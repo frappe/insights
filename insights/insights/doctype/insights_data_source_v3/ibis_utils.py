@@ -205,8 +205,8 @@ class IbisQueryBuilder:
         self.force = False
         self.operations = doc.operations
         # held-back keys for the columns this query's removes and renames took
-        # off `self.query`. The author does not see them either; see `_carried_tables`
-        self.dropped_by_author: set[str] = set()
+        # off `self.query`. The author does not see them either; see `_whole_tables`
+        self.dropped_by_writer: set[str] = set()
         self.set_operations()
 
     def set_operations(self):
@@ -380,7 +380,7 @@ class IbisQueryBuilder:
     def get_table_or_query(self, table_args) -> tuple[IbisQuery, set[str]]:
         """The relation `table_args` names, and what its author removed from it."""
         _table = None
-        dropped_by_author = set()
+        dropped_by_writer = set()
 
         if table_args.type == "table":
             _table = InsightsTablev3.get_ibis_table(
@@ -394,16 +394,16 @@ class IbisQueryBuilder:
                 check_source_workbook(self.stored_workbook, table_args.query_name)
             q = frappe.get_doc("Insights Query v3", table_args.query_name)
             builder = q.get_builder(use_live_connection=self.use_live_connection, force=self.force)
-            _table, dropped_by_author = builder.query, builder.dropped_by_author
+            _table, dropped_by_writer = builder.query, builder.dropped_by_writer
 
         if _table is None:
             frappe.throw(frappe._("Table or Query not found"), UnknownColumn)
 
-        return _table, dropped_by_author
+        return _table, dropped_by_writer
 
-    def get_column(self, column_name, throw=True, table=None, dropped_by_author=frozenset()):
+    def get_column(self, column_name, throw=True, table=None, dropped_by_writer=frozenset()):
         """The column `column_name` names, on the query being built or on `table`,
-        whose author removed `dropped_by_author`.
+        whose author removed `dropped_by_writer`.
 
         This is the one place that turns "this column is not here" into an
         answer, so every operation that names a column calls it, a join's own
@@ -412,7 +412,7 @@ class IbisQueryBuilder:
         """
         query = table
         if table is None:
-            query, dropped_by_author = self.query, self.dropped_by_author
+            query, dropped_by_writer = self.query, self.dropped_by_writer
 
         # 1. Exact match
         if column_name in query.columns:
@@ -428,7 +428,7 @@ class IbisQueryBuilder:
         # ending in `_<name>` would be the other side of a join, used silently.
         # `throw` decides how to stop, not whether: a caller that continues
         # without the column gets None.
-        if doctype := self.held_back(column_name, query, dropped_by_author):
+        if doctype := self.held_back(column_name, query, dropped_by_writer):
             if throw:
                 not_permitted.refuse([doctype])
             return None
@@ -472,7 +472,7 @@ class IbisQueryBuilder:
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table", UnknownColumn)
 
-    def held_back(self, column_name: str, relation: IbisQuery, dropped_by_author: set[str]) -> str | None:
+    def held_back(self, column_name: str, relation: IbisQuery, dropped_by_writer: set[str]) -> str | None:
         """The doctype `column_name` was held back from for permlevel, under `relation`.
 
         Checked on the relation the name was looked up on, because that decides
@@ -481,7 +481,7 @@ class IbisQueryBuilder:
         removed itself, before the reader's permissions applied.
         """
         held = not_permitted.held_back_columns()
-        for table in _carried_tables(relation, held, dropped_by_author):
+        for table in _whole_tables(relation, held, dropped_by_writer):
             doctype = not_permitted.held_back_doctype(held_back_key(table, column_name))
             if doctype:
                 return doctype
@@ -489,7 +489,7 @@ class IbisQueryBuilder:
         return None
 
     def apply_source(self, source_args):
-        source, self.dropped_by_author = self.get_table_or_query(source_args.table)
+        source, self.dropped_by_writer = self.get_table_or_query(source_args.table)
         return source
 
     def apply_join(self, join_args):
@@ -508,10 +508,10 @@ class IbisQueryBuilder:
         )
 
     def get_right_table(self, join_args):
-        right_table, dropped_by_author = self.get_table_or_query(join_args.table)
+        right_table, dropped_by_writer = self.get_table_or_query(join_args.table)
 
         if not join_args.select_columns:
-            return right_table, dropped_by_author
+            return right_table, dropped_by_writer
 
         named = [col.column_name for col in join_args.select_columns]
 
@@ -523,13 +523,13 @@ class IbisQueryBuilder:
         for name in named:
             if not name:
                 continue
-            column = self.get_column(name, table=right_table, dropped_by_author=dropped_by_author)
+            column = self.get_column(name, table=right_table, dropped_by_writer=dropped_by_writer)
             select_columns[column.get_name()] = column
 
         if join_args.join_condition and join_args.join_condition.join_expression:
             expression = self.evaluate_expression(
                 join_args.join_condition.join_expression.expression,
-                right=(right_table, dropped_by_author),
+                right=(right_table, dropped_by_writer),
             )
             columns_from_exp = self.get_columns_from_expression(expression)
             # an expression names columns of both tables; keep only this table's
@@ -537,7 +537,7 @@ class IbisQueryBuilder:
                 if name in right_table.columns:
                     select_columns[name] = right_table[name]
 
-        return right_table.select(list(select_columns.values())), dropped_by_author
+        return right_table.select(list(select_columns.values())), dropped_by_writer
 
     def get_columns_from_expression(
         self,
@@ -583,7 +583,7 @@ class IbisQueryBuilder:
         they would for the author: held-back columns on either side count."""
         query: IbisQuery = self.query
         held = not_permitted.held_back_columns()
-        left = _side(query, held, self.dropped_by_author)
+        left = _side(query, held, self.dropped_by_writer)
         right = _side(right_table, held, right_dropped)
         right_table_name = get_ibis_table_name(right_table)
         right_table_name = sanitize_name(right_table_name)
@@ -614,7 +614,7 @@ class IbisQueryBuilder:
         other_table, other_dropped = self.get_table_or_query(union_args.table)
         # a union keeps only the columns both sides have, so a remove on either
         # side takes the column off for the author
-        self.dropped_by_author = self.dropped_by_author | other_dropped
+        self.dropped_by_writer = self.dropped_by_writer | other_dropped
 
         current_columns = set(self.query.columns)
         other_columns = set(other_table.columns)
@@ -717,7 +717,7 @@ class IbisQueryBuilder:
     def apply_rename(self, rename_args):
         old_name = self.get_column(rename_args.column.column_name).get_name()
         new_name = sanitize_name(rename_args.new_name)
-        self.drop_by_author([old_name])
+        self.drop_by_writer([old_name])
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
@@ -727,20 +727,20 @@ class IbisQueryBuilder:
             column = self.get_column(column_name, throw=False)
             if column is not None:
                 present.append(column.get_name())
-            elif self.held_back(column_name, self.query, self.dropped_by_author):
+            elif self.held_back(column_name, self.query, self.dropped_by_writer):
                 # the author removes it too. Record it, because its table is still
                 # under the relation
                 held.append(column_name)
 
-        self.drop_by_author(present + held)
+        self.drop_by_writer(present + held)
         return self.query.drop(*present) if present else self.query
 
-    def drop_by_author(self, names: list[str]) -> None:
+    def drop_by_writer(self, names: list[str]) -> None:
         """Record the names a remove or rename takes off `self.query`, for every table under it."""
         tables = [
             frappe.scrub(strip_schema_prefix(dt.name)) for dt in self.query.op().find_topmost(DatabaseTable)
         ]
-        self.dropped_by_author = self.dropped_by_author | {
+        self.dropped_by_writer = self.dropped_by_writer | {
             held_back_key(table, name) for table in tables for name in names
         }
 
@@ -806,7 +806,7 @@ class IbisQueryBuilder:
         select = self._validate_sql_column_statement(statement, source_dialect)
         # the SQL reads only the columns left to the reader, so a held-back name
         # is missing here, as it is from `get_column`
-        self.refuse_held_back_in_sql(select, {SQL_COLUMN_RELATION: self.query}, self.dropped_by_author)
+        self.refuse_held_back_in_sql(select, {SQL_COLUMN_RELATION: self.query}, self.dropped_by_writer)
 
         if not self.use_live_connection:
             statement = self._transpile_sql_to_duckdb(statement, source_dialect)
@@ -878,7 +878,7 @@ class IbisQueryBuilder:
         the start dates sort the spans oldest first, the order a number card
         reads its rows in. A span holding no rows is a row too, with null
         measures: the card reads its rows by position, so a span that came back
-        as nothing would hand the reading its neighbor's figure. A span carries
+        as nothing would hand the reading its neighbor's figure. A span has
         no dates until here, because the clock and the fiscal calendar are only
         known while the query runs.
 
@@ -992,7 +992,7 @@ class IbisQueryBuilder:
         """The distinct column values a pivot keeps, and whether it cut any.
 
         Everything the cut leaves out lands in "Others", so this ranking decides
-        which series a chart draws. Rank by the measure, not by the value's own
+        which series a chart plots. Rank by the measure, not by the value's own
         name: alphabetical order drops the largest series into the tail. Several
         measures rank by the first. With none, and with a measure that does not
         add up, whose sum ranks nothing, the pivot only shows which groups
@@ -1185,7 +1185,7 @@ class IbisQueryBuilder:
 
         A binding is passed to `db` as SQL text, so ibis never executes it and
         never registers the in-memory tables it names. On the Data Store these
-        hold the rows desk admits, read from the live site. They are registered
+        hold the rows desk allows, read from the live site. They are registered
         here, as ibis does before it executes an expression.
         """
         bindings = {}
@@ -1202,13 +1202,13 @@ class IbisQueryBuilder:
         return bindings
 
     def refuse_held_back_in_sql(
-        self, parsed: sg.exp.Expression, relations: dict[str, IbisQuery], dropped_by_author=frozenset()
+        self, parsed: sg.exp.Expression, relations: dict[str, IbisQuery], dropped_by_writer=frozenset()
     ) -> None:
         """Refuse a column in `parsed` that a relation it reads held back.
 
         Raw SQL reads the relations bound for the reader, so a held-back column
         is missing there. The database would raise a column error, and the card
-        would offer a retry. This gives the refusal `get_column` gives an
+        would show a retry. This gives the refusal `get_column` gives an
         operation.
 
         `relations` is keyed by the table name the SQL reads each one as. A name
@@ -1235,7 +1235,7 @@ class IbisQueryBuilder:
                 continue
 
             for relation in reads:
-                if doctype := self.held_back(name, relation, dropped_by_author):
+                if doctype := self.held_back(name, relation, dropped_by_writer):
                     not_permitted.refuse([doctype])
 
     def _replace_sql_tables(
@@ -1262,7 +1262,7 @@ class IbisQueryBuilder:
 
         parsed = sg.parse_one(raw_sql, dialect=dialect)
 
-        # collect first: the replacements carry their own table references, and
+        # collect first: the replacements have their own table references, and
         # re-reading them would replace a table inside its own binding
         for table_exp in real_table_refs(parsed):
             table_sql = replace_map.get(table_exp.name)
@@ -1300,7 +1300,7 @@ class IbisQueryBuilder:
         if not parsed.ctes:
             return raw_sql
 
-        # nest what was parsed, not the text it came from: the text can carry a
+        # nest what was parsed, not the text it came from: the text can have a
         # trailing semicolon, and that would land inside the brackets
         return f"SELECT * FROM ({parsed.sql(dialect=dialect)}) AS {NATIVE_SQL_RELATION}"
 
@@ -1441,7 +1441,7 @@ class IbisQueryBuilder:
             raise ExpressionSyntaxError(f"Invalid expression: {expression}")
 
         frappe.flags.current_ibis_query = self.query
-        tables = [(self.query, self.dropped_by_author)]
+        tables = [(self.query, self.dropped_by_writer)]
         context = frappe._dict()
         context.q = self.query
         context.update(self.get_current_columns())
@@ -1456,8 +1456,8 @@ class IbisQueryBuilder:
             # held-back name is missing here, bare or on a table, as it is from
             # `get_column`
             named_on = self.query if isinstance(e, NameError) else e.obj
-            for table, dropped_by_author in tables:
-                if table is named_on and (doctype := self.held_back(e.name, table, dropped_by_author)):
+            for table, dropped_by_writer in tables:
+                if table is named_on and (doctype := self.held_back(e.name, table, dropped_by_writer)):
                     not_permitted.refuse([doctype])
             raise
         frappe.flags.current_ibis_query = None
@@ -1621,7 +1621,7 @@ def get_cached_results(cache_key) -> pd.DataFrame:
     if not data:
         return None
     payload = frappe.parse_json(data)
-    # a result with no rows still has columns, and records alone cannot carry them
+    # a result with no rows still has columns, and records alone cannot hold them
     df = pd.DataFrame(payload["rows"], columns=payload["columns"])
     return df.replace({pd.NaT: None, np.nan: None})
 
@@ -1690,30 +1690,30 @@ def folded_a_tail(column_name: str) -> bool:
     return column_name in (getattr(frappe.local, PIVOT_TAILS, None) or set())
 
 
-def _carried_tables(relation: IbisQuery, held: set[str], dropped_by_author: set[str]) -> set[str]:
+def _whole_tables(relation: IbisQuery, held: set[str], dropped_by_writer: set[str]) -> set[str]:
     """The tables under `relation` whose columns it keeps in full, minus what
     this build held back and what the author removed. Only such a table can
     tell which held-back columns `relation` would have had. A summarize or a
     select above a table keeps only some of its columns."""
     columns = set(relation.columns)
-    dropped = held | dropped_by_author
-    carried = set()
+    dropped = held | dropped_by_writer
+    whole = set()
     for dt in relation.op().find_topmost(DatabaseTable):
         table = frappe.scrub(strip_schema_prefix(dt.name))
         kept = {name for name in dt.schema.names if held_back_key(table, name) not in dropped}
         if kept <= columns:
-            carried.add(table)
+            whole.add(table)
 
-    return carried
+    return whole
 
 
-def _side(relation: IbisQuery, held: set[str], dropped_by_author: set[str]):
+def _side(relation: IbisQuery, held: set[str], dropped_by_writer: set[str]):
     """A check of whether a name is a column of `relation` as its author sees
     it: its tables' held-back columns count, and a name the author removed does
     not."""
     columns = set(relation.columns)
-    tables = _carried_tables(relation, held, dropped_by_author)
-    put_back = held - dropped_by_author
+    tables = _whole_tables(relation, held, dropped_by_writer)
+    put_back = held - dropped_by_writer
 
     def had(column_name: str) -> bool:
         return column_name in columns or any(

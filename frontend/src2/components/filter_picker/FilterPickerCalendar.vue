@@ -24,7 +24,7 @@ const day = computed(() => (Array.isArray(value.value) ? '' : value.value))
 
 <template>
 	<!-- the picker's caret lives in the combobox input; a day click must not take it.
-	     No Today button: the picker's own list already carries Today. -->
+	     No Today button: the picker's own list already includes Today. -->
 	<div class="filter-picker-calendar" @mousedown.prevent>
 		<DateRangeCalendar
 			v-if="mode === 'range'"

@@ -63,7 +63,7 @@ describe('a document the server refuses', () => {
 		chart.doc.visibility = 'Public'
 		const saving = chart.save()
 		await settled()
-		// typed while the write was in flight, so the refused write did not carry it
+		// typed while the write was in flight, so the refused write did not include it
 		chart.doc.title = 'Sales — Q4 rework'
 		refuse(refusal())
 		await expect(saving).rejects.toThrow()

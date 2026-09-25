@@ -58,7 +58,7 @@ const props = defineProps<{
 	// the event too: a caller that opens a menu at the click needs the point, and
 	// the cell is the only thing that knows where it was
 	onDrilldown?: (column: QueryResultColumn, row: QueryResultRow, event: MouseEvent) => void
-	// where a cell's value points, when it points anywhere. The table draws the
+	// where a cell's value points, when it points anywhere. The table renders the
 	// link and knows nothing about what is behind it
 	cellLink?: (column: QueryResultColumn, row: QueryResultRow) => string | undefined
 	stickyColumns?: string[]
@@ -218,7 +218,7 @@ const pagination = usePagination({
 	currentPage: computed(() => props.currentPage),
 })
 
-// The grid draws in the same colors every chart does, so a scale reads the
+// The grid renders in the same colors every chart does, so a scale reads the
 // same whether it is a heatmap or a column of numbers. `useChartTokens`
 // re-resolves when the theme flips.
 const $root = ref<HTMLElement>()
@@ -226,7 +226,7 @@ const { tokens } = useChartTokens($root)
 
 // Built once per theme rather than per cell: every cell in a column reads the
 // same scale, and a grid asks for it thousands of times. The chart-wide toggle
-// and a column's own rule draw from the same two, so they cannot disagree.
+// and a column's own rule use the same two, so they cannot disagree.
 const scales = computed(() => ({
 	ascending: magnitudeScale(tokens.value, 'ascending'),
 	descending: magnitudeScale(tokens.value, 'descending'),
@@ -241,7 +241,7 @@ const formattingRulesByColumn = computed(() =>
 
 // Every column's values, read once per grid: a scale and a rank rule both ask
 // for them per cell, and a grid has thousands of cells. They are the rows the
-// grid draws.
+// grid renders.
 const columnValues = computed(() => {
 	const values: Record<string, any[]> = {}
 	const rows = props.rows || []
@@ -416,7 +416,7 @@ function getColorScaleFillFromRules(
 type CellPaint = Partial<CellFill> & { borderColor?: string }
 
 /**
- * A filled cell draws its gridline in its own fill. The table's border is an
+ * A filled cell renders its gridline in its own fill. The table's border is an
  * outline gray that separates two bare cells, and any other color over a fill
  * still cuts the block. Painting the border in the fill keeps the cell edge
  * where it was, so nothing reflows, and a run of filled cells reads as one block.
@@ -491,7 +491,7 @@ function _formatNumber(value: any, columnName?: string, row?: QueryResultRow) {
  *
  * The pane around the grid owns the find and asks for this. The grid owns where
  * a column sits, which is why the pane asks rather than reaching for the cell
- * itself. A grid drawn outside a pane registers with nobody and is never asked.
+ * itself. A grid rendered outside a pane registers with nobody and is never asked.
  */
 function scrollToColumn(column_name: string) {
 	nextTick(() => {
@@ -658,7 +658,7 @@ function toggleNewColumn() {
 							</template>
 							<!-- the whole value is the control, so a link needs no column
 							     of its own. The icon marks the one that leaves, and it
-							     is drawn only under the pointer: a column where every
+							     is shown only under the pointer: a column where every
 							     row links would otherwise be a column of icons. Its
 							     space is held either way, so nothing shifts on hover.
 
@@ -667,7 +667,7 @@ function toggleNewColumn() {
 							     icon out of reach of most of the cell. The group is
 							     named for it, because a card names a hover group of
 							     its own around the whole table and a bare
-							     `group-hover` answers whichever ancestor carries the
+							     `group-hover` answers whichever ancestor has the
 							     class. -->
 							<a
 								v-else-if="linkOf(col, row)"
@@ -698,7 +698,7 @@ function toggleNewColumn() {
 						</td>
 					</tr>
 
-					<!-- The cells carry the closing rule, not the row: under
+					<!-- The cells hold the closing rule, not the row: under
 					     `border-separate` a border on a `tr` is never painted. -->
 					<tr
 						v-if="props.showColumnTotals && totalPerColumn"

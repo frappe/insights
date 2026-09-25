@@ -123,7 +123,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
     # @feature query.native-sql
     def test_two_spellings_of_one_table_produce_no_cte(self):
         # MariaDB matches CTE names case-insensitively, so a CTE per spelling was
-        # rejected with "Duplicate query name". A reference carries no name.
+        # rejected with "Duplicate query name". A reference has no name.
         raw_sql = "select a.name from `tabUser` a join tabuser b on a.name = b.name"
         replace_map = {
             "tabUser": "SELECT * FROM `tabUser`",
@@ -132,7 +132,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         rewritten = self.rewrite(raw_sql, replace_map)
 
-        # each reference reads its own binding, and neither carries a name
+        # each reference reads its own binding, and neither has a name
         self.assertEqual(self.cte_names(rewritten), [])
         self.assertEqual(self.table_names(rewritten), ["tabUser", "tabuser"])
 

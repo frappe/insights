@@ -32,7 +32,7 @@ async function tableCard(answer: Record<string, unknown>) {
 
 describe('a table card a reader is given', () => {
 	// @feature dashboard.card-filter permissions.chart-run-as-owner
-	it('offers a filter of their own only where `view.get_chart_data` says they may', async () => {
+	it('allows a filter of their own only where `view.get_chart_data` says they may', async () => {
 		expect(await tableCard({ can_filter: true })).toContain('lucide-list-filter')
 		expect(await tableCard({ can_filter: false })).not.toContain('lucide-list-filter')
 		// find runs in the browser, so it stays either way

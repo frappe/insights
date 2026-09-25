@@ -81,7 +81,7 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
             frappe.local.request = request_was
 
     def render(self, dashboard):
-        """Run a preview and return the URL opened and the key it carried."""
+        """Run a preview and return the URL opened and the key it passed."""
         opened = {}
 
         def record(url, headers=None):
@@ -104,7 +104,7 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
             opened["viewer_title"] = self.as_render(
                 opened["key"], lambda: get_dashboard(self.dashboard)["title"]
             )
-            opened["draws_as"] = {
+            opened["runs_as"] = {
                 name: self.as_render(
                     opened["key"],
                     lambda name=name: permission_user_for(frappe.get_doc(DT.CHART, name)),
@@ -150,11 +150,11 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
         self.assertEqual(self.render(self.dashboard)["viewer_title"], "Preview Dashboard")
 
     # @feature dashboard.preview-image
-    def test_the_render_draws_as_the_user_the_key_was_cut_for(self):
-        draws_as = self.render(self.dashboard)["draws_as"]
-        self.assertEqual(draws_as[self.chart], "Administrator")
+    def test_the_render_runs_as_the_user_the_key_was_cut_for(self):
+        runs_as = self.render(self.dashboard)["runs_as"]
+        self.assertEqual(runs_as[self.chart], "Administrator")
         # a chart the key does not open runs as the caller
-        self.assertEqual(draws_as[self.other_chart], "Guest")
+        self.assertEqual(runs_as[self.other_chart], "Guest")
 
     # @feature dashboard.preview-image
     def test_a_spent_key_opens_nothing(self):

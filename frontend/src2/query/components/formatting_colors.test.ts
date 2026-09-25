@@ -48,7 +48,7 @@ const tokens = {
 
 describe('color scale direction', () => {
 	// @feature query.conditional-formatting
-	it('reads the two names the option carried when the scale ran red to green', () => {
+	it('reads the two names the option held when the scale ran red to green', () => {
 		expect(colorScaleDirection('Green-Red')).toBe('ascending')
 		expect(colorScaleDirection('Red-Green')).toBe('descending')
 	})
@@ -64,7 +64,7 @@ describe('the magnitude scale', () => {
 	const scale = magnitudeScale(tokens, 'ascending')
 
 	// @feature query.conditional-formatting
-	it('draws nothing at the bottom of the range', () => {
+	it('shows nothing at the bottom of the range', () => {
 		expect(scale[0]).toBeUndefined()
 		expect(scale.slice(1).every(Boolean)).toBe(true)
 	})
@@ -89,7 +89,7 @@ describe('the magnitude scale', () => {
 		expect(down[down.length - 1]).toBeUndefined()
 	})
 
-	// A column of one value ranks against nothing, and it still draws the heavy
+	// A column of one value ranks against nothing, and it still shows the heavy
 	// end. Which end that is, the direction decides.
 	// @feature query.conditional-formatting
 	it('names the deep end of either direction', () => {

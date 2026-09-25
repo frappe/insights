@@ -1,6 +1,6 @@
 """Move a `Insights Table v3` record on to another spelling of the table it names.
 
-Every referrer names a table by the string the record stores, so a rename has to carry
+Every referrer names a table by the string the record stores, so a rename has to take
 the queries, the references, the links, the grants and the imported copy with it. See
 `InsightsDataSourcev3.table_identity` for why the spelling changes at all.
 
@@ -175,7 +175,7 @@ def move_grants(old_name: str, new_name: str) -> None:
     """Point the grants of `old_name` at `new_name`, dropping the ones already there.
 
     A grant is an `Insights Resource Permission` row a team holds against the record, and
-    it carries that team's row restrictions. Deleting the rows instead would revoke the
+    it holds that team's row restrictions. Deleting the rows instead would revoke the
     table from every team that reads it.
     """
     granted_to = frappe.get_all(
@@ -295,7 +295,7 @@ def update_table_links(data_source: str, renames: dict[str, str]) -> None:
 def rename_column_values(doctype: str, data_source: str, field: str, renames: dict[str, str]) -> None:
     """Rewrite `field` from every old name to its new one, in a single statement.
 
-    Every row holding a given old name takes the same new one, so the rows themselves carry
+    Every row holding a given old name takes the same new one, so the rows themselves hold
     nothing a rename needs. `frappe.db.bulk_update` matches by document name, so it would
     have to read them all first — and an import log keeps a row per import forever.
     """

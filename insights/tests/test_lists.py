@@ -4,7 +4,7 @@ Each endpoint answers one question: which rows the caller may see, which of them
 a search term keeps, and which lens — owned, shared, favourite, recent — narrows
 it further. The pages only render what comes back.
 
-The site carries rows these suites did not make, so a list is read through the
+The site has rows these suites did not make, so a list is read through the
 fixtures' own titles. A lens is still checked whole: the rows it must keep and the
 rows it must drop are both named.
 """
@@ -225,11 +225,11 @@ class TestDashboardList(InsightsIntegrationTestCase):
             toggle_like(DT.DASHBOARD, self.own, add="No")
 
     # @feature dashboard.list
-    def test_only_a_writer_redraws_a_dashboards_preview(self):
+    def test_only_a_writer_refreshes_a_dashboards_preview(self):
         """`update_dashboard_preview`, which `DashboardList.vue`'s "Refresh
         Preview" and `DashboardCard`'s "Load Preview" call, and the `can_write`
-        each row of `get_dashboards` carries for them. The preview is drawn with
-        the rows of whoever redraws it, and every reader of the list sees it."""
+        each row of `get_dashboards` includes for them. The preview is rendered with
+        the rows of whoever refreshes it, and every reader of the list sees it."""
         from unittest.mock import patch
 
         from insights.api.dashboards import update_dashboard_preview
@@ -239,7 +239,7 @@ class TestDashboardList(InsightsIntegrationTestCase):
 
         with patch.object(
             InsightsDashboardv3, "generate_dashboard_preview", return_value="/preview.png"
-        ) as drawn:
+        ) as rendered:
             for user, dashboard, writes in ((OWNER, self.others, False), (OWNER, self.own, True)):
                 with self.subTest(user=user, dashboard=dashboard), self.as_user(user):
                     row = next(row for row in get_dashboards() if row["name"] == dashboard)
@@ -249,7 +249,7 @@ class TestDashboardList(InsightsIntegrationTestCase):
                     else:
                         with self.assertRaises(frappe.PermissionError):
                             update_dashboard_preview(dashboard)
-        self.assertEqual(drawn.call_count, 1)
+        self.assertEqual(rendered.call_count, 1)
 
     def probed_dashboard(self):
         """A dashboard of OTHER's, shared with OWNER by name, over a chart of a

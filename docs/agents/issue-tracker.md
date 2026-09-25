@@ -17,7 +17,7 @@ Don't create or triage GitHub issues unless explicitly asked.
 - Implementation issues are one file per ticket at
   `docs/projects/<effort-slug>/issues/<NN>-<slug>.md`, numbered from `01` —
   never a single combined tickets file
-- Every ticket carries a `Status:` line near the top. Wayfinder tickets use
+- Every ticket has a `Status:` line near the top. Wayfinder tickets use
   `open`, `claimed` and `resolved` (see *Wayfinding operations*). Tickets raised
   from an incoming GitHub issue use the triage roles instead: `needs-triage`,
   `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`

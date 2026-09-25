@@ -83,7 +83,7 @@ test.describe('data-source', () => {
 			await page.getByText('Upload CSV or Excel', { exact: true }).click()
 
 			// locator: the file input is the one frappe-ui's FileUploader hides
-			// behind its drop zone. It carries no label and no accessible name.
+			// behind its drop zone. It has no label and no accessible name.
 			await page.locator('input[type="file"]').setInputFiles(upload)
 
 			// The dialog renames itself once it has read the file, and shows what
@@ -132,7 +132,7 @@ test.describe('data-source', () => {
 				table,
 				file: '',
 			})
-			// The file carries a name of its own, so it is not matched by the
+			// The file has a name of its own, so it is not matched by the
 			// table's prefix and goes separately.
 			await deleteUploadedFiles(adminApi, file)
 		}
@@ -159,7 +159,7 @@ test.describe('data-source', () => {
 		await dialog.getByRole('button', { name: 'Connect' }).click()
 
 		// The refusal is reported on the button that ran the test. The toast
-		// beside it carries the driver's own message and fades, so the button is
+		// beside it shows the driver's own message and fades, so the button is
 		// what this flow reads.
 		await expect(dialog.getByRole('button', { name: 'Failed, Retry?' })).toBeVisible()
 		// A failed test blocks the data source, so the flow leaves nothing behind.
@@ -189,7 +189,7 @@ test.describe('data-source', () => {
 			await dialog.getByRole('combobox', { name: 'Data Source' }).click()
 			await page.getByRole('option', { name: 'Uploads' }).click()
 			await dialog.getByRole('combobox', { name: 'Table' }).click()
-			// An option carries the table name and the Data Source it belongs to.
+			// An option shows the table name and the Data Source it belongs to.
 			await page.getByRole('option', { name: `${table} ${UPLOADS_DATA_SOURCE}` }).click()
 
 			await expect(dialog.getByText('Selected table has 3 rows.')).toBeVisible()

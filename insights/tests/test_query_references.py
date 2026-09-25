@@ -3,7 +3,7 @@
 An operation may source, join or union another query, and a dashboard filter or a
 chart may name one. Either way the reference resolves to the whole query - its
 operations, its native SQL, and the tables it reads - and the compiled result
-carries all of it back.
+brings all of it back.
 
 The reference is checked once, where it is written. Execution then trusts what was
 saved, so a chain stays runnable by everyone who may read the query at its head.
@@ -169,7 +169,7 @@ class AReferenceInTheRequestIsChecked:
             self.fail(f"the reference resolved and returned {result.get('sql')}")
 
 
-class ASavedReferenceCarriesItsOwnAccess:
+class ASavedReferenceKeepsItsOwnAccess:
     """The rules for a reference that was saved.
 
     A chart can be shared with someone who holds no access to the workbook behind
@@ -202,7 +202,7 @@ class ASavedReferenceCarriesItsOwnAccess:
         self.set_team_permissions(self.ENABLE_PERMISSIONS)
 
     # @feature permissions.chart-access-follows
-    def test_the_share_carries_the_chart_and_the_pipeline_it_reads(self):
+    def test_the_share_grants_read_on_the_chart_and_the_pipeline_it_reads(self):
         """A shared chart gives read on every query its pipeline reads, and no more.
 
         The engine trusts a saved reference, so the chart's number uses all of
@@ -242,7 +242,7 @@ class ASavedReferenceCarriesItsOwnAccess:
                 self.assertFalse(frappe.has_permission(DT.QUERY, ptype=ptype, doc=far_query), ptype)
 
     # @feature permissions.chart-access-follows permissions.visibility
-    def test_a_level_alone_carries_no_query_behind_the_chart(self):
+    def test_a_visibility_level_alone_grants_no_read_on_the_query_behind_the_chart(self):
         """A reader who sees a chart through its visibility level gets the chart's
         result, not the queries behind it."""
         chart = create_test_chart(OWNER, self.workbook, query=self.consumer, title="Chain Open Chart")
@@ -278,7 +278,7 @@ class ASavedReferenceCarriesItsOwnAccess:
         self.assertEqual(result["rows"][0]["secret"], SECRET)
 
     # @feature query.copy-paste
-    def test_an_export_carries_its_references_before_the_index_is_built(self):
+    def test_an_export_includes_its_references_before_the_index_is_built(self):
         """An export packs the queries it is built on. Which those are comes from
         the query, not from the index that a background job rebuilds."""
         frappe.db.delete("Insights Query Reference", {"query": self.consumer})
@@ -295,7 +295,7 @@ class ASavedReferenceCarriesItsOwnAccess:
     # @feature query.copy-paste
     def test_an_export_skips_a_reference_whose_query_is_gone(self):
         """`on_trash` drops the edge rows but not the operations that name the
-        query, so the export list carries a name with no row behind it."""
+        query, so the export list includes a name with no row behind it."""
         with self.as_user(OWNER):
             gone = create_source_query(OWNER, self.workbook, "Chain Doomed Base").name
             orphan = create_referencing_query(OWNER, self.workbook, gone, "Chain Orphan").name
@@ -394,7 +394,7 @@ class DashboardFilterReadsTheQuery:
             return frappe.get_doc(DT.DASHBOARD, dashboard).get_distinct_column_values(filter_name)
 
     # @feature dashboard.filter-values
-    def test_a_filter_offers_the_values_of_the_column_it_links(self):
+    def test_a_filter_lists_the_values_of_the_column_it_links(self):
         with self.as_user(OWNER):
             values = self.distinct_values(self.owner_dashboard, self.FILTER_NAME)
         self.assertEqual(values, [SECRET])
@@ -480,7 +480,7 @@ class ChartExportReadsTheQuery:
         set_request(method="POST", path="/api/method/insights.api.run_doc_method")
 
     def export_chart(self, name, **claims):
-        """The client sends the chart it holds, so the body carries its fields."""
+        """The client sends the chart it holds, so the body includes its fields."""
         chart = frappe.get_doc(DT.CHART, name)
         body = {
             "doctype": DT.CHART,
@@ -493,7 +493,7 @@ class ChartExportReadsTheQuery:
 
     # @feature charts.copy-paste
     def test_a_chart_exports_the_query_its_owner_may_read(self):
-        """The baseline: the export carries the linked query."""
+        """The baseline: the export includes the linked query."""
         with self.as_user(OWNER):
             exported = self.export_chart(self.owner_chart)
         self.assertIn(self.owner_query, exported["dependencies"]["queries"])
@@ -562,7 +562,7 @@ class TestSourceTablesComeFromTheQuery(InsightsIntegrationTestCase):
 
 
 class TestTheLineageGraph(InsightsIntegrationTestCase):
-    """The graph the lineage dialog draws is built from the reference rows."""
+    """The graph the lineage dialog renders is built from the reference rows."""
 
     @classmethod
     def before_class(cls):
@@ -594,7 +594,7 @@ class TestTheLineageGraph(InsightsIntegrationTestCase):
         delete_users(OWNER)
 
     # @feature workbook.lineage
-    def test_the_lineage_graph_draws_an_edge_from_a_query_to_the_query_it_reads(self):
+    def test_the_lineage_graph_shows_an_edge_from_a_query_to_the_query_it_reads(self):
         graph = frappe.get_doc(DT.WORKBOOK, self.workbook).get_lineage_graph()
 
         table_id = f"table::{TEST_DS}::table1"
@@ -768,7 +768,7 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
                 frappe.db.rollback(save_point="copy_hop")
 
     # @feature query.source-query
-    def test_a_copy_carries_a_sources_variables_without_their_values(self):
+    def test_a_copy_keeps_a_sources_variables_without_their_values(self):
         """A variable holds a script's credential, and editors of the reading
         workbook can edit the copy. So the copy gets no values, and the patch
         lists the copies that need a value entered."""
@@ -912,12 +912,12 @@ class TestAReferenceInTheRequestIsCheckedWithTeamPermissions(
     ENABLE_PERMISSIONS = 1
 
 
-class TestASavedReferenceCarriesItsOwnAccess(ASavedReferenceCarriesItsOwnAccess, InsightsIntegrationTestCase):
+class TestASavedReferenceKeepsItsOwnAccess(ASavedReferenceKeepsItsOwnAccess, InsightsIntegrationTestCase):
     ENABLE_PERMISSIONS = 0
 
 
-class TestASavedReferenceCarriesItsOwnAccessWithTeamPermissions(
-    ASavedReferenceCarriesItsOwnAccess, InsightsIntegrationTestCase
+class TestASavedReferenceKeepsItsOwnAccessWithTeamPermissions(
+    ASavedReferenceKeepsItsOwnAccess, InsightsIntegrationTestCase
 ):
     ENABLE_PERMISSIONS = 1
 

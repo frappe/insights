@@ -34,7 +34,7 @@ the patch that moved it to `visibility`.
 Details the table leaves out:
 
 - On a chart or dashboard, a DocShare counts only when it names a user. An
-  org-wide share is ignored there, because the `Everyone` level already admits
+  org-wide share is ignored there, because the `Everyone` level already allows
   every signed-in user. A workbook has no visibility, so its org-wide share
   counts for signed-in users. A guest holds no share of either kind.
 - `has_doc_permission` is asked for read, share or write. Any other ptype is
@@ -109,14 +109,14 @@ EVERYONE = "Everyone"
 PUBLIC = "Public"
 VISIBILITY_LEVELS = [PRIVATE, ROLES, EVERYONE, PUBLIC]
 
-# `Everyone` and wider. These admit a signed-in user who holds no other grant.
+# `Everyone` and wider. These allow a signed-in user who holds no other grant.
 OPEN_LEVELS = VISIBILITY_LEVELS[VISIBILITY_LEVELS.index(EVERYONE) :]
 
 
 def visibility_level(visibility: str | None) -> int:
     """The index of `visibility` in `VISIBILITY_LEVELS`.
 
-    An unknown value admits nobody, so it counts as `Private`.
+    An unknown value allows nobody, so it counts as `Private`.
     """
     return VISIBILITY_LEVELS.index(visibility) if visibility in VISIBILITY_LEVELS else 0
 
@@ -124,7 +124,7 @@ def visibility_level(visibility: str | None) -> int:
 def reach(doc) -> tuple[int, frozenset[str]]:
     """The level of `doc`'s visibility, and the roles it names at `Roles`.
 
-    `Roles` with no role admits nobody, so it counts as `Private`. So does a
+    `Roles` with no role allows nobody, so it counts as `Private`. So does a
     missing document, such as one being created.
     """
     level = visibility_level(doc.visibility) if doc else 0
@@ -136,16 +136,16 @@ def reach(doc) -> tuple[int, frozenset[str]]:
 
 
 def reaches_anybody(doc) -> bool:
-    """Whether `doc`'s visibility admits anyone.
+    """Whether `doc`'s visibility allows anyone.
 
-    Every level above `Private` admits a group of users, not users named one by
+    Every level above `Private` allows a group of users, not users named one by
     one as a share does.
     """
     return reach(doc)[0] > 0
 
 
 def widens(before, doc) -> bool:
-    """Whether `doc`'s visibility admits someone that `before`'s did not.
+    """Whether `doc`'s visibility allows someone that `before`'s did not.
 
     Levels are ordered from `Private` to `Public`. When both are at `Roles`, it
     widens if `doc` names a role `before` did not. Roles are compared by name,
@@ -169,7 +169,7 @@ def get_insights_users():
     """Everyone who may use Insights: an enabled holder of an Insights role.
 
     One definition serves both sides of sharing - the picker lists this set and
-    `validate_shareable_users` accepts it - so a name the picker offers is never
+    `validate_shareable_users` accepts it - so a name the picker lists is never
     refused when the share is saved. Administrator is left out: it is nobody to
     browse for, though it can still own a workbook and be granted access to one.
     """
@@ -435,10 +435,10 @@ class InsightsPermissions:
         )
 
     def _build_visibility_query(self, doctype, ptype):
-        """Documents whose visibility admits this user.
+        """Documents whose visibility allows this user.
 
         Visibility grants read only, never write or share. No level checks the
-        `Insights User` role. Under `ignore_visibility` it admits nobody.
+        `Insights User` role. Under `ignore_visibility` it allows nobody.
         """
         if ptype != "read" or doctype not in VISIBILITY_DOCTYPES or self.ignore_visibility:
             return None
@@ -446,11 +446,11 @@ class InsightsPermissions:
         Content = frappe.qb.DocType(doctype)
 
         if self.user == "Guest":
-            # a guest holds no role, so only `Public` admits them
+            # a guest holds no role, so only `Public` allows them
             return frappe.qb.from_(Content).select(Content.name).where(Content.visibility == PUBLIC)
 
         query = frappe.qb.from_(Content).select(Content.name)
-        admits_user = Content.visibility.isin(OPEN_LEVELS)
+        allows_user = Content.visibility.isin(OPEN_LEVELS)
 
         roles = [role for role in self.user_roles if role != "Guest"]
         if roles:
@@ -466,9 +466,9 @@ class InsightsPermissions:
             )
             query = query.left_join(NamedRoles).on(Content.name == NamedRoles.name)
             named = (Content.visibility == ROLES) & NamedRoles.name.isnotnull()
-            admits_user = admits_user | named
+            allows_user = allows_user | named
 
-        return query.where(admits_user)
+        return query.where(allows_user)
 
     def _with_visibility_grant(self, query, Content, doctype, ptype, granted):
         visible = self._build_visibility_query(doctype, ptype)
@@ -524,7 +524,7 @@ class InsightsPermissions:
             .where(AllowedSources.name.isnotnull())
         )
 
-        # On a site DB source, desk read on a doctype admits the user to its
+        # On a site DB source, desk read on a doctype lets the user read its
         # table, as a team grant does. `apply_user_permissions` filters rows by
         # the same rule. It grants read only: desk read does not allow changing
         # the Insights Table document.
@@ -709,7 +709,7 @@ class InsightsPermissions:
 
         # A chart's grant gives read on the queries its pipeline reads in its
         # own workbook. It never gives write or delete; those belong to the
-        # workbook. It does not apply to a reader admitted only by a visibility
+        # workbook. It does not apply to a reader allowed in only by a visibility
         # level or a dashboard: they may see the chart, not its pipeline.
         Chart = frappe.qb.DocType("Insights Chart v3")
         AllowedCharts = self._named_grants._build_chart_permission_query("read").select(
@@ -816,7 +816,7 @@ class InsightsPermissions:
     def _build_resource_query(self, doctype):
         """Grants on `doctype` that the user holds through a team.
 
-        A team is the only thing that carries a grant, so a user in no team must
+        A team is the only thing that holds a grant, so a user in no team must
         match no row. That case cannot be written as a test of a column: `parent`
         links a grant back to its team and is set on every row, so any predicate
         over it is true for all of them. `isin([])` is not an option either -
@@ -846,7 +846,7 @@ def check_referenced_query_access(query_name):
     An unattended execution has no caller, so it is checked against the user it
     runs as (`get_permission_user`).
 
-    It asks `may_read`, not `frappe.has_permission`. A reader admitted to a
+    It asks `may_read`, not `frappe.has_permission`. A reader allowed on a
     dashboard by its visibility may hold no Insights role. Frappe's role check
     would refuse them a query that the chart they are reading grants them.
     """
@@ -878,7 +878,7 @@ def can_read_chart(chart_name) -> bool:
 
     Whoever may read a chart may read every query its stored pipeline reads. So
     an endpoint limited to that pipeline (`chart_reads`) checks the chart, not
-    the query. A reader admitted only by a visibility level has no grant on the
+    the query. A reader allowed only by a visibility level has no grant on the
     query, but may still see what the chart shows from it.
     """
     from insights.permission_user import get_permission_user
@@ -916,7 +916,7 @@ def validate_visibility(doc):
     what share means. So it is checked on save, like a chart's query link.
 
     Only widening is checked. Narrowing takes nothing from anyone. A new
-    document admits nobody before its first save, so any level it has is a
+    document allows nobody before its first save, so any level it has is a
     widening. A copy is reset instead of allowed; see
     `InsightsChartv3.duplicate`.
     """
@@ -1117,7 +1117,7 @@ def dashboard_linking_at(chart, levels: list[str], reader: str | None = None) ->
             (DashboardChart.parenttype == "Insights Dashboard v3")
             & (DashboardChart.chart == chart.name)
             & (Dashboard.visibility.isin(levels))
-            # `Roles` naming no role admits nobody (`reach`)
+            # `Roles` naming no role allows nobody (`reach`)
             & ((Dashboard.visibility != ROLES) | Dashboard.name.isin(naming_a_role))
         )
         .limit(1)
@@ -1321,7 +1321,7 @@ def can_download(user=None) -> bool:
     The role is checked on `Insights Query v3` always, so the answer does not
     depend on which doctype the caller came through. It is checked only for a
     user with an Insights role. Every view endpoint is open to readers with no
-    Insights role, admitted by name through a DocShare. A ptype on a doctype
+    Insights role, allowed by name through a DocShare. A ptype on a doctype
     whose roles they lack says nothing about them. Reading it as a refusal
     would confuse "has no Insights role" with "has a role the site denied
     export".
@@ -1358,7 +1358,7 @@ def can_write(doc) -> bool:
     """Whether the caller may change `doc`. Every edit control checks this.
 
     The form's `read_only`, a view's `can_write` and the Builder's
-    `authoring.is_author` all read it. It needs write on the document, an
+    `authoring.is_writer` all read it. It needs write on the document, an
     Insights role, and a workbook the site may change. Standard content is
     read-only outside developer mode, even to its owner, and `can_copy` allows
     a copy instead.

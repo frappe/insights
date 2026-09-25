@@ -11,7 +11,7 @@ const props = defineProps<{ actions: DashboardAction[] }>()
 const first = computed(() => props.actions[0])
 const rest = computed(() => props.actions.slice(1).map(toOption))
 
-// An action carries the bare lucide name, because a host outside Insights uses
+// An action holds the bare lucide name, because a host outside Insights uses
 // its own icon component. frappe-ui names the same icon `lucide-<name>`.
 function iconClass(action: DashboardAction) {
 	return action.icon ? `lucide-${action.icon}` : undefined

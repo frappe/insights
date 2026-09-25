@@ -5,7 +5,7 @@ generic document routes — `/api/resource`, `frappe.client.get`, `get_list` wit
 field list — return whatever the doctype exposes, so the boundary has to live on
 the fields themselves rather than on the endpoints that read them.
 
-`Password` fields already mask themselves. These four do not, so they carry a
+`Password` fields already mask themselves. These four do not, so they have a
 permlevel instead.
 """
 

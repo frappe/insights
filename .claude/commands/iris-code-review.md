@@ -21,7 +21,7 @@ the review to `/tmp/review.md`, then stop — the workflow posts the file as the
 Always write the file, even for "Looks good". Otherwise print it in chat and post nothing.
 Do not probe the environment to decide — the arguments are the only signal.
 
-**Inputs.** `$ARGUMENTS` is a PR number, a git ref, or empty. It may also carry one stage:
+**Inputs.** `$ARGUMENTS` is a PR number, a git ref, or empty. It may also include one stage:
 `design`, `works` or `quality`. In CI it is `<pr> --ci <event>`.
 
 - A number → `gh pr view <N>`, `gh pr diff <N>`. Read the PR, not the working tree.

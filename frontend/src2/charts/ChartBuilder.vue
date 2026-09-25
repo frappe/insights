@@ -28,7 +28,7 @@ provide('chart', chart)
 // @ts-ignore
 window.chart = chart
 
-// the preview is the card the builder draws: it sends the config being edited to
+// the preview is the card the builder renders: it sends the config being edited to
 // the authoring endpoint and gets back the rows, the SQL and the operations the
 // server derived — the same round trip the old client derivation already made
 const preview = useChartPreview(chart)
@@ -37,7 +37,7 @@ provide(chartPreviewKey, preview)
 // an edit here would not change the rows it shows
 const readOnly = computed(() => preview.doc.can_write === false)
 
-// the first draw separately, so opening a chart does not wait out the debounce
+// the first render separately, so opening a chart does not wait out the debounce
 waitUntil(() => !chart.pending).then(() => preview.load())
 watchDebounced(
 	() => [chart.doc.query, chart.doc.chart_type, chart.doc.config],
@@ -84,7 +84,7 @@ const showShareDialog = ref(false)
 		<LoadingOverlay v-if="chart.pending" />
 		<div class="relative flex h-full w-full flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
 			<!-- no page header: the card's header is the page's, so the title is
-			     drawn once with the actions beside it -->
+			     shown once with the actions beside it -->
 			<div ref="chartEl" class="flex min-h-0 flex-1 items-center justify-center">
 				<ChartRenderer :chart="preview" hide-maximize>
 					<template v-if="chart.doc.query" #actions>

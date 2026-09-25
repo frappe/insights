@@ -50,9 +50,9 @@ class AStandardChartReadsAsAnyChart(InsightsIntegrationTestCase):
         create_user(GRANTED, first_name="Standard", last_name="Granted", roles="Insights User")
         create_user(UNGRANTED, first_name="Standard", last_name="Ungranted", roles="Insights User")
 
-        # each ToDo is allocated to its reader, so desk permissions admit the
+        # each ToDo is allocated to its reader, so desk permissions allow the
         # reader and the tests observe only the team grant. Only the ungranted
-        # reader has a cancelled ToDo, and the team's restriction admits it
+        # reader has a cancelled ToDo, and the team's restriction allows it
         cls.todos = [
             frappe.get_doc(
                 {
@@ -192,7 +192,7 @@ class AStandardChartReadsAsAnyChart(InsightsIntegrationTestCase):
     # @feature standard.read-rules permissions.site-user-permissions
     def test_a_reader_with_no_grant_reads_the_site_rows_desk_allows_them(self):
         """Protects `view.get_chart_data` for a reader in no team. Desk
-        permissions admit them whether or not the chart is standard."""
+        permissions allow them whether or not the chart is standard."""
         self.assertEqual(self.statuses_read_by(self.plain, UNGRANTED), ["Cancelled", "Closed", "Open"])
         self.assertEqual(self.statuses_read_by(self.shipped, UNGRANTED), ["Cancelled", "Closed", "Open"])
 

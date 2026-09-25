@@ -9,7 +9,7 @@
 //
 // One module owns the vocabulary. A span is a string the server's `get_window`
 // parses, and nothing outside this file builds one — a span it cannot parse
-// raises while the card runs, so the choices an author is offered and the
+// raises while the card runs, so the choices an author is shown and the
 // strings they write have to be the same list.
 
 import dayjs from 'dayjs'
@@ -129,7 +129,7 @@ export function lastSpanSentence(unit: WindowUnit, count: number): [string, stri
 /**
  * What the include-current toggle adds, worded as the choice that names it.
  *
- * "Include this month" is the option label `current:month` carries, so the
+ * "Include this month" is the option label `current:month` has, so the
  * toggle names the exact period it extends the run over. A day has no "this
  * day" in English, and its option is called Today.
  */
@@ -230,7 +230,7 @@ export function choiceOfPeriod(period?: NumberPeriod): string {
 	if (period?.grain) {
 		const choice = `${GRAIN}${grainUnit(period.grain)}`
 		// A grain with no choice of its own still echoes as a grain: the picker
-		// offers back what it was handed, and what comes back must write the shape
+		// lists back what it was handed, and what comes back must write the shape
 		// it was read from. Unprefixed, an hourly card reopened as `{span: 'hour'}`
 		// and the server refused the span.
 		return choice in choiceCopy() ? choice : `${GRAIN}${period.grain}`
@@ -257,7 +257,7 @@ export const DEFAULT_CHOICE = 'to date:month'
  * The period a choice writes, over the run length the author already set.
  *
  * Built whole rather than merged, so switching between the two families cannot
- * leave the old family's key behind — a period carrying both would group twice.
+ * leave the old family's key behind — a period with both would group twice.
  */
 export function periodOfChoice(choice: string, current?: NumberPeriod): NumberPeriod | undefined {
 	if (!choice) return undefined
@@ -311,7 +311,7 @@ const UNIT_STEPS: Record<WindowUnit, [number, 'day' | 'week' | 'month' | 'year']
 /**
  * The stretch a span covers, from the date it starts on.
  *
- * A span is grouped by membership, so its dimension carries no granularity
+ * A span is grouped by membership, so its dimension has no granularity
  * and its start date prints raw. The span is what says how long it is,
  * so the span is what names it — and a span of several periods is named by the
  * whole run, because the first period alone reads as that period's own number.
@@ -332,7 +332,7 @@ export function formatWindowLabel(span: string, start: any): any {
 }
 
 /**
- * The rows a card draws, with its period column read as a period rather than as
+ * The rows a card renders, with its period column read as a period rather than as
  * the date the period starts on.
  */
 export function labelWindowRows(

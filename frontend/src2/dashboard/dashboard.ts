@@ -8,7 +8,7 @@ import {
 	operatorOf,
 	type Filter,
 } from '../components/filter_picker/filter_picker'
-import useChartPreview, { type ChartPreviewSurface } from '../charts/chart_preview'
+import useChartPreview, { type ChartPreviewContext } from '../charts/chart_preview'
 import { type DashboardFilterContext } from '../charts/chart_view'
 import { getUniqueId, safeJSONParse, showErrorToast, waitUntil } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
@@ -72,7 +72,7 @@ export default function useDashboard(name: string) {
 
 	// A store is always first asked for inside a component's `setup`, and it
 	// outlives that component. Its own effects (autosave, the chart map, the
-	// saved filter states) would stop when the page it was first drawn on
+	// saved filter states) would stop when the page it was first rendered on
 	// unmounts, leaving a store that reads current and saves nothing. Detached,
 	// so they live as long as the store does: the map never drops an entry.
 	const scope = effectScope(true)
@@ -148,7 +148,7 @@ function makeDashboard(name: string) {
 	/**
 	 * The cells a chart is dropped as.
 	 *
-	 * Every type is one cell except a Number chart: a cell draws one card, so a
+	 * Every type is one cell except a Number chart: a cell renders one card, so a
 	 * chart stating five readings arrives as five cells side by side, each at the
 	 * height its own card needs. How many there are is in the config and not in
 	 * the list entry, so the chart's document is waited for rather than guessed
@@ -200,7 +200,7 @@ function makeDashboard(name: string) {
 	// autosave watcher, a debounced history), so it cannot be resolved in a
 	// computed, which Vue is free to evaluate, discard or run again. The stores
 	// the rules below read are resolved here, once per chart the grid names, the
-	// way a cell resolves the one it draws. It is handed out for the same reason:
+	// way a cell resolves the one it renders. It is handed out for the same reason:
 	// a surface inside the dashboard reads a chart through this map.
 	const chartsByName = shallowRef<Record<string, Chart>>({})
 	watch(
@@ -380,10 +380,10 @@ function makeDashboard(name: string) {
 	// A card filter goes along as an item and a state of its own. The server has
 	// one router for both, so a filter the reader made on a card lands in the
 	// chart's query group beside the grid's own, `And`-composed.
-	// A card filter is the reader's own, on a column the card draws, so it travels
+	// A card filter is the reader's own, on a column the card shows, so it travels
 	// as itself rather than as a filter item the grid never held. The server lands
 	// it on the chart's own derived query, which is what the chart's name reaches:
-	// the rule falls after the chart's summarize, on the columns the card draws,
+	// the rule falls after the chart's summarize, on the columns the card shows,
 	// measures included.
 	function filterContextFor(chart_name: string): DashboardFilterContext {
 		return {
@@ -403,14 +403,14 @@ function makeDashboard(name: string) {
 	// saved chart, so an unsaved edit shows on the grid too. The reads belong to
 	// this dashboard, because its filters narrow their rows. Another dashboard
 	// with the same chart has its own reads.
-	const viewSurface: ChartPreviewSurface = {
+	const readContext: ChartPreviewContext = {
 		id: `dashboard:${name}`,
 		filterContext: filterContextFor,
 		canWrite: () => dashboard.doc.has_workbook_access,
 	}
 
 	function chartView(chart_name: string) {
-		return useChartPreview(useChart(chart_name), viewSurface)
+		return useChartPreview(useChart(chart_name), readContext)
 	}
 
 	function refreshChart(chart_name: string, force = false) {

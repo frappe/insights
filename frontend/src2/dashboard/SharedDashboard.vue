@@ -14,7 +14,7 @@ import { useDashboardView } from './view'
 const props = defineProps<{ dashboard_name: string }>()
 
 // The reference is sent unchanged. The resolver accepts every form a link can
-// carry: a route, a docname, or the v2 name.
+// hold: a route, a docname, or the v2 name.
 const dashboard = useDashboardView(() => props.dashboard_name, 'shared')
 
 // On Not Found, a guest is sent to sign in, because a signed-in user may be

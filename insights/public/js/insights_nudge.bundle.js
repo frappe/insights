@@ -41,7 +41,7 @@
 	const suggestionsDisabled = () =>
 		cint(frappe.sys_defaults?.disable_product_suggestion);
 	// Keyed on the template, not the workspace, so dismissing the suggestion once
-	// covers every workspace that offers it.
+	// covers every workspace that shows it.
 	const dismissKey = (cfg) =>
 		`insights:nudge:${frappe.session.user}:${templateId(cfg)}`;
 	const dismissed = (cfg) => localStorage.getItem(dismissKey(cfg)) === "1";

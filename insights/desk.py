@@ -71,7 +71,7 @@ def boot_app_path(bootinfo) -> None:
 def claim(doc, method=None) -> None:
     """Set the island that renders `doc`, if Insights renders it.
 
-    Both `doc_events` handlers call this one method. The document carries its
+    Both `doc_events` handlers call this one method. The document includes its
     doctype, so a per-doctype entry point would only add a second name.
     """
     island = island_for(doc)
@@ -140,7 +140,7 @@ def refuse_delete_while_claimed(title: str, claims: list[tuple[str, str, str]]) 
         return
 
     frappe.throw(
-        frappe._("Cannot delete {0} because {1} draw from it.").format(
+        frappe._("Cannot delete {0} because {1} use it.").format(
             frappe.bold(title),
             ", ".join(
                 f"{frappe._(doctype)} {frappe.utils.get_link_to_form(doctype, name)}"

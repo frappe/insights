@@ -72,7 +72,7 @@ Notes:
 
 - Use consistent internal names (`q-*`, `c-*`, `d-*`). Every reference must match the key it points
   at, exactly.
-- A member names its folder by **title**. The folder itself carries no name: the site mints one.
+- A member names its folder by **title**. The folder itself has no name: the site mints one.
 - An older envelope, with the workbook under `doc` and its members under `dependencies`, still
   imports. New files use the shape above.
 - **The importer drops a reference it cannot resolve, and reports nothing.** A filter link

@@ -85,7 +85,7 @@ Store copy go with it. That is worse than the duplicate it fixes.
 
 ## Consequences
 
-**A request path carries a rename engine.** Saving a Data Source can now rewrite
+**A request path runs a rename engine.** Saving a Data Source can now rewrite
 every query on the site. It runs only when a name actually changed, which is
 rare, but the cost is there.
 

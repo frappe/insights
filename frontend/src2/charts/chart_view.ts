@@ -114,12 +114,12 @@ type ChartDataResponse = {
 	not_permitted?: NotPermitted
 	user_permissions?: { doctype: string; documents: string[] }[]
 	// a team's Table Restriction, or a column blanked on the rows only desk
-	// admits, filtered these rows. Unlike `user_permissions`, it names nothing
+	// allows, filtered these rows. Unlike `user_permissions`, it names nothing
 	narrowed_by_permissions?: boolean
 	currency_symbols?: Session['site']['currency_symbols']
 	// the date this card's spans resolved against. A span is stored unresolved,
 	// so the card needs this to say which dates its number covers
-	drawn_on?: string
+	read_on?: string
 	// builder only: the `modified` of the saved chart these rows ran as
 	modified?: string
 }
@@ -130,15 +130,15 @@ type ChartDataResponse = {
  * one chart hold one read each and cannot change each other's rows. A caller
  * that applies no filters passes none and shares one read.
  */
-export type ChartReadSurface = {
+export type ChartReadContext = {
 	id: string
 	// called on each load and not stored, so a load always sends the current
 	// filters
 	filterContext: (chart_name: string) => DashboardFilterContext
 }
 
-function chartReadKey(source: ChartSourceName, chart_name: string, surface?: ChartReadSurface) {
-	return `${source}:${surface?.id || ''}:${chart_name}`
+function chartReadKey(source: ChartSourceName, chart_name: string, context?: ChartReadContext) {
+	return `${source}:${context?.id || ''}:${chart_name}`
 }
 
 /** `preview` is the builder's source. */
@@ -147,7 +147,7 @@ export type ChartSourceName = 'saved' | 'preview'
 export type ChartSource = {
 	doc: ChartViewDoc | ComputedRef<ChartViewDoc>
 	fetchDoc?: () => Promise<ChartViewDoc | undefined>
-	takeFrame?: (frame: ChartViewDoc) => void
+	takeChartDoc?: (chartDoc: ChartViewDoc) => void
 	fetchData: (
 		force: boolean,
 		filterContext: DashboardFilterContext | undefined,
@@ -162,26 +162,26 @@ export type ChartSource = {
 	// as the rows on screen is skipped, so the card does not show its loading
 	// state for the same result. A source without it runs every load.
 	requestKey?: (filterContext?: DashboardFilterContext) => string
-	// `drawn` is the chart on screen. Operations are never sent, and only the
+	// `rendered` is the chart on screen. Operations are never sent, and only the
 	// authoring endpoint returns them.
 	fetchDrillData: (
 		levels: DrillLevel[],
 		filterContext: DashboardFilterContext | undefined,
-		drawn: ChartViewDoc,
+		rendered: ChartViewDoc,
 	) => Promise<DrillLevelData>
 	rowsSource?: (
 		levels: DrillLevel[],
 		filterContext: DashboardFilterContext | undefined,
-		drawn: ChartViewDoc,
+		rendered: ChartViewDoc,
 	) => DrillRowsSource
 	drillable?: boolean
 }
 
-export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
+export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	const current = computed(() => unref(source.doc))
 
 	function filterContext(): DashboardFilterContext | undefined {
-		return surface?.filterContext(current.value.name)
+		return context?.filterContext(current.value.name)
 	}
 
 	const answered = shallowRef<{ key?: string; doc: ChartViewDoc }>()
@@ -212,7 +212,7 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 	const narrowedByPermissions = ref(false)
 	// a drill sends it back, so the rows behind the number are for the date the
 	// number was read, not the date of the click
-	const drawnOn = ref<string>()
+	const readOn = ref<string>()
 	// only the server knows this: a span is resolved while the query runs
 	const comparisonRows = ref<Record<string, number | null>>()
 
@@ -248,7 +248,7 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 	// The rows and the values read from them go together. A load that shows no
 	// rows clears all of them: a comparison row kept past its rows points at a
 	// row that is gone.
-	function clearPicture() {
+	function clearChart() {
 		answered.value = undefined
 		result.value = emptyResult()
 		sparklineResult.value = undefined
@@ -304,7 +304,7 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 		try {
 			const placeholder = await docLoad
 			if (isStale()) return
-			if (placeholder && !answered.value) source.takeFrame?.(placeholder)
+			if (placeholder && !answered.value) source.takeChartDoc?.(placeholder)
 
 			const response = await dataLoad
 			if (isStale()) return
@@ -312,7 +312,7 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 
 			if (response.not_permitted) {
 				notPermitted.value = response.not_permitted.doctypes || []
-				clearPicture()
+				clearChart()
 				ready.value = true
 				return
 			}
@@ -321,16 +321,16 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 			// a half-configured chart is normal in the builder, and the old rows no
 			// longer match the config on screen
 			if (configErrors.value.length) {
-				clearPicture()
+				clearChart()
 				return
 			}
 
-			if (response.chart) source.takeFrame?.(response.chart)
+			if (response.chart) source.takeChartDoc?.(response.chart)
 			// the server ran a chart this source does not hold (the saved one, for a
 			// builder user who may not write it), so that chart is shown
-			const substituted = Boolean(response.chart && !source.takeFrame)
-			const frame = substituted
-				? { ...asked, ...framed(response.chart!) }
+			const substituted = Boolean(response.chart && !source.takeChartDoc)
+			const chartDoc = substituted
+				? { ...asked, ...normalizedChartDoc(response.chart!) }
 				: response.chart
 				  ? copy(current.value)
 				  : { ...asked, modified: response.modified }
@@ -351,8 +351,8 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 				// span is, so it labels them.
 				formattedRows: labelWindowRows(
 					formatResultRows(rows, response.granularity || {}),
-					frame.chart_type,
-					frame.config,
+					chartDoc.chart_type,
+					chartDoc.config,
 				),
 				columnOptions: rows.columns.map((column) => ({
 					label: column.name,
@@ -384,9 +384,9 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 			comparisonRows.value = response.comparison_rows
 			scopedBy.value = response.user_permissions
 			narrowedByPermissions.value = Boolean(response.narrowed_by_permissions)
-			drawnOn.value = response.drawn_on
+			readOn.value = response.read_on
 			executedAt.value = result.value.lastExecutedAt
-			answered.value = { key: substituted ? undefined : question, doc: frame }
+			answered.value = { key: substituted ? undefined : question, doc: chartDoc }
 			ready.value = true
 		} catch (error) {
 			// a load that a newer one replaced is not a failure. If it was still
@@ -398,7 +398,7 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 			serverBusy.value = isServerBusyError(error)
 			failure.value = serverBusy.value ? '' : getErrorMessage(error)
 			failed.value = true
-			clearPicture()
+			clearChart()
 		} finally {
 			if (!isStale()) executing.value = false
 		}
@@ -430,18 +430,18 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 	// both. A click is read off the chart on screen, so the drill uses that chart,
 	// even while an edit waits for its rows.
 	const drillSubject = computed<DrillSubject>(() => {
-		const drawn = doc.value
+		const rendered = doc.value
 		return {
-			chart: { chart_type: drawn.chart_type as ChartType, config: drawn.config },
-			title: drawn.title,
+			chart: { chart_type: rendered.chart_type as ChartType, config: rendered.config },
+			title: rendered.title,
 			dimensions: drillDimensions.value,
 			canRows: drillCanRows.value,
-			drawnOn: drawnOn.value,
+			readOn: readOn.value,
 			// the version of the rows. The document being edited does not hold it
 			modified: answered.value?.doc.modified,
-			fetch: (levels) => source.fetchDrillData(levels, filterContext(), drawn),
+			fetch: (levels) => source.fetchDrillData(levels, filterContext(), rendered),
 			rows: source.rowsSource
-				? (levels: DrillLevel[]) => source.rowsSource!(levels, filterContext(), drawn)
+				? (levels: DrillLevel[]) => source.rowsSource!(levels, filterContext(), rendered)
 				: undefined,
 		}
 	})
@@ -491,7 +491,7 @@ export function makeChartRead(source: ChartSource, surface?: ChartReadSurface) {
 
 export type ChartRead = ReturnType<typeof makeChartRead>
 
-// One read per chart, per surface, per source. The cards of one dashboard share
+// One read per chart, per context, per source. The cards of one dashboard share
 // rows, a second dashboard that shows the chart holds its own, and the builder's
 // preview is another read. Both sources cache here, because an edit makes the
 // chart stale, not one read.
@@ -504,10 +504,10 @@ const reads = new Map<string, { chart: string; read: ChartRead }>()
 export function cachedChartRead(
 	source: ChartSourceName,
 	chart_name: string,
-	surface: ChartReadSurface | undefined,
+	context: ChartReadContext | undefined,
 	make: () => ChartRead,
 ): ChartRead {
-	const key = chartReadKey(source, chart_name, surface)
+	const key = chartReadKey(source, chart_name, context)
 	const existing = reads.get(key)
 	if (existing) return existing.read
 
@@ -553,29 +553,37 @@ export function invalidateChart(chart_name: string) {
  * The server decides what runs from the chart name, so nothing a reader sends
  * can widen what they see, and no operations come back.
  *
- * `frame` is the chart document, when the caller already has it. A dashboard
+ * `chartDoc` is the chart document, when the caller already has it. A dashboard
  * returns every chart on it, so its cards need no second request.
  */
-export function useChartView(chart_name: string, surface?: ChartReadSurface, frame?: ChartViewDoc) {
+export function useChartView(
+	chart_name: string,
+	context?: ChartReadContext,
+	chartDoc?: ChartViewDoc,
+) {
 	// A read outlives the page that made it and keeps the chart its rows ran as.
-	// A `frame` passed later is ignored: over rows, it would be a config they do
+	// A `chartDoc` passed later is ignored: over rows, it would be a config they do
 	// not answer.
-	return cachedChartRead('saved', chart_name, surface, () =>
-		makeSavedChartView(chart_name, surface, frame),
+	return cachedChartRead('saved', chart_name, context, () =>
+		makeSavedChartView(chart_name, context, chartDoc),
 	)
 }
 
 // A config from the server holds only what its owner set. The defaults the card
 // reads are filled in here.
-function framed(frame: ChartViewDoc): ChartViewDoc {
-	return { ...frame, config: normalizeChartConfig(frame.config || {}, frame.chart_type) }
+function normalizedChartDoc(chartDoc: ChartViewDoc): ChartViewDoc {
+	return { ...chartDoc, config: normalizeChartConfig(chartDoc.config || {}, chartDoc.chart_type) }
 }
 
-function assignFrame(doc: ChartViewDoc, frame: ChartViewDoc) {
-	Object.assign(doc, framed(frame))
+function assignChartDoc(doc: ChartViewDoc, chartDoc: ChartViewDoc) {
+	Object.assign(doc, normalizedChartDoc(chartDoc))
 }
 
-function makeSavedChartView(chart_name: string, surface?: ChartReadSurface, frame?: ChartViewDoc) {
+function makeSavedChartView(
+	chart_name: string,
+	context?: ChartReadContext,
+	chartDoc?: ChartViewDoc,
+) {
 	const doc = reactive<ChartViewDoc>({
 		name: chart_name,
 		title: '',
@@ -583,7 +591,7 @@ function makeSavedChartView(chart_name: string, surface?: ChartReadSurface, fram
 		config: normalizeChartConfig({}, ''),
 	})
 
-	if (frame) assignFrame(doc, frame)
+	if (chartDoc) assignChartDoc(doc, chartDoc)
 
 	// A reader changes none of the config, so the request holds only the chart
 	// name and the caller's filters. Filters go by name: the server reads the
@@ -598,10 +606,10 @@ function makeSavedChartView(chart_name: string, surface?: ChartReadSurface, fram
 	return makeChartRead(
 		{
 			doc,
-			fetchDoc: frame
+			fetchDoc: chartDoc
 				? undefined
 				: () => call('insights.api.view.get_chart', { chart: chart_name }),
-			takeFrame: (chart_doc) => assignFrame(doc, chart_doc),
+			takeChartDoc: (chart_doc) => assignChartDoc(doc, chart_doc),
 			// Each reading of a Number card is its own cell, and each cell loads the
 			// chart. Without a key, each one runs the same query again. The server
 			// holds everything else that decides the rows (the chart's filters, its
@@ -621,7 +629,7 @@ function makeSavedChartView(chart_name: string, surface?: ChartReadSurface, fram
 					...request(filterContext),
 					format,
 				}),
-			// A drill reads rows, so a guest is not offered it. The endpoint also
+			// A drill reads rows, so a guest is not allowed it. The endpoint also
 			// refuses Guest.
 			drillable: session.isLoggedIn,
 			// card filters apply after the chart's summarize, and a drill cuts before it
@@ -633,9 +641,9 @@ function makeSavedChartView(chart_name: string, surface?: ChartReadSurface, fram
 				const { chart, dashboard, filters } = request(filterContext)
 				const drilled = { chart, dashboard, filters }
 				return {
-					read: (reading) => fetchViewDrillData(drilled, drill_stack, reading),
-					download: (reading, format) =>
-						downloadViewDrillRows(drilled, drill_stack, reading, format),
+					read: (state) => fetchViewDrillData(drilled, drill_stack, state),
+					download: (state, format) =>
+						downloadViewDrillRows(drilled, drill_stack, state, format),
 					values: (column, search, rules) =>
 						fetchViewDrillRowsValues(drilled, drill_stack, column, search, rules),
 					range: (column, rules) =>
@@ -643,6 +651,6 @@ function makeSavedChartView(chart_name: string, surface?: ChartReadSurface, fram
 				}
 			},
 		},
-		surface,
+		context,
 	)
 }

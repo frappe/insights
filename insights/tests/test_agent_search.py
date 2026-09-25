@@ -160,7 +160,7 @@ class TestAgentSearch(InsightsIntegrationTestCase):
         self.assertEqual(hit["dashboard_views"], self.recent_views)
 
     # @feature permissions.search-respects-access
-    def test_a_query_nothing_reads_carries_no_usage(self):
+    def test_a_query_nothing_reads_has_no_usage(self):
         hit = self.hit_for(self.search(OWNER), self.titled_query)
         self.assertEqual(hit["used_by_charts"], 0)
         self.assertEqual(hit["used_by_dashboards"], 0)

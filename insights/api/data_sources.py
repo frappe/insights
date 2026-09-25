@@ -111,7 +111,7 @@ def get_data_source_table_row_count(data_source: str, table_name: str):
 
     A refusal raises instead of returning a value. `answers_refusal` exists so
     that a refused card does not read as zero. A count's empty value is zero,
-    and a number has no field to carry a refusal, so "0 rows" would tell a
+    and a number has no field to hold a refusal, so "0 rows" would tell a
     caller who may not read the table that it is empty.
     """
     table = get_permitted_ibis_table(data_source, table_name)

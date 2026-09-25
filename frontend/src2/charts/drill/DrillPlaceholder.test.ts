@@ -14,9 +14,9 @@ function placeholder(failure: ChartFailure) {
 	return renderToString(app)
 }
 
-describe('a drill level that draws nothing', () => {
+describe('a drill level that renders nothing', () => {
 	// @feature permissions.not-permitted-chart
-	it('names what a refused level needs and offers no retry', async () => {
+	it('names what a refused level needs and shows no retry', async () => {
 		const html = await placeholder({
 			kind: 'notPermitted',
 			headline: 'Not Permitted',
@@ -30,7 +30,7 @@ describe('a drill level that draws nothing', () => {
 	})
 
 	// @feature charts.retry
-	it('offers a retry for a level that failed', async () => {
+	it('shows a retry for a level that failed', async () => {
 		const html = await placeholder({
 			headline: 'This drill is not available',
 		})

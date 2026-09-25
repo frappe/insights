@@ -4,7 +4,7 @@ Generating a dashboard's preview image starts a browser on this server and hands
 it a key, because the dashboard it renders is usually not public. The key is a
 read grant and nothing wider: it opens the documents the image already shows.
 `insights.permissions` reads it as that grant, and `insights.permission_user`
-reads the user it was cut for, so the render draws rows instead of empty cards.
+reads the user it was cut for, so the render shows rows instead of empty cards.
 """
 
 from contextlib import contextmanager
@@ -24,7 +24,7 @@ def generate_preview_key(dashboard: str):
     charts and queries on it — the same documents the preview image itself
     shows — and nothing else.
 
-    It names its user too. The render arrives as Guest, so the rows it draws
+    It names its user too. The render arrives as Guest, so the rows it shows
     are filtered by the user the key was cut for, and the image shows what that
     user would see.
     """

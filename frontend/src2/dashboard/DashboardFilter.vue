@@ -49,7 +49,7 @@ function stringValuesProvider() {
 	return (search: string) => props.dashboard.filterValues(filter.value.filter_name, search)
 }
 
-// The numbers a number filter offers, cut from the column the link names. The
+// The numbers a number filter lists, cut from the column the link names. The
 // server finds that column, the same way it does for the value list.
 function rangeProvider() {
 	return props.dashboard.filterRange(filter.value.filter_name)

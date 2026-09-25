@@ -22,7 +22,7 @@ import {
 } from './drill_stack'
 import type { ChartSegmentClick } from './segment_click'
 
-// The drill, as a surface offers it: a menu where the reader pointed, and one
+// The drill, as a surface shows it: a menu where the reader pointed, and one
 // dialog behind whichever item they chose.
 //
 // A surface mounts this and hands over what was clicked. Everything past that
@@ -77,7 +77,7 @@ const clickedChart = computed<DrillChart>(() => {
 })
 
 // The grains the level being read can be asked for. A breakdown of anything but
-// a date has none, and the dialog draws no control where there is nothing to
+// a date has none, and the dialog shows no control where there is nothing to
 // choose between.
 const grains = computed(() => {
 	const action = stack.current?.level.action
@@ -93,7 +93,7 @@ const candidates = computed<DrillDimension[]>(() =>
 	),
 )
 
-function offerMenu(click: ChartSegmentClick, chart: DrillChart) {
+function showMenu(click: ChartSegmentClick, chart: DrillChart) {
 	pending.value = { segment: segmentOf(chart, click.target), point: click.point }
 }
 
@@ -101,25 +101,25 @@ function offerMenu(click: ChartSegmentClick, chart: DrillChart) {
 // a second click lands before the first one's round trip is back.
 watch(
 	() => props.clicked,
-	(click) => offerMenu(click, props.subject.chart),
+	(click) => showMenu(click, props.subject.chart),
 	{ immediate: true },
 )
 
 function descend(action: DrillAction) {
-	const offered = pending.value
-	if (!offered) return
+	const menu = pending.value
+	if (!menu) return
 	pending.value = undefined
 
 	stack.push({
 		level: {
-			segment_filters: offered.segment.filters,
+			segment_filters: menu.segment.filters,
 			action,
-			drawn_on: props.subject.drawnOn,
+			read_on: props.subject.readOn,
 			// the chart as the card showed it, so the server refuses a drill if it
 			// changed since
 			modified: props.subject.modified,
 		},
-		pins: offered.segment.pins,
+		pins: menu.segment.pins,
 		actionLabel: 'rows' in action ? __('Rows') : __('by {0}', columnLabel(action.breakdown)),
 	})
 	open.value = true
@@ -220,7 +220,7 @@ async function load() {
 		:loading="loading"
 		:failed="failed"
 		:refused="refused"
-		@segment-click="(click) => offerMenu(click, clickedChart)"
+		@segment-click="(click) => showMenu(click, clickedChart)"
 		@regrain="regrain"
 		@retry="load"
 		@pop-to="popTo"

@@ -4,7 +4,7 @@
 
 `get_functions()` builds the context an expression evaluates in. Several ibis
 top-level names are readers and writers, and the objects the context hands out
-carry output methods of their own, so the boundary is easy to widen by accident.
+have output methods of their own, so the boundary is easy to widen by accident.
 
 The rule is held here rather than a list of names, so an ibis upgrade that adds
 a reader does not quietly become reachable.
@@ -77,7 +77,7 @@ class TestExpressionIsolation(UnitTestCase):
 
     # @feature query.expression-cannot-reach-files
     def test_a_writer_is_refused(self):
-        """The context carries table and column objects, so an output method on
+        """The context holds table and column objects, so an output method on
         one of them is as reachable as a top-level name."""
         target = os.path.join(tempfile.gettempdir(), "insights_expression_io_test.csv")
         if os.path.exists(target):

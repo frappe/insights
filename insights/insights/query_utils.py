@@ -147,7 +147,7 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
 def table_references(operations) -> list[dict]:
     """The (data_source, table_name) pairs `operations` reads.
 
-    A builder operation names its table outright. A native SQL operation carries
+    A builder operation names its table outright. A native SQL operation has
     it in the SQL, so it has to be parsed out.
     """
     ops = frappe.parse_json(operations) or []

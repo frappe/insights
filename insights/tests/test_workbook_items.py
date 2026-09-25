@@ -200,7 +200,7 @@ class TestDuplicate(InsightsIntegrationTestCase):
         delete_users(OWNER, OTHER)
 
     # @feature query.duplicate
-    def test_a_duplicated_query_carries_the_pipeline_under_a_copy_title(self):
+    def test_a_duplicated_query_keeps_the_pipeline_under_a_copy_title(self):
         operations = [
             {
                 "type": "source",

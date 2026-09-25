@@ -154,7 +154,7 @@ class TestNumberCardSparkline(InsightsIntegrationTestCase):
 
     # @feature charts.number-sparkline
     def test_one_filter_reaches_the_number_and_the_series(self):
-        """A filter that moves the number and leaves the series behind draws a
+        """A filter that moves the number and leaves the series behind plots a
         trend of a number nobody is reading."""
         query, chart = self.make_card()
 
@@ -174,9 +174,9 @@ class TestNumberCardSparkline(InsightsIntegrationTestCase):
                 self.assertNotIn("sparkline", self.fetch(chart))
 
     # @feature charts.number-sparkline
-    def test_the_number_reads_the_same_whether_the_trend_is_drawn_or_not(self):
+    def test_the_number_reads_the_same_whether_the_trend_is_plotted_or_not(self):
         """The trend is asked beside the number, never instead of it."""
-        _, drawn = self.make_card()
+        _, plotted = self.make_card()
         _, plain = self.make_card(sparkline=False)
 
-        self.assertEqual(self.fetch(drawn)["rows"], self.fetch(plain)["rows"])
+        self.assertEqual(self.fetch(plotted)["rows"], self.fetch(plain)["rows"])

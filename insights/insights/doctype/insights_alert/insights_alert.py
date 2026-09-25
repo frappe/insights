@@ -189,7 +189,7 @@ class InsightsAlert(Document):
         }
 
         try:
-            # frappe.as_json, not requests' json=: query rows carry datetimes
+            # frappe.as_json, not requests' json=: query rows hold datetimes
             # and Decimals that the plain encoder refuses.
             response = post_to_public_url(
                 self.webhook_url,

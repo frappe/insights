@@ -36,7 +36,7 @@ watch(
 	{ immediate: true },
 )
 
-// The card is authored as rich text and drawn as HTML, and a public link draws
+// The card is authored as rich text and rendered as HTML, and a public link shows
 // it to a reader with no session. The dashboard sanitizes a text item on the way
 // in, so this is the second half of the same rule: an item a patch wrote, or one
 // stored before that rule existed, still reaches the DOM through here.

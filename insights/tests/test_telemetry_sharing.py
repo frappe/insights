@@ -45,7 +45,7 @@ class TestShareGranted(InsightsIntegrationTestCase):
         delete_workbooks(title_prefix=WORKBOOK_TITLE)
 
     def granted(self, action):
-        """Return the `share_granted` properties each capture carried."""
+        """Return the `share_granted` properties each capture sent."""
         with patch("insights.telemetry.capture") as sender:
             action()
         return [call.kwargs for call in sender.call_args_list if call.args == ("share_granted",)]

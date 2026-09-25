@@ -1,7 +1,7 @@
 """An import references its own copies, not the exporter's queries.
 
 A file names its queries as the exporting site named them. Import rewrites every
-name the file carries to the copy that replaces it, so importing asks for no
+name in the file to the copy that replaces it, so importing asks for no
 access to the queries the file was exported from.
 
 A whole workbook, a single query and a single chart are all imported this way.
@@ -122,7 +122,7 @@ class ImportedReferencesPointAtTheNewCopies(InsightsIntegrationTestCase):
         self.assertNotIn(self.source, deps, "a reference must not point back at the source site")
 
 
-class ImportingOneQueryCarriesItsReferences(InsightsIntegrationTestCase):
+class ImportingOneQueryIncludesItsReferences(InsightsIntegrationTestCase):
     """A single query is imported the same way a workbook is.
 
     `import_query` is what the UI calls to paste a query into another workbook.
@@ -254,7 +254,7 @@ class ImportingOneQueryCopiesAReferenceOnce(InsightsIntegrationTestCase):
         self.assertIn(base[0], deps, "both branches must name the one copy")
 
 
-class ImportingOneChartCarriesItsQuery(InsightsIntegrationTestCase):
+class ImportingOneChartIncludesItsQuery(InsightsIntegrationTestCase):
     """A chart is imported the same way a query and a workbook are.
 
     `import_chart` is what the UI calls to paste a chart into another workbook.
@@ -305,7 +305,7 @@ class ImportingOneChartCarriesItsQuery(InsightsIntegrationTestCase):
 class ImportingAcrossSitesIgnoresTheWorkbookNameInTheFile(InsightsIntegrationTestCase):
     """Workbook names are a bare counter, so every site has a workbook "1".
 
-    A file carries the exporting site's name. Reading it as a local one made the
+    A file holds the exporting site's name. Reading it as a local one made the
     import decide it had nothing to copy, and the query saved naming queries that
     do not exist here.
     """
@@ -355,7 +355,7 @@ class ImportingAcrossSitesIgnoresTheWorkbookNameInTheFile(InsightsIntegrationTes
             self.assertEqual(frappe.db.get_value(DT.QUERY, dep, "workbook"), self.target)
 
 
-class AWorkbookFileCarriesItsMembersAtTheTop(InsightsIntegrationTestCase):
+class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
     """One format for the download, Duplicate, the delete backup and a shipped file.
 
     The keys are the contract an app's shipped file is written against, and the
@@ -430,7 +430,7 @@ class AWorkbookFileCarriesItsMembersAtTheTop(InsightsIntegrationTestCase):
         delete_users(OWNER, IMPORTER)
 
     # @feature standard.file-format
-    def test_a_file_carries_the_workbook_and_its_members_under_one_key_each(self):
+    def test_a_file_includes_the_workbook_and_its_members_under_one_key_each(self):
         self.assertEqual(
             set(self.file),
             {"doctype", "name", "title", "folders", "queries", "charts", "dashboards"},
@@ -496,7 +496,7 @@ class AWorkbookFileCarriesItsMembersAtTheTop(InsightsIntegrationTestCase):
     # @feature workbook.copy-paste standard.file-format
     def test_a_pasted_file_is_a_workbook_in_either_shape(self):
         """`workbook_file.ts` `pastedWorkbook` asks this of every JSON object a
-        user pastes on the workbook list, before it offers to import it. The
+        user pastes on the workbook list, before it asks to import it. The
         released version's Copy JSON writes the wrapped shape, as the sample file
         this app ships does."""
         from insights.api.workbooks import is_workbook_file

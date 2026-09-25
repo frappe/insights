@@ -41,7 +41,7 @@ watch(
 		if (newRoute.name === 'WorkbookChart' && oldRoute.name === 'WorkbookQuery') {
 			const chart = useChart(newRoute.params.chart_name as string)
 			// every read of the chart, not only its own: a dashboard beside it
-			// draws the same chart, and its read asks the same question it
+			// renders the same chart, and its read asks the same question it
 			// asked before the query changed under it
 			if (chart.doc.query === oldRoute.params.query_name) {
 				invalidateChart(String(chart.doc.name))

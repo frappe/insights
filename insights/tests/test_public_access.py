@@ -189,7 +189,7 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
 
 
 class TestCardFilterRouting(InsightsIntegrationTestCase):
-    """A card filter is the reader's, so it reaches only what the card draws."""
+    """A card filter is the reader's, so it reaches only what the card shows."""
 
     @classmethod
     def before_class(cls):
@@ -221,7 +221,7 @@ class TestCardFilterRouting(InsightsIntegrationTestCase):
 
     # @feature dashboard.card-filter
     def test_a_card_filter_lands_on_the_card_s_own_query(self):
-        """It names a column the card draws, so it reaches no other query.
+        """It names a column the card shows, so it reaches no other query.
         `InsightsChartv3.fetch` routes it; the chart runs as its owner, and only
         the owner may filter it."""
         from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
@@ -267,7 +267,7 @@ class TestCardFilterRouting(InsightsIntegrationTestCase):
         self.assertIsNone(route_card_filters(self.chart, [{"operator": "="}], None))
 
     # @feature shared.filters-on-public-dashboard
-    def test_a_reader_cannot_ask_for_a_column_the_card_does_not_draw(self):
+    def test_a_reader_cannot_ask_for_a_column_the_card_does_not_show(self):
         from insights.api.view import get_card_values
 
         with self.assertRaises(frappe.DoesNotExistError):

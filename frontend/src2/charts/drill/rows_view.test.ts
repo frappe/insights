@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Filter } from '../../components/filter_picker/filter_picker'
-import type { DrillLevelData, DrillRowFilter, DrillRowsReading } from './drill_stack'
+import type { DrillLevelData, DrillRowFilter, DrillRowsState } from './drill_stack'
 import { makeDrillRows } from './rows_view'
 
 // The rows level in a View. A View never receives the pipeline, so the server
@@ -23,9 +23,9 @@ function answer(over: Partial<DrillLevelData> = {}): DrillLevelData {
 	}
 }
 
-// A reading arrives as a Vue reactive array, which structured clone rejects.
+// A state arrives holding Vue reactive arrays, which structured clone rejects.
 // So the test records a plain copy.
-const copyOf = (reading: DrillRowsReading): DrillRowsReading => JSON.parse(JSON.stringify(reading))
+const copyOf = (state: DrillRowsState): DrillRowsState => JSON.parse(JSON.stringify(state))
 
 /** The filter picker holds a whole column, not a column name. */
 function rule(column: string, operator: any, value: any): Filter {
@@ -37,25 +37,25 @@ function rule(column: string, operator: any, value: any): Filter {
 }
 
 function server(...answers: DrillLevelData[]) {
-	const asked: DrillRowsReading[] = []
-	const downloads: { reading: DrillRowsReading; format: string }[] = []
-	const offers: { column: string; search: string; rules: DrillRowFilter[] }[] = []
+	const asked: DrillRowsState[] = []
+	const downloads: { state: DrillRowsState; format: string }[] = []
+	const valueRequests: { column: string; search: string; rules: DrillRowFilter[] }[] = []
 	let next = 0
 	return {
 		asked,
 		downloads,
-		offers,
+		valueRequests,
 		values: (column: string, search: string, rules: DrillRowFilter[]) => {
-			offers.push({ column, search, rules: JSON.parse(JSON.stringify(rules)) })
+			valueRequests.push({ column, search, rules: JSON.parse(JSON.stringify(rules)) })
 			return Promise.resolve(['Chetak Traders'])
 		},
 		range: () => Promise.resolve(undefined),
-		read: (reading: DrillRowsReading) => {
-			asked.push(copyOf(reading))
+		read: (state: DrillRowsState) => {
+			asked.push(copyOf(state))
 			return Promise.resolve(answers[next++] ?? answers[answers.length - 1] ?? answer())
 		},
-		download: (reading: DrillRowsReading, format: string) => {
-			downloads.push({ reading: copyOf(reading), format })
+		download: (state: DrillRowsState, format: string) => {
+			downloads.push({ state: copyOf(state), format })
 			// never resolves: the tests check only the call
 			return new Promise<string>(() => {})
 		},
@@ -72,8 +72,8 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		vi.useRealTimers()
 	})
 
-	// @feature charts.drill-rows-reading
-	it('draws the answer the dialog already holds without asking for another', () => {
+	// @feature charts.drill-rows-state
+	it('renders the answer the dialog already holds without asking for another', () => {
 		const source = server()
 		const rows = makeDrillRows(answer(), source)
 
@@ -85,7 +85,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		expect(rows.pageSize).toBe(100)
 	})
 
-	// @feature charts.drill-rows-reading
+	// @feature charts.drill-rows-state
 	it('asks for the rows run by the column just sorted, with the earlier sort behind it', async () => {
 		const source = server()
 		const rows = makeDrillRows(answer(), source)
@@ -113,7 +113,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		])
 	})
 
-	// @feature charts.drill-rows-reading
+	// @feature charts.drill-rows-state
 	it('drops a sort the reader cleared', async () => {
 		const source = server()
 		const rows = makeDrillRows(answer(), source)
@@ -126,7 +126,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		expect(source.asked.at(-1)!.sort).toEqual([])
 	})
 
-	// @feature charts.drill-rows-reading
+	// @feature charts.drill-rows-state
 	it('waits for the reader to stop typing before it asks the find', async () => {
 		const source = server()
 		const rows = makeDrillRows(answer(), source)
@@ -142,7 +142,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		expect(source.asked[0].find).toBe('chetak')
 	})
 
-	// @feature charts.drill-rows-reading
+	// @feature charts.drill-rows-state
 	it('takes a narrowed or reordered result from its first page', async () => {
 		const source = server()
 		const rows = makeDrillRows(answer(), source)
@@ -157,8 +157,8 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		expect(source.asked.at(-1)!.page).toBe(1)
 	})
 
-	// @feature charts.drill-rows-reading
-	it('carries the sort and the find onto every page it turns to', async () => {
+	// @feature charts.drill-rows-state
+	it('keeps the sort and the find on every page it turns to', async () => {
 		const source = server()
 		const rows = makeDrillRows(answer(), source)
 
@@ -193,7 +193,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		expect(source.asked.at(-1)!.page).toBe(1)
 	})
 
-	// @feature charts.drill-rows-filter charts.drill-rows-reading
+	// @feature charts.drill-rows-filter charts.drill-rows-state
 	it('holds the answer the reader’s own reading last asked for', async () => {
 		// `BuilderDrillDown.vue` opens a level as a query from these `operations`.
 		// So they must match the filtered rows on screen, not the first response.
@@ -210,7 +210,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 	})
 
 	// @feature charts.drill-rows-filter
-	it('leaves a rule out of the values its own column offers', async () => {
+	it('leaves a rule out of the values its own column lists', async () => {
 		const source = server()
 		const rows = makeDrillRows(answer(), source)
 
@@ -220,7 +220,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 
 		// The rule on this column leaves only its own value in the rows. Applied to
 		// the value list, it would hide every other value from the picker.
-		expect(source.offers).toEqual([
+		expect(source.valueRequests).toEqual([
 			{
 				column: 'customer',
 				search: 'che',
@@ -230,7 +230,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 	})
 
 	// @feature charts.drill-record-link
-	it('reads the record links off the answer it is drawing', async () => {
+	it('reads the record links off the answer it is rendering', async () => {
 		const source = server(answer({ record_links: { name: 'Sales Invoice' } }))
 		const rows = makeDrillRows(answer(), source)
 
@@ -242,7 +242,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		expect(rows.recordLinks).toEqual({ name: 'Sales Invoice' })
 	})
 
-	// @feature charts.drill-rows-reading
+	// @feature charts.drill-rows-state
 	it('drops an answer a newer question has already superseded', async () => {
 		const slow = answer({ rows: [{ name: 'STALE', customer: 'x', total: 1 }] })
 		const fresh = answer({ rows: [{ name: 'FRESH', customer: 'y', total: 2 }] })
@@ -253,13 +253,13 @@ describe('the rows behind a segment, as a reader reads them', () => {
 		rows.goToPage!(3)
 		await flush()
 
-		expect(source.asked.map((reading) => reading.page)).toEqual([2, 3])
+		expect(source.asked.map((state) => state.page)).toEqual([2, 3])
 		expect(rows.result.rows[0].name).toBe('FRESH')
 		expect(rows.executing).toBe(false)
 	})
 
 	// @feature charts.drill-rows-export
-	it('offers a file only where the server said the reader may have one', () => {
+	it('allows export only where the server said the reader may export', () => {
 		const source = server()
 
 		expect(makeDrillRows(answer({ can_export: false }), source).exportResults).toBeUndefined()
@@ -271,7 +271,7 @@ describe('the rows behind a segment, as a reader reads them', () => {
 
 		expect(source.downloads).toEqual([
 			{
-				reading: {
+				state: {
 					row_filters: [
 						{ column: 'customer', operator: 'in', value: ['Chetak Traders'] },
 					],

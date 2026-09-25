@@ -2,7 +2,7 @@
 // A number box, writing a number.
 //
 // `FormControl type="number"` hands back a string, and a cleared box hands back
-// an empty string. A config slot that declares a number then carries text, and
+// an empty string. A config slot that declares a number then holds text, and
 // `''` is not absent to `??`, so clearing an axis floor pins it at nothing
 // instead of releasing it to the data's own extent. Every number a config form
 // writes goes through this box, and `asNumber` is its one conversion.

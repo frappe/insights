@@ -57,7 +57,7 @@ class EndpointsCheckArgumentTypes(InsightsIntegrationTestCase):
     # @feature permissions.malformed-request-refused
     def test_a_positional_argument_is_checked_too(self):
         """Frappe names positional arguments through `__code__`, which a `*args`
-        wrapper does not carry. Passing one hides the check if it ever returns."""
+        wrapper does not keep. Passing one hides the check if it ever returns."""
 
         @insights_whitelist()
         def takes_a_name(name: str):
@@ -89,7 +89,7 @@ class EndpointsCheckArgumentTypes(InsightsIntegrationTestCase):
     # @feature workbook.copy-paste
     def test_a_workbook_file_arrives_as_json_text_or_as_a_dict(self):
         """`import_workbook` starts with `frappe.parse_json`, so both are names
-        for the same file. The annotation used to admit only a dict."""
+        for the same file. The annotation used to allow only a dict."""
         with as_user(OWNER):
             imported = import_workbook('{"doctype": "Insights Workbook", "title": "Arg Types Import"}')[
                 "workbook"
@@ -100,7 +100,7 @@ class EndpointsCheckArgumentTypes(InsightsIntegrationTestCase):
 
     # @feature permissions.malformed-request-refused
     def test_a_flag_arrives_as_true_or_as_1(self):
-        """JSON carries a flag either way, and `isinstance(1, bool)` is False."""
+        """JSON sends a flag either way, and `isinstance(1, bool)` is False."""
         with as_user(OWNER):
             toggle_folder_expanded(self.folder, 1)
             self.assertEqual(frappe.db.get_value("Insights Folder", self.folder, "is_expanded"), 1)

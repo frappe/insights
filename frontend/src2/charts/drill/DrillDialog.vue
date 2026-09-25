@@ -28,7 +28,7 @@ import type { ChartSegmentClick } from './segment_click'
 // crumbs, grain, close — not a dialog title.
 //
 // So the whole surface is one card: a toolbar, a plot, and a line under it. The
-// only chrome drawn here is that toolbar. The states around the plot and the
+// only chrome rendered here is that toolbar. The states around the plot and the
 // label naming its measure come from the chart, the way they do on a dashboard.
 const props = defineProps<{
 	stack: DrillStack
@@ -75,12 +75,12 @@ defineSlots<{
 
 const open = defineModel<boolean>({ default: false })
 
-// The find belongs to the level's result pane, but the dialog draws it here with
+// The find belongs to the level's result pane, but the dialog renders it here with
 // the level actions, outside the pane border — the shape the query builder
 // already has.
 const $find = ref<HTMLElement | null>(null)
 
-/** Whether there is a level to draw. Anything else is one of the three states. */
+/** Whether there is a level to show. Anything else is one of the three states. */
 const ready = computed(() => !props.loading && !props.failed && Boolean(props.answer))
 
 // What the drill shows in place of the level. A level that did not load gets a
@@ -151,7 +151,7 @@ const bound = computed(() =>
 		<template #default="{ close }">
 			<!-- `px-4 py-3` is a chart card's own padding.
 
-			     The height does not follow what is drawn: a box that resized as the
+			     The height does not follow what is shown: a box that resized as the
 			     reader descended would move the plot out from under the pointer. It
 			     is tall enough for a ranking at the server's bound, and still short
 			     enough for a laptop. -->
@@ -160,7 +160,7 @@ const bound = computed(() =>
 				     chart's name and every level under it, in one trail at one type
 				     size and one ink.
 
-				     Hand-rolled rather than `Breadcrumbs`, which carries a type scale
+				     Hand-rolled rather than `Breadcrumbs`, which has a type scale
 				     of its own and would set the trail against the title it continues.
 				     Only what goes somewhere is a button: the chart's name navigates
 				     nowhere, and neither does the last crumb, which is where the
@@ -203,10 +203,10 @@ const bound = computed(() =>
 
 					<!-- what a surface may do with the drill wherever it stands, next
 					     to the close button. Empty on a reading surface, which has
-					     nothing to offer beyond the stack. -->
+					     nothing to show beyond the stack. -->
 					<div class="ml-auto flex flex-shrink-0 items-center gap-1 pl-2">
 						<slot name="actions" />
-						<!-- `bare` draws no close button, so close belongs in this row
+						<!-- `bare` renders no close button, so close belongs in this row
 						     with the other actions. -->
 						<Button variant="ghost" :tooltip="__('Close')" @click="close">
 							<template #icon>
@@ -226,8 +226,8 @@ const bound = computed(() =>
 				     about what they are values of, and a reader three levels down has
 				     no way left to ask.
 
-				     Drawn on every level, empty where the level pinned nothing and
-				     offers nothing: `h-7` fixes the height, and a row that came and
+				     Rendered on every level, empty where the level pinned nothing and
+				     shows nothing: `h-7` fixes the height, and a row that came and
 				     went would move the plot as the reader descends. -->
 				<div class="flex h-7 min-w-0 flex-shrink-0 items-center gap-1.5">
 					<!-- a pin is capped and ellipsised the way a crumb is: a Heatmap or
@@ -282,7 +282,7 @@ const bound = computed(() =>
 					/>
 				</div>
 
-				<!-- Drawn on every level, empty where the level has nothing to
+				<!-- Rendered on every level, empty where the level has nothing to
 				     declare. A line that came and went as the reader descended would
 				     take its height out of the plot, which is what `h-7` above keeps
 				     the pins row from doing. -->

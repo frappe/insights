@@ -8,7 +8,7 @@ import type { DataFormat, QueryResultRow } from '../types/query.types'
  *
  * Everything that prints a measured number asks this module how — every chart
  * adapter, and the grid. A chart passes what it gets back to v2's `format`
- * prop, so the library owns the drawing and Insights owns the policy. Nothing
+ * prop, so the library owns the rendering and Insights owns the policy. Nothing
  * else formats a number of its own.
  *
  * ## The layers
@@ -62,8 +62,8 @@ export type NumberFormatSource = NumberFormat & NumberFormatAliases
 
 /**
  * Whatever states a format: a Chart's config, or a bare `NumberFormat`. A
- * config carries the chart-level default and the per-Measure overrides. A bare
- * format carries neither, and reads as one layer.
+ * config includes the chart-level default and the per-Measure overrides. A bare
+ * format includes neither, and reads as one layer.
  */
 export type NumberFormatConfigSource = NumberFormatSource & {
 	number_format?: NumberFormatSource

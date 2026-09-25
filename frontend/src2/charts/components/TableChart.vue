@@ -10,9 +10,9 @@ import { usePagination } from '../../composables/usePagination'
 import type { QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import { tableFindKey, type TableCellEvent, type TableChartProps } from '../adapter/table'
 
-// The grid a Table Chart draws instead of a plot. It is a filler like any
+// The grid a Table Chart renders instead of a plot. It is a filler like any
 // other: the title and every state around it are `ChartBody`'s, and the card is
-// whoever drew the chrome, so nothing here draws a surface of its own. It holds the
+// whoever rendered the chrome, so nothing here renders a surface of its own. It holds the
 // table and reports a cell, and everything it puts on the table was decided in
 // `adapter/table.ts`.
 const props = defineProps<TableChartProps>()
@@ -68,11 +68,11 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 		     `--chart-card-inset`, and a table with no card around it bleeds by
 		     nothing.
 		     The last column drops its own right border once it is flush: the
-		     card's border is already that line, and both drawn is a double rule.
+		     card's border is already that line, and both rendered is a double rule.
 		     A box of its own, not classes on the table: DataTable renders a
 		     fragment — the grid, the empty state and the loading veil are
 		     siblings — so an inherited class would reach none of them.
-		     The card draws the one loading veil, over the whole card: the grid
+		     The card renders the one loading veil, over the whole card: the grid
 		     does not know a run is in flight and never veils itself. -->
 		<div
 			class="relative mt-1 h-full [&_tr>*:last-child]:border-r-0 [margin-inline:calc(var(--chart-card-inset,0px)*-1)] [width:calc(100%_+_2_*_var(--chart-card-inset,0px))]"

@@ -149,7 +149,7 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 // formatting below stays one implementation.
 export function getColumnGranularity(operations: Operation[]) {
 	// The last of each kind: a later operation regroups what an earlier one grouped, so
-	// its grain is the one the result columns carry.
+	// its grain is the one the result columns have.
 	const reversed = [...operations].reverse()
 	const summarize_step = reversed.find((op) => op.type === 'summarize')
 	const pivot_step = reversed.find((op) => op.type === 'pivot_wider')
@@ -199,8 +199,8 @@ export function formatResultRows(result: QueryResult, granularityByColumn: Recor
 	return formattedRows
 }
 /**
- * The row `formatResultRows` produced this one from. A surface that draws the
- * formatted rows — a table — reports the row it drew, and everything downstream
+ * The row `formatResultRows` produced this one from. A surface that renders the
+ * formatted rows — a table — reports the row it rendered, and everything downstream
  * of a click reads the raw values, so the crossing happens once, here.
  *
  * The two are parallel arrays, so the raw row is the formatted one's position.
@@ -248,10 +248,10 @@ const LONG_DATE_FORMATS: Record<string, string> = {
 }
 
 /**
- * How the same date reads on an axis. A category axis draws a label per column,
+ * How the same date reads on an axis. A category axis shows a label per column,
  * so a spelled-out month is dropped by the overlap rule and the reader is left
  * with a bare grid. Everything is abbreviated, and the year is kept: a category
- * carries no neighbors to read it against.
+ * has no neighbors to read it against.
  */
 const AXIS_DATE_FORMATS: Record<string, string> = {
 	second: 'MMM D, YYYY h:mm:ss A',

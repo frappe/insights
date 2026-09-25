@@ -288,9 +288,9 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 def check_table_permission(data_source, table, user=None, raise_error=True):
     """Whether this user may read this table.
 
-    On the site database, desk's own permissions or a team grant admit a
-    reader, and either one is enough. Being an admin is not a grant there. On
-    other data sources only a team grant admits a reader, and an admin always
+    On the site database, desk's own permissions or a team grant let a
+    reader in, and either one is enough. Being an admin is not a grant there. On
+    other data sources only a team grant lets a reader in, and an admin always
     passes.
 
     A refusal raises `NotPermitted`, which `answers_refusal` catches, as every

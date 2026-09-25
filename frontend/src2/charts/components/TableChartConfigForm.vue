@@ -21,7 +21,7 @@ const props = defineProps<{
 	formatGroup?: FormatGroupArgs
 	dimensions: DimensionOption[]
 	columnOptions: ColumnOption[]
-	/** The columns the chart drew. A pivot's columns exist only here. */
+	/** The columns the chart shows. A pivot's columns exist only here. */
 	resultColumnOptions?: ColumnOption[]
 }>()
 
@@ -84,7 +84,7 @@ const measuresAndDimensions = computed(() => {
 	return [...measures, ...dimensions, ...rows]
 })
 
-// A rule names a column the table drew, so the drawn columns are the list. The
+// A rule names a column the table rendered, so the rendered columns are the list. The
 // configured measures and dimensions stand in until the chart has run once,
 // which is also the whole list when the table does not pivot.
 const colOptions = computed<ColumnOption[]>(() =>

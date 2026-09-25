@@ -10,7 +10,7 @@ table fails the whole `get_list`. The alternative is a card that says "No
 data", which a reader takes for zero. See
 `docs/adr/a-reader-never-sees-a-false-empty.md`.
 
-The reader was already admitted to the chart, so naming the doctypes it needs
+The reader was already allowed on the chart, so naming the doctypes it needs
 reveals nothing. **Not Found** is the answer for the content itself.
 """
 
@@ -27,7 +27,7 @@ HELD_BACK = "insights_columns_held_back"
 
 
 class NotPermitted(frappe.PermissionError):
-    """Carries the doctypes the reader would need read on."""
+    """Holds the doctypes the reader would need read on."""
 
     def __init__(self, message, doctypes: list[str] | None = None):
         super().__init__(message)
@@ -38,7 +38,7 @@ def refuse(doctypes: list[str] | None = None, message: str | None = None) -> Non
     """Refuse a read and name the doctypes it needs. The only place the app raises `NotPermitted`.
 
     It throws through `frappe.throw`, so the message reaches the message log. A
-    response carries the exception's own text only where tracebacks are
+    response includes the exception's own text only where tracebacks are
     allowed. Without the message log, the reader would see only an endpoint's URL.
     """
     doctypes = doctypes or []
@@ -63,16 +63,16 @@ def forget_refusal(refusal: NotPermitted) -> None:
 def answers_refusal(empty):
     """Turn a refusal into the answer the UI renders. Apply it once, on the endpoint.
 
-    A reader is admitted to a dashboard as soon as one card on it is readable.
+    A reader is allowed on a dashboard as soon as one card on it is readable.
     So every endpoint behind that dashboard can meet a table the reader may not
     read: a filter's value picker, a card's range, a table preview. There a
-    refusal is an answer, not a failure. The reader was admitted, they cannot
+    refusal is an answer, not a failure. The reader was allowed in, they cannot
     fix anything, and a retry cannot succeed. When each endpoint handled this
     itself, only one in eleven did.
 
     `empty` builds the endpoint's answer when it has nothing: a list for a
     picker, `None` for a range, the rendering keys for a card. A dict answer
-    also carries `not_permitted` with the doctypes the reader would need. So a
+    also includes `not_permitted` with the doctypes the reader would need. So a
     card can say why it is blank instead of reading as zero.
 
     Use it on an endpoint only when the UI renders its answer. If the UI reads

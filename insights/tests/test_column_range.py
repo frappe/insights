@@ -1,4 +1,4 @@
-"""What a number filter offers to pick from, for a column of whole numbers.
+"""What a number filter lists to pick from, for a column of whole numbers.
 
 `column_range` reads the smallest and largest a column goes and hands them to
 the filter picker. It reads them off a pandas frame, which answers in the
@@ -29,7 +29,7 @@ LENGTHS = sorted(len(description) for description in TODOS)
 def weighted_operations():
     """A query over `tabToDo` with a whole number per row.
 
-    `tabToDo` carries no number of its own, so the column under test is derived
+    `tabToDo` has no number of its own, so the column under test is derived
     from something the fixtures differ on.
     """
     return [

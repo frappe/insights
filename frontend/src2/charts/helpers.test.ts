@@ -26,7 +26,7 @@ function config(series: any[], tooltip?: any[]) {
 
 describe('getGranularity', () => {
 	// @feature charts.dimension-grain
-	it('reads the grain off a slot only the newer chart types carry', () => {
+	it('reads the grain off a slot only the newer chart types have', () => {
 		const config = {
 			x_column: { dimension_name: 'posting_date', granularity: 'month' },
 		} as any
@@ -78,7 +78,7 @@ describe('the stack default on a Bar', () => {
 	})
 
 	// @feature charts.bar-stack
-	it('is left off a saved chart that was drawn grouped', () => {
+	it('is left off a saved chart that was shown grouped', () => {
 		const after = ensureConfigSlots(config([{ measure: measure('revenue') }]), 'Bar')
 		expect(after.y_axis.stack).toBeUndefined()
 	})
@@ -133,7 +133,7 @@ describe('the half of a config that decides which rows come back', () => {
 	})
 
 	// @feature charts.style-change-no-rerun
-	it('reads a tooltip measure, which is fetched and not drawn', () => {
+	it('reads a tooltip measure, which is fetched and not plotted', () => {
 		const before = dataSelection(bar([{ measure: measure('revenue') }]))
 		const after = dataSelection(
 			bar([{ measure: measure('revenue') }], { tooltip: { measures: [measure('count')] } }),
@@ -249,7 +249,7 @@ describe("a reading's options follow the reading", () => {
 	})
 })
 
-// Every older shape a stored config still carries, anonymized from the configs
+// Every older shape a stored config still has, anonymized from the configs
 // on insights.frappe.io. `insights.patches.normalize_chart_configs` rewrites
 // them once. The load path's job here is to leave them as they are.
 const olderShapes: { shape: string; chart_type: string; config: any }[] = [
@@ -282,7 +282,7 @@ const olderShapes: { shape: string; chart_type: string; config: any }[] = [
 		},
 	},
 	{
-		shape: 'a reference line saved before it carried an id',
+		shape: 'a reference line saved before it had an id',
 		chart_type: 'Line',
 		config: {
 			y_axis: {

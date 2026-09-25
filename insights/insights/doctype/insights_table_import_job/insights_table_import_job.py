@@ -417,7 +417,7 @@ class TableWriter:
 
 
 class JobState:
-    """What the script carries between runs — usually the cursor its next run starts from.
+    """What the script keeps between runs — usually the cursor its next run starts from.
 
     Buffered in memory, written by `save()` on the success path only. A `db_set`
     here lands inside the open transaction and the next log line commits it, so

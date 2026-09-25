@@ -71,7 +71,7 @@ class TestRecordLink(InsightsIntegrationTestCase):
 
     # @feature charts.table-record-link
     def test_the_link_follows_a_copy(self):
-        # the copy carries the document name too, so either column opens the document
+        # the copy includes the document name too, so either column opens the document
         operations = [source(), mutate("todo_id", "name")]
         self.assertEqual(record_links(operations, columns("todo_id"))["todo_id"], "ToDo")
 

@@ -16,7 +16,7 @@ One component serves every host. A host with the column already chosen mounts it
 
 It behaves like a command palette: one search input, and under it a list per stage, column then operator then value. Typing narrows the list, Enter picks, Backspace on an empty input steps back, Cmd+Enter commits. Applied filters show on an overview stage inside, never as chips in the host. A multi-value pick commits when the popover closes. Every other value commits on Enter. No Apply button.
 
-Every stage is a list, the value stage included. Operator rows read the word with the sign as a note. The kind's default is first. Text splits `is` (a multi-select over distinct values, `in`) from `equals` (typed). Typing is the value for numbers and dates: no inline inputs, no slider. A calendar draws inline under the input for `between` and the comparisons, and writes into the input. `within` lists presets, then Relative as further list stages (Last / Next / This, a count, units). Legacy date shapes the old controls wrote still read.
+Every stage is a list, the value stage included. Operator rows read the word with the sign as a note. The kind's default is first. Text splits `is` (a multi-select over distinct values, `in`) from `equals` (typed). Typing is the value for numbers and dates: no inline inputs, no slider. A calendar shows inline under the input for `between` and the comparisons, and writes into the input. `within` lists presets, then Relative as further list stages (Last / Next / This, a count, units). Legacy date shapes the old controls wrote still read.
 
 A card filter is a dashboard filter the reader owns: a filter item linked to the one chart, unsaved, folded into the surface's filter context, keyed by the chart name so the server lands it after the chart's summarize and measures work. The drill drops the chart-keyed group, since a drilled row already passed it. Card filters live in the dashboard store per chart and reset on reload.
 
@@ -31,4 +31,4 @@ The list stands on reka's `ComboboxRoot`, since frappe-ui's `Combobox` has no se
 
 ## Consequences
 
-`Filter.vue` is gone. `dashboard/` still reaches under `query/`: every card reads its values through `query/query`, and `DashboardFilterEditor` still draws a saved filter with the query builder's own controls — that editor is the one surface this picker has not replaced.
+`Filter.vue` is gone. `dashboard/` still reaches under `query/`: every card reads its values through `query/query`, and `DashboardFilterEditor` still renders a saved filter with the query builder's own controls — that editor is the one surface this picker has not replaced.

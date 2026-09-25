@@ -6,7 +6,7 @@ import { __ } from '../../translation'
 import { columnLabel, type DrillDimension } from './drill_stack'
 import type { ClickPoint } from './segment_click'
 
-// What a segment click offers, before anything is loaded.
+// What a segment click lists, before anything is loaded.
 //
 // Two items, and the second one absorbs the dimension picker so a breakdown is
 // two clicks from the chart. Nothing is fetched until the reader has said which
@@ -14,7 +14,7 @@ import type { ClickPoint } from './segment_click'
 //
 // The menu opens where the reader pointed, which is why it hangs off a zero-size
 // anchor placed at the click rather than off a control on the page: there is no
-// control, only a bar. The anchor carries viewport coordinates, so it is
+// control, only a bar. The anchor holds viewport coordinates, so it is
 // teleported out of the chart — `position: fixed` is measured against the nearest
 // transformed ancestor, and the builder's grid moves its cards with `translate3d`,
 // which would put the menu the width of a card away from the click.
@@ -32,7 +32,7 @@ const props = defineProps<{
 	/**
 	 * Whether this reader may read the rows behind the segment. A chart shared
 	 * only through its visibility level shows the reader the aggregate, and the
-	 * server refuses the rows under it. So the menu does not offer them.
+	 * server refuses the rows under it. So the menu does not list them.
 	 */
 	canRows?: boolean
 }>()
@@ -61,7 +61,7 @@ const matches = computed(() => {
 // undefined outside an island, which is Teleport's default target
 const portalTarget = usePortalTarget()
 
-// A row here is a ghost Button: an ItemListRow draws without its own utilities
+// A row here is a ghost Button: an ItemListRow renders without its own utilities
 // inside this menu.
 const rowClass = 'w-full !justify-start'
 

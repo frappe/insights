@@ -38,7 +38,7 @@ const tabs = [
 	},
 ]
 
-// Once each: several cells can draw readings of one Number chart, and a filter
+// Once each: several cells can show readings of one Number chart, and a filter
 // lands on the chart, not on the cell.
 const charts = computed(() => dashboard.linkedCharts().filter(Boolean))
 

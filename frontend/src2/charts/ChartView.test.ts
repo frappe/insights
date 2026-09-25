@@ -22,7 +22,7 @@ function card(chart_type: string, slots: Record<string, () => any> = {}) {
 
 describe('a chart card a reader is given', () => {
 	// @feature charts.expand
-	it('offers the picture full-size, except where the picture is a reading', async () => {
+	it('lets the chart expand to full size, except a Number chart', async () => {
 		expect(await card('Bar')).toContain('aria-label="Expand"')
 		// A Number card has no plot, so a larger view shows nothing more.
 		expect(await card('Number')).not.toContain('aria-label="Expand"')

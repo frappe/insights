@@ -1,4 +1,4 @@
-"""What a number a chart drew is made of, level by level.
+"""What a number a chart shows is made of, level by level.
 
 The walk is `chart_drill`'s: a chart document, a stack of levels, and the rows
 behind the segment the stack describes. It is tested at the layer, under the
@@ -32,9 +32,9 @@ from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
 
 OWNER = "drill_api_owner@test.com"
-# visibility admits them, but they hold no Insights role: a desk user
+# visibility allows them, but they hold no Insights role: a desk user
 DESK_USER = "drill_api_desk_user@test.com"
-# holds an Insights role, but the owner's content never admits them
+# holds an Insights role, but the owner's content never allows them
 OUTSIDER = "drill_api_outsider@test.com"
 GUEST = "Guest"
 
@@ -99,7 +99,7 @@ def todo_operations(prefix=TODO_PREFIX):
 def weighted_operations():
     """The same query with a number per row, which is what a rows page ranks by.
 
-    `tabToDo` carries no measurable column of its own, so the tests that turn on
+    `tabToDo` has no measurable column of its own, so the tests that turn on
     the ranking derive one the fixtures already differ on.
     """
     return [
@@ -213,7 +213,7 @@ def bar_config(measures=None):
 
     A chart that declares no series of its own counts rows, which is what the
     mechanics tests click. `measures` names them instead, for the tests that
-    turn on which measure a level carries.
+    turn on which measure a level includes.
     """
     return {
         "limit": 50,
@@ -238,7 +238,7 @@ def number_config():
     """A card reading one number, measured against a target.
 
     The target is a measure of the card's own result and is summarized beside
-    the reading, so a card carries more measures than it draws.
+    the reading, so a card includes more measures than it plots.
     """
     return {
         "limit": 50,
@@ -248,10 +248,10 @@ def number_config():
     }
 
 
-def rows_level(filters=None, measure=None, drawn_on=None):
+def rows_level(filters=None, measure=None, read_on=None):
     level = {"segment_filters": filters or [], "action": {"rows": True, "measure": measure}}
-    if drawn_on:
-        level["drawn_on"] = drawn_on
+    if read_on:
+        level["read_on"] = read_on
 
     return level
 
@@ -482,7 +482,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
 
         # the fixtures are created within one second, so the span asks for the finest
-        # grain `GRAINS` offers and they all land within a bucket of it
+        # grain `GRAINS` lists and they all land within a bucket of it
         self.assertEqual(result["granularity"], "minute")
         self.assertEqual(sum(row["count_of_rows"] for row in result["rows"]), len(OWNER_TODOS))
 
@@ -560,7 +560,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     # A View never gets the pipeline. The reader asks for a sort, a find and a
     # page by name, and the server applies them inside the same cut.
 
-    # @feature charts.drill-rows-reading
+    # @feature charts.drill-rows-state
     def test_a_sort_the_reader_named_replaces_the_ranking_the_click_implied(self):
         _, chart, dashboard = self.make_content(
             operations=weighted_operations(), config=bar_config([weight()])
@@ -577,7 +577,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual([row["description"] for row in result["rows"]], sorted(OWNER_TODOS, reverse=True))
         self.assertNotEqual([row["description"] for row in result["rows"]], BY_WEIGHT)
 
-    # @feature charts.drill-rows-reading
+    # @feature charts.drill-rows-state
     def test_the_first_column_of_a_sort_is_the_one_the_rows_run_by(self):
         """The engine merges chained sorts and the last one it is given wins, so
         the column the reader listed first has to be written last."""
@@ -596,7 +596,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         self.assertEqual([row["description"] for row in result["rows"]], [CLOSED_HIGH, OPEN_LOW, OPEN_HIGH])
 
-    # @feature charts.drill-rows-reading
+    # @feature charts.drill-rows-state
     def test_a_find_narrows_the_rows_and_the_total_they_are_counted_against(self):
         _, chart, dashboard = self.make_content()
 
@@ -606,7 +606,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # the total the dialog shows counts only the rows the find kept
         self.assertEqual(result["total_row_count"], 2)
 
-    # @feature charts.drill-rows-reading
+    # @feature charts.drill-rows-state
     def test_a_find_reads_the_text_of_the_surface_and_leaves_its_dates_alone(self):
         """A find is a text match. A date holds no substring a reader types, and
         matching one is an error rather than a miss."""
@@ -625,7 +625,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(dated["rows"], [])
         self.assertEqual(dated["total_row_count"], 0)
 
-    # @feature charts.drill-rows-reading
+    # @feature charts.drill-rows-state
     def test_a_find_on_a_cut_with_nothing_to_match_keeps_no_rows(self):
         """The engine treats an empty find group as no filter. It returned every
         row, and the reader took the whole cut as matches for their term."""
@@ -642,7 +642,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(result["rows"], [])
         self.assertEqual(result["total_row_count"], 0)
 
-    # @feature charts.drill-rows-reading
+    # @feature charts.drill-rows-state
     def test_a_page_the_reader_turned_to_holds_the_rows_after_the_ones_before_it(self):
         _, chart, dashboard = self.make_content()
         alphabetical = [{"column": "description", "direction": "asc"}]
@@ -681,7 +681,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # the rule applies inside the cut, so the total counts only the rows it kept
         self.assertEqual(result["total_row_count"], 2)
 
-    # @feature charts.drill-rows-filter charts.drill-rows-reading
+    # @feature charts.drill-rows-filter charts.drill-rows-state
     def test_the_filters_the_sort_the_find_and_the_page_all_hold_at_once(self):
         _, chart, dashboard = self.make_content()
         alphabetical = [{"column": "description", "direction": "asc"}]
@@ -722,7 +722,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(second["total_row_count"], 2)
 
     # @feature charts.drill-rows-filter
-    def test_a_filter_offers_the_values_of_the_cut_it_narrows(self):
+    def test_a_filter_lists_the_values_of_the_cut_it_narrows(self):
         _, chart, dashboard = self.make_content()
 
         with as_user(OWNER), db_connections():
@@ -738,7 +738,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(sorted(values), ["High", "Low"])
 
     # @feature charts.drill-rows-filter dashboard.card-filter
-    def test_a_filter_on_the_builder_grid_offers_the_cut_whatever_the_card_is_filtered_by(self):
+    def test_a_filter_on_the_builder_grid_lists_the_cut_whatever_the_card_is_filtered_by(self):
         """`authoringDrillRows` sends the grid card's filters with every value
         list and range, as it does with the rows. A card filter applies after the
         chart's summarize, and the cut stops before it, so the value lists ignore
@@ -861,7 +861,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         ranked = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[breakdown_level("priority")])
         behind = self.drill(OWNER, chart.name, dashboard.name, drill_stack=[rows_level()])
 
-        # the client draws by what it is told, never by a column type it guesses from
+        # the client renders by what it is told, never by a column type it guesses from
         self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "month"))
         self.assertEqual((ranked["ordered"], ranked["granularity"]), (False, None))
         self.assertEqual((behind["ordered"], behind["granularity"]), (False, None))
@@ -947,7 +947,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(result["rows"][0]["count_of_rows"], len(TIMELINE_TODOS))
 
     # @feature charts.drill-grain
-    def test_a_grain_the_column_cannot_admit_is_refused(self):
+    def test_a_grain_the_column_cannot_allow_is_refused(self):
         timed = [
             *todo_operations(TIMELINE_PREFIX),
             {"type": "cast", "column": {"type": "column", "column_name": "creation"}, "data_type": "Time"},
@@ -976,7 +976,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
     # @feature charts.drill-grain
     def test_a_time_column_is_bucketed_by_a_grain_it_has(self):
-        """Hour, minute and second are all a column with no date part admits."""
+        """Hour, minute and second are all a column with no date part allows."""
         timed = [
             *todo_operations(),
             {"type": "cast", "column": {"type": "column", "column_name": "creation"}, "data_type": "Time"},
@@ -990,9 +990,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(result["granularity"], "second")
 
     # @feature charts.drill-number-card
-    def test_a_number_cards_breakdown_carries_its_readings_and_not_its_targets(self):
+    def test_a_number_cards_breakdown_includes_its_readings_and_not_its_targets(self):
         """A card names no measure when it is clicked, so the level keeps them all
-        — all of them being what the card draws. A target is read off the card's
+        — all of them being what the card plots. A target is read off the card's
         own row, and broken down it is a column nobody clicked and an average
         that makes the whole level look like it does not add up."""
         _, chart, dashboard = self.make_content(chart_type="Number", config=number_config())
@@ -1031,8 +1031,8 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(behind["total_row_count"], len(OWNER_TODOS))
 
         # and the bucket it was narrowed by is an hour of the clock. A bound
-        # carrying a date is one a store that does not coerce it away drops every
-        # row for, and one carrying tomorrow's is a bucket nothing can be inside
+        # holding a date is one a store that does not coerce it away drops every
+        # row for, and one holding tomorrow's is a bucket nothing can be inside
         handed = self.drill(OWNER, chart.name, dashboard.name, drill_stack=stack, with_operations=True)
         bounds = [
             rule["value"]
@@ -1045,7 +1045,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertTrue(all(re.fullmatch(r"\d\d:\d\d:\d\d", bound) for bound in bounds), bounds)
 
     # @feature charts.drill-segment
-    def test_a_breakdown_carries_the_measure_the_click_landed_on(self):
+    def test_a_breakdown_includes_the_measure_the_click_landed_on(self):
         _, chart, dashboard = self.make_content(
             chart_type="Table",
             config={
@@ -1095,9 +1095,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
     # @feature charts.drill-number-card
     def test_a_windowed_card_drills_into_the_window_it_reads(self):
-        """A card holding one span against another draws only the first.
+        """A card holding one span against another shows only the first.
 
-        The pipeline under it carries both, as the Or of every span the card
+        The pipeline under it includes both, as the Or of every span the card
         fetches, so a click that pinned nothing came back with both months.
         """
         _, chart, dashboard = self.timeline(
@@ -1161,7 +1161,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         )
 
         with patch("insights.insights.query_builders.sql_functions.nowdate", return_value="2024-02-17"):
-            drawn = frappe.get_doc(DT.CHART, chart.name).fetch(force=True)
+            shown = frappe.get_doc(DT.CHART, chart.name).fetch(force=True)
             clicked_the_next_day = self.drill(
                 OWNER,
                 chart.name,
@@ -1170,14 +1170,14 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                     rows_level(
                         filters=[equals("date", "2024-02-01")],
                         measure="Todos",
-                        drawn_on="2024-02-16",
+                        read_on="2024-02-16",
                     )
                 ],
             )
 
         # the card the reader is looking at was read on the 16th, so it counted
         # the 15th and the 16th and not the 17th
-        self.assertEqual(drawn["drawn_on"], "2024-02-17")
+        self.assertEqual(shown["read_on"], "2024-02-17")
         self.assertEqual(
             self.descriptions(clicked_the_next_day),
             sorted(d for d, (date, _) in TIMELINE_TODOS.items() if date in ("2024-02-15", "2024-02-16")),
@@ -1185,7 +1185,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
     # @feature charts.drill-number-card
     def test_a_span_that_moved_overnight_drills_to_the_whole_span_the_card_counted(self):
-        """`ChartDrillDown.vue` sends the day the card was read as `drawn_on` on
+        """`ChartDrillDown.vue` sends the day the card was read as `read_on` on
         every level. The card's span filter is inside the cut. Resolved against
         the day of the click, it is next month: a click on 1 March on a card read
         on 17 February filtered February's rows by March and found nothing."""
@@ -1207,7 +1207,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                     rows_level(
                         filters=[equals("date", "2024-02-01")],
                         measure="Todos",
-                        drawn_on="2024-02-17",
+                        read_on="2024-02-17",
                     )
                 ],
             )
@@ -1218,14 +1218,14 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def test_the_builders_rows_level_is_read_for_the_day_the_card_was(self):
         """The builder (`authoring.get_drill_data`) and a View
         (`view.get_drill_data`) return the same rows for the same click and
-        `drawn_on`."""
+        `read_on`."""
         config = {
             "number_columns": [count("Todos")],
             "date_column": dimension("date", "Date"),
             "window": {"span": "current month"},
         }
         query, chart, dashboard = self.timeline(chart_type="Number", config=config)
-        level = rows_level(filters=[equals("date", "2024-02-01")], measure="Todos", drawn_on="2024-02-17")
+        level = rows_level(filters=[equals("date", "2024-02-01")], measure="Todos", read_on="2024-02-17")
 
         with patch("insights.insights.query_builders.sql_functions.nowdate", return_value="2024-03-01"):
             with as_user(OWNER), db_connections():
@@ -1245,7 +1245,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def test_a_level_opened_as_a_query_holds_the_rows_the_dialog_showed(self):
         """`AuthoringDrillDown.vue` saves the returned `operations` as a new
         query in the workbook. That query runs on the day it is opened, outside
-        any dashboard. So its steps must carry the card's day and the grid's
+        any dashboard. So its steps must include the card's day and the grid's
         filters, or it returns other rows or none."""
         config = {
             "number_columns": [count("Todos")],
@@ -1258,7 +1258,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         for action in ({"rows": True, "measure": "Todos"}, {"breakdown": "priority", "measure": "Todos"}):
             with self.subTest(next(iter(action))):
                 level = {
-                    **rows_level(filters=[equals("date", "2024-02-01")], drawn_on="2024-02-17"),
+                    **rows_level(filters=[equals("date", "2024-02-01")], read_on="2024-02-17"),
                     "action": action,
                 }
                 with as_user(OWNER), db_connections():
@@ -1295,7 +1295,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                     self.assertEqual(self.descriptions(shown), february_t)
 
     # @feature charts.drill-open-as-query dashboard.drill
-    def test_a_level_opened_as_a_query_names_each_dashboard_filter_it_could_not_carry(self):
+    def test_a_level_opened_as_a_query_names_each_dashboard_filter_it_could_not_keep(self):
         """`AuthoringDrillDown.vue` lists them in its toast. A filter linked to a
         source query of the chart's query narrowed the dialog's rows, but the
         opened query has no step to hold it. A filter linked to the chart's own
@@ -1337,7 +1337,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                 drill_stack=[rows_level(filters=[equals("priority", "High")], measure="count_of_rows")],
             )
 
-        self.assertEqual(shown["uncarried_filters"], ["Description"])
+        self.assertEqual(shown["unapplied_filters"], ["Description"])
         self.assertIn(
             "status",
             [rule["column"]["column_name"] for rule in shown["operations"][1].get("filters") or []],
@@ -1370,7 +1370,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                 ],
             }
         }
-        level = rows_level(filters=[equals("date", "2024-02-01")], measure="Todos", drawn_on="2024-02-17")
+        level = rows_level(filters=[equals("date", "2024-02-01")], measure="Todos", read_on="2024-02-17")
 
         with patch("insights.insights.query_builders.sql_functions.nowdate", return_value="2024-03-01"):
             with as_user(OWNER), db_connections():
@@ -1382,7 +1382,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def test_a_card_whose_author_pinned_its_span_names_the_day_it_was_read(self):
         """The pinned span never moves, but the dashboard's filters resolve
         against the day of the read. The drill resolves them against the
-        `drawn_on` it is sent, so the card must return it."""
+        `read_on` it is sent, so the card must return it."""
         _, chart, dashboard = self.timeline(
             chart_type="Number",
             config={
@@ -1396,7 +1396,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             with as_user(OWNER), db_connections():
                 card = get_chart_data(chart=chart.name, dashboard=dashboard.name, force=True)
 
-        self.assertEqual(card["drawn_on"], "2024-03-01")
+        self.assertEqual(card["read_on"], "2024-03-01")
 
     # @feature charts.drill-number-card
     def test_a_span_in_the_source_query_is_read_for_the_day_the_card_was(self):
@@ -1413,7 +1413,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             chart_type="Number",
             config={"number_columns": [count("Todos")], "date_column": dimension("date", "Date")},
         )
-        level = rows_level(measure="Todos", drawn_on="2024-02-17")
+        level = rows_level(measure="Todos", read_on="2024-02-17")
 
         with patch("insights.insights.query_builders.sql_functions.nowdate", return_value="2024-03-01"):
             with as_user(OWNER), db_connections():
@@ -1444,7 +1444,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(self.descriptions(result), [f"{TIMELINE_PREFIX} december"])
 
     # @feature charts.drill-conditional-measure
-    def test_a_conditional_measure_carries_its_condition_into_the_rows(self):
+    def test_a_conditional_measure_passes_its_condition_into_the_rows(self):
         _, chart, dashboard = self.make_content(
             chart_type="Number",
             config={
@@ -1721,7 +1721,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(self.descriptions(result), [f"{TIMELINE_PREFIX} february one"])
 
     # @feature charts.drill-grain
-    def test_a_grain_an_earlier_level_cannot_admit_is_refused(self):
+    def test_a_grain_an_earlier_level_cannot_allow_is_refused(self):
         _, chart, dashboard = self.timeline()
 
         with self.assertRaises(frappe.ValidationError) as raised:
@@ -1752,7 +1752,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             self.assertIn("is not a column", str(raised.exception))
 
     # @feature charts.drill-surface-bound
-    def test_no_drill_response_carries_the_query_behind_the_chart(self):
+    def test_no_drill_response_includes_the_query_behind_the_chart(self):
         query, chart, dashboard = self.make_content()
 
         result = self.drill(
@@ -1767,16 +1767,16 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             self.assertNotIn(leak, serialized, f"{leak} must not reach a reader")
         self.assertNotIn("sql", result)
 
-    # what the menu offers before anything is clicked
+    # what the menu lists before anything is clicked
 
-    # @feature charts.drill-breakdown-offers
-    def test_the_chart_offers_the_dimensions_of_the_pre_summarize_surface(self):
+    # @feature charts.drill-breakdown-options
+    def test_the_chart_lists_the_dimensions_of_the_pre_summarize_surface(self):
         _, chart, _ = self.make_content()
 
         with as_user(OWNER), db_connections():
             dimensions = {d["name"]: d["type"] for d in drill_dimensions(chart)}
         # the surface underneath the summarize, so a column the chart does not
-        # draw is still a candidate
+        # show is still a candidate
         self.assertEqual(dimensions.get("priority"), "String")
         self.assertEqual(dimensions.get("status"), "String")
         self.assertEqual(dimensions.get("creation"), "Datetime")
@@ -1825,7 +1825,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertNotIn("name", result["record_links"])
 
     # @feature charts.drill-record-link
-    def test_a_dropped_name_column_carries_no_record_link(self):
+    def test_a_dropped_name_column_has_no_record_link(self):
         dropped = [
             *todo_operations(),
             {"type": "select", "column_names": ["status", "priority"]},
@@ -1863,7 +1863,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(result["record_links"]["role"], "Role")
 
     # @feature charts.drill-record-link
-    def test_only_a_rows_level_carries_record_links(self):
+    def test_only_a_rows_level_has_record_links(self):
         _, chart, dashboard = self.make_content()
 
         result = self.drill(
@@ -1921,13 +1921,13 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             return get_drill_data(chart=chart, dashboard=dashboard, **kwargs)
 
     # @feature charts.drill-changed-chart
-    def test_a_drill_from_a_chart_that_changed_since_it_was_drawn_is_refused(self):
+    def test_a_drill_from_a_chart_that_changed_since_it_was_rendered_is_refused(self):
         """`ChartDrillDown.vue` sends the `modified` of the chart the card
         rendered. A card keeps its result until Refresh, so a drill after someone
         else's edit would cut a chart the card does not show."""
         _, chart, dashboard = self.make_content(run_as_owner=0)
-        drawn = str(chart.modified)
-        level = {**breakdown_level("status"), "modified": drawn}
+        modified = str(chart.modified)
+        level = {**breakdown_level("status"), "modified": modified}
 
         def drill():
             with as_user(OWNER), db_connections():
@@ -1968,8 +1968,8 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         def drill():
             with as_user(OWNER), db_connections():
-                drawn = get_chart_data(chart=chart.name, dashboard=dashboard.name)["chart"]["modified"]
-            level = {**breakdown_level("status"), "modified": drawn}
+                modified = get_chart_data(chart=chart.name, dashboard=dashboard.name)["chart"]["modified"]
+            level = {**breakdown_level("status"), "modified": modified}
 
             def again():
                 with as_user(OWNER), db_connections():
@@ -1979,8 +1979,8 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         for hops, edited in (("two hops", inner.name), ("one hop", query.name)):
             with self.subTest(hops):
-                drawn_before = drill()
-                self.assertTrue(drawn_before()["rows"])
+                read_before_edit = drill()
+                self.assertTrue(read_before_edit()["rows"])
 
                 with as_user(OWNER):
                     doc = frappe.get_doc(DT.QUERY, edited)
@@ -1988,7 +1988,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                     doc.save()
 
                 with self.assertRaisesRegex(frappe.ValidationError, "This chart changed. Refresh to drill."):
-                    drawn_before()
+                    read_before_edit()
                 # a card read after the edit can drill
                 self.assertTrue(drill()()["rows"])
 
@@ -2008,11 +2008,11 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             return result
 
         with patch.object(InsightsChartv3, "fetch", saved_while_read), as_user(OWNER), db_connections():
-            drawn = get_chart_data(chart=chart.name, dashboard=dashboard.name, force=True)["chart"][
+            modified = get_chart_data(chart=chart.name, dashboard=dashboard.name, force=True)["chart"][
                 "modified"
             ]
 
-        level = {**breakdown_level("status"), "modified": drawn}
+        level = {**breakdown_level("status"), "modified": modified}
         with self.assertRaisesRegex(frappe.ValidationError, "This chart changed. Refresh to drill."):
             self.view_drill(OWNER, chart.name, dashboard.name, drill_stack=[level])
 
@@ -2044,8 +2044,8 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             with as_user(OWNER), db_connections():
                 return get_authoring_chart_data(**shape, config=bar_config(), force=True)["modified"]
 
-        def drill(drawn, config=None):
-            level = {**breakdown_level("status"), "modified": drawn}
+        def drill(modified, config=None):
+            level = {**breakdown_level("status"), "modified": modified}
             with as_user(OWNER), db_connections():
                 return get_authoring_drill_data(**shape, config=config or bar_config(), drill_stack=[level])
 
@@ -2053,14 +2053,14 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         for edited in (DT.QUERY, inner.name), (DT.QUERY, query.name), (DT.CHART, chart.name):
             with self.subTest(edited):
-                drawn = card()
+                modified = card()
                 with as_user(OWNER):
                     doc = frappe.get_doc(*edited)
                     doc.title = f"{doc.title}, edited"
                     doc.save()
 
                 with self.assertRaisesRegex(frappe.ValidationError, "This chart changed. Refresh to drill."):
-                    drill(drawn)
+                    drill(modified)
                 self.assertTrue(drill(card())["rows"])
 
     def share_dashboard_with(self, dashboard, user):
@@ -2068,7 +2068,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         frappe.share.add(DT.DASHBOARD, dashboard, user=user, read=1, notify=0)
 
     # @feature charts.drill-breakdown charts.drill-rows charts.drill-rows-export permissions.chart-run-as-owner
-    def test_a_chart_run_as_its_owner_offers_another_reader_only_what_the_owner_saved(self):
+    def test_a_chart_run_as_its_owner_allows_another_reader_only_what_the_owner_saved(self):
         """With `run_as_owner` set, a reader with their own grant still reads the
         owner's rows. A breakdown, the rows and the file would each give out more
         than the owner saved. The owner keeps all three."""
@@ -2140,7 +2140,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
     # @feature dashboard.drill permissions.non-insights-user
     def test_a_reader_without_an_insights_role_breaks_down_no_chart_run_as_its_owner(self):
-        """The dashboard's visibility admits them, but the owner saved only the
+        """The dashboard's visibility allows them, but the owner saved only the
         chart. A breakdown is the owner's rows grouped another way."""
         _, chart, dashboard = self.make_content(run_as_owner=1)
         self.assertNotIn("Insights User", frappe.get_roles(DESK_USER))
@@ -2152,7 +2152,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(result, {"columns": [], "rows": [], "not_permitted": {"doctypes": []}})
 
     # @feature charts.drill-rows permissions.non-insights-user
-    def test_a_reader_admitted_by_the_level_alone_gets_no_rows_behind_the_picture(self):
+    def test_a_reader_allowed_by_the_visibility_level_alone_gets_no_rows_behind_the_chart(self):
         """`Everyone` shares the chart, not the rows it aggregates. Those rows are
         fetched under the owner's permissions and hold columns the card never
         showed. Paging through them reaches the same rows the file holds, so both
@@ -2218,7 +2218,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         self.assertNotIsInstance(raised.exception, frappe.DoesNotExistError)
 
-    # @feature charts.drill-rows-reading charts.drill-rows-filter permissions.chart-run-as-owner
+    # @feature charts.drill-rows-state charts.drill-rows-filter permissions.chart-run-as-owner
     def test_a_readers_own_permissions_narrow_the_page_and_the_total_under_it(self):
         """The filters, the find and the count all run inside the permission the
         chart declares, so none of them can report rows the reader is not shown."""
@@ -2283,7 +2283,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertIn(OPEN_LOW, filtered)
 
     # @feature charts.drill-rows-export permissions.non-insights-user
-    def test_a_reader_admitted_by_the_level_alone_takes_no_file(self):
+    def test_a_reader_allowed_by_the_visibility_level_alone_takes_no_file(self):
         """`Everyone` shares the chart, not the rows it aggregates. Those rows
         are fetched under the owner's permissions, and nobody granted them to
         this reader."""
@@ -2311,7 +2311,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertEqual(len(self.exported(csv)), 1)
 
     # @feature charts.drill-rows charts.drill-rows-export permissions.visibility permissions.chart-run-as-owner
-    def test_no_level_hands_out_the_owners_rows(self):
+    def test_no_visibility_level_hands_out_the_owners_rows(self):
         """`standard_dashboard_visibility` sets every shipped dashboard to
         `Roles`. A visibility level lets a reader see the chart. The rows behind
         it come only from the chart running as the reader. `Roles` is narrower
@@ -2369,7 +2369,7 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             self.view_export(OUTSIDER, chart.name, dashboard.name, drill_stack=[rows_level()])
 
     # @feature charts.drill-rows-export settings.allow-download
-    def test_a_site_that_allows_no_download_offers_the_reader_none(self):
+    def test_a_site_that_allows_no_download_gives_the_reader_no_file(self):
         """The setting is about data leaving the site as a file. It removes the
         file and keeps the page the reader is looking at."""
         # a chart that runs as them, so the toggle is the only thing left to refuse

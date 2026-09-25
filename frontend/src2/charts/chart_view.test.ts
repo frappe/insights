@@ -30,8 +30,8 @@ beforeEach(() => {
 describe('the request a public read would send', () => {
 	// @feature shared.read-once
 	it('is asked once, however many cards load the same chart under the same filters', async () => {
-		const frame = { name: 'chart-9', title: '', chart_type: 'Number', config: {} as any }
-		const read = useChartView(frame.name, undefined, frame)
+		const chartDoc = { name: 'chart-9', title: '', chart_type: 'Number', config: {} as any }
+		const read = useChartView(chartDoc.name, undefined, chartDoc)
 
 		await read.load()
 		await read.load()
@@ -42,9 +42,9 @@ describe('the request a public read would send', () => {
 	// @feature shared.read-once
 	it('is asked again when the surface narrows the chart differently', async () => {
 		const cardFilters: CardFilter[] = []
-		const frame = { name: 'chart-10', title: '', chart_type: 'Number', config: {} as any }
+		const chartDoc = { name: 'chart-10', title: '', chart_type: 'Number', config: {} as any }
 		const read = useChartView(
-			frame.name,
+			chartDoc.name,
 			{
 				id: 'dashboard:dashboard-9',
 				filterContext: (chart_name) => ({
@@ -53,7 +53,7 @@ describe('the request a public read would send', () => {
 					cardFilters: [...cardFilters],
 				}),
 			},
-			frame,
+			chartDoc,
 		)
 
 		await read.load()
@@ -141,7 +141,7 @@ describe('a link to a chart the reader cannot open', () => {
 })
 
 // Not Permitted is a result, not a failure. The reader cannot retry or fix it,
-// so the card must not offer either.
+// so the card must not show either.
 
 describe('a card the reader may not read the data behind', () => {
 	// @feature permissions.not-permitted-chart
@@ -215,46 +215,46 @@ function deferred<T>() {
 
 const settled = () => new Promise((resolve) => setTimeout(resolve, 0))
 
-function frameOf(name: string, title: string) {
+function chartDocOf(name: string, title: string) {
 	return { name, title, chart_type: 'Table', config: {} as any }
 }
 
-function rowsOf(frame: ReturnType<typeof frameOf>, region: string) {
-	return { chart: frame, columns: [{ name: 'region', type: 'String' }], rows: [{ region }] }
+function rowsOf(chartDoc: ReturnType<typeof chartDocOf>, region: string) {
+	return { chart: chartDoc, columns: [{ name: 'region', type: 'String' }], rows: [{ region }] }
 }
 
-describe('a card and the chart it draws', () => {
+describe('a card and the chart it renders', () => {
 	// @feature charts.one-snapshot
-	it('keeps the frame it drew its rows with when a revisit hands it a newer one', async () => {
-		// `view.ts` `openReads` passes each read the frame from the dashboard
-		// response, on every visit. The rows on screen belong to the first frame.
-		const first = frameOf('chart-20', 'Sales')
+	it('keeps the chart document it rendered its rows with when a revisit hands it a newer one', async () => {
+		// `view.ts` `openReads` passes each read the chart document from the dashboard
+		// response, on every visit. The rows on screen belong to the first chart document.
+		const first = chartDocOf('chart-20', 'Sales')
 		answers.set('insights.api.view.get_chart_data', () =>
 			Promise.resolve(rowsOf(first, 'North')),
 		)
 		await useChartView(first.name, undefined, first).load()
 
-		const read = useChartView(first.name, undefined, frameOf(first.name, 'Sales by region'))
+		const read = useChartView(first.name, undefined, chartDocOf(first.name, 'Sales by region'))
 
 		expect(read.doc.title).toBe('Sales')
 		expect(read.result.rows).toEqual([{ region: 'North' }])
 	})
 
 	// @feature charts.one-snapshot charts.refresh
-	it('draws a refreshed frame only once the rows it decides have landed', async () => {
-		// `SharedChart` and `ChartIsland` open a chart without a frame. The card's
+	it('renders a refreshed chart only once its new rows have landed', async () => {
+		// `SharedChart` and `ChartIsland` open a chart without a chart document. The card's
 		// Refresh reloads it with force.
 		answers.set('insights.api.view.get_chart', () =>
-			Promise.resolve(frameOf('chart-21', 'Sales')),
+			Promise.resolve(chartDocOf('chart-21', 'Sales')),
 		)
 		answers.set('insights.api.view.get_chart_data', () =>
-			Promise.resolve(rowsOf(frameOf('chart-21', 'Sales'), 'North')),
+			Promise.resolve(rowsOf(chartDocOf('chart-21', 'Sales'), 'North')),
 		)
 		const read = useChartView('chart-21')
 		await read.load()
 		expect(read.doc.title).toBe('Sales')
 
-		const edited = frameOf('chart-21', 'Sales by region')
+		const edited = chartDocOf('chart-21', 'Sales by region')
 		const rows = deferred<any>()
 		answers.set('insights.api.view.get_chart', () => Promise.resolve(edited))
 		answers.set('insights.api.view.get_chart_data', () => rows.promise)
@@ -271,10 +271,10 @@ describe('a card and the chart it draws', () => {
 	})
 
 	// @feature charts.drill-changed-chart
-	it('drills the version of the chart it drew, not the one a revisit handed it', async () => {
+	it('drills the version of the chart it rendered, not the one a revisit handed it', async () => {
 		// `ChartDrillDown.vue` sends the subject's `modified` with each level.
 		// `view.get_drill_data` refuses a stale `modified`.
-		const first = { ...frameOf('chart-23', 'Sales'), modified: '2026-09-22 10:00:00' }
+		const first = { ...chartDocOf('chart-23', 'Sales'), modified: '2026-09-22 10:00:00' }
 		answers.set('insights.api.view.get_chart_data', () =>
 			Promise.resolve(rowsOf(first, 'North')),
 		)
@@ -289,14 +289,14 @@ describe('a card and the chart it draws', () => {
 	})
 
 	// @feature charts.one-snapshot shared.read-once
-	it('is not asked again when the island that draws it is mounted again', async () => {
+	it('is not asked again when the island that renders it is mounted again', async () => {
 		// Desk's `chart_widget.js` remounts `ChartIsland` on every render. Each
 		// mount opens the chart by name and loads it.
 		answers.set('insights.api.view.get_chart', () =>
-			Promise.resolve(frameOf('chart-22', 'Sales')),
+			Promise.resolve(chartDocOf('chart-22', 'Sales')),
 		)
 		answers.set('insights.api.view.get_chart_data', () =>
-			Promise.resolve(rowsOf(frameOf('chart-22', 'Sales'), 'North')),
+			Promise.resolve(rowsOf(chartDocOf('chart-22', 'Sales'), 'North')),
 		)
 		await useChartView('chart-22').load()
 		const asked = calls.length
@@ -310,9 +310,9 @@ describe('a card and the chart it draws', () => {
 	})
 })
 
-describe('the builder grid drawing a chart its author edited', () => {
+describe('the builder grid rendering a chart its author edited', () => {
 	// @feature charts.one-snapshot charts.preview
-	it('draws the config its rows answer until the edited config has its own rows', async () => {
+	it('renders the config its rows answer until the edited config has its own rows', async () => {
 		// `dashboard.ts` `chartView` gives the grid the workbook's chart store,
 		// which the chart builder edits in place. `builder.ts` `loadChart` loads
 		// each card when the grid mounts.
@@ -325,7 +325,7 @@ describe('the builder grid drawing a chart its author edited', () => {
 				config: { limit: 10 } as any,
 			},
 		}) as unknown as Chart
-		const surface = {
+		const context = {
 			id: 'dashboard:dashboard-30',
 			filterContext: (chart_name: string) => ({ chart: chart_name, cardFilters: [] }),
 		}
@@ -335,7 +335,7 @@ describe('the builder grid drawing a chart its author edited', () => {
 				rows: [{ region: 'North' }],
 			}),
 		)
-		const read = useChartPreview(chart, surface)
+		const read = useChartPreview(chart, context)
 		await read.load()
 
 		chart.doc.config = { limit: 1 } as any
@@ -418,9 +418,9 @@ describe('the builder drilling a chart its author is editing', () => {
 	})
 })
 
-describe('the builder drawing a chart its reader may not write', () => {
+describe('the builder rendering a chart its reader may not write', () => {
 	// @feature charts.one-snapshot charts.preview
-	it('draws the chart the server ran when that is not the one it sent', async () => {
+	it('renders the chart the server ran when that is not the one it sent', async () => {
 		// For a collaborator who may not write the chart,
 		// `authoring.get_chart_data` runs the stored chart and returns it.
 		const chart = reactive({
@@ -453,7 +453,7 @@ describe('the builder drawing a chart its reader may not write', () => {
 
 	// @feature charts.one-snapshot charts.preview
 	it('fills the slots of the chart the server ran, as a saved card does', async () => {
-		// A View's frame holds only what the owner set, and never `filters`.
+		// A View's chart document holds only what the owner set, and never `filters`.
 		const chart = reactive({
 			doc: {
 				name: 'chart-33',
@@ -515,13 +515,13 @@ function pagedRead(chart_type: string, answer: (page: number) => Promise<any>) {
 	return { read, pages, ask: (next: string) => (question = next) }
 }
 
-const admitted = (page: number) =>
+const allowed = (page: number) =>
 	northThenSouth(page).then((answer) => ({ ...answer, can_read_rows: true, can_export: true }))
 
 describe('a card paged past its first page', () => {
 	// @feature charts.table-pager
 	it('asks for the next page of the same question, and a new question starts on the first', async () => {
-		const { read, pages, ask } = pagedRead('Table', admitted)
+		const { read, pages, ask } = pagedRead('Table', allowed)
 
 		await read.load()
 		await read.goToPage!(2)
@@ -536,8 +536,8 @@ describe('a card paged past its first page', () => {
 	})
 
 	// @feature charts.table-pager
-	it('keeps a chart that is not a table on its one picture', async () => {
-		const { read, pages } = pagedRead('Bar', admitted)
+	it('keeps a chart that is not a table on one page', async () => {
+		const { read, pages } = pagedRead('Bar', allowed)
 
 		await read.load()
 
@@ -548,7 +548,7 @@ describe('a card paged past its first page', () => {
 	})
 
 	// @feature charts.table-pager charts.export-rows permissions.chart-run-as-owner
-	it('offers a reader shown only the picture no page, no count and no file', async () => {
+	it('shows a reader allowed only the chart no page, no count and no file', async () => {
 		const { read } = pagedRead('Table', (page) =>
 			northThenSouth(page).then((answer) => ({
 				...answer,
@@ -565,7 +565,7 @@ describe('a card paged past its first page', () => {
 	})
 
 	// @feature charts.export-rows
-	it('offers the file only where the server says the reader may take it', async () => {
+	it('allows export only where the server says the reader may export', async () => {
 		const { read } = pagedRead('Table', (page) =>
 			northThenSouth(page).then((answer) => ({ ...answer, can_read_rows: true })),
 		)

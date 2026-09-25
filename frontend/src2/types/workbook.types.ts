@@ -155,7 +155,7 @@ export type Placement = {
 	h: number
 }
 
-/** A placement with the cell it belongs to. What a grid is drawn from. */
+/** A placement with the cell it belongs to. What a grid is rendered from. */
 export type Layout = Placement & {
 	/** The cell's identity, stable across a move. */
 	i: string
@@ -172,7 +172,7 @@ export type Layout = Placement & {
 export type BreakpointKey = 'sm' | 'lg'
 
 /**
- * What every dashboard item carries about where it sits.
+ * What every dashboard item keeps about where it sits.
  *
  * `layout` is the placement at the widest breakpoint, and it is the one every
  * item has — it is what a dashboard authored before there was more than one
@@ -194,9 +194,9 @@ export type WorkbookDashboardChart = WorkbookDashboardItemLayout & {
 	type: 'chart'
 	chart: string
 	/**
-	 * The reading this cell draws, by its `id`. Only a Number chart states
+	 * The reading this cell shows, by its `id`. Only a Number chart states
 	 * several, so only its cells name one, and a cell written before this field
-	 * existed names none and draws the first.
+	 * existed names none and shows the first.
 	 */
 	reading?: string
 }

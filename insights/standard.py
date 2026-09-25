@@ -230,13 +230,13 @@ def export_modules() -> list[dict]:
         if not os.access(writable, os.W_OK):
             continue
 
-        # the full path, as `claim_file` shows it in its error
+        # the full path, as `check_file_is_free` shows it in its error
         modules.append({"module": module, "app": app, "folder": root})
 
     return modules
 
 
-def claim_file(doctype: str, name: str, module: str) -> None:
+def check_file_is_free(doctype: str, name: str, module: str) -> None:
     """Refuse a name whose file another document in `module` already has.
 
     The file is named after `scrub(name)`, and two names can scrub to one

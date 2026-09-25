@@ -2,7 +2,7 @@
 import { Button, Tooltip } from 'frappe-ui'
 import { Pencil } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import { drawsOwnCards } from '../charts/adapter'
+import { rendersOwnCards } from '../charts/adapter'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { __ } from '../translation'
 import { useChartCell, type ChartCellProps } from './chart_cell'
@@ -28,9 +28,9 @@ const {
 } = useChartCell(props)
 
 const actionsActive = ref(false)
-// a card that draws itself heads its title with a zero-height row, which fits the smallest control
+// a card that renders itself heads its title with a zero-height row, which fits the smallest control
 const actionSize = computed(() =>
-	read.value && drawsOwnCards(read.value.doc.chart_type) ? 'xs' : 'sm',
+	read.value && rendersOwnCards(read.value.doc.chart_type) ? 'xs' : 'sm',
 )
 
 // Editing a chart is not editing the dashboard. The chart is a workbook object

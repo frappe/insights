@@ -141,7 +141,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
                     # the chart is Private, so only the dashboard's
                     # visibility can give access to it
                     "visibility": "Private",
-                    # a Public dashboard carries only charts that run as their owner
+                    # a Public dashboard includes only charts that run as their owner
                     "run_as_owner": int(visibility == "Public"),
                 }
             ).insert()
@@ -218,7 +218,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
             with self.assertRaises(frappe.DoesNotExistError):
                 get_chart(chart=elsewhere.name, dashboard=dashboard.name)
 
-        self.assertEqual([drawn["name"] for drawn in response["charts"]], [chart.name])
+        self.assertEqual([shown["name"] for shown in response["charts"]], [chart.name])
         # the cell goes too. A cell that names a chart missing from `charts`
         # shows "Chart not found". The docname of refused content also leaks it:
         # after a workbook is shipped, the docname is the title in readable form
@@ -360,7 +360,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(self.descriptions(result), [])
 
     # @feature charts.missing-slot-message
-    def test_an_unconfigured_chart_says_so_instead_of_drawing_its_source(self):
+    def test_an_unconfigured_chart_says_so_instead_of_showing_its_source(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")
         chart.db_set("run_as_owner", 1, update_modified=False)
         # a table chart with no rows configured. Falling back to the source query
@@ -571,7 +571,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
             self.assertIsNone(response["workbook"])
 
     # @feature standard.duplicate
-    def test_shipped_content_is_not_offered_for_copying_without_workbook_read(self):
+    def test_shipped_content_does_not_allow_copying_without_workbook_read(self):
         _, _, dashboard = self.make_content(visibility="Everyone")
         dashboard = self.ship(dashboard)
 
@@ -582,7 +582,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
             self.assertIsNone(response["workbook"])
 
     # @feature standard.duplicate
-    def test_a_shipped_workbook_is_offered_for_copying_and_the_copy_is_the_sites(self):
+    def test_a_shipped_workbook_allows_copying_and_the_copy_is_the_sites(self):
         _, _, dashboard = self.make_content(visibility="Everyone")
         dashboard = self.ship(dashboard)
 
@@ -601,7 +601,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
     # the query never crosses the boundary
 
     # @feature permissions.view-sends-no-query
-    def test_no_response_carries_the_query_behind_the_chart(self):
+    def test_no_response_includes_the_query_behind_the_chart(self):
         query, chart, dashboard = self.make_content(visibility="Everyone")
         chart.db_set("run_as_owner", 1, update_modified=False)
 
@@ -620,7 +620,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # @feature charts.one-snapshot
     def test_the_rows_arrive_with_the_chart_they_were_computed_from(self):
-        """The answer carries the `chart` with its rows, and `makeSavedChartView`
+        """The answer includes the `chart` with its rows, and `makeSavedChartView`
         loads both in one step. So a card never holds a definition that its rows
         do not match. The chart is edited between two unforced reads, as an
         author in another tab would."""
@@ -957,7 +957,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         frappe.db.set_single_value(DT.SETTINGS, "allow_download", 1)
         return chart, dashboard
 
-    def assert_picture_only(self, user, chart, dashboard):
+    def assert_chart_only(self, user, chart, dashboard):
         first = self.fetch_data(user, chart.name, dashboard.name, force=True)
         second = self.fetch_data(user, chart.name, dashboard.name, page=2, force=True)
 
@@ -994,21 +994,21 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(len(lines), 1 + len(OWNER_TODOS))
 
     # @feature charts.table-pager charts.export-rows permissions.chart-run-as-owner
-    def test_a_reader_shown_the_picture_keeps_the_charts_one_page(self):
+    def test_a_reader_of_a_run_as_owner_chart_keeps_its_one_page(self):
         """The same three endpoints, for a reader of a run-as-owner chart who may not write it."""
         chart, dashboard = self.paged_content()
 
-        self.assert_picture_only(DESK_USER, chart, dashboard)
+        self.assert_chart_only(DESK_USER, chart, dashboard)
 
     # @feature charts.table-pager charts.export-rows shared.no-drill
     def test_a_guest_keeps_a_public_charts_one_page(self):
         """The same three endpoints, for a guest on a public link."""
         chart, dashboard = self.paged_content(visibility="Public")
 
-        self.assert_picture_only(GUEST, chart, dashboard)
+        self.assert_chart_only(GUEST, chart, dashboard)
 
     # @feature shared.no-drill charts.table-pager dashboard.card-filter permissions.run-as-owner-lapses
-    def test_a_guest_gets_no_more_than_the_picture_of_a_public_chart_run_as_its_reader(self):
+    def test_a_guest_of_a_public_chart_run_as_its_reader_gets_only_the_chart(self):
         """A Public chart runs as its reader when Run as owner is off or its
         owner is disabled. A guest then gets no row count, and no `can_read_rows`
         or `can_filter` from `view.get_chart_data`. A signed-in reader of the

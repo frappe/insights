@@ -1,7 +1,7 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-"""What a number a chart drew is made of.
+"""What a number a chart plotted is made of.
 
 A drill walks back down the chart's own pipeline. The operations derived from a
 chart end in the operation that turned rows into numbers, a summarize or a
@@ -34,8 +34,8 @@ from insights import user_permissions
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     ORDERED_TYPES,
     count_of_rows,
-    drawn_measures,
     grain_step,
+    plotted_measures,
 )
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
@@ -52,7 +52,7 @@ from insights.permissions import can_read_rows
 ROWS = "rows"
 BREAKDOWN = "breakdown"
 
-# a bucket standing for the rows that carry no date at all
+# a bucket standing for the rows that have no date at all
 NO_DATE = (None, None)
 
 PAGE_SIZE = 100
@@ -120,7 +120,7 @@ GRAINS = {
 }
 
 # the two ends of the segment a grain is derived from, named so the aggregate
-# that reads them can be told apart from anything the surface already carries
+# that reads them can be told apart from anything the surface already includes
 SPAN_START = "drill_span_start"
 SPAN_END = "drill_span_end"
 
@@ -146,7 +146,7 @@ OPERATORS = (
 )
 
 # a measure that aggregates under a condition: the rows behind it are the ones
-# the condition holds for, so drilling it carries the condition. The value is
+# the condition holds for, so drilling it keeps the condition. The value is
 # where the gate sits among the positional arguments, or under `where=`
 CONDITION_ARGUMENT = {
     "count_if": 0,
@@ -167,7 +167,7 @@ def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
     """The columns a segment of this chart can be broken down by.
 
     The dimension-typed columns of the pre-summarize surface: what the menu
-    offers before anything is clicked, which is why it comes back with the
+    lists before anything is clicked, which is why it comes back with the
     chart's own data response instead of in a call of its own.
 
     A pipeline that aggregates nothing has no surface underneath it, so it
@@ -208,14 +208,14 @@ def drill_data(
     """
     check_rows(chart)
     _checked_stack(drill_stack)
-    _check_drawn_from(chart, drill_stack)
+    _check_chart_unchanged(chart, drill_stack)
     adhoc_filters = _card_filters_out(adhoc_filters, chart)
 
     operations, index = _pipeline(chart, drill_stack, operations)
     step = operations[index]
     sliced = operations[:index]
 
-    with runs_as(chart), read_on(_drawn_on(drill_stack)):
+    with runs_as(chart), read_on(_read_on(drill_stack)):
         surface = _surface(chart, operations, index)
 
         last = drill_stack[-1]
@@ -229,7 +229,7 @@ def drill_data(
             drilled = [*segment, *breakdown["operations"]]
             page = 1
         else:
-            drilled = _rows_reading(segment, drill_stack, step, surface, sort, find, row_filters)
+            drilled = _rows_state(segment, drill_stack, step, surface, sort, find, row_filters)
             page = _page(page)
 
         query = chart.get_query(operations=drilled)
@@ -316,7 +316,7 @@ def drill_rows_export(
     """
     check_rows(chart)
     _checked_stack(drill_stack)
-    _check_drawn_from(chart, drill_stack)
+    _check_chart_unchanged(chart, drill_stack)
     if _action(drill_stack[-1])["type"] != ROWS:
         frappe.throw(_("Only the rows behind a segment can be exported"))
 
@@ -325,10 +325,10 @@ def drill_rows_export(
     step = operations[index]
     sliced = operations[:index]
 
-    with runs_as(chart), read_on(_drawn_on(drill_stack)):
+    with runs_as(chart), read_on(_read_on(drill_stack)):
         surface = _surface(chart, operations, index)
         segment = [*sliced, _filter_group(_segment_filters(chart, sliced, drill_stack, step, surface))]
-        drilled = _rows_reading(segment, drill_stack, step, surface, sort, find, row_filters)
+        drilled = _rows_state(segment, drill_stack, step, surface, sort, find, row_filters)
 
         return chart.get_query(operations=drilled).export_rows(format=format, adhoc_filters=adhoc_filters)
 
@@ -350,7 +350,7 @@ def drill_rows_values(
     value it already holds.
     """
     adhoc_filters = _card_filters_out(adhoc_filters, chart)
-    with runs_as(chart), read_on(_drawn_on(drill_stack)):
+    with runs_as(chart), read_on(_read_on(drill_stack)):
         surface, narrowed = _reader_cut(chart, drill_stack, row_filters, operations)
         on_surface = _surface_column(column, surface)
 
@@ -369,7 +369,7 @@ def drill_rows_range(
 ) -> list | None:
     """The minimum and maximum of a column of the cut, narrowed as `drill_rows_values` is."""
     adhoc_filters = _card_filters_out(adhoc_filters, chart)
-    with runs_as(chart), read_on(_drawn_on(drill_stack)):
+    with runs_as(chart), read_on(_read_on(drill_stack)):
         surface, narrowed = _reader_cut(chart, drill_stack, row_filters, operations)
         on_surface = _surface_column(column, surface)
 
@@ -389,7 +389,7 @@ def _reader_cut(
     """
     check_rows(chart)
     _checked_stack(drill_stack)
-    _check_drawn_from(chart, drill_stack)
+    _check_chart_unchanged(chart, drill_stack)
     operations, index = _pipeline(chart, drill_stack, operations)
     surface = _surface(chart, operations, index)
     sliced = operations[:index]
@@ -424,16 +424,16 @@ def _checked_stack(drill_stack: list) -> None:
         frappe.throw(_("A drill level must name its segment and its action"))
 
 
-def _check_drawn_from(chart, drill_stack: list) -> None:
+def _check_chart_unchanged(chart, drill_stack: list) -> None:
     """Refuse a drill from a card rendered from an earlier version of the chart.
 
     A card keeps its result until Refresh, but the drill reads the chart and its
-    queries as they are now. Each level carries the `last_modified` its card was
+    queries as they are now. Each level keeps the `last_modified` its card was
     rendered from. A chart that was never saved has no value to compare.
     """
-    drawn = next((level.get("modified") for level in drill_stack if level.get("modified")), None)
-    current = chart.last_modified() if drawn else None
-    if current and get_datetime(drawn) != get_datetime(current):
+    card_modified = next((level.get("modified") for level in drill_stack if level.get("modified")), None)
+    current = chart.last_modified() if card_modified else None
+    if current and get_datetime(card_modified) != get_datetime(current):
         frappe.throw(_("This chart changed. Refresh to drill."), title=_("Chart Changed"))
 
 
@@ -446,7 +446,7 @@ def _card_filters_out(adhoc_filters: dict | None, chart) -> dict | None:
     return {k: v for k, v in (adhoc_filters or {}).items() if k != chart.name} or None
 
 
-def _rows_reading(
+def _rows_state(
     segment: list[dict],
     drill_stack: list,
     step: dict,
@@ -573,14 +573,14 @@ def _pipeline(chart, drill_stack: list, operations: list[dict] | None = None) ->
     return operations, index
 
 
-def _drawn_on(drill_stack: list) -> str | None:
-    """The day the card was read. Every level of the stack carries it.
+def _read_on(drill_stack: list) -> str | None:
+    """The day the card was read. Every level of the stack keeps it.
 
     Spans are stored unresolved. Resolved on the day of the click, a span would
     narrow the clicked bucket to a stretch the card never counted. This applies
     to the chart's operations, the dashboard's filters and the source query.
     """
-    return next((level.get("drawn_on") for level in drill_stack if level.get("drawn_on")), None)
+    return next((level.get("read_on") for level in drill_stack if level.get("read_on")), None)
 
 
 def _aggregating_step(operations: list[dict]) -> int | None:
@@ -658,7 +658,7 @@ def _breakdown(chart, segment: list[dict], action: dict, step: dict, surface: li
     """Group what is left by one more column of the surface.
 
     Which order it comes back in is the whole of the level's rule. A dimension
-    that carries an order of its own is shown in that order. One that carries
+    that has an order of its own is shown in that order. One that has
     none is ranked by the measure, biggest first. Ranking a series of months by
     their size reads as noise, and cutting one to a top twenty takes buckets out
     of the middle of it, leaving gaps in the timeline.
@@ -710,9 +710,9 @@ def _breakdown(chart, segment: list[dict], action: dict, step: dict, surface: li
 def _additive(measures: list[dict]) -> bool:
     """Whether this level's groups add up to the value of the segment above it.
 
-    The client is told, because the answer it receives carries column types and
+    The client is told, because the answer it receives includes column types and
     not aggregations: nothing in a column of decimals says whether they are
-    sums or averages. A level drawn as parts of one whole rests
+    sums or averages. A level plotted as parts of one whole rests
     on this, and a whole made of averages is wrong with nothing on screen to
     show it.
     """
@@ -729,7 +729,7 @@ def _granularity(chart, segment: list[dict], column: dict, named: str | None, ad
     only thing that knows whether it covers ten minutes or ten years.
     """
     if named:
-        return _admitted_grain(column, named)
+        return _allowed_grain(column, named)
 
     grains = GRAINS.get(column["type"]) or {}
     if not grains:
@@ -738,7 +738,7 @@ def _granularity(chart, segment: list[dict], column: dict, named: str | None, ad
     return _derived_grain(grains, _span_seconds(chart, segment, column, adhoc_filters))
 
 
-def _admitted_grain(column: dict, granularity: str) -> str:
+def _allowed_grain(column: dict, granularity: str) -> str:
     """A grain a caller named, checked against the ones the column has."""
     if granularity not in (GRAINS.get(column["type"]) or {}):
         frappe.throw(_("{0} cannot be broken down by {1}").format(column["name"], granularity))
@@ -902,13 +902,13 @@ def _refuse_invented_value(chart, sliced: list[dict], dimension: dict | None, st
     if _surface_holds(chart, sliced, dimension.get("column_name"), value):
         frappe.throw(
             _(
-                "This series holds the rows whose {0} is {1} together with the values the chart did not draw, and nothing cuts exactly those."
+                "This series combines the rows whose {0} is {1} with the values the chart does not show, so it cannot be drilled into."
             ).format(frappe.bold(dimension.get("column_name")), frappe.bold(PIVOT_OTHERS)),
             title=_("Nothing to Drill Into"),
         )
 
     frappe.throw(
-        _("{0} stands for the values this chart did not draw, so there is nothing behind it.").format(
+        _("{0} groups the values this chart does not show, so it cannot be drilled into.").format(
             frappe.bold(PIVOT_OTHERS)
         ),
         title=_("Nothing to Drill Into"),
@@ -945,10 +945,10 @@ def _bucket(on_surface: dict, dimension: dict | None, grains: dict, value) -> tu
 
     Two ways a chart cuts a date into stretches, and a click on either pins the
     whole of the one it landed on. A grain says how long the stretch is and the
-    value is where it starts. A span carries its own dates, and the value is
+    value is where it starts. A span has its own dates, and the value is
     the day it opens. Anything else stands for itself, and answers with nothing.
 
-    A bucket clicked on no value at all is the rows that carry no date, which
+    A bucket clicked on no value at all is the rows that have no date, which
     `NO_DATE` says and `_bucket_filters` matches.
     """
     granularity = _bucket_grain(on_surface, dimension, grains)
@@ -962,13 +962,13 @@ def _bucket_grain(on_surface: dict, dimension: dict | None, grains: dict) -> str
     """The grain a value on this column stands for a whole bucket of.
 
     A level above says it outright, and that grain wins: it is the one the reader
-    is looking at, whichever the chart underneath happened to draw. Failing that
+    is looking at, whichever the chart underneath happened to plot. Failing that
     the chart's own aggregating operation says it, which is the only answer the first
     level of a stack can have.
     """
     named = grains.get(on_surface["name"])
     if named:
-        return _admitted_grain(on_surface, named)
+        return _allowed_grain(on_surface, named)
 
     return dimension["granularity"] if _is_bucket(dimension) else None
 
@@ -998,15 +998,15 @@ def _clicked_window(dimension: dict | None, value) -> tuple | None:
     A number card grouped by spans labels each row with the date its span
     opens, so the label names the span and resolving the span gives the end.
     Spans are stored unresolved, so the same chart reads a different stretch
-    tomorrow. They resolve against the day the card was read: `drawn_on`, which
+    tomorrow. They resolve against the day the card was read: `read_on`, which
     the card's answer sets and each level sends back. A `<unit> to date` span
     opens on the first of its period and closes on that day. Resolved on the
     day of the click, it would return rows the number never counted.
 
     Both ends move, but only the start is checked. A label that opens no span
     is refused, not passed to the caller's categorical fallback. That refusal
-    also keeps `drawn_on` to a day the card could have been read on. The rows
-    are bounded either way: the pipeline underneath carries the card's own span
+    also keeps `read_on` to a day the card could have been read on. The rows
+    are bounded either way: the pipeline underneath keeps the card's own span
     filter, which resolves for the same day.
     """
     windows = (dimension or {}).get("windows") or []
@@ -1149,13 +1149,13 @@ def _measures(step: dict) -> list[dict]:
 
 
 def _clicked_measures(clicked: str | None, step: dict, chart) -> list[dict]:
-    """The measure the click landed on, or every measure the chart draws when it
+    """The measure the click landed on, or every measure the chart plots when it
     landed on none.
 
-    A breakdown draws what was clicked, so a chart with several measures follows
+    A breakdown plots what was clicked, so a chart with several measures follows
     the one the level names. A number card names none and keeps all of its own.
 
-    Its own is what it draws and not everything it summarizes: a card carries a
+    Its own is what it plots and not everything it summarizes: a card includes a
     measure for every target and every comparison it reads off its own row, and
     those are the reading's second half rather than readings. Broken down they
     are columns nobody clicked, and one average among them makes the whole level
@@ -1166,23 +1166,23 @@ def _clicked_measures(clicked: str | None, step: dict, chart) -> list[dict]:
     """
     measures = _measures(step)
     measure = _measure_named(clicked, measures)
-    return [measure] if measure else _drawn(chart, measures) or [count_of_rows()]
+    return [measure] if measure else _plotted(chart, measures) or [count_of_rows()]
 
 
-def _drawn(chart, measures: list[dict]) -> list[dict]:
-    """The operation's measures the chart draws, in its own order.
+def _plotted(chart, measures: list[dict]) -> list[dict]:
+    """The operation's measures the chart plots, in its own order.
 
-    A chart that says nothing about which of its measures it draws draws all of
+    A chart that says nothing about which of its measures it plots plots all of
     them, and so does a pipeline that is not the chart's own: the query builder
     drills the operations it is editing, and no config describes those.
     """
-    drawn = {
-        m["measure_name"] for m in drawn_measures(chart.chart_type, frappe.parse_json(chart.config or "{}"))
+    plotted = {
+        m["measure_name"] for m in plotted_measures(chart.chart_type, frappe.parse_json(chart.config or "{}"))
     }
-    if not drawn:
+    if not plotted:
         return measures
 
-    return [m for m in measures if m.get("measure_name") in drawn] or measures
+    return [m for m in measures if m.get("measure_name") in plotted] or measures
 
 
 def _measure_named(name: str | None, measures: list[dict]) -> dict | None:

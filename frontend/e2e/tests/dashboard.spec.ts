@@ -14,7 +14,7 @@ const items = (page: Page): Locator => page.getByTestId('dashboard-cell')
  * The chart itself. echarts writes `_echarts_instance_` on the element it
  * renders into, so this names the charts and nothing else on the page.
  */
-// locator: an echarts host carries no role and no accessible name.
+// locator: an echarts host has no role and no accessible name.
 const charts = (page: Page): Locator => page.locator('[_echarts_instance_]')
 
 /**
@@ -331,7 +331,7 @@ test.describe('dashboard', () => {
 
 		const item = items(page).filter({ hasText: chart.title })
 		await item.hover()
-		// The item's action bar draws real buttons, and each one carries the
+		// The item's action bar renders real buttons, and each one has the
 		// label of the act it performs.
 		await item.getByRole('button', { name: 'Delete' }).click()
 
@@ -357,7 +357,7 @@ test.describe('dashboard', () => {
 		await runChartAsOwner(adminApi, chart.name)
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
 
-		// The workbook header carries its own Share button, and only the
+		// The workbook header has its own Share button, and only the
 		// dashboard's one names itself through a label.
 		const shareButton = page.getByLabel('Share', { exact: true })
 		await expect(shareButton).toBeVisible()
@@ -411,12 +411,12 @@ test.describe('dashboard', () => {
 		await expect(page.getByRole('button', { name: 'Status', exact: true })).toBeVisible()
 		await page.getByRole('button', { name: 'Done', exact: true }).click()
 
-		// The filter names its own column, so the picker opens on the values `is` offers.
+		// The filter names its own column, so the picker opens on the values `is` lists.
 		const trigger = page.getByRole('button', { name: 'Status', exact: true })
 		await trigger.click()
 
 		// No linked chart names a column, so the filter can read no values from
-		// the data and offers none of the order statuses to pick.
+		// the data and lists none of the order statuses to pick.
 		await expect(popover(page).getByText('No values found')).toBeVisible()
 		await expect(popover(page).getByText('delivered')).toHaveCount(0)
 		await expect(popover(page).getByText('canceled')).toHaveCount(0)
@@ -490,7 +490,7 @@ test.describe('dashboard', () => {
 		await expect(card).toHaveCount(1)
 		await card.hover()
 		// locator: the pencil that opens the chart is an icon-only Button inside a
-		// Tooltip, so it carries no accessible name. Its lucide icon class names
+		// Tooltip, so it has no accessible name. Its lucide icon class names
 		// it inside the card it belongs to.
 		await card.locator('button:has(svg.lucide-pencil)').click()
 

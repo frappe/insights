@@ -3,7 +3,7 @@
 //
 // It is separate from `view.ts` for the same reason `chart_preview` is separate
 // from `chart_view`. The builder imports the workbook's stores and forms. An
-// island must not carry their weight, and its reader lacks the rights for them.
+// island must not bundle them, and its reader lacks the rights for them.
 
 import { computed, provide, reactive, watch } from 'vue'
 import { safeJSONParse, waitUntil } from '../helpers'

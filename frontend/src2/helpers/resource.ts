@@ -65,7 +65,7 @@ export default function useDocumentResource<T extends Document>(
 	// wrote the `undefined` writes it again.
 	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
-	// A surface waits on this before it draws the document. A local document has
+	// A surface waits on this before it renders the document. A local document has
 	// nothing to load, so it is ready the moment it is made.
 	const isPending = computed(() => !isLoaded.value && !isLocal.value)
 
@@ -193,7 +193,7 @@ export default function useDocumentResource<T extends Document>(
 			.finally(() => (isDeleting.value = false))
 	}
 
-	// `sentDoc` is the deep clone a write carried. Pass it and the answer is read
+	// `sentDoc` is the deep clone a write sent. Pass it and the answer is read
 	// as the receipt it is — see `mergeWriteAnswer`. Leave it out to replace the
 	// document, which is what a load wants.
 	function updateDocState(newDoc: any, sentDoc?: any) {

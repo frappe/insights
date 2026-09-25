@@ -25,7 +25,7 @@ distinct causes, not bullets — evidence for one cause is one finding.
 The reader must be able to stop after layer 1 and still know what is wrong.
 
 - **One fact per sentence, and never in layer 1.** The failure mode is a sentence where
-  every clause carries a different fact. Split it, or move the facts down a layer.
+  every clause holds a different fact. Split it, or move the facts down a layer.
 - **Visible part is short.** ~4-8 lines for `Concerns`, ~3 for `Minor nits`, 1 for
   `Looks good`. A nit needs no `<details>`.
 - Never report `Concerns` without `path:line`, the decision or precedent it breaks, and the

@@ -31,7 +31,7 @@ const query = inject('query') as Query
 
 // A summarized cell opens the same dialog a chart segment does. The candidates
 // are the one thing this surface has to ask for, so the click waits on them
-// rather than drawing a menu that would fill in under the reader's cursor.
+// rather than showing a menu that would fill in under the reader's cursor.
 const drill = ref<{ subject: DrillSubject; clicked: ChartSegmentClick }>()
 async function onSegmentClick(clicked: ChartSegmentClick) {
 	const subject = await queryDrillSubject(query)

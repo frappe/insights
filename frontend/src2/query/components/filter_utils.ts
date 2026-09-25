@@ -8,7 +8,7 @@ import {
 } from '../../types/query.types'
 
 /**
- * The operators a filter of this type offers, in the picker's own vocabulary.
+ * The operators a filter of this type allows, in the picker's own vocabulary.
  *
  * One table, in `filter_picker`. Two lists of operators meant a filter authored
  * here reopened in the picker as a different rule.

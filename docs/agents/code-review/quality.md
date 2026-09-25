@@ -38,7 +38,7 @@ Read at the quality stage of `/iris-code-review`, after `brief.md`.
   against a wider type list than you remember.
 - **Tests.** Ask for a test on the **public surface** when behaviour changed and nothing
   covers it. *"i prefer tests that are broader, that check the public surface/APIs, instead
-  of testing internals"*. A behaviour fix carries the test that fails without it, covering
+  of testing internals"*. A behaviour fix includes the test that fails without it, covering
   the refusal and the legitimate path. Do **not** ask for tests on config helpers, plumbing,
   or internals — test bulk is review cost. If the change is risky and untested, say what
   single test would settle it, not that coverage is missing.

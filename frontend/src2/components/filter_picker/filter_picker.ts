@@ -1,5 +1,5 @@
 // The vocabulary the filter picker speaks: the kinds a column falls in, the
-// operator table each kind offers, the spans a date filter is written in, the
+// operator table each kind allows, the spans a date filter is written in, the
 // one date formatter every stage prints through, and the parts of the line an
 // overview row prints.
 
@@ -181,10 +181,10 @@ export type ListItem = {
 }
 
 /**
- * The numbers a `>=`-style stage offers, cut from the column's own range.
+ * The numbers a `>=`-style stage lists, cut from the column's own range.
  *
  * Quarters of it, rounded to something a reader would type. A fixed list of
- * round numbers offered 1,000 for a column of percentages and nothing at all for
+ * round numbers listed 1,000 for a column of percentages and nothing at all for
  * a column of revenues — presets have to come from the column or not exist.
  */
 export function numberQuickValues(range?: [number, number]): number[] {
@@ -196,7 +196,7 @@ export function numberQuickValues(range?: [number, number]): number[] {
 	return [...new Set(cuts)].filter((value) => value > low && value < high)
 }
 
-/** The ranges a `between` stage offers: the column's own, in three parts. */
+/** The ranges a `between` stage lists: the column's own, in three parts. */
 export function numberPairValues(range?: [number, number]): Array<[number, number]> {
 	if (!range) return []
 	const cuts = numberQuickValues(range)
@@ -300,7 +300,7 @@ function timespanOf(value: FilterValue): Timespan | undefined {
 	return undefined
 }
 
-/** The directions the relative stage offers, which are the grammar's own. */
+/** The directions the relative stage lists, which are the grammar's own. */
 export type SpanDirection = Extract<SpanShape, 'last' | 'next' | 'current'>
 
 export type RelativeForm = {
@@ -311,7 +311,7 @@ export type RelativeForm = {
 }
 
 /**
- * The presets the `within` stage offers. Every span here is one
+ * The presets the `within` stage lists. Every span here is one
  * `charts/window.ts` writes and the server's `get_window` parses — a "last N"
  * span covers whole periods behind today, so "Last 7 days" ends yesterday.
  */
@@ -415,7 +415,7 @@ export function unitRows(form: RelativeForm): Array<{ label: string; span: strin
 	}))
 }
 
-/** The one row the `within` stage carries past its presets. */
+/** The one row the `within` stage lists past its presets. */
 export const relativeRow = translatedTable<{ key: string; label: string }>(() => ({
 	key: 'relative',
 	label: __('Relative…'),
@@ -662,7 +662,7 @@ export function pathOf(filter: Filter): Path {
 	if (operator === 'within') {
 		const span = timespanOf(value)?.span || ''
 		const parsed = isPreset(span) ? undefined : parseSpan(span)
-		// The relative row draws a direction, so a `to date` span is not one of
+		// The relative row shows a direction, so a `to date` span is not one of
 		// its forms: the overview prints it through `spanLabel` instead.
 		const relative: RelativeForm | undefined =
 			parsed && parsed.shape !== 'to date'

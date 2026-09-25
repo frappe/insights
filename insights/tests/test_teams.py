@@ -79,7 +79,7 @@ class TestTeamManagement(InsightsIntegrationTestCase):
 
     # @feature settings.team-manage
     def test_the_admin_team_keeps_its_name_and_cannot_be_deleted(self):
-        # the site's Admin team can carry rows for users another suite deleted, and
+        # the site's Admin team can have rows for users another suite deleted, and
         # a save would fail on the dangling link before it reached the name guard
         admins = [
             member.user

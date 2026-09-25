@@ -31,12 +31,12 @@ from insights.tests.factories import (
 EXTERNAL_TABLE = [
     {
         "type": "source",
-        "table": {"type": "table", "data_source": "Public Rung Source", "table_name": "orders"},
+        "table": {"type": "table", "data_source": "Public Link Source", "table_name": "orders"},
     }
 ]
 OWNER = "Administrator"
-PREFIX = "Public Rung Test"
-PUBLISHER = "public_rung_publisher@test.com"
+PREFIX = "Public Link Test"
+PUBLISHER = "public_link_publisher@test.com"
 
 
 class TestPublicLinkPublisher(InsightsIntegrationTestCase):

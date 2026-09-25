@@ -31,7 +31,7 @@ function toCount(token?: string) {
 // Only three of the four shapes are here. `<unit> to date` has no option in
 // `SPAN_OPTIONS`. The picker must not overwrite a span it cannot read: Copy
 // JSON, an import or a hand-written workbook can store spans the picker never
-// offered.
+// listed.
 const SPAN_WORD: Partial<Record<SpanShape, string>> = {
 	last: 'Last',
 	current: 'Current',

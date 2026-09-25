@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { ChartCard } from 'frappe-ui/charts'
 import { computed } from 'vue'
-import { drawsOwnCards } from '../adapter'
+import { rendersOwnCards } from '../adapter'
 import type { ChartRead } from '../chart_view'
 import type { ChartSegmentClick } from '../drill/segment_click'
 import ChartBody from './ChartBody.vue'
 
 // The chrome around an Insights chart: the card, the title and whatever the
 // host puts beside the title through `#actions`. Inside it is
-// ChartBody, which draws the chart and nothing else, so a host with chrome of
+// ChartBody, which renders the chart and nothing else, so a host with chrome of
 // its own — a desk island — mounts the body instead and gets no second border
 // and no second title.
 const props = defineProps<{
 	chart: ChartRead
-	/** Which reading to draw, for a Number Chart. See `ChartBody`. */
+	/** Which reading to show, for a Number Chart. See `ChartBody`. */
 	reading?: string
 	readonly?: boolean
 	filtered?: boolean
@@ -24,7 +24,7 @@ const emit = defineEmits<{
 	resetFilters: []
 }>()
 
-const card = computed(() => !drawsOwnCards(props.chart.doc.chart_type))
+const card = computed(() => !rendersOwnCards(props.chart.doc.chart_type))
 </script>
 
 <template>

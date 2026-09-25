@@ -507,9 +507,9 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
                 frappe.get_doc("Insights Query v3", stored.name).duplicate()
 
     # @feature query.script-variables
-    def test_a_script_reads_the_variables_its_stored_query_carries(self):
+    def test_a_script_reads_the_variables_its_stored_query_includes(self):
         """The caller controls the variable rows in the request body. If they point
-        to another query's row or carry their own value, the script still reads
+        to another query's row or hold their own value, the script still reads
         its stored query's secret."""
         from insights.api import run_doc_method
         from insights.tests.test_run_as_owner import as_http_request
@@ -621,7 +621,7 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
         self.assertEqual(len(frappe.parse_json(stored.operations)), 2)
 
     # @feature query.script-author
-    def test_the_script_editor_is_offered_to_whoever_may_save_a_script(self):
+    def test_the_script_editor_is_shown_to_whoever_may_save_a_script(self):
         """`ScriptQueryEditor` shows the script editor only when
         `can_write_trusted_code` is set. The flag must match the save check: a
         System Manager without the `Insights Admin` role may save a script, and a
@@ -645,10 +645,10 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
             "Insights Workbook", self.workbook, role_holder, write=1, flags={"ignore_share_permission": True}
         )
 
-        for user, offered in ((manager, True), (role_holder, False), (SCRIPT_READER, False)):
+        for user, allowed in ((manager, True), (role_holder, False), (SCRIPT_READER, False)):
             with self.subTest(user=user), as_user(user):
-                self.assertEqual(get_user_info()["can_write_trusted_code"], offered)
-                if offered:
+                self.assertEqual(get_user_info()["can_write_trusted_code"], allowed)
+                if allowed:
                     insert(self.script_query(f"Script by {user}").as_dict())
                 else:
                     with self.assertRaises(frappe.PermissionError):
@@ -679,7 +679,7 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
         ).insert()
 
     # @feature query.script-author alerts.test-send
-    def test_an_alert_sends_only_the_trusted_code_its_stored_alert_carries(self):
+    def test_an_alert_sends_only_the_trusted_code_its_stored_alert_includes(self):
         """The alert dialog sends the condition on screen, saved or not. The
         scheduled run sends the stored one. An editor may send an admin's stored
         condition, or their own condition that runs no SQL."""
@@ -723,8 +723,8 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
         self.assertEqual(send(stored.as_dict()), 0)
         self.assertEqual(send({**unsaved, "condition": "status == 'Nothing'"}), 0)
 
-    # @feature query.script-author charts.drill-breakdown-offers
-    def test_a_builder_drill_runs_the_trusted_code_its_source_query_carries(self):
+    # @feature query.script-author charts.drill-breakdown-options
+    def test_a_builder_drill_runs_the_trusted_code_its_source_query_includes(self):
         """The query builder sends its unsaved operations to `get_drill_dimensions`.
         They run as a preview that belongs to no stored document. An editor may
         drill an admin's stored `q.sql`, but not one of their own."""
@@ -790,9 +790,9 @@ class TestScriptAuthor(InsightsIntegrationTestCase):
                 frappe.get_doc("Insights Query v3", source.name).duplicate()
             with self.assertRaisesRegex(frappe.PermissionError, "Consumer Script.*Source Script"):
                 frappe.get_doc("Insights Workbook", target.name).import_query(query_file)
-            for door in (workbook.duplicate, lambda: import_workbook(workbook_file)):
+            for copy_workbook in (workbook.duplicate, lambda: import_workbook(workbook_file)):
                 with self.assertRaisesRegex(frappe.PermissionError, "Source Script.*Consumer Script"):
-                    door()
+                    copy_workbook()
         self.assertEqual(frappe.db.count("Insights Query v3", {"workbook": target.name}), 0)
 
         imported = import_workbook(workbook_file)["workbook"]

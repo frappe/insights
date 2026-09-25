@@ -5,9 +5,9 @@ import type { AdhocFilters, Operation, OrderByArgs, QueryResult } from '../types
 // A query store satisfies the whole of it. A chart read store fills in the rows
 // and leaves the builder half out: a chart's result arrives whole, in one
 // response, and re-shaping it is a config edit no card owns. Everything past
-// the rows is therefore optional, and the table offers only what it was handed.
+// the rows is therefore optional, and the table shows only what it was handed.
 export type ResultTable = {
-	// there is something to draw
+	// there is something to render
 	ready: boolean
 	executing: boolean
 	result: QueryResult

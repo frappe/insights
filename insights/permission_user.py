@@ -139,7 +139,7 @@ def permission_user_for(doc) -> str:
 def declared_owner(doc) -> str | None:
     """The owner the stored `doc` runs as, or None while it runs as its reader.
 
-    The owner decides only while `may_run_as` admits them. An owner the
+    The owner decides only while `may_run_as` allows them. An owner the
     workbook no longer names, or a disabled one, gives nobody their rows. The
     box stays checked until an editor clears it.
     """

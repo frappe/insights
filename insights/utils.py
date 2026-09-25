@@ -170,10 +170,10 @@ def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
     return df
 
 
-# A leading control character can carry a formula past an importer that trims
+# A leading control character can pass a formula past an importer that trims
 # before it parses, so it counts as a trigger. `@`, `+` and `-` also start
 # ordinary data — a handle, a phone number, a text-column negative — so they are
-# quoted only when the value carries the characters a formula needs to call.
+# quoted only when the value has the characters a formula needs to call.
 FORMULA_TRIGGERS = ("=", "\t", "\r", "\n")
 AMBIGUOUS_STARTS = ("@", "+", "-")
 CALL_CHARACTERS = frozenset("|!()")

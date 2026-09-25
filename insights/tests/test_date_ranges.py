@@ -126,7 +126,7 @@ class TestToDateWindows(InsightsIntegrationTestCase):
     # @feature charts.number-period
     def test_a_counted_span_to_date_is_rejected(self):
         """A period so far is one period. "last 7 days to date" names a count the
-        shape cannot carry, and reading it as today would drop the count."""
+        shape cannot hold, and reading it as today would drop the count."""
         with self.assertRaises(Exception):
             get_window("last 7 days to date", ANCHOR)
 

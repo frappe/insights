@@ -126,7 +126,7 @@ describe('the words a span is written in', () => {
 
 describe('the operator table', () => {
 	// @feature query.filter-operators-by-type
-	it('answers only for the kind that offers the operator', () => {
+	it('answers only for the kind that lists the operator', () => {
 		expect(operatorOf('text', 'in')?.word).toBe('is')
 		expect(operatorOf('date', '>')?.word).toBe('after')
 		expect(operatorOf('number', '>')?.word).toBe('greater than')
@@ -150,7 +150,7 @@ describe('what a host sends', () => {
 	})
 })
 
-describe('the numbers a number filter offers', () => {
+describe('the numbers a number filter lists', () => {
 	// @feature query.filter-number-range
 	it('cuts them from the column, not from a fixed list', () => {
 		expect(numberQuickValues([0, 100])).toEqual([25, 50, 75])
@@ -159,14 +159,14 @@ describe('the numbers a number filter offers', () => {
 	})
 
 	// @feature query.filter-number-range
-	it('offers nothing for a column it has no range for', () => {
+	it('lists nothing for a column it has no range for', () => {
 		expect(numberQuickValues(undefined)).toEqual([])
 		expect(numberQuickValues([5, 5])).toEqual([])
 		expect(numberPairValues(undefined)).toEqual([])
 	})
 
 	// @feature query.filter-number-range
-	it('offers the column in parts for a between stage', () => {
+	it('lists the column in parts for a between stage', () => {
 		expect(numberPairValues([0, 100])).toEqual([
 			[0, 25],
 			[25, 50],

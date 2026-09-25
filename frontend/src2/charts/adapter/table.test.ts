@@ -5,11 +5,11 @@ import { adaptChart } from './index'
 import type { ChartAdapterInput } from './types'
 
 // A Table has no plot, so what is asserted here is the table it is handed: the
-// rows, the affordances, and which of them the surface may offer at all.
+// rows, the affordances, and which of them the surface may show at all.
 
 function adapt(input: ChartAdapterInput) {
 	const filler = adaptChart(input)
-	if (!filler) throw new Error('the adapter drew nothing for this Chart')
+	if (!filler) throw new Error('the adapter rendered nothing for this Chart')
 	return filler
 }
 
@@ -17,7 +17,7 @@ const propsOf = (spec: TableChartSpec) => adapt(tableChart(spec)).props
 
 describe('the grid', () => {
 	// @feature charts.type-table
-	it('draws the result as it stands, formatted for reading', () => {
+	it('renders the result as it stands, formatted for reading', () => {
 		const input = tableChart({ rows: ['region'], values: ['revenue'] })
 		const { component, props } = adapt(input)
 
@@ -43,7 +43,7 @@ describe('the grid', () => {
 	})
 
 	// @feature charts.type-table
-	it('draws nothing until the result holds a column', () => {
+	it('renders nothing until the result holds a column', () => {
 		const input = tableChart({ values: ['revenue'] })
 		expect(adaptChart({ ...input, result: { ...input.result, columns: [] } })).toBeUndefined()
 	})
@@ -98,7 +98,7 @@ describe('what the author put on the table', () => {
 	})
 
 	// @feature charts.table-conditional-formatting
-	it('carries a conditional format to the column it was set on', () => {
+	it('passes a conditional format to the column it was set on', () => {
 		const props = propsOf({
 			rows: ['category'],
 			values: ['revenue'],
@@ -121,7 +121,7 @@ describe('what the author put on the table', () => {
 
 describe('the sort', () => {
 	// @feature charts.table-header-sort
-	it('draws the arrows the Chart is ordered by', () => {
+	it('shows the arrows the Chart is ordered by', () => {
 		const props = propsOf({
 			rows: ['category'],
 			values: ['revenue'],
@@ -145,9 +145,9 @@ describe('the sort', () => {
 	})
 
 	// @feature charts.table-header-sort
-	it('offers a reader no sort at all', () => {
+	it('allows a reader no sort at all', () => {
 		// A sort re-runs the query off a rewritten config, and a reader holds
-		// neither half, so the arrow is left out rather than drawn dead.
+		// neither half, so the arrow is left out rather than shown dead.
 		const input = tableChart({
 			rows: ['category'],
 			values: ['revenue'],
@@ -161,8 +161,8 @@ describe('the sort', () => {
 })
 
 describe('a run in flight', () => {
-	// The card draws the one veil, over the whole card. A second one inside the
-	// grid drew two over a table.
+	// The card renders the one veil, over the whole card. A second one inside the
+	// grid rendered two over a table.
 	// @feature charts.table-loading
 	it('is not the grid to say: the card veils it', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
@@ -171,7 +171,7 @@ describe('a run in flight', () => {
 })
 
 describe('the record a row names', () => {
-	// The server says which column names a document. The grid draws the link in
+	// The server says which column names a document. The grid renders the link in
 	// that column's own cells, and nowhere else.
 	const withLink = (input: ChartAdapterInput) => ({
 		...input,
@@ -199,12 +199,12 @@ describe('the record a row names', () => {
 	})
 
 	// @feature charts.table-record-link
-	it('draws no link at all where the server named no column', () => {
+	it('shows no link at all where the server named no column', () => {
 		expect(propsOf({ rows: ['category'], values: ['revenue'] }).cellLink).toBeUndefined()
 	})
 
 	// @feature charts.table-record-link
-	it('names no record from a row the result does not carry', () => {
+	it('names no record from a row the result does not include', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		const props = adapt(withLink(input)).props
 
@@ -219,7 +219,7 @@ describe('drilling into a cell', () => {
 		const filler = adapt(input)
 
 		expect(filler.props.drillable).toBe(true)
-		// The table draws the formatted rows and a drill names a raw one.
+		// The table renders the formatted rows and a drill names a raw one.
 		expect(
 			filler.drillDown!.cellClick({
 				column: input.result.columns[1],
@@ -231,7 +231,7 @@ describe('drilling into a cell', () => {
 	// Only the rows the table was handed have a raw row behind them, so `rawRowOf`
 	// returns nothing for any other row.
 	// @feature charts.drill-segment
-	it('drills into nothing from a row the result does not carry', () => {
+	it('drills into nothing from a row the result does not include', () => {
 		const input = tableChart({ rows: ['category'], values: ['revenue'] })
 		const filler = adapt(input)
 
@@ -243,10 +243,10 @@ describe('drilling into a cell', () => {
 		).toBeUndefined()
 	})
 
-	// Inspecting a cell changes nothing about the Chart, so a reader is offered it
+	// Inspecting a cell changes nothing about the Chart, so a reader is allowed it
 	// too — unlike the sort beside it, which rewrites the config.
 	// @feature charts.drill-segment
-	it('is offered to a reader too, who inspects without rewriting anything', () => {
+	it('is allowed for a reader too, who inspects without rewriting anything', () => {
 		const props = adapt({ ...tableChart({ values: ['revenue'] }), readonly: true }).props
 		expect(props.drillable).toBe(true)
 		expect(props.onSortChange).toBeUndefined()
@@ -254,7 +254,7 @@ describe('drilling into a cell', () => {
 
 	// A public link has no drill endpoint, so a drill control would do nothing.
 	// @feature charts.drill-segment
-	it('is not offered where the source answers no drill', () => {
+	it('is not allowed where the source answers no drill', () => {
 		const props = adapt({ ...tableChart({ values: ['revenue'] }), drillable: false }).props
 		expect(props.drillable).toBeUndefined()
 	})

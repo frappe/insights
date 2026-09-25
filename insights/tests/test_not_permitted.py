@@ -233,9 +233,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
                 result = frappe.get_doc(DT.QUERY, joined.name).execute(force=True)
             return [column["name"] for column in result["columns"]]
 
-        as_author = column_names()
+        as_writer = column_names()
         # the right-hand `status` got a prefix because the left side has one too
-        joined_column = next(name for name in as_author if name.endswith("_status"))
+        joined_column = next(name for name in as_writer if name.endswith("_status"))
 
         self.make_status_permlevel()
         as_reader = column_names()
@@ -290,10 +290,10 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
                 result = frappe.get_doc(DT.QUERY, query.name).execute(force=True)
             return [column["name"] for column in result["columns"]]
 
-        as_author = column_names()
+        as_writer = column_names()
         # the remove drops the left-hand column, so only the renamed
         # right-hand one is left
-        joined_column = next(name for name in as_author if name.endswith("_status"))
+        joined_column = next(name for name in as_writer if name.endswith("_status"))
 
         self.make_status_permlevel()
 
@@ -334,8 +334,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         ]
         chart = self.create_chart("Summarized Then Joined", summarized, "status")
 
-        as_author = self.fetch(chart)
-        self.assertIn("status", [column["name"] for column in as_author["columns"]])
+        as_writer = self.fetch(chart)
+        self.assertIn("status", [column["name"] for column in as_writer["columns"]])
 
         self.make_status_permlevel()
 
@@ -344,16 +344,16 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         as_reader = self.fetch(chart)
         self.assertEqual(
             [column["name"] for column in as_reader["columns"]],
-            [column["name"] for column in as_author["columns"]],
+            [column["name"] for column in as_writer["columns"]],
         )
-        self.assertEqual(len(as_reader["rows"]), len(as_author["rows"]))
+        self.assertEqual(len(as_reader["rows"]), len(as_writer["rows"]))
 
     # @feature permissions.not-permitted-chart
     def test_a_column_the_author_removed_or_renamed_does_not_hide_a_held_back_one(self):
         """A remove or a rename drops only the column it names. The held-back
         column is still the left-hand `status`, so the join must still prefix
         the right-hand one."""
-        dropped_by_author = {
+        dropped_by_writer = {
             "remove": {"type": "remove", "column_names": ["description"]},
             "rename": {
                 "type": "rename",
@@ -362,7 +362,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             },
         }
         charts = {}
-        for kind, operation in dropped_by_author.items():
+        for kind, operation in dropped_by_writer.items():
             [source_operation, joined] = self.mutated_status_join()
             charts[kind] = self.create_chart(
                 f"{kind} Then Joined", [source_operation, operation, joined], "status"
@@ -390,16 +390,16 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             [source_operation, {"type": "remove", "column_names": ["status"]}, joined],
             "status",
         )
-        as_author = self.fetch(chart)
+        as_writer = self.fetch(chart)
 
         self.make_status_permlevel()
 
         as_reader = self.fetch(chart)
         self.assertEqual(
             [column["name"] for column in as_reader["columns"]],
-            [column["name"] for column in as_author["columns"]],
+            [column["name"] for column in as_writer["columns"]],
         )
-        self.assertEqual(as_reader["rows"], as_author["rows"])
+        self.assertEqual(as_reader["rows"], as_writer["rows"])
 
     # @feature permissions.not-permitted-chart
     def test_a_remove_on_the_other_side_of_a_join_does_not_hand_it_the_held_back_name(self):
@@ -463,7 +463,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
                 self.assertEqual(refusal.exception.doctypes, ["ToDo"])
 
     # @feature permissions.not-permitted-chart
-    def test_a_table_narrowed_by_rows_and_read_twice_draws_the_readers_rows(self):
+    def test_a_table_narrowed_by_rows_and_read_twice_shows_the_readers_rows(self):
         """A reader who sees only some ToDo rows still sees only those rows when
         a chart reads `tabToDo` again, through a second join or through a union
         and a join. This holds whether or not `status` is held back."""
@@ -735,7 +735,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             self.fetch(unknown)
 
     # @feature permissions.not-permitted-chart
-    def test_a_union_carries_a_remove_from_either_side(self):
+    def test_a_union_keeps_a_remove_from_either_side(self):
         """A union keeps only the columns both sides have. The other side's
         remove drops `status` for the author too, so the join's `status` is the
         right-hand column for both of them."""
@@ -746,12 +746,12 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         [source_operation, joined] = self.mutated_status_join()
         union = {"type": "union", "table": {"type": "query", "query_name": removed}, "distinct": True}
         chart = self.create_chart("Union Then Joined", [source_operation, union, joined], "status")
-        as_author = self.fetch(chart)
-        self.assertNotIn("Open", [row["status"] for row in as_author["rows"]])
+        as_writer = self.fetch(chart)
+        self.assertNotIn("Open", [row["status"] for row in as_writer["rows"]])
 
         self.make_status_permlevel()
 
-        self.assertEqual(self.fetch(chart)["rows"], as_author["rows"])
+        self.assertEqual(self.fetch(chart)["rows"], as_writer["rows"])
 
     def create_query(self, title, operations) -> str:
         return (
@@ -790,7 +790,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         ]
 
     def mutated_status_query(self) -> str:
-        """A query over `tabToDo` that carries `status` past the permlevel projection."""
+        """A query over `tabToDo` that keeps `status` past the permlevel projection."""
         mutated = frappe.get_doc(
             {
                 "doctype": DT.QUERY,
@@ -843,7 +843,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             self.assertIsNone(board.get_filter_column_range(REFUSED_FILTER))
 
     # @feature permissions.not-permitted-chart dashboard.filter-values
-    def test_a_filter_offers_the_values_of_a_card_behind_a_refused_one(self):
+    def test_a_filter_lists_the_values_of_a_card_behind_a_refused_one(self):
         """The stored links are sorted by chart name, so the chart the reader
         cannot read may come first. Here it does."""
         from insights.api.view import get_filter_range, get_filter_values
@@ -873,7 +873,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         self.assertIsNotNone(ranged)
 
     # @feature permissions.not-permitted-chart dashboard.filter-values
-    def test_a_filter_offers_the_values_of_a_card_behind_a_held_back_column(self):
+    def test_a_filter_lists_the_values_of_a_card_behind_a_held_back_column(self):
         """A held-back column is refused like a table the reader cannot read, so
         the filter uses the next link. The card's own picker and the query's
         methods in the builder return the same refusal."""
@@ -914,7 +914,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         self.assertIsNone(query_range)
 
     # @feature permissions.not-permitted-chart
-    def test_a_refused_drill_is_an_answer_the_dialog_draws(self):
+    def test_a_refused_drill_is_an_answer_the_dialog_renders(self):
         """The drill dialog renders a refused level, so the refusal comes back as
         an answer, as from every other endpoint of a dashboard the reader may
         open. The reader's endpoint and the builder's both answer it."""
@@ -939,7 +939,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             self.assertEqual(answer["columns"], [])
 
     # @feature permissions.not-permitted-chart
-    def test_the_query_doors_answer_what_their_dashboard_twins_answer(self):
+    def test_the_query_endpoints_answer_what_the_matching_dashboard_endpoints_answer(self):
         """The builder's filter dialog calls the query document directly. A
         reader's picker calls the dashboard's method. Both must answer a
         refusal the same way."""
@@ -952,7 +952,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_row_count_the_reader_may_not_have_is_not_a_zero(self):
-        """A count has no empty value other than zero, so it cannot carry a Not
+        """A count has no empty value other than zero, so it cannot hold a Not
         Permitted marker. "0 rows" would read as an empty table, so it raises."""
         from insights.api.data_sources import get_data_source_table_row_count
 
@@ -975,7 +975,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         self.assertEqual(messages, ["Needs read access to <strong>Error Log</strong>"])
 
     # @feature permissions.not-permitted-chart
-    def test_a_refusal_the_card_draws_leaves_no_message_beside_it(self):
+    def test_a_refusal_the_card_shows_leaves_no_message_beside_it(self):
         """`get_data_source_table` returns the refusal for the explorer's
         preview to render. A toast would repeat it."""
         from insights.api.data_sources import get_data_source_table

@@ -3,7 +3,7 @@
 //
 // It lives apart from the store because of what it imports. The authoring
 // endpoints answer with the operations the server derived, and the query editor
-// a drill level opens in is the builder — neither of which an island may carry.
+// a drill level opens in is the builder — neither of which an island may import.
 // A View imports `chart_view` and loads none of it.
 
 import { call } from 'frappe-ui'
@@ -18,14 +18,14 @@ import {
 	makeChartRead,
 	type ChartViewDoc,
 	type ChartRead,
-	type ChartReadSurface,
+	type ChartReadContext,
 	type DashboardFilterContext,
 } from './chart_view'
 import { authoringDrillRows, fetchAuthoringDrillData } from './drill/drill_api'
 
 export const chartPreviewKey: InjectionKey<ChartRead> = Symbol('chartPreview')
 
-export type ChartPreviewSurface = ChartReadSurface & {
+export type ChartPreviewContext = ChartReadContext & {
 	// whether the user can write the chart here. Asked at read time, like the
 	// filters, because a dashboard learns the user's permissions only when its
 	// document loads. Left out means the user can write.
@@ -33,18 +33,18 @@ export type ChartPreviewSurface = ChartReadSurface & {
 	canWrite?: () => boolean
 }
 
-// one preview per chart per surface: every card of one dashboard draws the
+// one preview per chart per context: every card of one dashboard renders the
 // chart from the same rows, while the chart's own page and a second dashboard
-// each hold their own — a surface's filters are in the rows it drew. They are
+// each hold their own — a context's filters are in the rows it rendered. They are
 // cached in the store beside the saved source's, so a chart that goes stale
 // reaches every read of it.
-export default function useChartPreview(chart: Chart, surface?: ChartPreviewSurface) {
-	return cachedChartRead('preview', String(chart.doc.name), surface, () =>
-		makeChartPreview(chart, surface),
+export default function useChartPreview(chart: Chart, context?: ChartPreviewContext) {
+	return cachedChartRead('preview', String(chart.doc.name), context, () =>
+		makeChartPreview(chart, context),
 	)
 }
 
-function makeChartPreview(chart: Chart, surface?: ChartPreviewSurface) {
+function makeChartPreview(chart: Chart, context?: ChartPreviewContext) {
 	// The saved chart this preview belongs to. Every caller sends it, including
 	// the chart's own builder page. The chart decides whose permissions filter
 	// the rows, so a caller that leaves it out can show different rows from the
@@ -69,10 +69,10 @@ function makeChartPreview(chart: Chart, surface?: ChartPreviewSurface) {
 
 	// the chart as rendered, so a drill matches what is on screen and not an
 	// edit still waiting for its rows
-	const drilled = (drawn: ChartViewDoc) => ({
-		query: drawn.query!,
-		chart_type: drawn.chart_type,
-		config: drawn.config,
+	const drilled = (rendered: ChartViewDoc) => ({
+		query: rendered.query!,
+		chart_type: rendered.chart_type,
+		config: rendered.config,
 	})
 
 	return makeChartRead(
@@ -82,7 +82,7 @@ function makeChartPreview(chart: Chart, surface?: ChartPreviewSurface) {
 					({
 						...chart.doc,
 						can_write:
-							!chart.doc.read_only && (surface?.canWrite ? surface.canWrite() : true),
+							!chart.doc.read_only && (context?.canWrite ? context.canWrite() : true),
 					}) as ChartViewDoc,
 			),
 			requestKey: (filterContext) =>
@@ -119,16 +119,16 @@ function makeChartPreview(chart: Chart, surface?: ChartPreviewSurface) {
 				const { page_size, ...args } = request(filterContext)
 				return call('insights.api.authoring.download_chart_rows', { ...args, format })
 			},
-			fetchDrillData: (drill_stack, filterContext, drawn) =>
+			fetchDrillData: (drill_stack, filterContext, rendered) =>
 				fetchAuthoringDrillData(
-					drilled(drawn),
+					drilled(rendered),
 					drill_stack,
 					filterContext,
 					declaringChart(),
 				),
-			rowsSource: (drill_stack, filterContext, drawn) =>
-				authoringDrillRows(drilled(drawn), drill_stack, filterContext, declaringChart()),
+			rowsSource: (drill_stack, filterContext, rendered) =>
+				authoringDrillRows(drilled(rendered), drill_stack, filterContext, declaringChart()),
 		},
-		surface,
+		context,
 	)
 }

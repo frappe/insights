@@ -24,7 +24,7 @@ describe('the Run as owner box in the share dialog', () => {
 	})
 
 	// @feature permissions.chart-run-as-owner shared.rows-are-the-owners
-	it('ticks the box when the level moves to Public, and then refuses the untick the server refuses', async () => {
+	it('ticks the box when the visibility level moves to Public, then refuses the untick as the server does', async () => {
 		const share = shareOf({ visibility: 'Everyone', run_as_owner: 0 })
 
 		share.visibility.value = 'Public'
@@ -43,7 +43,7 @@ describe('the Run as owner box in the share dialog', () => {
 	})
 
 	// @feature permissions.chart-run-as-owner shared.chart-on-public-dashboard
-	it('keeps the box on for a chart a public dashboard carries, as the server does', () => {
+	it('keeps the box on for a chart on a public dashboard, as the server does', () => {
 		const share = shareOf({ visibility: 'Private', run_as_owner: 1 }, true)
 
 		expect(share.canMoveRunAsOwner.value).toBe(false)

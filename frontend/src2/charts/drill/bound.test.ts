@@ -22,7 +22,7 @@ describe('the line under a drill level', () => {
 		expect(levelBound({ breakdown: true, ordered: false, shown: 7 })).toBe('')
 	})
 
-	// @feature charts.drill-rows-reading
+	// @feature charts.drill-rows-state
 	it('leaves the rows level to the pane that pages it', () => {
 		expect(levelBound({ breakdown: false, ordered: false, shown: 100, total: 1240 })).toBe('')
 	})

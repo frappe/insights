@@ -96,7 +96,7 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
     def descriptions(self, result):
         """The `description` column of a result, sorted.
 
-        The test tables carry one text column, so a sorted list of it is how
+        The test tables have one text column, so a sorted list of it is how
         these suites compare the rows a read returned.
         """
         return sorted(row["description"] for row in result["rows"])

@@ -32,7 +32,7 @@ describe.each(drillable)('the %s chart', (_type, input) => {
 	// @feature charts.drill-segment
 	it('names an event its component declares', () => {
 		const filler = adaptChart(input)
-		if (!filler) throw new Error('the adapter drew nothing for this Chart')
+		if (!filler) throw new Error('the adapter rendered nothing for this Chart')
 		// every chart listed here is drillable, so a missing block is the failure
 		// this test exists to catch
 		expect(filler.drillDown).toBeDefined()

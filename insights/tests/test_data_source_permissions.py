@@ -26,7 +26,7 @@ def create_user(email):
 class TestSiteDBRowPermissions(InsightsIntegrationTestCase):
     """Data source exploration must not show rows the user cannot read.
 
-    `ToDo` carries a `permission_query_conditions` hook in frappe, so it stands in for
+    `ToDo` has a `permission_query_conditions` hook in frappe, so it stands in for
     any doctype whose rows are restricted per user.
     """
 

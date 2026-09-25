@@ -25,7 +25,7 @@ import type {
 	DrillLevel,
 	DrillLevelData,
 	DrillRowFilter,
-	DrillRowsReading,
+	DrillRowsState,
 	DrillRowsSource,
 } from './drill_stack'
 
@@ -40,24 +40,24 @@ export function fetchViewDrillData(
 	drill_stack: DrillLevel[],
 	// Left out for a level nobody has changed yet, and for a breakdown, which
 	// uses none of it
-	reading?: DrillRowsReading,
+	state?: DrillRowsState,
 ): Promise<DrillLevelData> {
-	return call('insights.api.view.get_drill_data', { ...subject, drill_stack, ...reading })
+	return call('insights.api.view.get_drill_data', { ...subject, drill_stack, ...state })
 }
 
-/** A file needs no page, so the reading is sent without it. */
+/** A file needs no page, so the state is sent without it. */
 export function downloadViewDrillRows(
 	subject: ViewDrillSubject,
 	drill_stack: DrillLevel[],
-	reading: DrillRowsReading,
+	state: DrillRowsState,
 	format: string,
 ): Promise<string> {
 	return call('insights.api.view.download_drill_rows', {
 		...subject,
 		drill_stack,
-		row_filters: reading.row_filters,
-		sort: reading.sort,
-		find: reading.find,
+		row_filters: state.row_filters,
+		sort: state.sort,
+		find: state.find,
 		format,
 	})
 }
@@ -94,7 +94,7 @@ export function fetchViewDrillRowsRange(
 
 /**
  * What the builder is drilling. Both forms name the source query — it
- * carries the data source and the read check — and then say what shape sits on
+ * holds the data source and the read check — and then say what shape sits on
  * top of it: the chart being configured, or the pipeline being edited.
  */
 export type AuthoringDrillSubject =
@@ -111,12 +111,12 @@ export function fetchAuthoringDrillData(
 	// The chart decides whose permissions filter the rows, so a level that leaves
 	// it out can read different rows from the card it was opened from
 	declaringChart?: string,
-	reading?: DrillRowsReading,
+	state?: DrillRowsState,
 ): Promise<DrillLevelData> {
 	return call('insights.api.authoring.get_drill_data', {
 		...authoringArgs(subject, filterContext, declaringChart),
 		drill_stack,
-		...reading,
+		...state,
 	})
 }
 
@@ -128,14 +128,14 @@ export function authoringDrillRows(
 ): DrillRowsSource {
 	const args = () => ({ ...authoringArgs(subject, filterContext, declaringChart), drill_stack })
 	return {
-		read: (reading) =>
-			fetchAuthoringDrillData(subject, drill_stack, filterContext, declaringChart, reading),
-		download: (reading, format) =>
+		read: (state) =>
+			fetchAuthoringDrillData(subject, drill_stack, filterContext, declaringChart, state),
+		download: (state, format) =>
 			call('insights.api.authoring.download_drill_rows', {
 				...args(),
-				row_filters: reading.row_filters,
-				sort: reading.sort,
-				find: reading.find,
+				row_filters: state.row_filters,
+				sort: state.sort,
+				find: state.find,
 				format,
 			}),
 		values: (column, search_term, row_filters) =>
@@ -164,7 +164,7 @@ function authoringArgs(
 		dashboard_items: filterContext?.items,
 		filters: filterContext?.filters,
 		// what the reader narrowed this one card to. A level that leaves it out
-		// counts rows the card itself does not draw
+		// counts rows the card itself does not show
 		card_filters: filterContext?.cardFilters,
 	}
 }

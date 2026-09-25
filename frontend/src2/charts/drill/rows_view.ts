@@ -24,12 +24,7 @@ import type {
 	QueryResult,
 	QueryResultColumn,
 } from '../../types/query.types'
-import type {
-	DrillLevelData,
-	DrillRowFilter,
-	DrillRowsReading,
-	DrillRowsSource,
-} from './drill_stack'
+import type { DrillLevelData, DrillRowFilter, DrillRowsState, DrillRowsSource } from './drill_stack'
 
 /**
  * What the pane's own controls do not cover: which columns name a document, and
@@ -64,7 +59,7 @@ const FIND_DELAY = 300
 export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 	const level = ref<DrillLevelData>(first)
 	const filters = ref<Filter[]>([])
-	const sort = ref<DrillRowsReading['sort']>([])
+	const sort = ref<DrillRowsState['sort']>([])
 	const find = ref('')
 	const page = ref(1)
 
@@ -85,7 +80,7 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 	const executionError = ref('')
 	const downloading = ref(false)
 
-	const reading = (): DrillRowsReading => ({
+	const state = (): DrillRowsState => ({
 		row_filters: rules(filters.value),
 		sort: sort.value,
 		find: find.value,
@@ -100,7 +95,7 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 		executing.value = true
 		executionError.value = ''
 		try {
-			const answer = await source.read(reading())
+			const answer = await source.read(state())
 			if (token !== inFlight) return
 			// nothing ran, so there is no page of rows and no count to show. This
 			// happens when a permission is removed between two reads of the level.
@@ -189,7 +184,7 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 		const token = ++downloads
 		downloading.value = true
 		source
-			.download(reading(), format)
+			.download(state(), format)
 			.then((data: string) => {
 				if (token !== downloads) return
 				if (!data) {

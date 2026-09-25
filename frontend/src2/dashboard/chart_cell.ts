@@ -1,6 +1,6 @@
 // The state of one chart cell, for both chart cards. The builder renders a card
 // the owner can change, and every view page renders a read-only one. Both read
-// the same rows and offer the same filters, so both use this.
+// the same rows and show the same filters, so both use this.
 //
 // It is separate from both cards because of their imports. The builder's card
 // imports the builder's drill, which an island must not load.

@@ -506,8 +506,8 @@ class InsightsQueryv3(Document):
     ) -> list | None:
         """The smallest and largest a numeric column goes, as [min, max].
 
-        What a number filter offers to pick from. A fixed list of round numbers
-        offers 1,000 for a column of percentages and nothing at all for a column
+        What a number filter lists to pick from. A fixed list of round numbers
+        lists 1,000 for a column of percentages and nothing at all for a column
         of revenues, so the column is asked instead.
         """
         with set_adhoc_filters(adhoc_filters):
@@ -628,7 +628,7 @@ def delete_variable_secrets(variables) -> None:
 
 def _sql_has_group_by(sql: str) -> bool:
     """Return True if SQL contains a GROUP BY
-    anywhere in its AST (including CTEs and subqueries that feed the outer SELECT).
+    anywhere in its AST (including CTEs and subqueries that the outer SELECT reads).
 
     Uses sqlglot to parse the SQL so that GROUP BY inside string literals or
     comments is correctly ignored. Falls back to False on any parse error.
@@ -652,7 +652,7 @@ def already_in_workbook(query_name, workbook) -> bool:
     """Whether `query_name` is a query the target workbook already holds.
 
     A reference that resolves here needs no copy, and the copy would be a second
-    row for one query. The file cannot answer this: it carries the exporting
+    row for one query. The file cannot answer this: it keeps the exporting
     site's workbook name, and `autoname` makes those a bare counter, so every
     site has a workbook "1". Ask the row.
     """
@@ -713,7 +713,7 @@ def import_query(query, workbook, id_map=None):
 
 
 def imported_queries(query, workbook):
-    """`query` and every query its file carries that `import_query` copies into `workbook`."""
+    """`query` and every query its file includes that `import_query` copies into `workbook`."""
     yield query
     for name, dependency in ((query.get("dependencies") or {}).get("queries") or {}).items():
         if not already_in_workbook(name, workbook):

@@ -11,11 +11,11 @@ import ChartStateMessage from './ChartStateMessage.vue'
 // One reading of a Number Chart. Nothing here decorates: it fills its space and
 // reports a click.
 //
-// The reading is a card of frappe-ui's, drawn with its own surface, which is why
-// the filler tells the chrome to draw none: a card inside a card would border
+// The reading is a card of frappe-ui's, rendered with its own surface, which is why
+// the filler tells the chrome to render none: a card inside a card would border
 // the reading twice.
 //
-// The card is the chart's only surface, so it draws every state: a skeleton
+// The card is the chart's only surface, so it renders every state: a skeleton
 // while the query runs, a dash when it returns nothing, the failure and the
 // retry when it fails. A reader who sees a titled card and a dash has been told
 // which reading is missing, which a message floating on the page never said.
@@ -37,7 +37,7 @@ const emit = defineEmits<{
 }>()
 
 // `column` is what a drill names, `missing` stands in for the reading it names,
-// and `height` is the row's to apply, so none of them is something the card draws.
+// and `height` is the row's to apply, so none of them is something the card shows.
 const reading = computed(() => {
 	// eslint-disable-next-line no-unused-vars
 	const { column, missing, height, ...card } = props.card
@@ -58,12 +58,12 @@ const retryable = computed(
 )
 // A reading a drill can be asked about: the card has a reading to name, and the
 // source behind it supports drills. A public link's source does not, so the
-// card there is not offered as something to click.
+// card there is not shown as something to click.
 const drillable = computed(() => props.drillable !== false && !props.card.missing)
 </script>
 
 <template>
-	<!-- `NumberCard` cuts its title to one line and draws no tooltip for it, so the
+	<!-- `NumberCard` cuts its title to one line and shows no tooltip for it, so the
 	     whole card shows the title on hover -->
 	<div
 		class="min-w-0"

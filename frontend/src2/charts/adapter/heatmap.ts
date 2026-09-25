@@ -51,7 +51,7 @@ export function adaptHeatmapChart(input: ChartAdapterInput): ChartFiller | undef
 /**
  * How a cut prints, when it is a date one. A plain category prints itself.
  *
- * Abbreviated, because these are axis ticks: a grid draws a label per column,
+ * Abbreviated, because these are axis ticks: a grid shows a label per column,
  * and the columns are as narrow as the cells. The axis charts get the same
  * reading from `timeGrain`, which a category axis has nowhere to put.
  */

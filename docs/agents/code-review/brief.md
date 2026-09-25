@@ -46,7 +46,7 @@ Then apply "Do not flag" below. Drop everything it forbids.
 **Phase 3 — write.** Only now read `docs/agents/code-review/report.md` and write the comment in
 its format. You may cut for length here. You may not soften a finding that survived phase
 2, and you may not drop one to fit a line count. If everything survived and the limit is
-tight, the score carries the weight, not the omission.
+tight, the score shows it, not the omission.
 
 ## The bar
 

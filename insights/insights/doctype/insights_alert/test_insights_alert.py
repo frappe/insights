@@ -55,7 +55,7 @@ class TestWebhookPayload(IntegrationTestCase):
         return frappe.parse_json(post.call_args.kwargs["data"]), post.call_args
 
     # @feature alerts.webhook
-    def test_payload_carries_a_version(self):
+    def test_payload_includes_a_version(self):
         payload, _ = self.post_one(message_context())
         self.assertEqual(payload["version"], 1)
         self.assertEqual(payload["event"], "insights_alert")
@@ -300,7 +300,7 @@ class TestEmailRecipients(InsightsIntegrationTestCase):
 
 
 class TestAlertMailIsAttributable(InsightsIntegrationTestCase):
-    """The mail carries the marks that say it is an Insights alert."""
+    """The mail includes the marks that say it is an Insights alert."""
 
     AUTHOR = "alert_author@test.com"
 
@@ -500,7 +500,7 @@ class TestCondition(AlertOverSeededTodos):
         self.assertIn("<table", body)
 
 
-class TestRowsAnAlertCarries(AlertOverSeededTodos):
+class TestRowsAnAlertIncludes(AlertOverSeededTodos):
     # @feature alerts.message alerts.webhook
     def test_the_rows_stop_at_the_cap_and_the_count_is_the_whole_result(self):
         """`send_alert` builds one context for every channel. So its count is the

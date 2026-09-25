@@ -78,13 +78,13 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         return frappe.response.docs[0].get("__onload") or {}
 
     # @feature desk.dashboard-page
-    def test_the_dashboard_page_is_drawn_by_an_island_the_build_ships(self):
+    def test_the_dashboard_page_is_rendered_by_an_island_the_build_ships(self):
         page = frappe.get_doc("Page", DASHBOARD_PAGE)
         self.assertEqual(page.type, "Frappe UI")
         self.assertIn(page.island, get_ui_islands())
 
     # @feature desk.dashboard-page
-    def test_the_dashboard_page_admits_every_desk_user(self):
+    def test_the_dashboard_page_allows_every_desk_user(self):
         page = frappe.get_doc("Page", DASHBOARD_PAGE)
         self.assertEqual([role.role for role in page.roles], ["Desk User"])
 
@@ -106,7 +106,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertIsNone(island_for(self.desk_dashboard()))
 
     # @feature desk.dashboard-island
-    def test_dashboard_with_a_link_is_drawn_by_the_dashboard_island(self):
+    def test_dashboard_with_a_link_is_rendered_by_the_dashboard_island(self):
         doc = self.desk_dashboard(self.dashboard.name)
         self.assertEqual(
             island_for(doc),
@@ -114,7 +114,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         )
 
     # @feature desk.chart-island
-    def test_chart_with_a_link_is_drawn_by_the_chart_island(self):
+    def test_chart_with_a_link_is_rendered_by_the_chart_island(self):
         doc = self.desk_chart(self.chart.name)
         self.assertEqual(
             island_for(doc),
@@ -134,7 +134,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         )
 
     # @feature desk.chart-island
-    def test_a_chart_we_draw_carries_the_claim_through_getdoc(self):
+    def test_a_chart_we_render_includes_the_claim_through_getdoc(self):
         name = self.desk_chart(self.chart.name).name
         self.assertEqual(
             self.onload_of("Dashboard Chart", name)["island"],
@@ -154,14 +154,14 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertEqual(bootinfo.insights_path, f"/{insights_path}")
 
     # @feature desk.dashboard-island
-    def test_a_dashboard_we_do_not_draw_carries_no_key(self):
+    def test_a_dashboard_we_do_not_render_gets_no_island_key(self):
         name = self.desk_dashboard().name
         # Desk uses its own rendering only when the key is absent. An empty value
         # tells desk an island renders the page, and the page stays blank.
         self.assertNotIn("island", self.onload_of("Dashboard", name))
 
     # @feature desk.dashboard-island desk.chart-island workbook.remove-item
-    def test_deleting_what_a_desk_document_draws_is_refused_naming_that_document(self):
+    def test_deleting_what_a_desk_document_shows_is_refused_naming_that_document(self):
         """The sidebar's remove calls `frappe.client.delete`. Removing the link
         instead would return the desk document to the placeholder definition its
         author entered to save the form. The refusal comes before any change, so
@@ -192,7 +192,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         )
 
     # @feature desk.dashboard-island desk.chart-island workbook.delete
-    def test_deleting_a_workbook_a_desk_document_draws_from_is_refused_naming_that_document(self):
+    def test_deleting_a_workbook_behind_a_desk_document_is_refused_naming_that_document(self):
         """The workbook deletes its members with `force`, and `force` skips the
         link check that refuses a member's own delete."""
         workbook = create_test_workbook(OWNER, title="Desk Island Deleted Workbook")
@@ -211,7 +211,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertTrue(frappe.db.exists(DT.DASHBOARD, dashboard.name))
 
     # @feature desk.dashboard-island desk.chart-island standard.resync
-    def test_a_resync_keeps_a_dropped_member_a_desk_document_draws(self):
+    def test_a_resync_keeps_a_dropped_member_a_desk_document_shows(self):
         """A migrate resyncs every changed workbook file. Deleting a member that a
         desk document links would break the link, and refusing would block the
         migrate. So the member stays with its queries and folder, and an Error
@@ -260,7 +260,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.count("Error Log"), logged + 1)
 
     # @feature desk.dashboard-island standard.resync
-    def test_a_resync_keeps_what_a_kept_dashboard_draws(self):
+    def test_a_resync_keeps_what_a_kept_dashboard_shows(self):
         """A desk Dashboard links only the Insights dashboard. Its charts stay
         with it, so the desk page still shows them."""
         workbook = create_test_workbook(OWNER, title="Desk Island Board Workbook")

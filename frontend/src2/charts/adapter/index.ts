@@ -1,7 +1,7 @@
 /**
  * The adapter: the one place a Chart's stored config becomes chart props.
  *
- * The seam it sits on — Insights configures, frappe-ui draws — is settled in
+ * The seam it sits on — Insights configures, frappe-ui renders — is settled in
  * `docs/adr/charts-render-through-frappe-ui.md`: the three fillers, the purity
  * rule, and `echartOptions` as the only escape hatch. Read it first.
  *
@@ -10,8 +10,8 @@
  *
  *     { component, props, drillDown? }
  *
- * `undefined` means there is nothing to draw: a slot is unfilled, or the result
- * carries no column the config asks for. The card shows its unconfigured state.
+ * `undefined` means there is nothing to render: a slot is unfilled, or the result
+ * includes no column the config asks for. The card shows its unconfigured state.
  *
  * ## Writing one
  *
@@ -32,7 +32,7 @@
  *
  * A filler that a reader can point at names its click events in `drillDown`,
  * keyed by the event it emits — `select` for every v2 chart, `regionClick` for
- * the Map that Insights draws itself — each turning the payload into the column
+ * the Map that Insights renders itself — each turning the payload into the column
  * and row behind the point. `ChartBody` binds them without knowing which is
  * which, so a plot naming its own event needs nothing from the chrome.
  */
@@ -80,17 +80,17 @@ export function adaptChart(input: ChartAdapterInput): ChartFiller | undefined {
 const OWN_CARDS: ChartType[] = ['Number']
 
 /**
- * Whether the chrome leaves the card surface undrawn. A Number Chart's readings
+ * Whether the chrome does not render the card surface. A Number Chart's readings
  * are cards already, and a card inside a card borders a reading twice. It is a
  * property of the type and not of its data, so the chrome can ask before there
  * is a result to adapt.
  *
  * The same answer settles where the states go. A type with no card of its own has
- * nothing to draw a loading skeleton or a failure on, so the chrome draws them
- * over the plot. A type that draws cards draws them inside each card, and takes
+ * nothing to render a loading skeleton or a failure on, so the chrome renders them
+ * over the plot. A type that renders cards renders them inside each card, and takes
  * `ChartStateProps` for it. That is why its filler is built from the config alone
  * — the cards stand before the first result, and stand when none arrives.
  */
-export function drawsOwnCards(chart_type: string): boolean {
+export function rendersOwnCards(chart_type: string): boolean {
 	return OWN_CARDS.includes(chart_type as ChartType)
 }

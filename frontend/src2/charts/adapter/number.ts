@@ -15,7 +15,7 @@ import { LAST_YEAR, periodOf, previousWindowShift, windowShiftLabel } from '../w
 import NumberCards from '../components/NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
-// A Number Chart carries several Measures and v2's card is one reading, so a
+// A Number Chart has several Measures and v2's card is one reading, so a
 // reading is a card and the chart is the row of them. Two more things v2 will
 // not do for a caller land here as arithmetic: the gap against the comparison,
 // and the scaling a Measure formatted as a percent asks for.
@@ -43,17 +43,17 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 
 	// The config names every reading, so the cards are built before a result and
 	// built when none arrives: a card with no row prints a dash, and the states
-	// the other types draw on their chrome are drawn inside them.
+	// the other types render on their chrome are rendered inside them.
 	const rows = input.result.rows || []
 	// Every reading is the newest one, so the newest row is the row behind every
 	// card. Which row a comparison reads is the server's answer, not a count
 	// back from here — see `comparisonNumber`.
 	const current = rows[rows.length - 1]
 
-	// A dashboard cell names the one reading it draws. A surface that names none
+	// A dashboard cell names the one reading it shows. A surface that names none
 	// — the workbook editor — previews them all.
-	const drawn = input.reading ? [input.reading] : numberReadings(config)
-	const cards = drawn.map((reading) =>
+	const shown = input.reading ? [input.reading] : numberReadings(config)
+	const cards = shown.map((reading) =>
 		cardFor(config, rows, reading, input.comparisonRows, input.sparklineResult?.rows),
 	)
 
@@ -63,7 +63,7 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 	const drillable = (input.drillable ?? true) && Boolean(current)
 
 	// A surface that names no reading gets the cards at the size a cell gives
-	// them, so the preview is what the dashboard draws and not a guess at it.
+	// them, so the preview is what the dashboard shows and not a guess at it.
 	const filler: ChartFiller = {
 		component: NumberCards,
 		props: { cards, preview: !input.reading, drillable },
@@ -97,7 +97,7 @@ export function numberReadings(config?: NumberChartConfig): string[] {
  * entries included. `-1` when the config states no such reading.
  *
  * Naming none is naming the first: a cell written before a cell could name one
- * draws what it has always drawn.
+ * shows what it has always shown.
  */
 function readingIndex(config: NumberChartConfig, reading?: string): number {
 	const columns = config.number_columns || []
@@ -175,7 +175,7 @@ function readingOf(
 		if (against !== undefined) {
 			const show = comparison.show ?? 'change'
 			if (show === 'delta') {
-				// A gap in the value's own units carries the value's own units, so
+				// A gap in the value's own units keeps the value's own units, so
 				// the percent Measure's scaling applies to it too.
 				card.delta = latest === null || against === null ? null : scale(latest - against)
 				if (format.prefix) card.deltaPrefix = format.prefix
@@ -202,7 +202,7 @@ function readingOf(
 		// A grain card is one row per period, so its own readings are the trend.
 		// A span card is one row per period — the reading and what it is held
 		// against — which is never a trend, so it waits for the run the server
-		// makes for it. Falling back to the rows there draws a two-point line from
+		// makes for it. Falling back to the rows there plots a two-point line from
 		// the reading and its comparison, which reads as a trend.
 		const grouped = periodOf(config)
 		const data = series
@@ -322,7 +322,7 @@ function previousLabel(config: NumberChartConfig): string | undefined {
 }
 
 /**
- * The card, measured from the CSS that draws it — every number below is a class
+ * The card, measured from the CSS that renders it — every number below is a class
  * on frappe-ui's `NumberCard.vue` or `ChartCard`, resolved against the type
  * scale, and nothing here is an estimate.
  */
@@ -343,7 +343,7 @@ const CARD = {
 	value: 20 * 1.35,
 	/** The delta row: `text-sm`, whose line stands taller than its `size-4` arrow. */
 	delta: 13 * 1.35,
-	/** `pb-10`, the band the sparkline is drawn into. */
+	/** `pb-10`, the band the sparkline is plotted into. */
 	sparkline: 40,
 }
 
@@ -355,7 +355,7 @@ const CARD = {
  * a delta row under them when the reading is compared with something, and the
  * sparkline band under that.
  *
- * A cell that names nothing draws the first reading. One naming a reading the
+ * A cell that names nothing shows the first reading. One naming a reading the
  * chart dropped keeps the height the chart's own settings give it, so the cell
  * does not move under the author while they decide what to do about it.
  */

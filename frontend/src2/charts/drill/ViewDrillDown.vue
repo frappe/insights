@@ -53,7 +53,7 @@ const DrillRowsView = defineAsyncComponent({
 		@close="emit('close')"
 	>
 		<!-- A reader can see the rows behind a segment, so they render here. The
-		     server sorts, searches and pages them. The answer does not carry the
+		     server sorts, searches and pages them. The answer does not include the
 		     pipeline, the client does not ask for it, and this file imports no
 		     editor that could run it. -->
 		<template #rows="{ answer, levels, findTarget }">

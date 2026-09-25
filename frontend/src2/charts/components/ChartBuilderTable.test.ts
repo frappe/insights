@@ -41,7 +41,7 @@ const menus = (html: string) => html.split('data-menu').length - 1
 
 describe('the rows under the builder card', () => {
 	// @feature charts.preview-table-sort charts.preview-table-grain permissions.chart-run-as-owner
-	it('offers its sort and its date grain only to a caller who may write the chart', async () => {
+	it('allows sort and date grain changes only to a caller who may write the chart', async () => {
 		// a sort menu on each column, and a grain menu on the date column
 		expect(menus(await table(false))).toBe(3)
 		expect(menus(await table(true))).toBe(0)

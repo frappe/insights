@@ -9,7 +9,7 @@ import { asNumber } from '../helpers/typed_input'
  *
  * Prefix, suffix and precision are three parts of one setting, how a number
  * prints, the way the four sides of a margin are one setting. So they share a
- * box and read as one control, and each field carries its name under it rather
+ * box and read as one control, and each field shows its name under it rather
  * than beside it, which is what lets them sit side by side.
  *
  * Two things a plain row of controls does not do:
@@ -88,7 +88,7 @@ function onLabelDrag(event: MouseEvent, field: InputGroupField) {
 	<div class="w-full">
 		<!--
 		The box owns the fill and the rounding, and a hairline is the only thing
-		between one field and the next. The fields are `ghost`, so no field draws a
+		between one field and the next. The fields are `ghost`, so no field renders a
 		box of its own inside a box. A focused field takes the base surface and
 		lifts out of the group, which is the only state that needs an edge.
 		-->

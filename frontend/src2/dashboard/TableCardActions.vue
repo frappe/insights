@@ -88,7 +88,7 @@ const filterTooltip = computed(() =>
 			:values-provider="props.valuesProvider"
 			:range-provider="props.rangeProvider"
 		>
-			<!-- The picker's own button carries a label, which beside a card
+			<!-- The picker's own button has a label, which beside a card
 				     title reads as a second title. Here it is one of the card's
 				     icons, and the dot is what says the rows are narrowed.
 				     The click is wired here rather than left to the popover: the

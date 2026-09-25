@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { donutChart, type DonutChartSpec } from './fixtures'
 import { adaptChart } from './index'
 
-// Props, never an echarts option: what the ring is drawn from is v2's concern.
+// Props, never an echarts option: what the ring is rendered from is v2's concern.
 
 function adapt(spec: DonutChartSpec) {
 	const filler = adaptChart(donutChart(spec))
-	if (!filler) throw new Error('the adapter drew nothing for this Chart')
+	if (!filler) throw new Error('the adapter rendered nothing for this Chart')
 	return filler
 }
 
@@ -63,7 +63,7 @@ describe('a donut', () => {
 	// @feature charts.donut-inline-labels
 	it('says nothing about where the legend sits', () => {
 		// Legend placement is the library's, so the stored side is dropped rather
-		// than carried under another name.
+		// than kept under another name.
 		const props = propsOf({
 			category: 'category',
 			measure: 'revenue',
@@ -73,7 +73,7 @@ describe('a donut', () => {
 	})
 
 	// @feature charts.type-donut
-	it('draws nothing until the Chart names both columns', () => {
+	it('renders nothing until the Chart names both columns', () => {
 		expect(adaptChart(donutChart({ category: '', measure: 'revenue' }))).toBeUndefined()
 		expect(adaptChart(donutChart({ category: 'category', measure: '' }))).toBeUndefined()
 	})
@@ -81,7 +81,7 @@ describe('a donut', () => {
 
 describe('drilling into a segment', () => {
 	// @feature charts.drill-segment
-	it('names the value column and the row the segment was drawn from', () => {
+	it('names the value column and the row the segment was plotted from', () => {
 		const input = donutChart({ category: 'category', measure: 'revenue' })
 		const row = input.result.rows[1]
 

@@ -1,6 +1,6 @@
-"""The one-time split of the dashboard cell that drew several readings.
+"""The one-time split of the dashboard cell that showed several readings.
 
-A cell draws one reading of a Number chart, so a cell on a chart that states
+A cell shows one reading of a Number chart, so a cell on a chart that states
 several becomes one cell per reading. The chart keeps all of them. See
 `insights/patches/split_number_cells.py`.
 """

@@ -117,7 +117,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
 
     # @feature upgrade.cached-queries-removed
     def test_a_cache_a_chart_reads_is_kept(self):
-        """No surface offers a cache in the query picker, so this should not
+        """No surface lists a cache in the query picker, so this should not
         happen — and the delete is permanent, so the chart's own field says so
         rather than the column nothing reads."""
         _chart, cache = self.cached_query()

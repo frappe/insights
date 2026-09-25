@@ -27,7 +27,7 @@ function cardAnswering(answer: Record<string, any>) {
 	return read
 }
 
-async function draw(answer: Record<string, any>) {
+async function renderCard(answer: Record<string, any>) {
 	const read = cardAnswering(answer)
 	await read.load()
 	const app = createSSRApp({
@@ -44,7 +44,7 @@ const rows = { columns: spec.result.columns, rows: spec.result.rows }
 describe('a card whose rows the reader User Permissions narrowed', () => {
 	// @feature permissions.card-says-it-is-scoped
 	it('sets the mark against the title and leaves the reading its whole card', async () => {
-		const html = await draw({
+		const html = await renderCard({
 			...rows,
 			user_permissions: [{ doctype: 'Territory', documents: ['Karnataka'] }],
 		})
@@ -68,7 +68,7 @@ describe('a card whose rows the reader User Permissions narrowed', () => {
 
 	// @feature permissions.card-says-it-is-scoped
 	it('sets the same mark when a restriction that names nothing narrowed it', async () => {
-		const html = await draw({ ...rows, narrowed_by_permissions: true })
+		const html = await renderCard({ ...rows, narrowed_by_permissions: true })
 
 		expect(html).toContain('aria-label="Narrowed by your permissions"')
 		expect(html).toContain('12,300')
@@ -76,7 +76,7 @@ describe('a card whose rows the reader User Permissions narrowed', () => {
 
 	// @feature permissions.card-says-it-is-scoped
 	it('is the card it was when no User Permission narrowed it', async () => {
-		const html = await draw(rows)
+		const html = await renderCard(rows)
 		expect(html).not.toContain('Filtered by your User Permissions')
 		expect(html).toContain('12,300')
 	})
@@ -130,8 +130,8 @@ describe('what the mark says', () => {
 
 describe('a card the reader may not read the data behind', () => {
 	// @feature permissions.not-permitted-chart
-	it('keeps the card a reading draws and says what it needs inside it', async () => {
-		const html = await draw({ not_permitted: { doctypes: ['Sales Invoice'] } })
+	it('keeps the card a reading renders and says what it needs inside it', async () => {
+		const html = await renderCard({ not_permitted: { doctypes: ['Sales Invoice'] } })
 
 		expect(html).toContain('Not Permitted')
 		expect(html).toContain('Needs read access to Sales Invoice')

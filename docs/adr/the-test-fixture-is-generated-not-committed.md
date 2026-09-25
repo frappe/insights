@@ -21,7 +21,7 @@ to `products`, `orders` to `orderpayments`.
 The damage reached the shipped content. `sample_workbook.json` holds a query
 that left-joins `orders` to `orderitems` and computes `price * freight_value`.
 Under `CI` it returned 2 rows with `price` entirely null, and its four charts
-drew nothing.
+rendered nothing.
 
 Nobody noticed for as long as the file existed. A binary does not appear in a
 diff, so no review could have caught it.

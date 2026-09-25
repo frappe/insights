@@ -28,14 +28,14 @@ export type ChartAdapterInput = {
 	comparisonRows?: Record<string, number | null>
 	/**
 	 * Which result columns name a desk document, when the rows are documents.
-	 * Only a filler that draws the values themselves — the grid — has anywhere
+	 * Only a filler that renders the values themselves — the grid — has anywhere
 	 * to put them.
 	 */
 	recordLinks?: RecordLinks
 	/** Printed by the chrome. It belongs to the Chart, not to its config. */
 	title?: string
 	/**
-	 * The one reading to draw, by its `id`, for the type that states several — a
+	 * The one reading to show, by its `id`, for the type that states several — a
 	 * Number Chart. A dashboard cell is one reading, so the cell names it. A
 	 * surface that names none gets every reading the config states, which is what
 	 * the workbook editor previews.
@@ -43,7 +43,7 @@ export type ChartAdapterInput = {
 	reading?: string
 	/**
 	 * The surface cannot change the Chart. A control that rewrites the config —
-	 * a table's sort — is left out rather than drawn dead.
+	 * a table's sort — is left out rather than rendered dead.
 	 */
 	readonly?: boolean
 	/**
@@ -53,14 +53,14 @@ export type ChartAdapterInput = {
 	 */
 	drillable?: boolean
 	/**
-	 * The next run is in flight. Only a filler that keeps its last picture while
+	 * The next run is in flight. Only a filler that keeps its last chart while
 	 * it reloads has anything to say about this. The rest are replaced by the
 	 * card's loading state before they are asked.
 	 */
 	executing?: boolean
 	/** Which page of the rows this is, for the filler that pages them — the grid. */
 	page?: ResultPage
-	/** Every row as a file, for the filler that offers one — the grid. */
+	/** Every row as a file, for the filler that allows one — the grid. */
 	download?: ResultDownload
 }
 
@@ -94,7 +94,7 @@ export type DrillDownTarget = {
 
 /**
  * Keyed by the event the filler emits — `select` for every v2 chart, and its
- * own name for a plot Insights draws itself. Each entry turns that event's
+ * own name for a plot Insights renders itself. Each entry turns that event's
  * payload into the point behind it, or `undefined` when the click landed on
  * nothing drillable.
  */
@@ -111,7 +111,7 @@ export type DrillDownResolvers = Record<
 export type ChartFailure = {
 	/**
 	 * Not Permitted is an answer, not an error. The card shows a lock instead of
-	 * the red mark and offers no retry, because the reader cannot change their
+	 * the red mark and shows no retry, because the reader cannot change their
 	 * own permissions. Undefined means `failed`.
 	 */
 	kind?: 'failed' | 'notPermitted'
@@ -122,14 +122,14 @@ export type ChartFailure = {
 }
 
 /**
- * The loading and failure states, handed to a filler that draws its own cards.
- * Every other type draws them on the chrome around the plot. A filler with its
- * own cards has no chrome, so it draws them inside each card.
+ * The loading and failure states, handed to a filler that renders its own cards.
+ * Every other type renders them on the chrome around the plot. A filler with its
+ * own cards has no chrome, so it renders them inside each card.
  */
 export type ChartStateProps = {
 	loading: boolean
 	failure: ChartFailure | null
-	/** The query returned no rows. Every other type draws this on the chrome. */
+	/** The query returned no rows. Every other type renders this on the chrome. */
 	empty: boolean
 	/** Runs the chart again. The action beside the message. */
 	onRetry: () => void

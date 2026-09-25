@@ -3,7 +3,7 @@
 // The config is stored as JSON, so whatever a form hands it is what every
 // reader gets. Two controls used to hand it something else. A number box handed
 // back its text, and a cleared box handed back `''`, which is not absent to
-// `??`. A picker handed back the whole dropdown option, carrying a `label` and a
+// `??`. A picker handed back the whole dropdown option, with a `label` and a
 // `value` into a slot that declares neither. Both are converted here, once,
 // rather than at each of the fields.
 
@@ -19,7 +19,7 @@ export function asNumber(value: unknown): number | undefined {
 /**
  * A picked option as the Dimension it names.
  *
- * An option is a Dimension plus what the dropdown drew it with. Naming the
+ * An option is a Dimension plus what the dropdown shows it with. Naming the
  * Dimension's own keys is what keeps the dropdown's out: a key added to the
  * option reaches no config until it is named here.
  */

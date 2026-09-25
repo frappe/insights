@@ -52,7 +52,7 @@ defineOptions({ inheritAttrs: false })
 const props = defineProps<{
 	columns: QueryResultColumn[]
 	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
-	/** The smallest and largest a numeric column goes, for the presets it offers. */
+	/** The smallest and largest a numeric column goes, for the presets it lists. */
 	rangeProvider?: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	column?: QueryResultColumn
 	filters: Filter[]
@@ -154,7 +154,7 @@ function load(filter: Filter) {
 	sticky.value = [...path.picked]
 	search.value = multi.value ? '' : path.text
 	// An operator that takes no value has no value stage to reopen on: opening one
-	// would offer a value the operator ignores, and store it when the reader picks.
+	// would list a value the operator ignores, and store it when the reader picks.
 	const needsValue = path.op.needsValue
 	history.value = props.column ? [] : ['overview', 'column']
 	if (needsValue) history.value.push('operator')
@@ -211,7 +211,7 @@ async function fetchDistinct() {
 watch([() => column.value?.name, multi], fetchDistinct, { immediate: true })
 watchDebounced(search, fetchDistinct, { debounce: 300 })
 
-// The column's own range, for the numbers the value stage offers. Fetched when
+// The column's own range, for the numbers the value stage lists. Fetched when
 // the stage opens on a number column and not before: a range is one aggregate
 // over the whole result, and a text column has no use for one.
 const range = ref<[number, number] | undefined>()
@@ -383,7 +383,7 @@ const rows = computed<ListItem[]>(() => {
 	if (kind.value === 'number') {
 		if (search.value.trim()) return use
 		// Cut from the column's own range, so a column with no range (not
-		// fetched yet, or every row the same number) offers nothing to pick and
+		// fetched yet, or every row the same number) lists nothing to pick and
 		// the reader types.
 		return between.value
 			? numberPairValues(range.value).map((pair) => ({
@@ -423,7 +423,7 @@ const emptyText = computed(() => {
 })
 
 /**
- * The prompt carries what the path tokens used to. A value stage names the
+ * The prompt shows what the path tokens used to. A value stage names the
  * column and the operator it is filling in, because the operator is what says
  * how much to type; the operator stage names the column alone, the operator
  * being the thing the reader is there to pick.
@@ -480,7 +480,7 @@ function pick(item: ListItem) {
 	if (stage.value === 'unit') {
 		if (item.key === 'include') {
 			relative.includeCurrent = !relative.includeCurrent
-			// the row is redrawn with its new tick, so the highlight is put back
+			// the row is rendered again with its new tick, so the highlight is put back
 			highlight('include')
 			return
 		}
@@ -586,7 +586,7 @@ function onKeydown(event: KeyboardEvent) {
 	}
 	if (event.key === 'Backspace' && !search.value) {
 		event.preventDefault()
-		// the row under the highlight already draws a Remove button, so the key
+		// the row under the highlight already shows a Remove button, so the key
 		// takes the row where there is one and the stage where there is not
 		const row = highlightedRow()
 		if (row?.removable && row.filter) emit('remove', row.filter)

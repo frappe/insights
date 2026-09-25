@@ -3,7 +3,7 @@ import type { NumberCardClickEvent, NumberCardEntry } from '../adapter/number'
 import NumberReading from './NumberReading.vue'
 import type { ChartFailure } from '../adapter/types'
 
-// The readings a Number Chart draws, in a row. Nothing here decorates — it lays
+// The readings a Number Chart shows, in a row. Nothing here decorates — it lays
 // them out and passes a click on.
 //
 // A dashboard cell names one reading, so on a dashboard this row holds a single
@@ -12,16 +12,16 @@ import type { ChartFailure } from '../adapter/types'
 //
 // `numberCardRows` sizes the cell from this config, so on a dashboard the one
 // card fills it. The editor has no cell,
-// so there each card is drawn at the size a cell would give it: the height the
+// so there each card is rendered at the size a cell would give it: the height the
 // rule states, and a fifth of the pane wide, which is the width a dropped cell
 // starts at.
 //
 // The gap is the one a dashboard puts between two cells — 16px, the `p-2` each
-// grid cell carries on both sides — so a preview of two readings and two cells
+// grid cell has on both sides — so a preview of two readings and two cells
 // side by side stand the same distance apart.
 defineProps<{
 	cards: NumberCardEntry[]
-	/** Draw every card at cell size, for a surface with no cell to fill. */
+	/** Render every card at cell size, for a surface with no cell to fill. */
 	preview?: boolean
 	loading?: boolean
 	failure?: ChartFailure | null
@@ -54,7 +54,7 @@ const emit = defineEmits<{
 			>
 				<!-- A Number Chart has no card to head, so a host's actions go in
 				     the first card's own action row. Over the readings instead,
-				     they would paint over the Retry the failed card draws in the
+				     they would paint over the Retry the failed card renders in the
 				     same corner. A dashboard cell names one reading, so the first
 				     card is the card. -->
 				<!-- On the first card, like the actions above: the scope belongs

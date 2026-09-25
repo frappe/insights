@@ -5,7 +5,7 @@ import { CREDENTIALS, INSIGHTS_PATH } from '../helpers/auth'
  * The one flow that starts signed out.
  *
  * Insights hands a visitor with no session to the site's own login page rather
- * than drawing one of its own: the router's guard sets `window.location` to
+ * than rendering one of its own: the router's guard sets `window.location` to
  * `/login` outside a dev build, so the app's `Login.vue` never renders in the
  * build this suite runs against. The page under test here is therefore the site
  * login page, which is what a user of Insights actually meets.
@@ -20,7 +20,7 @@ test.describe('settings', () => {
 		// No session, so the app sends the visitor to the login page.
 		await expect(guestPage).toHaveURL(/\/login/)
 
-		// locator: the page draws a sign-up and a forgot-password section beside
+		// locator: the page renders a sign-up and a forgot-password section beside
 		// the sign-in one, each with its own Email field, and all three are in the
 		// DOM at once. The sign-in form's own class is what names its fields.
 		const form = guestPage.locator('form.form-login')
@@ -44,7 +44,7 @@ test.describe('settings', () => {
 		await guestPage.goto(INSIGHTS_PATH)
 		await expect(guestPage).toHaveURL(/\/dashboards$/)
 
-		// The sidebar's user menu carries the app's name and the signed-in user's.
+		// The sidebar's user menu shows the app's name and the signed-in user's.
 		const userMenu = guestPage.getByRole('button', { name: /Insights/ })
 		await expect(userMenu).toBeVisible()
 		await userMenu.click()

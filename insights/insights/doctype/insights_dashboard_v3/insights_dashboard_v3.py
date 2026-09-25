@@ -91,7 +91,7 @@ class InsightsDashboardv3(Document):
     def sanitize_text_items(self):
         """A text item is authored as rich text and rendered as HTML.
 
-        The framework sanitizes the fields it knows carry markup, and `items`
+        The framework sanitizes the fields it knows hold markup, and `items`
         is a JSON field, so nothing reaches inside it. Sanitizing on the way in
         makes the stored text safe for every reader of the dashboard, including
         the Guest who follows a public link.
@@ -236,7 +236,7 @@ class InsightsDashboardv3(Document):
     def set_linked_charts(self):
         """The charts the grid names, once each.
 
-        A Number chart draws one reading per cell, so several cells can name one
+        A Number chart shows one reading per cell, so several cells can name one
         chart. This table answers which charts the dashboard reaches, which is a
         question about charts and not about cells.
         """
@@ -257,7 +257,7 @@ class InsightsDashboardv3(Document):
         The permission check uses the name, not `self`. `has_doc_permission`
         reads `owner` and `__islocal` from the document it gets, and
         `BaseDocument.update` copies both from the request. So
-        `self.has_permission` would admit anyone who sends them. This follows
+        `self.has_permission` would allow anyone who sends them. This follows
         `insights.api.check_stored_document`: decide against the stored row.
         """
         if frappe.has_permission(self.doctype, ptype="write", doc=self.name):
@@ -281,7 +281,7 @@ class InsightsDashboardv3(Document):
 
         The caller must also be able to read the chart. That covers every query
         the chart reads. The query's own permission is not checked, because a
-        reader admitted only by a visibility level has none. `can_read_chart`
+        reader allowed only by a visibility level has none. `can_read_chart`
         checks the session user, so it runs before `runs_as`. Inside `runs_as`
         it would check the chart's owner. The lookup runs as the chart runs, so
         the values come from the same rows as the card.
@@ -335,7 +335,7 @@ class InsightsDashboardv3(Document):
         search_term: str | None = None,
         filter_context: dict | None = None,
     ):
-        """The values one of this dashboard's filters offers.
+        """The values one of this dashboard's filters lists.
 
         Read access to the dashboard is checked before this runs. The builder
         calls it through `run_doc_method`, and a reader through
@@ -381,10 +381,10 @@ class InsightsDashboardv3(Document):
     @frappe.whitelist()
     @answers_refusal(lambda: None)
     def get_filter_column_range(self, filter_name: str, filter_context: dict | None = None):
-        """The range one of this dashboard's own filters offers.
+        """The range one of this dashboard's own filters allows.
 
         Addressed and routed the way `get_distinct_column_values` is: the preset
-        ranges a picker offers and the values it lists answer the same question
+        ranges a picker shows and the values it lists answer the same question
         about the same rows.
         """
         adhoc_filters = self._filter_context_filters(filter_name, filter_context)
@@ -420,7 +420,7 @@ class InsightsDashboardv3(Document):
     def generate_dashboard_preview(self):
         with generate_preview_key(self.name) as key:
             preview = get_page_preview(
-                # The browser runs on the server and carries a preview key, so
+                # The browser runs on the server and passes a preview key, so
                 # the page it opens is the site's own, not one a request header
                 # named.
                 frappe.utils.get_url(
@@ -569,7 +569,7 @@ def route_filters(
     server because a link names a query and a column, and a reader is never
     sent those.
 
-    `exclude_filter` leaves one filter out. A filter offering its own values
+    `exclude_filter` leaves one filter out. A filter listing its own values
     must not narrow them by what it currently holds, or picking a second value
     would be impossible.
     """
@@ -620,20 +620,20 @@ def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None,
     column reads, and the narrowing the card itself already applies.
 
     The card's own operations answer all three, so every chart type is read the
-    same way. Its aggregating operation names every column the picture holds
+    same way. Its aggregating operation names every column the chart holds
     (the dimensions it groups by, under the names they come back as, and the
     measures it states), and a column no operation names is not one the card
-    draws. That is a
+    shows. That is a
     `None` query, which is what the caller refuses.
 
     A dimension reads a source column, and that column is where its values come
     from. A measure reads none: it is computed over the result, and so is every
-    column a pivot makes. Both are drawn and offer no values, which is what a
+    column a pivot makes. Both are shown and list no values, which is what a
     source column of `None` says. A pivot names its columns after the values its
     data holds, so on a pivoted card that is the answer for every column the
     config does not name.
 
-    The card's own filters come back with it because a list offering what the
+    The card's own filters come back with it because a list showing what the
     card does not show reaches past what the chart published.
     """
     query, chart_type, config = frappe.db.get_value(
@@ -691,10 +691,10 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     """The reader's own filters on one card, landing on the card's own query.
 
     A card filter is the reader's and not the author's: it names a column the
-    card draws and reaches no further, so it is taken from the request whole on
+    card shows and reaches no further, so it is taken from the request whole on
     every surface, public included. It lands under the chart's own name, which is
     what the chart's derived query is called, so the rule falls after the chart's
-    summarize — on the columns the card draws, measures included.
+    summarize — on the columns the card shows, measures included.
     """
     rules = []
     for card_filter in frappe.parse_json(card_filters) or []:

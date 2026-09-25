@@ -48,7 +48,7 @@ def assert_expression_has_no_io(expression: str) -> None:
     """Refuse an expression that names an I/O, backend or run attribute.
 
     Checked in the source rather than at evaluation: RestrictedPython compiles
-    `a.b` to a guard call carrying the literal `b` and leaves no `getattr`, so an
+    `a.b` to a guard call passing the literal `b` and leaves no `getattr`, so an
     attribute name is always spelled out here.
     """
     for name in attributes_of(expression):

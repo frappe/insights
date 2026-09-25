@@ -5,11 +5,11 @@ import { adaptChart } from './index'
 import { mapChart, type MapChartSpec } from './fixtures'
 
 // Everything here asserts on the props the plot is handed, and on the point a
-// click resolves to. How the plot draws them is the component's concern.
+// click resolves to. How the plot renders them is the component's concern.
 
 function adapt(spec: MapChartSpec) {
 	const filler = adaptChart(mapChart(spec))
-	if (!filler) throw new Error('the adapter drew nothing for this Chart')
+	if (!filler) throw new Error('the adapter rendered nothing for this Chart')
 	return filler
 }
 
@@ -19,9 +19,9 @@ const propsOf = (spec: MapChartSpec) => adapt(spec).props
 it('registers its series into the same echarts the chart mounts through', () => {
 	// Map is the one chart type Insights registers an echarts module for, and
 	// echarts keeps that registry in module state. frappe-ui is linked from the
-	// framework checkout and carries an echarts of its own, so without the
+	// framework checkout and includes an echarts of its own, so without the
 	// resolver deduping the package the series would be registered into a copy
-	// no chart instance reads — and the map would draw a blank plot with no
+	// no chart instance reads — and the map would render a blank plot with no
 	// error. The build config is the fix. This is the guard on it.
 	expect(registerChartModules).toBe(use)
 })
@@ -47,14 +47,14 @@ describe('the geography', () => {
 	})
 
 	// @feature charts.map-type
-	it('draws the India map when the Chart asks for it', () => {
+	it('renders the India map when the Chart asks for it', () => {
 		expect(propsOf({ mapType: 'india', regions: [{ region: 'Goa', value: 1 }] }).map).toBe(
 			'india',
 		)
 	})
 
 	// @feature charts.type-map
-	it('draws nothing without both a region column and a measure', () => {
+	it('renders nothing without both a region column and a measure', () => {
 		const input = mapChart({ regions: [{ region: 'India', value: 30 }] })
 		input.result.columns = input.result.columns.filter((c) => c.name !== 'revenue')
 		expect(adaptChart(input)).toBeUndefined()
@@ -74,7 +74,7 @@ describe('the geography', () => {
 	// @feature charts.type-map
 	it('sums the rows that land on one region', () => {
 		// A region column is not a group by: two spellings of one country arrive
-		// as two rows and the geography can only draw one shape for them.
+		// as two rows and the geography can only render one shape for them.
 		const props = propsOf({
 			regions: [
 				{ region: 'india', value: 30 },
@@ -114,7 +114,7 @@ describe('region mappings', () => {
 	}
 
 	// @feature charts.map-region-mapping
-	it('draws a mapped region under the name the geography carries', () => {
+	it('shows a mapped region under the name the geography uses', () => {
 		expect(propsOf(gallery).regions).toEqual([
 			{ name: 'United States of America', value: 500 },
 			{ name: 'Brazil', value: 300 },
@@ -157,7 +157,7 @@ describe('region mappings', () => {
 	// @feature charts.map-region-mapping
 	it('drills into every row a folded region was summed from', () => {
 		// Two spellings the mapping folds into one shape. The click stands for the
-		// shape, so it carries both spellings and not the last row that fed it.
+		// shape, so it keeps both spellings and not the last row that filled it.
 		const input = mapChart({
 			regions: [
 				{ region: 'Brasil', value: 300 },
@@ -226,7 +226,7 @@ describe('the natural-breaks scale', () => {
 	})
 
 	// @feature charts.map-color-scale
-	it('classifies a loss too, so it is not drawn as a region with no row', () => {
+	it('classifies a loss too, so it is not shown as a region with no row', () => {
 		// The unvalued shade is what a region the query returned nothing for gets.
 		// A profit measure is negative wherever the business lost money, and a
 		// reader who cannot tell the two apart reads the map wrong.

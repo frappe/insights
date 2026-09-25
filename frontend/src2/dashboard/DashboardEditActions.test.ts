@@ -23,7 +23,7 @@ async function actions(doc: Record<string, any>) {
 
 describe('the dashboard builder actions', () => {
 	// @feature shared.publish-needs-share
-	it('offers Share where the server says the caller may share, and nowhere else', async () => {
+	it('shows Share where the server says the caller may share, and nowhere else', async () => {
 		expect(await actions({ read_only: false, can_share: true })).toContain('Share')
 		expect(await actions({ read_only: false, can_share: false })).not.toContain('Share')
 		expect(await actions({ read_only: false, can_share: false })).toContain('Edit')

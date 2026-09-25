@@ -140,7 +140,7 @@ def copy_into(original: str, workbook: str, copies: dict, workbook_of: dict, sto
     )
     for variable in source.variables:
         copy.append("variables", {"variable_name": variable.variable_name})
-    # the value is mandatory, but the copy must not carry it
+    # the value is mandatory, but the copy must not keep it
     copy.flags.ignore_mandatory = True
     copy.insert(ignore_permissions=True)
     if source.variables:

@@ -1,6 +1,6 @@
 """The one-time repair of Sankey value aggregations.
 
-A Sankey used to draw its source query as it stood, so nothing read the
+A Sankey used to render its source query as it stood, so nothing read the
 aggregation on its value column. The server derivation reads it, and the two
 functions that collapse a one-row group — `count` and `count_distinct` — flatten
 every ribbon to width 1. See
@@ -96,7 +96,7 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
 
     # @feature charts.sankey-source-target-value
     def test_a_count_over_a_column_that_cannot_be_summed_is_left_alone(self):
-        """A count is offered over every column, a sum only over the numeric ones.
+        """A count is allowed over every column, a sum only over the numeric ones.
 
         Rewriting one of these would trade a flat diagram for a chart that
         throws, for the author and for every reader of a dashboard it sits on.

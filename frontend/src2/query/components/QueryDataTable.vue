@@ -20,7 +20,7 @@ import type { ChartSegmentClick } from '../../charts/drill/segment_click'
 // depending on how much data there was.
 const props = defineProps<{
 	query: ResultTable
-	/** the rows to draw, when the pane owns the paging. Defaults to the whole result. */
+	/** the rows to render, when the pane owns the paging. Defaults to the whole result. */
 	rows?: QueryResultRow[]
 	/** which page the rows came from, so the row gutter counts on */
 	currentPage?: number
@@ -83,7 +83,7 @@ function onSortChange(column_name: string, sort_order: SortDirection) {
 }
 
 // The table reports the click, it does not act on it: what a cell can be drilled
-// against is the caller's to know, and so is the dialog. The table draws the
+// against is the caller's to know, and so is the dialog. The table renders the
 // formatted rows, so it is the table that crosses back to the raw one — a
 // segment is pinned on what was queried, never on what was printed.
 function onDrillDown(column: QueryResultColumn, formattedRow: QueryResultRow, event: MouseEvent) {

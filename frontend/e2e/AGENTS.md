@@ -67,7 +67,7 @@ refilter" is an author flow.
 
 A verify flow seeds over REST and asserts in the browser. It is fast and stable,
 so prefer it whenever the sentence does not name a click. An author flow is slow
-and carries the churn, so keep its clicking to the flow under test. Never click
+and takes the churn, so keep its clicking to the flow under test. Never click
 to build setup data that a fixture or a seeding function can create.
 
 ## Fixtures
@@ -85,7 +85,7 @@ Every fixture is lazy. A test seeds only what it names in its destructuring.
 | `workbookWithChart` | Plus a saved Bar Chart counting orders by status |
 | `workbookWithDashboard` | Plus a Dashboard holding that Chart |
 
-The Workbook rungs stack. A test that names `workbookWithChart` gets one
+The Workbook fixtures stack. A test that names `workbookWithChart` gets one
 Workbook and one teardown, because `Insights Workbook.on_trash` cascades.
 
 **A test states what it depends on.** The destructured fixture list is that
@@ -126,7 +126,7 @@ test('a user unions two queries', async ({ page, adminApi, demoDataSource }) => 
 })
 ```
 
-Every seeded title carries the `e2e` prefix through `uniqueTitle`, so a stray
+Every seeded title has the `e2e` prefix through `uniqueTitle`, so a stray
 record is findable. Keep using it.
 
 **Publishing is not a REST write.** `is_public` and `permission_user` sit at
@@ -196,19 +196,19 @@ XPath is banned outright.
   string is the rendered string. This app defines its own `__` in
   `frontend/src2/translation.ts`. It takes positional arguments, not an array,
   so `__('Add {0}', section.title)` is correct.
-- **A workbook sidebar item is a router link carrying the title.** A Query tab
+- **A workbook sidebar item is a router link named by the title.** A Query tab
   is `getByRole('link', { name: query.title })`, not a button.
 - **The sidebar `+` that adds a Query or a Chart is named after its section.**
   Use `getByRole('button', { name: 'Add Charts' })`, and the same shape for
   `Add Queries` and `Add Dashboards`. The row `X` is `Remove <title>`. The
   second header button is `New folder in <section>`.
-- **Two components draw the workbook sidebar, and they look almost the same.**
-  `WorkbookSidebarFolders.vue` draws Queries and Charts.
-  `WorkbookSidebarListSection.vue` draws Dashboards only. Edit the right one.
+- **Two components render the workbook sidebar, and they look almost the same.**
+  `WorkbookSidebarFolders.vue` renders Queries and Charts.
+  `WorkbookSidebarListSection.vue` renders Dashboards only. Edit the right one.
   Check the rendered DOM before you trust a source read.
-- **A chart's picture renders as SVG**, so axis labels and data labels are real
-  `<text>` nodes. The legend is HTML beside it, and several chart types draw no
-  picture at all. See "Asserting on a chart" below.
+- **A chart's plot renders as SVG**, so axis labels and data labels are real
+  `<text>` nodes. The legend is HTML beside it, and several chart types render no
+  plot at all. See "Asserting on a chart" below.
 - **The results table is a real `<table>`.** Body rows are role `row` and cells
   are role `cell`.
 
@@ -217,7 +217,7 @@ XPath is banned outright.
 Three traps. Read this before you assert on rows.
 
 1. Header cells are `<td>` inside `<thead>`, so their role is **`cell`**, not
-   `columnheader`. Each header cell carries `data-column-name="<column>"`.
+   `columnheader`. Each header cell has `data-column-name="<column>"`.
 2. `<tbody>` ends with a spacer `<tr>` that holds no cells. A bare
    `getByRole('row')` count is therefore header rows plus data rows plus one.
 3. Every data row starts with a row-number cell holding `1`, `2`, `3` and so on.
@@ -240,7 +240,7 @@ assert on it unless your flow is about paging.
 
 ### Asserting on a chart
 
-A chart is assertable in text, and it is drawn in two layers. The picture is echarts in SVG mode, so every axis label and data label is a real `<text>` node. Everything around it — the legend above all — is plain HTML beside the picture, and a chart type that draws no picture at all (a Number card, a Funnel, a Table) has no echarts node to name.
+A chart is assertable in text, and it is rendered in two layers. The plot is echarts in SVG mode, so every axis label and data label is a real `<text>` node. Everything around it — the legend above all — is plain HTML beside the plot, and a chart type that renders no plot at all (a Number card, a Funnel, a Table) has no echarts node to name.
 
 Scope to the chart. The result preview under the chart builder repeats every
 category label, so an unscoped `getByText('delivered')` matches twice.
@@ -248,12 +248,12 @@ category label, so an unscoped `getByText('delivered')` matches twice.
 
 ```ts
 // locator: `ChartBody` is the one element that holds the chart alone, whatever
-// the type draws. It is `data-testid="chart"`.
+// the type renders. It is `data-testid="chart"`.
 const card = page.getByTestId('chart')
 // locator: echarts writes `_echarts_instance_` on the element it renders into.
-// Only the types that draw a picture have one.
+// Only the types that render a plot have one.
 const plot = page.locator('[_echarts_instance_]')
-// locator: the legend is HTML, not part of the picture, and its entries are
+// locator: the legend is HTML, not part of the plot, and its entries are
 // buttons — clicking one switches the series off.
 const legend = page.locator('[data-slot="chart-legend"]')
 
@@ -263,7 +263,7 @@ await expect(legend.getByRole('button', { name: 'Revenue' })).toBeVisible()
 
 Four things the chart will not give you.
 
-1. **A series name is not in the picture.** It is a legend button. Reach it
+1. **A series name is not in the plot.** It is a legend button. Reach it
    through the legend, never inside the echarts node.
 2. **Category order is not stable between runs.** Assert that a label is there,
    never where it is.
@@ -368,7 +368,7 @@ Category values, safe to assert on:
 All 8 declared foreign keys join with zero orphans, so any join in the spec
 returns rows.
 
-**One thing the data does not support.** `orderpayments.payment_value` is drawn
+**One thing the data does not support.** `orderpayments.payment_value` is generated
 independently of the line items it pays for. A test that reconciles a payment
 total against a price total will fail.
 
@@ -418,7 +418,7 @@ counts the setup and the teardown project on top of the flows in
 `e2e/tests/*.spec.ts`.
 
 `yarn dev` cannot host the suite. Vite serves its own `index.html` for
-`/insights`, so the page carries no `window.csrf_token` and the setup project
+`/insights`, so the page has no `window.csrf_token` and the setup project
 fails. Point the suite at the bench port.
 
 If the setup project reports a missing Data Source, seed it once:
@@ -521,7 +521,7 @@ test.describe('dashboard', () => {
 
 		await expect(page.getByText(chart.title)).toBeVisible()
 		// Charts render as SVG, so a legend entry is a real text node. Several
-		// nodes can carry the label, so assert a count instead of visibility.
+		// nodes can hold the label, so assert a count instead of visibility.
 		await expect(page.getByText('delivered')).not.toHaveCount(0)
 	})
 })
@@ -547,7 +547,7 @@ test.describe('permissions', () => {
 - [ ] One `test.describe` per file, named after the area.
 - [ ] Every test names the fixtures it depends on.
 - [ ] No `if`, no sleep, no assertion on a REST field.
-- [ ] Every CSS locator carries a `// locator:` reason.
+- [ ] Every CSS locator has a `// locator:` reason.
 - [ ] `yarn lint:e2e` reports no errors.
 - [ ] Any genuine bug is a new ticket, not a code fix.
 - [ ] Report which flows you could not reach, and why.

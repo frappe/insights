@@ -127,7 +127,7 @@ class TestVisibility(InsightsIntegrationTestCase):
     # the levels, one by one
 
     # @feature permissions.visibility
-    def test_private_admits_the_owner_only(self):
+    def test_private_allows_the_owner_only(self):
         for doc in self.make_content():
             doc = self.declare(doc, "Private")
             self.assert_can_read(OWNER, doc)
@@ -135,7 +135,7 @@ class TestVisibility(InsightsIntegrationTestCase):
                 self.assert_cannot_read(user, doc)
 
     # @feature permissions.visibility
-    def test_private_still_admits_a_docshare(self):
+    def test_private_still_allows_a_docshare(self):
         for doc in self.make_content():
             doc = self.declare(doc, "Private")
             self.assert_cannot_read(INSIGHTS_PEER, doc)
@@ -145,8 +145,8 @@ class TestVisibility(InsightsIntegrationTestCase):
             self.assert_cannot_read(DESK_USER, doc)
 
     # @feature permissions.visibility
-    def test_an_org_wide_share_admits_nobody(self):
-        """`Everyone` is the only way to admit every user, so a DocShare must
+    def test_an_org_wide_share_allows_nobody(self):
+        """`Everyone` is the only way to allow every user, so a DocShare must
         name a person. `frappe.share.add` refuses an org-wide share, and the
         permission check ignores an older one."""
         for doc in self.make_content():
@@ -166,8 +166,8 @@ class TestVisibility(InsightsIntegrationTestCase):
                 self.assert_cannot_read(user, doc)
 
     # @feature permissions.share-workbook-org
-    def test_a_workbook_open_to_the_organization_admits_no_guest(self):
-        """An org-wide share admits every signed-in user, and a guest is not signed in."""
+    def test_a_workbook_open_to_the_organization_allows_no_guest(self):
+        """An org-wide share allows every signed-in user, and a guest is not signed in."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.declare(chart, "Private")
         self.declare(dashboard, "Private")
@@ -196,7 +196,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.share-dashboard
     def test_a_dashboard_is_shared_with_insights_users_only(self):
-        """A dashboard's DocShare also admits the user to its charts, their rows
+        """A dashboard's DocShare also lets the user read its charts, their rows
         and their files. So a dashboard share checks for an Insights user, as a
         workbook share does."""
         _, dashboard = self.make_content()
@@ -205,7 +205,7 @@ class TestVisibility(InsightsIntegrationTestCase):
             frappe.get_doc(DT.DASHBOARD, dashboard.name).update_access({"people_with_access": [DESK_USER]})
 
     # @feature permissions.share-dashboard
-    def test_a_share_the_dashboard_already_holds_is_kept_not_named_again(self):
+    def test_a_share_the_dashboard_already_holds_is_kept_when_sent_back(self):
         """`DashboardShareDialog` loads its list from `get_people_with_access` and
         sends the whole list back on Done. So an older share, or one with a user
         who has since left Insights, comes back each time. Keeping it gives
@@ -226,7 +226,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         self.assertEqual(sorted(shared), sorted([DESK_USER, INSIGHTS_PEER]))
 
     # @feature permissions.visibility
-    def test_roles_admits_the_named_roles_only(self):
+    def test_roles_allows_the_named_roles_only(self):
         for doc in self.make_content():
             doc = self.declare(doc, "Roles", roles=[VISIBILITY_ROLE])
             self.assert_can_read(ROLE_HOLDER, doc)
@@ -234,7 +234,7 @@ class TestVisibility(InsightsIntegrationTestCase):
                 self.assert_cannot_read(user, doc)
 
     # @feature permissions.visibility
-    def test_everyone_admits_any_logged_in_user(self):
+    def test_everyone_allows_any_logged_in_user(self):
         for doc in self.make_content():
             doc = self.declare(doc, "Everyone")
             for user in (INSIGHTS_PEER, ROLE_HOLDER, DESK_USER):
@@ -242,14 +242,14 @@ class TestVisibility(InsightsIntegrationTestCase):
             self.assert_cannot_read(GUEST, doc)
 
     # @feature permissions.visibility shared.dashboard-link shared.chart-link
-    def test_public_admits_guests(self):
+    def test_public_allows_guests(self):
         for doc in self.make_content():
             doc = self.declare(doc, "Public")
             for user in (INSIGHTS_PEER, ROLE_HOLDER, DESK_USER, GUEST):
                 self.assert_can_read(user, doc)
 
     # @feature permissions.visibility permissions.non-insights-user
-    def test_no_level_consults_the_insights_user_role(self):
+    def test_no_visibility_level_consults_the_insights_user_role(self):
         self.assertNotIn("Insights User", frappe.get_roles(DESK_USER))
         for doc in self.make_content():
             self.assert_can_read(DESK_USER, self.declare(doc, "Everyone"))
@@ -301,7 +301,7 @@ class TestVisibility(InsightsIntegrationTestCase):
     # @feature shared.publish-needs-share
     def test_every_widening_step_needs_write_on_the_workbook(self):
         """The check applies to every widening, not only to the widest level.
-        `Roles` with no role admits nobody, so the test names a role."""
+        `Roles` with no role allows nobody, so the test names a role."""
         for doc in self.make_content():
             doc = self.reads_through_workbook(doc)
             self.assertFalse(has_doc_permission(doc, "share", INSIGHTS_PEER))
@@ -354,7 +354,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature shared.publish-needs-share
     def test_narrowing_visibility_is_a_plain_write(self):
-        """Narrowing admits nobody new, so it needs only write."""
+        """Narrowing allows nobody new, so it needs only write."""
         for doc in self.make_content():
             doc = self.declare(doc, "Public")
             self.edits_through_workbook(doc)
@@ -381,7 +381,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         self.assert_can_read(DESK_USER, dashboard)
         self.assert_can_read(DESK_USER, chart)
 
-        # a chart's visibility never admits a user to its dashboard
+        # a chart's visibility never lets a user read its dashboard
         dashboard = self.declare(dashboard, "Private")
         chart = self.declare(chart, "Everyone")
 
@@ -446,7 +446,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         self.assertEqual(saved.linked_charts, [])
 
     # @feature shared.chart-on-public-dashboard shared.revoke
-    def test_a_public_dashboard_admits_a_guest_to_its_charts(self):
+    def test_a_public_dashboard_lets_a_guest_read_its_charts(self):
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
         self.declare(chart, "Private")
         self.runs_as_its_owner(chart)
@@ -548,7 +548,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         chart, dashboard = self.make_content()
         frappe.share.add(DT.WORKBOOK, chart.workbook, user=INSIGHTS_PEER, read=1, notify=0)
 
-        def offered(user, doc):
+        def can_share(user, doc):
             with self.as_user(user):
                 d = frappe.get_doc(doc.doctype, doc.name).as_dict()
             if doc.doctype == DT.DASHBOARD:
@@ -556,17 +556,17 @@ class TestVisibility(InsightsIntegrationTestCase):
             return d.can_share
 
         for doc in (chart, dashboard):
-            self.assertTrue(offered(OWNER, doc), doc.doctype)
-            self.assertFalse(offered(INSIGHTS_PEER, doc), doc.doctype)
+            self.assertTrue(can_share(OWNER, doc), doc.doctype)
+            self.assertFalse(can_share(INSIGHTS_PEER, doc), doc.doctype)
 
         self.edits_through_workbook(chart)
         for doc in (chart, dashboard):
-            self.assertTrue(offered(INSIGHTS_PEER, doc), doc.doctype)
+            self.assertTrue(can_share(INSIGHTS_PEER, doc), doc.doctype)
 
         frappe.db.set_value(DT.WORKBOOK, chart.workbook, "is_standard", 1)
         with patch.dict(frappe.conf, {"developer_mode": 0}):
             for doc in (chart, dashboard):
-                self.assertFalse(offered(OWNER, doc), doc.doctype)
+                self.assertFalse(can_share(OWNER, doc), doc.doctype)
 
     # @feature permissions.chart-run-as-owner permissions.run-as-owner-lapses
     def test_a_chart_says_who_may_move_its_box(self):
@@ -660,7 +660,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.get_value(chart.doctype, chart.name, "visibility"), "Private")
 
     # @feature shared.chart-on-public-dashboard
-    def test_publishing_a_dashboard_cannot_carry_a_chart_that_runs_as_somebody_else(self):
+    def test_publishing_a_dashboard_cannot_include_a_chart_that_runs_as_somebody_else(self):
         """Unlike `test_publishing_a_dashboard_never_checks_somebody_elses_chart`,
         Run as owner is already on here. Nothing is left to tick, but a guest
         would still read the owner's rows."""
@@ -669,7 +669,7 @@ class TestVisibility(InsightsIntegrationTestCase):
         self.edits_through_workbook(dashboard)
         frappe.share.add(chart.doctype, chart.name, user=INSIGHTS_PEER, read=1, notify=0)
 
-        # `Roles` too: a role admits users that nobody named one by one, and
+        # `Roles` too: a role allows users that nobody named one by one, and
         # share permission cannot grant that for another user's rows
         for level in ("Public", "Everyone", "Roles"):
             with self.as_user(INSIGHTS_PEER), self.assertRaises(frappe.PermissionError):
@@ -683,7 +683,7 @@ class TestVisibility(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner
     def test_a_sharer_cannot_publish_somebody_elses_chart_to_a_role(self):
-        """A role admits a group of users. They get the owner's rows, as they do
+        """A role allows a group of users. They get the owner's rows, as they do
         at `Everyone` and `Public`."""
         chart, _ = self.make_content()
         self.runs_as_its_owner(chart)
@@ -748,8 +748,8 @@ class TestVisibility(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.get_value(chart.doctype, chart.name, "visibility"), "Roles")
 
     # @feature permissions.visibility permissions.chart-run-as-owner
-    def test_roles_with_no_role_admits_nobody(self):
-        """`Roles` with no role admits nobody, as `Private` does. So the move is
+    def test_roles_with_no_role_allows_nobody(self):
+        """`Roles` with no role allows nobody, as `Private` does. So the move is
         not a publish, and `published_reach` tells `ChartShareDialog` so."""
         chart, _ = self.make_content()
         self.runs_as_its_owner(chart)
@@ -856,7 +856,7 @@ class TestVisibility(InsightsIntegrationTestCase):
                 self.assertFalse(frappe.has_permission(doc.doctype, ptype="write", doc=doc.name))
 
     # @feature permissions.visibility
-    def test_declared_levels_match_the_schema(self):
+    def test_declared_visibility_levels_match_the_schema(self):
         for doctype in (DT.CHART, DT.DASHBOARD):
             options = frappe.get_meta(doctype).get_field("visibility").options.split("\n")
             self.assertEqual(options, VISIBILITY_LEVELS)
@@ -907,7 +907,7 @@ class TestOrgShareMigration(InsightsIntegrationTestCase):
         execute()
 
     # @feature permissions.visibility
-    def test_an_org_share_that_carried_only_read_becomes_the_everyone_level(self):
+    def test_an_org_share_that_granted_only_read_becomes_the_everyone_level(self):
         for doc in self.shared_with_the_org(read=1):
             self.migrate()
             self.assertEqual(frappe.db.get_value(doc.doctype, doc.name, "visibility"), "Everyone")
@@ -916,7 +916,7 @@ class TestOrgShareMigration(InsightsIntegrationTestCase):
             )
 
     # @feature permissions.visibility
-    def test_an_org_share_that_carried_write_still_becomes_the_everyone_level(self):
+    def test_an_org_share_that_granted_write_still_becomes_the_everyone_level(self):
         """A share with write also granted read, and a row left behind would grant nothing."""
         for doc in self.shared_with_the_org(read=1, write=1):
             self.migrate()

@@ -62,13 +62,13 @@ class InsightsWorkbook(Document):
         standard.validate_overwrite(docdict)
 
     def before_naming(self):
-        # a fixture or export written while this doctype was still `autoincrement` carries a
+        # a fixture or export written while this doctype was still `autoincrement` has a
         # numeric name, and the column is varchar now — `validate_name` throws on an int
         if isinstance(self.name, int):
             self.name = str(self.name)
 
     def autoname(self):
-        # plain numbers, carrying on from where `autoincrement` left off — see
+        # plain numbers, continuing from where `autoincrement` left off — see
         # insights/patches/name_workbooks_as_strings.py for why this needs to be a string.
         self.name = getseries(WORKBOOK_SERIES_KEY, 1)
 
@@ -102,11 +102,11 @@ class InsightsWorkbook(Document):
         standard.validate_standard(self)
 
         if self.is_standard:
-            # Every rename of a standard workbook must claim its file, not only
+            # Every rename of a standard workbook must check its file is free, not only
             # `mark_as_standard`. Two names can scrub to one filename. Then
             # `after_rename` overwrites the other workbook's file, and the next
             # migrate deletes that workbook as an orphan.
-            standard.claim_file(self.doctype, new_name, self.module)
+            standard.check_file_is_free(self.doctype, new_name, self.module)
 
     def after_rename(self, old_name, new_name, merge=False):
         standard.delete_folder(self, old_name)
@@ -189,12 +189,12 @@ class InsightsWorkbook(Document):
     ):
         """Restore the workbook's contents, and answer with the name each one took.
 
-        The map is keyed on the name the file carries and valued on the name the
+        The map is keyed on the name the file includes and valued on the name the
         copy got, so a caller can reach what it just imported.
 
         With `keep_names`, the file is restored as written. Each member keeps the
         name the file gives it. A member the site already has is updated in
-        place. Members the file no longer carries are deleted. A standard
+        place. Members the file no longer includes are deleted. A standard
         workbook arrives this way. Every other restore gives members new names
         and rewrites the references to them.
         """
@@ -497,7 +497,7 @@ class InsightsWorkbook(Document):
         if not name:
             frappe.throw(frappe._("Name the workbook ships under."))
 
-        standard.claim_file(self.doctype, name, module)
+        standard.check_file_is_free(self.doctype, name, module)
 
         if name != self.name:
             rename_doc(self.doctype, self.name, name, force=True, ignore_permissions=True)
@@ -634,7 +634,7 @@ def _order_by_reference(queries: dict) -> list[str]:
 
     A query is inserted with its references already pointing at the copies they
     name, so those copies have to exist first. References form a directed acyclic
-    graph, so such an order exists. A file with no such order carries a cycle.
+    graph, so such an order exists. A file with no such order has a cycle.
     """
     deps = {
         name: referenced_queries(query.get("operations")) & queries.keys() for name, query in queries.items()
@@ -885,7 +885,7 @@ def _answers_to_route(doctype: str, name: str) -> str | None:
 
 
 def _delete_dropped_members(workbook: str, contents: dict) -> None:
-    """Delete the members of `workbook` the file no longer carries.
+    """Delete the members of `workbook` the file no longer includes.
 
     A member that a desk document shows is kept, with the charts and queries
     it reads, and the keep is logged. Deleting it would leave the desk
@@ -924,11 +924,11 @@ def _delete_dropped_members(workbook: str, contents: dict) -> None:
         )
         if folder
     }
-    carried = {(folder["type"], folder["title"]) for folder in contents["folders"]}
+    in_file = {(folder["type"], folder["title"]) for folder in contents["folders"]}
     for folder in frappe.get_all(
         "Insights Folder", filters={"workbook": workbook}, fields=["name", "title", "type"]
     ):
-        if (folder.type, folder.title) not in carried and folder.name not in kept_folders:
+        if (folder.type, folder.title) not in in_file and folder.name not in kept_folders:
             frappe.delete_doc("Insights Folder", folder.name, force=True, ignore_permissions=True)
 
 
@@ -972,9 +972,9 @@ def _kept_for_desk(workbook: str, dropped: dict) -> set[str]:
     newly_claimed = [claim for claim in claims if claim[2] not in already_kept]
     if newly_claimed:
         frappe.log_error(
-            title=f"Kept what a desk document draws in {workbook}",
+            title=f"Kept what a desk document uses in {workbook}",
             message="\n".join(
-                f"{desk_doctype} {desk_name} draws {claimed}, which the file no longer carries"
+                f"{desk_doctype} {desk_name} uses {claimed}, which the file no longer includes"
                 for desk_doctype, desk_name, claimed in newly_claimed
             ),
         )

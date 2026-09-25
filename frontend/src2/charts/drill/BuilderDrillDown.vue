@@ -32,7 +32,7 @@ function openable(answer: DrillLevelData) {
 // filter, sort and find.
 const $rows = ref<InstanceType<typeof DrillRowsView> | null>(null)
 
-// The new query runs as its own author. It carries the level's cut, but not the
+// The new query runs as its own author. It keeps the level's cut, but not the
 // chart's Run as owner setting.
 function addToWorkbook(first: DrillLevelData) {
 	const answer = $rows.value?.rows.level ?? first
@@ -49,11 +49,11 @@ function addToWorkbook(first: DrillLevelData) {
 			})
 			// a dashboard filter on a query that the chart's query reads has no
 			// operation in the new query, so it has more rows than the dialog showed
-			if (answer.uncarried_filters?.length) {
+			if (answer.unapplied_filters?.length) {
 				toast.warning(
 					__(
 						'The new query does not apply the dashboard filters: {0}',
-						answer.uncarried_filters.join(', '),
+						answer.unapplied_filters.join(', '),
 					),
 				)
 			}

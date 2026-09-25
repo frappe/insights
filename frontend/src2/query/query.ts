@@ -822,7 +822,7 @@ export function makeQuery(name: string) {
 		...toRefs(query),
 
 		// a saved query has a document to wait for, a throwaway one never does —
-		// either way this is when there is something to draw a table from
+		// either way this is when there is something to render a table from
 		ready: computed(() => query.isloaded || query.islocal),
 
 		activeOperationIdx,

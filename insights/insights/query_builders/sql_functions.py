@@ -492,7 +492,7 @@ def get_date_range(timespan, include_current=False, anchor=None):
     """The days a span covers. `timespan` is "last 7 days", "next 3 months", …
 
     `include_current` is here for a caller that says it beside the span rather
-    than inside it. A span carrying "(include current)" says it for itself.
+    than inside it. A span with "(include current)" says it for itself.
     """
     parsed = parse_span(timespan)
     if not parsed:

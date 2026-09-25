@@ -5,7 +5,7 @@ from insights.insights.doctype.insights_chart_v3.chart_drill import aggregate_co
 
 class TestAggregateConditions(UnitTestCase):
     # @feature charts.drill-conditional-measure
-    def test_a_conditional_aggregate_carries_its_condition(self):
+    def test_a_conditional_aggregate_keeps_its_condition(self):
         self.assertEqual(aggregate_conditions("count_if(status == 'Open')"), ["status == 'Open'"])
         self.assertEqual(aggregate_conditions("sum_if(status == 'Open', amount)"), ["status == 'Open'"])
 

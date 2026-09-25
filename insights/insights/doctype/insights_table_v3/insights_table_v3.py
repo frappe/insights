@@ -244,7 +244,7 @@ def get_stored_columns(
 ) -> dict[str, frappe._dict]:
     """Stored columns of every table the caller may read, keyed by table document name.
 
-    Each value carries `data_source`, `table`, `label` and `columns`, where `columns`
+    Each value includes `data_source`, `table`, `label` and `columns`, where `columns`
     is narrowed to what the caller may read. A table synced before the columns were
     stored is left out - it has nothing to report.
 
@@ -404,7 +404,7 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
     """The queries that reference this table and that the caller may read.
 
     `Insights Query Reference` is an edge table. It is granted to Administrator
-    and System Manager alone, and a join over it carries the joined query's title
+    and System Manager alone, and a join over it passes the joined query's title
     and workbook out with it. Reading a table says nothing about who may see the
     queries built on it, so each one is asked for by name.
     """
@@ -427,7 +427,7 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
 
 
 def strip_schema_prefix(table_name: str) -> str:
-    """Drop the `<schema>.` prefix postgres table names used to always carry.
+    """Drop the `<schema>.` prefix postgres table names used to always have.
 
     The frappe table -> doctype mapping below needs the bare `tab`-prefixed name, so
     `public.tabUser` has to resolve to the `User` doctype and not blow up in `get_meta`.
@@ -446,15 +446,15 @@ def apply_user_permissions(t: Table, data_source, table_name, user=None, granted
     """The rows and columns of a site table that `user` may read.
 
     Desk permissions or a team grant, whichever allows more, cell by cell. A
-    cell comes back if desk admits its row and its column, or if a grant admits
+    cell comes back if desk allows its row and its column, or if a grant allows
     its row. `granted` is the Table Restrictions of the team grant
     (`team_grant`), or None when no grant covers the table. So a column that
-    desk hides is kept, and it is empty on the rows that only desk admits.
+    desk hides is kept, and it is empty on the rows that only desk allows.
     """
     user = user or get_permission_user()
 
     if not is_site_db(data_source):
-        # external databases and uploads carry no Frappe permissions to filter by
+        # external databases and uploads have no Frappe permissions to filter by
         return t
 
     if granted is not None and not granted:
@@ -478,7 +478,7 @@ def apply_user_permissions(t: Table, data_source, table_name, user=None, granted
     from insights.insights.doctype.insights_team.insights_team import restriction_predicate
 
     # The grant is restricted, so it gives less than the whole table: rows
-    # desk does not admit, and cells of columns desk hides. Where desk admits
+    # desk does not allow, and cells of columns desk hides. Where desk allows
     # rows too, the grant only adds to them, so nothing is recorded as narrowed.
     by_desk = desk_predicate(t, data_source, table_name, user)
     if by_desk is None:
@@ -541,8 +541,8 @@ def desk_reads_table(table: str, user: str | None = None) -> bool:
     """Whether desk lets `user` read any rows of this site table.
 
     It matches the query engine: `apply_user_permissions` reads a table's rows
-    through `frappe.get_list`, which admits a share as it admits a role. A table
-    without a doctype admits nobody.
+    through `frappe.get_list`, which allows a share as it allows a role. A table
+    without a doctype allows nobody.
     """
     user = user or frappe.session.user
     table = strip_schema_prefix(table)
@@ -560,7 +560,7 @@ def desk_readable_tables(user: str) -> set[str]:
     """Every site table in which desk lets `user` read some rows.
 
     A readable doctype's table, a child table of one, and `tabSingles` when any
-    single doctype is readable. These are the tables `apply_user_permissions` admits.
+    single doctype is readable. These are the tables `apply_user_permissions` allows.
     """
     readable = readable_doctypes(user)
     children = {
@@ -625,7 +625,7 @@ def apply_column_permissions(t: Table, table_name, user=None):
 
 
 def permitted_names(t: Table, data_source, table_name, permission_query):
-    """The `name` of every row `permission_query` admits, on `t`'s own backend."""
+    """The `name` of every row `permission_query` allows, on `t`'s own backend."""
     from_warehouse = isinstance(t.get_backend(), DuckDBBackend)
     if from_warehouse:
         # `t` is on DuckDB but the permission query must run against the live site-db (a

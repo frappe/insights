@@ -34,7 +34,7 @@ def execute():
     The reason lives beside `ROW_HEIGHT`. A cell keeps the pixels it covered,
     rounded up to the next whole row, so a card that fit its content still fits
     it. Two kinds of cell are not scaled but restated: a filter cell and a
-    Number cell are as tall as what they draw, so each is written at the rows
+    Number cell are as tall as what they show, so each is written at the rows
     its own rule gives. Widths and columns are untouched: the grid still places
     against 20 of them.
     """
@@ -57,7 +57,7 @@ def execute():
 def already_rescaled() -> bool:
     """Whether this patch has run on the site before, under any ` #N` suffix.
 
-    The suffix as the framework writes it: `patches.txt` carries the space and
+    The suffix as the framework writes it: `patches.txt` includes the space and
     the log stores the line verbatim. The suffix and nothing else: a prefix
     match would also read a later `..._v2` patch as this one, and this guard is
     all that stands between a re-run and every box doubling. The underscores in
@@ -132,19 +132,19 @@ def fixed_rows(item: dict, configs: dict) -> int | None:
 
 def card_rows(config: dict, reading: str | None = None) -> int:
     """The rows one reading of a Number chart takes, in the three heights a card
-    has. Naming no reading is naming the first, which is what such a cell draws."""
-    if _draws_sparkline(config):
+    has. Naming no reading is naming the first, which is what such a cell shows."""
+    if _plots_sparkline(config):
         return ROWS_WITH_SPARKLINE
     return ROWS_WITH_DELTA if _compared(config, reading) else ROWS_TITLE_AND_VALUE
 
 
-def _draws_sparkline(config: dict) -> bool:
+def _plots_sparkline(config: dict) -> bool:
     """Whether the card keeps a sparkline band under its reading.
 
     The card's own rule and not the server's: `sparkline_grain` answers whether
     the server derives a second run for the card, which a grain card needs none
     of because its own readings are the series. `numberCardRows` in
-    `charts/adapter/number.ts` asks this, and it is what the cell is redrawn at
+    `charts/adapter/number.ts` asks this, and it is what the cell is rendered at
     on every read.
     """
     date_column = config.get("date_column")

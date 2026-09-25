@@ -75,7 +75,7 @@ test.describe('shared', () => {
 		// A Guest gets Not Found for an unpublished dashboard, as for a missing one.
 		// `SharedDashboard` then sends the Guest to the site login page.
 		await expect(guestPage).toHaveURL(/\/login/)
-		// The login page draws its sign-in prompt twice, once per card, so this
+		// The login page renders its sign-in prompt twice, once per card, so this
 		// asserts the prompt is present rather than that one node is visible.
 		await expect(guestPage.getByText('Please sign in to continue')).not.toHaveCount(0)
 		await expect(guestPage.getByText(chart.title)).toHaveCount(0)

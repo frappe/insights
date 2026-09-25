@@ -23,7 +23,7 @@ from insights.tests.test_run_as_owner import as_http_request
 OWNER = "authoring_api_owner@test.com"
 # holds an Insights role, but none of the owner's content
 OUTSIDER = "authoring_api_outsider@test.com"
-# the chart's visibility admits them, but they hold no Insights role
+# the chart's visibility allows them, but they hold no Insights role
 READER = "authoring_api_reader@test.com"
 
 WORKBOOK_TITLE = "Authoring API Test Workbook"
@@ -177,7 +177,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             return [d["name"] for d in get_drill_dimensions(**kwargs)["dimensions"]]
 
     # @feature charts.preview
-    def test_a_config_that_was_never_saved_draws_rows(self):
+    def test_a_config_that_was_never_saved_renders_rows(self):
         query, _ = self.make_content()
 
         result = self.preview(
@@ -225,7 +225,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         result = self.preview(OWNER, chart_type="Table", query=query.name, config=config)
 
         # the builder's normal state on the way to a chart: no rows, and no error
-        # either — the card keeps the last picture and says what is still needed
+        # either — the card keeps the last chart and says what is still needed
         self.assertEqual(result["errors"], ["Rows are required"])
         self.assertNotIn("rows", result)
 
@@ -405,7 +405,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             force=True,
         )
 
-        # a link that names a card this preview is not drawing routes nowhere
+        # a link that names a card this preview is not rendering routes nowhere
         self.assertEqual(self.descriptions(result), sorted(OWNER_TODOS))
 
     # The walk itself is `insights.api.view`'s walk and is tested there. What is
@@ -466,7 +466,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual([(row["priority"], row["Todos"]) for row in result["rows"]], [("Medium", 2)])
 
     # @feature charts.drill-breakdown-shape
-    def test_a_breakdown_here_says_how_to_draw_it_too(self):
+    def test_a_breakdown_here_says_how_to_render_it_too(self):
         query, _ = self.make_content()
 
         ordered = self.drill(
@@ -483,12 +483,12 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         )
 
         # the two fields `insights.api.view` reports, on the endpoint the builder uses:
-        # one dialog draws both, so it must not have to know which fed it
+        # one dialog renders both, so it must not have to know which endpoint sent it
         self.assertEqual((ordered["ordered"], ordered["granularity"]), (True, "minute"))
         self.assertEqual((ranked["ordered"], ranked["granularity"]), (False, None))
 
     # @feature charts.drill-open-as-query
-    def test_the_answer_carries_the_pipeline_the_level_opens_as(self):
+    def test_the_answer_includes_the_pipeline_the_level_opens_as(self):
         query, _ = self.make_content()
 
         result = self.drill(
@@ -520,7 +520,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             drill_stack=[breakdown_level("priority", [equals("status", "Open")], measure="Todos")],
         )
 
-        # the grouping and the sort the level is a picture of, not just the rows
+        # the grouping and the sort the level shows, not just the rows
         # underneath it: the opened query produces what is on screen, ties
         # included
         self.assertEqual(
@@ -529,7 +529,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         )
 
     # @feature charts.drill-rows charts.drill-open-as-query
-    def test_a_rows_level_here_is_read_here_and_carries_the_pipeline_it_opens_as(self):
+    def test_a_rows_level_here_is_read_here_and_includes_the_pipeline_it_opens_as(self):
         """`AuthoringDrillDown.vue` shows the rows the server read, and "open as
         query" adds the pipeline to the workbook. Run anywhere else, the pipeline
         runs as its caller."""
@@ -560,7 +560,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual([(row["priority"], row["Todos"]) for row in breakdown["rows"]], [("Medium", 2)])
         self.assertEqual(breakdown["total_row_count"], 1)
 
-    # @feature charts.drill-breakdown-offers
+    # @feature charts.drill-breakdown-options
     def test_the_candidates_can_be_asked_for_on_their_own(self):
         query, _ = self.make_content()
 
@@ -576,8 +576,8 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertNotIn("Todos", names)
         self.assertNotIn("docstatus", names)
 
-    # @feature charts.drill-breakdown-offers
-    def test_a_pipeline_that_aggregates_nothing_offers_no_candidates(self):
+    # @feature charts.drill-breakdown-options
+    def test_a_pipeline_that_aggregates_nothing_lists_no_candidates(self):
         query, _ = self.make_content()
 
         names = self.candidates(OWNER, query=query.name, operations=todo_operations())
@@ -586,14 +586,14 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         # when the answer is that it cannot
         self.assertEqual(names, [])
 
-    # @feature charts.drill-breakdown-offers
+    # @feature charts.drill-breakdown-options
     def test_the_candidates_ride_the_previews_rows(self):
         query, _ = self.make_content()
 
         result = self.preview(OWNER, chart_type="Table", query=query.name, config=table_config())
 
-        # the same field the viewer response carries, so a card reads its menu
-        # off whichever feed drew it
+        # the same field the viewer response includes, so a card reads its menu
+        # off whichever endpoint rendered it
         names = [dimension["name"] for dimension in result["drill"]["dimensions"]]
         self.assertIn("status", names)
         self.assertIn("priority", names)
@@ -711,7 +711,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
             update_share_permissions(chart.workbook, [{"user": OUTSIDER, "read": 1, "write": write}])
 
     # @feature permissions.request-body-not-trusted permissions.chart-run-as-owner
-    def test_a_reader_who_cannot_edit_the_chart_draws_the_stored_chart(self):
+    def test_a_reader_who_cannot_edit_the_chart_renders_the_stored_chart(self):
         """`chart_preview.ts` sends `chart_name` with the config it holds. A view
         response removes `filters` from that config (`present_config`), so a
         reader who may not edit the chart sends it without them. The server uses
@@ -741,7 +741,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual(self.descriptions(reshaped), self.descriptions(card))
 
     # @feature permissions.request-body-not-trusted permissions.chart-run-as-owner
-    def test_a_reader_who_cannot_edit_the_chart_gets_its_picture_and_nothing_behind_it(self):
+    def test_a_reader_who_cannot_edit_the_chart_gets_the_chart_and_nothing_behind_it(self):
         """A read-only collaborator's builder sends its grid, a page window and
         `chart_name`. They get what `view.get_chart_data` gives a reader, whatever
         the chart runs as: the stored chart at its own `limit`, no routing by
@@ -772,7 +772,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
     # @feature permissions.request-body-not-trusted charts.drill-open-as-query
     def test_a_reader_who_cannot_edit_the_chart_gets_no_pipeline_from_its_drill(self):
-        """`AuthoringDrillDown.vue` shows "open as query" when a level carries its
+        """`AuthoringDrillDown.vue` shows "open as query" when a level includes its
         pipeline. A read-only collaborator on a chart run as its reader gets the
         drill `view.get_drill_data` would give them. A collaborator who may edit
         it gets the pipeline."""
@@ -823,7 +823,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertEqual(self.descriptions(answer), [OWNER_TODOS[0]])
 
     # @feature dashboard.filter-links permissions.chart-run-as-owner permissions.request-body-not-trusted
-    def test_a_dashboard_routes_no_chart_it_does_not_carry(self):
+    def test_a_dashboard_routes_no_chart_it_does_not_include(self):
         """`chart_preview.ts` sends the card's `dashboard`, and a caller can name
         any dashboard they can read. Their own dashboard may link a filter to
         someone else's chart without holding that chart. That filter must not
@@ -997,9 +997,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
                 run_doc_method("execute", frappe.as_json(docs), {"force": True})
 
     # @feature charts.measure-unit
-    def test_both_feeds_carry_the_symbol_of_a_code_the_rows_hold(self):
+    def test_the_builder_and_the_view_both_include_the_symbol_of_a_code_the_rows_hold(self):
         """A currency measure gets its symbol from the session's symbol map. Only
-        the response that carries the rows adds to that map. The site seeds it
+        the response that includes the rows adds to that map. The site seeds it
         with its own currency alone."""
         query, chart = self.make_content()
         config = table_config()
@@ -1015,7 +1015,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         with as_user(READER), db_connections():
             read = get_view_data(chart=chart.name, force=True)
 
-        # the todos carry the default priority, which is no ISO code, so the
+        # the todos have the default priority, which is no ISO code, so the
         # symbol is the code itself
         for response in (authored, read):
             self.assertEqual(response["currency_symbols"]["Medium"]["symbol"], "Medium")
@@ -1023,7 +1023,7 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
     # the view contract is unchanged
 
     # @feature permissions.view-sends-no-query
-    def test_no_view_response_carries_the_derived_operations(self):
+    def test_no_view_response_includes_the_derived_operations(self):
         query, chart = self.make_content()
 
         with as_user(READER), db_connections():

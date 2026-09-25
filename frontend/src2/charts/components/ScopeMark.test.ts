@@ -18,7 +18,7 @@ describe('the scope mark', () => {
 	})
 
 	// @feature permissions.card-says-it-is-scoped
-	it('draws nothing where nothing narrowed the cells', async () => {
+	it('renders nothing where nothing narrowed the cells', async () => {
 		expect(await mark({ applied: [], narrowed: false })).not.toContain('aria-label')
 	})
 })

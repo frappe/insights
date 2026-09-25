@@ -191,7 +191,7 @@ export function newChart() {
 	// The page that opens next asks for the chart by the name the insert gave it,
 	// and has to be handed this store. A second store for one chart writes the
 	// document twice and runs its data twice, and the two disagree from the first
-	// edit. The rows it already drew move with it, or nothing invalidating the
+	// edit. The rows it already rendered move with it, or nothing invalidating the
 	// saved chart would reach them.
 	chart.onAfterInsert(() => {
 		charts.set(String(chart.doc.name), chart)

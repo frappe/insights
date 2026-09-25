@@ -11,7 +11,7 @@ COLLAPSING = ("count", "count_distinct")
 REPAIRED = "sum"
 
 # The only column types a `sum` can be asked for. The measure picker restricts
-# the column list to these for `sum` and `avg`. "Count of..." offers every
+# the column list to these for `sum` and `avg`. "Count of..." lists every
 # column, so a Sankey can hold a count over a String or a Date.
 NUMERIC = ("Integer", "Decimal")
 
@@ -19,7 +19,7 @@ NUMERIC = ("Integer", "Decimal")
 def execute():
     """Repair the value aggregation of Sankey charts that would collapse.
 
-    A Sankey used to draw its source query as it stood, so nothing read
+    A Sankey used to render its source query as it stood, so nothing read
     `config.value_column.aggregation`. It is read now: the chart derives
     `summarize(value, by source and target)` from the config, and the stored
     function decides the width of every ribbon.
@@ -28,15 +28,15 @@ def execute():
     measure picker pre-fills `sum` only when the source declares measure
     columns, and a native SQL source declares none — so the author picked from a
     list that opens with "Count of", over a column that is already a `COUNT(*)`.
-    Counting a group of one row returns 1, and every ribbon draws the same width.
+    Counting a group of one row returns 1, and every ribbon is plotted at the same width.
 
     This repairs only the two functions that collapse. Over a one-row group the
-    other four return the value itself. A chart that holds one of them draws
+    other four return the value itself. A chart that holds one of them shows
     what the author sees today, so the patch leaves it alone.
 
-    And only over a numeric value column. A count is offered over every column,
+    And only over a numeric value column. A count is listed over every column,
     a `sum` only over `Integer` and `Decimal` — the engine has no `sum` for a
-    string or a date and would throw where the chart merely draws flat today. A
+    string or a date and would throw where the chart merely plots flat today. A
     column whose type the config does not state is left alone for the same
     reason: the premise above, a column that is already a `COUNT(*)`, is one
     only a numeric column can meet.

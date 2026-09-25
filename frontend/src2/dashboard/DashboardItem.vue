@@ -30,7 +30,7 @@ const dashboard = inject('dashboard') as Dashboard
 <template>
 	<div class="group relative flex h-full w-full p-2">
 		<!-- A card fills its cell. Nothing is centered in it: a Number cell is as
-		     tall as its card, and every other type draws into the whole box. -->
+		     tall as its card, and every other type renders into the whole box. -->
 		<div
 			class="flex h-full w-full justify-start"
 			:class="

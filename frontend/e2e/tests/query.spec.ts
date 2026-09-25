@@ -13,7 +13,7 @@ function dataRows(page: Page): Locator {
 
 /**
  * locator: a header cell is a <td data-column-name>. The two buttons inside it
- * are icon-only and carry no accessible name, so position inside the cell is
+ * are icon-only and have no accessible name, so position inside the cell is
  * the only handle. The first changes the column type, the last opens the menu.
  */
 function columnMenu(page: Page, column: string): Locator {
@@ -53,7 +53,7 @@ test.describe('query', () => {
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}`)
 
 		// The three interface cards are clickable divs with no role and no label,
-		// so getByText is the first rung of the ladder that reaches them.
+		// so getByText is the first level of the ladder that reaches them.
 		await page.getByText('Query Builder').click()
 
 		await page.getByRole('button', { name: `orders ${demoDataSource}` }).click()
@@ -90,7 +90,7 @@ test.describe('query', () => {
 		await page.getByRole('combobox', { name: 'Column' }).fill('order_status')
 		await page.getByRole('option', { name: 'order_status' }).click()
 
-		// The default operator for a text column is "is", which offers the
+		// The default operator for a text column is "is", which lists the
 		// distinct values of the column.
 		await page.getByRole('button', { name: 'Value' }).click()
 		await page.getByRole('option', { name: 'canceled' }).click()
@@ -217,7 +217,7 @@ test.describe('query', () => {
 		await page.getByRole('button', { name: 'Add New Column' }).click()
 
 		// locator: the expression editor is CodeMirror, and its input is a
-		// contenteditable div. The dialog's Column Name field carries the same
+		// contenteditable div. The dialog's Column Name field has the same
 		// textbox role, so only the editor class separates the two.
 		await page.locator('.cm-content').fill('order_status.upper()')
 		await page.getByLabel('Column Name').fill('shout')
@@ -230,8 +230,8 @@ test.describe('query', () => {
 		// an expression and nothing else, so the column it writes is named
 		// `new_column` and typed from the expression.
 		// locator: the `+` that opens it, and the tick that confirms it, are
-		// icon-only Buttons that pass no label. The lucide class each icon
-		// carries is the only name they have, and the header row is what keeps
+		// icon-only Buttons that pass no label. The lucide class on each icon
+		// is the only name they have, and the header row is what keeps
 		// the match off the toolbar's own `+`.
 		await page.locator('thead button:has(svg.lucide-plus)').click()
 		// locator: the inline expression editor is CodeMirror. Its own class is
@@ -242,7 +242,7 @@ test.describe('query', () => {
 		await expect(page.getByRole('cell', { name: 'new_column' })).toBeVisible()
 		// A mutate adds a column and touches no row, so the page still holds 100.
 		await expect(dataRows(page)).toHaveCount(100)
-		// locator: an operation row is a plain div carrying its own words. Both
+		// locator: an operation row is a plain div holding its own words. Both
 		// calculated columns are now steps of the pipeline.
 		await expect(page.locator('div.group').filter({ hasText: 'Calculate' })).toHaveCount(2)
 	})
@@ -311,9 +311,9 @@ test.describe('query', () => {
 	/**
 	 * Renaming and removing are two flows, not one.
 	 *
-	 * Each one edits the query, and each edit redraws the results twice: once
+	 * Each one edits the query, and each edit re-renders the results twice: once
 	 * when the new rows arrive, once when the save answer replaces the document.
-	 * A second edit made across either redraw is lost, and an open column menu
+	 * A second edit made across either re-render is lost, and an open column menu
 	 * closes under it. See "Never wait in the middle of an edit" in AGENTS.md.
 	 * One edit per flow, on a page that has gone quiet, has neither problem.
 	 */
@@ -410,7 +410,7 @@ test.describe('query', () => {
 		await page.getByRole('option', { name: 'order_purchase_timestamp' }).click()
 
 		// locator: the operator control is a listbox, not a native select, and it
-		// carries no label. The row wraps it in a div with a stable id.
+		// has no label. The row wraps it in a div with a stable id.
 		await page.locator('#operator').getByRole('combobox').click()
 		await page.getByRole('option', { name: 'within' }).click()
 
@@ -424,7 +424,7 @@ test.describe('query', () => {
 		await page.getByRole('button', { name: 'Apply Filters' }).click()
 
 		// The demo orders stop in 2018, so the last year holds none of them. A
-		// result with no rows draws no table at all, headers included, so what
+		// result with no rows renders no table at all, headers included, so what
 		// the editor shows is the empty state and the count behind it.
 		await expect(dataRows(page)).toHaveCount(0)
 		await expect(page.getByText('No data to display.')).toBeVisible()
@@ -449,7 +449,7 @@ test.describe('query', () => {
 		// The schema explorer beside the editor writes names into it. A table name
 		// is a button of its own; the row around it is what opens the table.
 		// locator: the SQL editor is CodeMirror, and its input is a contenteditable
-		// div. The Query Title field carries the same textbox role, so only the
+		// div. The Query Title field has the same textbox role, so only the
 		// editor class separates the two.
 		const editor = page.locator('.cm-content')
 		await page.getByPlaceholder('Search tables and columns...').fill('orders')
@@ -458,7 +458,7 @@ test.describe('query', () => {
 
 		// locator: the row that expands a table is a plain div, and the name
 		// inside it stops the click before it reaches the row. The row is named
-		// by the button it holds, and the chevron carries only its lucide class.
+		// by the button it holds, and the chevron has only its lucide class.
 		await page.locator('div:has(> button:text-is("orders"))').locator('svg').first().click()
 		// A column button reads its name and then its type, so the match is on
 		// the name it starts with.

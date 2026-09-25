@@ -51,7 +51,7 @@ def execute():
     A cache is owned by one chart and referenced nowhere else, with three
     exceptions. One is a query that sources it: the edge table answers that,
     and such a document is left where it is. Another is a chart whose `query`
-    names it: no surface offers a cache in the query picker, so this should not
+    names it: no surface lists a cache in the query picker, so this should not
     happen, and the delete is permanent, so the chart's own field is read rather
     than trusted. The last is an alert that may name it, set on the chart's rows
     back when they were a query a user could pick. The query controller already
@@ -67,7 +67,7 @@ def execute():
     Frappe's cleanup itself. A cache has no attachments to remove: nothing ever
     opened one in the desk.
 
-    Running this twice deletes nothing the second time: the charts still carry
+    Running this twice deletes nothing the second time: the charts still hold
     the docnames in the orphan column, and none of them name a document that is
     still there.
     """

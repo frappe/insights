@@ -30,7 +30,7 @@ import { numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // Bar, Line and Row. One family, because they differ in two values: the mark an
-// unmarked Series draws as, and whether the bars run across the plot.
+// unmarked Series plots as, and whether the bars run across the plot.
 
 export function adaptBarChart(input: ChartAdapterInput) {
 	return adaptAxisChart(input, BarChart, 'bar')
@@ -62,7 +62,7 @@ function adaptAxisChart(
 	const tooltipMeasures = tooltipMeasuresOf(config)
 
 	// A split renames the value columns after its own values, so the series a
-	// chart draws are only knowable from the result. Without one they are the
+	// chart plots are only knowable from the result. Without one they are the
 	// Measures, under the names the summarize gave them. Either way the answer is
 	// the same question asked of the result: which columns hold numbers.
 	const columns = input.result.columns
@@ -77,7 +77,7 @@ function adaptAxisChart(
 
 	const seriesByColumn = new Map(columns.map((column) => [column, seriesFor(config, column)]))
 	// A split hands one Series several columns, and the color the form wrote is
-	// one color: painting it on each of them draws the split in a single shade.
+	// one color: painting it on each of them plots the split in a single shade.
 	// Every other thing a Series says — the mark, the area, the labels — is true
 	// of all its columns, so only the color asks how many it owns.
 	const columnsOwned = new Map<Series, number>()
@@ -93,7 +93,7 @@ function adaptAxisChart(
 		if (Object.keys(style).length) seriesConfig[column] = style
 	}
 
-	// A horizontal bar chart runs its value axis across the plot and draws only
+	// A horizontal bar chart runs its value axis across the plot and plots only
 	// one, so v2 reads every series against the primary there. Nothing here asks
 	// which way the bars run: knowing it twice is how the two answers drift apart.
 	const onRight = (column: string) => seriesByColumn.get(column)?.align === 'Right'
@@ -114,7 +114,7 @@ function adaptAxisChart(
 	if (stacked) props.stacked = stacked
 
 	// One formatter per axis, not per series: v2 prints a value against the axis
-	// it is read on, and an axis carries one scale. The first series drawn on it
+	// it is read on, and an axis has one scale. The first series plotted on it
 	// says how that scale reads.
 	const primary = numberFormatter(config, measureOn(config, 'Left'), input.result.rows)
 	props.yAxis = valueAxisFor(y_axis, Boolean(stacked === 'normalized'), primary)
@@ -125,7 +125,7 @@ function adaptAxisChart(
 		: undefined
 	if (secondary) props.y2Axis = { format: secondary }
 
-	// A reference line reads any Measure the Chart carries, drawn or not: a rule
+	// A reference line reads any Measure the Chart includes, plotted or not: a rule
 	// often computes from a tooltip target.
 	const referenceLines = referenceLinesFor(
 		config,
@@ -144,7 +144,7 @@ function adaptAxisChart(
 		component,
 		props,
 		drillDown: {
-			// The typed event carries the row it drew, so nothing maps an index
+			// The typed event includes the row it plotted, so nothing maps an index
 			// back onto the result.
 			select: (event: ChartDatapointEvent) => ({
 				column: event.name,
@@ -173,7 +173,7 @@ function seriesFor(config: MixedChartConfig, column: string): Series | undefined
 }
 
 /**
- * The Measure a value column came from, drawn or not. A series is asked of
+ * The Measure a value column came from, plotted or not. A series is asked of
  * `seriesFor`, so a split — where the columns are named after the split's values
  * and one Measure owns several of them — answers the same way it does for a
  * mark. A tooltip Measure is never split, so its column is its own name.
@@ -185,26 +185,26 @@ function measureNameFor(config: MixedChartConfig, column: string): string | unde
 }
 
 /**
- * The Measures the tooltip carries, by the column name each one produced. Empty
+ * The Measures the tooltip includes, by the column name each one produced. Empty
  * under a split: a split turns every Measure into one column per split value,
  * so there is no per-category column for one to arrive on, and the server
  * leaves them out of the pivot.
  */
 function tooltipMeasuresOf(config: MixedChartConfig): string[] {
 	if (config.split_by?.dimension?.column_name) return []
-	const drawn = new Set(
+	const plotted = new Set(
 		(config.y_axis?.series || []).map((series) => series.measure?.measure_name).filter(Boolean),
 	)
 	return (config.tooltip?.measures || [])
 		.map((measure) => measure?.measure_name)
-		.filter((name): name is string => Boolean(name) && !drawn.has(name))
+		.filter((name): name is string => Boolean(name) && !plotted.has(name))
 }
 
 /**
  * How each tooltip Measure prints. A tooltip value goes through the same number
  * format policy a series value does — the point of an extra is a number in
- * another unit, so it has to carry that unit. No label: a column takes the same
- * one the chart would give the Measure if it drew it.
+ * another unit, so it has to keep that unit. No label: a column takes the same
+ * one the chart would give the Measure if it plotted it.
  */
 function tooltipColumnsFor(
 	config: MixedChartConfig,
@@ -242,7 +242,7 @@ function styleFor(
 
 	// The form wrote 'Line' where the type declares 'line'.
 	// `insights.patches.normalize_chart_configs` folded the stored ones. A config
-	// an import delivers must still not silently draw the chart's own mark.
+	// an import delivers must still not silently plot the chart's own mark.
 	const asked = (series?.type?.toLowerCase() as ChartMark) || mark
 	const area = asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
 	const type = area ? 'area' : asked
@@ -270,7 +270,7 @@ function styleFor(
 
 /**
  * `normalize` reads every value as a share of its category, which only holds
- * once the shares are stacked into one column — so it carries the stack with it.
+ * once the shares are stacked into one column — so it brings the stack with it.
  * `overlap` puts the bars in front of each other, which a stack cannot do.
  * Bars on both axes are two scales, and no column sums them.
  */
@@ -302,11 +302,11 @@ function xAxisFor(dimension: Dimension): ChartXAxisOptions {
 
 /**
  * The Measure whose format an axis takes: the first series sitting on it. A
- * chart drawing two Measures on one axis has already said they share a scale,
+ * chart plotting two Measures on one axis has already said they share a scale,
  * so it prints them the way it prints the first.
  *
  * A chart that put every series on the right has none on the left, and the left
- * is the axis the ticks are still drawn against. It prints the way the chart's
+ * is the axis the ticks are still plotted against. It prints the way the chart's
  * first Measure prints, rather than unformatted.
  */
 function measureOn(config: MixedChartConfig, align: 'Left' | 'Right') {
@@ -332,7 +332,7 @@ function valueAxisFor(
 
 /**
  * A reference line sits at a constant the author typed, or at an aggregate of a
- * Measure. v2 draws a rule at a value and computes nothing — it cannot, because
+ * Measure. v2 plots a rule at a value and computes nothing — it cannot, because
  * it hangs every rule on an empty host series so a legend toggle cannot take the
  * rule away with the data. So Insights reads the aggregate off the result, the
  * same way it derives the comparison delta, and hands over a plain value.
@@ -346,7 +346,7 @@ function referenceLinesFor(
 ): PlotReferenceLine[] {
 	const lines: PlotReferenceLine[] = []
 	for (const line of config.y_axis?.reference_lines || []) {
-		// A line labels itself in the scale it is drawn against, so a rule on the
+		// A line labels itself in the scale it is plotted against, so a rule on the
 		// right axis reads as that axis's ticks do.
 		const on = line.align === 'Right' && rightFormat ? rightFormat : format
 		const at = positionOf(line, config, columns, rows, on)
@@ -368,13 +368,13 @@ function referenceLinesFor(
 	return lines
 }
 
-/** Where a line sits, and the label it names itself. Undrawable lines answer nothing. */
+/** Where a line sits, and the label it names itself. Lines that cannot be plotted answer nothing. */
 type ReferencePosition = { value: number | string; label?: string }
 
 /**
  * The kind of a line is read, not stored: an `aggregate` and a Measure make it
  * computed, and anything else is a constant. So a line saved before computed
- * lines existed carries a `value` alone and still reads as one.
+ * lines existed has a `value` alone and still reads as one.
  */
 function positionOf(
 	line: ReferenceLine,
@@ -401,8 +401,8 @@ function aggregatePositionOf(
 
 	const sources = columns.filter((column) => measureNameFor(config, column) === measure)
 
-	// Every number the chart draws for those columns. Not the category totals: a
-	// stack is the one picture they read better on, and one rule that holds
+	// Every number the chart plots for those columns. Not the category totals: a
+	// stack is the one chart they read better on, and one rule that holds
 	// everywhere beats two that are each right once.
 	const values = sources
 		.flatMap((column) => rows.map((row) => toNumber(row[column])))
@@ -412,7 +412,7 @@ function aggregatePositionOf(
 	if (!values.length) return
 
 	const value = aggregateOf(aggregate, values)
-	// The label prints on the plot, beside the ticks the same formatter drew.
+	// The label prints on the plot, beside the ticks the same formatter wrote.
 	return { value, label: `${aggregateLabels()[aggregate]} ${measure}: ${format(value)}` }
 }
 

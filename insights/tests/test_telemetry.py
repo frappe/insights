@@ -1,4 +1,4 @@
-"""Every event carries the app version and the site's entry cohort.
+"""Every event includes the app version and the site's entry cohort.
 
 An analysis that reads a series by version or by cohort needs both properties on
 every row. No answer is worth failing the action that reported it.
@@ -29,7 +29,7 @@ class TestTelemetryDefaults(InsightsIntegrationTestCase):
         return sender.call_args
 
     # @feature telemetry.defaults
-    def test_an_event_carries_the_app_version_and_the_entry_cohort(self):
+    def test_an_event_includes_the_app_version_and_the_entry_cohort(self):
         args, kwargs = self.sent()
         self.assertEqual(args, ("workbook_opened", "insights"))
         self.assertEqual(kwargs["interval"], "1d")

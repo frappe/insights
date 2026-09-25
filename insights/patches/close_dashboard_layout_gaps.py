@@ -3,7 +3,7 @@ import frappe
 
 def execute():
     """Every dashboard saved before the compact layout became the dashboard's
-    own field drew with its gaps closed, so every one of them keeps doing that.
+    own field rendered with its gaps closed, so every one of them keeps doing that.
 
     The setting used to live in the browser and was on unless a reader turned it
     off. The field that replaced it was added in the v2 era and nothing has ever

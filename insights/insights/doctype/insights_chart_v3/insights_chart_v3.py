@@ -33,7 +33,7 @@ from insights.utils import deep_convert_dict_to_dict, refuse_delete_while_linked
 QUERY = "Insights Query v3"
 
 # A page of an ascending series ends at its oldest rows, so a series cut by the
-# card's own page size would stop short of the number it is drawn under. This is
+# card's own page size would stop short of the number it is plotted under. This is
 # the bound instead: more periods than any period a card is read over.
 SPARKLINE_MAX_POINTS = 1000
 
@@ -185,13 +185,13 @@ class InsightsChartv3(Document):
 
         The chart is re-read from its row, so the request cannot change whose
         permissions apply or which query runs. A page holds the `limit` the
-        author saved. Only a caller that `can_read_rows` admits gets a later
+        author saved. Only a caller that `can_read_rows` allows gets a later
         page. Anyone else gets the first page.
 
         `adhoc_filters` arrives already routed, keyed by query name.
 
         `card_filters` is the reader's own filter on this one card. It names a
-        column the card draws, and it lands on the card's own derived query, so
+        column the card shows, and it lands on the card's own derived query, so
         it is taken from the request on every surface.
 
         A span card's sparkline comes back under `sparkline`. It runs here
@@ -205,7 +205,7 @@ class InsightsChartv3(Document):
         page_size = frappe.parse_json(chart.config or "{}").get("limit") or 100
         # every span in this fetch resolves against this day. A drill sends it
         # back, so the drill cuts rows for the same day
-        drawn_on = str(getdate(reading_day()))
+        read_on = str(getdate(reading_day()))
         adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
 
         query = chart.get_query()
@@ -243,7 +243,7 @@ class InsightsChartv3(Document):
             result["sparkline"] = sparkline
         if rows := chart.comparison_rows(result["rows"]):
             result["comparison_rows"] = rows
-        result["drawn_on"] = drawn_on
+        result["read_on"] = read_on
         return result
 
     def count_rows(
@@ -254,7 +254,7 @@ class InsightsChartv3(Document):
     ) -> int:
         """The total row count behind the pages of `fetch`, under the same filters.
 
-        Only for a caller that `can_read_rows` admits, because the count tells
+        Only for a caller that `can_read_rows` allows, because the count tells
         more than the chart shows. It uses this document as given: a view loads
         it from the stored row, and the builder sends its unsaved config.
         """
@@ -300,7 +300,7 @@ class InsightsChartv3(Document):
         comparison, and they come back oldest first, each named by the date it
         starts on.
 
-        Answered here because the answer is a date. A span carries none until
+        Answered here because the answer is a date. A span has none until
         the query runs, and the same span resolved a second time in the browser
         would be resolved against a different clock and a different fiscal
         calendar.
@@ -337,7 +337,7 @@ class InsightsChartv3(Document):
         return {source: starts.get(resolve_timespan(timespan)[0]) for source, timespan in timespans.items()}
 
     def get_sparkline_data(self, force: bool = False, adhoc_filters: dict | None = None):
-        """The series behind this card's sparkline, or nothing when it draws none.
+        """The series behind this card's sparkline, or nothing when it plots none.
 
         Only a card that asks for both a sparkline and a span runs it. Execution
         is limited rather than queued (a dashboard already fills the pool), so a

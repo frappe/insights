@@ -69,7 +69,7 @@ export const DEMO_TABLES = [
 	'sellers',
 ]
 
-/** Every record the suite creates carries this prefix, so strays are findable. */
+/** Every record the suite creates has this prefix, so strays are findable. */
 export const E2E_TITLE_PREFIX = 'e2e'
 
 export type SeededWorkbook = { name: string; title: string }
@@ -156,7 +156,7 @@ export async function createQuery(
 	return { name: doc.name, title, workbook: options.workbook }
 }
 
-/** A row count split by a dimension. The smallest configuration a Bar Chart draws. */
+/** A row count split by a dimension. The smallest configuration a Bar Chart renders. */
 export function countByConfig(dimension: Dimension): ChartConfig {
 	const rowCount: Measure = {
 		measure_name: 'count_of_rows',
@@ -311,7 +311,7 @@ export const UPLOADS_DATA_SOURCE = 'uploads'
 /**
  * The Table document for a Data Source table, or null when there is none.
  *
- * `InsightsTablev3.autoname` hashes the pair, so the name carries no meaning.
+ * `InsightsTablev3.autoname` hashes the pair, so the name has no meaning.
  * The document keeps both halves as fields, so ask the site for it rather than
  * repeat the hash here. Teardown needs it.
  */

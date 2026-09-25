@@ -250,7 +250,7 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
         return file
 
     # @feature standard.file-format
-    def test_a_file_carries_the_members_rather_than_a_summary_of_them(self):
+    def test_a_file_includes_the_members_rather_than_a_summary_of_them(self):
         file = self.exported()
 
         self.assertEqual(list(file["queries"]), [QUERY])
@@ -259,7 +259,7 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
         self.assertEqual(file["folders"], [{"title": "Revenue", "type": "chart", "sort_order": 0}])
 
     # @feature standard.file-format
-    def test_a_file_carries_nothing_a_site_owns(self):
+    def test_a_file_includes_nothing_a_site_owns(self):
         """A key that changes by itself would change the file on every save."""
         file = self.exported()
 
@@ -863,7 +863,7 @@ class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
         self.assertEqual(list(frappe.get_doc(DT.WORKBOOK, WORKBOOK).export()["charts"]), [CHART])
 
     # @feature standard.resync
-    def test_a_migrate_deletes_it_once_no_desk_document_draws_it(self):
+    def test_a_migrate_deletes_it_once_no_desk_document_shows_it(self):
         """The file did not change on this migrate. The chart stays while the
         desk document shows it."""
         migrate()
@@ -876,7 +876,7 @@ class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
         self.assertEqual(frappe.get_all(DT.QUERY, {"workbook": WORKBOOK}, pluck="name"), [QUERY])
 
 
-class WhatTheExportToAppDialogIsOffered(InsightsIntegrationTestCase):
+class WhatTheExportToAppDialogReads(InsightsIntegrationTestCase):
     """What the Export to app dialog reads: whether the bench can write app
     files, and which modules it may write to."""
 

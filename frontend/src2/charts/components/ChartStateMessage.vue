@@ -36,7 +36,7 @@ const refused = computed(() => props.failure.kind === 'notPermitted')
 			:class="refused ? 'text-ink-gray-7' : 'text-ink-gray-8'"
 		>
 			<!-- The icon matches the text size, here and in every other state
-			     Insights shows. A larger icon reads as a picture of an error, not
+			     Insights shows. A larger icon reads as an image of an error, not
 			     as part of the sentence. -->
 			<component
 				:is="refused ? Lock : AlertTriangle"

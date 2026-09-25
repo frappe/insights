@@ -29,7 +29,7 @@ def after_app_install(app: str):
 
 def sync_standard_workbooks():
     """Import the workbooks the installed apps ship, delete the ones no app ships
-    any more and the members kept for a desk document that no longer draws them,
+    any more and the members kept for a desk document that no longer uses them,
     then name each desk document left linking what went.
     """
     from insights import standard

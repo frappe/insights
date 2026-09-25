@@ -284,7 +284,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
                 self.assertEqual(frappe.session.user, "Administrator")
 
     # @feature permissions.chart-run-as-owner
-    def test_the_builder_draws_the_rows_the_card_draws(self):
+    def test_the_builder_shows_the_rows_the_card_shows(self):
         """The builder read as the caller while the card read as the owner. The
         author then saw a number that no reader sees."""
         from insights.api.authoring import get_chart_data as authoring_chart_data
@@ -392,7 +392,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
     # @feature permissions.chart-run-as-owner permissions.site-user-permissions
     def test_non_site_db_rows_are_unfiltered_either_way(self):
-        """External sources carry no Frappe permissions, so neither mode filters them."""
+        """External sources have no Frappe permissions, so neither mode filters them."""
         table = ibis.memtable({"name": ["a", "b"], "value": [1, 2]})
 
         for user in (OWNER, READER):
@@ -449,12 +449,12 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         self.set_team_permissions(1)
         self.grant_todos(OWNER, f"description == '{READER_TODOS[0]}'")
         # Desk allows no row, so only the restriction filters the rows (Q15).
-        desk_admits_none = patch(
+        desk_allows_none = patch(
             "insights.insights.doctype.insights_table_v3.insights_table_v3.desk_predicate",
             return_value=None,
         )
 
-        with desk_admits_none, as_user(OWNER), db_connections():
+        with desk_allows_none, as_user(OWNER), db_connections():
             authored = get_authoring_data(
                 chart_type=self.chart.chart_type,
                 query=self.query.name,
@@ -465,7 +465,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         self.assertTrue(authored["narrowed_by_permissions"])
 
         self.set_run_as_owner(1)
-        with desk_admits_none:
+        with desk_allows_none:
             self.assertTrue(self.fetch_chart_data(OWNER)["narrowed_by_permissions"])
             result = self.fetch_chart_data(READER)
         self.assertEqual(self.descriptions(result), [READER_TODOS[0]])
@@ -538,11 +538,11 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
         # Desk allows every row, so the grant narrows no row. The card still says
         # the blanked column narrowed it.
-        desk_admits_every_row = patch(
+        desk_allows_every_row = patch(
             "insights.insights.doctype.insights_table_v3.insights_table_v3.desk_predicate",
             return_value=True,
         )
-        with desk_admits_every_row, as_user(READER), db_connections():
+        with desk_allows_every_row, as_user(READER), db_connections():
             result = get_chart_data(chart=chart.name, force=True)
 
         statuses = {row["description"]: row["status"] for row in result["rows"]}
@@ -617,7 +617,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         self.assertTrue(native_status["narrowed_by_permissions"])
 
     # @feature permissions.card-says-it-is-scoped permissions.team-grant
-    def test_the_table_browser_and_a_rows_level_mark_the_cells_they_draw_blanked(self):
+    def test_the_table_browser_and_a_rows_level_mark_the_cells_they_show_blanked(self):
         """The table browser and a drill's rows level show every column. Both show
         `status` empty on rows only desk allows, and say so as the card does."""
         from insights.api.data_sources import get_data_source_table

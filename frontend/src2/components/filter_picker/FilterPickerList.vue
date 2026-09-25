@@ -34,7 +34,7 @@ function onSelect(item: ListItem, event: Event) {
 }
 
 /**
- * reka's ListboxItem carries our listeners twice: once through the `$attrs` it
+ * reka's ListboxItem passes our listeners twice: once through the `$attrs` it
  * spreads onto the row itself, once through Vue's own fallthrough. One click
  * would then pick the row twice and walk two stages on one Enter, so only the
  * first run of an event counts.
@@ -48,9 +48,9 @@ function onClick(item: ListItem, event: MouseEvent) {
 
 /**
  * reka's ListboxItem memoizes its row on the highlight and the tick alone
- * (ListboxItem.vue, the `v-memo` at line 79), so anything else the row draws
+ * (ListboxItem.vue, the `v-memo` at line 79), so anything else the row renders
  * has to arrive as a new key. The stage leads, so a stage change re-mounts
- * every row and no memoized row outlives the list it was drawn for. A
+ * every row and no memoized row outlives the list it was rendered for. A
  * reka-owned tick is left out — it moves reka's own model and invalidates the
  * memo by itself.
  */
@@ -96,7 +96,7 @@ function keyOf(item: ListItem, stage: string) {
 					/>
 					<!-- the note truncates before the label: the reader picks the label, and
 					     the note only says what it covers. A label beside a note never
-					     shrinks, because any shrink draws its ellipsis -->
+					     shrinks, because any shrink shows its ellipsis -->
 					<span
 						class="truncate text-start"
 						:class="

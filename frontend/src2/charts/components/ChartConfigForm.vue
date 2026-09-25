@@ -49,7 +49,7 @@ const dimensions = computed<DimensionOption[]>(() => {
 const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [])
 const queryResult = computed(() => chartQuery.value.result)
 
-// What the chart actually drew, not what the query returned. A table pivots
+// What the chart actually shows, not what the query returned. A table pivots
 // after the query, so `Revenue___Women` exists here and nowhere else — and a
 // formatting rule must name the column it formats.
 const resultColumnOptions = computed(() => preview.result?.columnOptions || [])

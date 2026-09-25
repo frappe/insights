@@ -87,7 +87,7 @@ const discrete_dimensions = computed(() =>
 
 	<!-- One format for the whole funnel, not one per stage: the stages are the
 	     same quantity counted at different points, and v2 prints them against a
-	     single scale. A per-stage override would draw nothing. -->
+	     single scale. A per-stage override would render nothing. -->
 	<NumberFormatSection
 		:config="config"
 		:sole-measure-name="hasMeasures ? undefined : config.value_column?.measure_name"

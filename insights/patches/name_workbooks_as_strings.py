@@ -30,7 +30,7 @@ def execute():
     # read the counter while the column is still numeric
     last_id = frappe.db.sql("select max(name) from `tabInsights Workbook`")[0][0]
 
-    # the JSON that lands right after this patch no longer carries `autoname`; the DocType
+    # the JSON that lands right after this patch no longer includes `autoname`; the DocType
     # record has to agree with it already, or the import throws
     frappe.db.set_value(
         "DocType",
@@ -46,7 +46,7 @@ def execute():
 
 
 def drop_sequence():
-    """The sequence the old naming rule drew from. Nothing recreates it: the framework only
+    """The sequence the old naming rule read from. Nothing recreates it: the framework only
     maintains sequences for doctypes still marked `autoincrement`."""
     frappe.db.sql_ddl(f"drop sequence if exists {SEQUENCE_NAME}")
 

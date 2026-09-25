@@ -14,7 +14,7 @@ afterEach(() => {
 
 describe('the menu item', () => {
 	// @feature standard.export-to-app
-	it('is offered to an author on a developer-mode bench', () => {
+	it('is shown to an author on a developer-mode bench', () => {
 		session.site.developer_mode = true
 		expect(canExportToApp({ is_standard: false })).toBe(true)
 	})

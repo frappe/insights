@@ -105,7 +105,7 @@ class TestValidateExpression(unittest.TestCase):
         for module_name in ("frappe", "ir", "math", "pd"):
             self.assertNotIn(module_name, function_list)
 
-        # `ibis` is offered as a namespace of vetted attributes, not as the module
+        # `ibis` is available as a namespace of vetted attributes, not as the module
         ibis_namespace = utils.get_functions()["ibis"]
         self.assertIn("literal", ibis_namespace)
         for refused in (

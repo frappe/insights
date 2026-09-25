@@ -1,11 +1,11 @@
-"""Does a chart's config derive the query the chart is meant to draw?
+"""Does a chart's config derive the query the chart is meant to render?
 
 Every chart type has a case here, and a type with no case is a failure — this
 is the only place that says what a config turns into, so a new chart type is
-undrawable until it lands in `chart_derivation_fixtures`.
+unrenderable until it lands in `chart_derivation_fixtures`.
 
 The cases used to be diffed against the queries the browser derived and the
-shipped workbooks carried. That check did its job: the port matched, chart for
+shipped workbooks stored. That check did its job: the port matched, chart for
 chart, so the browser's output was written into the fixtures and the caches it
 came from are gone.
 
@@ -46,7 +46,7 @@ def comparable(operations):
     """The operations, minus what says nothing about the query that runs.
 
     A fixture names its source query by name and leaves the workbook beside it
-    at zero, the placeholder a query that is not on a site yet carries. The name
+    at zero, the placeholder a query that is not on a site yet has. The name
     is what resolves the reference, so the placeholder is all the comparison can
     ask for.
     """
@@ -122,7 +122,7 @@ class TestChartDerivation(unittest.TestCase):
                 self.assertEqual(
                     config_errors(case["chart_type"], case["query"], case["config"]),
                     [],
-                    f"{case['title']} must be drawable",
+                    f"{case['title']} must be renderable",
                 )
                 derived = derive_operations(case["chart_type"], case["query"], case["config"])
                 self.assertEqual(comparable(derived), comparable(case["operations"]))
@@ -134,7 +134,7 @@ class TestChartDerivation(unittest.TestCase):
         self.assertEqual(covered, CHART_TYPES)
 
     # @feature charts.missing-slot-message
-    def test_a_config_that_names_no_columns_cannot_be_drawn(self):
+    def test_a_config_that_names_no_columns_cannot_be_rendered(self):
         for chart_type in (
             "Bar",
             "Number",
@@ -222,9 +222,9 @@ class TestChartDerivation(unittest.TestCase):
         )
 
     # @feature charts.tooltip-measures
-    def test_a_tooltip_measure_rides_the_summarize_beside_the_drawn_ones(self):
+    def test_a_tooltip_measure_rides_the_summarize_beside_the_plotted_ones(self):
         """One value per plotted row, which is what the tooltip prints beside the
-        series. Nothing here says it is not drawn — the config does that."""
+        series. Nothing here says it is not plotted — the config does that."""
         case = derivation_case("Bar")
         measure = {
             "column_name": "name",
@@ -268,18 +268,18 @@ class TestChartDerivation(unittest.TestCase):
         self.assertNotIn("order_count", [m["measure_name"] for m in pivot["values"]])
 
     # @feature charts.tooltip-measures
-    def test_a_tooltip_measure_named_after_a_drawn_one_is_dropped(self):
+    def test_a_tooltip_measure_named_after_a_plotted_one_is_dropped(self):
         """Two measures under one alias is one column, and the chart would lose
         the series to the tooltip. The Bar fixture names no series, so what it
-        draws is the count a chart falls back to."""
+        plots is the count a chart falls back to."""
         case = derivation_case("Bar")
-        drawn = {
+        plotted = {
             "column_name": "count",
             "data_type": "Integer",
             "aggregation": "count",
             "measure_name": "count_of_rows",
         }
-        config = {**case["config"], "tooltip": {"measures": [drawn]}}
+        config = {**case["config"], "tooltip": {"measures": [plotted]}}
         operations = derive_operations("Bar", case["query"], config)
         summarize = next(op for op in operations if op["type"] == "summarize")
         names = [m["measure_name"] for m in summarize["measures"]]
@@ -294,7 +294,7 @@ class TestChartDerivation(unittest.TestCase):
 
     # @feature charts.heatmap-two-cuts
     def test_a_heatmap_sorts_both_of_its_cuts(self):
-        """The renderer draws each axis in the order rows name its categories, so
+        """The renderer plots each axis in the order rows name its categories, so
         the grid's order is the row order and the chart has to ask for it."""
         case = derivation_case("Heatmap")
         operations = derive_operations("Heatmap", case["query"], case["config"])
@@ -322,7 +322,7 @@ class TestChartDerivation(unittest.TestCase):
     # @feature charts.sort
     def test_an_axis_chart_on_a_date_runs_forwards(self):
         """A line joins its points in row order and a summarize hands back none,
-        so a timeline nobody sorted draws itself doubling back on itself."""
+        so a timeline nobody sorted plots itself doubling back on itself."""
         case = derivation_case("Line")
         config = {**case["config"], "order_by": []}
         operations = derive_operations("Line", case["query"], config)
@@ -377,7 +377,7 @@ class TestChartDerivation(unittest.TestCase):
 
     # @feature charts.sort
     def test_a_date_axis_the_author_turned_around_stays_turned_around(self):
-        """Either direction is monotone, so either one draws a line that does not
+        """Either direction is monotone, so either one plots a line that does not
         cross itself."""
         case = derivation_case("Line")
         config = {
@@ -783,11 +783,11 @@ class TestChartDerivation(unittest.TestCase):
         can show, the same as an empty slot, never as an exception out of the
         deriver.
         """
-        drawable = {
+        plottable = {
             "x_axis": {"dimension": {"column_name": "status", "data_type": "String"}},
             "y_axis": {"series": []},
         }
-        self.assertEqual(config_errors("Bar", "some-query", drawable), [])
+        self.assertEqual(config_errors("Bar", "some-query", plottable), [])
 
         for slot, value in [
             ("x_axis", "status"),
@@ -799,7 +799,7 @@ class TestChartDerivation(unittest.TestCase):
             ("rows", ["status"]),
         ]:
             with self.subTest(slot=slot, value=value):
-                self.assertTrue(config_errors("Bar", "some-query", {**drawable, slot: value}))
+                self.assertTrue(config_errors("Bar", "some-query", {**plottable, slot: value}))
 
         self.assertTrue(config_errors("Bar", "some-query", "status"), "a config that is not an object")
 
@@ -807,7 +807,7 @@ class TestChartDerivation(unittest.TestCase):
 class TestSparklineDerivation(unittest.TestCase):
     """What a span card's sparkline runs, beside the number itself.
 
-    One row per span draws a two-point line, so the trend inside the span is
+    One row per span plots a two-point line, so the trend inside the span is
     a second question and a second query. Nothing new derives it: inside one
     span, a finer grain is the breakdown.
     """
@@ -849,9 +849,9 @@ class TestSparklineDerivation(unittest.TestCase):
         )
 
     # @feature charts.number-sparkline
-    def test_a_sparkline_draws_the_configured_window_and_not_the_comparison(self):
+    def test_a_sparkline_plots_the_configured_window_and_not_the_comparison(self):
         """The comparison span answers what the number is held against. The
-        picture is the span the card is read over."""
+        sparkline plots the span the card is read over."""
         config = _sparkline_config(compare="last year")
         operations = sparkline_operations("Number", "sales-invoice-lines", config)
 
@@ -869,7 +869,7 @@ class TestSparklineDerivation(unittest.TestCase):
     # @feature charts.number-sparkline
     def test_a_sparkline_runs_under_the_cards_own_filters(self):
         """Same source, same filters. A series over rows the card never counted
-        is a picture of a different number."""
+        is a chart of a different number."""
         config = _sparkline_config()
         config["filters"] = {
             "logical_operator": "And",
@@ -892,7 +892,7 @@ class TestSparklineDerivation(unittest.TestCase):
     # @feature charts.number-sparkline
     def test_a_sparkline_measures_the_readings_and_nothing_else(self):
         """A target and a comparison are read off the card's own row, and no
-        sparkline is drawn behind either."""
+        sparkline is plotted behind either."""
         config = _sparkline_config()
         target = {
             "aggregation": "sum",
@@ -924,8 +924,8 @@ class TestSparklineDerivation(unittest.TestCase):
                 self.assertEqual(summarize["dimensions"][0]["granularity"], grain)
 
     # @feature charts.number-sparkline
-    def test_a_window_with_no_finer_period_draws_no_sparkline(self):
-        """A day splits into clock grains, which is a different picture from a
+    def test_a_window_with_no_finer_period_plots_no_sparkline(self):
+        """A day splits into clock grains, which is a different chart from a
         period of periods."""
         self.assertEqual(
             sparkline_operations("Number", "sales-invoice-lines", _sparkline_config("current day")), []
@@ -956,7 +956,7 @@ class TestSparklineDerivation(unittest.TestCase):
 
     # @feature charts.measure-expression
     def test_a_measure_written_as_an_expression_is_summarized_by_it(self):
-        """An axis chart's series carries a measure the author wrote as an
+        """An axis chart's series holds a measure the author wrote as an
         expression. Nothing in the axis path may require a column and an
         aggregation, or the series is dropped from the summarize."""
         expression_measure = {

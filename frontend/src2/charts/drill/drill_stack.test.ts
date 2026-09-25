@@ -23,7 +23,7 @@ import {
 } from './drill_stack'
 
 // Everything here asserts on the descriptor a click produces and on the crumbs
-// the reader ends up reading. What the dialog draws from either is the dialog's
+// the reader ends up reading. What the dialog renders from either is the dialog's
 // concern, and it stays on manual verification.
 
 /** Clicks a value column on the row the given category came back on. */
@@ -91,7 +91,7 @@ describe('what a segment click pins', () => {
 
 	// @feature charts.drill-number-card
 	it('pins the window a card’s reading stands on, and reads it as the window', () => {
-		// The reading is the newest period and the row carries the day it opens.
+		// The reading is the newest period and the row holds the day it opens.
 		// Which stretch that day stands for is the span's answer, on both sides:
 		// the pin prints it, and the server resolves it.
 		const card = numberChart({
@@ -170,7 +170,7 @@ describe('what a segment click pins', () => {
 	})
 })
 
-describe('a segment a split or a pivot drew', () => {
+describe('a segment a split or a pivot plotted', () => {
 	const split: AxisChartSpec = {
 		type: 'Bar',
 		dimension: 'month',
@@ -204,7 +204,7 @@ describe('a segment a split or a pivot drew', () => {
 	})
 
 	// @feature charts.drill-segment
-	it('pins the absence of a split value on the series the rows with none were drawn in', () => {
+	it('pins the absence of a split value on the series the rows with none were plotted in', () => {
 		const segment = click(axisChart({ ...split, measures: ['revenue'] }), 'null')
 		expect(segment.filters).toContainEqual({
 			column: 'department',
@@ -291,7 +291,7 @@ describe('a segment on a date', () => {
 	})
 })
 
-describe('what "break down by" offers', () => {
+describe('what "break down by" lists', () => {
 	const available: DrillDimension[] = [
 		{ name: 'region', type: 'String' },
 		{ name: 'owner', type: 'String' },
@@ -299,7 +299,7 @@ describe('what "break down by" offers', () => {
 		{ name: 'priority', type: 'String' },
 	]
 
-	// @feature charts.drill-breakdown-offers
+	// @feature charts.drill-breakdown-options
 	it('drops the columns the click already pins', () => {
 		const segment = click(
 			axisChart({ type: 'Bar', dimension: 'status', measures: ['count'] }),
@@ -310,15 +310,15 @@ describe('what "break down by" offers', () => {
 		).not.toContain('status')
 	})
 
-	// @feature charts.drill-breakdown-offers
+	// @feature charts.drill-breakdown-options
 	it('drops a column a level further up already fixed', () => {
 		expect(breakdownCandidates(available, ['status', 'region'], []).map((d) => d.name)).toEqual(
 			['owner', 'priority'],
 		)
 	})
 
-	// @feature charts.drill-breakdown-offers
-	it('offers the Chart’s own other Dimensions first, in the order it declares them', () => {
+	// @feature charts.drill-breakdown-options
+	it('lists the Chart’s own other Dimensions first, in the order it declares them', () => {
 		// A number card pins nothing, and the Dimension its readings are grouped by
 		// is still one the chart talks about.
 		const card = numberChart({
@@ -335,7 +335,7 @@ describe('what "break down by" offers', () => {
 		).toEqual(['priority', 'owner', 'region', 'status'])
 	})
 
-	// @feature charts.drill-breakdown-offers
+	// @feature charts.drill-breakdown-options
 	it('sorts everything the Chart never named alphabetically', () => {
 		const segment = segmentOf(
 			{ chart_type: 'Number', config: { number_columns: [] } as unknown as ChartConfig },
@@ -398,7 +398,7 @@ describe('the crumbs', () => {
 	})
 
 	// @feature charts.drill-number-card
-	it('carries a crumb for a level whose segment pins nothing, as a number card does', () => {
+	it('keeps a crumb for a level whose segment pins nothing, as a number card does', () => {
 		const stack = makeDrillStack()
 		stack.push({ ...overdue, pins: [] })
 		expect(stack.crumbs).toEqual([{ label: 'by Region', depth: 1 }])
@@ -434,8 +434,8 @@ describe('the pins', () => {
 		expect(stack.pins).toEqual([{ column: 'status', value: 'Overdue' }])
 	})
 
-	// @feature charts.drill-breakdown-offers
-	it('collects every column the path has fixed, so the menu stops offering them', () => {
+	// @feature charts.drill-breakdown-options
+	it('collects every column the path has fixed, so the menu stops listing them', () => {
 		const stack = makeDrillStack()
 		stack.push(overdue)
 		stack.push(west)
@@ -618,7 +618,7 @@ describe('the grains a breakdown can be read at', () => {
 	]
 
 	// @feature charts.drill-grain
-	it('offers the calendar grains for a date', () => {
+	it('lists the calendar grains for a date', () => {
 		expect(grainsFor(dimensions, 'due_date').map((grain) => grain.value)).toContain('month')
 		expect(grainsFor(dimensions, 'creation').map((grain) => grain.value)).toContain(
 			'fiscal_year',
@@ -626,12 +626,12 @@ describe('the grains a breakdown can be read at', () => {
 	})
 
 	// @feature charts.drill-grain
-	it('offers none for a column with no order of its own', () => {
+	it('lists none for a column with no order of its own', () => {
 		expect(grainsFor(dimensions, 'status')).toEqual([])
 	})
 
 	// @feature charts.drill-grain
-	it('offers none for a column the response never carried', () => {
+	it('lists none for a column the response never included', () => {
 		expect(grainsFor(dimensions, 'owner')).toEqual([])
 	})
 })
@@ -704,7 +704,7 @@ describe('a query result read as a chart', () => {
 
 // A Funnel holds both shapes at once: the Label column stays in the config when
 // a stage names a Measure, and the form only hides its picker. The one reshaped
-// row carries no value for that column, so pinning it drills into `label IS
+// row has no value for that column, so pinning it drills into `label IS
 // NULL` under a crumb reading "(blank)".
 
 describe('what a funnel stage pins', () => {

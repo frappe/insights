@@ -20,7 +20,7 @@ _Avoid_: dataset
 **Query interface**:
 The editor a query is written in — `builder`, `sql` or `script`. Those three are the
 only names for them: the `interface` property a query answers with, the value the
-telemetry event carries, and the word the picker uses. A query that names neither
+telemetry event includes, and the word the picker uses. A query that names neither
 `is_native_query` nor `is_script_query` is a builder query.
 _Avoid_: visual, native, mode, editor type
 
@@ -31,13 +31,13 @@ query, compiled to SQL through ibis.
 _Avoid_: transform, step
 
 **Chart**:
-An aggregation over a query, drawn as one picture, configured with dimensions and measures.
+An aggregation over a query, configured with dimensions and measures and rendered by its chart type.
 Charts aggregate; a mid-pipeline `summarize` in a query is a grain change, not
 presentation.
 _Avoid_: visual, graph
 
 **Dashboard**:
-A grid of charts, filters, and text blocks; each item carries a Layout.
+A grid of charts, filters, and text blocks; each item has a Layout.
 
 **Dashboard filter**:
 A dashboard-level control that routes filter conditions into the queries behind its
@@ -60,11 +60,11 @@ The unit a date or ordered column is grouped by — day, week, month, quarter, y
 _Avoid_: granularity (in prose — `granularity` is the stored key), bucket, resolution
 
 **Reading**:
-One measure a Number chart states, drawn as a card of its own — its value, its format, its Period comparison and its target. `number_columns` names the readings and `number_column_options` carries each one's own settings, positionally. A dashboard cell draws one reading and names it in `reading`, by its `id`, so renaming the measure keeps the cell. A Number chart on a dashboard is as many cells as it has readings.
-_Avoid_: KPI, metric, data point ("card" is the thing drawn, "reading" is what it states)
+One measure a Number chart states, shown as a card of its own — its value, its format, its Period comparison and its target. `number_columns` names the readings and `number_column_options` keeps each one's own settings, positionally. A dashboard cell shows one reading and names it in `reading`, by its `id`, so renaming the measure keeps the cell. A Number chart on a dashboard is as many cells as it has readings.
+_Avoid_: KPI, metric, data point ("card" is the thing shown, "reading" is what it states)
 
 **Period**:
-The stretch of the date column one Number card reads, and the unit its comparison steps back by. Stored as `window`, holding one of a `span` or a `grain` and never both. It is the only thing that groups a card by date: left out, the card is one number over the whole result and its date column only feeds the sparkline.
+The stretch of the date column one Number card reads, and the unit its comparison steps back by. Stored as `window`, holding one of a `span` or a `grain` and never both. It is the only thing that groups a card by date: left out, the card is one number over the whole result and its date column is used only by the sparkline.
 _Avoid_: slice, window (in prose — `window` is the stored key), timeframe
 
 **Span**:
@@ -83,36 +83,35 @@ _Avoid_: script (for the three together), admin code, unsafe code
 ### Drill-down
 
 **Drill**:
-Reading what a number in a chart is made of. A drill cuts the chart's pipeline before its aggregation operation and reads the surface underneath. The builder's chart preview, its dashboard grid and the query builder's result table offer the same drill.
+Reading what a number in a chart is made of. A drill cuts the chart's pipeline before its aggregation operation and reads the surface underneath. The builder's chart preview, its dashboard grid and the query builder's result table show the same drill.
 _Avoid_: drill-through, explore
 
 **Surface**:
-Three senses, one per layer.
+Two senses.
 
 1. The rows under a chart's aggregation — the pipeline cut just before its
    summarize or pivot operation (`chart_drill.py`). This surface is the exposure
    bound. A drill may name only its columns, so a drill never reaches past what
    the chart already published.
-2. A screen a user works on: the public page, the desk island or the Builder. The server answers a View and the Builder differently.
-3. frappe-ui's `bg-surface-*` token, a background step in the design system.
+2. The page a View is read on. It is the `surface` argument of `insights.api.view.get_dashboard` and the `surface` of the `dashboard_viewed` telemetry event: `dashboards`, `shared` or `desk`, and `workbook` for the Builder (`VIEW_SURFACES`).
 
-Each layer means one of them, so say which when a sentence could take two. None of the three is renamed.
-_Avoid_: view, canvas, pane (for meaning 2)
+Say which sense when a sentence could take both.
+_Avoid_: view, canvas, pane (for sense 2); surface for `ChartReadContext`, the object that holds a read's id and filters
 
 **Segment**:
-The part of a chart a reader clicked — one bar, one wedge, one point. It goes to the server as its dimension values, plain triples of column, operator and value, never as operations. One level of a drill stack carries one segment, and levels accumulate, so each level narrows the rows further.
+The part of a chart a reader clicked — one bar, one wedge, one point. It goes to the server as its dimension values, plain triples of column, operator and value, never as operations. One level of a drill stack holds one segment, and levels accumulate, so each level narrows the rows further.
 _Avoid_: slice, data point, cell (a cell is the dashboard's grid unit, and a Table chart's)
 
 **Breakdown**:
-One of the two answers a drill level can ask for: group the segment by one more column of the surface. The other answer is rows — the rows behind the segment, and the word the wire, the code and the UI all use. A breakdown draws as an ad-hoc chart the answer picks for itself, and a click on it recurses.
+One of the two answers a drill level can ask for: group the segment by one more column of the surface. The other answer is rows — the rows behind the segment, and the word the wire, the code and the UI all use. A breakdown renders as an ad-hoc chart the answer picks for itself, and a click on it recurses.
 _Avoid_: split, group-by (that is a Dimension), and records, docs, entries for the rows answer
 
 **Additive**:
-Whether a level's group values add up to the value of the segment above them. True of a sum and a count, false of an average, a distinct count and an expression. The server says it on the answer, beside the order the rows run in, because a column of decimals does not say which aggregation made it. A breakdown reads it to decide whether it may draw itself as parts of one whole.
+Whether a level's group values add up to the value of the segment above them. True of a sum and a count, false of an average, a distinct count and an expression. The server says it on the answer, beside the order the rows run in, because a column of decimals does not say which aggregation made it. A breakdown reads it to decide whether it may show itself as parts of one whole.
 _Avoid_: summable, part-of-whole (that is what being additive licenses)
 
 **Record Link**:
-Which columns of a result name a desk document, and which doctype they name. A cell holds a document when its column came from a site-DB table and holds an id there — the table's own `name`, or one of its `Link` fields. Where a column came from is traced through the pipeline, never guessed from its name, and a trace that cannot be followed (an expression, a union, raw SQL, another data source) draws no link rather than one that lands on the wrong document. The server answers it on a drill's rows level and on a Table chart's result, and the value is the control: a linked cell opens the document's form, every other cell stays a value. The word "record" is kept for the identifier — `record_links` on the wire, `record_link.py`, `recordUrl` — and never used in prose or in the UI for the rows answer: the drill menu says View rows.
+Which columns of a result name a desk document, and which doctype they name. A cell holds a document when its column came from a site-DB table and holds an id there — the table's own `name`, or one of its `Link` fields. Where a column came from is traced through the pipeline, never guessed from its name, and a trace that cannot be followed (an expression, a union, raw SQL, another data source) gets no link rather than one that lands on the wrong document. The server answers it on a drill's rows level and on a Table chart's result, and the value is the control: a linked cell opens the document's form, every other cell stays a value. The word "record" is kept for the identifier — `record_links` on the wire, `record_link.py`, `recordUrl` — and never used in prose or in the UI for the rows answer: the drill menu says View rows.
 _Avoid_: record (in prose or in the UI), drill-to-detail, doc link
 
 ### Data
@@ -126,7 +125,7 @@ A table exposed by a data source, selectable as a query's source.
 
 **Table Name**:
 The string that names a Table — `Insights Table v3.table`. Every referrer quotes it,
-and the record's key derives from it. A postgres name carries a `<schema>.` prefix
+and the record's key derives from it. A postgres name includes a `<schema>.` prefix
 while the Data Source reads several schemas, so the name can change while the table
 does not. A rename therefore has to move every referrer. See
 `docs/adr/the-schema-is-a-coordinate-not-a-name.md`.
@@ -172,11 +171,11 @@ Everything around a plot: the card, the title, the actions, the legend, the tool
 _Avoid_: frame, shell, container
 
 **Plot**:
-The picture inside the chrome — the marks that carry the data. The only part that varies by chart type, and it has three fillers: a charts v2 component, an Insights plot built on v2's `useChart` (Map), or none at all (Table).
+What renders inside the chrome — the marks that show the data. The only part that varies by chart type, and it has three fillers: a charts v2 component, an Insights plot built on v2's `useChart` (Map), or none at all (Table).
 _Avoid_: graph, canvas, visual
 
 **Adapter**:
-The one module that turns a stored Chart config and a query result into the props of a charts v2 component (`frontend/src2/charts/adapter/`). One pure function per chart type. Insights builds no ECharts option for a type v2 admits.
+The one module that turns a stored Chart config and a query result into the props of a charts v2 component (`frontend/src2/charts/adapter/`). One pure function per chart type. Insights builds no ECharts option for a type v2 supports.
 _Avoid_: mapper, translator, transformer
 
 ### Reading and building
@@ -187,7 +186,7 @@ _Avoid_: viewer (neither the reader, nor the module, nor the endpoints), read su
 
 **Builder**:
 The write side: the workbook's stores, forms and grid editing. It renders content that has no name yet. So it sends the content it is editing to `insights.api.authoring`, and gets back the derived operations and the SQL. That is why those endpoints need an Insights role and the View endpoints do not. On the client, it is `dashboard/builder.ts`, `charts/chart_preview.ts` and `BuilderDrillDown.vue`. To edit, a user needs write permission on the document and an Insights role. `can_write` in `insights/permissions.py` is the one place that checks both.
-_Avoid_: authoring (as the name of a surface, a store or a prop — `insights.api.authoring` keeps the word), seat (the gate is a role)
+_Avoid_: authoring (as the name of a page, a store or a prop — `insights.api.authoring` keeps the word), seat (the gate is a role)
 
 **Route**:
 A dashboard's human-readable key, for its URL. It is made from the title only while it is empty, so a published link keeps working after the dashboard is renamed. `insights.resolver` accepts three references, in this order: the docname, the route and the v2 `old_name`. Charts have no route.
@@ -202,13 +201,17 @@ A chart the reader may open but whose data they may not read. It reads a site-DB
 _Avoid_: denied, no access, hidden, no data (no data is a true zero)
 
 **Held back**:
-A permlevel column the reader may not read, which a build removes from the table's columns. The chart keeps running while nothing in it names the column. An operation, an expression or SQL that names the column makes the chart **Not Permitted**. A held-back column still counts toward the shape of the result, so a join names its output columns as it would for the author (`not_permitted.hold_back`, `held_back_columns`, `held_back_key`). A column the author removed or renamed is dropped (`dropped_by_author`), not held back.
+A permlevel column the reader may not read, which a build removes from the table's columns. The chart keeps running while nothing in it names the column. An operation, an expression or SQL that names the column makes the chart **Not Permitted**. A held-back column still counts toward the shape of the result, so a join names its output columns as it would for the author (`not_permitted.hold_back`, `held_back_columns`, `held_back_key`). A column the author removed or renamed is dropped (`dropped_by_writer`), not held back.
 _Avoid_: lost, dropped (for permlevel)
 
 ### Sharing & governance
 
 **Grant**:
 Anything that gives a user access to a document. Each kind is one row of the table in `insights/permissions.py`: a DocShare, a workbook, a team or a Visibility level, among others. Nothing outside that table is a grant.
+
+**Member**:
+A workbook's query, chart, dashboard, alert or folder (`WORKBOOK_MEMBERS`). An alert belongs to its query's workbook (`workbook_of`). A member's write and share come from its workbook only: share on a member is checked as write, and owning a member grants nothing. A DocShare on a member may only give a named user read on a dashboard or chart (`is_member_share`).
+_Avoid_: item (the permissions table says "items"), child (a child row is a row of a member's child table)
 
 **Visibility**:
 Who may read a chart or dashboard, on any screen. It is a field on the content itself, with four levels from narrowest to widest. `Private` adds no reader: only the document's other grants give read. They are its workbook, a DocShare to a named user, a team and, for a chart, a dashboard it is on. Owning the document grants nothing. `Roles` adds users with a role listed in `visible_to_roles`. `Everyone` adds every signed-in user; the word comes from Frappe's DocShare `everyone`. `Public` adds guests, so anyone on the internet. Visibility gives read only: no level gives write or share. Widening it is checked as a share (`validate_visibility`).
@@ -238,5 +241,5 @@ condition is met.
 
 **Channel**:
 How an alert reaches its recipients: email, Telegram or a webhook. A webhook posts to a
-URL the user supplies, which is why outbound requests carry an address policy — see
+URL the user supplies, which is why outbound requests are checked against an address policy — see
 `docs/adr/outbound-http-to-user-chosen-urls.md`.

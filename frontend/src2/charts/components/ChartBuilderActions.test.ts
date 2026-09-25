@@ -37,13 +37,13 @@ async function menu(executedSQL: string, doc: Record<string, any> = {}) {
 
 describe('the builder card menu', () => {
 	// @feature charts.view-sql permissions.viewer-cannot-edit
-	it('offers the SQL only where the server sent it', async () => {
+	it('shows the SQL only where the server sent it', async () => {
 		expect(await menu('select 1')).toContain('View SQL')
 		expect(await menu('')).not.toContain('View SQL')
 	})
 
 	// @feature shared.publish-needs-share
-	it('offers Share where the server says the caller may share, and nowhere else', async () => {
+	it('shows Share where the server says the caller may share, and nowhere else', async () => {
 		expect(await menu('select 1', { can_share: true })).toContain('Share Chart')
 		expect(await menu('select 1', { can_share: false })).not.toContain('Share Chart')
 	})

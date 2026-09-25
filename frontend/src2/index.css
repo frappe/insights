@@ -38,7 +38,7 @@ body {
 }
 
 @layer components {
-	/* What a bare `border` draws in this app: a step darker than frappe-ui's
+	/* What a bare `border` renders in this app: a step darker than frappe-ui's
 	   own default. In the components layer: a utility that names a color,
 	   `border-transparent` included, is emitted after it and wins. */
 	.border {

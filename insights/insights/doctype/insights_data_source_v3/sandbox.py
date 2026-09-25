@@ -195,12 +195,12 @@ QUERY_READS = frozenset({"build", "execute"})
 
 
 def script_globals() -> dict:
-    offered = get_safe_globals()
-    frappe_names, db_names = offered["frappe"], offered["frappe"].db
+    safe_globals = get_safe_globals()
+    frappe_names, db_names = safe_globals["frappe"], safe_globals["frappe"].db
     return sandbox_globals(
-        offered,
+        safe_globals,
         names={
-            **{name: offered[name] for name in SCRIPT_NAMES if name in offered},
+            **{name: safe_globals[name] for name in SCRIPT_NAMES if name in safe_globals},
             "pandas": NamespaceDict(DataFrame=pd.DataFrame, json_normalize=pd.json_normalize),
         },
         frappe_names={
@@ -217,12 +217,12 @@ def script_globals() -> dict:
 
 
 def expression_globals() -> dict:
-    offered = get_safe_globals()
+    safe_globals = get_safe_globals()
     return sandbox_globals(
-        offered,
-        names={name: offered[name] for name in EXPRESSION_NAMES},
+        safe_globals,
+        names={name: safe_globals[name] for name in EXPRESSION_NAMES},
         frappe_names={
-            **{name: offered["frappe"][name] for name in EXPRESSION_FRAPPE},
+            **{name: safe_globals["frappe"][name] for name in EXPRESSION_FRAPPE},
             "get_doc": read_doc,
             "get_list": read_list,
         },
@@ -230,14 +230,14 @@ def expression_globals() -> dict:
     )
 
 
-def sandbox_globals(offered: dict, names: dict, frappe_names: dict, db_names: dict) -> dict:
+def sandbox_globals(safe_globals: dict, names: dict, frappe_names: dict, db_names: dict) -> dict:
     """The globals code runs with: `names`, and `frappe` holding `frappe_names`, `db_names` and `UTILS`.
 
     `safe_exec` merges these into frappe's Server Script globals, so every other
     frappe global is replaced with `NotDefined`. The RestrictedPython guards and
     the builtins are kept.
     """
-    allowed = {name: value for name, value in offered.items() if name.startswith("_")}
+    allowed = {name: value for name, value in safe_globals.items() if name.startswith("_")}
     allowed.update(get_python_builtins())
     allowed.update(names)
 
@@ -245,17 +245,17 @@ def sandbox_globals(offered: dict, names: dict, frappe_names: dict, db_names: di
         frappe_names,
         **{
             name: value
-            for name, value in offered["frappe"].items()
+            for name, value in safe_globals["frappe"].items()
             if isinstance(value, type) and issubclass(value, Exception)
         },
     )
     namespace.db = NamespaceDict(db_names)
-    utils = offered["frappe"].utils
+    utils = safe_globals["frappe"].utils
     namespace.utils = NamespaceDict({name: utils[name] for name in UTILS if name in utils})
     allowed["frappe"] = namespace
-    allowed["_getattr_"] = no_io(offered["_getattr_"])
+    allowed["_getattr_"] = no_io(safe_globals["_getattr_"])
 
-    return {**{name: NotDefined(name) for name in offered}, **allowed}
+    return {**{name: NotDefined(name) for name in safe_globals}, **allowed}
 
 
 def no_io(guard):

@@ -4,7 +4,7 @@ import { authoringDrillRows, fetchAuthoringDrillData } from './drill_api'
 // The wire contract, asserted where it is written. A drill level has to be
 // narrowed by everything the card itself was narrowed by — the grid's filters
 // and the reader's own card filter — or the breakdown counts rows the card does
-// not draw.
+// not show.
 
 const calls: [string, Record<string, any>][] = []
 vi.mock('frappe-ui', () => ({
@@ -16,7 +16,7 @@ vi.mock('frappe-ui', () => ({
 
 describe('a drill level', () => {
 	// @feature dashboard.card-filter
-	it('carries the card filter the read runs under', async () => {
+	it('passes the card filter the read runs under', async () => {
 		await fetchAuthoringDrillData(
 			{ query: 'query-1', chart_type: 'Bar', config: {} as any },
 			[
@@ -83,7 +83,7 @@ describe('a drill level', () => {
 		expect(args.chart_name).toBe('chart-1')
 	})
 
-	// @feature charts.drill-rows-reading charts.drill-rows-export permissions.chart-run-as-owner
+	// @feature charts.drill-rows-state charts.drill-rows-export permissions.chart-run-as-owner
 	it('reads a builder rows level on the server, under the chart it is of', async () => {
 		// Run as owner applies only on the server, where the pipeline is cut. So
 		// every read of the level names the chart and goes to the server.
@@ -93,19 +93,19 @@ describe('a drill level', () => {
 			undefined,
 			'chart-1',
 		)
-		const reading = {
+		const state = {
 			row_filters: [],
 			sort: [{ column: 'region', direction: 'desc' as const }],
 			find: 'north',
 			page: 2,
 		}
 
-		await rows.read(reading)
+		await rows.read(state)
 		const [read, readArgs] = calls[calls.length - 1]
 		expect(read).toBe('insights.api.authoring.get_drill_data')
-		expect(readArgs).toMatchObject({ chart_name: 'chart-1', ...reading })
+		expect(readArgs).toMatchObject({ chart_name: 'chart-1', ...state })
 
-		await rows.download(reading, 'csv')
+		await rows.download(state, 'csv')
 		const [download, downloadArgs] = calls[calls.length - 1]
 		expect(download).toBe('insights.api.authoring.download_drill_rows')
 		expect(downloadArgs).toMatchObject({ chart_name: 'chart-1', find: 'north', format: 'csv' })

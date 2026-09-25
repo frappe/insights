@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The "+ Add …" control at the foot of a config list. Not a frappe-ui Button:
 // it reads as the list's last line rather than as an action beside it, which is
-// why the config panel draws its own. One of them, so it is one look.
+// why the config panel renders its own. One of them, so it is one look.
 defineProps<{ label: string }>()
 </script>
 

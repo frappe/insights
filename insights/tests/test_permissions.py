@@ -184,12 +184,12 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         create_test_tables()
         self.set_team_permissions(False)
 
-        for user, admitted in ((USER_1, True), (ADMIN, True), (NON_INSIGHTS_USER, False), ("Guest", False)):
+        for user, allowed in ((USER_1, True), (ADMIN, True), (NON_INSIGHTS_USER, False), ("Guest", False)):
             with self.subTest(user=user):
                 self.assertIs(
-                    check_table_permission(TEST_DS, "table1", user=user, raise_error=False), admitted
+                    check_table_permission(TEST_DS, "table1", user=user, raise_error=False), allowed
                 )
-                if not admitted:
+                if not allowed:
                     with permission_user(user), self.assertRaisesRegex(NotPermitted, "access this table"):
                         InsightsTablev3.get_ibis_table(TEST_DS, "table1", use_live_connection=True)
 
@@ -261,7 +261,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 self.assertNotIn(NON_INSIGHTS_USER, emails)
 
     # @feature permissions.share-user-lookup
-    def test_roster_carries_nothing_but_directory_fields(self):
+    def test_roster_includes_nothing_but_directory_fields(self):
         # the api is the only way into `User`, so its field list is the whole
         # exposure - no phone number or api key may ride along
         with self.as_user(USER_1):
@@ -342,7 +342,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 )
 
     # @feature permissions.share-workbook-user
-    def test_a_share_the_workbook_already_holds_is_kept_not_named_again(self):
+    def test_a_share_the_workbook_already_holds_is_kept_when_sent_back(self):
         """`WorkbookShareDialog` sends the whole share list back on every save.
         So an old share, or a share to someone who left Insights, comes back each
         time. Keeping or narrowing it is allowed. Widening it to edit is checked."""
@@ -376,7 +376,7 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
         )
 
     # @feature permissions.share-workbook-user
-    def test_a_removed_share_given_back_is_named_again(self):
+    def test_a_removed_share_given_back_is_checked_again(self):
         """`WorkbookShareDialog` removes a person by sending them with no access.
         Their share row stays at read 0 and write 0. Giving access back widens
         it, so `update_share_permissions` checks the user again."""
@@ -1121,7 +1121,7 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
                     "description": f"{cls.PREFIX} {status} {i}",
                     "status": status,
                     # Each reader gets their own todos, which desk permissions
-                    # admit in full. So only the team's row filter limits the rest.
+                    # allow in full. So only the team's row filter limits the rest.
                     "allocated_to": user,
                     "assigned_by": "Administrator",
                 }
@@ -1194,7 +1194,7 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
 
     # @feature permissions.table-row-restriction
     def test_a_teams_row_restriction_cuts_only_the_rows_its_grant_adds(self):
-        """Desk permissions admit the reader's own todos, closed ones included.
+        """Desk permissions allow the reader's own todos, closed ones included.
         The grant adds the other reader's open todos, never their closed one."""
         self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Open", "Open", "Open", "Open"])
         self.assertEqual(self.statuses_read_by(ADMIN), ["Closed", "Open", "Open"])
@@ -1202,10 +1202,10 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
     # @feature permissions.table-row-restriction
     def test_one_teams_grant_never_narrows_anothers(self):
         """The reader is in two teams that both grant the table. Each grant
-        admits the rows its own restriction allows. A grant with no restriction
-        admits the whole table."""
+        lets the reader read the rows its own restriction allows. A grant with no restriction
+        allows the whole table."""
         team = self.second_team("status == 'Closed'")
-        # only the second team admits the other reader's closed todo
+        # only the second team allows the other reader's closed todo
         self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Closed", "Open", "Open", "Open", "Open"])
 
         team.team_permissions[-1].table_restrictions = "status == 'Nothing'"

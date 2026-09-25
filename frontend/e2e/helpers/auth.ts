@@ -62,7 +62,7 @@ export function readCsrfToken(role: Role): string {
 /**
  * Log in over the API and save the session and its CSRF token.
  *
- * A Frappe session carries no CSRF token until a page asks for one, and every
+ * A Frappe session has no CSRF token until a page asks for one, and every
  * later write is then checked against it. Loading the Insights page is what
  * mints the token, and the app's page renderer puts it on `window.csrf_token`.
  * A run that skipped this step would write fine until the first page load and

@@ -12,7 +12,7 @@ narrows the rows, but it names no document, so there is nothing to show.
 Insights' own narrowing names nothing either, so the card says only that the
 reader's permissions narrowed it. That covers two cases: a team's Table
 Restriction that removes rows the reader reads, and a column that the per-cell
-rule blanks on rows only desk admits, when the execution reads that column.
+rule blanks on rows only desk allows, when the execution reads that column.
 Desk's own row narrowing never sets this mark. Neither does a grant that only
 adds rows to what desk allows.
 
@@ -213,7 +213,7 @@ def narrowing(doctype: str, user: str, parent_doctype: str | None = None) -> dic
 
 
 def scope(user: str) -> dict:
-    """What narrowed this execution for `user`, in the shape a card's answer carries.
+    """What narrowed this execution for `user`, in the shape a card's answer includes.
 
     `user_permissions` has one entry per doctype, in a stable order.
     `narrowed_by_permissions` marks a narrowing with nothing to name. Empty

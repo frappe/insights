@@ -61,7 +61,7 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
         self.assertIsNone(resolve(CHART, "resolver-test-chart"))
 
     # @feature shared.old-name-resolves
-    def test_a_v2_name_resolves_to_the_document_that_carries_it(self):
+    def test_a_v2_name_resolves_to_the_document_that_keeps_it_as_its_old_name(self):
         dashboard = self.make_dashboard(title="Resolver Test Old Name")
         chart = self.make_chart()
         frappe.db.set_value(DT.DASHBOARD, dashboard.name, "old_name", "old-dashboard", update_modified=False)

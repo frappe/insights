@@ -38,7 +38,7 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 			})
 		}
 		// a card's rows come with the chart they were computed from
-		const chart = answer.dashboard.charts.find((frame: any) => frame.name === args.chart)
+		const chart = answer.dashboard.charts.find((chartDoc: any) => chartDoc.name === args.chart)
 		return Promise.resolve({ chart, columns: [], rows: [] })
 	},
 }))
@@ -111,8 +111,8 @@ beforeEach(() => {
 })
 
 // A reader leaves a dashboard and comes back. The SPA route rebuilds the page
-// component, but card reads are cached per surface (`ChartReadSurface`). A
-// second page state for one surface would leave every card reading a state
+// component, but card reads are cached per read context (`ChartReadContext`). A
+// second page state for one read context would leave every card reading a state
 // nobody sees.
 describe('a dashboard opened a second time', () => {
 	// @feature dashboard.filter-links
@@ -130,7 +130,7 @@ describe('a dashboard opened a second time', () => {
 	})
 
 	// @feature dashboard.loads charts.one-snapshot
-	it('draws the page the reader left and asks the server nothing', async () => {
+	it('renders the page the reader left and asks the server nothing', async () => {
 		const first = await opened('left')
 		const asked = calls.length
 
@@ -147,7 +147,7 @@ describe('a dashboard opened a second time', () => {
 // its workbook.
 describe('a shipped dashboard', () => {
 	// @feature standard.duplicate
-	it('offers Duplicate only to a reader the server lets copy it', async () => {
+	it('shows Duplicate only to a reader the server lets copy it', async () => {
 		answer.dashboard = { ...dashboardAnswer('Bar'), can_copy: true, workbook: 'workbook-1' }
 		const copyable = await opened('shipped')
 		expect(copyable.duplicate).toBeTypeOf('function')
@@ -198,7 +198,7 @@ describe('a dashboard refreshed', () => {
 
 describe('a chart its author saved in this tab', () => {
 	// @feature charts.one-snapshot
-	it('is asked again when a card that draws it mounts', async () => {
+	it('is asked again when a card that renders it mounts', async () => {
 		const first = await opened('authored')
 		const before = dataCalls().length
 

@@ -12,7 +12,7 @@ Every reference goes through `resolve_for_read`, which answers Not Found for a
 missing reference and a refused one alike. Nothing below checks the read again
 or catches its error, because either would reveal which case it was.
 
-Responses carry only what rendering needs. Operations, SQL and the queries
+Responses include only what rendering needs. Operations, SQL and the queries
 behind a chart never leave the server: the client names the chart, and the
 server decides what runs.
 """
@@ -42,7 +42,7 @@ from insights.resolver import CHART, DASHBOARD, may_read, not_found, resolve, re
 QUERY = "Insights Query v3"
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 def get_dashboard(dashboard: str, surface: str | None = None):
     """A dashboard with what a View needs: its layout, and what the reader may do with it.
 
@@ -86,7 +86,7 @@ def get_dashboard(dashboard: str, surface: str | None = None):
     }
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 def get_chart(chart: str, dashboard: str | None = None):
     """A chart's rendering config. The query behind it stays on the server."""
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
@@ -94,7 +94,7 @@ def get_chart(chart: str, dashboard: str | None = None):
     return {**present_chart(doc), "can_write": can_write(doc)}
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(lambda: {"columns": [], "rows": [], "executed_at": frappe.utils.now()})
 def get_chart_data(
     chart: str,
@@ -109,7 +109,7 @@ def get_chart_data(
     `filters` is the dashboard filter state, keyed by filter name.
     `card_filters` is the reader's own filter on this card. It names a column
     the card shows, so it exposes nothing the card does not. Pages past the
-    first are for readers `can_read_rows` admits. Everyone else gets the
+    first are for readers `can_read_rows` allows. Everyone else gets the
     chart's one page.
 
     A chart that reads a table or a permlevel column the reader may not read is
@@ -122,7 +122,7 @@ def get_chart_data(
     return chart_answer(doc, routed_filters(name, dashboard, filters), card_filters, force, page)
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 def get_chart_count(
     chart: str,
     dashboard: str | None = None,
@@ -132,7 +132,7 @@ def get_chart_count(
 ):
     """The total number of rows behind the pages of `get_chart_data`, under the same filters.
 
-    For readers `can_read_rows` admits. A refusal raises, because the card asks
+    For readers `can_read_rows` allows. A refusal raises, because the card asks
     for the count only when its data answer allowed it.
     """
     name = resolve_chart(chart, dashboard)
@@ -141,7 +141,7 @@ def get_chart_count(
     return doc.count_rows(routed_filters(name, dashboard, filters), card_filters, force=force)
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 def download_chart_rows(
     chart: str,
     dashboard: str | None = None,
@@ -211,13 +211,13 @@ def chart_answer(
         "currency_symbols": result["currency_symbols"],
         # the date this card's Spans resolved against, so a drill uses the same
         # date as the number
-        "drawn_on": result["drawn_on"],
+        "read_on": result["read_on"],
         "time_taken": result["time_taken"],
         "executed_at": frappe.utils.now(),
     }
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(lambda: {"columns": [], "rows": []})
 def get_drill_data(
     chart: str,
@@ -264,10 +264,10 @@ def get_drill_data(
     A rows level also says whether this reader may download the cut, so the
     dialog shows the control only when it will work.
 
-    A refusal is a normal answer here. `DrillLevelData` carries
+    A refusal is a normal answer here. `DrillLevelData` includes
     `not_permitted`, and `DrillDialog` renders it as a card renders a Not
     Permitted chart. So the level says the reader may not read the rows,
-    instead of offering a Retry that cannot succeed.
+    instead of showing a Retry that cannot succeed.
     """
     check_can_drill()
 
@@ -289,7 +289,7 @@ def get_drill_data(
     return answer
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 def download_drill_rows(
     chart: str,
     dashboard: str | None = None,
@@ -303,7 +303,7 @@ def download_drill_rows(
     """The rows behind a segment as a file, with the reader's own filters, sort and find.
 
     The same cut that `get_drill_data` returns a page of, in full up to the
-    download row limit. The request carries no more than that one does: the
+    download row limit. The request includes no more than that one does: the
     chart, the segments, and how to read them.
     """
     name = resolve_chart(chart, dashboard)
@@ -322,7 +322,7 @@ def download_drill_rows(
     )
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(list)
 def get_drill_rows_values(
     chart: str,
@@ -354,7 +354,7 @@ def get_drill_rows_values(
     )
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(lambda: None)
 def get_drill_rows_range(
     chart: str,
@@ -409,7 +409,7 @@ def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> d
     return route_filters(items, chart, filters)
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(list)
 def get_filter_values(
     dashboard: str,
@@ -438,7 +438,7 @@ def get_filter_values(
     return doc.lookup_filter(filter_name, values, missing=not_found)
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(lambda: None)
 def get_filter_range(dashboard: str, filter_name: str, filters: dict | None = None):
     """The range a filter on this dashboard shows.
@@ -455,7 +455,7 @@ def get_filter_range(dashboard: str, filter_name: str, filters: dict | None = No
     return doc.lookup_filter(filter_name, column_range, missing=not_found)
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(list)
 def get_card_values(chart: str, column: str, dashboard: str | None = None, search_term: str | None = None):
     """The values listed by the reader's own filter on one card.
@@ -475,7 +475,7 @@ def get_card_values(chart: str, column: str, dashboard: str | None = None, searc
         )
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read admits a guest to Public content only
+@frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(lambda: None)
 def get_card_range(chart: str, column: str, dashboard: str | None = None):
     """The range shown by the reader's own filter on one card, narrowed like `get_card_values`."""

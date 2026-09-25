@@ -22,7 +22,7 @@ import {
 	useChartView,
 	type ChartRead,
 	type ChartViewDoc,
-	type ChartReadSurface,
+	type ChartReadContext,
 	type DashboardFilterContext,
 } from '../charts/chart_view'
 import {
@@ -399,9 +399,9 @@ function makeDashboardPage(
 	// depends on its chart.
 	const reads = shallowReactive(new Map<string, ChartRead>())
 
-	// The read cache keys this page's reads by this id. It carries the page's own
+	// The read cache keys this page's reads by this id. It includes the page's own
 	// filters, so every mount shows the rows for the filters the reader sees.
-	const viewSurface: ChartReadSurface = {
+	const readContext: ChartReadContext = {
 		id: `view:${key}`,
 		filterContext: filterContextFor,
 	}
@@ -464,7 +464,7 @@ function makeDashboardPage(
 		// placeholder for a read with no rows yet. A read that has rows gets the new
 		// definition with its next rows.
 		charts.forEach((doc) => {
-			const read = useChartView(doc.name, viewSurface, doc)
+			const read = useChartView(doc.name, readContext, doc)
 			read.executionPriority = priorityFor(doc.name)
 			reads.set(doc.name, read)
 			read.load(force)
@@ -624,7 +624,7 @@ function fetchDashboard(dashboard: string, surface: DashboardSurface): Promise<D
 }
 
 /**
- * The values a filter offers. Only the server knows the column behind it.
+ * The values a filter lists. Only the server knows the column behind it.
  *
  * `filters` is the current state of the other filters. The server applies them
  * and leaves this filter out, so the list narrows to what the other filters
