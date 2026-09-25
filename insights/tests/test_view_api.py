@@ -565,6 +565,24 @@ class TestViewAPI(InsightsIntegrationTestCase):
             with as_user(DESK_USER):
                 response = get_dashboard(dashboard=dashboard.name)
             self.assertFalse(response["can_copy"])
+            self.assertIsNone(response["workbook"])
+
+    # @feature standard.duplicate
+    def test_a_shipped_workbook_is_offered_for_copying_and_the_copy_is_the_sites(self):
+        _, _, dashboard = self.make_content(visibility="Everyone")
+        dashboard = self.ship(dashboard)
+
+        with patch.dict(frappe.conf, {"developer_mode": 0}), as_user(OWNER):
+            response = get_dashboard(dashboard=dashboard.name)
+            self.assertEqual(response["workbook"], dashboard.workbook)
+
+            workbook = frappe.get_doc(DT.WORKBOOK, dashboard.workbook).as_dict()
+            self.assertTrue(workbook.read_only)
+            self.assertTrue(workbook.can_copy)
+
+            copy = frappe.get_doc(DT.WORKBOOK, frappe.get_doc(DT.WORKBOOK, dashboard.workbook).duplicate())
+            self.assertFalse(copy.is_standard)
+            self.assertFalse(copy.as_dict().read_only)
 
     # the query never crosses the boundary
 

@@ -67,6 +67,8 @@ export type InsightsWorkbook = {
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
 	read_only: boolean
+	/** A read-only workbook the reader may duplicate instead. */
+	can_copy?: boolean
 	/** Set on a workbook an app ships, with the module it ships in. */
 	is_standard?: boolean
 	module?: string | null

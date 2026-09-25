@@ -51,7 +51,7 @@ function afterMarked(name: string) {
 					icon: GitFork,
 					onClick: () => (showLineageDialog = true),
 				},
-				!workbook.doc.read_only
+				!workbook.doc.read_only || workbook.doc.can_copy
 					? {
 							label: __('Duplicate'),
 							icon: 'lucide-copy',

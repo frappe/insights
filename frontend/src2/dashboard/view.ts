@@ -32,7 +32,9 @@ import {
 	operatorOf,
 	type Filter,
 } from '../components/filter_picker/filter_picker'
+import { showErrorToast } from '../helpers'
 import type { FilterType } from '../helpers/constants'
+import { navigate } from '../helpers/navigation'
 import { stableStringify } from '../helpers/stable_stringify'
 import type { NumberChartConfig } from '../types/chart.types'
 import type { FilterOperator, FilterValue } from '../types/query.types'
@@ -73,8 +75,10 @@ export type DashboardViewDoc = {
 	// what this reader may do with it. The surface offers an action only where the
 	// server granted it, so nothing dangles an affordance the server would refuse
 	can_write: boolean
-	// where editing happens — the builder is workbook-scoped. Null for anyone who
-	// cannot edit
+	// a read-only dashboard whose workbook the reader may duplicate instead
+	can_copy: boolean
+	// where editing happens, and what a duplicate copies — the builder is
+	// workbook-scoped. Null for anyone who can do neither
 	workbook: string | null
 }
 
@@ -290,6 +294,9 @@ export type DashboardView = {
 	// where a chart on this dashboard is edited, as an SPA route. Absent for a
 	// reader who cannot edit it
 	chartRoute?: (chart: string) => string | undefined
+	// copy the dashboard's workbook and open the copy. Absent for a reader who
+	// may not copy it
+	duplicate?: () => void
 	builder?: DashboardBuilderActions
 }
 
@@ -404,6 +411,8 @@ function makeDashboardPage(
 		builderRoute: undefined as string | undefined,
 		// the workbook a reader who may edit is sent to, for a chart on the grid
 		workbook: undefined as string | undefined,
+		// the workbook a reader who may not edit it may duplicate
+		copyable: undefined as string | undefined,
 	})
 
 	// one read per chart, so the cells that draw one chart ask once. Reactive,
@@ -554,6 +563,7 @@ function makeDashboardPage(
 					? `/workbook/${doc.workbook}/dashboard/${doc.name}`
 					: undefined
 				state.workbook = editable ? doc.workbook! : undefined
+				state.copyable = doc.can_copy && doc.workbook ? doc.workbook : undefined
 				openReads(doc.charts, force)
 			})
 			.catch((error) => {
@@ -610,6 +620,11 @@ function makeDashboardPage(
 		builderRoute: computed(() => state.builderRoute),
 		chartRoute: (chart: string) =>
 			state.workbook ? `/workbook/${state.workbook}/chart/${chart}` : undefined,
+		duplicate: computed(() => {
+			const workbook = state.copyable
+			if (!workbook) return undefined
+			return () => duplicateWorkbook(workbook)
+		}),
 	}) as DashboardView
 
 	return {
@@ -650,4 +665,10 @@ function fetchFilterValues(
 		search_term,
 		filters,
 	})
+}
+
+function duplicateWorkbook(workbook: string) {
+	return call('run_doc_method', { dt: 'Insights Workbook', dn: workbook, method: 'duplicate' })
+		.then((copy) => navigate(`/workbook/${copy}`))
+		.catch((err) => showErrorToast(err, false))
 }

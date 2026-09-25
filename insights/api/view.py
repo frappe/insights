@@ -37,7 +37,7 @@ from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 impor
 )
 from insights.not_permitted import answers_refusal
 from insights.permission_user import runs_as
-from insights.permissions import can_export, can_read_rows, can_write, check_app_permission
+from insights.permissions import can_copy, can_export, can_read_rows, can_write
 from insights.resolver import CHART, DASHBOARD, may_read, not_found, resolve, resolve_for_read
 
 QUERY = "Insights Query v3"
@@ -52,6 +52,7 @@ def get_dashboard(dashboard: str, surface: str | None = None):
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
     doc.track_view(surface)
     writable = can_write(doc)
+    copyable = can_copy(doc)
     items = frappe.parse_json(doc.items) or []
 
     # One pass decides which cells reach this reader, and everything below is
@@ -79,12 +80,11 @@ def get_dashboard(dashboard: str, surface: str | None = None):
         "charts": [present_chart(chart) for chart in charts],
         "vertical_compact_layout": bool(doc.vertical_compact_layout),
         "can_write": writable,
-        # where "Edit in Insights" lands: the builder is workbook-scoped. It is the
-        # one piece of the Builder's structure here, so only an editor is told it
-        "workbook": doc.workbook if writable else None,
-        # standard content is read-only on a site, so copying is the only way to
-        # change it — and changing it means an Insights role
-        "can_copy": bool(doc.is_standard) and check_app_permission(),
+        "can_copy": copyable,
+        # where "Edit" lands, and what "Duplicate" copies: the builder is
+        # workbook-scoped. It is the one piece of the Builder's structure here, so
+        # only a reader who may act on it is told it
+        "workbook": doc.workbook if writable or copyable else None,
     }
 
 

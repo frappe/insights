@@ -14,7 +14,7 @@ from frappe.website.utils import cleanup_page_name
 from insights import standard
 from insights.desk import claims_on, refuse_delete_while_claimed
 from insights.insights.query_utils import referenced_queries
-from insights.permissions import ROLES, can_write, check_trusted_code_author
+from insights.permissions import ROLES, can_copy, can_write, check_trusted_code_author
 from insights.telemetry import capture
 from insights.utils import deep_convert_dict_to_dict
 
@@ -348,6 +348,7 @@ class InsightsWorkbook(Document):
         d.charts = frappe.as_json(d.charts)
         d.dashboards = frappe.as_json(d.dashboards)
         d.read_only = not can_write(self)
+        d.can_copy = can_copy(self)
         return d
 
     @frappe.whitelist()
@@ -390,7 +391,7 @@ class InsightsWorkbook(Document):
         member kept for desk is no longer the app's, so it is left out.
         """
         doc_export.update(self.export_members(shipped=True))
-        for field in ("read_only", "data_backup"):
+        for field in ("read_only", "can_copy", "data_backup"):
             doc_export.pop(field, None)
 
     def export_members(self, shipped: bool = False) -> dict:

@@ -279,6 +279,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | standard.ship | An app ships a workbook as one file, and importing it gives the site the workbook and its members under the names the file carries. |
 | standard.resync | Importing a changed file updates the members the site holds and deletes the ones the file has dropped, but keeps one a desk document draws and logs it. A kept member is left out of the file, and a migrate deletes it once no desk document draws it. |
 | standard.read-only | A standard workbook and its members refuse an edit, a delete, a rename and a member of the site's own outside developer mode. |
+| standard.duplicate | A user with an Insights role duplicates a standard workbook from its menu or from one of its dashboards, and the copy is the site's own to edit. |
 | standard.export-on-save | In developer mode, saving a standard workbook or any of its members writes its file, and deleting, renaming or unmarking it moves or removes the file. |
 | standard.mark | In developer mode an author marks a workbook standard: it takes the name they give, its members take readable ones, and every reference follows. |
 | standard.export-to-app | On a developer-mode bench the workbook menu offers "Export to app…" for a workbook no app ships yet, and the dialog picks a module of an installed app, names the workbook and says which file the export writes. |

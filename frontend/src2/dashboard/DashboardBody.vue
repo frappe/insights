@@ -59,6 +59,9 @@ const actions = computed(() => {
 		builderRoute
 			? { label: __('Edit'), icon: 'pencil', href: resolveHref(builderRoute) }
 			: null,
+		reading && props.dashboard.duplicate
+			? { label: __('Duplicate'), icon: 'copy', onClick: props.dashboard.duplicate }
+			: null,
 		...(props.dashboard.builder?.menuOptions || []),
 	].filter(Boolean) as DashboardAction[]
 })

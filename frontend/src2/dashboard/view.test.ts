@@ -149,6 +149,38 @@ describe('a dashboard opened a second time', () => {
 	})
 })
 
+// A dashboard an app ships is read-only, and duplicating its workbook is how a
+// site changes it.
+describe('a shipped dashboard', () => {
+	// @feature standard.duplicate
+	it('offers Duplicate only to a reader the server lets copy it', async () => {
+		answer.dashboard = { ...dashboardAnswer('Bar'), can_copy: true, workbook: 'workbook-1' }
+		const copyable = await opened('shipped')
+		expect(copyable.duplicate).toBeTypeOf('function')
+		expect(copyable.builderRoute).toBeUndefined()
+		expect(copyable.chartRoute?.('chart-1')).toBeUndefined()
+
+		answer.dashboard = dashboardAnswer('Bar')
+		const readOnly = await opened('shipped-for-a-desk-reader')
+		expect(readOnly.duplicate).toBeUndefined()
+	})
+
+	// @feature standard.duplicate
+	it('duplicates the workbook the server named', async () => {
+		answer.dashboard = { ...dashboardAnswer('Bar'), can_copy: true, workbook: 'workbook-1' }
+		const view = await opened('shipped-and-copied')
+
+		view.duplicate!()
+		await settled()
+
+		expect(calls.find((call) => call.method === 'run_doc_method')?.args).toEqual({
+			dt: 'Insights Workbook',
+			dn: 'workbook-1',
+			method: 'duplicate',
+		})
+	})
+})
+
 // The header's Refresh, through `DashboardBody`'s `refresh`, which calls
 // `refresh(true)` on the page it draws.
 describe('a dashboard refreshed', () => {

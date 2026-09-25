@@ -1400,6 +1400,18 @@ def can_write(doc) -> bool:
     return bool(frappe.has_permission(doc.doctype, ptype="write", doc=doc)) and check_app_permission()
 
 
+def can_copy(doc) -> bool:
+    """Whether the caller may duplicate `doc`'s workbook instead of editing it.
+
+    Standard content is read-only on a site, so copying is the only way to
+    change it - and changing it means an Insights role.
+    """
+    from insights import standard
+
+    workbook = doc.name if doc.doctype == "Insights Workbook" else workbook_of(doc)
+    return standard.is_read_only(workbook) and check_app_permission()
+
+
 def can_share(doc) -> bool:
     """Whether the caller may widen who reads `doc` or name a person on it.
 
