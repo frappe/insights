@@ -55,8 +55,8 @@ change with the code:
 - `docs/agents/` — these conventions
 
 **Effort** documents describe how one piece of work got done. They live under
-`docs/projects/<effort-slug>/` on a feature branch, and they are removed when
-that branch merges. See `issue-tracker.md` for the close-out.
+`docs/projects/<effort-slug>/`, a symlink out of the repo. See
+`issue-tracker.md` for the close-out.
 
 Never move an effort document into `docs/adr/` to keep it alive. Distill the
 decision and let the rest go.

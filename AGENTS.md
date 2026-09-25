@@ -37,8 +37,8 @@ frappe-ui in `frontend/src2/`, built with Vite.
 ### Issue tracker
 
 Markdown under `docs/projects/<effort>/` — a decision map plus one ticket per
-question. Effort docs are branch-scoped: they are removed when the branch merges,
-and the ADR is what survives. GitHub Issues on `frappe/insights` is the public
+question. `docs/projects` is an untracked symlink to `~/frappe/workshop/efforts/insights/`,
+and the ADR is what survives in this repo. GitHub Issues on `frappe/insights` is the public
 queue, not this tracker. See `docs/agents/issue-tracker.md`.
 
 ### Tests

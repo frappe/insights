@@ -9,7 +9,7 @@ what you look for, so you do not get to think about length until phase 3.
 
 **Phase 1 — read and search.** Read `CONTEXT.md` (the glossary), `AGENTS.md`, and the ADRs
 in `docs/adr/` that touch the changed area. Cite them; never paraphrase a decision from
-memory. If the branch carries `docs/projects/<effort>/`, read the map and any ticket the
+memory. If `docs/projects/<effort>/` covers the branch, read the map and any ticket the
 diff claims to resolve. Then investigate — spend most of your budget here. Read around the
 hunks, not just the hunks. Grep the other call sites of anything the diff touches.
 `git log --oneline -n 5 -- <file>` on suspicious files. Work through the stages in the order the command gives.
@@ -78,7 +78,7 @@ trust.
 - Guards, options, polish, edge-case coverage or measurement before a first version
   ships. *"keep it simple for now, will experience first and then suggest something"*.
 - A missing ADR, ticket or effort doc for a trivial or still-moving change. Effort docs
-  under `docs/projects/` on an open branch are versioned there and drop on merge.
+  are not committed to this repo.
 - A dependency on another open branch or a planned framework change, on a feature branch.
   Name it; do not block. A PR into `develop` that needs a pin move is different.
 - A missing button, banner, close control, section title, freshness indicator or hover
