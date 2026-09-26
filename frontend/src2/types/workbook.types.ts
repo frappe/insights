@@ -207,6 +207,9 @@ export type WorkbookDashboardFilter = WorkbookDashboardItemLayout & {
 	links: Record<string, string>
 	default_operator?: FilterOperator
 	default_value?: FilterValue
+	// a user default key, such as `Company`. The server sends the reader's value
+	// for it as `default_value`
+	default_user_key?: string
 	icon?: string
 }
 export type WorkbookDashboardText = WorkbookDashboardItemLayout & {

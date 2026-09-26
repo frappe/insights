@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import FilterIconPicker from './FilterIconPicker.vue'
-import { computed, inject, reactive, ref } from 'vue'
+import { computed, inject, reactive, ref, watch } from 'vue'
 import useQuery from '../query/query'
 import { copy } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -25,6 +25,13 @@ const filter = reactive(copy(props.item))
 if (!filter.links) {
 	filter.links = {}
 }
+
+// The server replaces the default with the reader's `default_user_key`, which a
+// shipped workbook sets. A default the author picks here must not be replaced.
+watch(
+	() => [filter.default_operator, filter.default_value],
+	() => delete filter.default_user_key,
+)
 
 const activeTab = ref('setup')
 const tabs = [

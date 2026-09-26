@@ -562,7 +562,7 @@ def present_item(item: dict, readable: set[str]) -> dict:
                 "filter_type": item.get("filter_type"),
                 "icon": item.get("icon"),
                 "default_operator": item.get("default_operator"),
-                "default_value": item.get("default_value"),
+                "default_value": filter_default_value(item),
                 "charts": [
                     chart for chart, link in (item.get("links") or {}).items() if link and chart in readable
                 ],
@@ -570,6 +570,14 @@ def present_item(item: dict, readable: set[str]) -> dict:
         )
 
     return presented
+
+
+def filter_default_value(item: dict):
+    """A filter's default. `default_user_key` makes it the reader's own user
+    default, so a shipped dashboard opens on each reader's company."""
+    if key := item.get("default_user_key"):
+        return frappe.defaults.get_user_default(key)
+    return item.get("default_value")
 
 
 def charts_on(items: list[dict]) -> list:

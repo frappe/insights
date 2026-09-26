@@ -679,6 +679,24 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(filter_item["charts"], [chart.name])
         self.assertEqual(filter_item["filter_type"], "String")
 
+    # @feature dashboard.filter-user-default
+    def test_a_filter_default_is_each_readers_own_user_default(self):
+        _, _, dashboard = self.make_content(visibility="Everyone")
+        items = frappe.parse_json(dashboard.items)
+        items[1].update(default_operator="=", default_value="Fixed", default_user_key="Company")
+        dashboard.db_set("items", frappe.as_json(items), update_modified=False)
+        # ERPNext stores the default company under the scrubbed key
+        frappe.defaults.set_user_default("company", "Desk Co", DESK_USER)
+        frappe.defaults.set_user_default("company", "Admin Co", ADMIN)
+
+        def default_value(user):
+            with as_user(user):
+                response = get_dashboard(dashboard=dashboard.name)
+            return next(item for item in response["items"] if item["type"] == "filter")["default_value"]
+
+        self.assertEqual(default_value(DESK_USER), "Desk Co")
+        self.assertEqual(default_value(ADMIN), "Admin Co")
+
     # @feature dashboard.filter-values
     def test_filter_values_come_from_the_linked_column(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")
