@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, Dialog, Tooltip } from 'frappe-ui'
-import { AlertTriangle, Maximize, XIcon } from 'lucide-vue-next'
+import { AlertTriangle, Maximize2, XIcon } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { __ } from '../translation'
 import type { ChartRead } from './chart_view'
@@ -62,17 +62,21 @@ const canMaximize = computed(
 	() => !props.hideMaximize && Boolean(props.chart) && props.chart?.doc.chart_type !== 'Number',
 )
 
-// The expanded chart opens short for a wide card and tall for any other. The
-// dialog caps the width at `7xl` in both cases, so only the height differs.
-const WIDE_RATIO = 2
+// Each side of the expanded chart grows on its own, so a full-width card still
+// gets taller. The chart redraws at the new size, so the shape can change.
+const GROWTH = 2
+const WINDOW_SHARE = 0.8
 
 const card = ref<HTMLElement>()
 const expanded = ref(false)
-const expandWide = ref(false)
+const expandedSize = ref<{ width: string; height: string }>()
 
 function expand() {
-	const rect = card.value?.getBoundingClientRect()
-	expandWide.value = Boolean(rect && rect.height > 0 && rect.width / rect.height > WIDE_RATIO)
+	const rect = card.value!.getBoundingClientRect()
+	expandedSize.value = {
+		width: `${Math.min(rect.width * GROWTH, window.innerWidth * WINDOW_SHARE)}px`,
+		height: `${Math.min(rect.height * GROWTH, window.innerHeight * WINDOW_SHARE)}px`,
+	}
 	expanded.value = true
 }
 
@@ -124,7 +128,7 @@ const HIDDEN_UNTIL_POINTED_AT =
 									:aria-label="__('Expand')"
 									@click="expand()"
 								>
-									<Maximize
+									<Maximize2
 										class="h-3.5 w-3.5 text-ink-gray-6"
 										stroke-width="1.5"
 									/>
@@ -166,7 +170,7 @@ const HIDDEN_UNTIL_POINTED_AT =
 	     hides behind a hover: the pointer is already over the dialog. -->
 	<Dialog v-if="chart && canMaximize" v-model:open="expanded" size="7xl" bare>
 		<template #default>
-			<div class="relative w-full" :class="expandWide ? 'h-[50vh]' : 'h-[75vh]'">
+			<div class="chart-expanded relative" :style="expandedSize">
 				<ChartChrome
 					:chart="chart"
 					:reading="props.reading"
@@ -212,3 +216,11 @@ const HIDDEN_UNTIL_POINTED_AT =
 		</template>
 	</Dialog>
 </template>
+
+<style>
+/* frappe-ui's Dialog caps its width at `7xl` and has no wider size */
+[data-slot='content']:has(> .chart-expanded) {
+	width: auto;
+	max-width: none;
+}
+</style>
