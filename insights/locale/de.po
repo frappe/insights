@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-09-07 08:43\n"
+"PO-Revision-Date: 2026-09-21 09:35\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: German\n"
 "MIME-Version: 1.0\n"
@@ -21,16 +21,16 @@ msgstr ""
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:1"
-msgstr ""
+msgstr "1:1"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:N"
-msgstr ""
+msgstr "1:N"
 
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:35
 msgid "A folder cannot be its own parent"
-msgstr ""
+msgstr "Ein Ordner kann nicht sein eigener übergeordneter Ordner sein"
 
 #. Label of the api_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
@@ -131,7 +131,7 @@ msgstr "Administrator"
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation"
-msgstr ""
+msgstr "Aggregation"
 
 #. Label of the aggregation_condition (Code) field in DocType 'Insights Query
 #. Column'
@@ -179,7 +179,7 @@ msgstr "Alle"
 #. Label of the allow_download (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Data Download"
-msgstr ""
+msgstr "Daten-Download zulassen"
 
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
@@ -222,7 +222,7 @@ msgstr "Anhängen"
 #. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Append Only"
-msgstr ""
+msgstr "Nur anhängen"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:116
 msgid "Append Rows"
@@ -309,7 +309,7 @@ msgstr "Unter Durchschnitt"
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery"
-msgstr ""
+msgstr "BigQuery"
 
 #. Label of the bigquery_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
@@ -390,7 +390,7 @@ msgstr "Kann ansehen"
 #: frontend/src2/query/components/JoinSelectorDialog.vue:384
 #: frontend/src2/query/components/UnionSelectorDialog.vue:152
 msgid "Cancel"
-msgstr "Abbrechen"
+msgstr "Stornieren"
 
 #: insights/api/workbooks.py:426
 msgid "Cannot delete a folder that is not empty. Move its contents out first."
@@ -3012,7 +3012,7 @@ msgstr "Teamberechtigungen"
 
 #: frontend/src2/teams/TeamList.vue:83
 msgid "Teams"
-msgstr ""
+msgstr "Teams"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
