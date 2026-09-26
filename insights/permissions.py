@@ -288,6 +288,7 @@ class InsightsPermissions:
         # reader see a chart but not its rows. `can_read_rows` sets this to
         # leave both grants out.
         self.ignore_visibility = ignore_visibility
+        self._sourced_under_allowed_charts = {}
         self.user_teams = []
         if self.team_permissions_enabled:
             self.user_teams = get_teams(self.user)
@@ -378,7 +379,13 @@ class InsightsPermissions:
         if is_new or (is_owner and doc.doctype not in WORKBOOK_MEMBERS):
             return True
 
-        docs = self._build_permission_query(doc.doctype, access_type)
+        # a query's read through a chart comes only from its own workbook
+        query_workbook = (
+            frappe.db.get_value(doc.doctype, doc.name, "workbook")
+            if doc.doctype == "Insights Query v3"
+            else None
+        )
+        docs = self._build_permission_query(doc.doctype, access_type, query_workbook)
         return docs.where(frappe.qb.DocType(doc.doctype).name == doc.name).limit(1).run(pluck="name")
 
     def get_granted(self, doctype, ptype="read") -> list[str]:
@@ -389,8 +396,11 @@ class InsightsPermissions:
         """
         return self._build_permission_query(doctype, ptype).run(pluck=True)
 
-    def _build_permission_query(self, doctype, ptype):
-        """Returns a query to get docs with `ptype`  permission"""
+    def _build_permission_query(self, doctype, ptype, workbook=None):
+        """Returns a query to get docs with `ptype`  permission.
+
+        `workbook` limits the query's grant to queries of that workbook.
+        """
         if doctype in ("Insights Folder", "Insights Alert") or (
             ptype == "write" and doctype in WORKBOOK_MEMBERS
         ):
@@ -408,7 +418,7 @@ class InsightsPermissions:
         if doctype == "Insights Chart v3":
             query = self._build_chart_permission_query(ptype)
         if doctype == "Insights Query v3":
-            query = self._build_query_permission_query(ptype)
+            query = self._build_query_permission_query(ptype, workbook)
         return query
 
     def _build_workbook_member_query(self, doctype, ptype):
@@ -682,7 +692,7 @@ class InsightsPermissions:
 
         return self._with_visibility_grant(query, Chart, "Insights Chart v3", ptype, granted)
 
-    def _build_query_permission_query(self, ptype):
+    def _build_query_permission_query(self, ptype, workbook=None):
         Query = frappe.qb.DocType("Insights Query v3")
 
         AllowedWorkbooks = self._build_workbook_permission_query(ptype)
@@ -730,7 +740,7 @@ class InsightsPermissions:
         # Also every query those queries read from, at any depth.
         # `_queries_sourced_under_allowed_charts` explains why only the first
         # hop is a join.
-        sourced = self._queries_sourced_under_allowed_charts
+        sourced = self._queries_sourced_under_allowed_charts(workbook)
         if sourced:
             granted = granted | Query.name.isin(sorted(sourced))
 
@@ -742,8 +752,7 @@ class InsightsPermissions:
         visibility levels, and a dashboard's grant on its charts."""
         return self if self.ignore_visibility else InsightsPermissions(self.user, ignore_visibility=True)
 
-    @cached_property
-    def _queries_sourced_under_allowed_charts(self):
+    def _queries_sourced_under_allowed_charts(self, workbook=None):
         """Every query read, at any depth, by the queries of charts this user may read.
 
         A chart's grant extends to the query behind it, because the card shows
@@ -763,15 +772,23 @@ class InsightsPermissions:
         what makes a walk expensive. The walk starts from queries that another
         query reads from, since only those can be more than one hop away. A
         site with no layered queries pays one indexed scan and no join.
+
+        `workbook` limits the walk to one workbook. A check on one query needs
+        only its own, and reading every workbook's operations made that check
+        cost as much as a list.
         """
         from insights.insights.query_utils import referenced_queries
 
+        cached = self._sourced_under_allowed_charts.get(workbook)
+        if cached is not None:
+            return cached
+
+        filters = {"operations": ("like", "%query_name%")}
+        if workbook:
+            filters["workbook"] = workbook
+
         sources = {}
-        for row in frappe.get_all(
-            "Insights Query v3",
-            filters={"operations": ("like", "%query_name%")},
-            fields=["name", "operations"],
-        ):
+        for row in frappe.get_all("Insights Query v3", filters=filters, fields=["name", "operations"]):
             referenced = referenced_queries(row.operations)
             if referenced:
                 sources[row.name] = referenced
@@ -798,19 +815,20 @@ class InsightsPermissions:
                 )
                 .run()
             )
-            for query, workbook in read_by_a_chart:
-                if workbooks.get(query) != workbook:
+            for query, chart_workbook in read_by_a_chart:
+                if workbooks.get(query) != chart_workbook:
                     continue
-                frontier = {ref for ref in sources[query] if workbooks.get(ref) == workbook}
+                frontier = {ref for ref in sources[query] if workbooks.get(ref) == chart_workbook}
                 while frontier:
                     reachable |= frontier
                     frontier = {
                         ref
                         for name in frontier
                         for ref in sources.get(name, ())
-                        if workbooks.get(ref) == workbook
+                        if workbooks.get(ref) == chart_workbook
                     } - reachable
 
+        self._sourced_under_allowed_charts[workbook] = reachable
         return reachable
 
     def _build_resource_query(self, doctype):
