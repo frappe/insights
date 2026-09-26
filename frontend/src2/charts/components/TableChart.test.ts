@@ -4,8 +4,8 @@ import { renderToString } from 'vue/server-renderer'
 import TableChart from './TableChart.vue'
 import type { TableChartProps } from '../adapter/table'
 
-// A Table is drawn outside a chart surface too: a drill level whose answer holds
-// no numeric column falls back to a grid, and the dialog that draws it is
+// A Table is rendered outside a chart surface too: a drill level whose answer holds
+// no numeric column falls back to a grid, and the dialog that renders it is
 // `ChartBody`'s sibling, so nothing a surface provides is there.
 
 const props: TableChartProps = {
@@ -17,9 +17,9 @@ const props: TableChartProps = {
 	sortOrder: {},
 }
 
-describe('a grid drawn outside a chart surface', () => {
+describe('a grid rendered outside a chart surface', () => {
 	// @feature charts.table-renders-outside-dashboard
-	it('draws its rows instead of throwing', async () => {
+	it('renders its rows instead of throwing', async () => {
 		const app = createSSRApp({ render: () => h(TableChart, props) })
 		// the app registers frappe-ui's components globally; this render is one
 		// component and does not need them resolved

@@ -30,21 +30,24 @@ add_to_apps_screen = [
     }
 ]
 
-# Any app can ship workbooks to Insights by pointing this hook at a directory
-# (relative to the app) holding one folder per workbook — manifest.json +
-# workbook.json + optional preview.png. Insights is its own first consumer: the
-# bundled ERPNext workbooks are discovered through the same public contract.
-# Deliberately policy-free name: how the site consumes these (import a copy
-# today, versioned updates later) can evolve without breaking the hook.
-insights_workbooks = "workbook_templates"
-
-
 # Includes in <head>
 # ------------------
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/insights/css/insights.css"
-app_include_js = "insights_nudge.bundle.js"
+
+# a desk page with an island needs the app's mount path to build links
+extend_bootinfo = "insights.desk.boot_app_path"
+
+# Island name -> the bundle name `frontend/build-islands.mjs` writes into
+# assets.json. The two are the same string. `frappe.ui.mount_island` and
+# `get_island_assets` look names up here. Without an entry, a desk document
+# claimed in `insights/desk.py` mounts nothing and shows an empty div. Keep it in
+# sync with `DESK_ISLANDS` in `insights/desk.py` by hand.
+ui_islands = {
+    "insights.chart": "insights.chart",
+    "insights.dashboard": "insights.dashboard",
+}
 
 # include js, css files in header of web template
 # web_include_css = "/assets/insights/css/insights.css"
@@ -97,8 +100,8 @@ app_include_js = "insights_nudge.bundle.js"
 
 # before_install = "insights.install.before_install"
 after_install = "insights.migrate.after_migrate"
-before_migrate = "insights.migrate.before_migrate"
 after_migrate = "insights.migrate.after_migrate"
+after_app_install = "insights.migrate.after_app_install"
 
 after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
 
@@ -134,6 +137,7 @@ permission_query_conditions = {
     "Insights Chart v3": "insights.permissions.get_permission_query_conditions",
     "Insights Dashboard v3": "insights.permissions.get_permission_query_conditions",
     "Insights Alert": "insights.permissions.get_permission_query_conditions",
+    "Insights Folder": "insights.permissions.get_permission_query_conditions",
 }
 
 has_permission = {
@@ -145,6 +149,7 @@ has_permission = {
     "Insights Chart v3": "insights.permissions.has_doc_permission",
     "Insights Dashboard v3": "insights.permissions.has_doc_permission",
     "Insights Alert": "insights.permissions.has_doc_permission",
+    "Insights Folder": "insights.permissions.has_doc_permission",
 }
 
 # DocType Class
@@ -162,7 +167,23 @@ has_permission = {
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
-    }
+    },
+    # a desk document that links to Insights content renders through an
+    # Insights island — see insights/desk.py
+    "Dashboard": {
+        "onload": "insights.desk.claim",
+    },
+    "Dashboard Chart": {
+        "onload": "insights.desk.claim",
+    },
+    "DocShare": {
+        "validate": "insights.permissions.validate_member_share",
+    },
+    # child tables of workbook members
+    ("Insights Dashboard Chart v3", "Has Role", "Insights Query Variable"): {
+        "validate": "insights.permissions.refuse_member_row_alone",
+        "on_trash": "insights.permissions.refuse_member_row_alone",
+    },
 }
 
 # Scheduled Tasks

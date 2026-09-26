@@ -19,6 +19,23 @@ import insights
 APP = Path(insights.__file__).parent.parent
 
 
+class TestErrorToastRendersText(UnitTestCase):
+    """The toast shows the server's error as text.
+
+    frappe-ui renders the toast, so the app owns only the call: the error goes
+    in as the message, and nothing in the helper turns it into markup.
+    """
+
+    # @feature permissions.error-is-text
+    def test_the_toast_renders_no_html(self):
+        helpers = (APP / "frontend/src2/helpers/index.ts").read_text()
+        # Collapsed, so a reformat that rewraps the call cannot fail the rule.
+        collapsed = re.sub(r"\s+", " ", helpers)
+        self.assertIn("toast.error(getErrorMessage(err))", collapsed)
+        for markup in ("v-html", "innerHTML", "insertAdjacentHTML"):
+            self.assertNotIn(markup, helpers)
+
+
 class TestDeskFormEscapesTheTableLabel(UnitTestCase):
     """The table label is a value, so the desk form escapes it before it renders.
 

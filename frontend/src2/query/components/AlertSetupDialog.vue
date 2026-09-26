@@ -3,7 +3,9 @@ import { Textarea, toast } from 'frappe-ui'
 import { computed, reactive, unref } from 'vue'
 import Toggle from '../../components/Toggle.vue'
 import { waitUntil, wheneverChanges } from '../../helpers'
+import session from '../../session'
 import { __ } from '../../translation'
+import useUserStore from '../../users/users'
 import useAlertStore from '../alert'
 import { Query } from '../query'
 import ExpressionEditor from './ExpressionEditor.vue'
@@ -39,6 +41,20 @@ wheneverChanges(
 	},
 	{ deep: true },
 )
+
+const userStore = useUserStore()
+// Saving a new or disabled alert enables it. An alert runs as the user who
+// enabled it.
+const runsAs = computed(() => {
+	const enabler = alert.islocal || alert.doc.disabled ? '' : alert.doc.permission_user
+	if (!enabler || enabler === session.user.email) {
+		return __('Runs as you, so it sends the rows you can see.')
+	}
+	return __(
+		'Runs as {0}, so it sends the rows they can see.',
+		userStore.getName(enabler) || enabler,
+	)
+})
 
 const webhookError = computed(() => {
 	if (alert.doc.channel !== 'Webhook') return ''
@@ -282,6 +298,8 @@ Thanks,
 						/>
 					</div>
 				</div>
+
+				<p class="text-p-sm text-ink-gray-5">{{ runsAs }}</p>
 			</div>
 		</template>
 	</Dialog>

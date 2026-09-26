@@ -25,7 +25,7 @@ beforeEach(() => {
 	calls.length = 0
 })
 
-describe('a card drawing a chart in the builder', () => {
+describe('a card rendering a chart in the builder', () => {
 	// @feature dashboard.card-follows-edits
 	it('is asked again once the query it reads is saved', async () => {
 		const query = useQuery('query-1')

@@ -5,7 +5,7 @@ import { adaptChart } from './index'
 
 function adapt(spec: BubbleChartSpec) {
 	const filler = adaptChart(bubbleChart(spec))
-	if (!filler) throw new Error('the adapter drew nothing for this Chart')
+	if (!filler) throw new Error('the adapter rendered nothing for this Chart')
 	return filler
 }
 
@@ -60,7 +60,7 @@ describe('a bubble chart', () => {
 	})
 
 	// @feature charts.type-bubble
-	it('draws nothing until the Chart names both Measures', () => {
+	it('renders nothing until the Chart names both Measures', () => {
 		expect(adaptChart(bubbleChart({ x: '', y: 'profit' }))).toBeUndefined()
 		expect(adaptChart(bubbleChart({ x: 'revenue', y: '' }))).toBeUndefined()
 	})
@@ -96,7 +96,7 @@ describe('the quadrant dividers', () => {
 	})
 
 	// @feature charts.bubble-quadrants
-	it('draws only the rule the Chart set a value for', () => {
+	it('plots only the rule the Chart set a value for', () => {
 		expect(
 			propsOf({ x: 'revenue', y: 'profit', quadrants: { x: 100 } }).referenceLines,
 		).toEqual([
@@ -112,7 +112,7 @@ describe('the quadrant dividers', () => {
 	})
 
 	// @feature charts.bubble-quadrants
-	it('draws none when the Chart keeps the values but switched them off', () => {
+	it('plots none when the Chart keeps the values but switched them off', () => {
 		expect(
 			propsOf({ x: 'revenue', y: 'profit', quadrants: { x: 100, y: 50, shown: false } })
 				.referenceLines,

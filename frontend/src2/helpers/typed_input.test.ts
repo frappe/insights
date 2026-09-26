@@ -29,7 +29,7 @@ describe('a number box', () => {
 
 describe('a picked column', () => {
 	// @feature charts.config-typed-values
-	it('is written as the dimension, without what the dropdown drew it with', () => {
+	it('is written as the dimension, without what the dropdown showed it with', () => {
 		expect(
 			asDimension({
 				dimension_name: 'Region',
@@ -42,7 +42,7 @@ describe('a picked column', () => {
 	})
 
 	// @feature charts.config-typed-values
-	it('keeps the grain and the spans the dimension itself carries', () => {
+	it('keeps the grain and the spans the dimension itself has', () => {
 		const dimension = asDimension({
 			dimension_name: 'creation',
 			column_name: 'creation',

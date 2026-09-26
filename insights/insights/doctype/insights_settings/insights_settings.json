@@ -11,7 +11,6 @@
   "allow_download",
   "max_export_rows",
   "enable_data_store",
-  "apply_user_permissions",
   "disable_user_lookup",
   "allowed_origins",
   "max_records_to_sync",
@@ -145,12 +144,6 @@
    "fieldname": "enable_data_store",
    "fieldtype": "Check",
    "label": "Enable Data Store"
-  },
-  {
-   "default": "1",
-   "fieldname": "apply_user_permissions",
-   "fieldtype": "Check",
-   "label": "Apply User Permissions"
   },
   {
    "default": "0",

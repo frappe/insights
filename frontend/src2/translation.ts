@@ -59,8 +59,20 @@ function fetchTranslations() {
 	})
 }
 
-export function translationPlugin(app: App<Element>) {
+/**
+ * Install this app's `__` for templates.
+ *
+ * The SPA and every island install it, because a host can bring its own `__`.
+ * Desk gives an island `frappe._` through `SetVueGlobals`. That one replaces
+ * `{0}` only when it gets an object of replacements. Insights passes arguments
+ * positionally, so with desk's `__` the `{0}` would show on the page as is.
+ */
+export function installTranslate(app: App<Element>) {
 	app.config.globalProperties.__ = translate
+}
+
+export function translationPlugin(app: App<Element>) {
+	installTranslate(app)
 	const windowObj = window as any
 	windowObj.__ = translate
 	if (!windowObj.translatedMessages) {

@@ -8,7 +8,7 @@ import { breakdownChart } from './breakdown_chart'
 import type { DrillLevelData } from './drill_stack'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from './segment_click'
 
-// One breakdown level: the clicked Measure across the chosen Dimension, drawn by
+// One breakdown level: the clicked Measure across the chosen Dimension, plotted by
 // the chart the answer's own reading calls for. It goes through `adaptChart` like
 // any card, so a click inside it comes back through the same resolver a card's
 // click does — so the next level reuses the existing click path.
@@ -32,10 +32,10 @@ const result = computed<QueryResult>(() => {
 	}
 	return {
 		...answered,
-		// A level that draws itself as a grid reads the formatted rows, and so
+		// A level that renders itself as a grid reads the formatted rows, and so
 		// does the click path behind it, so they are made here the way a card's
-		// feed makes them. The level's grain belongs to the Dimension it was cut
-		// on, which is the only column that carries one.
+		// source makes them. The level's grain belongs to the Dimension it was cut
+		// on, which is the only column that has one.
 		formattedRows: formatResultRows(
 			answered,
 			props.answer.granularity ? { [props.dimension]: props.answer.granularity } : {},
@@ -67,7 +67,7 @@ const events = computed(() =>
 <template>
 	<!-- `card: false` keeps the box a chart needs — it clips the plot — and drops
 	     the card's own border and background. A dialog is already the chrome here, and a second
-	     border inside it draws a card that is not there. -->
+	     border inside it renders a card that is not there. -->
 	<ChartCard class="h-full" :card="false" @click.capture="rememberPoint">
 		<component v-if="filler" :is="filler.component" v-bind="filler.props" v-on="events" />
 	</ChartCard>

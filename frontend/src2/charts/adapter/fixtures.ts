@@ -34,9 +34,9 @@ type MeasureSpec =
 	| {
 			name: string
 			/**
-			 * Draws as this instead of the chart's own mark, i.e. a combo series.
+			 * Plots as this instead of the chart's own mark, i.e. a combo series.
 			 * The form wrote 'Line' and 'Bar' for three releases, so a saved chart
-			 * carries either case.
+			 * has either case.
 			 */
 			mark?: 'line' | 'bar' | 'Line' | 'Bar'
 			/** Measured against the second value axis. */
@@ -73,7 +73,7 @@ export type AxisChartSpec = {
 	readings?: Record<string, (number | string | null)[]>
 	/**
 	 * Measures that reach the tooltip and nothing else. The same summarize
-	 * returns them, so the result carries a value column for each of them.
+	 * returns them, so the result includes a value column for each of them.
 	 */
 	tooltipMeasures?: MeasureSpec[]
 	stacked?: boolean
@@ -94,18 +94,18 @@ export function axisChart(spec: AxisChartSpec): ChartAdapterInput {
 	const split = spec.splitBy ? toDimension(spec.splitBy.dimension) : undefined
 	const measures = spec.measures.map(toMeasureSpec)
 	const tooltipMeasures = (spec.tooltipMeasures ?? []).map(toMeasureSpec)
-	const drawnColumns = valueColumns(measures, spec.splitBy?.into)
+	const plottedColumns = valueColumns(measures, spec.splitBy?.into)
 	// What the server sends back for the tooltip Measures. A split leaves them
-	// out of the pivot, and a name already drawn is one column, not two — the
+	// out of the pivot, and a name already plotted is one column, not two — the
 	// summarize drops it rather than aliasing the same name twice.
-	const drawnNames = new Set(measures.map((measure) => measure.name))
+	const plottedNames = new Set(measures.map((measure) => measure.name))
 	const columns = [
-		...drawnColumns,
+		...plottedColumns,
 		...(spec.splitBy
 			? []
 			: tooltipMeasures
 					.map((measure) => measure.name)
-					.filter((name) => !drawnNames.has(name))),
+					.filter((name) => !plottedNames.has(name))),
 	]
 	const categories = spec.categories ?? defaultCategories(dimension)
 
@@ -232,10 +232,10 @@ function defaultCategories(dimension: Dimension) {
 	return ['North', 'South']
 }
 
-// The types that draw one picture out of one shape. Each spec says what the
+// The types that render one chart out of one shape. Each spec says what the
 // Chart measures and what came back for it. The server has already grouped and
 // ordered every one of these results, so a fixture writes the rows as the
-// picture reads them.
+// chart reads them.
 
 export type DonutChartSpec = {
 	title?: string
@@ -293,7 +293,7 @@ export type FunnelChartSpec = {
 	stages?: FunnelStageSpec[]
 	/**
 	 * Measures mode: one Measure per stage, aggregated with no group-by, so they
-	 * all arrive on one row. The config admits both shapes at once, and the
+	 * all arrive on one row. The config allows both shapes at once, and the
 	 * server derives the Chart from this one whenever it is set.
 	 */
 	measures?: FunnelStageSpec[]
@@ -356,7 +356,7 @@ export type BubbleChartSpec = {
 	dataLabels?: boolean
 	/**
 	 * The dividers that cut the plot into quadrants. `shown: false` keeps the
-	 * values on the Chart without drawing them.
+	 * values on the Chart without plotting them.
 	 */
 	quadrants?: { x?: number; y?: number; shown?: boolean }
 }
@@ -541,14 +541,14 @@ type NumberValueSpec = {
 export type NumberChartSpec = {
 	title?: string
 	values: NumberValueSpec[]
-	/** The one reading a dashboard cell names, by id. Absent draws every value. */
+	/** The one reading a dashboard cell names, by id. Absent shows every value. */
 	reading?: string
 	/** The Dimension the readings are grouped by. A comparison and a sparkline both need one. */
 	period?: DimensionSpec
 	sparkline?: boolean
 	sparklineColor?: string
 	/**
-	 * The second run a span card's sparkline is drawn from: one reading per
+	 * The second run a span card's sparkline is plotted from: one reading per
 	 * period inside the span, keyed by value name.
 	 */
 	sparklineSeries?: Record<string, (number | null)[]>

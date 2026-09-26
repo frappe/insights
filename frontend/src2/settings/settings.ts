@@ -24,7 +24,6 @@ function makeSettings() {
 			fiscal_year_start: '',
 			week_starts_on: 'Monday',
 			enable_data_store: false,
-			apply_user_permissions: false,
 		},
 		disableLocalStorage: true,
 	})
@@ -52,5 +51,4 @@ type InsightsSettings = {
 	fiscal_year_start: string
 	week_starts_on: string
 	enable_data_store: boolean
-	apply_user_permissions: boolean
 }

@@ -1,6 +1,6 @@
 import datetime
 import operator
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from typing import ClassVar, NamedTuple
 
 import frappe
@@ -241,11 +241,33 @@ def resolve_timespan(timespan) -> tuple[datetime.date, datetime.date]:
     return get_window(*read_timespan(timespan))
 
 
+def reading_day():
+    """The day a span resolves against: today, or the day `read_on` pinned."""
+    return getattr(frappe.local, "insights_reading_day", None) or nowdate()
+
+
+@contextmanager
+def read_on(day: str | None):
+    """Resolve every span in the block against `day`.
+
+    A drill cuts rows for the day its card was read. Its spans sit in the
+    chart's operations, in the dashboard's filters and in the source query, and
+    each resolves where it is built, so the day is the request's and not any one
+    operation's.
+    """
+    previous = getattr(frappe.local, "insights_reading_day", None)
+    frappe.local.insights_reading_day = day or previous
+    try:
+        yield
+    finally:
+        frappe.local.insights_reading_day = previous
+
+
 def read_timespan(timespan) -> tuple[str, datetime.date | None]:
     """The span a `within` filter names, and the date to resolve it against.
 
     A filter written before periods names the span alone, as a string or as the
-    words of one, and resolves against today. A period also pins the anchor, and
+    words of one, and resolves against `reading_day`. A period also pins the anchor, and
     a comparison span moves it, so both arrive beside the span.
     """
     if isinstance(timespan, list):
@@ -257,7 +279,7 @@ def read_timespan(timespan) -> tuple[str, datetime.date | None]:
     if not isinstance(timespan, dict) or not timespan.get("span"):
         raise Exception(f"Invalid timespan {timespan}")
 
-    anchor = getdate(timespan.get("anchor") or nowdate())
+    anchor = getdate(timespan.get("anchor") or reading_day())
     shift = timespan.get("shift") or {}
     if shift.get("unit"):
         anchor = shift_anchor(anchor, shift["unit"], shift.get("count") or 0)
@@ -329,9 +351,23 @@ def get_current_date_range(unit, anchor=None):
 
 def get_fiscal_year_start_date():
     fiscal_year_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
-    if not fiscal_year_start or get_date_str(fiscal_year_start) == "0001-01-01":
-        return getdate("1995-04-01")
-    return getdate(fiscal_year_start)
+    # frappe returns an unset date field as 0001-01-01, not None
+    if fiscal_year_start and get_date_str(fiscal_year_start) != "0001-01-01":
+        return getdate(fiscal_year_start)
+    return get_erpnext_fiscal_year_start() or getdate("1995-04-01")
+
+
+def get_erpnext_fiscal_year_start():
+    if not frappe.db.table_exists("Fiscal Year"):
+        return None
+
+    today = getdate()
+    return frappe.db.get_value(
+        "Fiscal Year",
+        {"disabled": 0, "year_start_date": ("<=", today), "year_end_date": (">=", today)},
+        "year_start_date",
+        order_by="year_start_date desc",
+    )
 
 
 def get_fy_start(date):
@@ -470,7 +506,7 @@ def get_date_range(timespan, include_current=False, anchor=None):
     """The days a span covers. `timespan` is "last 7 days", "next 3 months", …
 
     `include_current` is here for a caller that says it beside the span rather
-    than inside it. A span carrying "(include current)" says it for itself.
+    than inside it. A span with "(include current)" says it for itself.
     """
     parsed = parse_span(timespan)
     if not parsed:
@@ -511,9 +547,9 @@ def get_window(span: str, anchor: datetime.date | None = None) -> tuple[datetime
 
     Accepts every span `get_date_range` accepts, plus "<unit> to date", which
     ends at the anchor instead of at the end of the period. `anchor` defaults to
-    today.
+    `reading_day`.
     """
-    anchor = getdate(anchor or nowdate())
+    anchor = getdate(anchor or reading_day())
 
     parsed = parse_span(span)
     if not parsed:

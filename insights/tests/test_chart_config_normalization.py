@@ -35,7 +35,7 @@ class TestChartConfigNormalization(InsightsIntegrationTestCase):
     SAVEPOINT = "test_chart_config_normalization"
 
     # @feature upgrade.chart-config-older-shapes
-    def test_an_axis_that_was_the_dimension_itself_carries_it(self):
+    def test_an_axis_that_was_the_dimension_itself_keeps_it(self):
         dimension = {"column_name": "posting_date", "data_type": "Date", "granularity": "month"}
 
         written = normalize(
@@ -49,7 +49,7 @@ class TestChartConfigNormalization(InsightsIntegrationTestCase):
         )
 
     # @feature upgrade.chart-config-older-shapes
-    def test_a_value_axis_that_was_a_list_of_measures_draws_them_as_series(self):
+    def test_a_value_axis_that_was_a_list_of_measures_plots_them_as_series(self):
         written = normalize({"y_axis": [measure("Revenue"), measure("Profit")]})
 
         self.assertEqual(
@@ -74,7 +74,7 @@ class TestChartConfigNormalization(InsightsIntegrationTestCase):
         self.assertEqual(written["tooltip"], {"measures": [measure("Margin")]})
 
     # A chart that hid every series has nothing left to plot, and the renderer
-    # draws nothing at all rather than an empty plot.
+    # renders nothing at all rather than an empty plot.
     # @feature charts.tooltip-measures upgrade.chart-config-older-shapes
     def test_a_chart_that_hid_every_series_is_left_alone(self):
         config = {"y_axis": {"series": [{"measure": measure("Revenue"), "hide_from_chart": True}]}}
@@ -154,7 +154,7 @@ class TestChartConfigNormalization(InsightsIntegrationTestCase):
     # Every slot, so a reader never falls back to `column_name` for the ones the
     # rewrite forgot.
     # @feature charts.dimension-label upgrade.chart-config-older-shapes
-    def test_a_dimension_saved_before_it_carried_a_name_is_named_after_its_column(self):
+    def test_a_dimension_saved_before_it_had_a_name_is_named_after_its_column(self):
         written = normalize(
             {
                 "x_axis": {"dimension": {"column_name": "region"}},
@@ -249,7 +249,7 @@ class TestChartConfigNormalization(InsightsIntegrationTestCase):
         self.assertEqual(written["rows"][0]["timezone"], "IST")
 
     # A Number card is the one chart type whose own older shapes are a rewrite of
-    # their own, and a card that arrives from an import or a template has to be
+    # their own, and a card that arrives from an import has to be
     # stored through them too.
     # @feature charts.type-number upgrade.number-older-shapes upgrade.chart-config-older-shapes
     def test_a_number_card_is_stored_through_the_readings_own_rewrite(self):
@@ -348,8 +348,8 @@ class TestChartConfigNormalizationPatch(InsightsIntegrationTestCase):
             {"column_name": "region", "data_type": "String", "dimension_name": "region"},
         )
 
-    # An import and a template both insert the chart, which is the one place an
-    # older Number card stops being stored.
+    # An import is the one path that can still bring in an older Number card, so
+    # the insert converts it.
     # @feature charts.type-number upgrade.number-older-shapes
     def test_a_number_card_that_arrives_in_an_older_shape_is_stored_in_todays(self):
         chart = frappe.get_doc(

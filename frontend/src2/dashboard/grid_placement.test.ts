@@ -246,7 +246,7 @@ describe('resolveLayouts', () => {
 
 describe('placeGrid', () => {
 	// @feature dashboard.move-resize
-	it('keys every cell by its identity, so the caller can draw in its own order', () => {
+	it('keys every cell by its identity, so the caller can render in its own order', () => {
 		const placed = placeGrid([cell('a', 0, 0, 6, 2), cell('b', 6, 0, 6, 2)], { columns: 12 })
 		expect(Object.keys(placed.cells).sort()).toEqual(['a', 'b'])
 	})
@@ -282,7 +282,7 @@ describe('breakpointFor', () => {
 	})
 
 	// The grid reports zero before it is measured. Collapsing then would
-	// draw the narrow layout for a frame and reflow, which reads as a break.
+	// render the narrow layout for a frame and reflow, which reads as a break.
 	// @feature dashboard.breakpoints
 	it('reads an unmeasured grid as the widest breakpoint', () => {
 		expect(breakpointFor(0)).toBe(BASE_BREAKPOINT)
@@ -452,10 +452,10 @@ describe('derivedPlacement', () => {
 		expect(derivedPlacement(items, 'sm', 1)).toEqual(cell('b', 0, 2, GRID_COLUMNS, 2))
 	})
 
-	// A drop is a box on the drawn grid, and the drawn grid is compacted. Without
+	// A drop is a box on the rendered grid, and the rendered grid is compacted. Without
 	// this the stored entry never matches its own derived box, so it never drops.
 	// @feature dashboard.compact-layout
-	it('answers with the drawn box when the grid compacts', () => {
+	it('answers with the rendered box when the grid compacts', () => {
 		const items = [
 			item(cell('a', 0, 0, 6, 2)),
 			item(cell('b', 6, 0, 6, 2), { sm: { x: 0, y: 20, w: 20, h: 2 } }),

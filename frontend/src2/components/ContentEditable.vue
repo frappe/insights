@@ -1,6 +1,6 @@
 <template>
 	<!-- A title that edits in place: no border at rest, and on focus the border
-	     frappe-ui's outline input draws. It goes on the box because the element
+	     frappe-ui's outline input shows. It goes on the box because the element
 	     that takes focus is the text inside it. Font-size is the caller's, so a
 	     `text-lg-semibold` on this component is not fought by one here. -->
 	<div :class="boxClasses">

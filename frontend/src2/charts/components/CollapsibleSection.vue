@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { ChevronRight } from 'lucide-vue-next'
-import { ref } from 'vue'
+import { computed, inject, ref } from 'vue'
+import { chartPreviewKey } from '../chart_preview'
 
 const props = defineProps<{ title: string; collapsed?: boolean }>()
 
-const collapsed = ref(props.collapsed ?? false)
+const toggled = ref(props.collapsed ?? false)
+// a user who cannot write the chart cannot click the form, so every section
+// stays open
+const preview = inject(chartPreviewKey, undefined)
+const collapsed = computed(() => toggled.value && preview?.doc.can_write !== false)
 </script>
 
 <template>
 	<div class="flex flex-col" :class="collapsed ? '' : 'pb-3.5'">
 		<button
 			class="sticky top-0 z-10 flex cursor-pointer items-center gap-1 bg-surface-base py-3"
-			@click="collapsed = !collapsed"
+			@click="toggled = !toggled"
 		>
 			<div class="flex items-center gap-1">
 				<slot name="title-prefix" />

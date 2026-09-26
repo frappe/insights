@@ -20,7 +20,7 @@ describe('the raw row behind a formatted one', () => {
 	})
 
 	// @feature query.result-raw-row
-	it('is nothing for a row the result does not carry', () => {
+	it('is nothing for a row the result does not include', () => {
 		const result = resultOf([{ revenue: 1 }])
 		expect(rawRowOf(result, { revenue: 99 })).toBeUndefined()
 	})

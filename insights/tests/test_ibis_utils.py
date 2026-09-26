@@ -158,7 +158,7 @@ class TestIbisPivotWider(IbisQueryBuilderTestCase):
         self.assertEqual(self.pivot_totals(sales, 2), {"alpha": 10, "zulu": 200})
 
     # @feature query.pivot-wider
-    def test_pivot_draws_rows_with_no_split_value_as_their_own_series(self):
+    def test_pivot_plots_rows_with_no_split_value_as_their_own_series(self):
         sales = [
             {"month": "2026-01", "region": "alpha", "amount": 10},
             {"month": "2026-01", "region": None, "amount": 100},
@@ -311,7 +311,7 @@ class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):
 
     # @feature charts.number-sparkline
     def test_a_sparkline_reads_the_window_one_day_at_a_time(self):
-        """The card's own rows are one per span. The picture under the number
+        """The card's own rows are one per span. The chart under the number
         is the same span cut by the grain below the span's unit."""
         sales = [
             {"posting_date": "2026-08-05", "amount": 30},

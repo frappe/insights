@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
 import { NumberCard } from 'frappe-ui/charts'
-import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
+import { RefreshCcw } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { __ } from '../../translation'
 import type { NumberCardClickEvent, NumberCardEntry } from '../adapter/number'
 import type { ChartFailure } from '../adapter/types'
+import ChartStateMessage from './ChartStateMessage.vue'
 
 // One reading of a Number Chart. Nothing here decorates: it fills its space and
 // reports a click.
 //
-// The reading is a card of frappe-ui's, drawn with its own surface, which is why
-// the filler tells the chrome to draw none: a card inside a card would border
+// The reading is a card of frappe-ui's, rendered with its own surface, which is why
+// the filler tells the chrome to render none: a card inside a card would border
 // the reading twice.
 //
-// The card is the chart's only surface, so it draws every state: a skeleton
+// The card is the chart's only surface, so it renders every state: a skeleton
 // while the query runs, a dash when it returns nothing, the failure and the
 // retry when it fails. A reader who sees a titled card and a dash has been told
 // which reading is missing, which a message floating on the page never said.
@@ -26,7 +27,6 @@ const props = defineProps<{
 	failure?: ChartFailure | null
 	/** The query returned no rows. See `ChartBody`. */
 	empty?: boolean
-	/** Whether this surface's feed answers a drill. See `ChartBody`. */
 	drillable?: boolean
 }>()
 
@@ -37,7 +37,7 @@ const emit = defineEmits<{
 }>()
 
 // `column` is what a drill names, `missing` stands in for the reading it names,
-// and `height` is the row's to apply, so none of them is something the card draws.
+// and `height` is the row's to apply, so none of them is something the card shows.
 const reading = computed(() => {
 	// eslint-disable-next-line no-unused-vars
 	const { column, missing, height, ...card } = props.card
@@ -49,19 +49,21 @@ const reading = computed(() => {
 // it again will not bring the Measure back. So the message stands without the
 // retry beside it, and it is the author who removes the cell.
 const failure = computed<ChartFailure | null>(() =>
-	props.card.missing
-		? { headline: __('Reading not found'), detailHtml: '' }
-		: props.failure || null,
+	props.card.missing ? { headline: __('Reading not found') } : props.failure || null,
 )
-const retryable = computed(() => Boolean(props.failure) && !props.card.missing)
+// A refusal is not a failed run: the reader cannot change their own
+// permissions, so the card shows it with no retry.
+const retryable = computed(
+	() => Boolean(props.failure) && !props.card.missing && props.failure?.kind !== 'notPermitted',
+)
 // A reading a drill can be asked about: the card has a reading to name, and the
-// feed behind it answers drills at all. A public link's feed does not, so the
-// card there is not offered as something to click.
+// source behind it supports drills. A public link's source does not, so the
+// card there is not shown as something to click.
 const drillable = computed(() => props.drillable !== false && !props.card.missing)
 </script>
 
 <template>
-	<!-- `NumberCard` cuts its title to one line and draws no tooltip for it, so the
+	<!-- `NumberCard` cuts its title to one line and shows no tooltip for it, so the
 	     whole card shows the title on hover -->
 	<div
 		class="min-w-0"
@@ -86,17 +88,15 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 				<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
 			</template>
 
-			<!-- One line, because the cell's height is the card's own and any
-			     taller block is a block the card cuts in half. The whole of it
+			<!-- No reason under it: the cell's height is the card's own and any
+			     taller block is a block the card cuts in half, so the whole of it
 			     waits on hover. -->
 			<template v-if="failure" #error>
-				<div
-					class="flex items-center gap-1.5 text-p-sm text-ink-gray-8"
-					:title="failure.detailText"
-				>
-					<AlertTriangle class="h-3.5 w-3.5 shrink-0 text-ink-red-5" stroke-width="1.5" />
-					<span class="truncate">{{ failure.headline }}</span>
-				</div>
+				<ChartStateMessage :failure="failure" />
+			</template>
+
+			<template v-if="$slots['title-suffix']" #title-suffix>
+				<slot name="title-suffix" />
 			</template>
 
 			<!-- The retry sits in the title row, which has zero height, so the

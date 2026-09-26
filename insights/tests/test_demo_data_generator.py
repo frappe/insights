@@ -88,7 +88,7 @@ class TestDemoDataGenerator(unittest.TestCase):
             connection.close()
 
         self.assertGreater(rows, 100)
-        self.assertEqual(rows, prices, "every joined row must carry a price")
+        self.assertEqual(rows, prices, "every joined row must have a price")
         self.assertGreaterEqual(months, 18)
         self.assertGreaterEqual(statuses, 4)
 

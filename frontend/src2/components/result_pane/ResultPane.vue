@@ -31,16 +31,31 @@ const props = defineProps<{
 	stale?: boolean
 	/** Where the host wants the find control. Without one it sits in the pane's own header. */
 	findTarget?: HTMLElement | null
-	/** a host whose rows only back a picture above them has nothing to find in */
+	/** a host whose rows only back a chart above them has nothing to find in */
 	noFind?: boolean
 }>()
 
 const columns = computed(() => props.query.result.columns || [])
 const loadedRows = computed(() => props.query.result.formattedRows || [])
 
-const term = ref('')
+// A source with `setFind` searches the whole result itself, so it owns the term.
+// Without one, the pane keeps the term and searches the rows already loaded.
+const findsOnSource = computed(() => Boolean(props.query.setFind))
+const localTerm = ref('')
+const term = computed({
+	get: () => (findsOnSource.value ? props.query.findTerm || '' : localTerm.value),
+	set: (value: string) => {
+		if (findsOnSource.value) props.query.setFind?.(value)
+		else localTerm.value = value
+	},
+})
 const $find = ref<InstanceType<typeof ResultFind> | null>(null)
-const matchedRows = computed(() => findRows(loadedRows.value, term.value))
+const matchedRows = computed(() =>
+	findsOnSource.value ? loadedRows.value : findRows(loadedRows.value, term.value),
+)
+const matchCount = computed(() =>
+	findsOnSource.value ? props.query.result.totalRowCount || 0 : matchedRows.value.length,
+)
 
 function clearFind() {
 	$find.value?.clear()
@@ -72,7 +87,7 @@ function jumpToColumn(column_name: string) {
 const pageSize = computed(() => props.query.pageSize ?? loadedRows.value.length + 1)
 // The cursor pages the chunk the server loaded, not what a find left of it: a
 // term that keeps fewer rows than one page would otherwise read as the last
-// page and take the next chunk away. The find narrows what the page draws, and
+// page and take the next chunk away. The find narrows what the page shows, and
 // the status line prints that count of its own.
 const pagination = usePagination({
 	pageSize,
@@ -97,17 +112,21 @@ const bodyState = computed<'error' | 'loading' | 'nomatch' | 'nodata' | null>(()
 	return null
 })
 
-// there is a range to print only when the grid is what the body draws
+// there is a range to print only when the grid is what the body renders
 const pageRange = computed(() => (bodyState.value ? undefined : pagination))
-// The pager belongs to the result, not to the grid: a page past the end draws
+// The pager belongs to the result, not to the grid: a page past the end shows
 // no rows, and the way back off it is the pager.
 const pager = computed(() => (columns.value.length ? pagination : undefined))
 
 const timeAgo = useTimeAgo(() => props.query.result.lastExecutedAt)
 const lastRun = computed(() => (props.query.result.executedSQL ? timeAgo.value : ''))
 const timing = computed(() => fetchTiming(props.query.result))
+// Only a find on the loaded rows needs this. After a find on the source, the
+// paging line already prints the full count.
 const narrowed = computed(() =>
-	term.value ? { matched: matchedRows.value.length, loaded: loadedRows.value.length } : undefined,
+	term.value && !findsOnSource.value
+		? { matched: matchedRows.value.length, loaded: loadedRows.value.length }
+		: undefined,
 )
 
 const canExport = computed(
@@ -137,7 +156,7 @@ watch(
 				ref="$find"
 				v-model="term"
 				:columns="columns"
-				:match-count="matchedRows.length"
+				:match-count="matchCount"
 				@jump="jumpToColumn"
 			/>
 		</Teleport>
@@ -155,7 +174,7 @@ watch(
 					ref="$find"
 					v-model="term"
 					:columns="columns"
-					:match-count="matchedRows.length"
+					:match-count="matchCount"
 					@jump="jumpToColumn"
 				/>
 			</div>

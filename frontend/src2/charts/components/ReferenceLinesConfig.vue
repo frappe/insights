@@ -16,15 +16,15 @@ import CollapsibleSection from './CollapsibleSection.vue'
 import NumberInput from '../../components/NumberInput.vue'
 
 // The whole Chart config, not the axis alone: a line reads any Measure the
-// Chart carries, and the tooltip Measures do not live on the axis.
+// Chart includes, and the tooltip Measures do not live on the axis.
 const config = defineModel<AxisChartConfig>({ required: true })
 const y_axis = computed(() => config.value.y_axis)
 
 const lines = computed(() => y_axis.value.reference_lines || [])
 
-// A computed line reads one of the Chart's own Measures. The result carries no
+// A computed line reads one of the Chart's own Measures. The result includes no
 // other numbers, so a Measure from anywhere else would have nowhere to sit.
-// A tooltip Measure is one of them: it is not drawn, but it is measured, and a
+// A tooltip Measure is one of them: it is not plotted, but it is measured, and a
 // target on the tooltip is exactly the kind a rule is computed from.
 const measureOptions = computed(() =>
 	[
@@ -33,8 +33,8 @@ const measureOptions = computed(() =>
 	].filter((name): name is string => Boolean(name)),
 )
 
-// Named as an end of the rule and a side of it. A rule drawn down the plot
-// carries its label rotated, so its sides read as the left and the right of it.
+// Named as an end of the rule and a side of it. A rule running down the plot
+// has its label rotated, so its sides read as the left and the right of it.
 const labelPlacementOptions: { label: string; value: ReferenceLabelPlacement }[] = [
 	{ label: __('End, above'), value: 'end-top' },
 	{ label: __('End, below'), value: 'end-bottom' },

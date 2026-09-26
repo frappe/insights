@@ -22,7 +22,7 @@ const props = defineProps<{
 	/** The Measure this states the format of. Left out, the chart's default. */
 	measureName?: string
 	/**
-	 * The one Measure a single-Measure chart draws. It has no per-Measure
+	 * The one Measure a single-Measure chart plots. It has no per-Measure
 	 * override, because the override and the default would say the same thing
 	 * and the override would win silently. An earlier release wrote that
 	 * chart's format under the Measure, so the default reads it while it is the
@@ -75,7 +75,7 @@ function write(key: keyof NumberFormat, value: any) {
 }
 
 // A negative precision is not a precision, and the resolver clamps one away.
-// The field refuses to hold one so what is stored says what is drawn. The number
+// The field refuses to hold one so what is stored says what is shown. The number
 // itself arrives as one: `InputGroup` reports a number field as a number.
 function writeField(key: string, value: string | number | undefined) {
 	if (key !== 'decimals') return write(key as keyof NumberFormat, value)
@@ -84,7 +84,7 @@ function writeField(key: string, value: string | number | undefined) {
 
 // A placeholder answers one of two questions, in this order: what does this
 // field inherit, and failing that, what does an answer look like. An example
-// carries more than the word "none", which states an absence the empty field
+// says more than the word "none", which states an absence the empty field
 // already states.
 const EXAMPLES = { prefix: '$', suffix: '%', decimals: '2' }
 

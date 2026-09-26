@@ -11,11 +11,11 @@ territory's label alone.
 Where a column came from is traced, never guessed. Each operation of the
 pipeline is followed: a rename gives a column another name, a copy gives it a
 second one, a join brings columns in from another table, a summarize keeps the
-columns it grouped by, and a column an expression wrote carries nothing at all.
+columns it grouped by, and a column an expression wrote keeps nothing at all.
 What the trace says is checked against the result columns, so a trace that goes
-wrong draws no link rather than one that lands on the wrong document.
+wrong shows no link rather than one that lands on the wrong document.
 
-The same answer serves a drill's rows and a Table chart, because both draw rows
+The same answer serves a drill's rows and a Table chart, because both render rows
 and neither can tell from a value that it names a document.
 """
 
@@ -93,7 +93,7 @@ def _doctype_named_by(origin: Origin, pins: Pins) -> str | None:
         return df.options
 
     # A `Dynamic Link` names its doctype in a second column, which the result
-    # rarely draws. It is followed only where the pipeline pinned that column to
+    # rarely shows. It is followed only where the pipeline pinned that column to
     # one value — `party_type = "Customer"` — because then every row of the
     # column is that doctype and no cell has to be read to know it.
     if df and df.fieldtype == "Dynamic Link" and df.options:
@@ -132,7 +132,7 @@ def _table_of(table: dict, seen: set) -> tuple[str | None, dict[str, Origin], Pi
     """The same answer for a table a pipeline reads or joins to.
 
     A site-DB table names itself, and a query is traced the way any pipeline is.
-    Anything else, another data source, names nothing, so its columns carry no
+    Anything else, another data source, names nothing, so its columns have no
     link.
     """
     if table.get("type") == "table":
@@ -169,7 +169,7 @@ def _follow(
             origins[sanitize_name(operation.get("new_name"))] = origin_of(old_name)
 
         elif type == "mutate":
-            # a mutate that copies a column carries its origin into the new one.
+            # a mutate that copies a column passes its origin into the new one.
             # Any other expression makes a value that belongs to no table
             new_name = sanitize_name(operation.get("new_name"))
             expression = ((operation.get("expression") or {}).get("expression") or "").strip()

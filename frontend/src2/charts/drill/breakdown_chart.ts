@@ -1,21 +1,21 @@
 // A breakdown level as a Chart.
 //
-// Which shape draws a level is read off the answer and nowhere else. The server
+// Which shape plots a level is read off the answer and nowhere else. The server
 // owns the cut — which way the rows run, how many came back, the grain they were
 // bucketed at, whether they add up — and the shape has to agree with the cut, so
 // a shape guessed from a column type would put two owners on one decision.
 //
 // The rules, in order:
 //
-//   nothing numeric to draw      →  Table
-//   ordered, few buckets         →  Bar    a line through three points draws a
+//   nothing numeric to plot      →  Table
+//   ordered, few buckets         →  Bar    a line through three points plots a
 //                                          trend the three points do not have
 //   ordered                      →  Line
 //   ranked, parts of one whole   →  Donut
 //   ranked                       →  Row
 //
 // And one rule for labels: a label belongs on a mark you read a value off, not
-// on a mark you read a shape off. Bars and segments carry them when they fit. A
+// on a mark you read a shape off. Bars and segments show them when they fit. A
 // line never does, because a label on every point of a stretch buries the shape.
 
 import { FIELDTYPES, type GranularityType } from '../../helpers/constants'
@@ -35,7 +35,7 @@ import type {
 } from '../../types/query.types'
 import { columnLabel, type DrillChart, type DrillLevelData } from './drill_stack'
 
-/** What a breakdown level draws itself from: the answer, whole. */
+/** What a breakdown level renders itself from: the answer, whole. */
 export type BreakdownAnswer = Pick<
 	DrillLevelData,
 	'columns' | 'rows' | 'ordered' | 'granularity' | 'additive' | 'total_row_count'
@@ -50,7 +50,7 @@ const SLICES = { min: 2, max: 6 }
 /** How many marks a plot can label before the labels collide. */
 const LABEL_BUDGET = 20
 
-/** The shape an answer draws itself as, and whether its marks carry values. */
+/** The shape an answer renders itself as, and whether its marks show values. */
 export type BreakdownPlot = {
 	chart_type: ChartType
 	labels: boolean
@@ -59,13 +59,13 @@ export type BreakdownPlot = {
 /**
  * The one decision. Everything it reads is on the answer, so the same rules hold
  * for a level clicked out of a dashboard card and one clicked out of the query
- * builder — neither has anything else to offer.
+ * builder — neither has anything else to show.
  */
 export function breakdownPlot(dimension: string, answer: BreakdownAnswer): BreakdownPlot {
 	const values = valueColumns(dimension, answer.columns)
 	const fits = answer.rows.length * values.length <= LABEL_BUDGET
 
-	// a measure that came back as text plots as nothing. The grid draws it rather
+	// a measure that came back as text plots as nothing. The grid shows it rather
 	// than leaving an empty pane where a chart was expected
 	if (!values.length) return { chart_type: 'Table', labels: false }
 
@@ -99,9 +99,9 @@ function partsOfAWhole(answer: BreakdownAnswer, values: QueryResultColumn[]): bo
 }
 
 /**
- * The columns holding the numbers this level drew, in the order the result
- * carries them. A click that named a measure has one, and a click on a number
- * card named none and kept every measure the card drew.
+ * The columns holding the numbers this level plotted, in the order the result
+ * holds them. A click that named a measure has one, and a click on a number
+ * card named none and kept every measure the card plotted.
  */
 function valueColumns(dimension: string, columns: QueryResultColumn[]): QueryResultColumn[] {
 	return columns.filter(
@@ -109,7 +109,7 @@ function valueColumns(dimension: string, columns: QueryResultColumn[]): QueryRes
 	)
 }
 
-/** The Chart a breakdown level draws itself as. */
+/** The Chart a breakdown level renders itself as. */
 export function breakdownChart(dimension: string, answer: BreakdownAnswer): DrillChart {
 	const plot = breakdownPlot(dimension, answer)
 	const values = valueColumns(dimension, answer.columns).map(measureSlot)
@@ -141,7 +141,7 @@ function configFor(plot: BreakdownPlot, dimension: Dimension, values: Measure[])
 			show_data_labels: plot.labels,
 			// What the bars measure. The crumb says which Dimension the level cut
 			// by and never what it counted, and the axis title is where a chart
-			// already answers that — drawn over the plot edge, not as a heading.
+			// already answers that — shown over the plot edge, not as a heading.
 			// Several measures have no one name, so they go unnamed here and the
 			// legend names each of them.
 			...(values.length === 1

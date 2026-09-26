@@ -243,7 +243,6 @@ export function makeQuery(name: string) {
 				// the row keeps a hidden column; only the listing drops it
 				result.value.columns = response.columns.filter((c: QueryResultColumn) => !c.hidden)
 				result.value.rows = response.rows
-				result.value.recordLinks = response.record_links
 				Object.assign(session.site.currency_symbols, response.currency_symbols || {})
 				result.value.formattedRows = getFormattedRows(result.value, query.doc.operations)
 
@@ -299,18 +298,26 @@ export function makeQuery(name: string) {
 		}
 
 		fetchingCount.value = true
-		return scheduleQueryExecution(() =>
-			query.call('get_count', {
-				active_operation_idx: activeOperationIdx.value,
-				adhoc_filters: adhocFilters.value,
-			}),
+		return (
+			scheduleQueryExecution(() =>
+				query.call('get_count', {
+					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
+				}),
+			)
+				.then((count: number) => {
+					result.value.totalRowCount = count || 0
+				})
+				// An empty count is a real zero, so the endpoint throws when the
+				// reader may not read the data. Without this, the previous run's
+				// total stays on screen.
+				.catch(() => {
+					result.value.totalRowCount = 0
+				})
+				.finally(() => {
+					fetchingCount.value = false
+				})
 		)
-			.then((count: number) => {
-				result.value.totalRowCount = count || 0
-			})
-			.finally(() => {
-				fetchingCount.value = false
-			})
 	}
 
 	async function formatSQL(args: SQLArgs): Promise<string> {
@@ -815,7 +822,7 @@ export function makeQuery(name: string) {
 		...toRefs(query),
 
 		// a saved query has a document to wait for, a throwaway one never does —
-		// either way this is when there is something to draw a table from
+		// either way this is when there is something to render a table from
 		ready: computed(() => query.isloaded || query.islocal),
 
 		activeOperationIdx,

@@ -7,8 +7,8 @@ import type { ChartAdapterInput, ChartFiller } from './types'
 
 // A funnel is stored in two shapes and v2 reads one: a stage column and a value
 // column, one row per stage. The grouped shape is already that. The Measures
-// shape is one row carrying every stage side by side, so Insights turns it on
-// its side here — v2 takes data as it is drawn, and reshaping it is the
+// shape is one row holding every stage side by side, so Insights turns it on
+// its side here — v2 takes data as it is plotted, and reshaping it is the
 // caller's.
 //
 // The columns of the reshaped rows are named here because the rows are built
@@ -49,7 +49,7 @@ function measuresFunnel(
 	const row = input.result.rows[0]
 	if (!row) return
 
-	// A stage the query returned nothing for is not a stage of zero: `|| 0` drew a
+	// A stage the query returned nothing for is not a stage of zero: `|| 0` plotted a
 	// missing count as a real one, and a funnel reads its stages against each
 	// other. The heatmap states the same rule in its own header.
 	const data = measures.map((measure) => {

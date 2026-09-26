@@ -16,11 +16,14 @@ import { __ } from '../translation'
 import type { QueryResultColumn } from '../types/query.types'
 
 const props = defineProps<{
+	filterable: boolean
 	columns: QueryResultColumn[]
 	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
 	rangeProvider: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	/** Whether the acts wait for the card to be pointed at. A public link has no
-	 *  hover affordances to keep company with, so there they stand. */
+	 *  hover affordances to keep company with, so there they stand. They reveal
+	 *  on hover over the card's own `card` group, because the grid cell around
+	 *  it is a group too. */
 	reveal?: boolean
 }>()
 
@@ -44,7 +47,9 @@ const pickerOpen = ref(false)
 const active = defineModel<boolean>('active', { default: false })
 watchEffect(() => (active.value = pickerOpen.value || findOpen.value))
 const revealClass = computed(() =>
-	props.reveal && !active.value ? 'opacity-0 transition-opacity group-hover:opacity-100' : '',
+	props.reveal && !active.value
+		? 'opacity-0 transition-opacity group-hover/card:opacity-100'
+		: '',
 )
 const filterTooltip = computed(() =>
 	filters.value.length ? __('Filters ({0})', String(filters.value.length)) : __('Filter'),
@@ -76,13 +81,14 @@ const filterTooltip = computed(() =>
 		</Tooltip>
 
 		<FilterPicker
+			v-if="props.filterable"
 			v-model="filters"
 			v-model:open="pickerOpen"
 			:columns="props.columns"
 			:values-provider="props.valuesProvider"
 			:range-provider="props.rangeProvider"
 		>
-			<!-- The picker's own button carries a label, which beside a card
+			<!-- The picker's own button has a label, which beside a card
 				     title reads as a second title. Here it is one of the card's
 				     icons, and the dot is what says the rows are narrowed.
 				     The click is wired here rather than left to the popover: the

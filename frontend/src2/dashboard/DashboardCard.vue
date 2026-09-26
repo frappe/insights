@@ -48,6 +48,7 @@ watch(
 			/>
 			<div v-else class="flex h-full w-full items-center justify-center bg-surface-gray-1/70">
 				<Button
+					v-if="dashboard.can_write"
 					variant="ghost"
 					@click.prevent.stop="emit('update-preview')"
 					:loading="previewLoading"

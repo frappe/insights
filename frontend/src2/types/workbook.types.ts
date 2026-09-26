@@ -7,6 +7,10 @@ export interface QueryVariable {
 	variable_value: string
 }
 
+// narrowest first: each level includes the readers of the one before it
+export type Visibility = 'Private' | 'Roles' | 'Everyone' | 'Public'
+export type VisibleToRole = { role: string }
+
 export type WorkbookListItem = {
 	title: string
 	name: string
@@ -63,6 +67,11 @@ export type InsightsWorkbook = {
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
 	read_only: boolean
+	/** A read-only workbook the reader may duplicate instead. */
+	can_copy?: boolean
+	/** Set when an app ships the workbook. `module` is the module it ships in. */
+	is_standard?: boolean
+	module?: string | null
 }
 
 export type InsightsQueryv3 = {
@@ -93,7 +102,13 @@ export type InsightsChartv3 = {
 	chart_type: ChartType
 	sort_order: number
 	folder?: string | null
-	is_public: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
+	run_as_owner: boolean
+	/** Whether the caller may change the saved `run_as_owner`. The owner or an admin may tick it. Any writer may clear it. */
+	can_move_run_as_owner?: boolean
+	/** Whether the caller may widen the chart's Visibility (the server's `can_share`). */
+	can_share?: boolean
 	operations: Operation[]
 	use_live_connection?: boolean
 	config: ChartConfig & {
@@ -113,14 +128,16 @@ export type InsightsDashboardv3 = {
 	items: WorkbookDashboardItem[]
 	preview_image?: string
 	share_link?: string
-	is_public: boolean
-	is_shared_with_organization: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
 	people_with_access: {
 		email: string
 		full_name: string
 		user_image: string
 	}[]
 	read_only: boolean
+	/** Whether the caller may widen the dashboard's Visibility or share it with a user. */
+	can_share?: boolean
 	vertical_compact_layout: boolean
 	has_workbook_access: boolean
 }
@@ -138,7 +155,7 @@ export type Placement = {
 	h: number
 }
 
-/** A placement with the cell it belongs to. What a grid is drawn from. */
+/** A placement with the cell it belongs to. What a grid is rendered from. */
 export type Layout = Placement & {
 	/** The cell's identity, stable across a move. */
 	i: string
@@ -155,7 +172,7 @@ export type Layout = Placement & {
 export type BreakpointKey = 'sm' | 'lg'
 
 /**
- * What every dashboard item carries about where it sits.
+ * What every dashboard item keeps about where it sits.
  *
  * `layout` is the placement at the widest breakpoint, and it is the one every
  * item has — it is what a dashboard authored before there was more than one
@@ -177,9 +194,9 @@ export type WorkbookDashboardChart = WorkbookDashboardItemLayout & {
 	type: 'chart'
 	chart: string
 	/**
-	 * The reading this cell draws, by its `id`. Only a Number chart states
+	 * The reading this cell shows, by its `id`. Only a Number chart states
 	 * several, so only its cells name one, and a cell written before this field
-	 * existed names none and draws the first.
+	 * existed names none and shows the first.
 	 */
 	reading?: string
 }
@@ -190,6 +207,9 @@ export type WorkbookDashboardFilter = WorkbookDashboardItemLayout & {
 	links: Record<string, string>
 	default_operator?: FilterOperator
 	default_value?: FilterValue
+	// a user default key, such as `Company`. The server sends the reader's value
+	// for it as `default_value`
+	default_user_key?: string
 	icon?: string
 }
 export type WorkbookDashboardText = WorkbookDashboardItemLayout & {
@@ -200,7 +220,7 @@ export type WorkbookDashboardText = WorkbookDashboardItemLayout & {
 // dashboard filter state, keyed by filter name. Which query a filter lands on is
 // the server's concern — every surface sends the state and the grid it sits
 // on, and the links are read there.
-export type ViewerFilters = Record<string, { operator: FilterOperator; value: FilterValue }>
+export type FilterValues = Record<string, { operator: FilterOperator; value: FilterValue }>
 
 export type ShareAccess = 'view' | 'edit' | undefined
 export type WorkbookSharePermission = {

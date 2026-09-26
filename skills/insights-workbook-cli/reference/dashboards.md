@@ -27,7 +27,7 @@ Filters own their rows. No chart may share a row with a filter, and a chart you 
 
 `vertical_compact_layout` is on by default, so the grid pulls every item up until it rests on the one above. A `y` you write is where the item starts, not where it stays.
 
-A Number chart is not one cell. Each of its readings is a cell of its own at `w:4`, as tall as what that reading draws: `h:4` for a title and a value, `h:5` when the reading names a comparison, `h:7` when the chart draws a sparkline. Every one of those cells carries the same `chart`, and names its reading in `reading` — the reading's `id` in `number_columns`. Saving the chart sets a missing `id` to the `measure_name`, so read the chart back after you create it and take each `id` from its `number_columns`:
+A Number chart is not one cell. Each of its readings is a cell of its own at `w:4`, as tall as what that reading shows: `h:4` for a title and a value, `h:5` when the reading names a comparison, `h:7` when the chart plots a sparkline. Every one of those cells has the same `chart`, and names its reading in `reading` — the reading's `id` in `number_columns`. Saving the chart sets a missing `id` to the `measure_name`, so read the chart back after you create it and take each `id` from its `number_columns`:
 
 ```json
 { "type": "chart", "chart": "<chart doc name>", "reading": "Revenue", "layout": { "i": "kpi-revenue", "x": 0, "y": 0, "w": 4, "h": 5 } }
@@ -122,7 +122,7 @@ pipeline, before the chart's own aggregation. Two consequences:
 - One filter can point different charts at different queries and columns. A "Company" filter routes
   the invoice charts to `` `tq-sales-invoices`.`company` `` and the item charts to
   `` `tq-sales-invoice-items`.`company` ``.
-- The named query is usually the chart's base query. It can be **any query that feeds the chart**.
+- The named query is usually the chart's base query. It can be **any query that is the chart's source**.
   Insights applies the filter wherever that query is built. So a filter on a shared helper query
   reaches every chart built on it.
 - A chart whose query chain lacks the column cannot be linked: add the column to the query first

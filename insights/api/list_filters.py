@@ -10,8 +10,9 @@ from insights.permissions import InsightsPermissions
 DEFAULT_SOURCES = ("created", "shared")
 NEGATED_OPERATORS = {"!=": "=", "not like": "like", "not in": "in"}
 
-# (is_pattern, values) -> names of the listed documents that match
-Match = Callable[[bool, list], list]
+# (is_pattern, values) -> names of the listed documents that match, or None when
+# the match does not support patterns
+Match = Callable[[bool, list], list | None]
 
 
 def get_source_filters(doctype: str, sources: list | None) -> list:
@@ -58,6 +59,10 @@ def get_content_filters(filters: list, matches: dict[str, Match]) -> list:
         operator = NEGATED_OPERATORS.get(operator, operator)
         values = value if operator == "in" else [value]
         names = match(operator == "like", values) if values else []
+        if names is None:
+            # an unsupported pattern matches nothing, even when negated
+            list_filters.append(["name", "in", []])
+            continue
         list_filters.append(["name", "not in" if negated else "in", names])
     return list_filters
 
@@ -69,9 +74,8 @@ def match_records(doctype: str, column: str) -> Match:
     """
 
     def match(is_pattern, values):
-        Doc = frappe.qb.DocType(doctype)
-        conditions = [Doc.title.like(v) if is_pattern else Doc.name == v for v in values]
-        return _select(Doc, Doc[column], conditions)
+        alternatives = [[["title", "like", v]] for v in values] if is_pattern else [[["name", "in", values]]]
+        return _readable(doctype, column, alternatives)
 
     return match
 
@@ -92,35 +96,40 @@ def match_operations(key: str, column: str) -> Match:
     """
 
     def match(is_pattern, values):
-        Query = frappe.qb.DocType("Insights Query v3")
-        return _select(
-            Query, Query[column], [_operations_condition(Query, key, v, is_pattern) for v in values]
+        return _readable(
+            "Insights Query v3", column, [_operations_filters(key, v, is_pattern) for v in values]
         )
 
     return match
 
 
-def _operations_condition(Query, key: str, value: str, is_pattern: bool):
+def _operations_filters(key: str, value: str, is_pattern: bool) -> list:
     def contains(k, v):
-        return Query.operations.like("%" + OPERATIONS_KEYS[k].format(v) + "%")
+        return ["operations", "like", "%" + OPERATIONS_KEYS[k].format(v) + "%"]
 
     if is_pattern:
-        return contains(key, value)
+        return [contains(key, value)]
     if key == "table_name":
         table = frappe.db.get_value("Insights Table v3", value, ["data_source", "table"], as_dict=True)
         if not table:
-            return contains("table_name", _escape_like(value))
-        return contains("data_source", _escape_like(table.data_source)) & contains(
-            "table_name", _escape_like(table.table)
-        )
-    return contains(key, _escape_like(value))
+            return [contains("table_name", _escape_like(value))]
+        return [
+            contains("data_source", _escape_like(table.data_source)),
+            contains("table_name", _escape_like(table.table)),
+        ]
+    return [contains(key, _escape_like(value))]
 
 
-def _select(Doc, column, conditions) -> list:
-    condition = conditions[0]
-    for c in conditions[1:]:
-        condition |= c
-    return frappe.qb.from_(Doc).select(column).where(condition).distinct().run(pluck=True)
+def _readable(doctype: str, column: str, alternatives: list[list]) -> list:
+    """`column` of the readable `doctype` documents that meet any of `alternatives`.
+
+    It goes through `frappe.get_list`. A match over documents the caller may
+    not read would leak their contents, one guess at a time.
+    """
+    matched = set()
+    for filters in alternatives:
+        matched.update(frappe.get_list(doctype, filters=filters, pluck=column, limit=0))
+    return list(matched)
 
 
 def _escape_like(value: str) -> str:

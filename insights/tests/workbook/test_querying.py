@@ -1,3 +1,4 @@
+import os
 from unittest.mock import patch
 
 import frappe
@@ -812,6 +813,248 @@ class TestQuerying(InsightsIntegrationTestCase):
             [row["description"] for row in result["rows"]],
             [f"{TODO_PREFIX} Open Alpha", f"{TODO_PREFIX} Open Gamma"],
         )
+
+    # @feature query.custom-operation query.expression-sandbox
+    def test_a_custom_operation_crosses_the_queries_it_reads(self):
+        """This is how custom operations are used on insights.frappe.io. It reads
+        two other queries of its workbook by name and cross-joins them with its own
+        table. It runs as the workbook's writer, like a builder or chart run."""
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        closed = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Closed",
+            operations=[
+                table_source(),
+                self.prefix_filter(),
+                {"type": "filter", "column": column("status"), "operator": "=", "value": "Closed"},
+                {"type": "select", "column_names": ["status"]},
+            ],
+        )
+        alpha = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Alpha",
+            operations=[
+                table_source(),
+                {"type": "filter", "column": column("description"), "operator": "contains", "value": "Alpha"},
+                self.prefix_filter(),
+                {"type": "select", "column_names": ["date"]},
+            ],
+        )
+        code = "\n".join(
+            [
+                f"closed = frappe.get_doc('Insights Query v3', '{closed.name}')",
+                "t1 = closed.build(use_live_connection=True)",
+                f"alpha = frappe.get_doc('Insights Query v3', '{alpha.name}')",
+                "t2 = alpha.build(use_live_connection=True)",
+                "q.cross_join(t1).cross_join(t2)",
+            ]
+        )
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Crossed",
+            operations=[
+                table_source(),
+                self.prefix_filter(),
+                {"type": "select", "column_names": ["description"]},
+                {"type": "custom_operation", "expression": {"type": "expression", "expression": code}},
+                {"type": "order_by", "column": column("description"), "direction": "asc"},
+            ],
+        )
+
+        with as_user(USER_1):
+            result = execute_test_query(query.name)
+
+        self.assertEqual(
+            [(row["description"], row["status"], str(row["date"])[:10]) for row in result["rows"]],
+            [
+                (f"{TODO_PREFIX} {name}", "Closed", add_days(nowdate(), 1))
+                for name in ("Closed Beta", "Open Alpha", "Open Gamma")
+            ],
+        )
+
+    # @feature query.expression-sandbox
+    def test_an_expression_reads_only_what_its_reader_may_and_writes_nothing(self):
+        """Any writer of a query writes its expressions, and a chart runs them for
+        every reader. `safe_eval` runs one statement and `safe_exec` runs several."""
+        # rows USER_1 can read, for the expression to use
+        self.seed_todos()
+        todo = frappe.get_doc({"doctype": "ToDo", "description": f"{TODO_PREFIX} Admin's"}).insert(
+            ignore_permissions=True
+        )
+        others = create_test_query("Administrator", create_test_workbook("Administrator").name)
+        frappe.db.commit()  # nosemgrep
+        workbook = create_test_workbook(USER_1)
+        private_file = frappe.get_site_path("private", "files", "insights-expression-probe.pdf")
+        with open(private_file, "wb") as f:
+            f.write(b"%PDF-1.4")
+        self.addCleanup(os.remove, private_file)
+        self.addCleanup(frappe.db.delete, "UTM Source", {"name": "insights-expression-probe"})
+        refused = {
+            "set_value": f"frappe.db.set_value('ToDo', '{todo.name}', 'description', 'x')",
+            "save": f"frappe.get_doc('ToDo', '{todo.name}').save()",
+            "new_doc": "frappe.new_doc('ToDo')",
+            "delete_doc": f"frappe.delete_doc('ToDo', '{todo.name}')",
+            "enqueue": "frappe.enqueue('frappe.client.get_count', doctype='User')",
+            "call": "frappe.call('frappe.client.get_count', doctype='User')",
+            "sendmail": "frappe.sendmail(recipients=['a@example.com'], subject='s', message='m')",
+            "sql": "frappe.db.sql('select 1')",
+            "get_all": "frappe.get_all('ToDo')",
+            "http": "frappe.make_get_request('https://example.com')",
+            "after_commit": "frappe.db.after_commit.add(len)",
+            "commit": "frappe.db.commit()",
+            "rollback": "frappe.db.rollback()",
+            "another user's document": f"frappe.get_doc('ToDo', '{todo.name}').description",
+            "another user's query": f"frappe.get_doc('Insights Query v3', '{others.name}').build().count()",
+            "map_trackers": "frappe.utils.map_trackers({'utm_source': 'insights-expression-probe'}, create=True) and 'x'",
+            "a private file": "frappe.utils.pdf_to_base64('/private/files/insights-expression-probe.pdf').decode()",
+            "another user's email": "frappe.utils.get_user_info_for_avatar('Administrator')['email']",
+            "a field through a currency": "frappe.format_value(1, _dict(fieldtype='Currency', options='User:x:email'), _dict(doctype='P', x='Administrator'))",
+        }
+        not_in_sandbox = (AttributeError, "module has no attribute")
+        # frappe's read check puts its message in the message log, so the error text is empty
+        not_readable = (frappe.PermissionError, "^$")
+        refusal = {
+            "set_value": not_in_sandbox,
+            "save": not_readable,
+            "new_doc": not_in_sandbox,
+            "delete_doc": not_in_sandbox,
+            "enqueue": not_in_sandbox,
+            "call": not_in_sandbox,
+            "sendmail": not_in_sandbox,
+            "sql": (frappe.PermissionError, "Only an Insights Admin"),
+            "get_all": not_in_sandbox,
+            "http": not_in_sandbox,
+            # `frappe.db` returns a no-op for a name it does not have
+            "after_commit": (
+                (AttributeError, TypeError),
+                "has no attribute 'add'|'NoneType' object is not callable",
+            ),
+            "commit": not_in_sandbox,
+            "rollback": not_in_sandbox,
+            "another user's document": not_readable,
+            "another user's query": not_readable,
+            "map_trackers": not_in_sandbox,
+            "a private file": not_in_sandbox,
+            "another user's email": not_in_sandbox,
+            "a field through a currency": not_in_sandbox,
+        }
+        # a value or list read returns what the reader's own read returns: no row
+        empty = {
+            "another user's value": f"frappe.db.get_value('ToDo', '{todo.name}', 'description') or 'none'",
+            "another user's list": f"frappe.get_list('ToDo', filters={{'name': '{todo.name}'}}) or 'none'",
+        }
+
+        def run(title, expression):
+            query = create_test_query(
+                USER_1,
+                workbook.name,
+                title=f"Workbook Flow Test Query {title}",
+                operations=[
+                    table_source(),
+                    {
+                        "type": "mutate",
+                        "new_name": "read",
+                        "data_type": "Auto",
+                        "expression": {"type": "expression", "expression": expression},
+                    },
+                    {"type": "limit", "limit": 1},
+                ],
+            )
+            with as_user(USER_1):
+                return execute_test_query(query.name)["rows"][0]["read"]
+
+        for statements in ("literal({act})", "value = {act}\nliteral(value)"):
+            lines = statements.count("\n") + 1
+            for act, code in refused.items():
+                with self.subTest(act=act, lines=lines):
+                    with self.assertRaisesRegex(*refusal[act]):
+                        run(f"{act} {lines}", statements.format(act=code))
+            for act, code in empty.items():
+                with self.subTest(act=act, lines=lines):
+                    self.assertEqual(run(f"{act} {lines}", statements.format(act=code)), "none")
+
+        self.assertEqual(
+            run("date utils", "literal(frappe.utils.getdate('2026-01-02').isoformat())"), "2026-01-02"
+        )
+        self.assertEqual(frappe.db.get_value("ToDo", todo.name, "description"), f"{TODO_PREFIX} Admin's")
+        self.assertNotIn(len, frappe.db.after_commit._functions)
+        self.assertFalse(frappe.db.exists("UTM Source", "insights-expression-probe"))
+
+    # @feature query.expression-cannot-reach-files query.expression-sandbox
+    def test_an_expression_reaches_no_connection_and_runs_nothing(self):
+        """An expression holds the relation it builds on, and a query it reads
+        builds one too. Both lead to the data source's connection. For this reader
+        the relation is the table, without permlevel columns and with rows filtered."""
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        other = create_test_query(USER_1, workbook.name, title="Workbook Flow Test Query Other")
+        acts = {
+            "op": "q.op().parent.parent.source.raw_sql('select 1').fetchall()[0][0]",
+            "a query's op": f"frappe.get_doc('Insights Query v3', '{other.name}').build().op().parent.parent.source.con.open and 1",
+            "execute": "q.count().execute()",
+            "compile": "q.compile() and 1",
+            "preview": "q.preview() and 1",
+            "cache": "q.cache() and 1",
+        }
+
+        for statements in ("literal({act})", "value = {act}\nliteral(value)"):
+            lines = statements.count("\n") + 1
+            for act, code in acts.items():
+                query = create_test_query(
+                    USER_1,
+                    workbook.name,
+                    title=f"Workbook Flow Test Query {act} {lines}",
+                    operations=[
+                        table_source(),
+                        {
+                            "type": "mutate",
+                            "new_name": "reached",
+                            "data_type": "Auto",
+                            "expression": {"type": "expression", "expression": statements.format(act=code)},
+                        },
+                        {"type": "limit", "limit": 1},
+                    ],
+                )
+                with self.subTest(act=act, lines=lines), as_user(USER_1):
+                    with self.assertRaises(frappe.PermissionError):
+                        execute_test_query(query.name)
+
+    # @feature query.expression-sandbox
+    def test_an_expression_reads_no_table_its_query_does_not_source(self):
+        """ibis runs a relation built from a name or a statement on the query's
+        connection, which skips the source's table, row and column permissions.
+        It writes a literal relation to the connection as a temporary table.
+        `validate_expression` uses the same namespace."""
+        from insights.insights.doctype.insights_data_source_v3.ibis.utils import validate_expression
+
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        relations = {
+            "table": "ibis.table({'email': 'string'}, name='tabUser')",
+            "parse_sql": "ibis.parse_sql('select email from tabUser', {'tabUser': {'email': 'string'}})",
+            "memtable": "ibis.memtable({'email': ['x']})",
+        }
+        for name, relation in relations.items():
+            code = f"q.select('name').limit(1).cross_join({relation})"
+            query = create_test_query(
+                USER_1,
+                workbook.name,
+                title=f"Workbook Flow Test Query {name}",
+                operations=[
+                    table_source(),
+                    {"type": "custom_operation", "expression": {"type": "expression", "expression": code}},
+                ],
+            )
+            with self.subTest(name=name), as_user(USER_1):
+                with self.assertRaises(AttributeError):
+                    execute_test_query(query.name)
+                self.assertFalse(
+                    validate_expression(relation, '[{"value": "name", "description": "String"}]')["is_valid"]
+                )
 
     def site_db_todo_table(self):
         """The `Insights Table v3` row a refresh looks the source table up by."""

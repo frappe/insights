@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { GitFork, Share2 } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { GitFork, PackagePlus, Share2 } from 'lucide-vue-next'
+import { computed, inject, ref } from 'vue'
+import router from '../router'
 import session from '../session'
 import { __ } from '../translation'
+import { canExportToApp } from './export_to_app'
 import type { Workbook } from './workbook'
 import { workbookKey } from './workbook_key'
+import WorkbookExportToAppDialog from './WorkbookExportToAppDialog.vue'
 import WorkbookLineageDialog from './WorkbookLineageDialog.vue'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
 
@@ -12,6 +15,19 @@ const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
 const showLineageDialog = ref(false)
+const showExportDialog = ref(false)
+
+const canExport = computed(() => canExportToApp(workbook.doc))
+
+function afterMarked(name: string) {
+	// The workbook and its queries, charts and dashboards now have new names, so
+	// every resource in this tab points at a document that is gone. Reload the
+	// workbook instead of patching each resource. Duplicate does the same.
+	window.location.href = router.resolve({
+		name: 'Workbook',
+		params: { workbook_name: name },
+	}).href
+}
 </script>
 
 <template>
@@ -35,7 +51,7 @@ const showLineageDialog = ref(false)
 					icon: GitFork,
 					onClick: () => (showLineageDialog = true),
 				},
-				!workbook.doc.read_only
+				!workbook.doc.read_only || workbook.doc.can_copy
 					? {
 							label: __('Duplicate'),
 							icon: 'lucide-copy',
@@ -47,6 +63,13 @@ const showLineageDialog = ref(false)
 					icon: 'lucide-copy',
 					onClick: () => workbook.copy(),
 				},
+				canExport && !workbook.islocal
+					? {
+							label: __('Export to app…'),
+							icon: PackagePlus,
+							onClick: () => (showExportDialog = true),
+					  }
+					: null,
 				!workbook.islocal
 					? {
 							label: __('Delete'),
@@ -67,4 +90,9 @@ const showLineageDialog = ref(false)
 
 	<WorkbookShareDialog v-if="workbook.canShare && showShareDialog" v-model="showShareDialog" />
 	<WorkbookLineageDialog v-if="showLineageDialog" v-model="showLineageDialog" />
+	<WorkbookExportToAppDialog
+		v-if="showExportDialog"
+		v-model="showExportDialog"
+		@marked="afterMarked"
+	/>
 </template>

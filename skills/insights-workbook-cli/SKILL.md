@@ -91,7 +91,7 @@ frappectl -s $SITE method search -q <name>
 
 **Every procedure here works on a develop site with no newer endpoint.** A newer endpoint does the
 same job faster, never a different job. A missing endpoint costs round trips, never a result. If one
-is missing, take the plain path and carry on. Do not stop. Do not tell the user their site is behind
+is missing, take the plain path and continue. Do not stop. Do not tell the user their site is behind
 unless they ask.
 
 The same holds for a function `get_function_list` does not return: the plan changes, the ask does
@@ -114,12 +114,12 @@ not a fact you read off a column name.
 **1. Name the data sources.** `get_all_data_sources`. Their names are the first map: which system
 holds tickets, which holds sites, which holds billing. An ask that spans two of them is normal.
 
-**2. Search the corpus for every business word in the ask.** This is the rung that pays. "Partner",
+**2. Search the corpus for every business word in the ask.** This is the step that pays. "Partner",
 "active customer", "churned" and "enterprise" are decisions somebody encoded once, in a title, a
 `mutate`, a `case_when`, a filter value or a `sql` query. Section 3 has the searches. Run them for
 every noun and every qualifier the user used, before you look at a single table.
 
-A hit gives you the calculation *and* the tables it reads, so it settles rungs 3 and 4 at once.
+A hit gives you the calculation *and* the tables it reads, so it settles steps 3 and 4 at once.
 
 **3. Search table labels for what the corpus did not answer.** If you omit `data_source`,
 `get_data_source_tables` searches the whole instance. It matches the table's `label` and its real
@@ -222,8 +222,8 @@ function does. Read it before you use a function these files do not cover. Read 
 one they describe in a line. The parameter is `funcName`, in camelCase. `function` gives nothing
 back.
 
-For worked examples, read what the site already has (section 3). A workbook the site imported from a
-template is a good one: `doc list "Insights Workbook" --fields name,title,from_template --all`.
+For worked examples, read what the site already has (section 3). A workbook an app ships is a good
+one: `doc list "Insights Workbook" --fields name,title,is_standard --all`.
 
 ## 3. Reuse what the user already has
 
@@ -252,7 +252,7 @@ frappectl -s $SITE doc list "Insights Chart v3" \
 `search_term` matches workbook titles only, so run the query and chart searches too. A workbook
 titled "Cloud Metrics" can hold the partner definition.
 
-These searches work on every site. A newer site carries one endpoint that runs them all in a single
+These searches work on every site. A newer site has one endpoint that runs them all in a single
 call. Probe for it once. Use it when it is there:
 
 ```sh
@@ -264,7 +264,7 @@ A hit names `doctype`, `name`, `title`, `workbook`, `workbook_title`, `matched_f
 `snippet` of the text around the match. The snippet is the reason to prefer it. You can tell a real
 definition from a coincidence without fetching the document.
 
-**A hit also carries `used_by_charts`, `used_by_dashboards` and `dashboard_views`.** Read them.
+**A hit also includes `used_by_charts`, `used_by_dashboards` and `dashboard_views`.** Read them.
 Three queries can define "partner" three ways. The one behind a dashboard forty people open every
 week is the definition the organisation runs on. An orphan query somebody made once is not. Prefer
 the used one, and say in the scope block how much it is used.
@@ -309,14 +309,14 @@ Say what you reused. See "Say what you leaned on" in section 1.
 Before you author anything, post a scope block. It states:
 
 - the target workbook, by name
-- the tables to draw from, and the grain of each query
+- the tables to read from, and the grain of each query
 - every measure, with the exact columns it computes from
 - any definition you reused, and where it came from
 - the dimensions and the filters
 - what the user is actually looking at, so the dashboard leads with it
 
 When more than one column could serve a measure, name the candidates and ask which one.
-Never resolve that ambiguity alone. Never carry an unasked choice into the closing
+Never resolve that ambiguity alone. Never put an unasked choice into the closing
 summary.
 
 Ask before you sample real values from a column. Wait for the answer. A sample needs a scratch
@@ -406,8 +406,8 @@ Create them in dependency order, and keep the name the site returns for each:
    `reference/rules.md`.
 2. **Charts.** Set `workbook`, `title`, `query` (the query's real document name),
    `chart_type` and `config`.
-3. **Dashboards.** Set `workbook`, `title` and `items`. Chart items name the chart's
-   real document name. Filter links name the real query name. Author `chart` and `filter`
+3. **Dashboards.** Set `workbook`, `title` and `items`. Chart items name the real document
+   name of a chart in the same workbook; a chart of another workbook is refused. Filter links name the real query name. Author `chart` and `filter`
    items only. Never a `text` item.
 
 **Write a whole `items` array exactly once, at creation.** After that the user owns the layout. They
@@ -478,7 +478,7 @@ frappectl -s $SITE method call execute \
   --doctype "Insights Query v3" --name <query_name> -F page_size=5
 ```
 
-- The response carries `sql`, `columns`, `rows` and `time_taken`. All four together
+- The response includes `sql`, `columns`, `rows` and `time_taken`. All four together
   mean the query compiled and ran.
 - A failure here is often opaque. Run it again with `--debug` and read the server
   messages.
@@ -490,14 +490,13 @@ frappectl -s $SITE method call execute \
 
 ### Check 2 — every chart runs
 
-Saving a chart does not validate its config. A broken config fails only when the chart runs, with "Chart … is not configured" or an unknown column. So run every chart:
+Saving a chart does not validate its config. A broken config shows only when the chart runs: a missing slot comes back as `{"errors": [...]}`, and an unknown column fails. So run every chart:
 
 ```sh
-frappectl -s $SITE method call get_data \
-  --doctype "Insights Chart v3" --name <chart_name> -F page_size=5
+frappectl -s $SITE method call insights.api.view.get_chart_data -F chart=<chart_name>
 ```
 
-The response carries `columns` and `rows`. To test a config before you create the chart, send it to `insights.api.authoring.get_chart_data` (`chart_type`, `query`, `-F 'config:=<json>'`). A config it cannot draw comes back as `{"errors": [...]}`, not as an exception.
+The response includes `columns` and `rows`, one page at the chart's own `limit`. To test a config before you create the chart, send it to `insights.api.authoring.get_chart_data` (`chart_type`, `query`, `-F 'config:=<json>'`). A config it cannot render comes back as `{"errors": [...]}`, not as an exception.
 
 When a chart fails, compare its config with its base query:
 
@@ -545,14 +544,14 @@ the same filters. Read the rows. Then look at four things.
    count of distinct dates divided by a site count is not the average days per site. Compute the
    measure a second way and compare.
 2. **How many values does each dimension have?** Count it with `summarize` and `count_distinct` in
-   the scratch query. One value is not a split at all. The column does not carry what you assumed,
+   the scratch query. One value is not a split at all. The column does not hold what you assumed,
    and the split lives on another column. Hundreds of values is the wrong chart type. "Making it
    readable" in `charts.md` maps the count to the chart.
 3. **Is the signal present across the whole range?** Group the measure by month and read the series.
    A signal that starts partway through is not growth. It is the date somebody first recorded it. A
    signal that stops is retired, not fallen. Both read as a trend and are not one.
 4. **Is the last period complete?** The newest bucket is usually a partial day, week or month, and
-   it always draws as a fall. Confirm the maximum timestamp in the data before you call a drop real.
+   it always plots as a fall. Confirm the maximum timestamp in the data before you call a drop real.
 
 Report the row counts and the headline numbers in your reply. Any date cut, any retired signal, any
 gap in the data goes in the reply too. Do not put it in a dashboard text item or a chart title.
@@ -602,8 +601,8 @@ Verify again after any edit.
 
 ## Appendix — importing a workbook JSON
 
-Use this only when the user hands you a workbook JSON to import: a template, or an
-export from another site. It is not the authoring path.
+Use this only when the user hands you a workbook JSON to import, such as an export
+from another site. It is not the authoring path.
 
 ```sh
 frappectl -s $SITE api method/insights.api.workbooks.import_workbook --input /tmp/wb.json
@@ -642,8 +641,8 @@ exists.
 | Every expression function | `method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list` |
 | One function's signature and docstring | `method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description` (`funcName`) |
 | Run a saved query | `method call execute --doctype "Insights Query v3" --name <n> -F page_size=5` |
-| Run a saved chart | `method call get_data --doctype "Insights Chart v3" --name <n> -F page_size=5` (`page`, `page_size`, `force`, `dashboard`, `filters`) |
-| Run an unsaved chart config | `method call insights.api.authoring.get_chart_data` (`chart_type`, `query`, `config`, `page_size`) — returns `{"errors": [...]}` for a config it cannot draw |
+| Run a saved chart | `method call insights.api.view.get_chart_data -F chart=<n>` (`dashboard`, `filters`, `force`, `page`; a page past the first only for a reader who may read the chart's rows) |
+| Run an unsaved chart config | `method call insights.api.authoring.get_chart_data` (`chart_type`, `query`, `config`, `page_size`) — returns `{"errors": [...]}` for a config it cannot render |
 | Create, read, patch, delete content | `doc create` / `doc get` / `doc list` / `doc update` / `doc delete` |
 | Import a workbook JSON | `api method/insights.api.workbooks.import_workbook --input <file>` |
 

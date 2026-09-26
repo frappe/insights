@@ -63,7 +63,7 @@ before the request and then letting requests resolve the name again is a
 check of one lookup and a connection to another. Doing it in the connection is
 the only place where the address checked is the address used. That means
 `HTTPSConnection._new_conn`, `_dns_host` and `pool_classes_by_scheme` —
-three pieces of urllib3 that carry no compatibility promise.
+three pieces of urllib3 that have no compatibility promise.
 
 The failure mode is what makes this dangerous: if a urllib3 upgrade renames
 `_new_conn`, the subclass overrides nothing, nothing raises, and the defence

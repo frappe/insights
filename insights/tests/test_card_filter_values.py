@@ -1,16 +1,17 @@
-"""What a reader's own filter on a card offers, and what it may ask about.
+"""What a reader's own filter on a card lists, and what it may ask about.
 
-A card filter names a column of the picture. So the values it lists come from
+A card filter names a column of the chart. So the values it lists come from
 the card's own query — narrowed the way the card is narrowed, because a list
-offering rows the card does not show reaches past what the chart published.
+showing rows the card does not show reaches past what the chart published.
 
 Which columns may be asked about is the card's operations, not two slots of its
-config: a measure and a column a pivot made are drawn and hold no source
-column, so they offer no values rather than refusing a reader mid-action.
+config: a measure and a column a pivot made are rendered and hold no source
+column, so they list no values rather than refusing a reader mid-action.
 """
 
 import frappe
 
+from insights.api.view import get_card_range, get_card_values
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
@@ -31,7 +32,7 @@ OPEN_LENGTHS = sorted(len(d) for d in OPEN_TODOS)
 def todo_operations():
     """A query over `tabToDo`, narrowed to this module's fixtures, with a number.
 
-    `tabToDo` carries no number of its own, and a range has nothing to report
+    `tabToDo` has no number of its own, and a range has nothing to report
     without one.
     """
     return [
@@ -68,7 +69,7 @@ def count(measure_name="Todos"):
 
 
 def open_only():
-    """The card's own filter: it draws the open todos and nothing else."""
+    """The card's own filter: it shows the open todos and nothing else."""
     return {
         "logical_operator": "And",
         "filters": [
@@ -202,43 +203,43 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
 
     def values(self, chart, column):
         with as_user(AUTHOR), db_connections():
-            return frappe.get_doc(DT.DASHBOARD, self.dashboard).get_card_column_values(chart, column)
+            return get_card_values(chart, column, self.dashboard)
 
     def column_range(self, chart, column):
         with as_user(AUTHOR), db_connections():
-            return frappe.get_doc(DT.DASHBOARD, self.dashboard).get_card_column_range(chart, column)
+            return get_card_range(chart, column, self.dashboard)
 
     # @feature dashboard.card-filter
-    def test_a_card_filter_offers_only_what_the_card_draws(self):
-        """The card draws the open todos, so the closed one is not a value its
-        filter may offer."""
+    def test_a_card_filter_lists_only_what_the_card_shows(self):
+        """The card shows the open todos, so the closed one is not a value its
+        filter may list."""
         self.assertEqual(sorted(self.values(self.table, "description")), OPEN_TODOS)
 
     # @feature dashboard.card-filter
-    def test_a_card_filter_s_range_covers_only_what_the_card_draws(self):
-        """A range read off more rows than the card draws is the same overreach
+    def test_a_card_filter_s_range_covers_only_what_the_card_shows(self):
+        """A range read off more rows than the card shows is the same overreach
         as a value list read off them."""
         self.assertEqual(self.column_range(self.table, "weight"), [OPEN_LENGTHS[0], OPEN_LENGTHS[-1]])
 
     # @feature dashboard.card-filter
     def test_an_axis_chart_s_own_dimension_can_be_filtered(self):
-        """The x-axis is a column the card draws, the same as a table's rows."""
+        """The x-axis is a column the card shows, the same as a table's rows."""
         self.assertEqual(sorted(self.values(self.bar, "description")), OPEN_TODOS)
 
     # @feature dashboard.card-filter
-    def test_a_measure_the_card_draws_offers_no_values(self):
+    def test_a_measure_the_card_shows_lists_no_values(self):
         """A measure is computed over the result and holds no source column. The
         picker asks anyway, so this is a normal reader action and not a refusal."""
         self.assertEqual(self.values(self.table, "Todos"), [])
         self.assertIsNone(self.column_range(self.table, "Todos"))
 
     # @feature dashboard.card-filter
-    def test_a_column_a_pivot_made_offers_no_values(self):
+    def test_a_column_a_pivot_made_lists_no_values(self):
         """A pivot names its columns after the values its data holds, so the
-        config cannot say which ones the card draws."""
+        config cannot say which ones the card shows."""
         self.assertEqual(self.values(self.pivot, "Open"), [])
 
     # @feature dashboard.card-filter
-    def test_a_column_the_card_does_not_draw_is_refused(self):
-        with self.assertRaises(frappe.PermissionError):
+    def test_a_column_the_card_does_not_show_is_refused(self):
+        with self.assertRaises(frappe.DoesNotExistError):
             self.values(self.bar, "status")

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { mergeWriteAnswer } from './write_answer'
 
 // The three inputs a write settles from: what is on screen, what the write
-// carried, and what the server sent back.
+// sent, and what the server sent back.
 function saved(current: Record<string, any>, answer: Record<string, any>) {
 	// nothing moved while the write was in flight, so what was sent is what is on
 	// screen

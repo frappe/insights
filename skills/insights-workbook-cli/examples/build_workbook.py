@@ -42,19 +42,9 @@ def create(doctype, doc):
     return name
 
 
-def run_chart(chart_name, page_size=5):
+def run_chart(chart_name):
     """Run a saved chart. Saving does not validate its config, so this is the only check."""
-    return call(
-        "method",
-        "call",
-        "get_data",
-        "--doctype",
-        "Insights Chart v3",
-        "--name",
-        chart_name,
-        "-F",
-        f"page_size={page_size}",
-    )
+    return call("method", "call", "insights.api.view.get_chart_data", "-F", f"chart={chart_name}")
 
 
 def execute(query_name, page_size=5):
@@ -560,7 +550,10 @@ def verify():
 
         try:
             result = run_chart(c["name"])
-            print(f"chart {c['name']} ({c['title']}): {len(result['rows'])} rows")
+            if result.get("errors"):
+                failures.append(f"chart {c['name']} ({c['title']}) is not configured: {result['errors']}")
+            else:
+                print(f"chart {c['name']} ({c['title']}): {len(result['rows'])} rows")
         except SystemExit as e:
             failures.append(f"chart {c['name']} ({c['title']}) did not run: {e}")
             # The usual cause is a column the base query does not have.

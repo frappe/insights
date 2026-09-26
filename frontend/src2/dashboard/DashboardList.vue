@@ -92,12 +92,16 @@ const dropdownOptions = (dashboard: DashboardListItem) => [
 		icon: 'lucide-external-link',
 		onClick: () => router.push(`/workbook/${dashboard.workbook}`),
 	},
-	{
-		label: __('Refresh Preview'),
-		icon: 'lucide-refresh-cw',
-		loading: store.updatingPreviewImage,
-		onClick: () => store.updatePreviewImage(dashboard.name),
-	},
+	...(dashboard.can_write
+		? [
+				{
+					label: __('Refresh Preview'),
+					icon: 'lucide-refresh-cw',
+					loading: store.updatingPreviewImage,
+					onClick: () => store.updatePreviewImage(dashboard.name),
+				},
+		  ]
+		: []),
 ]
 
 const toggleFavorite = (dashboard: DashboardListItem) => {

@@ -1,6 +1,6 @@
-// The chart as its author holds it: the document, the config being edited, the
+// The chart as its owner holds it: the document, the config being edited, the
 // save. What the config produces is not here — the server derives the operations
-// from it and runs them, and `chart_read` is where the rows come back.
+// from it and runs them, and `chart_view` is where the rows come back.
 
 import { useDebouncedRefHistory } from '@vueuse/core'
 import { computed, reactive, toRefs, watch } from 'vue'
@@ -12,7 +12,7 @@ import router from '../router'
 import { AXIS_CHARTS } from '../types/chart.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import { getLinkedQueries } from '../query/linked_queries'
-import { renameChartReads } from './chart_read'
+import { invalidateChart, renameChartViews } from './chart_view'
 import {
 	configDimensions,
 	ensureConfigSlots,
@@ -49,10 +49,6 @@ function makeChart(name: string) {
 			params: { chart_name: chart.doc.name },
 		})
 		return `${window.location.origin}${href}`
-	}
-
-	function updateAccess(is_public: boolean) {
-		return chart.call('update_access', { is_public }).then(() => chart.load())
 	}
 
 	function getDependentQueries() {
@@ -120,7 +116,6 @@ function makeChart(name: string) {
 		resetConfig,
 
 		getShareLink,
-		updateAccess,
 
 		getDependentQueries,
 		getDependentQueryColumns,
@@ -143,7 +138,9 @@ const INITIAL_DOC: InsightsChartv3 = {
 	query: '',
 	chart_type: '',
 	sort_order: 0,
-	is_public: false,
+	visibility: 'Private',
+	visible_to_roles: [],
+	run_as_owner: false,
 	config: {} as InsightsChartv3['config'],
 	operations: [],
 	read_only: false,
@@ -164,6 +161,10 @@ function getChartResource(name: string) {
 	chart.onBeforeInsert(() => {
 		chart.doc.config = normalizeChartConfig(chart.doc.config, chart.doc.chart_type)
 	})
+	// Every card in this tab keeps its chart and rows until Refresh. The author's
+	// own save is the exception: the author knows the chart changed, so the next
+	// card that shows it fetches again.
+	chart.onAfterSave(() => invalidateChart(String(chart.doc.name)))
 	wheneverChanges(
 		() => chart.doc.read_only,
 		() => {
@@ -190,11 +191,11 @@ export function newChart() {
 	// The page that opens next asks for the chart by the name the insert gave it,
 	// and has to be handed this store. A second store for one chart writes the
 	// document twice and runs its data twice, and the two disagree from the first
-	// edit. The rows it already drew move with it, or nothing invalidating the
+	// edit. The rows it already rendered move with it, or nothing invalidating the
 	// saved chart would reach them.
 	chart.onAfterInsert(() => {
 		charts.set(String(chart.doc.name), chart)
-		renameChartReads(unsavedName, String(chart.doc.name))
+		renameChartViews(unsavedName, String(chart.doc.name))
 	})
 	return chart
 }

@@ -1,4 +1,4 @@
-// The one writer of what a row dragged out of the workbook sidebar carries.
+// The one writer of what a row dragged out of the workbook sidebar holds.
 // `DashboardBuilder.onDrop` is its only reader.
 export function setDraggedItem(dataTransfer: DataTransfer, type: string, item: any) {
 	// A drop whose effect the drag did not allow never fires: dropping on a

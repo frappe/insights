@@ -2,10 +2,7 @@
 
 Issues and specs for this repo live as markdown files in `docs/projects/`.
 
-`docs/` is tracked. Effort docs are **branch-scoped**: they live on the feature
-branch, and they are removed when that branch merges into `develop`. They record
-how the work happened, not what the project is. Only durable documents stay on
-`develop` — `CONTEXT.md`, `docs/adr/` and `docs/agents/`.
+`docs/projects` is not tracked. It is a symlink to `~/frappe/workshop/efforts/insights/`, so every worktree edits the same copy, and the workshop repo keeps the history. Effort docs record how the work happened, not what the project is. Only durable documents are committed here: `CONTEXT.md`, `docs/adr/` and `docs/agents/`.
 
 A few paths stay local-only and are ignored in `.gitignore`. Check it before you
 assume a path is committed.
@@ -20,28 +17,22 @@ Don't create or triage GitHub issues unless explicitly asked.
 - Implementation issues are one file per ticket at
   `docs/projects/<effort-slug>/issues/<NN>-<slug>.md`, numbered from `01` —
   never a single combined tickets file
-- Every ticket carries a `Status:` line near the top. Wayfinder tickets use
+- Every ticket has a `Status:` line near the top. Wayfinder tickets use
   `open`, `claimed` and `resolved` (see *Wayfinding operations*). Tickets raised
   from an incoming GitHub issue use the triage roles instead: `needs-triage`,
   `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`
 - Comments and conversation history append to the bottom of the file under a
   `## Comments` heading
-- Concluded efforts are closed out, not left in place. See *Closing out an
-  effort*
+- Concluded efforts are closed out. See *Closing out an effort*
 
 ## Closing out an effort
 
-The effort docs die with the branch. Most of what they hold is meant to die with
-it — how the work went, what was measured this week, what was still unknown on
-Tuesday. Close-out is not a distillation of the whole effort.
+Most of an effort is not meant to reach this repo: how the work went, what was measured this week, what was still unknown on Tuesday. Close-out does not distill the whole effort.
 
 1. Write an ADR for each decision that passes the test in `domain.md`. **Most
    tickets produce none**, and that is the normal outcome, not an omission. Add
    any new term to the glossary in `CONTEXT.md`.
-2. Remove the effort with `git rm -r docs/projects/<effort-slug>/`. Put this in
-   the same commit as any ADR it produced.
-3. Move the working copies to `docs/archive/<effort-slug>/` to keep them on the
-   machine. `docs/archive/` is local-only.
+2. Commit the effort's final state in the workshop repo. It stays there.
 
 Close-out is a bad moment to notice a decision for the first time. Write the ADR
 when the decision is made. What is left at close-out should be nearly nothing.

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import FilterIconPicker from './FilterIconPicker.vue'
-import { computed, inject, reactive, ref } from 'vue'
+import { computed, inject, reactive, ref, watch } from 'vue'
 import useQuery from '../query/query'
 import { copy } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -26,6 +26,13 @@ if (!filter.links) {
 	filter.links = {}
 }
 
+// The server replaces the default with the reader's `default_user_key`, which a
+// shipped workbook sets. A default the author picks here must not be replaced.
+watch(
+	() => [filter.default_operator, filter.default_value],
+	() => delete filter.default_user_key,
+)
+
 const activeTab = ref('setup')
 const tabs = [
 	{
@@ -38,7 +45,7 @@ const tabs = [
 	},
 ]
 
-// Once each: several cells can draw readings of one Number chart, and a filter
+// Once each: several cells can show readings of one Number chart, and a filter
 // lands on the chart, not on the cell.
 const charts = computed(() => dashboard.linkedCharts().filter(Boolean))
 
@@ -249,8 +256,9 @@ function saveEdit() {
 									v-model:value="filter.default_value as number"
 								/>
 								<template v-else>
-									<div class="flex gap-2 items-start">
+									<div class="flex flex-wrap gap-2 items-start">
 										<FormControl
+											class="w-32 flex-shrink-0"
 											type="select"
 											:placeholder="__('Select operator...')"
 											:modelValue="filter.default_operator"
@@ -275,7 +283,7 @@ function saveEdit() {
 												v-else-if="
 													defaultValueSelectorType === 'relative_date'
 												"
-												class="flex-1"
+												class="min-w-[15rem] flex-1"
 												v-model="filter.default_value as string"
 											/>
 											<div

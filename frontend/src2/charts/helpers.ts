@@ -1,17 +1,17 @@
 import { AXIS_CHARTS, ChartConfig } from '../types/chart.types'
 
-// What a Chart's config needs doing to it before anything reads it. Drawing is
-// not here: the adapter turns a config into chart props, and frappe-ui draws
+// What a Chart's config needs doing to it before anything reads it. Rendering is
+// not here: the adapter turns a config into chart props, and frappe-ui renders
 // them.
 
 /**
- * Whether a chart draws bars against both value axes, which is the one layout a
+ * Whether a chart plots bars against both value axes, which is the one layout a
  * stack cannot read: the segments of one column would sum two scales. A line
  * never stacks, so bars on the left beside a line on the right still do. The
  * adapter and the config form both rule on it, so they rule through one answer.
  * Neither writes it back: a saved flag outlives a rule that is later corrected.
  *
- * `mark` is what a series with no type draws as. frappe-ui gives a horizontal
+ * `mark` is what a series with no type plots as. frappe-ui gives a horizontal
  * chart no second value axis (`hasSecondaryValueAxis`), so it never has bars on both.
  */
 export function hasBarsOnBothAxes(
@@ -52,7 +52,7 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 
 	// A new bar stacks unless its author says otherwise, and the form reads the
 	// flag rather than the absence of one. A chart that was authored without the
-	// flag was drawn grouped, and writing the default here would restack it.
+	// flag was plotted grouped, and writing the default here would restack it.
 	if ((chart_type === 'Bar' || chart_type === 'Row') && !authored) {
 		if (config.y_axis.stack === undefined) {
 			config.y_axis.stack = true
@@ -110,7 +110,7 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 	return config
 }
 
-/** The single-Dimension slots a config can carry, over every chart type. */
+/** The single-Dimension slots a config can have, over every chart type. */
 const DIMENSION_SLOTS = [
 	'date_column',
 	'label_column',
@@ -124,11 +124,11 @@ const DIMENSION_SLOTS = [
 ]
 
 /**
- * Every Dimension a config carries, in whichever slot holds it.
+ * Every Dimension a config includes, in whichever slot holds it.
  *
  * The one walk over the slots. A chart type that adds a single-Dimension slot
  * adds it to `DIMENSION_SLOTS` and every reader here follows: a slot one reader
- * knows and another does not is a grain the app offers and cannot store.
+ * knows and another does not is a grain the app lists and cannot store.
  */
 export function configDimensions(config: any): any[] {
 	const dimensions: any[] = []
@@ -146,14 +146,14 @@ export function configDimensions(config: any): any[] {
 	return dimensions
 }
 
-/** The single-Measure slots a config can carry, over every chart type. */
+/** The single-Measure slots a config can have, over every chart type. */
 const MEASURE_SLOTS = ['value_column', 'size_column', 'xAxis', 'yAxis']
 
-/** The Measure-list slots a config can carry, over every chart type. */
+/** The Measure-list slots a config can have, over every chart type. */
 const MEASURE_LIST_SLOTS = ['number_columns', 'measures', 'values']
 
 /**
- * Every Measure a config carries, in whichever slot holds it.
+ * Every Measure a config includes, in whichever slot holds it.
  *
  * The counterpart to `configDimensions`, and the same rule: a chart type that
  * adds a Measure slot adds it here and every reader follows.
@@ -181,7 +181,7 @@ export function configMeasures(config: any): any[] {
  * the rest of the question is the filters, the sort, the caps and — for a Number
  * card — the period and what each reading is measured against. A color, a mark,
  * an axis label and a number format are the other half: they say how the rows are
- * drawn, and drawing them again is free.
+ * rendered, and rendering them again is free.
  *
  * `docs/adr/type-independent-chart-config.md` names this boundary as the shape
  * the config is going to; until it arrives, this reads it out of the slots.
@@ -202,7 +202,7 @@ export function dataSelection(config: any) {
 			target: option?.target,
 			comparison: option?.comparison,
 		})),
-		// how many series a split may draw, and how many columns a pivot may make:
+		// how many series a split may plot, and how many columns a pivot may make:
 		// both are bounded in SQL
 		max_split_values: config.split_by?.max_split_values,
 		max_column_values: config.max_column_values,
@@ -211,7 +211,7 @@ export function dataSelection(config: any) {
 
 /**
  * What a chart keeps when its author takes the options back: the rows that come
- * back, and nothing about how they are drawn. `filters` and `limit` are the half
+ * back, and nothing about how they are rendered. `filters` and `limit` are the half
  * of the config that decides which rows those are, so a reset leaves them as
  * they stand and refills the slots the new type reads.
  */
@@ -224,8 +224,8 @@ export function resetChartConfig(config: any, chart_type: string) {
 
 // Every saved config passes through here before anything reads it: the slots are
 // read without guarding, and a config saved by an older version may not have
-// them. The chart store runs it on load, and the viewer endpoint's config runs it
-// too — a card drawn on a desk page and the same card in the builder must not
+// them. The chart store runs it on load, and the view endpoint's config runs it
+// too — a card rendered on a desk page and the same card in the builder must not
 // disagree about what an old chart looks like.
 //
 // It only fills in what a config does not say. The server rewrites every older
@@ -245,7 +245,7 @@ export function normalizeChartConfig(config: any, chart_type: string) {
 
 /**
  * A Number card's readings and their options are paired by position — the
- * reading at index 2 is drawn with `number_column_options[2]`, and its target
+ * reading at index 2 is shown with `number_column_options[2]`, and its target
  * and its comparison are what the server is asked to resolve for it. Nothing
  * downstream can recover the pairing, so whoever writes the order writes both
  * arrays, here.

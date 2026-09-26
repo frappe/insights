@@ -19,8 +19,8 @@ export type ChartSegmentClick = {
 
 /**
  * The `v-on` map for a filler. A click that resolves to nothing drillable —
- * a donut's collapsed tail, a region the data does not carry — reports nothing.
- * A column the result does not carry is a mapping bug in the adapter, and it
+ * a donut's collapsed tail, a region the data does not include — reports nothing.
+ * A column the result does not include is a mapping bug in the adapter, and it
  * says so rather than drilling into a column the server will reject.
  */
 export function segmentClickEvents(

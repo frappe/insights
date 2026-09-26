@@ -4,7 +4,7 @@ import { copy } from './index'
 /**
  * The document to hold after a write, given the three things that describe it.
  *
- * A write's answer is a receipt: it repeats what the write carried. Only what it
+ * A write's answer is a receipt: it repeats what the write sent. Only what it
  * says differently is news — `modified`, a field the server computed, a field
  * this client may not write. So a field is taken from the answer when the answer
  * differs from what was sent, and kept otherwise.
@@ -17,7 +17,7 @@ import { copy } from './index'
  *
  * @param current what is on screen now, without the framework's own fields
  * @param answer the document the server sent back, already transformed
- * @param sent the deep clone the write carried
+ * @param sent the deep clone the write sent
  */
 export function mergeWriteAnswer<T extends Record<string, any>>(
 	current: Record<string, any>,
@@ -36,7 +36,7 @@ export function mergeWriteAnswer<T extends Record<string, any>>(
 			continue
 		}
 
-		// The answer only repeats what the write carried, so nothing here is
+		// The answer only repeats what the write sent, so nothing here is
 		// news. Keep what is already on screen.
 		if (isEqual(copy(answer[field]), sent[field])) {
 			;(answer as any)[field] = current[field]
@@ -44,4 +44,27 @@ export function mergeWriteAnswer<T extends Record<string, any>>(
 	}
 
 	return answer
+}
+
+/**
+ * The document to hold after the server rejected a write. The reverse of
+ * `mergeWriteAnswer`.
+ *
+ * A field goes back to the server's value only if it still holds the value the
+ * rejected write sent. If the author changed it while the write was in flight,
+ * the new value was not rejected, so it stays.
+ *
+ * @param current what is on screen now, without the framework's own fields
+ * @param original the document the server last sent back
+ * @param sent the deep clone the rejected write sent
+ */
+export function takeBackRefusal(
+	current: Record<string, any>,
+	original: Record<string, any>,
+	sent: Record<string, any>,
+) {
+	for (const field of Object.keys(sent)) {
+		if (isEqual(copy(current[field]), sent[field])) current[field] = copy(original[field])
+	}
+	return current
 }

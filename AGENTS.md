@@ -8,8 +8,6 @@ frappe-ui in `frontend/src2/`, built with Vite.
 - `insights/api/` — whitelisted API endpoints (thin; logic lives in doctype classes)
 - `insights/insights/doctype/` — doctypes; the `_v3` suffix on most of them is
   historical, not a variant marker (`Insights Workbook` and a few others have none)
-- `insights/workbook_templates/` — shipped workbook templates
-  (`insights_workbook_templates` hook, open to other apps)
 - `frontend/src2/` — the whole UI, one folder per area (`workbook/`, `query/`,
   `charts/`, `dashboard/`, `data_source/`, `data_store/`)
 - `frontend/src2/types/` — the domain types; read `query.types.ts` before touching
@@ -38,10 +36,7 @@ frappe-ui in `frontend/src2/`, built with Vite.
 
 ### Issue tracker
 
-Markdown under `docs/projects/<effort>/` — a decision map plus one ticket per
-question. Effort docs are branch-scoped: they are removed when the branch merges,
-and the ADR is what survives. GitHub Issues on `frappe/insights` is the public
-queue, not this tracker. See `docs/agents/issue-tracker.md`.
+Markdown under `docs/projects/<effort>/` — a decision map plus one ticket per question. `docs/projects` is an untracked symlink to `~/frappe/workshop/efforts/insights/`. Of an effort, only its ADRs are committed to this repo. GitHub Issues on `frappe/insights` is the public queue, not this tracker. See `docs/agents/issue-tracker.md`.
 
 ### Tests
 

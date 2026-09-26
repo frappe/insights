@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { Badge, Button, Dialog, Dropdown } from 'frappe-ui'
-import { ChartCard, ChartContainer } from 'frappe-ui/charts'
-import { AlertTriangle, ChevronDown, ChevronRight, X } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, X } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
+import { refusalDetail, refusalHeadline } from '../../not_permitted'
 import { __ } from '../../translation'
+import type { ChartFailure } from '../adapter/types'
+import ScopeMark from '../components/ScopeMark.vue'
+import { levelBound } from './bound'
 import DrillBreakdown from './DrillBreakdown.vue'
-import { columnLabel, type DrillLevelData, type DrillStack } from './drill_stack'
+import DrillPlaceholder from './DrillPlaceholder.vue'
+import { columnLabel, type DrillLevel, type DrillLevelData, type DrillStack } from './drill_stack'
 import type { ChartSegmentClick } from './segment_click'
 
 // One card for the whole drill, with a back-stack inside it.
@@ -24,7 +28,7 @@ import type { ChartSegmentClick } from './segment_click'
 // crumbs, grain, close — not a dialog title.
 //
 // So the whole surface is one card: a toolbar, a plot, and a line under it. The
-// only chrome drawn here is that toolbar. The states around the plot and the
+// only chrome rendered here is that toolbar. The states around the plot and the
 // label naming its measure come from the chart, the way they do on a dashboard.
 const props = defineProps<{
 	stack: DrillStack
@@ -33,7 +37,9 @@ const props = defineProps<{
 	/** the grains this level could be asked for. Empty unless it is a date. */
 	grains?: readonly { label: string; value: string }[]
 	loading?: boolean
-	failed?: boolean
+	failed?: string
+	/** The doctypes a refused level needs read permission on. */
+	refused?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -48,35 +54,59 @@ const emit = defineEmits<{
 	closed: []
 }>()
 
-// The rows level is drawn by whoever mounted the drill: it is a query, and a
-// query is the builder. A reading surface that offers no rows level passes no
-// slot, and imports none of it.
+// The component that mounts the drill renders the rows level, because it knows
+// where the rows come from. A caller without a rows level passes no slot and
+// imports none of that code. The slot passes the stack as well as the answer,
+// because reloading the level sends the whole stack again.
 //
 // `actions` is what a surface may do with the drill wherever it stands, and sits
-// in the title row. `level-actions` acts on the level being read, and sits in
-// the pins row with the find.
+// in the title row.
 defineSlots<{
 	actions?: () => any
-	'level-actions'?: () => any
-	// eslint-disable-next-line no-unused-vars
-	rows?: (props: { answer: DrillLevelData; findTarget: HTMLElement | null }) => any
+	rows?: (props: {
+		// eslint-disable-next-line no-unused-vars
+		answer: DrillLevelData
+		// eslint-disable-next-line no-unused-vars
+		levels: DrillLevel[]
+		// eslint-disable-next-line no-unused-vars
+		findTarget: HTMLElement | null
+	}) => any
 }>()
 
 const open = defineModel<boolean>({ default: false })
 
-// The find belongs to the level's result pane, but the dialog draws it here with
+// The find belongs to the level's result pane, but the dialog renders it here with
 // the level actions, outside the pane border — the shape the query builder
 // already has.
 const $find = ref<HTMLElement | null>(null)
 
-/** Whether there is a level to draw. Anything else is one of the three states. */
+/** Whether there is a level to show. Anything else is one of the three states. */
 const ready = computed(() => !props.loading && !props.failed && Boolean(props.answer))
 
-// A drill that will not load says so in one line. `ChartContainer`'s own wording is
-// about a chart failing to render, which is not what happened here.
-const failure = computed(() =>
-	!props.loading && (props.failed || !props.answer) ? __('This drill is not available') : null,
-)
+// What the drill shows in place of the level. A level that did not load gets a
+// line of its own, because `ChartContainer`'s wording is about a chart failing
+// to render. A refused level gets a different line, which the reader cannot act
+// on.
+const failure = computed<ChartFailure | null>(() => {
+	if (props.loading) return null
+	if (props.refused) {
+		return {
+			kind: 'notPermitted',
+			headline: refusalHeadline(),
+			detailText: refusalDetail(
+				props.refused,
+				__('You do not have access to the data behind this drill'),
+			),
+		}
+	}
+	if (props.failed || !props.answer) {
+		return {
+			headline: __('This drill is not available'),
+			detailText: props.failed,
+		}
+	}
+	return null
+})
 
 const action = computed(() => props.stack.current?.level.action)
 const breakdown = computed(() => {
@@ -104,23 +134,16 @@ const grainOptions = computed(() =>
 	})),
 )
 
-/**
- * Where the server cut a breakdown, said only when it cut one. Real paging is
- * not built, so when the server drops rows, name the bound. A level that came
- * back whole has nothing to declare. Which few came back is the level's own
- * reading: a ranked breakdown is cut to the biggest segments, and an ordered one
- * to the most recent stretch — so one says "top" and the other says "latest".
- * A rows level says its own count, from its grid.
- */
-const bound = computed(() => {
-	if (!breakdown.value || !props.answer) return ''
-	const shown = props.answer.rows.length
-	const total = props.answer.total_row_count
-	if (!total || total <= shown) return ''
-	return ordered.value
-		? __('latest {0} of {1} periods', shown.toLocaleString(), total.toLocaleString())
-		: __('top {0} of {1} groups', shown.toLocaleString(), total.toLocaleString())
-})
+const bound = computed(() =>
+	props.answer
+		? levelBound({
+				breakdown: Boolean(breakdown.value),
+				ordered: ordered.value,
+				shown: props.answer.rows.length,
+				total: props.answer.total_row_count,
+		  })
+		: '',
+)
 </script>
 
 <template>
@@ -128,7 +151,7 @@ const bound = computed(() => {
 		<template #default="{ close }">
 			<!-- `px-4 py-3` is a chart card's own padding.
 
-			     The height does not follow what is drawn: a box that resized as the
+			     The height does not follow what is shown: a box that resized as the
 			     reader descended would move the plot out from under the pointer. It
 			     is tall enough for a ranking at the server's bound, and still short
 			     enough for a laptop. -->
@@ -137,7 +160,7 @@ const bound = computed(() => {
 				     chart's name and every level under it, in one trail at one type
 				     size and one ink.
 
-				     Hand-rolled rather than `Breadcrumbs`, which carries a type scale
+				     Hand-rolled rather than `Breadcrumbs`, which has a type scale
 				     of its own and would set the trail against the title it continues.
 				     Only what goes somewhere is a button: the chart's name navigates
 				     nowhere, and neither does the last crumb, which is where the
@@ -180,10 +203,10 @@ const bound = computed(() => {
 
 					<!-- what a surface may do with the drill wherever it stands, next
 					     to the close button. Empty on a reading surface, which has
-					     nothing to offer beyond the stack. -->
+					     nothing to show beyond the stack. -->
 					<div class="ml-auto flex flex-shrink-0 items-center gap-1 pl-2">
 						<slot name="actions" />
-						<!-- `bare` draws no close button, so close belongs in this row
+						<!-- `bare` renders no close button, so close belongs in this row
 						     with the other actions. -->
 						<Button variant="ghost" :tooltip="__('Close')" @click="close">
 							<template #icon>
@@ -203,8 +226,8 @@ const bound = computed(() => {
 				     about what they are values of, and a reader three levels down has
 				     no way left to ask.
 
-				     Drawn on every level, empty where the level pinned nothing and
-				     offers nothing: `h-7` fixes the height, and a row that came and
+				     Rendered on every level, empty where the level pinned nothing and
+				     shows nothing: `h-7` fixes the height, and a row that came and
 				     went would move the plot as the reader descends. -->
 				<div class="flex h-7 min-w-0 flex-shrink-0 items-center gap-1.5">
 					<!-- a pin is capped and ellipsised the way a crumb is: a Heatmap or
@@ -220,12 +243,17 @@ const bound = computed(() => {
 						</span>
 						<span class="ml-1 max-w-48 truncate text-ink-gray-7">{{ pin.value }}</span>
 					</Badge>
+					<!-- it describes the level's cells, so it sits with the pins -->
+					<ScopeMark
+						v-if="ready"
+						:applied="props.answer?.user_permissions"
+						:narrowed="props.answer?.narrowed_by_permissions"
+					/>
 
 					<div class="ml-auto flex flex-shrink-0 items-center gap-1 pl-2">
 						<!-- `contents` so an empty host on a breakdown level takes no
 						     space and adds no gap of its own -->
 						<div ref="$find" class="contents"></div>
-						<slot name="level-actions" />
 					</div>
 				</div>
 
@@ -237,39 +265,24 @@ const bound = computed(() => {
 							:dimension="breakdown.breakdown"
 							@segment-click="emit('segmentClick', $event)"
 						/>
-						<slot v-else name="rows" :answer="props.answer!" :find-target="$find" />
+						<slot
+							v-else
+							name="rows"
+							:answer="props.answer!"
+							:levels="props.stack.levels"
+							:find-target="$find"
+						/>
 					</template>
 
-					<!-- Every state but the answer, from the same component a card
-					     draws them with. The placeholder holds the shape of the plot
-					     rather than turning a spinner in an empty box. -->
-					<ChartCard v-else class="h-full" :card="false">
-						<ChartContainer :loading="props.loading" :error="failure" :empty="true">
-							<template #error>
-								<div class="flex flex-col items-center gap-2">
-									<div
-										class="flex items-center gap-1.5 text-p-base text-ink-gray-5"
-									>
-										<AlertTriangle
-											class="h-3.5 w-3.5 shrink-0 text-ink-red-5"
-											stroke-width="1.5"
-										/>
-										<span>{{ failure }}</span>
-									</div>
-									<!-- the first level has no crumb to go back to, so
-									     without this the only way out is closing the card -->
-									<Button
-										variant="outline"
-										:label="__('Retry')"
-										@click="emit('retry')"
-									/>
-								</div>
-							</template>
-						</ChartContainer>
-					</ChartCard>
+					<DrillPlaceholder
+						v-else
+						:loading="props.loading"
+						:failure="failure"
+						@retry="emit('retry')"
+					/>
 				</div>
 
-				<!-- Drawn on every level, empty where the level has nothing to
+				<!-- Rendered on every level, empty where the level has nothing to
 				     declare. A line that came and went as the reader descended would
 				     take its height out of the plot, which is what `h-7` above keeps
 				     the pins row from doing. -->

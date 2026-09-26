@@ -9,11 +9,15 @@
 // The candidates cannot come back with the rows. A chart card's candidates
 // arrive with its rows. A query fetches its rows through its own document, so
 // there is no response for them to arrive on and they are asked for on their
-// own. That is one round trip between the double-click and the menu, on this
+// own. That is one round trip between the click and the menu, on this
 // surface only.
 
 import type { Query } from '../../query/query'
-import { fetchAuthoringDrillData, fetchAuthoringDrillDimensions } from './drill_api'
+import {
+	authoringDrillRows,
+	fetchAuthoringDrillData,
+	fetchAuthoringDrillDimensions,
+} from './drill_api'
 import { queryResultChart, type DrillSubject } from './drill_stack'
 
 /** Undefined when nothing in the pipeline aggregates, which has nothing behind it. */
@@ -28,5 +32,6 @@ export async function queryDrillSubject(query: Query): Promise<DrillSubject | un
 		title: query.doc.title,
 		dimensions: await fetchAuthoringDrillDimensions(subject),
 		fetch: (levels) => fetchAuthoringDrillData(subject, levels),
+		rows: (levels) => authoringDrillRows(subject, levels),
 	}
 }

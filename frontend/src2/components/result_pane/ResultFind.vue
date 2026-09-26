@@ -8,7 +8,7 @@ import type { QueryResultColumn } from '../../types/query.types'
 import { findColumns } from './find'
 
 // One box, two jobs. The row job is live in the grid behind this panel. The
-// column job needs a list, so the panel carries both and says which is which.
+// column job needs a list, so the panel shows both and says which is which.
 const props = defineProps<{
 	columns: QueryResultColumn[]
 	/** how many rows the term keeps, so the panel can say what it costs */

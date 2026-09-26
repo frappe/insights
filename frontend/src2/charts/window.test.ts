@@ -143,7 +143,7 @@ describe('the headings the picker lists under', () => {
 	})
 
 	// @feature charts.number-period
-	it('heads every family, and offers nothing outside one', () => {
+	it('heads every family, and lists nothing outside one', () => {
 		expect(windowChoiceGroups().map((group) => group.group)).toEqual([
 			'Up to today',
 			'Whole current period',
@@ -179,7 +179,7 @@ describe('the period a card reads', () => {
 	})
 
 	// @feature charts.number-period
-	it('offers no "no period" choice, because a column that groups nothing does nothing', () => {
+	it('lists no "no period" choice, because a column that groups nothing does nothing', () => {
 		expect(choiceOfPeriod(undefined)).toBe('')
 		expect(periodOfChoice('')).toBeUndefined()
 		expect(windowChoices().every((choice) => choice.value.includes(':'))).toBe(true)
@@ -206,7 +206,7 @@ describe('the window a comparison shifts to', () => {
 
 	// @feature charts.number-comparison
 	it('reads an unnumbered run as one period, the way `get_window` reads it', () => {
-		// A hand-written span the picker never offers. `_span_periods` counts it
+		// A hand-written span the picker never lists. `_span_periods` counts it
 		// as one, so the card fetches the month before — and a caption that could
 		// not read the span left that figure unworded.
 		expect(previousWindowShift('last month')).toEqual({ unit: 'month', count: -1 })
@@ -267,7 +267,7 @@ describe('how a window prints', () => {
 	})
 })
 
-describe('the rows a windowed card draws', () => {
+describe('the rows a windowed card renders', () => {
 	// @feature charts.number-period
 	it('reads the window column as a period', () => {
 		const rows = [

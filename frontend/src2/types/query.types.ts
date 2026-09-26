@@ -37,7 +37,7 @@ export type Dimension = {
 	/**
 	 * Groups by span membership rather than by a grain: one row per span,
 	 * named by the date the span starts on. The engine resolves them, so a
-	 * dimension carrying them says nothing with `granularity`.
+	 * dimension holding them says nothing with `granularity`.
 	 */
 	windows?: Timespan[]
 }
@@ -254,6 +254,4 @@ export type QueryResult = {
 	columnOptions: ColumnOption[]
 	timeTaken: number
 	lastExecutedAt: Date
-	/** the doctype each column names, keyed by column name, for the columns that name one */
-	recordLinks?: Record<string, string>
 }

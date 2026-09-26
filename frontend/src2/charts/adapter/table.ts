@@ -16,21 +16,21 @@ import TableChart from '../components/TableChart.vue'
 import type { ChartAdapterInput, ChartFiller, ResultDownload, ResultPage } from './types'
 
 // Table is filler 3: no plot at all. A table maps no value to a visual
-// property, so v2's scope rule keeps it out of the library and Insights draws
+// property, so v2's scope rule keeps it out of the library and Insights renders
 // the grid — inside the same card, and behind the same states, as every other
 // type.
 //
 // The server has already grouped, pivoted and ordered the rows, so nothing here
 // reshapes them. What is left is the display: which of the table's affordances
-// this Chart asks for, and which of them this surface may offer at all.
+// this Chart asks for, and which of them this surface may show at all.
 
 /** The stored config as the table reads it. `order_by` belongs to every Chart. */
 type StoredTableConfig = TableChartConfig & { order_by: OrderByArgs[] }
 
 /**
  * The host's find text, read by the grid it narrows. Find is the table's act
- * and client-side over the rows already drawn, so it never reaches the adapter
- * or the server. A host that draws no find box provides nothing and the grid
+ * and client-side over the rows already shown, so it never reaches the adapter
+ * or the server. A host that renders no find box provides nothing and the grid
  * shows every row it was handed.
  */
 export const tableFindKey: InjectionKey<Ref<string>> = Symbol('tableFind')
@@ -45,7 +45,7 @@ export type TableChartProps = {
 	rows: QueryResultRow[]
 	/** Which way each column is sorted, as the Chart itself is ordered. */
 	sortOrder: SortOrder
-	/** Absent where the Chart cannot be rewritten, so no arrow is drawn. */
+	/** Absent where the Chart cannot be rewritten, so no arrow is shown. */
 	// eslint-disable-next-line no-unused-vars
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	/** Whether a cell may be pointed at for the rows behind it. */
@@ -83,9 +83,9 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 	}
 
 	// The sort is a config edit the server re-derives the query from, so it is
-	// offered only where both halves are held. Drilling is not: a reader inspects
-	// a cell without changing anything, so every surface whose feed answers a
-	// drill offers it.
+	// allowed only where both halves are held. Drilling is not: a reader inspects
+	// a cell without changing anything, so it is allowed wherever the source
+	// supports a drill.
 	if (!input.readonly) {
 		props.onSortChange = (column_name, direction) => sortBy(config, column_name, direction)
 	}
@@ -105,13 +105,13 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 	if (Object.keys(columnFormats).length) props.columnFormats = columnFormats
 
 	// The grid formats its own cells, so it is handed the policy rather than a
-	// formatter per column: it draws a total row the config names no Measure for.
+	// formatter per column: it renders a total row the config names no Measure for.
 	const numberFormat = readNumberFormat({ ...config, ...config.number_format })
 	if (Object.keys(numberFormat).length) props.numberFormat = numberFormat
 	if (config.number_formats) props.numberFormats = config.number_formats
 
 	// A cell of a grid holds a document as often as it holds a value, and only
-	// the server can tell which. The link is drawn in the cell itself: a grid has
+	// the server can tell which. The link is rendered in the cell itself: a grid has
 	// no room for a column of controls, and no row to put one on when the row is
 	// a group.
 	const links = input.recordLinks
@@ -128,7 +128,7 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 		component: TableChart,
 		props,
 		drillDown: {
-			// The one type drawn from the formatted rows, so the one resolver that
+			// The one type rendered from the formatted rows, so the one resolver that
 			// crosses back to the raw one a drill reads.
 			cellClick: (event: TableCellEvent) => {
 				const row = rawRowOf(result, event.row)
@@ -150,7 +150,7 @@ function sortOrderOf(config: StoredTableConfig): SortOrder {
 /**
  * The one thing a table writes back. It is the same mapping read the other way,
  * so it sits beside it rather than in the component, and it writes to the config
- * it was handed — the Chart's own, which is what makes the next run carry it.
+ * it was handed — the Chart's own, which is what makes the next run keep it.
  *
  * The builder's result pane sorts the same config from its own header, so it
  * calls this rather than saying the three branches a second time.
@@ -173,7 +173,7 @@ export function sortBy(config: StoredTableConfig, column_name: string, direction
 	config.order_by = [...(config.order_by || []), { column: column(column_name), direction }]
 }
 
-/** A Measure that carries a unit says so once, and every column of it prints it. */
+/** A Measure that has a unit says so once, and every column of it prints it. */
 function columnFormatsOf(config: StoredTableConfig): Record<string, DataFormat> {
 	const formats: Record<string, DataFormat> = {}
 	for (const measure of config.values || []) {

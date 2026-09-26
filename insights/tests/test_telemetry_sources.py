@@ -26,7 +26,7 @@ DRIVER_ERROR = OSError(f'connection to "postgresql://svc:{SECRET}@warehouse.inte
 
 
 def sent(sender):
-    """The properties one capture carried, without the ones every event carries."""
+    """The properties one capture sent, without the ones every event sends."""
     _, kwargs = sender.call_args
     return {k: v for k, v in kwargs["properties"].items() if k not in ("app_version", "entry")}
 
@@ -117,7 +117,7 @@ class TestImportOutcome(InsightsIntegrationTestCase):
     """What an import reports once it reaches a terminal state.
 
     The remote read is the boundary, and a stand-in answers it. Everything the
-    event carries comes off the log the run itself writes.
+    event sends comes off the log the run itself writes.
     """
 
     DATA_SOURCE = "Site DB"

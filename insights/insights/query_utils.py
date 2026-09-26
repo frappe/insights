@@ -3,6 +3,13 @@
 
 import frappe
 import sqlglot as sg
+import sqlparse
+
+
+def runs_stored_procedure(raw_sql: str) -> bool:
+    """Whether a SQL query calls a stored procedure. A procedure runs as written,
+    so the reader's permissions do not limit the tables it reads."""
+    return sqlparse.format(raw_sql, strip_comments=True).strip().lower().startswith("exec")
 
 
 def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> list[frappe._dict]:
@@ -13,13 +20,11 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
         # In the future, we may want to log these exceptions to help improve our SQL parsing capabilities.
         return []
 
-    cte_aliases = {cte_exp.alias_or_name for cte_exp in parsed.find_all(sg.exp.CTE) if cte_exp.alias_or_name}
-
     table_refs = []
     seen_refs = set()
-    for table_exp in parsed.find_all(sg.exp.Table):
+    for table_exp in real_table_refs(parsed):
         table_name = table_exp.name
-        if not table_name or table_name in cte_aliases:
+        if not table_name:
             continue
 
         table_ref = frappe._dict(
@@ -37,6 +42,30 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
     return table_refs
 
 
+def real_table_refs(parsed: sg.Expression) -> list[sg.exp.Table]:
+    """Every table reference in a statement that names a real table. The
+    permission check and the rewrite that replaces each reference both use it.
+
+    A CTE hides a table name only inside its own query block. A subquery
+    aliased with a table's name hides it for that one source. sqlglot's scope
+    walk handles both, keyed by the reference's alias. If sqlglot cannot build
+    scopes for a statement, every reference counts as real, which restricts
+    more, never less.
+    """
+    from sqlglot.optimizer.scope import Scope, build_scope
+
+    root = build_scope(parsed)
+    if root is None:
+        return list(parsed.find_all(sg.exp.Table))
+
+    return [
+        table
+        for scope in root.traverse()
+        for table in scope.tables
+        if not isinstance(scope.sources.get(table.alias_or_name), Scope)
+    ]
+
+
 def extract_query_deps_from_operations(operations: list) -> list[str]:
     """Extract all referenced query names from a list of operations."""
     return [
@@ -51,6 +80,22 @@ def extract_query_deps_from_operations(operations: list) -> list[str]:
 def referenced_queries(operations) -> set[str]:
     """The query names `operations` references, from a stored or parsed value."""
     return set(extract_query_deps_from_operations(frappe.parse_json(operations) or []))
+
+
+def check_source_workbook(workbook: str | None, source: str) -> None:
+    """A query may only use queries of its own workbook as sources.
+
+    Datasets share queries across workbooks, not references. A source with no
+    row is not checked here; the build reports it as not found.
+    """
+    from insights.exceptions import QueryRefused
+
+    row = frappe.db.get_value("Insights Query v3", source, ["name", "workbook"], as_dict=True)
+    if not row or row.workbook == workbook:
+        return
+
+    # the message names no query, because the caller may not be allowed to read it
+    frappe.throw(frappe._("A query of another workbook cannot be a source here"), QueryRefused)
 
 
 def extract_table_deps_from_operations(operations: list) -> list[dict]:
@@ -102,7 +147,7 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
 def table_references(operations) -> list[dict]:
     """The (data_source, table_name) pairs `operations` reads.
 
-    A builder operation names its table outright. A native SQL operation carries
+    A builder operation names its table outright. A native SQL operation has
     it in the SQL, so it has to be parsed out.
     """
     ops = frappe.parse_json(operations) or []

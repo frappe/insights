@@ -8,11 +8,16 @@
 	},
 	"scripts": {
 		"dev": "vite",
+		"lint": "eslint --no-eslintrc -c .eslintrc.boundaries.json --ext .js,.ts,.vue src2",
 		"serve": "vite preview",
 		"lint:e2e": "eslint e2e --ext .ts",
+		"typecheck": "vue-tsc --noEmit -p tsconfig.json",
+		"typecheck:baseline": "node tools/typecheck-baseline.mjs",
 		"test": "vitest run",
 		"build": "vite build -l warn --base=/assets/insights/frontend/ && yarn copy-html-entry",
-		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/_insights.html"
+		"build:islands": "node build-islands.mjs --production",
+		"copy-html-entry": "cp ../insights/public/frontend/index.html ../insights/www/_insights.html",
+		"postinstall": "patch-package --patch-dir node_modules/@framework/ui/patches"
 	},
 	"dependencies": {
 		"@codemirror/lang-javascript": "^6.0.2",
@@ -56,10 +61,12 @@
 		"eslint-plugin-playwright": "^2.11.0",
 		"eslint-plugin-prettier": "^5.1.3",
 		"eslint-plugin-vue": "^9.1.1",
+		"patch-package": "^8.0.1",
 		"postcss": "^8.4.14",
 		"prettier": "3.1.0",
 		"tailwindcss": "3.4.17",
 		"typescript": "^5.5.2",
+		"unplugin-icons": "^22.1.0",
 		"vite": "^4.4.6",
 		"vitest": "^0.34.6",
 		"vue-tsc": "^2.0.21"

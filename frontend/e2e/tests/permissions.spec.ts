@@ -11,7 +11,7 @@ import {
 test.describe('permissions', () => {
 	// @feature permissions.viewer-sees-granted workbook.list
 	test('a viewer sees only the workbooks granted to them', async ({ adminApi, viewerPage }) => {
-		// Both titles carry one marker, so the list search reaches this pair and
+		// Both titles share one marker, so the list search reaches this pair and
 		// nothing else. Other agents seed workbooks into the same site, so a count
 		// over the whole list would prove nothing.
 		const marker = uniqueTitle('Visibility')
@@ -43,14 +43,14 @@ test.describe('permissions', () => {
 		await expect(viewerPage.getByRole('link', { name: query.title })).toBeVisible()
 
 		// locator: the read-only marker is a bare lucide icon in the navbar. It
-		// carries no role, no label and no text, so the class lucide stamps on
-		// every icon it draws is the only name this element has.
+		// has no role, no label and no text, so the class lucide stamps on
+		// every icon it renders is the only name this element has.
 		const readOnlyMarker = viewerPage.locator('.lucide-shield-alert')
 		await expect(readOnlyMarker).toBeVisible()
 		await readOnlyMarker.hover()
 		// The bubble is rendered twice: the copy a reader sees, and an aria-hidden
 		// mirror that names the trigger for a screen reader. The visible one comes
-		// first, and neither carries a role that tells them apart.
+		// first, and neither has a role that tells them apart.
 		await expect(
 			viewerPage.getByText('You have read-only access to this workbook').first(),
 		).toBeVisible()
@@ -68,8 +68,8 @@ test.describe('permissions', () => {
 		const teamName = uniqueTitle('Team')
 		await page.goto(`${INSIGHTS_PATH}/workbook`)
 
-		// The sidebar entries and the settings tabs are divs carrying their label,
-		// not buttons, so the text is the first rung of the ladder that reaches
+		// The sidebar entries and the settings tabs are divs holding their label,
+		// not buttons, so the text is the first level of the ladder that reaches
 		// them. Each name is unique until its own panel renders the same heading.
 		await page.getByText('Settings', { exact: true }).click()
 		await page.getByText('Permissions', { exact: true }).click()
@@ -115,7 +115,7 @@ test.describe('permissions', () => {
 		await viewerPage.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}`)
 
 		// The three interface cards are clickable divs with no role and no
-		// label, so getByText is the first rung that reaches them.
+		// label, so getByText is the first level that reaches them.
 		await viewerPage.getByText('Query Builder').click()
 
 		await expect(viewerPage.getByText('Pick Starting Data')).toBeVisible()

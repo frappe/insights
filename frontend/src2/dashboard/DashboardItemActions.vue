@@ -10,7 +10,7 @@ const props = defineProps<{ itemIndex: number }>()
 const dashboard = inject('dashboard') as Dashboard
 
 // A chart is not edited from here. It is a workbook object, so its own card
-// carries the edit action and this bar owns the layout only. A text or a filter
+// holds the edit action and this bar owns the layout only. A text or a filter
 // has no object behind it, so the pencil opens its editor.
 const actions = computed(() => {
 	const edit = {
@@ -28,7 +28,7 @@ const actions = computed(() => {
 })
 </script>
 <!-- Each action is a button, and not a div that listens: the grid lets a press
-	through when it lands on a native control, so a control drawn as anything else
+	through when it lands on a native control, so a control rendered as anything else
 	starts a drag under the reader's finger. -->
 <template>
 	<div class="flex w-fit rounded-4 bg-surface-gray-9 shadow-sm">

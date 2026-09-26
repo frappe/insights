@@ -4,7 +4,17 @@ declare global {
 	}
 }
 
-// Sites can serve the app from a path other than /insights (site config
-// `insights_path`); the server sends the effective one in boot data. Only the
-// router base needs it — build links via router.resolve() so they pick this up.
-export const APP_PATH = window.insights_path || '/insights'
+/**
+ * The path this site serves the Insights app from (site config `insights_path`).
+ *
+ * The server sends it in two places. The app's www page puts it in the page
+ * boot. `extend_bootinfo` in `insights.desk` puts it in desk's boot, and a desk
+ * island reads it from there. The island builds its links from this path.
+ * Without it, a site that serves the app elsewhere gives the island's links a
+ * 404.
+ *
+ * Inside the SPA only the router base needs it. Build links with
+ * router.resolve() so they use it.
+ */
+export const APP_PATH =
+	window.insights_path || (window as any).frappe?.boot?.insights_path || '/insights'

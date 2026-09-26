@@ -17,7 +17,8 @@
   "operations",
   "variables",
   "section_break_oujt",
-  "old_name"
+  "old_name",
+  "kept_for_desk"
  ],
  "fields": [
   {
@@ -62,7 +63,8 @@
    "label": "Workbook",
    "options": "Insights Workbook",
    "reqd": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "column_break_gamr",
@@ -101,6 +103,14 @@
    "fieldname": "folder",
    "fieldtype": "Data",
    "label": "folder"
+  },
+  {
+   "default": "0",
+   "fieldname": "kept_for_desk",
+   "fieldtype": "Check",
+   "label": "Kept for Desk",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -110,7 +120,7 @@
    "link_fieldname": "query"
   }
  ],
- "modified": "2026-09-10 21:41:04.688659",
+ "modified": "2026-09-23 19:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query v3",

@@ -15,7 +15,7 @@ import {
 } from '../../types/chart.types'
 import { DimensionOption } from '../../types/query.types'
 import { Chart } from '../chart'
-import { chartPreviewKey } from '../chart_read'
+import { chartPreviewKey } from '../chart_preview'
 import BarChartConfigForm from './BarChartConfigForm.vue'
 import DonutChartConfigForm from './DonutChartConfigForm.vue'
 import FunnelChartConfigForm from './FunnelChartConfigForm.vue'
@@ -49,7 +49,7 @@ const dimensions = computed<DimensionOption[]>(() => {
 const columnOptions = computed(() => chartQuery.value.result?.columnOptions || [])
 const queryResult = computed(() => chartQuery.value.result)
 
-// What the chart actually drew, not what the query returned. A table pivots
+// What the chart actually shows, not what the query returned. A table pivots
 // after the query, so `Revenue___Women` exists here and nowhere else — and a
 // formatting rule must name the column it formats.
 const resultColumnOptions = computed(() => preview.result?.columnOptions || [])

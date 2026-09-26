@@ -10,18 +10,18 @@ from insights.patches.resize_dashboard_cells import (
     settle_items,
 )
 
-# The widest a reading's card is made. On develop the readings drew in one cell
+# The widest a reading's card is made. On develop the readings rendered in one cell
 # on a grid of up to 5 per row, so a reading was 4 of the 20 columns wide.
 READING_COLUMNS = 4
 
 
 def execute():
-    """A dashboard cell draws one reading, so a cell on a Number chart that
+    """A dashboard cell shows one reading, so a cell on a Number chart that
     states several becomes one cell per reading, sharing the width the one cell
     had.
 
     The chart is untouched: it keeps every reading, and each cell names the one
-    it draws. Idempotent — a cell that already names a reading is left alone, so
+    it shows. Idempotent — a cell that already names a reading is left alone, so
     a second run finds nothing to expand.
     """
     configs = number_chart_configs()
@@ -79,8 +79,8 @@ def expand_items(items: list, configs: dict) -> bool:
 def expand_item(item: dict, configs: dict, taken: set) -> list[dict] | None:
     """The cells one cell becomes, or None when it stays as it is.
 
-    A cell drawing a chart that states one reading needs no name for it: naming
-    none is naming the first, which is what it already drew.
+    A cell showing a chart that states one reading needs no name for it: naming
+    none is naming the first, which is what it already shows.
     """
     if item.get("type") != "chart" or item.get("reading"):
         return None

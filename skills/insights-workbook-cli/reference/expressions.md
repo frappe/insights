@@ -19,7 +19,7 @@ work on columns. Use `&`, `|`, `~`, with parentheses around each comparison.
 
 - **A bare string or number as a whole `mutate` expression fails.** Insights casts the result to the
   declared `data_type`, and a Python `str` has no `.cast`. Write `ibis.literal('1. Total')` or
-  `literal(0)`. The templates label union branches this way.
+  `literal(0)`. Shipped workbooks label union branches this way.
 - **After `summarize`, only the summarized columns exist.** Use the sanitized snake_case measure and
   dimension names.
 - **Aggregations belong in expression measures and `summarize`.** In `mutate` they compute

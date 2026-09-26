@@ -1,72 +1,81 @@
 <script setup lang="ts">
-import DOMPurify from 'dompurify'
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { ChartContainer } from 'frappe-ui/charts'
-import { AlertTriangle, RefreshCcw } from 'lucide-vue-next'
+import { RefreshCcw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { refusalDetail, refusalHeadline } from '../../not_permitted'
 import { __ } from '../../translation'
 import { emptyResult } from '../../query/helpers'
-import { adaptChart, drawsOwnCards, type ChartStateProps, type DrillDownTarget } from '../adapter'
-import { ChartRead } from '../chart_read'
+import {
+	adaptChart,
+	rendersOwnCards,
+	type ChartFailure,
+	type ChartStateProps,
+	type DrillDownTarget,
+} from '../adapter'
+import type { ChartRead } from '../chart_view'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
+import { scopeText } from '../scoped_by'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
+import ScopeMark from './ScopeMark.vue'
+import ChartStateMessage from './ChartStateMessage.vue'
 
 // The chart itself: the type it is, the data it has, and every state in between.
-// One state machine — a surface that draws a chart draws this, and gets the
-// failure, the reload and the empty result along with the picture. Segment
-// clicks are reported, never handled — a drill is a dialog the caller offers,
-// so it is the caller that carries it.
+// One state machine — a surface that renders a chart renders this, and gets the
+// failure, the reload and the empty result along with the chart. Segment
+// clicks are reported, never handled — a drill is a dialog the caller shows,
+// so it is the caller that owns it.
 //
-// It draws no card. The border, the padding and the title belong to whoever
-// draws the chrome, and `#actions` reaches the row the title heads, in every
+// It renders no card. The border, the padding and the title belong to whoever
+// renders the chrome, and `#actions` reaches the row the title heads, in every
 // state and through every filler: `ChartChrome` on an Insights page, the island's chrome on
 // a desk workspace. A host that has one mounts this and gets the chart alone.
 //
 // The states are frappe-ui's, and what goes inside them is the adapter's answer:
-// it says which component draws this Chart and what to hand it, so nothing here
+// it says which component renders this Chart and what to hand it, so nothing here
 // switches on chart type. A new type is added in `charts/adapter`, not here.
 //
-// Where the states are drawn is the one thing that varies, and the adapter
-// answers that too. A type with no card of its own gets the states drawn around
-// the plot. A type that draws cards — a Number Chart's readings are cards
-// already — draws them inside each card, so it is mounted in every state and
+// Where the states are rendered is the one thing that varies, and the adapter
+// answers that too. A type with no card of its own gets the states rendered around
+// the plot. A type that renders cards — a Number Chart's readings are cards
+// already — renders them inside each card, so it is mounted in every state and
 // handed `ChartStateProps` instead.
 //
 // `readonly` is for a surface that cannot change the chart. A surface may say
-// so, and a chart the reader may not edit is read-only wherever it is drawn —
+// so, and a chart the reader may not edit is read-only wherever it is rendered —
 // read off the document, so no host has to remember to pass it. It decides two
 // things, and they are the same thing: a table's sort rewrites the chart's config
 // and re-runs its query, which a reader holds neither half of, so the control is
-// not offered rather than offered and dead — and for the same reason a reader is
+// not shown rather than shown and dead — and for the same reason a reader is
 // told about the data ("No data") where an author is told about the config.
 const props = defineProps<{
 	chart: ChartRead
-	// heads the chart. Left out, no title is drawn anywhere in it — which is what
+	// heads the chart. Left out, no title is shown anywhere in it — which is what
 	// a host that prints its own asks for.
 	title?: string
-	// which reading to draw, for a Number Chart. A host that draws one reading per
-	// cell says which. One that draws the chart says nothing and gets them all.
+	// which reading to show, for a Number Chart. A host that shows one reading per
+	// cell says which. One that renders the chart says nothing and gets them all.
 	reading?: string
 	readonly?: boolean
-	// whether filters narrowed the rows, so an empty card can offer to clear them.
+	// whether filters narrowed the rows, so an empty card can show a way to clear them.
 	// Only a surface that owns filter state can say, and only it can reset them.
 	filtered?: boolean
 }>()
 const emit = defineEmits<{
-	// where the reader pointed, for a surface that offers the drill menu
+	// where the reader pointed, for a surface that shows the drill menu
 	segmentClick: [click: ChartSegmentClick]
 	resetFilters: []
 }>()
 
-const readonly = computed(() => props.readonly || props.chart.doc.can_edit === false)
+const readonly = computed(() => props.readonly || props.chart.doc.can_write === false)
 
 const chart_type = computed(() => props.chart.doc.chart_type)
 const config = computed(() => props.chart.doc.config)
 const result = computed(() => props.chart.result || emptyResult())
 
-// Whether the filler draws the states itself. A property of the chart type, so
+// Whether the filler renders the states itself. A property of the chart type, so
 // it is settled before there is a result to adapt.
-const ownsStates = computed(() => drawsOwnCards(chart_type.value))
+const ownsStates = computed(() => rendersOwnCards(chart_type.value))
 
 const filler = computed(() => {
 	// the result outlives a chart type switch, so without this the adapter would
@@ -87,13 +96,15 @@ const filler = computed(() => {
 		readonly: readonly.value,
 		drillable: props.chart.drillable,
 		executing: props.chart.executing,
-		page: {
-			current: props.chart.currentPage,
-			size: props.chart.pageSize,
-			totalRowCount: result.value.totalRowCount || undefined,
-			goTo: props.chart.goToPage,
-			fetchCount: props.chart.fetchResultCount,
-		},
+		page: props.chart.goToPage
+			? {
+					current: props.chart.currentPage,
+					size: props.chart.pageSize,
+					totalRowCount: result.value.totalRowCount || undefined,
+					goTo: props.chart.goToPage,
+					fetchCount: props.chart.fetchResultCount,
+			  }
+			: undefined,
 		download:
 			props.chart.exportResults && props.chart.cancelDownload
 				? {
@@ -108,7 +119,7 @@ const filler = computed(() => {
 // Rows on screen stay through the next run, veiled. Blanking them unmounts the
 // plot, and a plot mounted again is a new echarts instance that replays its
 // entry animation — frappe-ui holds that back only for an instance that has
-// drawn once. The builder re-runs on every edit, so a color tweak would grow
+// rendered once. The builder re-runs on every edit, so a color tweak would grow
 // the plot from nothing.
 //
 // The veil waits: a run the server answers from cache is over before a veil can
@@ -130,17 +141,19 @@ onBeforeUnmount(() => clearTimeout(veilTimer))
 // What the card shows, in the order the store settles it: a failure outranks the
 // reload that would replace it, and a reload outranks the rows it is replacing.
 // `unconfigured` is a new chart's state and the state a config the
-// server refused puts it back in — nothing is drawn, and the space the picture
+// server refused puts it back in — nothing is rendered, and the space the chart
 // would take is where the reason is printed.
 const state = computed(() => {
 	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
 	if (props.chart.executing && !hasRows.value) return 'loading'
+	// nothing ran, so config errors and an empty result do not apply
+	if (props.chart.notPermitted) return 'notPermitted'
 	if (props.chart.configErrors.length) return 'unconfigured'
 	if (props.chart.empty) return 'empty'
 	return filler.value ? 'chart' : 'unconfigured'
 })
 
-// What an author has left to fill in, printed where the picture would be. It is
+// What an author has left to fill in, printed where the chart would be. It is
 // the same line a chart nobody has configured yet shows, so a half-configured
 // chart says what is missing rather than repeating the prompt to configure it. A reader owns
 // no config, so they are never told about one.
@@ -148,7 +161,7 @@ const unconfigured = computed(() => {
 	const errors = props.chart.configErrors
 	// a reader has no chart type to pick and no options to configure, so they are
 	// told what there is instead of what to do about it
-	if (readonly.value) return [__('This chart cannot be drawn')]
+	if (readonly.value) return [__('This chart cannot be rendered')]
 	if (!errors.length) {
 		return [__('Pick a chart type and configure options to see the chart here')]
 	}
@@ -156,37 +169,50 @@ const unconfigured = computed(() => {
 })
 
 // Any non-empty string puts `ChartContainer` in its error state. The slot below
-// draws the block itself, because a retry belongs beside the message.
+// renders the block itself, because a retry belongs beside the message.
 //
 // The headline names what happened and the detail names why. They are two lines
 // and not one because a card can be short enough to hold only one of them, and
 // then the line to keep is the one every reader can act on. The detail is what
-// gives way, in this block and in a card that draws the failure itself.
+// gives way, in this block and in a card that renders the failure itself.
 //
-// The headline is short enough for the narrowest surface that draws it, which is
+// The headline is short enough for the narrowest surface that renders it, which is
 // one reading of a Number Chart. One line for both, rather than a second string
 // that says the same thing in fewer words.
 const headline = computed(() => {
 	if (state.value === 'serverBusy') return __('The server is busy')
 	if (state.value === 'failed') return __('Could not load')
+	// Frappe's term. It is a card state like No data and Could not load, not a
+	// layout of its own, so every state reads the same way.
+	if (state.value === 'notPermitted') return refusalHeadline()
 	return null
 })
 
 // What the server said. An author can act on it. A reader owns neither the query
 // nor the config it names, so a reader gets the headline alone.
+//
+// A refusal is the exception. Authors and readers both get the doctypes it
+// names: neither of them owns the permission, and the doctype is the name the
+// site's permission settings use.
 const detail = computed(() => {
+	if (state.value === 'notPermitted') {
+		return refusalDetail(
+			props.chart.notPermitted,
+			__('You do not have access to the data behind this chart'),
+		)
+	}
 	if (state.value !== 'failed' || readonly.value) return ''
 	return props.chart.failure
 })
 
-// A Frappe exception message carries markup — a link to the docs, a `<br>` — so
-// the detail is drawn as HTML and not as its own source. DOMPurify is what keeps
-// a message that reached the server from a user out of the DOM as script.
-const detailHtml = computed(() => (detail.value ? DOMPurify.sanitize(detail.value) : ''))
-// The tooltip holds the whole message, which an element attribute can only carry
-// as text. Stripping every tag is the same sanitize with nothing allowed through.
-const detailText = computed(() =>
-	detail.value ? DOMPurify.sanitize(detail.value, { ALLOWED_TAGS: [] }) : undefined,
+const failure = computed<ChartFailure | null>(() =>
+	headline.value
+		? {
+				...(state.value === 'notPermitted' ? { kind: 'notPermitted' as const } : {}),
+				headline: headline.value,
+				detailText: detail.value || undefined,
+		  }
+		: null,
 )
 
 // What a filler that owns its states is told, bound as props beside the rest of
@@ -195,13 +221,7 @@ const stateProps = computed(() => {
 	if (!ownsStates.value) return {}
 	const owned: ChartStateProps = {
 		loading: state.value === 'loading',
-		failure: headline.value
-			? {
-					headline: headline.value,
-					detailHtml: detailHtml.value,
-					detailText: detailText.value,
-			  }
-			: null,
+		failure: failure.value,
 		empty: state.value === 'empty',
 		onRetry: () => props.chart.load(true),
 	}
@@ -212,15 +232,25 @@ const stateProps = computed(() => {
 // type emits which. The adapter names them and turns each payload into the point
 // behind it.
 //
-// A feed that answers no drill is not wired for one at all: the dialog would open
-// on a click the server refuses, and offer a retry that can never succeed. Gated
-// here rather than in each adapter, because a drill is the feed's answer to give
-// and every chart type reports its clicks through this one map.
+// A source without drill support gets no click handlers: the dialog would open
+// on a click the server refuses, and show a retry that can never succeed. Gated
+// here rather than in each adapter, because the source decides whether a drill is
+// possible, and every chart type reports its clicks through this one map.
 const fillerEvents = computed(() =>
 	props.chart.drillable === false
 		? {}
 		: segmentClickEvents(filler.value, result.value.columns, reportSegment),
 )
+
+// Tells the reader that their own permissions narrowed the rows, so a partial
+// number is not read as the total. Only User Permission records are named. A
+// role's match condition also narrows the rows, but there is no document to
+// name. A team's Table Restriction is also shown without names.
+//
+// It is a mark after the title, not a line in the card. The author sized the
+// card, and a line under the plot would take space from it. It belongs to the
+// title, so it goes in `#title-suffix`, not in `#actions` at the end of the row.
+const scope = computed(() => scopeText(props.chart.scopedBy, props.chart.narrowedByPermissions))
 
 // echarts hands over the point, not the event, so the capture phase records
 // the click position before the chart's own handler runs.
@@ -244,12 +274,19 @@ function reportSegment(target: DrillDownTarget) {
 			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
 		>
+			<template v-if="scope" #title-suffix>
+				<ScopeMark
+					:applied="props.chart.scopedBy"
+					:narrowed="props.chart.narrowedByPermissions"
+				/>
+			</template>
+
 			<template v-if="$slots.actions" #actions>
 				<slot name="actions" />
 			</template>
 		</component>
 
-		<!-- Every state but the picture. `#loading` is left alone: v2 draws a
+		<!-- Every state but the chart. `#loading` is left alone: v2 renders a
 		     skeleton the size of the plot, which is what a chart still filling in
 		     should read as to a reader and to an author alike. -->
 		<ChartContainer
@@ -259,43 +296,34 @@ function reportSegment(target: DrillDownTarget) {
 			:error="headline"
 			:empty="true"
 		>
+			<template v-if="scope" #title-suffix>
+				<ScopeMark
+					:applied="props.chart.scopedBy"
+					:narrowed="props.chart.narrowedByPermissions"
+				/>
+			</template>
+
 			<!-- The acts stay put through every state: a chart that failed is a
 			     chart to run again. -->
 			<template v-if="$slots.actions" #actions>
 				<slot name="actions" />
 			</template>
 
-			<!-- the queue turns a card away rather than queueing it, so asking
-			     again is the whole remedy — and a chart that failed for any
-			     other reason is worth one more try too -->
 			<template #error>
-				<!-- One block, so the headline and the action hold their size and
-				     the detail is the only thing a short box takes back. `status`
-				     and not `alert`: a dashboard can fail eight cards at once, and
-				     eight interruptions say less than one line each. -->
-				<div class="flex min-h-0 w-full flex-col items-center gap-2" role="status">
-					<div class="flex shrink-0 items-center gap-1.5 text-p-sm text-ink-gray-8">
-						<!-- The size of the text it stands beside, here and in every
-						     other failure Insights draws: an icon larger than its
-						     sentence reads as a picture of an error, not as part of
-						     the line that states one. -->
-						<AlertTriangle
-							class="h-3.5 w-3.5 shrink-0 text-ink-red-5"
-							stroke-width="1.5"
-						/>
-						<span>{{ headline }}</span>
-					</div>
-
-					<!-- The whole message is in the tooltip, so the clamp costs
-					     the reader nothing but a hover. -->
-					<p
-						v-if="detailHtml"
-						class="line-clamp-2 px-4 text-p-xs text-ink-gray-5 [&_a]:underline"
-						:title="detailText"
-						v-html="detailHtml"
-					></p>
-
+				<!-- centred, because this block takes the plot's place -->
+				<ChartStateMessage
+					v-if="failure"
+					class="w-full items-center text-center"
+					:failure="failure"
+					detailed
+				>
+					<!-- the queue turns a card away rather than queueing it, so
+					     asking again is the whole remedy — and a chart that failed
+					     for any other reason is worth one more try too. A refusal
+					     gets no retry: the reader cannot change their own
+					     permissions. -->
 					<Button
+						v-if="state !== 'notPermitted'"
 						class="shrink-0"
 						variant="outline"
 						:label="state === 'serverBusy' ? __('Try again') : __('Retry')"
@@ -305,7 +333,7 @@ function reportSegment(target: DrillDownTarget) {
 							<RefreshCcw class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
 					</Button>
-				</div>
+				</ChartStateMessage>
 			</template>
 
 			<template #empty>

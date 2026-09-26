@@ -37,7 +37,7 @@ class TestInvitationKeyIsStoredHashed(IntegrationTestCase):
         self.assertEqual(stored, hash_key(invitation._plain_key))
 
     # @feature settings.invite-users
-    def test_the_invitation_email_carries_the_key(self):
+    def test_the_invitation_email_includes_the_key(self):
         """The mailed link has to hold the key itself, or nothing can redeem it."""
         with patch.object(frappe, "sendmail") as sendmail:
             invitation = frappe.new_doc("Insights User Invitation")
@@ -102,7 +102,7 @@ class TestInvitationDoesNotAuthenticate(IntegrationTestCase):
         response = self.redeem(invitation)
 
         self.assertEqual(self.logged_in_as, [])
-        # the link still ends in Insights: the login page carries them there
+        # the link still ends in Insights: the login page sends them there
         self.assertEqual(response.location, f"/login?redirect-to={quote(get_app_url())}")
         # the invitation still did its job
         self.assertEqual(

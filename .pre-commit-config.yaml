@@ -12,6 +12,7 @@ repos:
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
+        exclude: "tsconfig.*\\.json$"
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
@@ -68,6 +69,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: typecheck
+        name: Type-check frontend
+        entry: yarn --cwd frontend typecheck:baseline
+        language: system
+        pass_filenames: false
+        files: ^frontend/
+
       - id: feature-coverage
         name: Check feature coverage
         entry: python insights/tests/features.py check

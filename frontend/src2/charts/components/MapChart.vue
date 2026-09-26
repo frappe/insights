@@ -13,7 +13,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { __ } from '../../translation'
 import type { MapChartProps } from '../adapter/map'
 
-// The choropleth Insights draws itself. Everything around the plot is v2's, so
+// The choropleth Insights renders itself. Everything around the plot is v2's, so
 // a Map card on a dashboard reads as one of the family. Only the geography is
 // ours. The arithmetic behind it — which region a row belongs to and which
 // class its value falls in — is `adapter/map.ts`, and this file holds what
@@ -46,7 +46,7 @@ async function loadGeography(name: string) {
 	}
 }
 
-// Which geography echarts can already draw. The option below is withheld until
+// Which geography echarts can already plot. The option below is withheld until
 // this catches up with the one the chart asks for, which is what makes the
 // order right rather than a matter of timing: `useChart` skips an undefined option and
 // re-runs the getter when this ref lands.
@@ -92,7 +92,7 @@ const option = computed(() => {
 				type: 'map',
 				name: props.measure,
 				map: props.map,
-				// Web Mercator. The GeoJSON carries plain degrees, and echarts
+				// Web Mercator. The GeoJSON holds plain degrees, and echarts
 				// plots them as-is unless it is told how to project them.
 				projection: {
 					project: (point: [number, number]) => [
@@ -156,7 +156,7 @@ useChart({
 })
 
 function showTooltip(name: string, value: number) {
-	// A region the query returned no rows for is drawn, and hovering it should
+	// A region the query returned no rows for is plotted, and hovering it should
 	// say nothing rather than say zero.
 	if (value === undefined || value === null || isNaN(value)) {
 		tooltip.open = false
@@ -186,6 +186,10 @@ function showTooltip(name: string, value: number) {
 		:error="failed ? __('Could not load the map') : null"
 		:empty="!props.regions.length"
 	>
+		<template v-if="$slots['title-suffix']" #title-suffix>
+			<slot name="title-suffix" />
+		</template>
+
 		<template v-if="$slots.actions" #actions>
 			<slot name="actions" />
 		</template>

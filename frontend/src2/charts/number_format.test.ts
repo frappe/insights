@@ -29,7 +29,7 @@ const measure = (name: string, format?: 'currency' | 'percent') => ({
 
 describe('what the locale says', () => {
 	// @feature charts.number-format
-	it('groups the digits and keeps what the number carries, up to two places', () => {
+	it('groups the digits and keeps what the number has, up to two places', () => {
 		const print = numberFormatter()
 		expect(print(1234567)).toBe('1,234,567')
 		expect(print(1234.5)).toBe('1,234.5')
@@ -78,8 +78,8 @@ describe("what the Measure's own format says", () => {
 		const mixed = [...dirhams, { revenue: 1200, revenue__currency: 'INR' }]
 		expect(numberFormatter(null, revenue, mixed)(1200)).toBe('1,200')
 
-		const uncarried = [{ revenue: 1200 }]
-		expect(numberFormatter(null, revenue, uncarried)(1200)).toBe('₹ 1,200')
+		const withoutCurrency = [{ revenue: 1200 }]
+		expect(numberFormatter(null, revenue, withoutCurrency)(1200)).toBe('₹ 1,200')
 
 		session.site.currency = null
 		session.site.currency_symbols = {}
@@ -135,7 +135,7 @@ describe('a precision the number cannot print', () => {
 
 describe('a negative number', () => {
 	// @feature charts.number-format
-	it('carries its sign outside the unit', () => {
+	it('keeps its sign outside the unit', () => {
 		expect(printNumber(-1234, { scale: 1, prefix: '$ ', decimals: 0 })).toBe('-$ 1,234')
 		expect(printNumber(-1234567, { scale: 1, prefix: '$ ', shorten: true })).toBe('-$ 1.2M')
 	})
@@ -147,7 +147,7 @@ describe('a negative number', () => {
 	})
 
 	// @feature charts.number-format
-	it('carries its sign where the locale prints its own digits', () => {
+	it('keeps its sign where the locale prints its own digits', () => {
 		const locale = session.user.locale
 		session.user.locale = 'fa'
 		expect(printNumber(-1234, { scale: 1, decimals: 0 })).toBe('-۱٬۲۳۴')
@@ -230,7 +230,7 @@ describe('the spellings an older release wrote', () => {
 	})
 })
 
-// Every type that draws a plot hands the formatter to v2 rather than printing a
+// Every type that renders a plot hands the formatter to v2 rather than printing a
 // number of its own. The Number card is the exception the module states, and the
 // Table hands the grid the policy instead of a function.
 const plotted: Array<[string, ChartAdapterInput, string]> = [
@@ -248,7 +248,7 @@ describe.each(plotted)('the %s chart', (_type, input, where) => {
 	// @feature charts.number-format
 	it('prints its numbers through the resolver', () => {
 		const filler = adaptChart(input)
-		if (!filler) throw new Error('the adapter drew nothing for this Chart')
+		if (!filler) throw new Error('the adapter rendered nothing for this Chart')
 
 		const format = where === 'yAxis' ? filler.props.yAxis?.format : filler.props.format
 		expect(typeof format).toBe('function')

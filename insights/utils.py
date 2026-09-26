@@ -96,6 +96,26 @@ def deep_convert_dict_to_dict(d):
     return d
 
 
+def refuse_delete_while_linked(doc, taken: tuple[str, ...]) -> None:
+    """Refuse a delete frappe's link check will refuse, before `on_trash` changes anything.
+
+    frappe asks after `on_trash`, and a refusal there leaves every change the
+    hook made to whoever commits next. `taken` names the doctypes the hook
+    deletes or rewrites itself, so their links never refuse.
+    """
+    from frappe.model.delete_doc import (
+        get_dynamic_linked_docs,
+        get_linked_docs,
+        raise_link_exists_exception,
+    )
+
+    for link in (*get_linked_docs(doc), *get_dynamic_linked_docs(doc)):
+        if link["reference_doctype"] not in taken:
+            raise_link_exists_exception(
+                doc, link["reference_doctype"], link["reference_docname"], link.get("at_position", "")
+            )
+
+
 def create_execution_log(sql, time_taken=0, query_name=None, data_store=False):
     frappe.get_doc(
         {
@@ -150,10 +170,10 @@ def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
     return df
 
 
-# A leading control character can carry a formula past an importer that trims
+# A leading control character can pass a formula past an importer that trims
 # before it parses, so it counts as a trigger. `@`, `+` and `-` also start
 # ordinary data — a handle, a phone number, a text-column negative — so they are
-# quoted only when the value carries the characters a formula needs to call.
+# quoted only when the value has the characters a formula needs to call.
 FORMULA_TRIGGERS = ("=", "\t", "\r", "\n")
 AMBIGUOUS_STARTS = ("@", "+", "-")
 CALL_CHARACTERS = frozenset("|!()")

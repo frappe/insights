@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Button, FormControl, Popover, usePortalTarget } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Layers, Rows3, Search } from 'lucide-vue-next'
+import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, ref } from 'vue'
 import { __ } from '../../translation'
 import { columnLabel, type DrillDimension } from './drill_stack'
 import type { ClickPoint } from './segment_click'
 
-// What a segment click offers, before anything is loaded.
+// What a segment click lists, before anything is loaded.
 //
 // Two items, and the second one absorbs the dimension picker so a breakdown is
 // two clicks from the chart. Nothing is fetched until the reader has said which
@@ -14,7 +15,7 @@ import type { ClickPoint } from './segment_click'
 //
 // The menu opens where the reader pointed, which is why it hangs off a zero-size
 // anchor placed at the click rather than off a control on the page: there is no
-// control, only a bar. The anchor carries viewport coordinates, so it is
+// control, only a bar. The anchor holds viewport coordinates, so it is
 // teleported out of the chart — `position: fixed` is measured against the nearest
 // transformed ancestor, and the builder's grid moves its cards with `translate3d`,
 // which would put the menu the width of a card away from the click.
@@ -29,6 +30,12 @@ const props = defineProps<{
 	point: ClickPoint
 	/** the columns this segment can still be broken down by, already ordered */
 	dimensions: DrillDimension[]
+	/**
+	 * Whether this reader may read the rows behind the segment. A chart shared
+	 * only through its visibility level shows the reader the aggregate, and the
+	 * server refuses the rows under it. So the menu does not list them.
+	 */
+	canRows?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -55,9 +62,21 @@ const matches = computed(() => {
 // undefined outside an island, which is Teleport's default target
 const portalTarget = usePortalTarget()
 
-// A row here is a ghost Button: an ItemListRow draws without its own utilities
+// A row here is a ghost Button: an ItemListRow renders without its own utilities
 // inside this menu.
 const rowClass = 'w-full !justify-start'
+
+// The anchor is fixed to the viewport, so the menu would stay put while the
+// value it drills slides away. Scrolling inside the menu is left alone.
+const menu = ref<HTMLElement>()
+useEventListener(
+	window,
+	'scroll',
+	(event: Event) => {
+		if (!menu.value?.contains(event.target as Node)) emit('close')
+	},
+	{ capture: true, passive: true },
+)
 
 function openDimensions() {
 	pane.value = 'dimensions'
@@ -70,6 +89,7 @@ function openDimensions() {
 	<Teleport :to="portalTarget ?? 'body'">
 		<Popover
 			:open="true"
+			:auto-focus="false"
 			side="bottom"
 			align="start"
 			@update:open="(open: boolean) => !open && emit('close')"
@@ -81,9 +101,14 @@ function openDimensions() {
 				/>
 			</template>
 
-			<div class="w-56 p-1.5">
+			<div ref="menu" class="w-56 p-1.5">
 				<div v-if="pane === 'actions'" class="flex flex-col gap-0.5">
-					<Button variant="ghost" :class="rowClass" @click="emit('rows')">
+					<Button
+						v-if="props.canRows !== false"
+						variant="ghost"
+						:class="rowClass"
+						@click="emit('rows')"
+					>
 						<template #prefix>
 							<Rows3 class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
@@ -105,6 +130,12 @@ function openDimensions() {
 							<ChevronRight class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 						</template>
 					</Button>
+					<p
+						v-if="props.canRows === false && !props.dimensions.length"
+						class="px-2 py-1.5 text-base text-ink-gray-5"
+					>
+						{{ __('Nothing to drill into here') }}
+					</p>
 				</div>
 
 				<div v-else class="flex flex-col gap-1.5">

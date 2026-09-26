@@ -134,7 +134,7 @@ def insights_whitelist(*args, role="Insights User", **kwargs):
     def decorator(function):
         # frappe.whitelist checks the argument types of the function it decorates:
         # it reads the annotations off that function, and names its positional
-        # arguments through its __code__. A `*args` wrapper carries neither, so
+        # arguments through its __code__. A `*args` wrapper has neither, so
         # frappe must decorate `function` itself for the checks to run at all.
         validated = frappe.whitelist(*args, **kwargs)(function)
         # the second call whitelists the role check, which is what the module

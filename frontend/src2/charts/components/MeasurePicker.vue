@@ -28,7 +28,7 @@ const props = defineProps<{
 
 /**
  * The settings popover holds a labeled row, so it is as wide as the widest
- * control that row carries: the number format group, at 10rem, beside a label
+ * control that row holds: the number format group, at 10rem, beside a label
  * column of 30%. Narrower than this and the group runs past the edge.
  */
 const CONFIG_WIDTH = '17rem'
@@ -106,8 +106,8 @@ function getAutoMeasureName(columnMeasure: ColumnMeasure) {
 }
 
 /**
- * The aggregation the picker is drawing, which is not always one the measure
- * carries.
+ * The aggregation the picker is showing, which is not always one the measure
+ * has.
  *
  * A source whose columns are already measures opens on the column list under
  * `sum`, skipping the "pick a function" step that would otherwise name a column
@@ -117,8 +117,8 @@ function getAutoMeasureName(columnMeasure: ColumnMeasure) {
  * autosave and two re-runs of the chart data.
  */
 const shownAggregation = computed<AggregationType | ''>(() => {
-	const carried = columnMeasure.value?.aggregation
-	if (carried) return carried as AggregationType
+	const measureAggregation = columnMeasure.value?.aggregation
+	if (measureAggregation) return measureAggregation as AggregationType
 	return sourceHasMeasures.value && !userResetAggregation.value ? 'sum' : ''
 })
 
@@ -224,7 +224,7 @@ const filteredColumnOptions = computed(() => {
 	return columnOptions.value.filter((option) => option.label.toLowerCase().includes(query))
 })
 
-// a currency code is text, so only text columns are offered
+// a currency code is text, so only text columns are listed
 const currencyColumnOptions = computed(() => [
 	{ label: __('Site currency'), value: '' },
 	...props.columnOptions

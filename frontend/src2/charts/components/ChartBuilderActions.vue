@@ -16,7 +16,7 @@ import ViewSQLDialog from '../../query/components/ViewSQLDialog.vue'
 import session from '../../session'
 import { __ } from '../../translation'
 import { duplicateWorkbookItem } from '../../workbook/workbook_items'
-import type { ChartRead } from '../chart_read'
+import type { ChartRead } from '../chart_view'
 
 // What the builder puts in the chart card's own header. The card heads the page,
 // so these are the page's acts: run it again, and everything else in a menu.
@@ -53,7 +53,7 @@ const moreActions = computed(() =>
 				label: __('Share Chart'),
 				icon: h(Share2, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 				onClick: () => props.onShare(),
-				condition: () => !props.chart.doc.read_only,
+				condition: () => Boolean(props.chart.doc.can_share),
 			},
 			{
 				label: __('Duplicate Chart'),
@@ -70,6 +70,8 @@ const moreActions = computed(() =>
 				label: __('View SQL'),
 				icon: h(Scroll, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 				onClick: () => (showViewSQLDialog.value = true),
+				// only the authoring endpoint returns the SQL
+				condition: () => Boolean(props.preview.result.executedSQL),
 			},
 			{
 				label: __('Copy JSON'),

@@ -3,6 +3,7 @@
 // A number card pins the period its reading stands on, and nothing when it reads
 // none. Nothing past `segmentOf` reads a chart type.
 
+import type { NotPermitted } from '../../not_permitted'
 import { __ } from '../../translation'
 import { computed, reactive, shallowRef } from 'vue'
 import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
@@ -25,6 +26,7 @@ import type {
 	ColumnDataType,
 	Dimension,
 	FilterOperator,
+	FilterValue,
 	Measure,
 	Operation,
 	QueryResultColumn,
@@ -32,6 +34,7 @@ import type {
 } from '../../types/query.types'
 import type { DrillDownTarget } from '../adapter'
 import type { RecordLinks } from '../record_link'
+import type { AppliedUserPermission } from '../scoped_by'
 import { formatWindowLabel, periodOf } from '../window'
 
 /** One pinned dimension value. Literals only — no operations cross the wire. */
@@ -43,8 +46,8 @@ export type DrillFilter = {
 }
 
 /**
- * What a level does with its segment. Both carry the Measure the click landed
- * on, because a Measure can carry a condition of its own.
+ * What a level does with its segment. Both include the Measure the click landed
+ * on, because a Measure can have a condition of its own.
  *
  * The server picks a grain when this field is absent. A grain set here
  * overrides the server's choice. The first response writes its grain back onto
@@ -57,6 +60,13 @@ export type DrillAction =
 export type DrillLevel = {
 	segment_filters: DrillFilter[]
 	action: DrillAction
+	/**
+	 * The date the card's rows were read. A span is stored unresolved (in the
+	 * card, in the dashboard's filters, in the query), so without this date the
+	 * server would resolve it to the day of the click.
+	 */
+	read_on?: string
+	modified?: string
 }
 
 /** A candidate for "break down by", as `get_chart_data` reports it. */
@@ -79,7 +89,7 @@ export type DrillPin = {
 
 /** What a segment click pins, before the reader has said what to do with it. */
 export type DrillSegment = {
-	/** The pins, as the wire carries them. Empty when the click pins nothing. */
+	/** The pins, as the wire sends them. Empty when the click pins nothing. */
 	filters: DrillFilter[]
 	/**
 	 * What this segment pins. The columns are subtracted from the breakdown
@@ -114,7 +124,7 @@ type DeclaredDimensions = {
 	measures: Measure[]
 	/**
 	 * How a Dimension's value prints, where the chart type knows better than the
-	 * Dimension does. A span card's date carries no grain: it is the day its
+	 * Dimension does. A span card's date has no grain: it is the day its
 	 * span opens, and only the span says how far it runs.
 	 */
 	labels: Record<string, (value: any) => string>
@@ -165,7 +175,7 @@ function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 			// Two modes: one stage per Measure, or one stage per row of a Dimension.
 			// The stage Measures decide, the way the adapter decides: the form that
 			// names one leaves the Label column standing, and the reshaped row a
-			// Measures funnel draws carries no value for it.
+			// Measures funnel plots has no value for it.
 			const stageMeasures = (funnel.measures || []).filter((measure) => measure.measure_name)
 			return {
 				...empty,
@@ -193,7 +203,7 @@ function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 		case 'Bubble': {
 			const bubble = config as BubbleChartConfig
 			// The group is part of what names the point, not a slot beside it: the
-			// row a point was drawn from carries its value like any other Dimension.
+			// row a point was plotted from holds its value like any other Dimension.
 			return {
 				...empty,
 				rows: dims([bubble.dimension, bubble.quadrant_column]),
@@ -222,7 +232,7 @@ function declaredDimensions(chart: DrillChart): DeclaredDimensions {
 			const period = periodOf(number)
 			// A card that reads a period reads one of its rows, so a click pins the
 			// period that row stands for: the bucket for a grain, the day the span
-			// opens. The Dimension carries no grain, so copy the period's
+			// opens. The Dimension has no grain, so copy the period's
 			// grain onto it.
 			const grained =
 				number.date_column && period?.grain
@@ -283,7 +293,7 @@ export function declaredDimensionColumns(chart: DrillChart): string[] {
 const PIVOTED_NULL = 'null'
 
 /**
- * A pivoted column carries the split's values in its own name. The Measure
+ * A pivoted column holds the split's values in its own name. The Measure
  * comes first and the Dimension values follow it in declaration order, which is
  * how the server names them — so the *trailing* parts are the values, however
  * many Dimensions the pivot has, and whatever is left in front is the Measure.
@@ -295,7 +305,7 @@ function readPivotedColumn(
 	declared: DeclaredDimensions,
 ): { values: (string | null)[]; measure?: string } {
 	const { rows, columns: columnDimensions, measures } = declared
-	// A numeric row Dimension draws as a clickable number too, but its name is
+	// A numeric row Dimension renders as a clickable number too, but its name is
 	// neither a Measure nor a split.
 	if (rows.some((dimension) => dimension.dimension_name === column)) return { values: [] }
 	if (!columnDimensions.length) return { values: [], measure: column }
@@ -357,7 +367,7 @@ function labelForDimension(
  * The descriptor a segment click produces.
  *
  * `target.row` is the **raw** row the chart was clicked with — the surfaces that
- * draw formatted rows cross back themselves. A filter built from a printed value
+ * render formatted rows cross back themselves. A filter built from a printed value
  * would not match anything the query can be asked about.
  */
 export function segmentOf(chart: DrillChart, target: DrillDownTarget): DrillSegment {
@@ -402,8 +412,8 @@ export function columnLabel(name: string): string {
 }
 
 /**
- * What "Break down by" offers: the pre-summarize Dimensions the response
- * carried, less every column the stack has pinned — this click's, and the ones
+ * What "Break down by" lists: the pre-summarize Dimensions the response
+ * included, less every column the stack has pinned — this click's, and the ones
  * the levels above it fixed. The Chart's own other Dimensions come first — a
  * reader reaches for a column the chart already talks about — and the rest
  * follow alphabetically.
@@ -429,9 +439,9 @@ export function breakdownCandidates(
 /**
  * The grains a breakdown column can be read at.
  *
- * The candidates carry each column's type, so the grains a reader may ask for
+ * The candidates include each column's type, so the grains a reader may ask for
  * are known without another call — and they are the grains the rest of the app
- * offers for that type, not a list of the drill's own. Empty for anything that
+ * lists for that type, not a list of the drill's own. Empty for anything that
  * is not a date, which is also every breakdown that comes back ranked.
  */
 export function grainsFor(dimensions: DrillDimension[], column: string) {
@@ -452,7 +462,7 @@ export type DrillEntry = {
  *
  * Only what a level *does* is a crumb. The value it was reached through is a
  * pin, and the two used to sit in one trail — where "Overdue" and "by Region"
- * both carried depth 1, so half the trail was a link to where the link beside
+ * both had depth 1, so half the trail was a link to where the link beside
  * it went. A pin is state. A crumb is a destination.
  */
 export type DrillCrumb = {
@@ -465,6 +475,12 @@ export type DrillLevelData = {
 	columns: QueryResultColumn[]
 	rows: QueryResultRow[]
 	/**
+	 * The level reads a table or a permlevel column this reader cannot read.
+	 * Nothing ran, so the columns and rows above are empty. Without this field
+	 * the refusal would look like a level with no rows.
+	 */
+	not_permitted?: NotPermitted
+	/**
 	 * Whether the Dimension this level broke down has an order of its own. The
 	 * server answers it, because the cut and the reading have to agree.
 	 */
@@ -473,7 +489,7 @@ export type DrillLevelData = {
 	granularity?: string | null
 	/**
 	 * Whether this level's groups add up to the segment above them. The server
-	 * answers it for the same reason it answers `ordered`: the response carries
+	 * answers it for the same reason it answers `ordered`: the response includes
 	 * column types, and nothing in a column of decimals says whether they hold
 	 * sums or averages.
 	 */
@@ -483,11 +499,59 @@ export type DrillLevelData = {
 	/** only on a rows level, and only for the columns that name a document */
 	record_links?: RecordLinks
 	/**
+	 * Whether this reader may export the rows as a file. Only a rows level
+	 * includes it. Only the server knows it, because export is a site setting,
+	 * not part of the reader's session.
+	 */
+	can_export?: boolean
+	/**
 	 * The pipeline the server cut for this level, and whether it ran on the
 	 * live data source. Only the authoring endpoint answers with them.
 	 */
 	operations?: Operation[]
 	use_live_connection?: boolean
+	/** Dashboard filters that narrowed this level but are not in `operations`. */
+	unapplied_filters?: string[]
+	/** Which of the reader's own permissions narrowed this level, in a card's form. */
+	user_permissions?: AppliedUserPermission[]
+	narrowed_by_permissions?: boolean
+}
+
+/**
+ * One filter the reader added on the rows. It has a segment's shape, with every
+ * value the filter picker supports: a date span is a value like any other.
+ */
+export type DrillRowFilter = {
+	column: string
+	operator: FilterOperator
+	value: FilterValue
+}
+
+/**
+ * How a reader filters, sorts, searches and pages the rows behind a segment.
+ *
+ * The server applies all four. A View never receives the pipeline, so the
+ * client can only name the columns, the filters and the search term.
+ */
+export type DrillRowsState = {
+	/** the reader's own filters, applied to the cut before the count */
+	row_filters: DrillRowFilter[]
+	/** the columns to sort by; the first one is the primary sort */
+	sort: { column: string; direction: 'asc' | 'desc' }[]
+	/** one search term, matched across the cut's text and number columns */
+	find: string
+	page: number
+}
+
+export type DrillRowsSource = {
+	read: (state: DrillRowsState) => Promise<DrillLevelData>
+	download: (state: DrillRowsState, format: string) => Promise<string>
+	/**
+	 * The values a filter on one column of the cut can pick from. `rules` holds
+	 * the reader's other filters.
+	 */
+	values: (column: string, search: string, rules: DrillRowFilter[]) => Promise<string[]>
+	range: (column: string, rules: DrillRowFilter[]) => Promise<[number, number] | undefined>
 }
 
 /** What the dialog drills, as the surface that opened it hands it over. */
@@ -496,7 +560,16 @@ export type DrillSubject = {
 	/** the first crumb — what the reader clicked into */
 	title: string
 	dimensions: DrillDimension[]
+	/**
+	 * Whether this reader may read the rows behind a segment. The server sends
+	 * it with the dimensions, so the menu lists "View rows" only when the
+	 * server allows it. Absent means yes.
+	 */
+	canRows?: boolean
+	readOn?: string
+	modified?: string
 	fetch: (levels: DrillLevel[]) => Promise<DrillLevelData>
+	rows?: (levels: DrillLevel[]) => DrillRowsSource
 }
 
 /**
@@ -506,7 +579,7 @@ export type DrillSubject = {
  */
 export function makeDrillStack() {
 	// shallow on purpose: an entry is replaced, never edited, and a level's rows
-	// are drawn whole, so neither needs per-cell reactivity
+	// are rendered whole, so neither needs per-cell reactivity
 	const entries = shallowRef<DrillEntry[]>([])
 	const answers = new Map<string, DrillLevelData>()
 
@@ -555,7 +628,7 @@ export function makeDrillStack() {
 		pins,
 		/**
 		 * The columns those pins hold. A Dimension already pinned upstream is not
-		 * a way of breaking anything further down, so the menu stops offering it
+		 * a way of breaking anything further down, so the menu stops listing it
 		 * as the reader descends.
 		 */
 		pinnedColumns: computed(() => Array.from(new Set(pins.value.map((pin) => pin.column)))),

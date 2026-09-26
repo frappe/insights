@@ -3,11 +3,11 @@ import type { AdhocFilters, Operation, OrderByArgs, QueryResult } from '../types
 // What a result table needs from whatever produced the rows.
 //
 // A query store satisfies the whole of it. A chart read store fills in the rows
-// and leaves the authoring half out: a chart's result arrives whole, in one
+// and leaves the builder half out: a chart's result arrives whole, in one
 // response, and re-shaping it is a config edit no card owns. Everything past
-// the rows is therefore optional, and the table offers only what it was handed.
+// the rows is therefore optional, and the table shows only what it was handed.
 export type ResultTable = {
-	// there is something to draw
+	// there is something to render
 	ready: boolean
 	executing: boolean
 	result: QueryResult
@@ -26,6 +26,11 @@ export type ResultTable = {
 
 	// the operations behind the rows, which is where the sort arrows are read from
 	currentOperations?: Operation[]
+
+	// Find on the source. With `setFind`, the source searches the whole result.
+	// Without it, the pane searches only the rows already loaded.
+	findTerm?: string
+	setFind?: (term: string) => void
 
 	adhocFilters?: AdhocFilters
 

@@ -48,7 +48,7 @@ class TestProfile(InsightsIntegrationTestCase):
 class TestTranslations(InsightsIntegrationTestCase):
     """Which language is asked for, not what the dictionary holds.
 
-    The strings come from whichever translation files the site carries, so the
+    The strings come from whichever translation files the site has, so the
     rule under test is the language `get_translations` resolves to.
     """
 

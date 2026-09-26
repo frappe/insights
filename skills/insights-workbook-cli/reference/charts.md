@@ -11,7 +11,7 @@ Chart types: `Number`, `Bar`, `Line`, `Row`, `Donut`, `Funnel`, `Table`, `Map`, 
 
 ## Titles
 
-The title is the only label the reader gets. A dashboard has no headings, so the titles carry its
+The title is the only label the reader gets. A dashboard has no headings, so the titles hold its
 structure. Each title must name its chart on its own.
 
 State the measure, then the grain: "Revenue, per Month". "Sites That Published, Template Against the
@@ -40,7 +40,7 @@ Keys on every chart config:
 - `number_format`: how the chart prints a number — `{ "shorten": true, "decimals": 2, "prefix": "",
   "suffix": "" }`. Every value of the chart inherits it.
 - `number_formats`: one Measure's own format, keyed by `measure_name`, overriding `number_format`
-  key by key. A chart drawing one measure writes the Measure's entry and leaves the default empty.
+  key by key. A chart plotting one measure writes the Measure's entry and leaves the default empty.
 - The unit belongs to the measure, not to a prefix. Set `format: "currency"` or `format: "percent"` on the measure (see `operations.md`). A `prefix` or `suffix` you write overrides the unit's symbol, so do not hard-code a currency symbol.
 
 - `order_by`: list of `{ "column": { "type": "column", "column_name": "..." }, "direction": "asc"|"desc" }`.
@@ -82,7 +82,7 @@ Keys on every chart config:
   the grand total. A snapshot card wants that. `window` is what groups the card by date: `grain`
   ("month") gives one row per period in the data, `span` ("month to date") one row per stretch of
   the calendar. Either needs `date_column`.
-- `number_column_options` is positional: one entry per measure, same order. It carries what belongs
+- `number_column_options` is positional: one entry per measure, same order. It holds what belongs
   to the reading: `comparison`, `target`, `negative_is_better`, `color`.
 - A comparison belongs to one reading, in that reading's options entry. `source` is `previous`,
   `last year`, `constant` (with `value`) or `measure` (with `measure`). `show` prints the gap as a
@@ -93,7 +93,7 @@ Keys on every chart config:
   prints nothing beside a `grain`. A second comparison is a second card.
 - `target` sits beside it, also per reading: `{ "value": 750000 }` or `{ "measure": { ... } }`.
 - The card sorts its own periods. An `order_by` on the date column is replaced, so do not write one.
-- `sparkline` is chart-level and draws only beside a `window`. A `grain` card draws its own periods. A `span` card runs a second query one grain finer, and draws nothing for a span of a day. Without a `window` there is no series.
+- `sparkline` is chart-level and plots only beside a `window`. A `grain` card plots its own periods. A `span` card runs a second query one grain finer, and plots nothing for a span of a day. Without a `window` there is no series.
 - Each reading gets an `id` when the chart is saved: its `measure_name`, unless you set one. A dashboard cell names the reading by this `id`. Two readings with the same `measure_name` get the same `id`, and a cell can reach only the first, so give every reading its own name.
 - A row of readings is normally ONE Number chart with several measures, not several charts.
 
@@ -118,10 +118,10 @@ Keys on every chart config:
 - Bar `y_axis` extras: `stack`, `normalize`, `overlap`. Line: `smooth`, `show_area`,
   `show_data_points`. Per-series `type: "line" | "bar"` gives a mixed chart. `align: "Right"` puts a
   series on the secondary axis. A chart with bars on both axes neither stacks, overlaps nor normalizes. Bars beside a line on the other axis still stack.
-- `y_axis.reference_lines`: a list of rules drawn across the plot. Each is
+- `y_axis.reference_lines`: a list of rules across the plot. Each is
   `{ "axis": "y", "measure_name": "Revenue", "aggregate": "average", "label": "Average" }` — an
   aggregate of one of the chart's own measures, named and not copied — or a constant with `value`.
-  `axis: "x"` draws a vertical rule at a category or date value. `align` picks the axis a `y` rule
+  `axis: "x"` plots a vertical rule at a category or date value. `align` picks the axis a `y` rule
   is read against, and `label_placement`, `color` and `dashed` are the rest of its look.
 - `tooltip: { "measures": [ ... ] }`: measures that reach the tooltip and nothing else — no series,
   no legend entry, no place on the value axis. For the count behind a rate, or a target beside an
@@ -192,7 +192,7 @@ cannot size. Count it in the scratch query with `summarize` and `count_distinct`
 
 | Distinct values | Use |
 |---|---|
-| 1 | Nothing. One value is not a split. Find the column that carries the split, or drop the chart. |
+| 1 | Nothing. One value is not a split. Find the column that holds the split, or drop the chart. |
 | 2 to 8 | `Donut`, or a stacked `Bar` |
 | up to ~15 | `Bar`, or `Line` for a series |
 | more | `Row` with `order_by` desc and `limit: 10`, and say it is a top 10 |
@@ -201,7 +201,7 @@ cannot size. Count it in the scratch query with `summarize` and `count_distinct`
 The same cap applies to `split_by` and to a `Table`'s pivot `columns`. One line per value of a
 high-cardinality column is unreadable at any size.
 
-**A share needs its n beside it.** A normalized stacked bar draws a bucket of 14 rows exactly as
+**A share needs its n beside it.** A normalized stacked bar plots a bucket of 14 rows exactly as
 strongly as a bucket of 545. Pair it with a `Table` beside it. The table holds the raw counts and the
 distinct entity count. The bar gives the shape. The table gives the n, so nobody misreads a thin
 bucket as a strong result.

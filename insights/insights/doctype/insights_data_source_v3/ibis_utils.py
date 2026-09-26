@@ -14,14 +14,13 @@ import sqlglot as sg
 import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_eval, safe_exec
-from ibis import _
 from ibis.expr.datatypes import DataType
 from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 import insights
-from insights import create_toast
+from insights import create_toast, not_permitted, user_permissions
 from insights.cache_utils import make_digest
 from insights.exceptions import (
     ExpressionSyntaxError,
@@ -32,18 +31,28 @@ from insights.exceptions import (
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
+    held_back_key,
+    strip_schema_prefix,
 )
 from insights.insights.query_builders.sql_functions import (
     add_start_and_end_time,
     handle_timespan,
     resolve_timespan,
 )
-from insights.insights.query_utils import extract_sql_table_refs, get_direct_dependencies
+from insights.insights.query_utils import (
+    check_source_workbook,
+    extract_sql_table_refs,
+    get_direct_dependencies,
+    real_table_refs,
+    runs_stored_procedure,
+)
+from insights.permission_user import get_permission_user, script_session
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import fiscal_year_start, week_start
 from .ibis.utils import assert_expression_has_no_io, get_functions
+from .sandbox import NotDefined, expression_globals, script_globals
 
 try:
     from frappe.concurrency_limiter import concurrent_limit
@@ -146,6 +155,14 @@ AGGREGATIONS = {
     "max": lambda column: column.max(),
 }
 
+# The label a `pivot_wider` gives the values it did not keep. The engine makes
+# it up at run time, so it matches no value of the column under it, and a drill
+# cannot filter the surface by it. See `chart_drill._rule_filters`.
+PIVOT_OTHERS = "Others"
+
+# where a build records the splits that replaced a tail of values with `Others`
+PIVOT_TAILS = "insights_pivot_tails"
+
 # `full` is the client's word for what ibis calls an outer join
 JOIN_TYPES = {"inner": "inner", "left": "left", "right": "right", "full": "outer"}
 
@@ -187,6 +204,9 @@ class IbisQueryBuilder:
         self.use_live_connection = bool(doc.use_live_connection)
         self.force = False
         self.operations = doc.operations
+        # held-back keys for the columns this query's removes and renames took
+        # off `self.query`. The author does not see them either; see `_whole_tables`
+        self.dropped_by_writer: set[str] = set()
         self.set_operations()
 
     def set_operations(self):
@@ -221,6 +241,13 @@ class IbisQueryBuilder:
         if not hasattr(frappe.local, "_insights_building_queries"):
             frappe.local._insights_building_queries = set()
 
+        # in the outermost build, clear what earlier builds recorded. What they
+        # held back for permlevel or were narrowed by does not apply to this one
+        if not frappe.local._insights_building_queries:
+            not_permitted.forget_held_back()
+            user_permissions.forget()
+            forget_folded_tails()
+
         if self.doc.name in frappe.local._insights_building_queries:
             raise CircularQueryReferenceError(
                 frappe._('Circular query reference detected while building "{0}"').format(self.title)
@@ -228,12 +255,15 @@ class IbisQueryBuilder:
 
         frappe.local._insights_building_queries.add(self.doc.name)
         try:
+            self.check_trusted_code()
             self.query = None
             for idx, operation in enumerate(self.operations):
                 try:
                     operation = _dict(operation)
                     self.query = self.perform_operation(operation)
-                except CircularQueryReferenceError:
+                except (CircularQueryReferenceError, not_permitted.NotPermitted):
+                    # Not Permitted is a normal answer, not a broken operation. The
+                    # card names what it needs; a toast would blame the author
                     raise
                 except BaseException as e:
                     operation_type_title = operation.type.title()
@@ -246,6 +276,17 @@ class IbisQueryBuilder:
             return self.query
         finally:
             frappe.local._insights_building_queries.discard(self.doc.name)
+
+    def check_trusted_code(self):
+        from insights.permissions import check_trusted_code_author
+
+        # the Builder runs unsaved content, so compare it with the saved chart it
+        # runs as. Otherwise compare it with its query: for a throwaway preview,
+        # the source query, because no document stores the preview
+        stored = frappe.db.get_value("Insights Chart v3", self.doc.name, "config")
+        if stored is None:
+            stored = frappe.db.get_value("Insights Query v3", self.doc.execution_reference, "operations")
+        check_trusted_code_author([(self.title, self.operations, stored)])
 
     def perform_operation(self, operation):
         if operation.type == "source":
@@ -301,20 +342,31 @@ class IbisQueryBuilder:
         Read from the row, not from the document being built: that one may have
         come from a request body, which authorizes nothing.
 
-        Two rows answer, because two kinds of document reach here under a name. A
-        saved query carries the dependencies `validate` authorized. A chart runs a
-        query document it mints from its config under the chart's own name, and
-        what that pipeline sources is the chart's stored `query` link, which
-        `check_chart_query_access` authorized when it was written.
+        Two rows are read. A saved query stores the dependencies `validate`
+        authorized. A chart's execution reads its stored `query` link, which
+        `check_chart_query_access` authorized when it was saved. That chart is
+        the one `runs_as` entered, never one named in the request.
         """
-        name = self.doc.get("name")
-        references = set(get_direct_dependencies(name))
+        from insights.permission_user import declaring_document
 
-        chart_query = frappe.db.get_value("Insights Chart v3", name, "query")
-        if chart_query:
-            references.add(chart_query)
+        references = set(get_direct_dependencies(self.doc.get("name")))
+
+        declaring = declaring_document()
+        if declaring and declaring.doctype == "Insights Chart v3":
+            if chart_query := frappe.db.get_value(declaring.doctype, declaring.name, "query"):
+                references.add(chart_query)
 
         return references
+
+    @cached_property
+    def stored_workbook(self):
+        """The workbook of the saved query being built, read from its row.
+
+        None for a document with no row: a chart's own pipeline, or the
+        Builder's unsaved one. `check_query_reference` checks their references.
+        """
+        name = self.doc.get("name")
+        return frappe.db.get_value("Insights Query v3", name, "workbook") if name else None
 
     def check_query_reference(self, query_name):
         """A saved reference is authorised. Anything else is checked now."""
@@ -325,8 +377,10 @@ class IbisQueryBuilder:
 
         check_referenced_query_access(query_name)
 
-    def get_table_or_query(self, table_args):
+    def get_table_or_query(self, table_args) -> tuple[IbisQuery, set[str]]:
+        """The relation `table_args` names, and what its author removed from it."""
         _table = None
+        dropped_by_writer = set()
 
         if table_args.type == "table":
             _table = InsightsTablev3.get_ibis_table(
@@ -336,22 +390,48 @@ class IbisQueryBuilder:
             )
         if table_args.type == "query":
             self.check_query_reference(table_args.query_name)
+            if self.stored_workbook:
+                check_source_workbook(self.stored_workbook, table_args.query_name)
             q = frappe.get_doc("Insights Query v3", table_args.query_name)
-            _table = q.build(use_live_connection=self.use_live_connection, force=self.force)
+            builder = q.get_builder(use_live_connection=self.use_live_connection, force=self.force)
+            _table, dropped_by_writer = builder.query, builder.dropped_by_writer
 
         if _table is None:
             frappe.throw(frappe._("Table or Query not found"), UnknownColumn)
 
-        return _table
+        return _table, dropped_by_writer
 
-    def get_column(self, column_name, throw=True):
+    def get_column(self, column_name, throw=True, table=None, dropped_by_writer=frozenset()):
+        """The column `column_name` names, on the query being built or on `table`,
+        whose author removed `dropped_by_writer`.
+
+        This is the one place that turns "this column is not here" into an
+        answer, so every operation that names a column calls it, a join's own
+        selection included. A column this build held back makes the chart Not
+        Permitted, not a broken operation the author must fix.
+        """
+        query = table
+        if table is None:
+            query, dropped_by_writer = self.query, self.dropped_by_writer
+
         # 1. Exact match
-        if column_name in self.query.columns:
-            return self.query[column_name]
+        if column_name in query.columns:
+            return query[column_name]
 
         # 2. Sanitized name match (handles capitalisation / special-char differences)
-        if sanitize_name(column_name) in self.query.columns:
-            return self.query[sanitize_name(column_name)]
+        if sanitize_name(column_name) in query.columns:
+            return query[sanitize_name(column_name)]
+
+        # A name this build held back is refused, not missing, and that stops
+        # every caller. The two fallbacks below handle columns stored under an
+        # older naming. A held-back column is not one of those: the one column
+        # ending in `_<name>` would be the other side of a join, used silently.
+        # `throw` decides how to stop, not whether: a caller that continues
+        # without the column gets None.
+        if doctype := self.held_back(column_name, query, dropped_by_writer):
+            if throw:
+                not_permitted.refuse([doctype])
+            return None
 
         # 3. Suffix match: handles the case where a stored column name was produced
         #    in live-connection mode (e.g. "tabhd_ticket_priority_name") but the
@@ -362,9 +442,9 @@ class IbisQueryBuilder:
         #    that ambiguous / short suffixes are never silently resolved to the
         #    wrong column.
         suffix = f"_{column_name}"
-        suffix_matches = [col for col in self.query.columns if col.endswith(suffix)]
+        suffix_matches = [col for col in query.columns if col.endswith(suffix)]
         if len(suffix_matches) == 1:
-            return self.query[suffix_matches[0]]
+            return query[suffix_matches[0]]
 
         # 4. Schema-prefix-strip match: handles the case where a stored column name
         #    was produced in old warehouse mode (e.g. "frappe_cloud_tabinvoice_item_parent")
@@ -374,7 +454,7 @@ class IbisQueryBuilder:
         #    We scan all DatabaseTable nodes in the current ibis expression tree to
         #    collect the schema names that are actually present in this query, then
         #    try stripping each as a leading prefix before checking for a column match.
-        all_dt = self.query.op().find_topmost(DatabaseTable)
+        all_dt = query.op().find_topmost(DatabaseTable)
         schemas = {
             dt.namespace.database
             for dt in all_dt
@@ -384,24 +464,43 @@ class IbisQueryBuilder:
             prefix = f"{schema}_"
             if column_name.startswith(prefix):
                 remainder = column_name[len(prefix) :]
-                if remainder in self.query.columns:
-                    return self.query[remainder]
-                if sanitize_name(remainder) in self.query.columns:
-                    return self.query[sanitize_name(remainder)]
+                if remainder in query.columns:
+                    return query[remainder]
+                if sanitize_name(remainder) in query.columns:
+                    return query[sanitize_name(remainder)]
 
         if throw:
             frappe.throw(f"Column {column_name} does not exist in the table", UnknownColumn)
 
+    def held_back(self, column_name: str, relation: IbisQuery, dropped_by_writer: set[str]) -> str | None:
+        """The doctype `column_name` was held back from for permlevel, under `relation`.
+
+        Checked on the relation the name was looked up on, because that decides
+        what the name means. A column held back from another table of the same
+        build says nothing about this one. Neither does a column this relation
+        removed itself, before the reader's permissions applied.
+        """
+        held = not_permitted.held_back_columns()
+        for table in _whole_tables(relation, held, dropped_by_writer):
+            doctype = not_permitted.held_back_doctype(held_back_key(table, column_name))
+            if doctype:
+                return doctype
+
+        return None
+
     def apply_source(self, source_args):
-        return self.get_table_or_query(source_args.table)
+        source, self.dropped_by_writer = self.get_table_or_query(source_args.table)
+        return source
 
     def apply_join(self, join_args):
-        right_table = self.get_right_table(join_args)
-        join_condition = self.translate_join_condition(join_args, right_table)
+        right_table, right_dropped = self.get_right_table(join_args)
+        join_condition = self.translate_join_condition(join_args, right_table, right_dropped)
         join_type = JOIN_TYPES.get(join_args.join_type)
         if join_type is None:
             frappe.throw(frappe._("Join type {0} is not supported").format(join_args.join_type), QueryRefused)
-        right_table = self.rename_duplicate_columns(right_table)
+        # each side keeps its own removals: a remove on the right took nothing
+        # off the left, even when both read the same table
+        right_table = self.rename_duplicate_columns(right_table, right_dropped)
         return self.query.join(
             right_table,
             join_condition,
@@ -409,34 +508,36 @@ class IbisQueryBuilder:
         )
 
     def get_right_table(self, join_args):
-        right_table = self.get_table_or_query(join_args.table)
+        right_table, dropped_by_writer = self.get_table_or_query(join_args.table)
 
         if not join_args.select_columns:
-            return right_table
+            return right_table, dropped_by_writer
 
-        select_columns = set()
-
-        for col in join_args.select_columns:
-            select_columns.add(col.column_name)
+        named = [col.column_name for col in join_args.select_columns]
 
         if join_args.join_condition and join_args.join_condition.right_column:
-            select_columns.add(join_args.join_condition.right_column.column_name)
+            named.append(join_args.join_condition.right_column.column_name)
+
+        # through `get_column`, so a held-back column makes the chart Not Permitted
+        select_columns = {}
+        for name in named:
+            if not name:
+                continue
+            column = self.get_column(name, table=right_table, dropped_by_writer=dropped_by_writer)
+            select_columns[column.get_name()] = column
 
         if join_args.join_condition and join_args.join_condition.join_expression:
             expression = self.evaluate_expression(
                 join_args.join_condition.join_expression.expression,
-                additonal_context={
-                    "t1": self.query,
-                    "t2": right_table,
-                },
+                right=(right_table, dropped_by_writer),
             )
             columns_from_exp = self.get_columns_from_expression(expression)
-            if columns_from_exp:
-                # filter columns to only include those that exist in right_table
-                columns_from_exp = [col for col in columns_from_exp if col in right_table.columns]
-                select_columns.update(columns_from_exp)
+            # an expression names columns of both tables; keep only this table's
+            for name in columns_from_exp or []:
+                if name in right_table.columns:
+                    select_columns[name] = right_table[name]
 
-        return right_table.select(select_columns)
+        return right_table.select(list(select_columns.values())), dropped_by_writer
 
     def get_columns_from_expression(
         self,
@@ -455,7 +556,7 @@ class IbisQueryBuilder:
 
         return list(columns)
 
-    def translate_join_condition(self, join_args, right_table):
+    def translate_join_condition(self, join_args, right_table, right_dropped):
         def left_eq_right_condition(left_column, right_column):
             if left_column and right_column and left_column.column_name and right_column.column_name:
                 rt = right_table
@@ -469,10 +570,7 @@ class IbisQueryBuilder:
         if join_condition.join_expression and join_condition.join_expression.expression:
             return self.evaluate_expression(
                 join_condition.join_expression.expression,
-                {
-                    "t1": _,
-                    "t2": right_table,
-                },
+                right=(right_table, right_dropped),
             )
         else:
             return left_eq_right_condition(
@@ -480,19 +578,22 @@ class IbisQueryBuilder:
                 join_condition.right_column,
             )
 
-    def rename_duplicate_columns(self, right_table):
+    def rename_duplicate_columns(self, right_table, right_dropped: set[str]):
+        """Prefix the right table's columns that collide with the left's, as
+        they would for the author: held-back columns on either side count."""
         query: IbisQuery = self.query
-        query_columns = set(query.columns)
-        right_table_columns = set(right_table.columns)
+        held = not_permitted.held_back_columns()
+        left = _side(query, held, self.dropped_by_writer)
+        right = _side(right_table, held, right_dropped)
         right_table_name = get_ibis_table_name(right_table)
         right_table_name = sanitize_name(right_table_name)
 
-        duplicate_columns = query_columns.intersection(right_table_columns)
+        duplicate_columns = {col for col in right_table.columns if left(col)}
         if not duplicate_columns:
             return right_table
 
         def is_conflicting(col):
-            return col in query_columns or col in right_table_columns
+            return left(col) or right(col)
 
         def get_new_name(col):
             new_name = f"{right_table_name}_{col}"
@@ -510,7 +611,10 @@ class IbisQueryBuilder:
         return right_table.rename(**{get_new_name(col): col for col in duplicate_columns})
 
     def apply_union(self, union_args):
-        other_table = self.get_table_or_query(union_args.table)
+        other_table, other_dropped = self.get_table_or_query(union_args.table)
+        # a union keeps only the columns both sides have, so a remove on either
+        # side takes the column off for the author
+        self.dropped_by_writer = self.dropped_by_writer | other_dropped
 
         current_columns = set(self.query.columns)
         other_columns = set(other_table.columns)
@@ -613,21 +717,32 @@ class IbisQueryBuilder:
     def apply_rename(self, rename_args):
         old_name = self.get_column(rename_args.column.column_name).get_name()
         new_name = sanitize_name(rename_args.new_name)
+        self.drop_by_writer([old_name])
         return self.query.rename(**{new_name: old_name})
 
     def apply_remove(self, remove_args):
-        # Get valid columns that exist in the query
-        valid_columns = []
+        present = []
+        held = []
         for column_name in remove_args.column_names:
             column = self.get_column(column_name, throw=False)
             if column is not None:
-                valid_columns.append(column.get_name())
+                present.append(column.get_name())
+            elif self.held_back(column_name, self.query, self.dropped_by_writer):
+                # the author removes it too. Record it, because its table is still
+                # under the relation
+                held.append(column_name)
 
-        # If no valid columns to remove, return the original query
-        if not valid_columns:
-            return self.query
+        self.drop_by_writer(present + held)
+        return self.query.drop(*present) if present else self.query
 
-        return self.query.drop(*valid_columns)
+    def drop_by_writer(self, names: list[str]) -> None:
+        """Record the names a remove or rename takes off `self.query`, for every table under it."""
+        tables = [
+            frappe.scrub(strip_schema_prefix(dt.name)) for dt in self.query.op().find_topmost(DatabaseTable)
+        ]
+        self.dropped_by_writer = self.dropped_by_writer | {
+            held_back_key(table, name) for table in tables for name in names
+        }
 
     def apply_cast(self, cast_args):
         col_name = self.get_column(cast_args.column.column_name).get_name()
@@ -688,7 +803,10 @@ class IbisQueryBuilder:
 
         alias = sg.to_identifier(new_name, quoted=True).sql(dialect=source_dialect)
         statement = f"SELECT *, {raw_sql} AS {alias} FROM {SQL_COLUMN_RELATION}"
-        self._validate_sql_column_statement(statement, source_dialect)
+        select = self._validate_sql_column_statement(statement, source_dialect)
+        # the SQL reads only the columns left to the reader, so a held-back name
+        # is missing here, as it is from `get_column`
+        self.refuse_held_back_in_sql(select, {SQL_COLUMN_RELATION: self.query}, self.dropped_by_writer)
 
         if not self.use_live_connection:
             statement = self._transpile_sql_to_duckdb(statement, source_dialect)
@@ -700,7 +818,7 @@ class IbisQueryBuilder:
         dtype = self.get_ibis_dtype(sql_column_args.data_type) if sql_column_args.data_type else None
         return query.cast({new_name: dtype}) if dtype else query
 
-    def _validate_sql_column_statement(self, statement: str, dialect: str) -> None:
+    def _validate_sql_column_statement(self, statement: str, dialect: str) -> sg.exp.Select:
         """Validate the assembled statement, not the expression alone.
 
         An expression parsed on its own is read as the start of a statement, so
@@ -728,6 +846,7 @@ class IbisQueryBuilder:
                 frappe._("A SQL column expression cannot read another table"),
                 QueryRefused,
             )
+        return select
 
     def apply_summary(self, summarize_args):
         if any(dimension.get("windows") for dimension in summarize_args.dimensions):
@@ -759,7 +878,7 @@ class IbisQueryBuilder:
         the start dates sort the spans oldest first, the order a number card
         reads its rows in. A span holding no rows is a row too, with null
         measures: the card reads its rows by position, so a span that came back
-        as nothing would hand the reading its neighbor's figure. A span carries
+        as nothing would hand the reading its neighbor's figure. A span has
         no dates until here, because the clock and the fiscal calendar are only
         known while the query runs.
 
@@ -848,12 +967,15 @@ class IbisQueryBuilder:
 
                 # replace values not in selected_names with 'Others'
                 # use ibis.case() since ibis.where isn't available on the module
-                others_expr = ibis.cases((col_expr.isin(selected_names), col_expr), else_="Others")
+                others_expr = ibis.cases((col_expr.isin(selected_names), col_expr), else_=PIVOT_OTHERS)
                 self.query = self.query.mutate(**{col_name: others_expr})
+                # recorded here, because only this run knows which values it kept:
+                # that depends on the rows it saw
+                _fold_tail_into_others(col_name)
 
                 # ensure the pivot names include the 'Others' bucket
                 names = [str(name) for name in selected_names]
-                names.append("Others")
+                names.append(PIVOT_OTHERS)
 
             return self.query.pivot_wider(
                 id_cols=[row.get_name() for row in rows],
@@ -870,7 +992,7 @@ class IbisQueryBuilder:
         """The distinct column values a pivot keeps, and whether it cut any.
 
         Everything the cut leaves out lands in "Others", so this ranking decides
-        which series a chart draws. Rank by the measure, not by the value's own
+        which series a chart plots. Rank by the measure, not by the value's own
         name: alphabetical order drops the largest series into the tail. Several
         measures rank by the first. With none, and with a measure that does not
         add up, whose sum ranks nothing, the pivot only shows which groups
@@ -911,38 +1033,52 @@ class IbisQueryBuilder:
         db = ds._get_ibis_backend() if self.use_live_connection else insights.warehouse.db
         source_dialect = ds.get_sqlglot_dialect()
 
+        calls_procedure = runs_stored_procedure(raw_sql)
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
-        raw_sql = self._validate_native_sql(raw_sql, use_live_connection=self.use_live_connection)
-
-        check_permissions = frappe.db.get_single_value(
-            "Insights Settings", "enable_permissions"
-        ) or frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
+        raw_sql = self._validate_native_sql(
+            raw_sql, use_live_connection=self.use_live_connection, dialect=source_dialect
+        )
 
         # the data store reads DuckDB, so from the transpile on, that is the dialect
         # this query is written in
         target_dialect = source_dialect if self.use_live_connection else "duckdb"
 
-        if check_permissions or not self.use_live_connection:
-            tables = self._get_sql_table_names(raw_sql, dialect=source_dialect)
-            replace_map = self._get_sql_table_bindings(
-                data_source,
-                tables,
-                dialect=source_dialect,
-                use_live_connection=self.use_live_connection,
-                check_permissions=check_permissions,
+        # raw SQL names its own tables, so each one is replaced with a binding
+        # that applies the reader's permissions. This covers every SQL query
+        # except a stored procedure call, which names no table and is trusted
+        # code (`trusted_code_of`). `_validate_native_sql` refuses the other
+        # shapes a binding cannot be built for, instead of running them unbound
+        tables = self._get_sql_table_names(raw_sql, dialect=source_dialect)
+        bindings = self._get_sql_table_bindings(
+            db,
+            data_source,
+            tables,
+            use_live_connection=self.use_live_connection,
+        )
+        if raw_sql.lower().startswith(("select", "with")):
+            parsed = sg.parse_one(raw_sql, dialect=source_dialect)
+            self.refuse_held_back_in_sql(parsed, bindings)
+            # a binding reaches the database as SQL text, so the execution cannot
+            # tell which of its columns are read. Work that out here instead
+            named = {column.name.lower() for column in parsed.find_all(sg.exp.Column)}
+            reads_all = any(
+                isinstance(projection, sg.exp.Star) or isinstance(projection.this, sg.exp.Star)
+                for select in parsed.find_all(sg.exp.Select)
+                for projection in select.expressions
             )
+            for table_expr in bindings.values():
+                read = [c for c in table_expr.columns if reads_all or c.lower() in named]
+                if read:
+                    user_permissions.record_blanked_reads(table_expr.select(*read))
+        replace_map = {table_name: ibis.to_sql(table_expr) for table_name, table_expr in bindings.items()}
 
-            if not self.use_live_connection:
-                raw_sql = self._transpile_sql_to_duckdb(raw_sql, source_dialect)
+        if not self.use_live_connection:
+            raw_sql = self._transpile_sql_to_duckdb(raw_sql, source_dialect)
 
-            raw_sql = self._replace_sql_tables(raw_sql, replace_map, dialect=target_dialect)
+        raw_sql = self._replace_sql_tables(raw_sql, replace_map, dialect=target_dialect)
 
         supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
-        if (
-            supports_stored_procedure
-            and ds.enable_stored_procedure_execution
-            and raw_sql.strip().lower().startswith("exec")
-        ):
+        if supports_stored_procedure and ds.enable_stored_procedure_execution and calls_procedure:
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
             raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
 
@@ -967,7 +1103,14 @@ class IbisQueryBuilder:
 
         return results
 
-    def _validate_native_sql(self, raw_sql: str, use_live_connection: bool) -> str:
+    def _validate_native_sql(
+        self, raw_sql: str, use_live_connection: bool, dialect: sg.Dialect | None = None
+    ) -> str:
+        """Refuse a SQL query that the rest of `apply_sql` cannot run correctly.
+
+        All the refusals are here together, because a refusal raised from
+        inside a rewrite looks like a bug in the rewrite.
+        """
         raw_sql = raw_sql.strip()
 
         # one statement, on every path: ibis cannot run two — `db.sql` on a pair
@@ -982,12 +1125,23 @@ class IbisQueryBuilder:
             )
 
         if not use_live_connection:
-            if raw_sql.lower().startswith("exec"):
+            if runs_stored_procedure(raw_sql):
                 frappe.throw(
                     frappe._("Stored procedures are not supported with Data Store for native queries"),
                     QueryRefused,
                     title=frappe._("Unsupported SQL Query"),
                 )
+
+        # every table a SQL query names is replaced with a permission-filtered
+        # select, looked up by bare name. A qualified reference would then get
+        # the same-named table in the default schema, a different table. So it
+        # is refused.
+        if any(ref.db or ref.catalog for ref in extract_sql_table_refs(raw_sql, dialect=dialect)):
+            frappe.throw(
+                frappe._("Schema-qualified table names are not supported for native queries yet"),
+                QueryRefused,
+                title=frappe._("Unsupported SQL Query"),
+            )
 
         return raw_sql
 
@@ -1014,30 +1168,27 @@ class IbisQueryBuilder:
         return transpiled_sql[0]
 
     def _get_sql_table_names(self, raw_sql: str, dialect: sg.Dialect | None) -> set[str]:
-        tables = set()
-        for table_ref in extract_sql_table_refs(raw_sql, dialect=dialect):
-            # a binding is looked up by the bare name, so a qualified reference would
-            # bind the same-named table in the default schema — a different table
-            if table_ref.db or table_ref.catalog:
-                frappe.throw(
-                    frappe._("Schema-qualified table names are not supported for native queries yet"),
-                    QueryRefused,
-                    title=frappe._("Unsupported SQL Query"),
-                )
-
-            tables.add(table_ref.name)
-
-        return tables
+        # bare names: `_validate_native_sql` has already refused a qualified one
+        return {table_ref.name for table_ref in extract_sql_table_refs(raw_sql, dialect=dialect)}
 
     def _get_sql_table_bindings(
         self,
+        db,
         data_source: str,
         tables: set[str],
-        dialect: sg.Dialect | None,
         use_live_connection: bool,
-        check_permissions: bool,
-    ) -> dict[str, str]:
-        replace_map = {}
+    ) -> dict[str, IbisQuery]:
+        """The permission-filtered relation that replaces each table the SQL names.
+
+        Every table gets one, even with no `WHERE`, because a held-back column
+        also narrows a table.
+
+        A binding is passed to `db` as SQL text, so ibis never executes it and
+        never registers the in-memory tables it names. On the Data Store these
+        hold the rows desk allows, read from the live site. They are registered
+        here, as ibis does before it executes an expression.
+        """
+        bindings = {}
 
         for table_name in tables:
             table_expr = InsightsTablev3.get_ibis_table(
@@ -1045,18 +1196,47 @@ class IbisQueryBuilder:
                 table_name,
                 use_live_connection=use_live_connection,
             )
-            table_sql = ibis.to_sql(table_expr)
+            db._register_in_memory_tables(table_expr)
+            bindings[table_name] = table_expr
 
-            if use_live_connection and check_permissions:
-                table_sql_parsed = sg.parse_one(table_sql, dialect=dialect)
-                if not table_sql_parsed.find(sg.exp.Where):
-                    # if we are running in live connection and there are no permission filters applied,
-                    # we skip replacing the table with a subquery
-                    continue
+        return bindings
 
-            replace_map[table_name] = table_sql
+    def refuse_held_back_in_sql(
+        self, parsed: sg.exp.Expression, relations: dict[str, IbisQuery], dropped_by_writer=frozenset()
+    ) -> None:
+        """Refuse a column in `parsed` that a relation it reads held back.
 
-        return replace_map
+        Raw SQL reads the relations bound for the reader, so a held-back column
+        is missing there. The database would raise a column error, and the card
+        would show a retry. This gives the refusal `get_column` gives an
+        operation.
+
+        `relations` is keyed by the table name the SQL reads each one as. A name
+        matches in any case, as the database reads it. A qualified name is
+        checked against the table its qualifier names. An unqualified name that
+        the SQL defines itself, as an alias or a CTE column, belongs to no table.
+        """
+        by_reference = {
+            table.alias_or_name: relations[table.name]
+            for table in parsed.find_all(sg.exp.Table)
+            if table.name in relations
+        }
+        defined = {alias.alias.lower() for alias in parsed.find_all(sg.exp.Alias)}
+
+        for column in parsed.find_all(sg.exp.Column):
+            name = column.name
+            if not name or (not column.table and name.lower() in defined):
+                continue
+
+            reads = (
+                [by_reference[column.table]] if column.table in by_reference else list(by_reference.values())
+            )
+            if any(name.lower() in {c.lower() for c in relation.columns} for relation in reads):
+                continue
+
+            for relation in reads:
+                if doctype := self.held_back(name, relation, dropped_by_writer):
+                    not_permitted.refuse([doctype])
 
     def _replace_sql_tables(
         self,
@@ -1071,15 +1251,20 @@ class IbisQueryBuilder:
         that reads `tabTask` in one place and `tabtask` in another asks for two CTEs
         that MariaDB reads as one, and it refuses the pair. Replacing the reference
         itself needs no name, so no spelling can collide.
+
+        `real_table_refs` decides which references to replace, the same rule the
+        bindings were built from. A reference it treats as a CTE has that block's
+        columns, not the table's, so binding it would ask the database for
+        columns that do not exist.
         """
         if not replace_map:
             return raw_sql
 
         parsed = sg.parse_one(raw_sql, dialect=dialect)
 
-        # collect first: the replacements carry their own table references, and
+        # collect first: the replacements have their own table references, and
         # re-reading them would replace a table inside its own binding
-        for table_exp in list(parsed.find_all(sg.exp.Table)):
+        for table_exp in real_table_refs(parsed):
             table_sql = replace_map.get(table_exp.name)
             if table_sql is None:
                 continue
@@ -1115,18 +1300,18 @@ class IbisQueryBuilder:
         if not parsed.ctes:
             return raw_sql
 
-        # nest what was parsed, not the text it came from: the text can carry a
+        # nest what was parsed, not the text it came from: the text can have a
         # trailing semicolon, and that would land inside the brackets
         return f"SELECT * FROM ({parsed.sql(dialect=dialect)}) AS {NATIVE_SQL_RELATION}"
 
     def apply_code(self, code_args):
         code = code_args.code
-
         adhoc_filters = frappe.as_json(getattr(frappe.local, "insights_adhoc_filters", {}))
-        variables = resolve_variables(getattr(self.doc, "variables", None))
+        variables = resolve_variables(self.doc.execution_reference)
         # a variable value changes the output as surely as the code does, so it
-        # belongs in the key that decides whether the script runs again
-        digest = make_digest(code, adhoc_filters, frappe.as_json(variables))
+        # belongs in the key that decides whether the script runs again. So does
+        # the user the script runs as
+        digest = make_digest(code, adhoc_filters, frappe.as_json(variables), get_permission_user())
 
         cached_results = None if self.force else get_cached_results(digest)
         if cached_results is not None:
@@ -1249,19 +1434,32 @@ class IbisQueryBuilder:
 
         frappe.throw(f"Granularity {granularity} is not supported for Time columns", QueryRefused)
 
-    def evaluate_expression(self, expression, additonal_context=None):
+    def evaluate_expression(self, expression, right=None):
+        """`right` is a join's other table and its author's removals. It is named
+        `t2`, beside the query being built as `t1`."""
         if not expression or not expression.strip():
             raise ExpressionSyntaxError(f"Invalid expression: {expression}")
 
         frappe.flags.current_ibis_query = self.query
+        tables = [(self.query, self.dropped_by_writer)]
         context = frappe._dict()
-        context.pandas = frappe._dict()
-        context.pandas.DataFrame = SafePandasDataFrame
         context.q = self.query
         context.update(self.get_current_columns())
         context.update(get_functions())
-        context.update(additonal_context or {})
-        ret = exec_with_return(expression, context)
+        if right:
+            tables.append(right)
+            context.t1, context.t2 = self.query, right[0]
+        try:
+            ret = exec_with_return(expression, context)
+        except (NameError, AttributeError) as e:
+            # the context holds only the columns left to the reader, so a
+            # held-back name is missing here, bare or on a table, as it is from
+            # `get_column`
+            named_on = self.query if isinstance(e, NameError) else e.obj
+            for table, dropped_by_writer in tables:
+                if table is named_on and (doctype := self.held_back(e.name, table, dropped_by_writer)):
+                    not_permitted.refuse([doctype])
+            raise
         frappe.flags.current_ibis_query = None
         return ret
 
@@ -1299,6 +1497,10 @@ def execute_ibis_query(
     except ibis.common.exceptions.OperationNotDefinedError:
         # TODO: throw better error message
         raise
+
+    # the columns the query reads are known only now. Record them before
+    # returning a cached answer, which read the same columns
+    user_permissions.record_blanked_reads(query)
 
     backend = query.get_backend()
     if cache:
@@ -1419,7 +1621,7 @@ def get_cached_results(cache_key) -> pd.DataFrame:
     if not data:
         return None
     payload = frappe.parse_json(data)
-    # a result with no rows still has columns, and records alone cannot carry them
+    # a result with no rows still has columns, and records alone cannot hold them
     df = pd.DataFrame(payload["rows"], columns=payload["columns"])
     return df.replace({pd.NaT: None, np.nan: None})
 
@@ -1450,17 +1652,75 @@ def exec_with_return(
     elif isinstance(last_node, ast.AnnAssign | ast.AugAssign):
         output_expression = ast.unparse(last_node.value)
 
-    _globals = _globals or {}
+    _globals = {**expression_globals(), **(_globals or {})}
     _locals = _locals or {}
 
     tree.body.pop()  # remove the last expression
     _script = ast.unparse(tree)
     if _script.strip():
-        with ensure_rollback():
-            safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
-        return safe_eval(output_expression, _globals, _locals)
-    else:
-        return safe_eval(output_expression, _globals, _locals)
+        safe_exec(_script, _globals, _locals)  # nosemgrep
+    # `safe_eval` starts with no globals, so frappe's other names need no
+    # `NotDefined` stand-in, and a held-back column name stays a NameError
+    defined = {name: value for name, value in _globals.items() if not isinstance(value, NotDefined)}
+    return safe_eval(output_expression, defined, _locals)  # nosemgrep
+
+
+def forget_folded_tails() -> None:
+    """Clear the last build's folded tails, so one build never reports for another."""
+    setattr(frappe.local, PIVOT_TAILS, set())
+
+
+def _fold_tail_into_others(column_name: str) -> None:
+    """Record that a split replaced a tail of this column's values with `Others`."""
+    folded = getattr(frappe.local, PIVOT_TAILS, None)
+    if folded is None:
+        folded = set()
+        setattr(frappe.local, PIVOT_TAILS, folded)
+    folded.add(column_name)
+
+
+def folded_a_tail(column_name: str) -> bool:
+    """Whether this build's split replaced a tail of `column_name` with `Others`.
+
+    Only the split knows. Whether there was a tail depends on how many distinct
+    values the rows had at run time. Also, `isin` keeps a real value named
+    `Others` under its own name, so one series can hold both, and the rows
+    alone cannot tell which.
+    """
+    return column_name in (getattr(frappe.local, PIVOT_TAILS, None) or set())
+
+
+def _whole_tables(relation: IbisQuery, held: set[str], dropped_by_writer: set[str]) -> set[str]:
+    """The tables under `relation` whose columns it keeps in full, minus what
+    this build held back and what the author removed. Only such a table can
+    tell which held-back columns `relation` would have had. A summarize or a
+    select above a table keeps only some of its columns."""
+    columns = set(relation.columns)
+    dropped = held | dropped_by_writer
+    whole = set()
+    for dt in relation.op().find_topmost(DatabaseTable):
+        table = frappe.scrub(strip_schema_prefix(dt.name))
+        kept = {name for name in dt.schema.names if held_back_key(table, name) not in dropped}
+        if kept <= columns:
+            whole.add(table)
+
+    return whole
+
+
+def _side(relation: IbisQuery, held: set[str], dropped_by_writer: set[str]):
+    """A check of whether a name is a column of `relation` as its author sees
+    it: its tables' held-back columns count, and a name the author removed does
+    not."""
+    columns = set(relation.columns)
+    tables = _whole_tables(relation, held, dropped_by_writer)
+    put_back = held - dropped_by_writer
+
+    def had(column_name: str) -> bool:
+        return column_name in columns or any(
+            held_back_key(table, column_name) in put_back for table in tables
+        )
+
+    return had
 
 
 def get_ibis_table_name(table: IbisQuery):
@@ -1485,15 +1745,12 @@ def sanitize_name(name):
     )
 
 
-class SafePandasDataFrame(pd.DataFrame):
-    def to_csv(self, *args, **kwargs):
-        raise NotImplementedError("to_csv is not supported in this context")
-
-    def to_json(self, *args, **kwargs):
-        raise NotImplementedError("to_json is not supported in this context")
-
-
 def publish_script_logs():
+    # a run as another user printed data read with their permissions, and the
+    # realtime room belongs to the caller
+    if get_permission_user() != frappe.session.user:
+        return
+
     # this runs in a finally, so an unguarded raise here would replace the
     # script's own exception - or its result - with a realtime transport error
     try:
@@ -1537,40 +1794,48 @@ def get_script_line_number(exc_value, tb) -> int | None:
     return None
 
 
-def resolve_variables(variables) -> dict:
-    if not variables:
-        return {}
+def resolve_variables(query: str) -> dict:
+    """The values of the variables stored on `query`.
 
+    Never from the rows of the document being run. `run_doc_method` builds that
+    document from the request body, so the caller picks its row names, and a
+    secret is stored under a row name.
+    """
     from frappe.utils.password import get_decrypted_password
 
     resolved = {}
-    for var in variables:
-        if isinstance(var, dict):
-            resolved[var.get("variable_name")] = var.get("variable_value")
-        else:
-            resolved[var.variable_name] = get_decrypted_password(var.doctype, var.name, "variable_value")
+    for var in frappe.get_all(
+        "Insights Query Variable",
+        filters={"parenttype": "Insights Query v3", "parentfield": "variables", "parent": query},
+        fields=["name", "variable_name"],
+        order_by="idx",
+    ):
+        value = get_decrypted_password(
+            "Insights Query Variable", var.name, "variable_value", raise_exception=False
+        )
+        # a copied query keeps the variable's name but not its secret value
+        if value is None:
+            frappe.throw(
+                frappe._("Fill in the value of the variable {0} on this query to run it.").format(
+                    frappe.bold(var.variable_name)
+                ),
+                frappe.ValidationError,
+                title=frappe._("Variable has no value"),
+            )
+        resolved[var.variable_name] = value
     return resolved
 
 
 def get_code_results(code: str, variables: dict | None = None):
-    pandas = frappe._dict()
-    pandas.DataFrame = SafePandasDataFrame
-    pandas.read_csv = pd.read_csv
-    pandas.json_normalize = pd.json_normalize
-
     results = []
     frappe.local.debug_log = []
 
     _locals = {"results": results, **(variables or {})}
     start = time.monotonic()
     try:
-        with ensure_rollback():
-            _, _locals = safe_exec(
-                code,
-                _globals={"pandas": pandas},
-                _locals=_locals,
-                restrict_commit_rollback=True,
-            )
+        with ensure_rollback(), script_session():
+            # built inside `script_session`, because `script_globals` reads `frappe.session.user`
+            _, _locals = safe_exec(code, _globals=script_globals(), _locals=_locals)  # nosemgrep
     except Exception:
         # the panel is the only place the script author sees anything, so the
         # error has to land there before it travels on as a request failure

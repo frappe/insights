@@ -58,7 +58,7 @@ If you delete a workbook, you delete its queries, charts, dashboards and folders
 
 - `query` is the base query's real document name.
 - `chart_type` and `config` shapes are in `charts.md`.
-- A chart holds no query of its own. Its aggregation is built at render time. Run it with `get_data` to check it. Saving does not validate the config.
+- A chart holds no query of its own. Its aggregation is built at render time. Run it with `insights.api.view.get_chart_data` to check it. Saving does not validate the config.
 - Every save normalizes the config: it rewrites older shapes, names each dimension and gives each reading an `id`. So the config you read back differs from the one you wrote. Do not compare them field by field.
 
 ## Insights Dashboard v3

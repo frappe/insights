@@ -191,10 +191,7 @@ frontend/components.d.ts
 frontend/e2e/.auth/
 scripts/
 
-# Effort docs under docs/projects/ are branch-scoped: they live on the feature
-# branch and are removed when it merges. See docs/agents/issue-tracker.md.
+# docs/projects links to the effort docs outside the repo. See docs/agents/issue-tracker.md.
 # These paths are local-only and are never committed.
-docs/archive/
+docs/projects
 docs/research/
-docs/projects/workbook_agent/
-docs/projects/gemstaging-doctype-drift/

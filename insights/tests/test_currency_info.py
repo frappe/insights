@@ -31,7 +31,7 @@ class TestCurrencyInfo(InsightsIntegrationTestCase):
             )
 
     # @feature charts.measure-unit
-    def test_a_symbol_is_looked_up_by_the_code_a_result_carries(self):
+    def test_a_symbol_is_looked_up_by_the_code_a_result_holds(self):
         # a disabled currency resolves like an enabled one
         frappe.db.set_value("Currency", "SEK", {"enabled": 0, "symbol_on_right": 1})
         _, hidden = _defaults()

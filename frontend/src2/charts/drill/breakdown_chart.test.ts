@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { breakdownChart, breakdownPlot, type BreakdownAnswer } from './breakdown_chart'
 
-// What a breakdown level draws itself as, and nothing about how it draws it.
+// What a breakdown level renders itself as, and nothing about how it renders it.
 // The shape is the answer's own reading, so these build answers and assert on
 // the shape that comes out — never on a column type read directly.
 
@@ -26,7 +26,7 @@ function answer(over: Partial<BreakdownAnswer> = {}): BreakdownAnswer {
 
 const config = (chart: ReturnType<typeof breakdownChart>) => chart.config as any
 
-describe('the shape a breakdown level draws itself as', () => {
+describe('the shape a breakdown level renders itself as', () => {
 	// @feature charts.drill-breakdown-shape
 	it('ranks an unordered Dimension as a Row chart', () => {
 		expect(breakdownPlot('region', answer()).chart_type).toBe('Row')
@@ -41,7 +41,7 @@ describe('the shape a breakdown level draws itself as', () => {
 	})
 
 	// @feature charts.drill-breakdown-shape
-	it('draws a short stretch as bars, because a few points trace no shape', () => {
+	it('shows a short stretch as bars, because a few points trace no shape', () => {
 		const short = answer({ columns: dated, rows: rows('due_date', 3), ordered: true })
 		expect(breakdownPlot('due_date', short).chart_type).toBe('Bar')
 	})
@@ -49,7 +49,7 @@ describe('the shape a breakdown level draws itself as', () => {
 	// @feature charts.drill-breakdown-shape
 	it('never decides the shape from the column type, only from the answer', () => {
 		// a date the server ranked — because the segment's span had no order worth
-		// reading — is a ranking, and drawing it as a line would invent one
+		// reading — is a ranking, and showing it as a line would invent one
 		const date = answer({ columns: dated, rows: rows('due_date', 12), ordered: false })
 		expect(breakdownPlot('due_date', date).chart_type).toBe('Row')
 	})
@@ -72,7 +72,7 @@ describe('a ranking read as parts of one whole', () => {
 		answer({ rows: rows('region', 4), additive: true, total_row_count: 4, ...over })
 
 	// @feature charts.drill-additive
-	it('draws few additive groups that all came back as a Donut', () => {
+	it('shows few additive groups that all came back as a Donut', () => {
 		expect(breakdownPlot('region', whole()).chart_type).toBe('Donut')
 	})
 
@@ -83,13 +83,13 @@ describe('a ranking read as parts of one whole', () => {
 	})
 
 	// @feature charts.drill-additive
-	it('will not draw a ring out of the biggest few of many groups', () => {
+	it('will not show a ring out of the biggest few of many groups', () => {
 		// the segments would not close: 40 groups exist and 4 are shown
 		expect(breakdownPlot('region', whole({ total_row_count: 40 })).chart_type).toBe('Row')
 	})
 
 	// @feature charts.drill-additive
-	it('will not draw a negative segment', () => {
+	it('will not show a negative segment', () => {
 		const refunds = whole({ rows: [...rows('region', 3), { region: 'g3', count: -5 }] })
 		expect(breakdownPlot('region', refunds).chart_type).toBe('Row')
 	})
@@ -132,9 +132,9 @@ describe('the marks a level labels', () => {
 	})
 })
 
-describe('the config a shape is drawn from', () => {
+describe('the config a shape is rendered from', () => {
 	// @feature charts.drill-breakdown-shape
-	it('draws the axis at the grain the level was grouped by', () => {
+	it('plots the axis at the grain the level was grouped by', () => {
 		const chart = breakdownChart(
 			'due_date',
 			answer({
@@ -151,7 +151,7 @@ describe('the config a shape is drawn from', () => {
 	})
 
 	// @feature charts.drill-breakdown-shape
-	it('measures every numeric column the answer carried', () => {
+	it('measures every numeric column the answer included', () => {
 		// a click on a number card names no measure and keeps all of them
 		const chart = breakdownChart(
 			'region',

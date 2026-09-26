@@ -12,7 +12,7 @@ const rule = (columnName: string) =>
 
 describe('routing a rule to its columns', () => {
 	// @feature charts.table-conditional-formatting
-	it('names the drawn column itself', () => {
+	it('names the rendered column itself', () => {
 		expect(Object.keys(rulesByColumn([rule('Revenue___Women')], PIVOT))).toEqual([
 			'Revenue___Women',
 		])

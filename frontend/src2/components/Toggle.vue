@@ -1,6 +1,6 @@
 <template>
 	<!--
-	`Switch` spaces itself as a settings row: a label-only row carries `py-1.5`
+	`Switch` spaces itself as a settings row: a label-only row has `py-1.5`
 	so a list of them abuts. Insights uses it as one control in a gapped form
 	stack, where that padding lands on top of the gap and doubles it. Canceling
 	it here makes a Toggle measure like every other control in the stack, so the

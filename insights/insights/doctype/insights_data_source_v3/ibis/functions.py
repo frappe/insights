@@ -6,9 +6,9 @@ import ibis.expr.types as ir
 import ibis.selectors as s
 import pandas as pd
 from frappe.utils import now_datetime
-from ibis import _
 
 from insights.insights.query_builders.sql_functions import (
+    get_fiscal_year_start_date,
     get_week_start_day_index,
     handle_timespan,
 )
@@ -1064,18 +1064,6 @@ def row_number():
     return ibis.row_number()
 
 
-def sql(query):
-    """
-    def sql(query)
-
-    Execute a SQL query.
-
-    Examples:
-    - sql('SELECT * FROM table')
-    """
-    return _.sql(query)
-
-
 def coalesce(*args):
     """
     def coalesce(*args)
@@ -1368,11 +1356,7 @@ def fiscal_year_start(column: ir.DateValue):
     - fiscal_year_start(order_date)
     """
 
-    fy_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
-    if not fy_start:
-        from datetime import date
-
-        fy_start = date(date.today().year - 1, 4, 1)
+    fy_start = get_fiscal_year_start_date()
     fiscal_year_start_month = fy_start.month
     fiscal_year_start_day = fy_start.day
 

@@ -89,7 +89,12 @@ function handleSaveVariables(variables: any[]) {
 		<div class="relative flex h-[55%] w-full flex-col overflow-hidden rounded-4 border">
 			<div class="flex flex-1 overflow-hidden">
 				<div class="flex-1">
-					<Code v-model="code" language="python" :placeholder="placeholder_script" />
+					<Code
+						v-model="code"
+						language="python"
+						:placeholder="placeholder_script"
+						:read-only="!session.user.can_write_trusted_code"
+					/>
 				</div>
 
 				<transition

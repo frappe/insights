@@ -4,9 +4,10 @@ import { Query } from '../query'
 import AlertSetupDialog from './AlertSetupDialog.vue'
 import QueryAlertsDialog from './QueryAlertsDialog.vue'
 
-// The alerts affordance, out of the table and into the callers that offer it.
-// Setting up an alert is authoring, and its two dialogs are 42 kB of editor
-// that every result table used to carry, the viewer's included. The menu item that opens it is the caller's, so nothing here draws
+// The alerts affordance, out of the table and into the callers that show it.
+// Setting up an alert is a Builder task, and its two dialogs are 42 kB of
+// editor. Every page with a result table used to load them, a reader's too.
+// The menu item that opens it is the caller's, so nothing here renders
 // a control of its own.
 defineProps<{ query: Query }>()
 

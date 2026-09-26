@@ -44,7 +44,7 @@ export type InsightsFixtures = {
 /**
  * Fixtures scoped to business actions.
  *
- * Each rung of the Workbook ladder builds on the one below it, so a test that
+ * Each level of the Workbook ladder builds on the one below it, so a test that
  * asks for a Chart gets exactly one Workbook and one teardown. A test states
  * what it depends on by naming the fixture, and nothing is seeded that a test
  * did not ask for.
@@ -77,7 +77,7 @@ export const test = base.extend<InsightsFixtures>({
 
 	guestPage: async ({ browser, baseURL }, use) => {
 		// An empty storage state, not the project default. The `page` fixture
-		// carries the admin session, so a guest flow that reused it would prove
+		// holds the admin session, so a guest flow that reused it would prove
 		// nothing. `browser.newContext` takes no options from the config, so
 		// `baseURL` is passed on.
 		const context = await browser.newContext({

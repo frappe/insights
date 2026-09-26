@@ -5,7 +5,7 @@ import type { BreakpointKey, Layout, WorkbookDashboardItemLayout } from '../type
 import type { CellRules } from './grid_placement'
 import { BREAKPOINTS, ROW_HEIGHT, breakpointFor, placeGrid, placementsFor } from './grid_placement'
 
-// The dashboard grid, drawn. It works out where every cell goes and puts it
+// The dashboard grid, rendered. It works out where every cell goes and puts it
 // there — no pointer, no measurement beyond its own width, and it never writes a
 // layout back.
 //
@@ -28,16 +28,16 @@ import { BREAKPOINTS, ROW_HEIGHT, breakpointFor, placeGrid, placementsFor } from
 const props = defineProps<{
 	items?: WorkbookDashboardItemLayout[]
 	/**
-	 * Draw this breakpoint, whatever the grid measures. It is what an author
+	 * Render this breakpoint, whatever the grid measures. It is what an author
 	 * arranging one width inside a box of another is shown, and what lets one
 	 * page hold every breakpoint side by side. Left out, the grid picks the
 	 * breakpoint its own box falls in.
 	 */
 	breakpoint?: BreakpointKey
 	/**
-	 * Draw this layout instead of the one the items hold. It is how the author's
+	 * Render this layout instead of the one the items hold. It is how the author's
 	 * grid shows a drag in progress: mid-gesture the grid on screen is not the
-	 * grid the document stores, and only one of them may be drawn.
+	 * grid the document stores, and only one of them may be rendered.
 	 */
 	layouts?: Layout[]
 	/**
@@ -113,7 +113,7 @@ function cellStyle(layout: Layout) {
 		return { ...box, transform: `translate(${across}, ${down})` }
 	}
 
-	// The held cell is drawn where the hand is, above the rest, and it does not
+	// The held cell is rendered where the hand is, above the rest, and it does not
 	// animate — a card that eases towards the cursor is a card that lags it.
 	return {
 		...box,

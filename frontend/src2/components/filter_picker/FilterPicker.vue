@@ -21,7 +21,7 @@ import FilterPickerPanel from './FilterPickerPanel.vue'
 const props = defineProps<{
 	columns: QueryResultColumn[]
 	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
-	/** The smallest and largest a numeric column goes, for the presets it offers. */
+	/** The smallest and largest a numeric column goes, for the presets it lists. */
 	rangeProvider?: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	column?: QueryResultColumn
 }>()

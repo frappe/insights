@@ -36,7 +36,7 @@ mkdir -p ~/.claude/skills
 ln -s "$SKILL" ~/.claude/skills/insights-workbook-cli
 ```
 
-The agent reads the `description` in `SKILL.md` and offers the skill when a task fits.
+The agent reads the `description` in `SKILL.md` and suggests the skill when a task fits.
 
 An agent with no skill loader takes a prompt instead. Write it wherever that agent keeps
 its prompts, with the real path in place of `$SKILL`:

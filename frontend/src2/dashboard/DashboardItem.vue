@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
 import {
-	WorkbookDashboardChart,
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 	WorkbookDashboardText,
@@ -9,13 +8,21 @@ import {
 import { Dashboard } from './dashboard'
 import DashboardChart from './DashboardChart.vue'
 import DashboardFilter from './DashboardFilter.vue'
+import DashboardFilterEditor from './DashboardFilterEditor.vue'
 import DashboardItemActions from './DashboardItemActions.vue'
 import DashboardText from './DashboardText.vue'
+import type { DashboardCellProps } from './view'
 
-const props = defineProps<{
-	index: number
-	item: WorkbookDashboardItem
-}>()
+// A grid cell in the builder: the card a reader sees, rendered from the config
+// being edited, with the controls to change it.
+//
+// It edits through the store the builder provides. The store holds the whole
+// document, not only what a reader gets.
+const props = defineProps<DashboardCellProps>()
+
+// The editors below write to the document item itself. The page passes it in
+// the reader's shape, because both the view and the builder use that shape.
+const item = computed(() => props.item as unknown as WorkbookDashboardItem)
 
 const dashboard = inject('dashboard') as Dashboard
 </script>
@@ -23,7 +30,7 @@ const dashboard = inject('dashboard') as Dashboard
 <template>
 	<div class="group relative flex h-full w-full p-2">
 		<!-- A card fills its cell. Nothing is centered in it: a Number cell is as
-		     tall as its card, and every other type draws into the whole box. -->
+		     tall as its card, and every other type renders into the whole box. -->
 		<div
 			class="flex h-full w-full justify-start"
 			:class="
@@ -33,24 +40,27 @@ const dashboard = inject('dashboard') as Dashboard
 			"
 		>
 			<DashboardChart
-				v-if="props.item.type == 'chart'"
-				:item="props.item as WorkbookDashboardChart"
+				v-if="item.type == 'chart'"
+				:item="props.item"
+				:dashboard="props.dashboard"
 			/>
 
-			<DashboardText
-				v-else-if="props.item.type === 'text'"
-				:item="props.item as WorkbookDashboardText"
-			/>
+			<DashboardText v-else-if="item.type === 'text'" :item="item as WorkbookDashboardText" />
 
 			<DashboardFilter
-				v-else-if="props.item.type === 'filter'"
-				:item="props.item as WorkbookDashboardFilter"
+				v-else-if="item.type === 'filter'"
+				:item="props.item"
+				:dashboard="props.dashboard"
 			/>
 		</div>
+		<DashboardFilterEditor
+			v-if="item.type === 'filter' && dashboard.isEditingItem(item)"
+			:item="item as WorkbookDashboardFilter"
+		/>
 		<DashboardItemActions
 			v-if="dashboard.editing"
 			class="absolute top-0 right-0 opacity-0 group-hover:opacity-100"
-			:item-index="index"
+			:item-index="props.index"
 		/>
 	</div>
 </template>

@@ -140,7 +140,7 @@ def chart_derivation_fixtures():
     lands.
 
     The shapes were the browser's while the browser derived them, and the
-    shipped workbooks carried its output chart by chart. That output is written
+    shipped workbooks stored its output chart by chart. That output is written
     out here instead: read once off the derivations that were checked against
     it, and from here on an expectation this codebase owns.
 
@@ -236,7 +236,7 @@ def chart_derivation_fixtures():
             ],
         },
         {
-            # measures mode: no grouping at all, one row carrying every stage
+            # measures mode: no grouping at all, one row with every stage
             "title": "Sales Pipeline",
             "chart_type": "Funnel",
             "query": "quotations",
@@ -587,7 +587,7 @@ def chart_derivation_fixtures():
             ],
         },
         {
-            # a date dimension carries its granularity into the summarize
+            # a date dimension passes its granularity into the summarize
             "title": "Spend Trend",
             "chart_type": "Line",
             "query": "purchase-invoices",

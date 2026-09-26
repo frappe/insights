@@ -4,7 +4,7 @@
 """The operations a chart runs, derived from its config.
 
 A chart is a source query plus a shape: which columns group it, which measures
-it draws, how it is sorted. That shape used to be turned into operations by the
+it plots, how it is sorted. That shape used to be turned into operations by the
 browser and parked in a second query document, so a chart only had rows after
 somebody opened it in the builder. Here the shape is turned into operations
 wherever the chart runs, from the config alone.
@@ -46,8 +46,8 @@ CHART_TYPES = (
 
 DEFAULT_MAX_COLUMN_VALUES = 10
 
-# A dimension that carries an order of its own is drawn in that order. One that
-# carries none is left in the order the result arrived in. Dates and times are
+# A dimension that has an order of its own is plotted in that order. One that
+# has none is left in the order the result arrived in. Dates and times are
 # the ordered ones.
 ORDERED_TYPES = ("Date", "Datetime", "Time")
 
@@ -56,7 +56,7 @@ def derive_operations(chart_type: str, query: str, config: dict | None) -> list[
     """The operations JSON this chart executes.
 
     Call `config_errors` first. Every slot below is read for what it names, so a
-    config that has not passed those checks either draws the wrong thing or is
+    config that has not passed those checks either renders the wrong thing or is
     not a shape this can read at all.
     """
     config = _config_for_derivation(config, chart_type)
@@ -71,7 +71,7 @@ def derive_operations(chart_type: str, query: str, config: dict | None) -> list[
 
 
 def sparkline_grain(chart_type: str, config: dict | None) -> str | None:
-    """The grain a card's sparkline cuts its span by, or nothing when it draws none.
+    """The grain a card's sparkline cuts its span by, or nothing when it plots none.
 
     One predicate for the whole question, so a reader of a card's height and the
     deriver of its series cannot disagree about whether there is a series. Only a
@@ -96,14 +96,14 @@ def sparkline_grain(chart_type: str, config: dict | None) -> str | None:
 def sparkline_operations(chart_type: str, query: str, config: dict | None) -> list[dict]:
     """The operations a span card's sparkline runs, empty when it needs none.
 
-    A span card returns one row per span, so the rows behind the number draw a
+    A span card returns one row per span, so the rows behind the number plot a
     two-point line. The series is a second question, how the number moved
     inside the span, and it is asked as a second query.
 
     Nothing new derives it. Inside one span a finer grain *is* the breakdown, so
     this is the shape an axis chart already derives: the configured span's
     filter, a summarize one grain finer, and an ascending sort. The comparison
-    span is left out, because it is not part of the picture the card draws.
+    span is left out, because it is not part of what the card plots.
 
     Adding the card's own rows up into a series was the alternative. It is
     silently wrong for every measure that does not add up (an average, a count
@@ -128,7 +128,7 @@ def sparkline_operations(chart_type: str, query: str, config: dict | None) -> li
         }
     )
     # the readings alone: a target and a comparison are read off the card's own
-    # row, and no sparkline is drawn behind either
+    # row, and no sparkline is plotted behind either
     operations.append(_summarize(measures=measures, dimensions=[{**date_column, "granularity": grain}]))
     _add_order_by(operations, result_column(date_column), "asc")
 
@@ -158,7 +158,7 @@ def column_granularity(operations: list[dict]) -> dict:
 
 
 def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]:
-    """Why this chart cannot be drawn, empty when it can.
+    """Why this chart cannot be rendered, empty when it can.
 
     Everything a shape needs to name a column: no query, no chart type, a slot
     holding something that names nothing, or a slot the chart type reads and the
@@ -276,7 +276,7 @@ def _window_errors(config: dict) -> list[str]:
     """Why a card with a period cannot be derived, empty when it can.
 
     Derivation falls back to its ungrouped shape for a period it cannot read.
-    That draws a number over all time under the period's own title, which is a
+    That shows a number over all time under the period's own title, which is a
     wrong reading nothing else reports.
     """
     if not _period(config):
@@ -338,16 +338,16 @@ def _add_axis_operation(operations: list[dict], config: dict):
         return
 
     # Tooltip measures go into the same summarize, so they arrive as one more value
-    # per plotted row. They are named apart from the drawn ones only by the
+    # per plotted row. They are named apart from the plotted ones only by the
     # config, which is what keeps them out of the chart.
     #
-    # A name already drawn is dropped: two measures under one alias is one
+    # A name already plotted is dropped: two measures under one alias is one
     # column, and the chart would lose the series to the tooltip.
-    drawn = {m["measure_name"] for m in values}
+    plotted = {m["measure_name"] for m in values}
     tooltip = [
         m
         for m in _named_measures((config.get("tooltip") or {}).get("measures") or [])
-        if m["measure_name"] not in drawn
+        if m["measure_name"] not in plotted
     ]
     operations.append(_summarize(measures=values + tooltip, dimensions=[x_dimension]))
 
@@ -411,7 +411,7 @@ def _period_order(chart_type: str, config: dict) -> tuple[str, str]:
     """The sort a card puts on its own periods: the column they come back under
     and the direction, both empty for every other chart.
 
-    One function for both shapes, so a card cannot carry two sorts on one column.
+    One function for both shapes, so a card cannot have two sorts on one column.
     """
     date_column = config.get("date_column") or {}
     if chart_type != "Number" or not date_column.get("column_name"):
@@ -453,7 +453,7 @@ def _add_window_operations(operations: list[dict], config: dict, window: dict, d
     periods grouped by its unit comes back as one row per period, and the card
     reads the newest period as if it were the whole span.
 
-    The spans stay unresolved. Both the filter and the dimension carry the
+    The spans stay unresolved. Both the filter and the dimension keep the
     span, and the engine turns it into dates while it runs, where the clock and
     the fiscal calendar already are. A span resolved here would derive
     different operations tomorrow.
@@ -465,7 +465,7 @@ def _add_window_operations(operations: list[dict], config: dict, window: dict, d
     operations.append({"type": "filter_group", "logical_operator": "Or", "filters": filters})
 
     dimension = {**date_column, "windows": windows}
-    # a span groups by itself, so a grain the config carries for the card
+    # a span groups by itself, so a grain the config holds for the card
     # without a span says nothing here and would be formatted as if it did
     dimension.pop("granularity", None)
     operations.append(_summarize(measures=_number_measures(config), dimensions=[dimension]))
@@ -473,7 +473,7 @@ def _add_window_operations(operations: list[dict], config: dict, window: dict, d
 
 # The grain a sparkline cuts its span by: one below the unit the span names. A
 # day-long span is left out. Its finer grains are clock grains, and a day of
-# hours is a different picture from a period of periods.
+# hours is a different chart from a period of periods.
 SPARKLINE_GRAINS = {
     "week": "day",
     "month": "day",
@@ -529,7 +529,7 @@ def comparison_timespans(chart_type: str, config: dict | None) -> dict[str, dict
 
     A card fetches one stretch per distinct comparison and gets one row each,
     which is what a reading is measured against. Which row is which is a
-    question of dates, and dates are what a span does not carry, so the caller
+    question of dates, and dates are what a span does not have, so the caller
     resolves these against the rows rather than the browser counting back from
     the end. A stretch with no data returns no row at all.
 
@@ -553,12 +553,12 @@ def comparison_timespans(chart_type: str, config: dict | None) -> dict[str, dict
     return timespans
 
 
-def drawn_measures(chart_type: str, config: dict | None) -> list[dict]:
-    """The measures a card draws, which is fewer than a Number card summarizes.
+def plotted_measures(chart_type: str, config: dict | None) -> list[dict]:
+    """The measures a card plots, which is fewer than a Number card summarizes.
 
     A target and a comparison are measures of the card's own result, read off
-    its row and never drawn, so a surface asking what the card shows wants the
-    readings alone. Every other chart type draws every measure it names, and
+    its row and never plotted, so a surface asking what the card shows wants the
+    readings alone. Every other chart type plots every measure it names, and
     says so by answering with nothing for this question.
     """
     if chart_type != "Number":
@@ -645,7 +645,7 @@ def _number_measures(config: dict) -> list[dict]:
     what they are compared with.
 
     A target or a comparison read off a measure is a column of the card's own
-    result, so the summarize has to carry it even though no card is drawn
+    result, so the summarize has to include it even though no card is plotted
     behind it. Two readings measured against the same measure share one column,
     which is why the list is deduped by name. `_measure_name_errors` is what
     guarantees a shared name means a shared measure.
@@ -694,7 +694,7 @@ def _measure_name_errors(config: dict) -> list[str]:
 def _computation(measure: dict) -> str:
     """What a measure computes, minus how it is displayed.
 
-    A comparison picked to match a reading names the same fold without carrying
+    A comparison picked to match a reading names the same fold without keeping
     the reading's display options, and the two are still one column.
     """
     keys = ("expression", "column_name", "aggregation")
@@ -709,7 +709,7 @@ def _add_donut_operation(operations: list[dict], config: dict):
 
 def _add_funnel_operation(operations: list[dict], config: dict):
     # measures mode: every measure is a stage, aggregated over the whole result
-    # with no grouping, so one row carries them all
+    # with no grouping, so one row holds them all
     measures = _named_measures(config.get("measures"))
     if measures:
         operations.append(_summarize(measures=measures, dimensions=[]))
@@ -775,7 +775,7 @@ def _add_heatmap_operation(operations: list[dict], config: dict):
     )
     # A grid reads its axes off the row order: the renderer registers a category
     # the first time a row names it, so the order rows arrive in is the order the
-    # axes are drawn in. Unsorted rows draw the months of a date column scattered.
+    # axes are plotted in. Unsorted rows plot the months of a date column scattered.
     # Sorting on both cuts is what puts each axis in its own order.
     _add_order_by(operations, result_column(x_column), "asc")
     _add_order_by(operations, result_column(y_column), "asc")
@@ -788,7 +788,7 @@ def _add_bubble_operation(operations: list[dict], config: dict):
 
 
 def _source(query: str) -> dict:
-    # `workbook` is carried by the reference but never read to resolve it: a
+    # `workbook` is kept in the reference but never read to resolve it: a
     # query name is unique on the site. The shipped format writes 0 here.
     return {"type": "source", "table": {"type": "query", "workbook": "", "query_name": query}}
 
@@ -816,7 +816,7 @@ def _order_by(column_name: str, direction: str) -> dict:
 
 
 def count_of_rows() -> dict:
-    """The measure a chart draws when it declares none of its own."""
+    """The measure a chart plots when it declares none of its own."""
     return {
         "column_name": "count",
         "data_type": "Integer",
@@ -849,12 +849,12 @@ def _add_axis_time_order(operations: list[dict], chart_type: str, config: dict):
     """An axis chart on a date x axis runs forwards, unless it already says so.
 
     A line joins its points in the order the rows arrive, and a summarize hands
-    back no order at all, so a timeline nobody sorted draws itself doubling back
+    back no order at all, so a timeline nobody sorted plots itself doubling back
     on itself. Bars hide it: a time axis places each bar at its own date. So the
     sort is added here rather than at the renderer, where only one of the two
     marks would show it missing.
 
-    Only for a dimension that carries an order of its own. A chart grouped by
+    Only for a dimension that has an order of its own. A chart grouped by
     status or territory keeps the order its author sorted it into — ranking is
     the reading there, and inventing one would be the implicit sort this avoids.
 
@@ -916,7 +916,7 @@ def _config_for_derivation(config: dict | None, chart_type: str) -> dict:
 
     The rules of `normalize_chart_config` that a reader needs. Two configs
     still need them: one stored before the patch ran, and one a writer
-    delivered without `validate`. The rules that decide what is drawn are left to it:
+    delivered without `validate`. The rules that decide what is rendered are left to it:
     an id minted here would be a new id on every read.
     """
     config = copy.deepcopy(config) if config else {}
@@ -957,7 +957,7 @@ def normalize_number_shapes(config: dict) -> bool:
             moved = True
         if not isinstance(options[index], dict):
             # an option nothing can read is no option, and the reading beside it
-            # is drawn without one either way
+            # is shown without one either way
             options[index] = {}
             moved = True
         beside = options[index]
@@ -1019,7 +1019,7 @@ def _raise_period(config: dict) -> bool:
 def _normalize_comparison(options: dict) -> bool:
     """A period comparison, written as the question it asks.
 
-    A `window` comparison carried the shift that fetched it, which the period
+    A `window` comparison kept the shift that fetched it, which the period
     the card read at the time decided. The period decides that where the card is
     read now, so the shift is dropped and only the question is kept: the same
     span a year back is `last year`, and every other shift is the period before
@@ -1093,11 +1093,11 @@ def _axis_with_dimension(axis) -> dict:
 
 
 def _y_axis_as_object(y_axis) -> dict:
-    """The value axis used to be the list of measures drawn on it."""
+    """The value axis used to be the list of measures plotted on it."""
     return {"series": [{"measure": measure} for measure in y_axis]}
 
 
-# The single-Dimension slots a config can carry, over every chart type. The
+# The single-Dimension slots a config can hold, over every chart type. The
 # counterpart of `DIMENSION_SLOTS` in the frontend's chart helpers.
 DIMENSION_SLOTS = (
     "date_column",
@@ -1114,9 +1114,9 @@ MEASURE_SLOTS = ("value_column", "size_column", "xAxis", "yAxis")
 MEASURE_LIST_SLOTS = ("number_columns", "measures", "values")
 
 # What a picker left in a slot beside the Dimension or the Measure it wrote
-# there: the `label` and the `value` the dropdown drew the column with, and on
+# there: the `label` and the `value` the dropdown showed the column with, and on
 # the older ones the `type` and the `resolvedSlots` that resolved it. Named one
-# by one, because a slot keeps every key it carries that is not one of these —
+# by one, because a slot keeps every key it holds that is not one of these —
 # a field a chart type gains later is the author's, not a dropdown's leftover.
 DROPDOWN_KEYS = ("label", "value", "type", "resolvedSlots")
 
@@ -1213,12 +1213,12 @@ def _identify_readings(config: dict) -> None:
 
 
 def _hidden_series_to_tooltip(config: dict) -> None:
-    """`hide_from_chart` drew a series at zero opacity and kept it out of the
+    """`hide_from_chart` plotted a series at zero opacity and kept it out of the
     legend, which left its value reaching the tooltip and nothing else.
     `tooltip.measures` says that directly.
 
     A chart that hid every series is left alone: moving them all leaves nothing
-    to plot, and the adapter draws nothing at all rather than an empty plot.
+    to plot, and the adapter renders nothing at all rather than an empty plot.
     """
     series = (config.get("y_axis") or {}).get("series") if isinstance(config.get("y_axis"), dict) else None
     if not isinstance(series, list):
@@ -1228,8 +1228,8 @@ def _hidden_series_to_tooltip(config: dict) -> None:
     if not hidden or len(hidden) == len(series):
         return
 
-    carried = (config.get("tooltip") or {}).get("measures") or []
-    named = {m.get("measure_name") for m in carried if isinstance(m, dict)}
+    in_tooltip = (config.get("tooltip") or {}).get("measures") or []
+    named = {m.get("measure_name") for m in in_tooltip if isinstance(m, dict)}
     moved = [
         s["measure"]
         for s in hidden
@@ -1238,7 +1238,7 @@ def _hidden_series_to_tooltip(config: dict) -> None:
         and s["measure"]["measure_name"] not in named
     ]
 
-    config["tooltip"] = {"measures": [*carried, *moved]}
+    config["tooltip"] = {"measures": [*in_tooltip, *moved]}
     config["y_axis"]["series"] = [s for s in series if not (isinstance(s, dict) and s.get("hide_from_chart"))]
 
 
@@ -1263,7 +1263,7 @@ def _identify_reference_lines(config: dict) -> None:
 
     The form keys its rows on the id: keyed by index, removing one line re-keys
     every line after it. `statistic` read every plotted number on the axis, so
-    it named no Measure — the nearest one is the first series that axis draws.
+    it named no Measure — the nearest one is the first series that axis plots.
     """
     y_axis = config.get("y_axis")
     lines = y_axis.get("reference_lines") if isinstance(y_axis, dict) else None
@@ -1281,9 +1281,9 @@ def _identify_reference_lines(config: dict) -> None:
             continue
         if not line.get("aggregate"):
             align = "Right" if line.get("align") == "Right" else "Left"
-            drawn = [s for s in series if isinstance(s, dict)]
-            target = next((s for s in drawn if (s.get("align") or "Left") == align), None)
-            target = target or (drawn[0] if drawn else None)
+            plotted = [s for s in series if isinstance(s, dict)]
+            target = next((s for s in plotted if (s.get("align") or "Left") == align), None)
+            target = target or (plotted[0] if plotted else None)
             measure_name = ((target or {}).get("measure") or {}).get("measure_name")
             if measure_name:
                 line["aggregate"] = line["statistic"]
@@ -1294,9 +1294,9 @@ def _identify_reference_lines(config: dict) -> None:
 
 def _series_marks_in_lower_case(config: dict) -> None:
     """The Y Axis form wrote 'Line' and 'Bar' where a series type declares
-    'line' and 'bar'. The renderer refuses a mark it does not know and draws the
+    'line' and 'bar'. The renderer refuses a mark it does not know and plots the
     chart's own instead. A series saved in the old case therefore stopped
-    drawing as itself."""
+    plotting as itself."""
     y_axis = config.get("y_axis")
     series = y_axis.get("series") if isinstance(y_axis, dict) else None
     if not isinstance(series, list):
@@ -1310,7 +1310,7 @@ def _numbers_where_a_number_is_declared(node) -> None:
     """Every number key of every slot, holding the number it names.
 
     One walk, not one repair per field. The control wrote the bad value, not
-    the slot, so every slot that control reached carries it.
+    the slot, so every slot that control reached holds it.
     """
     if isinstance(node, list):
         for item in node:
@@ -1345,7 +1345,7 @@ def _slots_hold_what_they_declare(config: dict) -> None:
 
 
 def _config_dimensions(config: dict) -> list[dict]:
-    """Every Dimension a config carries, in whichever slot holds it."""
+    """Every Dimension a config holds, in whichever slot holds it."""
     dimensions = []
 
     def collect(dimension):
@@ -1366,7 +1366,7 @@ def _config_dimensions(config: dict) -> list[dict]:
 
 
 def _config_measures(config: dict) -> list[dict]:
-    """Every Measure a config carries, in whichever slot holds it."""
+    """Every Measure a config holds, in whichever slot holds it."""
     measures = []
 
     def collect(measure):
@@ -1488,7 +1488,7 @@ SLOT_WORDS = {
 def _malformed_slot_error(slot: str) -> str:
     """Which slot of the chart cannot be read, in the word the form calls it.
 
-    An author reads this where the picture would be, and so does a reader on a
+    An author reads this where the chart would be, and so does a reader on a
     dashboard. The dotted path underneath is a stored JSON key, which is neither
     of their vocabulary. This module reads no document and writes none, so it
     is not the layer that logs one either.

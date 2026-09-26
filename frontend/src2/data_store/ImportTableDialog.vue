@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { getDataSourceOptions } from '../data_source/data_source'
-import { getRowCount, getTableOptions, getTables } from '../data_source/tables'
+import { getTableOptions, getTables } from '../data_source/tables'
 import { formatNumber } from '../helpers'
 import useDataStore from './data_store'
+import { useTableSelection } from './table_selection'
 import { __ } from '../translation'
 
 const show = defineModel({
 	default: false,
 })
 
-const initalTable = {
-	data_source: '',
-	table_name: '',
-	row_limit: 10_000_000,
-	table_row_count: 0,
-}
-const table = reactive({ ...initalTable })
+const ROW_LIMIT = 10_000_000
+const table = useTableSelection()
+const rowLimit = ref(ROW_LIMIT)
 
 const tableOptions = computed(() => {
 	if (!table.data_source) return []
@@ -28,28 +25,16 @@ watchEffect(() => {
 	getTables(table.data_source, dataSourceTableQuery.value)
 })
 
-watch(
-	() => table.table_name,
-	() => {
-		if (!table.table_name) {
-			table.table_row_count = 0
-			return
-		}
-		getRowCount(table.data_source, table.table_name).then((count) => {
-			table.table_row_count = count
-		})
-	},
-)
-
 function cancelImport() {
-	Object.assign(table, initalTable)
+	table.reset()
+	rowLimit.value = ROW_LIMIT
 	show.value = false
 }
 
 const dataStore = useDataStore()
 const importDisabled = computed(() => !table.table_name)
 function importTable() {
-	dataStore.importTable(table.data_source, table.table_name, table.row_limit).then(() => {
+	dataStore.importTable(table.data_source, table.table_name, rowLimit.value).then(() => {
 		show.value = false
 	})
 }
@@ -64,7 +49,7 @@ function importTable() {
 						label="Data Source"
 						placeholder="Select Data Source"
 						:modelValue="table.data_source"
-						@update:modelValue="table.data_source = $event"
+						@update:modelValue="table.pickSource($event)"
 						:options="getDataSourceOptions()"
 					/>
 					<Combobox
@@ -73,17 +58,27 @@ function importTable() {
 						@update:query="dataSourceTableQuery = $event"
 						:disabled="!table.data_source"
 						:modelValue="table.table_name"
-						@update:modelValue="table.table_name = $event"
+						@update:modelValue="table.pickTable($event)"
 						:options="tableOptions"
 					/>
 					<div v-if="table.table_name">
 						<FormControl
 							type="number"
 							label="No. of rows to import"
-							v-model="table.row_limit"
+							v-model="rowLimit"
 						/>
 						<p class="mt-1 text-xs text-ink-gray-4">
-							Selected table has {{ formatNumber(table.table_row_count) }} rows.
+							<template v-if="table.table_row_count !== undefined">
+								{{
+									__(
+										'Selected table has {0} rows.',
+										formatNumber(table.table_row_count),
+									)
+								}}
+							</template>
+							<template v-else>
+								{{ __('The number of rows in this table is not available.') }}
+							</template>
 						</p>
 					</div>
 				</div>

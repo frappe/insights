@@ -18,7 +18,7 @@ import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
 import ResultPane from '../../components/result_pane/ResultPane.vue'
 import QueryDataTable from './QueryDataTable.vue'
-import AuthoringDrillDown from '../../charts/drill/AuthoringDrillDown.vue'
+import BuilderDrillDown from '../../charts/drill/BuilderDrillDown.vue'
 import type { ChartSegmentClick } from '../../charts/drill/segment_click'
 import type { DrillSubject } from '../../charts/drill/drill_stack'
 import { queryDrillSubject } from '../../charts/drill/query_drill'
@@ -31,7 +31,7 @@ const query = inject('query') as Query
 
 // A summarized cell opens the same dialog a chart segment does. The candidates
 // are the one thing this surface has to ask for, so the click waits on them
-// rather than drawing a menu that would fill in under the reader's cursor.
+// rather than showing a menu that would fill in under the reader's cursor.
 const drill = ref<{ subject: DrillSubject; clicked: ChartSegmentClick }>()
 async function onSegmentClick(clicked: ChartSegmentClick) {
 	const subject = await queryDrillSubject(query)
@@ -183,11 +183,10 @@ function addNewColumn() {
 	</ResultPane>
 
 	<!-- `v-if` unmounts it on close, so every drill starts from an empty stack -->
-	<AuthoringDrillDown
+	<BuilderDrillDown
 		v-if="drill"
 		:subject="drill.subject"
 		:clicked="drill.clicked"
-		:adhoc-filters="query.adhocFilters"
 		@close="drill = undefined"
 	/>
 </template>

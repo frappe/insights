@@ -37,7 +37,7 @@ Close-out is for the ones you missed, and there should be few.
 Numbers were dropped because they are allocated on a feature branch and
 collide on merge — two branches both took `0003`, and `iris-code-review.md` cited
 two ADR numbers that resolved to the wrong documents. The slug is the stable
-name and the `Date:` line is the ordering, so the number carried nothing and
+name and the `Date:` line is the ordering, so the number meant nothing and
 broke on the one operation that matters.
 
 Cite an ADR by slug, never by number: `` `declared-tool-policy` ``, or a
@@ -54,9 +54,7 @@ change with the code:
 - `docs/adr/` — the decisions
 - `docs/agents/` — these conventions
 
-**Effort** documents describe how one piece of work got done. They live under
-`docs/projects/<effort-slug>/` on a feature branch, and they are removed when
-that branch merges. See `issue-tracker.md` for the close-out.
+**Effort** documents describe how one piece of work got done. They live under `docs/projects/<effort-slug>/`, which is a symlink to a directory outside the repo. See `issue-tracker.md` for the close-out.
 
 Never move an effort document into `docs/adr/` to keep it alive. Distill the
 decision and let the rest go.
@@ -66,6 +64,8 @@ decision and let the rest go.
 When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
 
 If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
+
+To name a new concept, say what it is in the words the host platform already uses. Never use a metaphor. See `docs/adr/name-things-in-the-hosts-words.md`.
 
 ## Flag ADR conflicts
 

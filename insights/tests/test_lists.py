@@ -4,7 +4,7 @@ Each endpoint answers one question: which rows the caller may see, which of them
 a search term keeps, and which lens — owned, shared, favourite, recent — narrows
 it further. The pages only render what comes back.
 
-The site carries rows these suites did not make, so a list is read through the
+The site has rows these suites did not make, so a list is read through the
 fixtures' own titles. A lens is still checked whole: the rows it must keep and the
 rows it must drop are both named.
 """
@@ -223,6 +223,99 @@ class TestDashboardList(InsightsIntegrationTestCase):
     def unlike(self):
         with self.as_user(OWNER):
             toggle_like(DT.DASHBOARD, self.own, add="No")
+
+    # @feature dashboard.list
+    def test_only_a_writer_refreshes_a_dashboards_preview(self):
+        """`update_dashboard_preview`, which `DashboardList.vue`'s "Refresh
+        Preview" and `DashboardCard`'s "Load Preview" call, and the `can_write`
+        each row of `get_dashboards` includes for them. The preview is rendered with
+        the rows of whoever refreshes it, and every reader of the list sees it."""
+        from unittest.mock import patch
+
+        from insights.api.dashboards import update_dashboard_preview
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
+            InsightsDashboardv3,
+        )
+
+        with patch.object(
+            InsightsDashboardv3, "generate_dashboard_preview", return_value="/preview.png"
+        ) as rendered:
+            for user, dashboard, writes in ((OWNER, self.others, False), (OWNER, self.own, True)):
+                with self.subTest(user=user, dashboard=dashboard), self.as_user(user):
+                    row = next(row for row in get_dashboards() if row["name"] == dashboard)
+                    self.assertIs(row["can_write"], writes)
+                    if writes:
+                        self.assertEqual(update_dashboard_preview(dashboard), "/preview.png")
+                    else:
+                        with self.assertRaises(frappe.PermissionError):
+                            update_dashboard_preview(dashboard)
+        self.assertEqual(rendered.call_count, 1)
+
+    def probed_dashboard(self):
+        """A dashboard of OTHER's, shared with OWNER by name, over a chart of a
+        query that reads Site DB."""
+        query = create_test_query(OTHER, self.other_workbook, title=f"{TITLE_PREFIX} Probed Query")
+        chart = create_test_chart(
+            OTHER, self.other_workbook, query=query.name, title=f"{TITLE_PREFIX} Hidden"
+        )
+        probed = create_test_dashboard(
+            OTHER, self.other_workbook, chart=chart.name, title=f"{TITLE_PREFIX} Dashboard Probed"
+        ).name
+        for doctype, name in ((DT.DASHBOARD, probed), (DT.CHART, chart.name), (DT.QUERY, query.name)):
+            self.addCleanup(frappe.delete_doc, doctype, name, force=True, ignore_permissions=True)
+        with as_user(OTHER):
+            update_dashboard_access(probed, [OWNER])
+
+        def listed(user, *filters):
+            with self.as_user(user):
+                return probed in [row["name"] for row in get_dashboards(filters=list(filters))]
+
+        return chart.name, listed
+
+    # @feature dashboard.list workbook.list-filter
+    def test_a_chart_filter_matches_only_the_charts_the_reader_may_read(self):
+        """`get_dashboards`, which `DashboardList.vue`'s Chart filter calls. A
+        guess at a chart title a User Permission hides from the reader must not
+        list its dashboard. Its owner still filters by it."""
+        chart, listed = self.probed_dashboard()
+
+        own_chart = create_test_chart(OWNER, self.own_workbook, title=f"{TITLE_PREFIX} Allowed").name
+        self.addCleanup(frappe.delete_doc, DT.CHART, own_chart, force=True, ignore_permissions=True)
+        restriction = frappe.get_doc(
+            {"doctype": "User Permission", "user": OWNER, "allow": DT.CHART, "for_value": own_chart}
+        ).insert(ignore_permissions=True)
+        self.addCleanup(frappe.delete_doc, "User Permission", restriction.name, force=True)
+        self.assertTrue(listed(OWNER))
+        for probe in (["chart", "=", chart], ["chart", "like", "%Hidden%"]):
+            with self.subTest(probe=probe):
+                self.assertFalse(listed(OWNER, probe))
+                self.assertTrue(listed(OTHER, probe))
+
+    # @feature dashboard.list
+    def test_the_data_source_filter_matches_a_picked_name_over_the_charts_the_reader_reads(self):
+        """`get_dashboards`, which `DashboardList.vue`'s Data Source filter calls
+        (Q26). A reader of the dashboard's chart who reads no query filters by
+        the data source the chart reads, as its owner does. A pattern matches
+        nothing, so no guess runs over a query's pipeline."""
+        _chart, listed = self.probed_dashboard()
+
+        answers = (
+            (["data_source", "=", "Site DB"], True),
+            (["data_source", "in", ["Site DB", TEST_DS]], True),
+            (["data_source", "is", "set"], True),
+            (["data_source", "=", "Site DB "], False),
+            (["data_source", "=", "site db"], False),
+            (["data_source", "=", TEST_DS], False),
+            (["data_source", "!=", "Site DB"], False),
+            (["data_source", "is", "not set"], False),
+            (["data_source", "like", "Site%"], False),
+            (["data_source", "like", "%Site DB%"], False),
+            (["data_source", "not like", "%Nothing%"], False),
+        )
+        for probe, expected in answers:
+            for user in (OWNER, OTHER):
+                with self.subTest(probe=probe, user=user):
+                    self.assertIs(listed(user, probe), expected)
 
 
 class TestStoredTableList(InsightsIntegrationTestCase):

@@ -2,7 +2,7 @@
 # For license information, please see license.txt
 
 import re
-from contextlib import contextmanager
+from collections.abc import Callable
 
 import frappe
 import requests
@@ -10,12 +10,18 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.html_utils import sanitize_html
+from frappe.website.utils import cleanup_page_name
 
+from insights import standard
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     config_filter_group,
     derive_operations,
     result_column,
 )
+from insights.insights.query_utils import transitive_closure
+from insights.not_permitted import answers_refusal
+from insights.permission_user import runs_as
+from insights.preview_key import generate_preview_key
 from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File, get_app_url
 
@@ -23,7 +29,7 @@ from insights.utils import DocShare, File, get_app_url
 LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
 
 # Which page the view came from, as `docs/telemetry.md` names them.
-VIEW_SURFACES = {"workbook", "shared", "dashboards"}
+VIEW_SURFACES = {"workbook", "shared", "dashboards", "desk"}
 
 
 class InsightsDashboardv3(Document):
@@ -33,34 +39,59 @@ class InsightsDashboardv3(Document):
     from typing import TYPE_CHECKING
 
     if TYPE_CHECKING:
+        from frappe.core.doctype.has_role.has_role import HasRole
         from frappe.types import DF
 
         from insights.insights.doctype.insights_dashboard_chart_v3.insights_dashboard_chart_v3 import (
             InsightsDashboardChartv3,
         )
 
-        is_public: DF.Check
+        is_standard: DF.Check
+        kept_for_desk: DF.Check
         items: DF.JSON | None
         linked_charts: DF.TableMultiSelect[InsightsDashboardChartv3]
         old_name: DF.Data | None
-        permission_user: DF.Link | None
         preview_image: DF.Data | None
+        route: DF.Data | None
         share_link: DF.Data | None
         title: DF.Data | None
         vertical_compact_layout: DF.Check
+        visibility: DF.Literal["Private", "Roles", "Everyone", "Public"]
+        visible_to_roles: DF.TableMultiSelect[HasRole]
         workbook: DF.Link
     # end: auto-generated types
 
     def before_validate(self):
         self.sanitize_text_items()
+        self.drop_deleted_charts()
         # linked_charts is derived from items, so build it before anything
         # validates it - validate() runs before before_save()
         self.set_linked_charts()
 
+    def drop_deleted_charts(self):
+        """Remove cells whose chart no longer exists.
+
+        Deleting a chart removes its cells from every dashboard. A browser tab
+        that loaded the grid before the delete still has them, and sends them
+        back on save.
+        """
+        items = frappe.parse_json(self.items) or []
+        named = {item.get("chart") for item in items if item.get("type") == "chart"}
+        if not named:
+            return
+
+        stored = set(
+            frappe.get_all("Insights Chart v3", filters={"name": ("in", sorted(named))}, pluck="name")
+        )
+        if named <= stored:
+            return
+
+        self.items = [item for item in items if item.get("type") != "chart" or item.get("chart") in stored]
+
     def sanitize_text_items(self):
         """A text item is authored as rich text and rendered as HTML.
 
-        The framework sanitizes the fields it knows carry markup, and `items`
+        The framework sanitizes the fields it knows hold markup, and `items`
         is a JSON field, so nothing reaches inside it. Sanitizing on the way in
         makes the stored text safe for every reader of the dashboard, including
         the Guest who follows a public link.
@@ -78,9 +109,37 @@ class InsightsDashboardv3(Document):
             self.items = items
 
     def validate(self):
-        from insights.permissions import check_dashboard_chart_access
+        from insights.permissions import (
+            check_dashboard_chart_access,
+            check_dashboard_publishes,
+            validate_visibility,
+        )
 
+        standard.guard_member(self)
+        # copied from the workbook, never from the request. It decides whether
+        # the site may change this dashboard
+        self.is_standard = standard.is_standard_member(self)
         check_dashboard_chart_access(self)
+        validate_visibility(self)
+        check_dashboard_publishes(self)
+
+    def on_update(self):
+        from insights.permissions import capture_visibility_widened
+
+        standard.export_member(self)
+        capture_visibility_widened(self)
+
+    def before_rename(self, old_name, new_name, merge=False):
+        standard.guard_member(self)
+
+    def after_rename(self, old_name, new_name, merge=False):
+        standard.export_member(self)
+
+    def on_trash(self):
+        standard.guard_member(self)
+
+    def after_delete(self):
+        standard.export_member(self)
 
     @frappe.whitelist()
     def track_view(self, surface: str | None = None):
@@ -108,18 +167,19 @@ class InsightsDashboardv3(Document):
         return super().get_valid_dict(*args, **kwargs)
 
     def as_dict(self, *args, **kwargs):
+        from insights.permissions import can_share, can_write
+
         d = super().as_dict(*args, **kwargs)
 
-        d.read_only = not self.has_permission("write")
-        if not d.read_only:
-            access = self.get_acess_data()
-            d.people_with_access = access[0]
-            d.is_shared_with_organization = access[1]
+        d.read_only = not can_write(self)
+        d.can_share = can_share(self)
+        if d.can_share:
+            d.people_with_access = self.get_people_with_access()
         d.has_workbook_access = frappe.has_permission("Insights Workbook", ptype="read", doc=self.workbook)
         return d
 
     def after_insert(self):
-        # A dashboard created already populated (e.g. imported from a template) is
+        # A dashboard created already populated (e.g. imported from a file) is
         # never saved again, so before_save's diff-based preview never runs and it
         # lands without a preview. Generate the initial one here when it has content.
         if frappe.flags.in_patch or not frappe.parse_json(self.items):
@@ -132,12 +192,51 @@ class InsightsDashboardv3(Document):
         )
 
     def before_save(self):
+        self.set_route()
         self.enqueue_update_dashboard_preview()
+
+    def set_route(self):
+        """Set a readable `route` for external links.
+
+        The route comes from the title only when it is empty, so a rename keeps
+        published links working. Clear the route to get a new one. A numbered
+        suffix keeps it unique. Nothing in the app links by route, so at worst
+        a suffix breaks a bookmark.
+        """
+        route = cleanup_page_name(self.route or self.title)
+        if not route:
+            return
+
+        self.route = self.unique_route(route)
+
+    def unique_route(self, route: str) -> str:
+        """`route` with a numbered suffix, until no other dashboard has it as
+        its route or its name.
+
+        A standard workbook names its members with readable slugs, so a route
+        can equal another dashboard's name. `resolver.resolve` tries the name
+        first. Without the name check, a site dashboard with the same title as
+        a shipped one gets a route that opens the shipped one, from every
+        workspace sidebar item that links to it.
+        """
+        candidate, suffix = route, 0
+        while self.answered_by_another(candidate):
+            suffix += 1
+            candidate = f"{route}-{suffix}"
+
+        return candidate
+
+    def answered_by_another(self, route: str) -> bool:
+        mine = self.name or ""
+        if frappe.db.exists(self.doctype, {"route": route, "name": ("!=", mine)}):
+            return True
+
+        return route != mine and bool(frappe.db.exists(self.doctype, route))
 
     def set_linked_charts(self):
         """The charts the grid names, once each.
 
-        A Number chart draws one reading per cell, so several cells can name one
+        A Number chart shows one reading per cell, so several cells can name one
         chart. This table answers which charts the dashboard reaches, which is a
         question about charts and not about cells.
         """
@@ -146,177 +245,154 @@ class InsightsDashboardv3(Document):
         )
         self.set("linked_charts", [{"chart": chart} for chart in charts])
 
-    def filter_source(self, filter_name: str) -> tuple[str, str, str] | None:
-        """The chart, query and column a named filter on this dashboard reads.
+    def routing_table(self) -> str:
+        """The `items` to route filters by: the request's, or the stored ones.
+
+        `run_doc_method` builds `self` from the request body, so `self.items`
+        is the caller's. For the builder, that is its unsaved grid. A caller who
+        may save the dashboard is routed by it. Anyone else is routed by the
+        stored items. Otherwise they could send a forged link and narrow a
+        filter's values by a column the dashboard does not show.
+
+        The permission check uses the name, not `self`. `has_doc_permission`
+        reads `owner` and `__islocal` from the document it gets, and
+        `BaseDocument.update` copies both from the request. So
+        `self.has_permission` would allow anyone who sends them. This follows
+        `insights.api.check_stored_document`: decide against the stored row.
+        """
+        if frappe.has_permission(self.doctype, ptype="write", doc=self.name):
+            return self.items
+
+        return frappe.db.get_value(self.doctype, self.name, "items")
+
+    def lookup_filter(self, filter_name: str, lookup: Callable, missing: Callable):
+        """Call `lookup(chart, query, column)` for the first link of the named
+        filter that the caller is not refused.
 
         The stored items, deliberately. This is what decides which column a
         caller may ask for at all, so it is read from the row rather than from
         `self`, which a method call builds out of the request body — and a
         caller that names the filter never has to be handed the link that says
         where it lands.
+
+        The link must name a query the chart reads (`chart_reads`). This holds
+        for every caller. A link to any other query would ask about rows this
+        dashboard does not show.
+
+        The caller must also be able to read the chart. That covers every query
+        the chart reads. The query's own permission is not checked, because a
+        reader allowed only by a visibility level has none. `can_read_chart`
+        checks the session user, so it runs before `runs_as`. Inside `runs_as`
+        it would check the chart's owner. The lookup runs as the chart runs, so
+        the values come from the same rows as the card.
+
+        A refused link is skipped like a malformed one, and the next link is
+        tried. A link is refused when the caller may not read its chart, or
+        when the lookup raises Not Permitted for a table they may not read.
+
+        If every link is refused, that is a refusal, not a missing filter. It
+        answers like any other refusal on a dashboard the caller may read: an
+        empty list. A filter with no usable link calls `missing()`.
         """
+        from insights.not_permitted import NotPermitted, forget_refusal, refuse
+        from insights.permissions import can_read_chart
+
         stored = frappe.db.get_value(self.doctype, self.name, "items")
         items = frappe.parse_json(stored) or []
         charts = {item.get("chart") for item in items if item.get("type") == "chart"}
 
+        refused = False
         for item in items:
             if item.get("type") != "filter" or item.get("filter_name") != filter_name:
                 continue
             for chart, link in (item.get("links") or {}).items():
                 match = LINK_COLUMN.match(link or "")
-                if match and chart in charts:
-                    return chart, *match.groups()
+                if not match or chart not in charts:
+                    continue
+                query, column = match.groups()
+                if not chart_reads(chart, query):
+                    continue
+                if not can_read_chart(chart):
+                    refused = True
+                    continue
+                try:
+                    with runs_as(frappe.get_doc("Insights Chart v3", chart)):
+                        return lookup(chart, frappe.get_cached_doc("Insights Query v3", query), column)
+                except NotPermitted as refusal:
+                    forget_refusal(refusal)
+                    refused = True
 
-        return None
+        if refused:
+            refuse([])
+
+        return missing()
 
     @frappe.whitelist()
+    @answers_refusal(list)
     def get_distinct_column_values(
         self,
         filter_name: str,
         search_term: str | None = None,
         filter_context: dict | None = None,
     ):
-        """The values one of this dashboard's filters offers.
+        """The values one of this dashboard's filters lists.
 
-        Who may read this dashboard was settled before this ran: the builder
-        reaches it through `run_doc_method`, and a public link through the same
-        endpoint's public fallback. The read is the whole gate, so this reaches the
-        query's plain method rather than the `Insights User` endpoint.
+        Read access to the dashboard is checked before this runs. The builder
+        calls it through `run_doc_method`, and a reader through
+        `insights.api.view.get_filter_values`. That check is the only gate, so
+        this calls the query's method directly. A reader of this dashboard may
+        have no Insights role.
 
-        `filter_context` is what the rest of the grid currently holds, unrouted:
-        the `chart` the links are followed under, and the `filters` state. Routing
-        happens here for the same reason it does everywhere else. This filter is
-        left out of its own list, or picking a second value would be impossible.
-
-        The routing table is this document's own `items`, never the request's: a
-        link names a query and a column, and a forged one would narrow this list
-        by a column nobody published, which answers a question about it. The
-        builder's unsaved grid still routes, because `run_doc_method` builds
-        `self` out of its request body, and the public fallback re-reads the
-        stored document, which is the same rule `filter_source` states.
+        `answers_refusal` is here because the method is whitelisted. A card
+        over a table the caller may not read then answers an empty list, the
+        same as through `insights.api.view`.
         """
-        query, column_name, adhoc_filters = self._filter_column_source(filter_name, filter_context)
-        doc = frappe.get_cached_doc("Insights Query v3", query)
-        return doc.distinct_column_values(column_name, search_term=search_term, adhoc_filters=adhoc_filters)
+        adhoc_filters = self._filter_context_filters(filter_name, filter_context)
+        return self.lookup_filter(
+            filter_name,
+            lambda chart, query, column: query.distinct_column_values(
+                column, search_term=search_term, adhoc_filters=adhoc_filters
+            ),
+            missing=filter_not_available,
+        )
 
-    def _filter_column_source(self, filter_name: str, filter_context: dict | None = None):
-        """Where one of this dashboard's own filters lands, and what the rest of
-        the grid narrows it by.
+    def _filter_context_filters(self, filter_name: str, filter_context: dict | None = None):
+        """The rest of the grid's filters, routed, to narrow one of this
+        dashboard's filters.
 
-        One answer for the values a filter offers and for the range it offers, so
-        the two cannot read different rows.
+        `filter_context` holds the grid's current state, unrouted: the `chart`
+        whose links to follow, and the `filters` state. This filter is left
+        out, or a second value could never be picked.
+
+        The links come from `routing_table`, not from `filter_context`. A link
+        names a query and a column, and a forged one would narrow this list by
+        a column the dashboard does not show.
         """
-        from insights.permissions import check_referenced_query_access
-
-        source = self.filter_source(filter_name)
-        if not source:
-            frappe.throw(
-                frappe._("This filter is not available on this dashboard"),
-                frappe.PermissionError,
-            )
-        _chart, query, column_name = source
-
-        adhoc_filters = None
-        if filter_context:
-            adhoc_filters = route_filters(
-                self.items,
-                filter_context.get("chart"),
-                filter_context.get("filters"),
-                filter_name,
-            )
-
-        # The stored row says which query the filter lands on, and the same person
-        # who asks the question wrote that row. So the caller's read on the query
-        # is checked here too — reading a dashboard already grants it on every
-        # query behind its charts.
-        check_referenced_query_access(query)
-
-        return query, column_name, adhoc_filters
-
-    @frappe.whitelist()
-    def get_card_column_values(self, chart: str, column: str, search_term: str | None = None):
-        """The values a reader's own card filter offers, for a card on this grid.
-
-        A card filter is not a saved filter. The author never named it, so
-        `filter_source` cannot answer where it lands. What it may ask for is
-        settled the same way: the stored items say which charts this dashboard
-        draws, and the card's own operations say which columns it draws and which
-        source column each of them reads. A column the card does not draw is not
-        one a reader may ask about, and a column no source column holds (a
-        measure, a column a pivot made) offers no values rather than refusing.
-
-        The card's own filters narrow the list, so it never offers what the card
-        does not show.
-
-        This lives here, and not on the query, because the dashboard is what a
-        public reader was published. Reaching the query's own method would ask a
-        document the reader holds no permission on.
-        """
-        from insights.permissions import check_referenced_query_access
-
-        query, column_name, card_filters = self._card_filter_source(chart, column)
-        if not column_name:
-            return []
-
-        check_referenced_query_access(query)
-
-        doc = frappe.get_cached_doc("Insights Query v3", query)
-        return doc.distinct_column_values(column_name, search_term=search_term, adhoc_filters=card_filters)
-
-    def _card_filter_source(self, chart: str, column: str) -> tuple[str, str | None, dict | None]:
-        """Where a card filter on this grid lands, refusing what it may not ask.
-
-        The stored items, for the reason `filter_source` states them: `self` is
-        built out of the request body for a signed-in caller, so what a reader may
-        ask about is read from the row.
-        """
-        stored = frappe.parse_json(frappe.db.get_value(self.doctype, self.name, "items")) or []
-        charts = {item.get("chart") for item in stored if item.get("type") == "chart"}
-        if chart not in charts:
-            frappe.throw(
-                frappe._("This chart is not on this dashboard"),
-                frappe.PermissionError,
-            )
-
-        query, column_name, card_filters = card_filter_source(chart, column)
-        if not query:
-            frappe.throw(
-                frappe._("This column cannot be filtered"),
-                frappe.PermissionError,
-            )
-
-        return query, column_name, card_filters
-
-    @frappe.whitelist()
-    def get_card_column_range(self, chart: str, column: str):
-        """The range a reader's own card filter offers, for a card on this grid.
-
-        Addressed, gated and narrowed the way `get_card_column_values` is: a
-        range read off more rows than the card draws is the same overreach as a
-        value list read off them.
-        """
-        from insights.permissions import check_referenced_query_access
-
-        query, column_name, card_filters = self._card_filter_source(chart, column)
-        if not column_name:
+        if not filter_context:
             return None
 
-        check_referenced_query_access(query)
-
-        doc = frappe.get_cached_doc("Insights Query v3", query)
-        return doc.column_range(column_name, adhoc_filters=card_filters)
+        return route_filters(
+            self.routing_table(),
+            filter_context.get("chart"),
+            filter_context.get("filters"),
+            filter_name,
+        )
 
     @frappe.whitelist()
+    @answers_refusal(lambda: None)
     def get_filter_column_range(self, filter_name: str, filter_context: dict | None = None):
-        """The range one of this dashboard's own filters offers.
+        """The range one of this dashboard's own filters allows.
 
         Addressed and routed the way `get_distinct_column_values` is: the preset
-        ranges a picker offers and the values it lists answer the same question
+        ranges a picker shows and the values it lists answer the same question
         about the same rows.
         """
-        query, column_name, adhoc_filters = self._filter_column_source(filter_name, filter_context)
-        doc = frappe.get_cached_doc("Insights Query v3", query)
-        return doc.column_range(column_name, adhoc_filters=adhoc_filters)
+        adhoc_filters = self._filter_context_filters(filter_name, filter_context)
+        return self.lookup_filter(
+            filter_name,
+            lambda chart, query, column: query.column_range(column, adhoc_filters=adhoc_filters),
+            missing=filter_not_available,
+        )
 
     def enqueue_update_dashboard_preview(self):
         if self.is_new() or not self.get_doc_before_save() or frappe.flags.in_patch:
@@ -344,7 +420,7 @@ class InsightsDashboardv3(Document):
     def generate_dashboard_preview(self):
         with generate_preview_key(self.name) as key:
             preview = get_page_preview(
-                # The browser runs on the server and carries a preview key, so
+                # The browser runs on the server and passes a preview key, so
                 # the page it opens is the site's own, not one a request header
                 # named.
                 frappe.utils.get_url(
@@ -361,59 +437,43 @@ class InsightsDashboardv3(Document):
             self.db_set("preview_image", file_url)
             return file_url
 
-    def get_acess_data(self):
+    def get_people_with_access(self):
         DocShare = frappe.qb.DocType("DocShare")
         User = frappe.qb.DocType("User")
 
-        shared_with = (
+        return (
             frappe.qb.from_(DocShare)
             .left_join(User)
             .on(DocShare.user == User.name)
             .select(
-                DocShare.user,
-                DocShare.everyone,
                 User.full_name,
                 User.user_image,
                 User.email,
             )
             .where(DocShare.share_doctype == "Insights Dashboard v3")
             .where(DocShare.share_name == self.name)
+            .where(DocShare.user.isnotnull())
             .where((DocShare.read == 1) | (DocShare.write == 1))
             .run(as_dict=True)
         )
 
-        org_access = False
-        people_with_access = []
-        for share in shared_with:
-            if not share.everyone:
-                people_with_access.append(
-                    {
-                        "full_name": share.full_name,
-                        "user_image": share.user_image,
-                        "email": share.email,
-                    }
-                )
-            else:
-                org_access = True
-
-        return people_with_access, org_access
-
     @frappe.whitelist()
     def update_access(self, data: dict | str):
+        """Share this dashboard with exactly the listed users.
+
+        This only adds and removes shares. `visibility` is a separate field
+        that the dialog saves with the document. `validate_shareable_users`
+        decides who may be in the list, as it does for workbook shares. Without
+        it, only the client's user picker stopped a share to a portal user, who
+        could then download the owner's rows.
+        """
+        from insights.permissions import validate_shareable_users
+
         if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
             frappe.throw("You do not have permission to share this dashboard")
 
         data = frappe.parse_json(data)
-        is_public = data.get("is_public")
-        is_shared_with_organization = data.get("is_shared_with_organization")
         people_with_access = data.get("people_with_access") or []
-
-        # this writes is_public with db_set, so validate() never runs. Check
-        # before any share is applied, so a refusal leaves nothing half-done.
-        if is_public:
-            from insights.permissions import check_dashboard_chart_access
-
-            check_dashboard_chart_access(self)
 
         existing_shares = frappe.get_all(
             "DocShare",
@@ -422,8 +482,12 @@ class InsightsDashboardv3(Document):
                 "share_name": self.name,
                 "read": 1,
             },
-            fields=["name", "user", "everyone"],
+            fields=["name", "user"],
         )
+        # the dialog sends back every existing share, so check only new users.
+        # Otherwise an old share, made before this check or to a user who has
+        # since left Insights, would block every later save
+        validate_shareable_users(set(people_with_access) - {share.user for share in existing_shares})
 
         # remove all existing shares that are not in the new list
         for share in existing_shares:
@@ -443,38 +507,16 @@ class InsightsDashboardv3(Document):
                 doc.notify_by_email = 0
                 doc.save(ignore_permissions=True)
 
-        org_shares = [share for share in existing_shares if share.everyone]
-        if is_shared_with_organization and not org_shares:
-            doc = DocShare.get_or_create_doc(
-                share_doctype="Insights Dashboard v3",
-                share_name=self.name,
-                everyone=1,
-            )
-            doc.read = 1
-            doc.notify_by_email = 0
-            doc.save(ignore_permissions=True)
-        elif org_shares and not is_shared_with_organization:
-            for share in org_shares:
-                frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
-
-        was_public = self.is_public
-
-        # a public execution has no caller of its own, so the rows it returns are
-        # filtered by whoever published the dashboard
-        self.db_set(
-            {
-                "is_public": is_public,
-                "permission_user": frappe.session.user if is_public else None,
-            }
-        )
-
         newly_shared = set(people_with_access) - set(existing_share_users)
         if newly_shared:
             capture_share_granted("dashboard", "user", len(newly_shared))
-        if is_shared_with_organization and not org_shares:
-            capture_share_granted("dashboard", "org", 1)
-        if is_public and not was_public:
-            capture_share_granted("dashboard", "public", 1)
+
+
+def filter_not_available():
+    frappe.throw(
+        frappe._("This filter is not available on this dashboard"),
+        frappe.PermissionError,
+    )
 
 
 # The two operators that ask about the column itself, so they stand without a value.
@@ -496,44 +538,44 @@ def _filter_is_set(state: dict) -> bool:
     return state.get("value") not in (None, "", [])
 
 
+def chart_reads(chart: str, query: str) -> bool:
+    """Whether a filter on `chart` may link to `query`: the chart's query, or
+    one it reads.
+
+    `route_filters` keys each filter group by the query its link names, and
+    the build applies the group when it reaches that query. A link to a query
+    the chart does not read changes nothing on the chart. But a filter's value
+    lookup would still run that query, as the chart runs, over rows the
+    dashboard does not show.
+
+    Anyone who may save the dashboard can write links, and an `edit` share on
+    the workbook gives that to every member. So this is checked where a link
+    is followed, not where it is saved.
+    """
+    source = frappe.db.get_value("Insights Chart v3", chart, "query")
+    if not source:
+        return False
+
+    return query == source or query in transitive_closure(source)
+
+
 def route_filters(
     items, chart: str, filter_states: dict | None, exclude_filter: str | None = None
 ) -> dict | None:
     """Dashboard filter state, routed to the queries the filters are linked to.
 
-    One router for every surface. The builder is editing items it has not saved
-    yet, so it sends those. A reading surface names its dashboard, and the
-    routing table is read from that dashboard's stored items. Routing is the
-    same either way, and it belongs on this side: a link names a query and a
-    column, and the client never has to take the link apart.
+    Every caller routes through here. For a reader, the saved dashboard's
+    items are passed. The builder passes its unsaved items. Routing runs on the
+    server because a link names a query and a column, and a reader is never
+    sent those.
 
-    `exclude_filter` leaves one filter out. A filter offering its own values
+    `exclude_filter` leaves one filter out. A filter listing its own values
     must not narrow them by what it currently holds, or picking a second value
     would be impossible.
     """
-    if not filter_states:
-        return None
-
     filters_by_query = {}
 
-    for item in frappe.parse_json(items) or []:
-        if item.get("type") != "filter":
-            continue
-
-        filter_name = item.get("filter_name")
-        if exclude_filter and filter_name == exclude_filter:
-            continue
-
-        state = filter_states.get(filter_name) or {}
-        if not _filter_is_set(state):
-            continue
-
-        link = (item.get("links") or {}).get(chart)
-        match = LINK_COLUMN.match(link) if link else None
-        if not match:
-            continue
-
-        query, column = match.groups()
+    for _, query, column, state in routed_filter_links(items, chart, filter_states, exclude_filter):
         group = filters_by_query.setdefault(
             query, {"type": "filter_group", "logical_operator": "And", "filters": []}
         )
@@ -549,25 +591,49 @@ def route_filters(
     return filters_by_query or None
 
 
+def routed_filter_links(items, chart: str, filter_states: dict | None, exclude_filter: str | None = None):
+    """Yield `(filter name, query, column, state)` for each set dashboard
+    filter linked to `chart`."""
+    if not filter_states:
+        return
+
+    for item in frappe.parse_json(items) or []:
+        if item.get("type") != "filter":
+            continue
+
+        filter_name = item.get("filter_name")
+        if exclude_filter and filter_name == exclude_filter:
+            continue
+
+        state = filter_states.get(filter_name) or {}
+        if not _filter_is_set(state):
+            continue
+
+        link = (item.get("links") or {}).get(chart)
+        match = LINK_COLUMN.match(link) if link else None
+        if match:
+            yield filter_name, *match.groups(), state
+
+
 def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None, dict | None]:
     """Where a card filter lands: the card's query, the source column the named
     column reads, and the narrowing the card itself already applies.
 
     The card's own operations answer all three, so every chart type is read the
-    same way. Its aggregating operation names every column the picture holds
+    same way. Its aggregating operation names every column the chart holds
     (the dimensions it groups by, under the names they come back as, and the
     measures it states), and a column no operation names is not one the card
-    draws. That is a
+    shows. That is a
     `None` query, which is what the caller refuses.
 
     A dimension reads a source column, and that column is where its values come
     from. A measure reads none: it is computed over the result, and so is every
-    column a pivot makes. Both are drawn and offer no values, which is what a
+    column a pivot makes. Both are shown and list no values, which is what a
     source column of `None` says. A pivot names its columns after the values its
     data holds, so on a pivoted card that is the answer for every column the
     config does not name.
 
-    The card's own filters come back with it because a list offering what the
+    The card's own filters come back with it because a list showing what the
     card does not show reaches past what the chart published.
     """
     query, chart_type, config = frappe.db.get_value(
@@ -590,6 +656,7 @@ def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None,
 
         for dimension in dimensions:
             if dimension and result_column(dimension) == column:
+                check_card_filter(chart)
                 return query, dimension.get("column_name"), card_filters
 
         if any(measure and measure.get("measure_name") == column for measure in measures):
@@ -601,14 +668,33 @@ def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None,
     return None, None, None
 
 
+def can_filter_card(chart: str) -> bool:
+    """Whether the reader may add their own filter to the card.
+
+    A card filter cuts the chart's rows another way, as a drill breakdown
+    does, so `can_read_rows` decides. Dashboard filters are set by the author
+    and go through `route_filters` instead.
+    """
+    from insights.permissions import can_read_rows
+
+    return can_read_rows(frappe._dict(doctype="Insights Chart v3", name=chart))
+
+
+def check_card_filter(chart: str) -> None:
+    from insights.not_permitted import refuse
+
+    if not can_filter_card(chart):
+        refuse(message=frappe._("This chart shows only what its owner saved, so it cannot be filtered"))
+
+
 def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dict | None) -> dict | None:
     """The reader's own filters on one card, landing on the card's own query.
 
     A card filter is the reader's and not the author's: it names a column the
-    card draws and reaches no further, so it is taken from the request whole on
+    card shows and reaches no further, so it is taken from the request whole on
     every surface, public included. It lands under the chart's own name, which is
     what the chart's derived query is called, so the rule falls after the chart's
-    summarize — on the columns the card draws, measures included.
+    summarize — on the columns the card shows, measures included.
     """
     rules = []
     for card_filter in frappe.parse_json(card_filters) or []:
@@ -628,6 +714,7 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     if not rules:
         return adhoc_filters
 
+    check_card_filter(chart)
     routed = dict(adhoc_filters or {})
     group = routed.setdefault(chart, {"type": "filter_group", "logical_operator": "And", "filters": []})
     group["filters"] = [*group["filters"], *rules]
@@ -692,26 +779,3 @@ def create_preview_file(content: bytes, dashboard_name: str):
         file.save()
 
     return file.file_url
-
-
-@contextmanager
-def generate_preview_key(dashboard: str):
-    """A key that stands in for the viewer of one dashboard, for one render.
-
-    The key names its dashboard, so a leaked key reads that dashboard and the
-    charts and queries on it — the same documents the preview image itself
-    shows — and nothing else.
-
-    It names its viewer too. The render arrives as Guest, so the rows it draws
-    are filtered by the user the key was cut for, and the image shows what that
-    user would see.
-    """
-    try:
-        key = frappe.generate_hash()
-        frappe.cache.set_value(
-            f"insights_preview_key:{key}",
-            {"dashboard": dashboard, "user": frappe.session.user},
-        )
-        yield key
-    finally:
-        frappe.cache.delete_value(f"insights_preview_key:{key}")

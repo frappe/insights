@@ -27,6 +27,8 @@ export type InsightsAlert = {
 	created_from_now: string
 	modified_from_now: string
 	owner: string
+	// who the alert runs as: whoever last enabled it
+	permission_user: string
 	name: string
 }
 
@@ -68,6 +70,7 @@ const EMPTY_ALERT: InsightsAlert = {
 	created_from_now: '',
 	modified_from_now: '',
 	owner: '',
+	permission_user: '',
 }
 
 function getAlert(name: string) {

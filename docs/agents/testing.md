@@ -36,12 +36,12 @@ Run them with `bench --site <site> run-tests --app insights --module <module>`, 
 - The test name is the triage line. It states what a user or the engine does, and it is equivalent to the assertion.
 - Write it as a sentence in the present tense, in the words of `CONTEXT.md`. No `should`, no ticket ids, no component names.
 - Backend: `test_a_sort_the_author_wrote_outranks_the_date_axis` (`insights/tests/test_chart_derivation.py`).
-- Unit: `it('draws a rate as a line over the bars it is read against')` (`frontend/src2/charts/adapter/axis.test.ts`).
+- Unit: `it('plots a rate as a line over the bars it is read against')` (`frontend/src2/charts/adapter/axis.test.ts`).
 - E2E: `test('a user steps back to an earlier operation and the results rewind')` (`frontend/e2e/tests/query.spec.ts`).
 
 ## The feature directive
 
-- Every test carries a directive on the line directly above it: `# @feature <slug>` in Python, `// @feature <slug>` in TypeScript. Separate several slugs with spaces.
+- Every test has a directive on the line directly above it: `# @feature <slug>` in Python, `// @feature <slug>` in TypeScript. Separate several slugs with spaces.
 - A slug is `<area>.<feature>` and is a row in `docs/features.md`, which holds only the slug and the sentence. Which tests pin a row is read off the tests, never written into the list.
 - A feature row precedes its first test. To test a new feature, add the row first, then the test.
 - `python insights/tests/features.py check` runs in the lint workflow. It fails on a test without a directive, a slug not in the feature list, or a coverage table that does not match the tests.
@@ -60,7 +60,7 @@ Each rule answers a failure someone has recorded; the source is named in bracket
 
 ## Skip and retry
 
-- A `skip` carries an issue link, an owner and an expiry date on the same line. Review checks the date; a skip past its expiry is a finding.
+- A `skip` has an issue link, an owner and an expiry date on the same line. Review checks the date; a skip past its expiry is a finding.
 - In e2e, `test.skip` is a lint error. Use the `@quarantine` tag as `frontend/e2e/AGENTS.md` states, and put the same three fields in its comment.
 - A retry is a CI allowance, not a fix. `retries: 2` in `playwright.config.ts` absorbs infrastructure noise; it does not license a flaky test.
 - Before you land an e2e case, run it with `--repeat-each 3`. Any failure is a real failure.

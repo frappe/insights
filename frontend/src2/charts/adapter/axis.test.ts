@@ -4,12 +4,12 @@ import type { ReferenceLine } from '../../types/chart.types'
 import { adaptChart } from './index'
 import { axisChart, type AxisChartSpec } from './fixtures'
 
-// Everything here asserts on the props a chart is handed. What echarts draws
+// Everything here asserts on the props a chart is handed. What echarts renders
 // from them is v2's concern, and v2 tests it.
 
 function adapt(spec: AxisChartSpec) {
 	const filler = adaptChart(axisChart(spec))
-	if (!filler) throw new Error('the adapter drew nothing for this Chart')
+	if (!filler) throw new Error('the adapter rendered nothing for this Chart')
 	return filler
 }
 
@@ -17,7 +17,7 @@ const propsOf = (spec: AxisChartSpec) => adapt(spec).props
 
 describe('the three axis types', () => {
 	// @feature charts.type-bar
-	it('draws a Bar Chart as a bar chart, its Measures in a list', () => {
+	it('renders a Bar Chart as a bar chart, its Measures in a list', () => {
 		const { component, props } = adapt({
 			type: 'Bar',
 			dimension: 'region',
@@ -32,14 +32,14 @@ describe('the three axis types', () => {
 	})
 
 	// @feature charts.type-line
-	it('draws a Line Chart as a line chart', () => {
+	it('renders a Line Chart as a line chart', () => {
 		const filler = adapt({ type: 'Line', dimension: 'region', measures: ['revenue'] })
 		expect(filler.component).toBe(LineChart)
 		expect(filler.props.horizontal).toBeUndefined()
 	})
 
 	// @feature charts.type-row
-	it('draws a Row Chart as a bar chart lying down', () => {
+	it('renders a Row Chart as a bar chart lying down', () => {
 		const filler = adapt({ type: 'Row', dimension: 'region', measures: ['revenue'] })
 		expect(filler.component).toBe(BarChart)
 		expect(filler.props.horizontal).toBe(true)
@@ -65,7 +65,7 @@ describe('the three axis types', () => {
 	})
 
 	// @feature charts.type-bar
-	it('draws nothing until the Chart names a Dimension and the result holds a number', () => {
+	it('renders nothing until the Chart names a Dimension and the result holds a number', () => {
 		expect(
 			adaptChart(axisChart({ type: 'Bar', dimension: '', measures: ['revenue'] })),
 		).toBeUndefined()
@@ -156,21 +156,21 @@ describe('a split Dimension', () => {
 		expect(props.y).toEqual(['North', 'South', 'Others'])
 		expect(props.maxSeries).toBeUndefined()
 		// `series` is v2's long reading and takes one value column. A split can
-		// carry several Measures, so only the wide one says what Insights allows.
+		// hold several Measures, so only the wide one says what Insights allows.
 		expect(props.series).toBeUndefined()
 	})
 })
 
-describe('the marks a series draws as', () => {
+describe('the marks a series is plotted as', () => {
 	// @feature charts.series-type
-	it('leaves a series that draws the chart’s own mark unstyled', () => {
+	it('leaves a series plotted as the chart’s own mark unstyled', () => {
 		expect(
 			propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).seriesConfig,
 		).toBeUndefined()
 	})
 
 	// @feature charts.series-type
-	it('draws a rate as a line over the bars it is read against', () => {
+	it('plots a rate as a line over the bars it is read against', () => {
 		expect(
 			propsOf({
 				type: 'Bar',
@@ -193,7 +193,7 @@ describe('the marks a series draws as', () => {
 	})
 
 	// @feature charts.line-area
-	it('draws a line series with a fill under it as an area', () => {
+	it('plots a line series with a fill under it as an area', () => {
 		expect(
 			propsOf({
 				type: 'Line',
@@ -263,7 +263,7 @@ describe('the marks a series draws as', () => {
 	// @feature charts.split-by
 	it('leaves the columns of a split uncolored, which the one color would flatten', () => {
 		// A split hands one Series every column it produced, and the form writes
-		// one color. Painting it on each of them draws the whole split in a single
+		// one color. Painting it on each of them plots the whole split in a single
 		// shade, so the palette colors them instead. Everything else the Series
 		// says is true of all its columns and still reaches them.
 		const props = propsOf({
@@ -306,7 +306,7 @@ describe('the second value axis', () => {
 	})
 
 	// @feature charts.series-align
-	it('draws no second axis when every Series is aligned left', () => {
+	it('shows no second axis when every Series is aligned left', () => {
 		const props = propsOf({
 			type: 'Bar',
 			dimension: 'region',
@@ -318,7 +318,7 @@ describe('the second value axis', () => {
 	// @feature charts.type-row
 	it('says the same for a row chart, whose one value axis is v2’s concern', () => {
 		// A row chart runs its value axis across the plot. A second one along the
-		// other edge is unreadable, so v2 draws none and reads every series against
+		// other edge is unreadable, so v2 shows none and reads every series against
 		// the primary. The adapter that knew this too was a second place to keep it.
 		const props = propsOf({
 			type: 'Row',
@@ -357,9 +357,9 @@ describe('the value axis', () => {
 			max: 500,
 		})
 		expect(props.stacked).toBe('normalized')
-		// The axis carries a percentage now, so a bound set for the raw magnitude
+		// The axis shows a percentage now, so a bound set for the raw magnitude
 		// would cut the plot off. What is left is the formatter, which every axis
-		// carries.
+		// has.
 		expect(Object.keys(props.yAxis)).toEqual(['format'])
 	})
 
@@ -408,7 +408,7 @@ describe('the value axis', () => {
 })
 
 describe('bars on both value axes', () => {
-	// A series with no align draws on the left.
+	// A series with no align is plotted on the left.
 	// @feature charts.bar-stack charts.bar-normalize charts.series-align
 	it('neither stack nor normalize, whatever the Chart saved', () => {
 		const measures = ['revenue', { name: 'refunds', axis: 'right' as const }]
@@ -444,7 +444,7 @@ describe('bars on both value axes', () => {
 		expect(props.stacked).toBe(true)
 	})
 
-	// A Row draws horizontally, and frappe-ui gives it no second value axis.
+	// A Row plots horizontally, and frappe-ui gives it no second value axis.
 	// @feature charts.bar-stack
 	it('never happen on a Row, so it keeps stacking', () => {
 		const props = propsOf({
@@ -459,7 +459,7 @@ describe('bars on both value axes', () => {
 
 describe('reference lines', () => {
 	// @feature charts.reference-lines
-	it('draws a target across the plot, and a marker down it', () => {
+	it('plots a target across the plot, and a marker down it', () => {
 		expect(
 			propsOf({
 				type: 'Bar',
@@ -523,7 +523,7 @@ describe('a reference line at an aggregate', () => {
 	const valueOf = (line: ReferenceLine) => propsOf(spec(line)).referenceLines?.[0]?.value
 
 	// @feature charts.reference-lines
-	it('reads the average of what the Chart draws', () => {
+	it('reads the average of what the Chart plots', () => {
 		expect(valueOf({ aggregate: 'average', measure_name: 'revenue' })).toBe(30)
 	})
 
@@ -645,7 +645,7 @@ describe('a reference line at an aggregate', () => {
 	})
 
 	// @feature charts.reference-lines
-	it('drops a line whose Measure the Chart does not draw', () => {
+	it('drops a line whose Measure the Chart does not plot', () => {
 		expect(valueOf({ aggregate: 'average', measure_name: 'target' })).toBeUndefined()
 	})
 
@@ -686,19 +686,19 @@ describe('a Measure that only reaches the tooltip', () => {
 		expect(props.tooltipColumns[0].name).toBe('order_count')
 	})
 
-	// The result carries it as one more numeric column, so without the config
-	// saying otherwise it would be read as a series and drawn.
+	// The result includes it as one more numeric column, so without the config
+	// saying otherwise it would be read as a series and plotted.
 	// @feature charts.tooltip-measures
-	it('is taken out of the columns the chart draws', () => {
+	it('is taken out of the columns the chart plots', () => {
 		const input = axisChart(spec)
 		expect(input.result.columns.map((column) => column.name)).toContain('order_count')
 		expect(adaptChart(input)!.props.y).not.toContain('order_count')
 	})
 
-	// The chart labels a column the way it labels a series it draws, so naming
+	// The chart labels a column the way it labels a series it plots, so naming
 	// one here would make the same Measure read two ways.
 	// @feature charts.tooltip-measures
-	it('names itself the way a drawn Measure does', () => {
+	it('names itself the way a plotted Measure does', () => {
 		expect(propsOf(spec).tooltipColumns[0].label).toBeUndefined()
 	})
 
@@ -730,7 +730,7 @@ describe('a Measure that only reaches the tooltip', () => {
 		expect(props.y).toEqual(['Men', 'Women'])
 	})
 
-	// A tooltip Measure is not drawn, but it is measured. A target on the tooltip
+	// A tooltip Measure is not plotted, but it is measured. A target on the tooltip
 	// is the kind of number a rule reads, so a line has to be able to name one.
 	// @feature charts.tooltip-measures
 	it('can still back a computed reference line', () => {
@@ -750,10 +750,10 @@ describe('a Measure that only reaches the tooltip', () => {
 		expect(props.tooltipColumns).toBeUndefined()
 	})
 
-	// Two Measures under one name is one column. Drawing wins: the chart would
+	// Two Measures under one name is one column. Plotting wins: the chart would
 	// otherwise lose a series to the tooltip.
 	// @feature charts.tooltip-measures
-	it('yields a name the chart already draws', () => {
+	it('yields a name the chart already plots', () => {
 		const props = propsOf({
 			type: 'Bar',
 			dimension: 'region',
@@ -786,9 +786,9 @@ describe('drilling into a point', () => {
 	})
 
 	// The column a split segment names is a pivoted one, which only the result
-	// carries — a drill that named the Measure would fail to find it there.
+	// includes — a drill that named the Measure would fail to find it there.
 	// @feature charts.drill-segment
-	it('names the pivoted column a split segment was drawn from', () => {
+	it('names the pivoted column a split segment was plotted from', () => {
 		const input = axisChart({
 			type: 'Bar',
 			dimension: 'month',

@@ -362,7 +362,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         return schemas or ["public"]
 
     def qualify_table_names(self) -> bool:
-        """Whether table names should carry a `<schema>.` prefix.
+        """Whether table names should have a `<schema>.` prefix.
 
         Only useful when the data source spans more than one schema — with a single schema
         there is nothing to disambiguate and the prefix just leaks into the UI and breaks the
@@ -384,7 +384,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         """Resolve `(schema, table)` for a postgres table name — inverse of `format_table_name`.
 
         Names are only qualified when the data source spans multiple schemas, but names
-        stored before that was the case may still carry the prefix — so accept both.
+        stored before that was the case may still have the prefix — so accept both.
         """
         schemas = self.get_postgres_schemas()
         schema, separator, table = table_name.partition(".")

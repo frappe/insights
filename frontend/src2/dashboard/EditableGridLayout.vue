@@ -14,12 +14,12 @@ import {
 
 // The dashboard grid an author gets: the reader's grid, plus a pointer.
 //
-// It draws nothing itself. The cells are laid out by `StaticGridLayout`, the
+// It renders nothing itself. The cells are laid out by `StaticGridLayout`, the
 // same component a reader is served, so the two surfaces cannot drift apart —
 // what an author drags a card into is the grid a reader will be shown. All this
 // component adds is the gesture: it turns pointer movement into a column and a
 // row, hands the disturbed grid to `resolveLayouts`, and passes the answer back
-// down to be drawn.
+// down to be rendered.
 //
 // The layout is only written back when the pointer is released. A drag is one
 // edit, not one per frame, so undo and autosave see a move rather than a trail.
@@ -46,7 +46,7 @@ const emit = defineEmits<{
 const container = ref<HTMLElement>()
 const { width } = useElementSize(container)
 
-// The one place a breakpoint is picked for this grid. The drawing half is told
+// The one place a breakpoint is picked for this grid. The rendering half is told
 // which one, rather than measuring the same box a second time and risking a
 // gesture that arranges a breakpoint other than the one on screen.
 const active = computed(
@@ -80,14 +80,14 @@ const settling = ref<Layout[]>()
 
 const layouts = computed(() => settling.value || stored.value)
 
-// A card carries its own controls, and a press on one of those is a press on the
+// A card has its own controls, and a press on one of those is a press on the
 // control. A chart's plot is one of them: a click on a segment opens the drill,
 // which is what the whole drill folder is for. Everything else on a card is
 // somewhere to grab it by.
 //
-// echarts writes `_echarts_instance_` on the element it draws into, whichever
+// echarts writes `_echarts_instance_` on the element it renders into, whichever
 // renderer it uses, so that is the plot. Naming the renderer's own element
-// instead would name a tag frappe-ui does not draw — it registers the SVG
+// instead would name a tag frappe-ui does not render — it registers the SVG
 // renderer and nothing else.
 const CONTROLS = 'button, a, input, select, textarea, [contenteditable], [_echarts_instance_]'
 
@@ -191,7 +191,7 @@ function track(event: PointerEvent) {
 	// `asked`. Compaction can move a cell above the row the pointer asked for, and
 	// an offset taken from the request would leave the card up there.
 	//
-	// A resize is not held at all. It snaps outright, because a card drawn at a
+	// A resize is not held at all. It snaps outright, because a card rendered at a
 	// width it will not keep is a card whose contents lay out twice.
 	const held = current.kind === 'move'
 	current.offsetX = held ? dx - (current.landed.x - dragged.x) * columnWidth : 0
@@ -204,7 +204,7 @@ function finish() {
 	const from = gesture.value?.from
 	gesture.value = undefined
 	if (resolved && from) emit('move', active.value.key, resolved, from)
-	// dropped only after the parent has been told, so the grid is never drawn
+	// dropped only after the parent has been told, so the grid is never rendered
 	// from the layout the gesture started at
 	settling.value = undefined
 }
@@ -217,7 +217,7 @@ function stopListening() {
 
 onBeforeUnmount(stopListening)
 
-// The card under the hand, as the grid needs to be told about it. Drawing it
+// The card under the hand, as the grid needs to be told about it. Rendering it
 // (holding it off its slot, raising it, leaving the slot showing) is the grid's
 // job, so all that is handed over is how far it is being held.
 const lifted = computed(() => {
@@ -251,7 +251,7 @@ const lifted = computed(() => {
 					]"
 					@pointerdown="start('move', cell.i, $event)"
 				>
-					<!-- The card being carried is raised by a shadow laid under it,
+					<!-- The card being dragged is raised by a shadow laid under it,
 					     inset to the card's own edges. Under it, and not on it: a
 					     `filter` on the card would re-render its plot on every
 					     frame of the drag. -->
@@ -262,7 +262,7 @@ const lifted = computed(() => {
 					<slot name="item" v-bind="cell" />
 					<!-- The corner an author grabs is 24px, the corner they see is
 					     8px. A mark big enough to take a fingertip would be a mark
-					     that draws the eye away from the card it sits on. -->
+					     that pulls the eye away from the card it sits on. -->
 					<div
 						v-if="editable"
 						data-testid="dashboard-cell-resize"

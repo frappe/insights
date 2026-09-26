@@ -13,7 +13,7 @@ const props = defineProps<{ columnOptions: ColumnOption[] }>()
 
 // The whole Chart config, not the `tooltip` key alone: the section owns the
 // rule that a split takes it away, and reading `split_by` from here keeps that
-// rule in one place rather than in every form that draws the section.
+// rule in one place rather than in every form that renders the section.
 const config = defineModel<AxisChartConfig>({ required: true })
 
 // A split turns every Measure into one column per split value, which is a
@@ -45,14 +45,14 @@ function addMeasure() {
 		<p v-if="splitBy" class="pt-1 text-xs text-ink-gray-5">
 			{{
 				__(
-					'A split draws one series per split value, so these {0} measures are off the tooltip until it is cleared.',
+					'A split plots one series per split value, so these {0} measures stay out of the tooltip until the split is cleared.',
 					String(measures.length),
 				)
 			}}
 		</p>
 		<div v-else class="pt-1">
 			<p class="mb-1.5 text-xs text-ink-gray-5">
-				{{ __('Measures printed in the tooltip only, never drawn.') }}
+				{{ __('Measures shown in the tooltip only, never plotted.') }}
 			</p>
 			<DraggableList v-model:items="measures" group="tooltip-measures">
 				<template #item="{ item, index }">

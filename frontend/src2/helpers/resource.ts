@@ -1,11 +1,9 @@
 import { useStorage, watchDebounced } from '@vueuse/core'
-import { __ } from '../translation'
 import { isEqual } from 'es-toolkit'
 import { call } from 'frappe-ui'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
-import { confirmDialog } from '../helpers/confirm_dialog'
 import { copy, showErrorToast, waitUntil, watchToggle } from './index'
-import { mergeWriteAnswer } from './write_answer'
+import { mergeWriteAnswer, takeBackRefusal } from './write_answer'
 // import json_diff from 'https://cdn.jsdelivr.net/npm/json-diff@1.0.6/+esm'
 
 type Document = {
@@ -44,7 +42,6 @@ export default function useDocumentResource<T extends Document>(
 	const isLocal = ref(docname.value.startsWith('new-'))
 	const isLoading = ref(docname.value && !docname.value.startsWith('new-'))
 	const isLoaded = ref(false)
-	const isFailed = ref(false)
 	const isSaving = ref(false)
 	const isDeleting = ref(false)
 	const autoSave = ref(options.enableAutoSave ?? false)
@@ -68,9 +65,8 @@ export default function useDocumentResource<T extends Document>(
 	// wrote the `undefined` writes it again.
 	const isDirty = computed(() => !isEqual(copy(doc.value), originalDoc.value))
 
-	// A surface waits on this before it draws the document. A local document has
-	// nothing to load, so it is ready the moment it is made. A failed load stays
-	// pending: a surface that draws the failure reads `failed`.
+	// A surface waits on this before it renders the document. A local document has
+	// nothing to load, so it is ready the moment it is made.
 	const isPending = computed(() => !isLoaded.value && !isLocal.value)
 
 	async function insertDoc() {
@@ -124,16 +120,31 @@ export default function useDocumentResource<T extends Document>(
 	async function updateDoc() {
 		isSaving.value = true
 		const sentDoc = copy(removeMetaFields(doc.value))
-		const newDoc = await call(methods.update, {
-			doctype,
-			name: docname.value,
-			fieldname: sentDoc,
-		})
-			.catch(showErrorToast)
-			.finally(() => (isSaving.value = false))
-
-		if (newDoc) {
-			updateDocState(newDoc, sentDoc)
+		try {
+			const newDoc = await call(methods.update, {
+				doctype,
+				name: docname.value,
+				fieldname: sentDoc,
+			})
+			if (newDoc) {
+				updateDocState(newDoc, sentDoc)
+			}
+		} catch (error) {
+			// Under autosave, a rejected value would block every later save. The
+			// document stays dirty, each edit triggers another save, and the
+			// server rejects the same payload again. So the rejected value is
+			// reverted. A manual save has no such loop, so it keeps every edit.
+			// So does a request that never reached the server.
+			if (autoSave.value && isRefusal(error)) {
+				doc.value = takeBackRefusal(
+					{ ...doc.value },
+					originalDoc.value,
+					sentDoc,
+				) as typeof doc.value
+			}
+			showErrorToast(error as Error)
+		} finally {
+			isSaving.value = false
 		}
 	}
 
@@ -141,16 +152,12 @@ export default function useDocumentResource<T extends Document>(
 		if (isLocal.value) return
 
 		isLoading.value = true
-		isFailed.value = false
 
 		const _doc = await call(methods.get, {
 			doctype,
 			name: docname.value,
 		})
-			.catch((error) => {
-				isFailed.value = true
-				showErrorToast(error)
-			})
+			.catch(showErrorToast)
 			.finally(() => (isLoading.value = false))
 
 		if (!_doc) return
@@ -186,7 +193,7 @@ export default function useDocumentResource<T extends Document>(
 			.finally(() => (isDeleting.value = false))
 	}
 
-	// `sentDoc` is the deep clone a write carried. Pass it and the answer is read
+	// `sentDoc` is the deep clone a write sent. Pass it and the answer is read
 	// as the receipt it is — see `mergeWriteAnswer`. Leave it out to replace the
 	// document, which is what a load wants.
 	function updateDocState(newDoc: any, sentDoc?: any) {
@@ -268,11 +275,7 @@ export default function useDocumentResource<T extends Document>(
 		// })
 	}
 
-	// a document that failed to load has nothing to keep or save, and the toast
-	// has already said why
-	loadDoc()
-		.then(setupLocalStorage)
-		.then(setupAutoSave, () => {})
+	loadDoc().then(setupLocalStorage).then(setupAutoSave)
 	// setupRealtimeUpdates()
 
 	return reactive({
@@ -285,7 +288,6 @@ export default function useDocumentResource<T extends Document>(
 		loading: isLoading,
 		isloaded: isLoaded,
 		pending: isPending,
-		failed: isFailed,
 		saving: isSaving,
 		deleting: isDeleting,
 		autoSave: autoSave,
@@ -301,14 +303,6 @@ export default function useDocumentResource<T extends Document>(
 		load: loadDoc,
 		call: callMethod,
 		delete: deleteDoc,
-
-		discard() {
-			confirmDialog({
-				title: __('Discard Changes'),
-				message: __('Are you sure you want to discard changes?'),
-				onSuccess: () => loadDoc(),
-			})
-		},
 	})
 }
 
@@ -326,6 +320,11 @@ const metaFields = [
 	'parentfield',
 	'parenttype',
 ]
+
+/** The server rejected the write with a permission or validation error. */
+function isRefusal(error: any) {
+	return error?.status === 403 || error?.status === 417
+}
 
 function removeMetaFields(doc: any) {
 	const newDoc = { ...doc }

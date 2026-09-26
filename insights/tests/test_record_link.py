@@ -5,11 +5,8 @@ this is what it is given. What it needs from the site is the `Site DB` data
 source and the doctypes it names.
 """
 
-import frappe
-
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import DT, create_test_query, create_test_workbook
 
 
 def source(table_name="tabToDo"):
@@ -74,7 +71,7 @@ class TestRecordLink(InsightsIntegrationTestCase):
 
     # @feature charts.table-record-link
     def test_the_link_follows_a_copy(self):
-        # the copy carries the document name too, so either column opens the document
+        # the copy includes the document name too, so either column opens the document
         operations = [source(), mutate("todo_id", "name")]
         self.assertEqual(record_links(operations, columns("todo_id"))["todo_id"], "ToDo")
 
@@ -243,34 +240,3 @@ class TestRecordLink(InsightsIntegrationTestCase):
     def test_a_link_field_survives_a_group_by(self):
         operations = [source(), summarize(("owner", "Owner"))]
         self.assertEqual(record_links(operations, columns("Owner", "count"))["Owner"], "User")
-
-
-class TestQueryRunRecordLink(InsightsIntegrationTestCase):
-    """A drill's rows level is an ad-hoc query the reader can edit, so its links
-    come back with each run rather than once with the level."""
-
-    @classmethod
-    def before_class(cls):
-        cls.workbook = create_test_workbook("Administrator", title="Record Link Workbook").name
-        cls.query = create_test_query(
-            "Administrator",
-            cls.workbook,
-            title="Record Link Query",
-            operations=[source(), rename("name", "todo_id")],
-        ).name
-
-    @classmethod
-    def after_class(cls):
-        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
-
-    # @feature charts.drill-record-link
-    def test_a_query_run_names_the_records_of_the_step_it_ran_to(self):
-        query = frappe.get_doc(DT.QUERY, self.query)
-
-        links = query.execute()["record_links"]
-        self.assertEqual(links["todo_id"], "ToDo")
-        self.assertNotIn("name", links)
-
-        before_rename = query.execute(active_operation_idx=0)["record_links"]
-        self.assertEqual(before_rename["name"], "ToDo")
-        self.assertNotIn("todo_id", before_rename)

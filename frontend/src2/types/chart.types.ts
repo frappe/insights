@@ -23,14 +23,14 @@ export type ChartType = (typeof CHARTS)[number]
  * chart's own default, and each Measure's override of it — so a setting reads
  * the same wherever it was set.
  *
- * What it does not carry is the unit: a currency or a percent is the Measure's
+ * What it does not include is the unit: a currency or a percent is the Measure's
  * own `format`, stated once on the Measure and printed by every chart that
- * draws it. This is the display on top of that.
+ * plots it. This is the display on top of that.
  */
 export type NumberFormat = {
 	/** `12300` prints as `12.3K`. */
 	shorten?: boolean
-	/** Decimal places. Left out, a value keeps as many as it carries, up to two. */
+	/** Decimal places. Left out, a value keeps as many as it has, up to two. */
 	decimals?: number
 	/** Printed before the number. Set, it stands in for the Measure's own unit. */
 	prefix?: string
@@ -39,11 +39,11 @@ export type NumberFormat = {
 }
 
 /**
- * Every chart config carries these two. `number_format` is the chart's default,
+ * Every chart config has these two. `number_format` is the chart's default,
  * which each of its values inherits. `number_formats` is one Measure's own,
  * keyed by `measure_name`, and it overrides the default key by key.
  *
- * A chart drawing one measure has nothing to tell apart, so its form writes the
+ * A chart plotting one measure has nothing to tell apart, so its form writes the
  * Measure's entry alone and leaves the default empty.
  */
 export type NumberFormatConfig = {
@@ -68,7 +68,7 @@ export type XAxis = {
  * rate, the target beside the actual.
  *
  * Its own key rather than a flag on a Series, because it is not a Series: a
- * Series that draws nothing is the thing `hide_from_chart` already is.
+ * Series that plots nothing is the thing `hide_from_chart` already is.
  *
  * A Dimension cannot go here. The chart's rows are a summarize, so anything in
  * the tooltip must be one value per plotted row, and only an aggregate is. A
@@ -99,7 +99,7 @@ export type ReferenceLine = {
 	// settings popover ends up over a different line. A line saved before it
 	// existed was given one by `insights.patches.normalize_chart_configs`.
 	id?: string
-	// 'y' draws a horizontal line at a measure value, 'x' a vertical line at a category/date value
+	// 'y' plots a horizontal line at a measure value, 'x' a vertical line at a category/date value
 	axis?: 'x' | 'y'
 	// which value axis a 'y' line targets on a dual-axis chart; defaults to the primary (left)
 	align?: 'Left' | 'Right'
@@ -128,7 +128,7 @@ export type Series = {
 	type?: 'line' | 'bar'
 	align?: 'Left' | 'Right'
 	show_data_labels?: boolean
-	// A series drawn at zero opacity and kept out of the legend, i.e. a Measure
+	// A series plotted at zero opacity and kept out of the legend, i.e. a Measure
 	// that reached the tooltip and nothing else. `tooltip.measures` says that, so
 	// `insights.patches.normalize_chart_configs` moved it there. Read, never written.
 	hide_from_chart?: boolean
@@ -168,7 +168,7 @@ export type MixedChartConfig = AxisChartConfig & {
 /**
  * What the reading is aimed at. The card prints it on the value line, as
  * `$621.8K / $750K`: a target is part of the reading, not commentary on it, so
- * it carries no label and no percent — the fraction is the whole statement.
+ * it has no label and no percent — the fraction is the whole statement.
  */
 export type NumberTarget = {
 	value?: number
@@ -245,7 +245,7 @@ export type NumberChartConfig = NumberFormatConfig & {
 	 *   a `previous` comparison reads the period one grain before it.
 	 *
 	 * Left out, the card is one number over the whole result and the date column
-	 * only feeds the sparkline. Before this existed a granularity on
+	 * is only the sparkline's source. Before this existed a granularity on
 	 * `date_column` did what `grain` does, which is what `periodOf` reads.
 	 */
 	window?: NumberPeriod

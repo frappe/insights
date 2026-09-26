@@ -3,7 +3,7 @@
 The setting used to live in the browser and was on unless a reader turned it
 off. The field that replaced it has been on the doctype since the v2 era with
 nothing ever writing it, so every stored row holds 0 — and reading the field
-alone would open the gaps in every dashboard already drawn. See
+alone would open the gaps in every dashboard already rendered. See
 `insights/patches/close_dashboard_layout_gaps.py`.
 """
 
@@ -41,7 +41,7 @@ class TestDashboardCompactLayout(InsightsIntegrationTestCase):
         self.assertEqual(self.create_dashboard("New Compact Dashboard").vertical_compact_layout, 1)
 
     # @feature dashboard.compact-layout
-    def test_the_patch_closes_the_gaps_of_a_dashboard_drawn_before_the_field(self):
+    def test_the_patch_closes_the_gaps_of_a_dashboard_saved_before_the_field(self):
         """Nothing wrote the field, so a row from before it reads as 0 and would
         re-arrange itself on deploy."""
         dashboard = self.create_dashboard("Old Compact Dashboard").name

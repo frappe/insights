@@ -30,7 +30,7 @@ function itemTitle(page: Page, scale: string): Locator {
 
 /**
  * locator: the workbook actions menu opens from an icon-only button that
- * carries no accessible name. `aria-haspopup` marks it as the only menu trigger
+ * has no accessible name. `aria-haspopup` marks it as the only menu trigger
  * in the navbar.
  */
 function actionsMenu(page: Page): Locator {
@@ -107,7 +107,7 @@ test.describe('workbook', () => {
 		await expect(page).toHaveURL(
 			new RegExp(`/workbook/${workbook.name}/dashboard/${dashboard.name}$`),
 		)
-		// The dashboard draws the chart narrower, and echarts drops the category
+		// The dashboard renders the chart narrower, and echarts drops the category
 		// labels that no longer fit. The value axis still runs to a 1,800 tick,
 		// because 1,778 of the 2,000 orders are delivered.
 		await expect(rendered.getByText('1,800')).toBeVisible()
@@ -260,7 +260,7 @@ test.describe('workbook', () => {
 		const item = page.getByRole('link', { name: query.title })
 		await expect(item).toBeVisible()
 
-		// The row's X is the only control on it that carries a name.
+		// The row's X is the only control on it that has a name.
 		await item.hover()
 		await page.getByRole('button', { name: `Remove ${query.title}` }).click()
 

@@ -19,7 +19,7 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 		data: input.result.rows,
 		x,
 		y,
-		// Three Measures, each printed in its own units: the two axes carry their
+		// Three Measures, each printed in its own units: the two axes keep their
 		// own formatter, and `format` is what is left — the size, which has no
 		// axis to hang one on.
 		xAxis: { format: numberFormatter(config, config.xAxis, input.result.rows) },
@@ -59,14 +59,14 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 }
 
 /**
- * Both axes of a scatter are value axes, so a quadrant is drawn by a pair of
+ * Both axes of a scatter are value axes, so a quadrant is plotted by a pair of
  * reference lines and `axis: 'x'` takes a number rather than a category. The
  * numbers are the author's own: nothing computes a default divider, and a
- * quadrant chart with no line set draws none.
+ * quadrant chart with no line set plots none.
  *
  * Each rule prints where it sits, in the units of the axis it is read against.
  * The two are placed at opposite ends, because both default to the same corner and a quadrant chart
- * always draws them crossing.
+ * always plots them crossing.
  */
 function quadrantLines(
 	config: BubbleChartConfig,

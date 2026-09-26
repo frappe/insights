@@ -33,13 +33,13 @@ const config = defineModel<NumberChartConfig>({
 	}),
 })
 
-// picking a column writes a calendar period, which a time of day cannot carry
+// picking a column writes a calendar period, which a time of day cannot hold
 const date_dimensions = computed(() =>
 	props.dimensions.filter((d) => isCalendarDateType(d.data_type)),
 )
 
-// What the card reads, which is what decides whether a period comparison is on
-// offer and whether a sparkline has a series behind it.
+// What the card reads, which is what decides whether a period comparison is
+// available and whether a sparkline has a series behind it.
 const period = computed(() => periodOf(config.value))
 
 const updateColor = debounce((color: string) => {
@@ -73,7 +73,7 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
  * The column and the period are one decision, so one handler answers both.
  *
  * A date column that groups nothing is a date column doing nothing, which is
- * why the picker offers no "None" — picking a column picks a period, and
+ * why the picker lists no "None" — picking a column picks a period, and
  * dropping the column drops it. Written only on an author's action, never on
  * open, so no chart is dirtied by being looked at.
  */

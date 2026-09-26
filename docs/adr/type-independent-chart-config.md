@@ -22,11 +22,11 @@ chart type reads its own slot names out of that config:
 | Bubble       | `dimension`, `quadrant_column`    | `xAxis`, `yAxis`, `size_column`   |
 
 These are eight names for two slots. Every chart is a set of dimensions and a
-set of measures, plus options that say how to draw them.
+set of measures, plus options that say how to plot them.
 
 frappe-ui charts v2 does not settle this question. Its props name the columns of
 already-shaped data (`x`, `y`, `series`, `category`, `value`). It takes rows and
-draws them. It holds no concept of a dimension, a measure, an aggregation or a
+renders them. It holds no concept of a dimension, a measure, an aggregation or a
 query. The config shape stays a concern of Insights.
 
 ## Decision
@@ -65,7 +65,7 @@ that count. No option builder can reach a slot that does not exist.
 A type switch becomes lossless and reversible. This makes a live preview of each
 type possible, because the switch no longer costs the user any work.
 
-Every chart type needs an adapter function from the config to the v2 props. That function is close to an identity function under this shape. Under the current shape it is nine separate translations, and each one carries the old slot names into the new render layer. That argued for making this change first. The amendment below reverses the ordering.
+Every chart type needs an adapter function from the config to the v2 props. That function is close to an identity function under this shape. Under the current shape it is nine separate translations, and each one passes the old slot names into the new render layer. That argued for making this change first. The amendment below reverses the ordering.
 
 The config is persisted, so the change needs a normalizer. `transformChartDoc`
 already normalizes older config shapes on load. The new shape follows the same

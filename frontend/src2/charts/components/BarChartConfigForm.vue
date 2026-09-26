@@ -25,7 +25,7 @@ const config = defineModel<BarChartConfig>({
 })
 
 // The flags stay as saved, and the adapter ignores them while bars sit on both
-// axes, so the switches show what is drawn rather than what is saved.
+// axes, so the switches show what is plotted rather than what is saved.
 const barsOnBothAxes = computed(() =>
 	hasBarsOnBothAxes(config.value.y_axis.series, 'bar', props.chartType === 'Row'),
 )

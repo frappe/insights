@@ -1,6 +1,6 @@
 // Where each cell of a dashboard grid sits.
 //
-// The reader's grid runs this to draw a saved layout. The author's grid runs it
+// The reader's grid runs this to render a saved layout. The author's grid runs it
 // on every pointer move, to work out what a drag did to the cells around it.
 // Neither surface holds a rule the other does not.
 //
@@ -187,15 +187,15 @@ export function resolveLayouts(
 export type GridPlacement = {
 	/** Column count the cells were placed against. */
 	columns: number
-	/** Placement by cell identity, so the caller can draw in its own order. */
+	/** Placement by cell identity, so the caller can render in its own order. */
 	cells: Record<string, Layout>
 }
 
 /**
  * Place every cell of one breakpoint's layout.
  *
- * Keyed by identity rather than returned as a list, because the caller draws its
- * cells in the order its own items carry — the slot index has to keep meaning
+ * Keyed by identity rather than returned as a list, because the caller renders its
+ * cells in the order its own items hold — the slot index has to keep meaning
  * what it meant.
  */
 export function placeGrid(
@@ -212,11 +212,11 @@ export function placeGrid(
 
 export type Breakpoint = {
 	key: BreakpointKey
-	/** The widest grid this layout is drawn on. The last row has no ceiling. */
+	/** The widest grid this layout is rendered on. The last row has no ceiling. */
 	maxWidth: number
 	/** Columns this layout places against. */
 	columns: number
-	/** What an author picking this layout to arrange is offered, untranslated. */
+	/** What an author picking this layout to arrange is shown, untranslated. */
 	label: string
 	/** The same, by lucide name. */
 	icon: string
@@ -328,8 +328,8 @@ export function placementsFor(
  * settled against them: what the breakpoint would give this item depends on
  * where everything else sits.
  *
- * `verticalCompact` is the flag the grid draws with. The answer is compared
- * against a box the author dropped on a drawn grid, so it has to be the drawn
+ * `verticalCompact` is the flag the grid renders with. The answer is compared
+ * against a box the author dropped on a rendered grid, so it has to be the rendered
  * box: a cell compaction pulls up sits nowhere near where the stored layout
  * puts it.
  */

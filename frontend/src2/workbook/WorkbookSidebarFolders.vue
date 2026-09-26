@@ -20,7 +20,7 @@ const section = defineProps<{
 
 const workbook = inject(workbookKey)!
 
-// Sortable owns the dragstart on these rows, so the payload a row carries out
+// Sortable owns the dragstart on these rows, so the payload a row takes out
 // of the sidebar is written through Sortable's own `setData`. The row it hands
 // back is an element; `data-name` is what names the item again.
 function setDragData(dataTransfer: DataTransfer, row: HTMLElement) {
@@ -112,7 +112,7 @@ function finishRenameFolder(folder: WorkbookFolder) {
 // (shared) item objects so the computeds re-derive without a snap-back, and
 // persist. A cross-list move fires `removed` on the source and `added` on the
 // target; we persist only from the `added` (and same-list `moved`) side, which
-// already carries the moved item with its new folder. The `removed` side is
+// already includes the moved item with its new folder. The `removed` side is
 // ignored so we don't issue a second, racing write for the source list.
 function onListChange(
 	currentList: (WorkbookQuery | WorkbookChart)[],

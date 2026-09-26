@@ -43,11 +43,11 @@ VIEW_WINDOW_DAYS = 30
 def search_content(term: str, limit: int = 20) -> list[dict]:
     """Search every workbook, query, chart and dashboard the caller may read.
 
-    Each hit carries a `snippet`: the part of the matching field that matched, with
+    Each hit includes a `snippet`: the part of the matching field that matched, with
     the term marked. That is what makes a hit rankable without a second round trip
     for the document itself.
 
-    Each hit also carries `used_by_charts`, `used_by_dashboards` and
+    Each hit also includes `used_by_charts`, `used_by_dashboards` and
     `dashboard_views` - the last 30 days of opens. They measure reach downstream of
     the hit, so a definition that a busy dashboard reads outranks one nobody opens.
     A count only ever covers documents the caller may read.
@@ -109,7 +109,7 @@ def search_columns(term: str, data_source: str | None = None, limit: int = 100) 
 
 
 def _search_doctype(doctype: str, fields: list[str], term: str, limit: int) -> list[frappe._dict]:
-    """The documents of one doctype that match, as hits carrying their snippet."""
+    """The documents of one doctype that match, as hits with their snippet."""
     pattern = f"%{_escape_wildcards(term)}%"
     has_workbook = doctype != WORKBOOK
 

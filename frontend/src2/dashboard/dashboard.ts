@@ -1,4 +1,5 @@
 import { useWindowSize } from '@vueuse/core'
+import { call } from 'frappe-ui'
 import { computed, effectScope, reactive, ref, shallowRef, toRefs, watch, watchEffect } from 'vue'
 import { numberCardRows, numberReadings } from '../charts/adapter/number'
 import useChart, { type Chart } from '../charts/chart'
@@ -7,13 +8,11 @@ import {
 	operatorOf,
 	type Filter,
 } from '../components/filter_picker/filter_picker'
-import useChartPreview from '../charts/chart_preview'
-import {
-	useSharedChart,
-	type ChartReadSurface,
-	type DashboardFilterContext,
-} from '../charts/chart_read'
-import { getUniqueId, safeJSONParse, showErrorToast, store, waitUntil } from '../helpers'
+import useChartPreview, { type ChartPreviewContext } from '../charts/chart_preview'
+import { type DashboardFilterContext } from '../charts/chart_view'
+import { getUniqueId, safeJSONParse, showErrorToast, waitUntil } from '../helpers'
+import { confirmDialog } from '../helpers/confirm_dialog'
+import { __ } from '../translation'
 import useDocumentResource from '../helpers/resource'
 import router from '../router'
 import { useTelemetry } from '../telemetry'
@@ -21,23 +20,22 @@ import type { NumberChartConfig } from '../types/chart.types'
 import { FilterOperator, FilterValue } from '../types/query.types'
 import {
 	BreakpointKey,
+	FilterValues,
 	InsightsDashboardv3,
-	ViewerFilters,
 	Layout,
 	WorkbookChart,
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
-import type { CellRules } from './grid_placement'
 import {
 	BASE_BREAKPOINT,
 	derivedPlacement,
 	GRID_COLUMNS,
 	layoutRank,
-	ROW_HEIGHT,
 	sameBox,
 	writePlacement,
 } from './grid_placement'
+import { cellRulesFor, defaultFilterStates, FILTER_ROWS, invalidateDashboard } from './view'
 
 /**
  * A filter link, `` `query`.`column` ``, split back into its two halves.
@@ -64,49 +62,28 @@ const NUMBER_CARD_COLUMNS = 4
 /** Columns a filter cell takes. */
 const FILTER_WIDTH = 4
 
-/**
- * The filter cell, measured from the CSS that draws it the way `numberCardRows`
- * measures a card: the trigger plus the cell's own padding.
- */
-const FILTER = {
-	/** The trigger is frappe-ui's `sm` Button, `h-7`. */
-	trigger: 28,
-	/** A dashboard cell's `p-2`, top and bottom. */
-	cellPadding: 2 * 8,
-}
-
-/** Rows a filter cell takes. */
-const FILTER_ROWS = Math.ceil((FILTER.trigger + FILTER.cellPadding) / ROW_HEIGHT)
-
 const dashboards = new Map<string, Dashboard>()
 
-/**
- * The store one surface reads a dashboard through.
- *
- * `shared` is part of the key, not a flag a page writes: a store outlives the
- * route that made it, and a public link and the in-app page read their cards
- * through different endpoints. Keyed, the surface that asks gets the store that
- * reads its way, whichever mounted first.
- */
-export default function useDashboard(name: string, shared = false) {
-	const key = `${shared ? 'shared' : 'app'}:${name}`
+/** The store the builder edits a dashboard through, one per dashboard. */
+export default function useDashboard(name: string) {
+	const key = name
 	const existingDashboard = dashboards.get(key)
 	if (existingDashboard) return existingDashboard
 
 	// A store is always first asked for inside a component's `setup`, and it
 	// outlives that component. Its own effects (autosave, the chart map, the
-	// saved filter states) would stop when the page it was first drawn on
+	// saved filter states) would stop when the page it was first rendered on
 	// unmounts, leaving a store that reads current and saves nothing. Detached,
 	// so they live as long as the store does: the map never drops an entry.
 	const scope = effectScope(true)
-	const dashboard = scope.run(() => makeDashboard(name, shared)) as Dashboard
+	const dashboard = scope.run(() => makeDashboard(name)) as Dashboard
 	dashboards.set(key, dashboard)
 	return dashboard
 }
 
-function makeDashboard(name: string, isShared: boolean) {
+function makeDashboard(name: string) {
 	const { capture } = useTelemetry()
-	const dashboard = getDashboardResource(name, isShared)
+	const dashboard = getDashboardResource(name)
 
 	const editing = ref(false)
 	const editingItemIndex = ref<number>()
@@ -136,13 +113,7 @@ function makeDashboard(name: string, isShared: boolean) {
 			!dashboard.doc.read_only && !editing.value && windowWidth.value >= ARRANGEABLE_WIDTH
 	})
 
-	// Which endpoint the cards read through. The builder and the in-app page draw
-	// a card from the config being edited through the authoring endpoint, which
-	// needs an authoring seat. A public link has no seat, so its cards read the saved
-	// chart through its own `get_data`. The page that mounts the store says.
-	const shared = ref(isShared)
-
-	const filterStates = ref<ViewerFilters>({})
+	const filterStates = ref<FilterValues>({})
 
 	// What a reader filtered one card down to, per chart. It is a filter the
 	// reader owns and the document never holds: not saved with the dashboard, and
@@ -177,7 +148,7 @@ function makeDashboard(name: string, isShared: boolean) {
 	/**
 	 * The cells a chart is dropped as.
 	 *
-	 * Every type is one cell except a Number chart: a cell draws one card, so a
+	 * Every type is one cell except a Number chart: a cell renders one card, so a
 	 * chart stating five readings arrives as five cells side by side, each at the
 	 * height its own card needs. How many there are is in the config and not in
 	 * the list entry, so the chart's document is waited for rather than guessed
@@ -229,7 +200,7 @@ function makeDashboard(name: string, isShared: boolean) {
 	// autosave watcher, a debounced history), so it cannot be resolved in a
 	// computed, which Vue is free to evaluate, discard or run again. The stores
 	// the rules below read are resolved here, once per chart the grid names, the
-	// way a cell resolves the one it draws. It is handed out for the same reason:
+	// way a cell resolves the one it renders. It is handed out for the same reason:
 	// a surface inside the dashboard reads a chart through this map.
 	const chartsByName = shallowRef<Record<string, Chart>>({})
 	watch(
@@ -252,36 +223,12 @@ function makeDashboard(name: string, isShared: boolean) {
 	)
 
 	/**
-	 * What the grid is told about a cell beyond its layout.
-	 *
-	 * A Number cell's height is what the card of the reading it names holds, so the
-	 * author sets the width and the height follows the config — including after the
-	 * config changes in the workbook. And two of them fit one narrow row, where
-	 * every other cell takes the row to itself. A filter cell is its trigger, which
-	 * is one height and never anything else. It keeps its row, so no card fills the
-	 * space beside the filters.
-	 *
-	 * Nothing is written back. The height is derived on every read, so a chart
-	 * edited in another tab needs no layout save to be drawn at its new height, and
-	 * a stored `h` cannot drift from the trigger.
+	 * Grid rules for each cell beyond its layout, from `cellRulesFor`. The builder
+	 * derives them from the chart stores it already holds.
 	 */
-	const cellRules = computed(() => {
-		const rules: CellRules = {}
-		for (const item of dashboard.doc.items) {
-			if (item.type === 'filter') {
-				rules[item.layout.i] = { height: FILTER_ROWS, exclusiveRow: true }
-				continue
-			}
-			if (item.type !== 'chart' || !item.chart) continue
-			const chart = chartsByName.value[item.chart]
-			if (chart?.doc?.chart_type !== 'Number') continue
-			rules[item.layout.i] = {
-				height: numberCardRows(chart.doc.config as NumberChartConfig, item.reading),
-				halfWidth: true,
-			}
-		}
-		return rules
-	})
+	const cellRules = computed(() =>
+		cellRulesFor(dashboard.doc.items, (chart) => chartsByName.value[chart]?.doc),
+	)
 
 	function getMaxY() {
 		return Math.max(...dashboard.doc.items.map((item) => item.layout.y + item.layout.h), 0)
@@ -433,10 +380,10 @@ function makeDashboard(name: string, isShared: boolean) {
 	// A card filter goes along as an item and a state of its own. The server has
 	// one router for both, so a filter the reader made on a card lands in the
 	// chart's query group beside the grid's own, `And`-composed.
-	// A card filter is the reader's own, on a column the card draws, so it travels
+	// A card filter is the reader's own, on a column the card shows, so it travels
 	// as itself rather than as a filter item the grid never held. The server lands
 	// it on the chart's own derived query, which is what the chart's name reaches:
-	// the rule falls after the chart's summarize, on the columns the card draws,
+	// the rule falls after the chart's summarize, on the columns the card shows,
 	// measures included.
 	function filterContextFor(chart_name: string): DashboardFilterContext {
 		return {
@@ -452,24 +399,22 @@ function makeDashboard(name: string, isShared: boolean) {
 		}
 	}
 
-	// This grid is a reading surface: the rows its cards draw are narrowed by the
-	// filters it holds, so its reads belong to it. Another dashboard drawing the
-	// same chart reads its own, and neither moves the other's rows.
-	const readSurface: ChartReadSurface = {
+	// The builder's grid renders its cards from the config being edited, not the
+	// saved chart, so an unsaved edit shows on the grid too. The reads belong to
+	// this dashboard, because its filters narrow their rows. Another dashboard
+	// with the same chart has its own reads.
+	const readContext: ChartPreviewContext = {
 		id: `dashboard:${name}`,
 		filterContext: filterContextFor,
-		canEdit: () => dashboard.doc.has_workbook_access,
+		canWrite: () => dashboard.doc.has_workbook_access,
 	}
 
-	function chartRead(chart_name: string) {
-		const chart = useChart(chart_name)
-		return shared.value
-			? useSharedChart(chart, readSurface)
-			: useChartPreview(chart, readSurface)
+	function chartView(chart_name: string) {
+		return useChartPreview(useChart(chart_name), readContext)
 	}
 
 	function refreshChart(chart_name: string, force = false) {
-		const read = chartRead(chart_name)
+		const read = chartView(chart_name)
 		read.executionPriority = getLayoutRank(chart_name)
 		read.load(force)
 	}
@@ -577,11 +522,11 @@ function makeDashboard(name: string, isShared: boolean) {
 		})
 	}
 
-	// A card filter is not a saved filter, so the dashboard cannot find it by name.
-	// It is still the dashboard that answers for it: a public reader was published
-	// this grid and holds no permission on the query behind a card.
+	// the view endpoints: card values and ranges come from the saved grid, so the
+	// builder needs none of its own
 	function getCardColumnValues(chart_name: string, column: string, search_term?: string) {
-		return dashboard.call('get_card_column_values', {
+		return call('insights.api.view.get_card_values', {
+			dashboard: dashboard.doc.name,
 			chart: chart_name,
 			column,
 			search_term,
@@ -589,7 +534,11 @@ function makeDashboard(name: string, isShared: boolean) {
 	}
 
 	function getCardColumnRange(chart_name: string, column: string) {
-		return dashboard.call('get_card_column_range', { chart: chart_name, column })
+		return call('insights.api.view.get_card_range', {
+			dashboard: dashboard.doc.name,
+			chart: chart_name,
+			column,
+		})
 	}
 
 	function getFilterColumnRange(filter_name: string) {
@@ -604,23 +553,40 @@ function makeDashboard(name: string, isShared: boolean) {
 		return dashboard.doc.share_link || `${window.location.origin}${href}`
 	}
 
-	function updateAccess(data: {
-		is_public: boolean
-		is_shared_with_organization: boolean
-		people_with_access: string[]
-	}) {
+	// Updates who the document is shared with by name. Other readers come from
+	// the `visibility` field, which saves with the rest of the document.
+	function updateAccess(data: { people_with_access: string[] }) {
 		return dashboard
 			.call('update_access', { data })
 			.catch(showErrorToast)
 			.then(() => dashboard.load())
 	}
 
-	const key = `insights:dashboard-filter-states-${name}`
-	filterStates.value = store(key, () => filterStates.value)
+	// Done. Edit mode ends only after the save returns. Autosave starts as soon
+	// as edit mode ends, and a save refused under autosave reverts what was sent.
+	// So a refused save keeps edit mode open with every edit.
+	async function finishEditing() {
+		await dashboard.save()
+		editing.value = false
+	}
 
-	// The author's default is what a filter opens on, not what it returns to: a
-	// reader who has picked something has an entry of their own, and `store` gave
-	// it back above. A default seeds a filter the reader has not answered.
+	// Reset Layout. Edit mode ends only after the confirm and the reload of the
+	// stored document. Ending it first would start autosave, which would save the
+	// edits the author is about to discard. Cancel keeps edit mode open.
+	function discardEditing() {
+		confirmDialog({
+			title: __('Discard Changes'),
+			message: __('Are you sure you want to discard changes?'),
+			onSuccess: async () => {
+				await dashboard.load()
+				editing.value = false
+			},
+		})
+	}
+
+	// The owner sees the defaults they set, not their last choice. A default
+	// belongs to the document, and the owner is here to check it. A default fills
+	// only a filter that has no state yet.
 	waitUntil(() => dashboard.isloaded).then(() => {
 		const defaults = defaultFilterStates(dashboard.doc.items)
 		Object.entries(defaults).forEach(([filter_name, state]) => {
@@ -634,9 +600,9 @@ function makeDashboard(name: string, isShared: boolean) {
 
 		editing,
 		editingItemIndex,
-		cellRules,
 		isEditingItem,
-		shared,
+		finishEditing,
+		discardEditing,
 		arranging,
 
 		filterStates,
@@ -657,9 +623,10 @@ function makeDashboard(name: string, isShared: boolean) {
 
 		refresh,
 		refreshChart,
-		chartRead,
+		chartView,
 		linkedCharts,
 		chartsByName,
+		cellRules,
 
 		updateFilterState,
 		applyFilter,
@@ -680,8 +647,8 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	title: '',
 	workbook: '',
 	items: [],
-	is_public: false,
-	is_shared_with_organization: false,
+	visibility: 'Private',
+	visible_to_roles: [],
 	people_with_access: [],
 	read_only: false,
 	// the document states what a new dashboard is, so the doctype's default never
@@ -691,15 +658,7 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	has_workbook_access: false,
 }
 
-// Which page this view is on. `shared` is the store's own key, so a public link
-// is known before any route. The other two come from the route the load happens
-// on.
-function viewedOn(isShared: boolean) {
-	if (isShared) return 'shared'
-	return router.currentRoute.value.name === 'Dashboard' ? 'dashboards' : 'workbook'
-}
-
-function getDashboardResource(name: string, isShared = false) {
+function getDashboardResource(name: string) {
 	const doctype = 'Insights Dashboard v3'
 	const dashboard = useDocumentResource<InsightsDashboardv3>(doctype, name, {
 		initialDoc: { ...INITIAL_DOC, name },
@@ -711,36 +670,10 @@ function getDashboardResource(name: string, isShared = false) {
 		},
 	})
 	dashboard.onAfterLoad(() =>
-		dashboard.call('track_view', { surface: viewedOn(isShared) }).catch(() => {}),
+		dashboard.call('track_view', { surface: 'workbook' }).catch(() => {}),
 	)
+	dashboard.onAfterSave(() => invalidateDashboard(String(dashboard.doc.name)))
 	return dashboard
-}
-
-/**
- * What every filter on a dashboard opens on, as its author set it.
- *
- * Whether a default says enough to run is the operator's answer, not the
- * value's — `is_set` asks about the column itself and carries no value, which is
- * the same rule the server states in `_filter_is_set`.
- */
-export function defaultFilterStates(items: WorkbookDashboardItem[]): ViewerFilters {
-	const states: ViewerFilters = {}
-	items.forEach((item) => {
-		if (item.type != 'filter') return
-		const filterItem = item as WorkbookDashboardFilter
-
-		const operator = filterItem.default_operator
-		if (!operator) return
-		const kind = FILTER_TYPE_KINDS[filterItem.filter_type]
-		const needsValue = operatorOf(kind, operator)?.needsValue ?? true
-		if (needsValue && !filterItem.default_value) return
-
-		states[filterItem.filter_name] = {
-			operator,
-			value: filterItem.default_value,
-		}
-	})
-	return states
 }
 
 export function newDashboard() {

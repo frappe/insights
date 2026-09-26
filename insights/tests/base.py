@@ -96,10 +96,31 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
     def descriptions(self, result):
         """The `description` column of a result, sorted.
 
-        The test tables carry one text column, so a sorted list of it is how
+        The test tables have one text column, so a sorted list of it is how
         these suites compare the rows a read returned.
         """
         return sorted(row["description"] for row in result["rows"])
+
+    def make_status_permlevel(self):
+        """Put `ToDo.status` behind permlevel 1, which no role here holds."""
+        setter = frappe.get_doc(
+            {
+                "doctype": "Property Setter",
+                "doctype_or_field": "DocField",
+                "doc_type": "ToDo",
+                "field_name": "status",
+                "property": "permlevel",
+                "value": 1,
+                "property_type": "Int",
+            }
+        ).insert(ignore_permissions=True)
+        frappe.clear_cache(doctype="ToDo")
+
+        def restore():
+            frappe.delete_doc("Property Setter", setter.name, force=True, ignore_permissions=True)
+            frappe.clear_cache(doctype="ToDo")
+
+        self.addCleanup(restore)
 
     def assert_visible_to(self, user, doctype, name, message=None):
         with self.as_user(user):

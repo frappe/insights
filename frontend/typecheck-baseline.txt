@@ -1,0 +1,63 @@
+src2/App.vue: TS2339: Property 'id' does not exist on type 'VNode<RendererNode, RendererElement, { [key: string]: any; }>'.
+src2/charts/adapter/number.ts: TS2322: Type '{ column: string; title: string; value: number | null; }' is not assignable to type 'NumberCardEntry'. Property 'height' is missing in type '{ column: string; title: string; value: number | null; }' but required in type '{ column: string; missing?: boolean | undefined; height: number; }'.
+src2/charts/ChartBuilder.vue: TS2322: Type '"orange"' is not assignable to type '"gray" | "red" | "blue" | "green" | "amber" | "violet" | undefined'.
+src2/charts/ChartBuilder.vue: TS2322: Type '"orange"' is not assignable to type '"gray" | "red" | "blue" | "green" | "amber" | "violet" | undefined'.
+src2/charts/ChartView.test.ts: TS2322: Type '(props: any) => VNode<RendererNode, RendererElement, { [key: string]: any; }>' is not assignable to type '() => any'. Target signature provides too few arguments. Expected 1 or more, but got 0.
+src2/charts/components/BarChartConfigForm.vue: TS2322: Type 'SplitBy | undefined' is not assignable to type 'SplitBy'. Type 'undefined' is not assignable to type 'SplitBy'.
+src2/charts/components/LineChartConfigForm.vue: TS2322: Type 'SplitBy | undefined' is not assignable to type 'SplitBy'. Type 'undefined' is not assignable to type 'SplitBy'.
+src2/charts/components/MapChartConfigForm.vue: TS18046: 'response' is of type 'unknown'.
+src2/charts/components/MapChartConfigForm.vue: TS2322: Type 'string | undefined' is not assignable to type 'string'. Type 'undefined' is not assignable to type 'string'.
+src2/charts/components/RegionMappingDialog.vue: TS18046: 'mappingResponse' is of type 'unknown'.
+src2/charts/components/RegionMappingDialog.vue: TS18046: 'mappingResponse' is of type 'unknown'.
+src2/charts/components/RegionMappingDialog.vue: TS18046: 'mappingResponse' is of type 'unknown'.
+src2/charts/components/RegionMappingDialog.vue: TS18046: 'mappingResponse' is of type 'unknown'.
+src2/charts/components/RegionMappingDialog.vue: TS18046: 'mappingResponse' is of type 'unknown'.
+src2/charts/components/RegionMappingDialog.vue: TS18046: 'regionsResponse' is of type 'unknown'.
+src2/charts/components/RegionMappingDialog.vue: TS2322: Type '"icon"' is not assignable to type 'Variant | undefined'.
+src2/charts/components/SplitByConfig.vue: TS2739: Type '{}' is missing the following properties from type 'Dimension': dimension_name, column_name, data_type
+src2/charts/components/TableChartConfigForm.vue: TS2322: Type '"orange"' is not assignable to type '"gray" | "red" | "blue" | "green" | "amber" | "violet" | undefined'.
+src2/components/AppSidebar.vue: TS2339: Property 'is_fc_site' does not exist on type 'Window & typeof globalThis'.
+src2/components/UserDropdown.vue: TS2339: Property 'is_fc_site' does not exist on type 'Window & typeof globalThis'.
+src2/components/UserDropdown.vue: TS2551: Property 'value' does not exist on type 'boolean'. Did you mean 'valueOf'?
+src2/dashboard/dashboards.ts: TS18046: 'result' is of type 'unknown'.
+src2/dashboard/dashboards.ts: TS2345: Argument of type '(file_url: string) => void' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'. Types of parameters 'file_url' and 'value' are incompatible. Type 'unknown' is not assignable to type 'string'.
+src2/dashboard/DashboardShareDialog.vue: TS2322: Type '"orange"' is not assignable to type '"gray" | "red" | "blue" | "green" | "amber" | "violet" | undefined'.
+src2/dashboard/DashboardText.vue: TS2322: Type 'unknown[]' is not assignable to type 'Extensions'. Type 'unknown' is not assignable to type 'AnyExtension'.
+src2/data_source/ConnectClickhouseDialog.vue: TS2345: Argument of type '(result: boolean) => void' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'. Types of parameters 'result' and 'value' are incompatible. Type 'unknown' is not assignable to type 'boolean'.
+src2/data_source/ConnectDuckDBDialog.vue: TS2345: Argument of type '(result: boolean) => void' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'. Types of parameters 'result' and 'value' are incompatible. Type 'unknown' is not assignable to type 'boolean'.
+src2/data_source/ConnectMariaDBDialog.vue: TS2345: Argument of type '(result: boolean) => void' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'. Types of parameters 'result' and 'value' are incompatible. Type 'unknown' is not assignable to type 'boolean'.
+src2/data_source/ConnectPostgreSQLDialog.vue: TS2345: Argument of type '(result: boolean) => void' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'. Types of parameters 'result' and 'value' are incompatible. Type 'unknown' is not assignable to type 'boolean'.
+src2/data_source/DataSourceTableList.vue: TS2322: Type 'unknown' is not assignable to type 'DataSourceTable[] | undefined'.
+src2/data_source/tables.ts: TS2322: Type 'unknown' is not assignable to type 'DataSourceTable[]'.
+src2/data_source/tables.ts: TS2322: Type 'unknown' is not assignable to type 'DataSourceTable[]'.
+src2/data_source/tables.ts: TS2322: Type 'unknown' is not assignable to type 'DataSourceTablePreview | undefined'.
+src2/data_source/tables.ts: TS2322: Type 'unknown' is not assignable to type 'number | undefined'.
+src2/data_source/tables.ts: TS2345: Argument of type '(columns: any[]) => QueryResultColumn[]' is not assignable to parameter of type '(value: unknown) => QueryResultColumn[] | PromiseLike<QueryResultColumn[]>'. Types of parameters 'columns' and 'value' are incompatible. Type 'unknown' is not assignable to type 'any[]'.
+src2/data_source/UploadCSVFileDialog.vue: TS2322: Type '(file: File) => Promise<void>' is not assignable to type '(data: UploadedFile) => any'. Types of parameters 'file' and 'data' are incompatible. Type 'UploadedFile' is missing the following properties from type 'File': lastModified, webkitRelativePath, size, type, and 5 more.
+src2/helpers/resource.ts: TS18046: 'response' is of type 'unknown'.
+src2/home/HomeWorkbookList.vue: TS18048: '__VLS_ctx.workbooks.list.data.length' is possibly 'undefined'.
+src2/main.ts: TS2769: No overload matches this call. Overload 1 of 2, '(plugin: Plugin<[options: TelemetryPluginOptions], [options: TelemetryPluginOptions]>, ...options: NoInfer<[options: TelemetryPluginOptions]>): App<...>', gave the following error. Argument of type '{ install(app: App<any>, options: TelemetryPluginOptions): Promise<void>; }' is not assignable to parameter of type 'Plugin<[options: TelemetryPluginOptions], [options: TelemetryPluginOptions]>'. Type '{ install(app: App<any>, options: TelemetryPluginOptions): Promise<void>; }' is not assignable to type 'FunctionPlugin<[options: TelemetryPluginOptions]>'. Type '{ install(app: App<any>, options: TelemetryPluginOptions): Promise<void>; }' is not assignable to type '(app: App<any>, options: TelemetryPluginOptions) => any'. Type '{ install(app: App<any>, options: TelemetryPluginOptions): Promise<void>; }' provides no match for the signature '(app: App<any>, options: TelemetryPluginOptions): any'. Overload 2 of 2, '(plugin: Plugin<[options: TelemetryPluginOptions], [options: TelemetryPluginOptions]>, options: NoInfer<[options: TelemetryPluginOptions]>): App<...>', gave the following error. Argument of type '{ install(app: App<any>, options: TelemetryPluginOptions): Promise<void>; }' is not assignable to parameter of type 'Plugin<[options: TelemetryPluginOptions], [options: TelemetryPluginOptions]>'. Type '{ install(app: App<any>, options: TelemetryPluginOptions): Promise<void>; }' is not assignable to type 'FunctionPlugin<[options: TelemetryPluginOptions]>'. Type '{ install(app: App<any>, options: TelemetryPluginOptions): Promise<void>; }' is not assignable to type '(app: App<any>, options: TelemetryPluginOptions) => any'. Type '{ install(app: App<any>, options: TelemetryPluginOptions): Promise<void>; }' provides no match for the signature '(app: App<any>, options: TelemetryPluginOptions): any'.
+src2/query/components/ConditonalFormattingDialog.vue: TS2322: Type 'unknown' is not assignable to type 'boolean | undefined'.
+src2/query/components/FormatRule.vue: TS2345: Argument of type 'string' is not assignable to parameter of type '"local" | "global"'.
+src2/query/components/join_utils.ts: TS2304: Cannot find name 'DropdownOption'.
+src2/query/components/JoinSelectorDialog.vue: TS2322: Type 'ComboboxOptionValue | null | undefined' is not assignable to type 'string'. Type 'undefined' is not assignable to type 'string'.
+src2/query/components/JoinSelectorDialog.vue: TS2322: Type 'ComboboxOptionValue | null | undefined' is not assignable to type 'string'. Type 'undefined' is not assignable to type 'string'.
+src2/query/query.test.ts: TS2322: Type 'VitestUtils' is not assignable to type 'Awaitable<HookCleanupCallback>'.
+src2/query/query.test.ts: TS2322: Type 'VitestUtils' is not assignable to type 'Awaitable<void>'.
+src2/query/Query.vue: TS2339: Property 'query' does not exist on type 'Window & typeof globalThis'.
+src2/socket.ts: TS2339: Property 'site_name' does not exist on type 'Window & typeof globalThis'.
+src2/socket.ts: TS2339: Property 'socketio_port' does not exist on type 'Window & typeof globalThis'.
+src2/teams/TeamResourceSelector.vue: TS18046: 'tables' is of type 'unknown'.
+src2/teams/TeamResourceSelector.vue: TS2304: Cannot find name 'ColumnOption'.
+src2/teams/TeamResourceSelector.vue: TS2345: Argument of type '(tablesBySource: Record<string, string[]>) => void' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'. Types of parameters 'tablesBySource' and 'value' are incompatible. Type 'unknown' is not assignable to type 'Record<string, string[]>'.
+src2/teams/TeamResourceSelector.vue: TS7006: Parameter 't' implicitly has an 'any' type.
+src2/teams/teams.ts: TS2345: Argument of type '(res: Team[]) => { name: string; team_name: string; owner: string; creation: string; creation_from_now: string; team_members: { user: string; }[]; team_permissions: { type: "Source" | "Table"; resource_type: "Insights Data Source v3" | "Insights Table v3"; resource_name: string; table_restrictions?: string | undefin...' is not assignable to parameter of type '(value: unknown) => { name: string; team_name: string; owner: string; creation: string; creation_from_now: string; team_members: { user: string; }[]; team_permissions: { type: "Source" | "Table"; resource_type: "Insights Data Source v3" | "Insights Table v3"; resource_name: string; table_restrictions?: string | unde...'. Types of parameters 'res' and 'value' are incompatible. Type 'unknown' is not assignable to type 'Team[]'.
+src2/users/users.ts: TS2345: Argument of type '(res: User[]) => { name: ""; email: ""; full_name: ""; user_image: ""; type: "Admin" | "User"; enabled: 1 | 0; last_active?: "" | undefined; invitation_status?: "Pending" | "Expired" | undefined; }[]' is not assignable to parameter of type '(value: unknown) => { name: ""; email: ""; full_name: ""; user_image: ""; type: "Admin" | "User"; enabled: 0 | 1; last_active?: "" | undefined; invitation_status?: "Pending" | "Expired" | undefined; }[] | PromiseLike<...>'. Types of parameters 'res' and 'value' are incompatible. Type 'unknown' is not assignable to type 'User[]'.
+src2/workbook/Workbook.vue: TS2339: Property 'workbook' does not exist on type 'Window & typeof globalThis'.
+src2/workbook/WorkbookLineageDialog.vue: TS2322: Type '(_evt: MouseEvent, node: any) => void' is not assignable to type '(nodeMouseEvent: NodeMouseEvent) => any'. Target signature provides too few arguments. Expected 2 or more, but got 1.
+src2/workbook/WorkbookList.vue: TS18046: 'doc' is of type 'unknown'.
+src2/workbook/workbooks.ts: TS18046: 'result' is of type 'unknown'.
+src2/workbook/workbooks.ts: TS2345: Argument of type '(imported: { workbook: string; }) => void' is not assignable to parameter of type '(value: unknown) => void | PromiseLike<void>'. Types of parameters 'imported' and 'value' are incompatible. Type 'unknown' is not assignable to type '{ workbook: string; }'.
+src2/workbook/WorkbookTabSwitcher.vue: TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src2/workbook/WorkbookTabSwitcher.vue: TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src2/workbook/WorkbookTabSwitcher.vue: TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.

@@ -8,7 +8,7 @@ import NumberFormatFields from './NumberFormatFields.vue'
 // Measure's settings popover.
 const props = defineProps<{
 	config: NumberFormatConfig
-	/** See `NumberFormatFields`. Set it on a chart that draws one Measure. */
+	/** See `NumberFormatFields`. Set it on a chart that plots one Measure. */
 	soleMeasureName?: string
 }>()
 </script>

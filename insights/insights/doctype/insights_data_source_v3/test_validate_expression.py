@@ -4,9 +4,12 @@
 import json
 import unittest
 
+import frappe
 from frappe.utils.safe_exec import is_safe_exec_enabled
 
-from insights.insights.doctype.insights_data_source_v3.ibis import utils
+from insights.insights.doctype.insights_data_source_v3.ibis import functions, utils
+from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import as_user, create_user, delete_users
 
 COLUMN_OPTIONS = json.dumps([{"value": "amount", "description": "Integer"}])
 
@@ -99,14 +102,23 @@ class TestValidateExpression(unittest.TestCase):
         self.assertEqual([name for name in function_list if name.startswith("_")], [])
         self.assertEqual(len(function_list), len(set(function_list)))
 
-        for module_name in ("frappe", "ir", "math"):
+        for module_name in ("frappe", "ir", "math", "pd"):
             self.assertNotIn(module_name, function_list)
 
-        # `ibis` is offered as a namespace of vetted attributes, not as the module
+        # `ibis` is available as a namespace of vetted attributes, not as the module
         ibis_namespace = utils.get_functions()["ibis"]
         self.assertIn("literal", ibis_namespace)
-        for io_attribute in ("read_csv", "read_parquet", "connect", "get_backend"):
-            self.assertNotIn(io_attribute, ibis_namespace)
+        for refused in (
+            "read_csv",
+            "read_parquet",
+            "connect",
+            "get_backend",
+            "table",
+            "memtable",
+            "parse_sql",
+            "selectors",
+        ):
+            self.assertNotIn(refused, ibis_namespace)
 
     # @feature query.expression-help
     def test_completions_describe_the_function_being_written_and_the_columns_types(self):
@@ -117,3 +129,53 @@ class TestValidateExpression(unittest.TestCase):
         self.assertEqual(answer["column_types"], {"amount": "Integer"})
         self.assertEqual(answer["current_function"]["name"], "sum")
         self.assertEqual(answer["current_function"]["current_param"], "column")
+
+
+VALIDATOR = "expression-validator@test.com"
+
+
+class TestValidateExpressionSandbox(InsightsIntegrationTestCase):
+    """`validate_expression` is whitelisted for any signed-in user, and the
+    expression editor calls it on every keystroke. The caller sends the column
+    list. A column with no type passes the check but is never bound during
+    evaluation, so the name `frappe` resolves to the sandbox's own `frappe`."""
+
+    columns = json.dumps([{"value": "amount", "description": "Integer"}, {"value": "frappe"}])
+
+    def before_test(self):
+        create_user(VALIDATOR, roles="Insights User")
+        self.addCleanup(delete_users, VALIDATOR)
+        self.todo = frappe.get_doc({"doctype": "ToDo", "description": "validate"}).insert(
+            ignore_permissions=True
+        )
+        self.addCleanup(frappe.delete_doc, "ToDo", self.todo.name, force=True)
+
+    # @feature query.expression-cannot-run-code
+    def test_validating_an_expression_writes_nothing_and_reads_only_what_the_caller_may(self):
+        todo = self.todo.name
+        acts = {
+            "set_value": f"frappe.db.set_value('ToDo', '{todo}', 'description', 'x')",
+            "save": f"doc = frappe.get_doc('ToDo', '{todo}')\ndoc.description = 'x'\ndoc.save()",
+            "insert": "frappe.get_doc({'doctype': 'ToDo', 'description': 'x'}).insert()",
+            "delete_doc": f"frappe.delete_doc('ToDo', '{todo}')",
+            "enqueue": "frappe.enqueue('frappe.client.get_count', doctype='User')",
+            "sendmail": "frappe.sendmail(recipients=['a@example.com'], subject='s', message='m')",
+            "sql": f"frappe.db.sql(\"update tabToDo set description='x' where name='{todo}'\")",
+            "after_commit": "frappe.db.after_commit.add(if_else)",
+            "commit": "frappe.db.commit()",
+            "rollback": "frappe.db.rollback()",
+            # another user's ToDo: an Insights User reads only their own
+            "read": f"frappe.get_doc('ToDo', '{todo}').description",
+        }
+        for runs_as in (VALIDATOR, "Administrator"):
+            with as_user(runs_as):
+                for act, code in acts.items():
+                    if runs_as == "Administrator" and act == "read":
+                        continue
+                    with self.subTest(act=act, runs_as=runs_as):
+                        result = utils.validate_expression(f"{code}\namount", self.columns)
+                        self.assertFalse(result["is_valid"], result)
+
+        self.assertEqual(frappe.db.get_value("ToDo", todo, "description"), "validate")
+        self.assertNotIn(functions.if_else, frappe.db.after_commit._functions)
+        self.assertTrue(utils.validate_expression("amount.sum()", self.columns)["is_valid"])

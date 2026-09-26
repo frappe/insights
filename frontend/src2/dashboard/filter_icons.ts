@@ -7,7 +7,7 @@
 //
 // Every name is spelled out here in full. Tailwind's JIT emits a `lucide-*`
 // class only where it reads that literal in source, so a name built at runtime
-// draws an empty box.
+// renders an empty box.
 
 import { __, translatedTable } from '../translation'
 
@@ -176,11 +176,11 @@ export const filterIconGroups = translatedTable<FilterIconGroup[]>(() => [
 const KNOWN_ICONS = new Set(filterIconGroups().flatMap((group) => group.icons))
 
 /**
- * The class that draws `icon`, or nothing when this build cannot draw it.
+ * The class that renders `icon`, or nothing when this build cannot render it.
  *
  * A stored icon is a class name. Filters authored against the sprite hold a
  * bare lucide name instead, so those are read as one. Either way a name the
- * curated list drops has no CSS behind it, and the caller draws its fallback
+ * curated list drops has no CSS behind it, and the caller renders its fallback
  * rather than an empty box.
  */
 export function filterIconClass(icon?: string): string | undefined {

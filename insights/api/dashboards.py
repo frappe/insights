@@ -5,10 +5,11 @@ from insights.api.list_filters import (
     get_content_filters,
     get_last_opened,
     get_source_filters,
-    match_operations,
     match_records,
 )
 from insights.decorators import insights_whitelist
+from insights.insights.query_utils import source_tables
+from insights.permissions import can_write
 
 DASHBOARD = "Insights Dashboard v3"
 DASHBOARD_CHART = "Insights Dashboard Chart v3"
@@ -16,23 +17,56 @@ DASHBOARD_CHART = "Insights Dashboard Chart v3"
 
 def _match_charts(is_pattern: bool, values: list) -> list:
     """Dashboards showing a picked chart, or a chart whose title matches."""
-    Link = frappe.qb.DocType(DASHBOARD_CHART)
-    Chart = frappe.qb.DocType("Insights Chart v3")
-    query = frappe.qb.from_(Link).select(Link.parent).where(Link.parenttype == DASHBOARD).distinct()
-    if is_pattern:
-        condition = Chart.title.like(values[0])
-        for v in values[1:]:
-            condition |= Chart.title.like(v)
-        return query.join(Chart).on(Chart.name == Link.chart).where(condition).run(pluck=True)
-    return query.where(Link.chart.isin(values)).run(pluck=True)
-
-
-def _match_data_sources(is_pattern: bool, values: list) -> list:
-    """Dashboards showing a chart whose query reads a matching data source."""
-    queries = match_operations("data_source", "name")(is_pattern, values)
-    if not queries:
+    charts = match_records("Insights Chart v3", "name")(is_pattern, values)
+    if not charts:
         return []
-    charts = frappe.get_all("Insights Chart v3", filters={"query": ["in", queries]}, pluck="name")
+    return frappe.get_all(
+        DASHBOARD_CHART,
+        filters={"parenttype": DASHBOARD, "chart": ["in", charts]},
+        pluck="parent",
+        distinct=True,
+    )
+
+
+def _match_data_sources(is_pattern: bool, values: list) -> list | None:
+    """Dashboards that show a chart built on one of the picked data sources.
+
+    Only charts the caller may read count. Only exact names match, not patterns.
+    A chart's reader may learn which data source it reads, but a pattern would
+    probe the text of a query they may not read. `is set` arrives as the
+    pattern `%`, which matches every name.
+    """
+    if is_pattern and values != ["%"]:
+        return None
+
+    # Start from the dashboards the caller can list. Only their charts can
+    # match, and listing every readable chart takes seconds on a large site.
+    shown = frappe.get_all(
+        DASHBOARD_CHART,
+        filters={
+            "parenttype": DASHBOARD,
+            "parent": ["in", frappe.get_list(DASHBOARD, pluck="name", limit=0)],
+        },
+        pluck="chart",
+        distinct=True,
+    )
+    if not shown:
+        return []
+
+    picked = set(values)
+    sources_of = {}
+    charts = []
+    readable = frappe.get_list(
+        "Insights Chart v3", filters={"name": ["in", shown]}, fields=["name", "query"], limit=0
+    )
+    for chart in readable:
+        if not chart.query:
+            continue
+        if chart.query not in sources_of:
+            sources_of[chart.query] = {table["data_source"] for table in source_tables(chart.query)}
+        sources = sources_of[chart.query]
+        if sources and (is_pattern or sources & picked):
+            charts.append(chart.name)
     return _match_charts(False, charts) if charts else []
 
 
@@ -116,6 +150,8 @@ def _enrich_dashboards(dashboards):
     for dashboard in dashboards:
         dashboard["views"] = view_counts.get(str(dashboard.name), 0)
         dashboard["is_favourite"] = bool(dashboard._liked_by) and user in frappe.as_json(dashboard._liked_by)
+        # the list shows the preview refresh only to editors
+        dashboard["can_write"] = can_write(frappe.get_doc(DASHBOARD, dashboard.name))
 
 
 def dashboard_view_counts(names: list[str], since: str | None = None) -> dict[str, int]:
@@ -141,7 +177,15 @@ def dashboard_view_counts(names: list[str], since: str | None = None) -> dict[st
 
 @insights_whitelist()
 def update_dashboard_preview(dashboard_name: str):
-    frappe.has_permission("Insights Dashboard v3", ptype="read", doc=dashboard_name, throw=True)
-    dashboard = frappe.get_doc("Insights Dashboard v3", dashboard_name)
-    file_url = dashboard.generate_dashboard_preview()
-    return file_url
+    """Regenerate the preview image from the caller's rows.
+
+    Every reader of the dashboard list sees this image, so only an editor may
+    regenerate it. A save regenerates it too.
+    """
+    frappe.has_permission(DASHBOARD, ptype="read", doc=dashboard_name, throw=True)
+    dashboard = frappe.get_doc(DASHBOARD, dashboard_name)
+    if not can_write(dashboard):
+        frappe.throw(
+            frappe._("Only an editor of this dashboard can refresh its preview"), frappe.PermissionError
+        )
+    return dashboard.generate_dashboard_preview()

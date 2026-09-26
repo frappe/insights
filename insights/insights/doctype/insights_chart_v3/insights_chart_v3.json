@@ -11,11 +11,14 @@
   "folder",
   "column_break_mgwd",
   "chart_type",
-  "is_public",
-  "permission_user",
+  "visibility",
+  "visible_to_roles",
+  "run_as_owner",
   "section_break_vmvi",
   "config",
-  "old_name"
+  "old_name",
+  "is_standard",
+  "kept_for_desk"
  ],
  "fields": [
   {
@@ -43,22 +46,6 @@
    "label": "Chart Type"
   },
   {
-   "default": "0",
-   "fieldname": "is_public",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Is Public",
-   "permlevel": 1
-  },
-  {
-   "fieldname": "permission_user",
-   "fieldtype": "Link",
-   "label": "Based on Permissions For User",
-   "options": "User",
-   "permlevel": 1,
-   "read_only": 1
-  },
-  {
    "fieldname": "section_break_vmvi",
    "fieldtype": "Section Break"
   },
@@ -75,7 +62,8 @@
    "label": "Workbook",
    "options": "Insights Workbook",
    "reqd": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "old_name",
@@ -94,11 +82,46 @@
    "fieldname": "folder",
    "fieldtype": "Data",
    "label": "folder"
+  },
+  {
+   "default": "Private",
+   "fieldname": "visibility",
+   "fieldtype": "Select",
+   "label": "Visibility",
+   "options": "Private\nRoles\nEveryone\nPublic"
+  },
+  {
+   "depends_on": "eval:doc.visibility === 'Roles'",
+   "fieldname": "visible_to_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Visible To Roles",
+   "options": "Has Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "run_as_owner",
+   "fieldtype": "Check",
+   "label": "Run as owner"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "kept_for_desk",
+   "fieldtype": "Check",
+   "label": "Kept for Desk",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-10 21:41:04.688659",
+ "modified": "2026-09-23 22:12:13.287784",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",

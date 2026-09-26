@@ -1,6 +1,6 @@
 // The relative-span grammar, written once for this runtime.
 //
-// A span is a string, and every surface that offers one writes it in this
+// A span is a string, and every surface that lists one writes it in this
 // grammar:
 //
 //   `<unit> to date`            the period so far, up to the anchor

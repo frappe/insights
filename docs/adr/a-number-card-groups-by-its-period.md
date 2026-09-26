@@ -24,7 +24,7 @@ posting_date | grand_total
 
 The start dates sort the rows oldest first, and the label is a real period key a target can join on. The group is the span, not the unit it names: `last 3 months` grouped by month returns three rows, and the card would show August as the three-month total.
 
-**The engine resolves the span.** Derived operations carry `month to date`, never dates. `get_window` resolves it while the query runs, where the clock and the fiscal calendar are. A comparison is the same span recomputed from a moved anchor (`shift_anchor`), so the previous span above is Aug 1–14, not all of August. Resolving earlier would derive different operations tomorrow.
+**The engine resolves the span.** Derived operations hold `month to date`, never dates. `get_window` resolves it while the query runs, where the clock and the fiscal calendar are. A comparison is the same span recomputed from a moved anchor (`shift_anchor`), so the previous span above is Aug 1–14, not all of August. Resolving earlier would derive different operations tomorrow.
 
 **Each span is its own aggregate.** `aggregate_by_window` filters and aggregates once per span and unions the rows. Spans that overlap both count the rows they share: `last 3 months` against the same span a month back share June and July, and neither reads short.
 

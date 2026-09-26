@@ -100,7 +100,7 @@ function measureOf(columnName: string): string {
  * Which rules paint which column. A rule names one of three things, and each is
  * a whole name rather than a fragment:
  *
- *   "Revenue___Women"  the drawn column itself
+ *   "Revenue___Women"  the rendered column itself
  *   "Revenue"          the measure behind every one of a pivot's columns
  *   "Women"            the dimension value one pivot column stands for
  *

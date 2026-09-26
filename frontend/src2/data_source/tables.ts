@@ -2,6 +2,8 @@ import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { reactive, ref } from 'vue'
 import { showErrorToast, toOptions } from '../helpers'
+import type { AppliedUserPermission } from '../charts/scoped_by'
+import type { Refusable } from '../not_permitted'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
 
 export type DataSourceTable = {
@@ -30,23 +32,32 @@ export async function getTables(data_source?: string, search_term?: string, limi
 }
 
 const fetchingTable = ref(false)
-export type DataSourceTablePreview = {
+// When the caller may not read the table, nothing runs and the columns and
+// rows are empty. The page then shows Not Permitted, not an empty grid.
+export type DataSourceTablePreview = Refusable<{
 	table_name: string
 	data_source: string
 	columns: QueryResultColumn[]
 	rows: QueryResultRow[]
-}
+	// the reader's User Permissions that filtered the rows, in a card's format
+	user_permissions?: AppliedUserPermission[]
+	narrowed_by_permissions?: boolean
+}>
+// A failure resolves to undefined instead of rejecting. The page has four
+// states: preview, Not Permitted, failure and loading. A rejected promise would
+// leave it loading forever.
 async function fetchTable(
 	data_source: string,
 	table_name: string,
-): Promise<DataSourceTablePreview> {
+): Promise<DataSourceTablePreview | undefined> {
 	fetchingTable.value = true
 	return call('insights.api.data_sources.get_data_source_table', {
 		data_source,
 		table_name,
 	})
 		.catch((e: Error) => {
-			showErrorToast(e)
+			showErrorToast(e, false)
+			return undefined
 		})
 		.finally(() => {
 			fetchingTable.value = false
@@ -65,10 +76,24 @@ async function getTableColumns(data_source: string, table_name: string) {
 	})
 }
 
-export async function getRowCount(data_source: string, table_name: string) {
+/**
+ * The row count of a table, or undefined when the caller may not read it.
+ *
+ * An empty count is a real zero, so the endpoint throws instead of returning
+ * one (see `insights/not_permitted.py`). Resolving to undefined lets the caller
+ * clear the count it shows. Otherwise the previous table's count stays on
+ * screen under this table's name.
+ */
+export async function getRowCount(
+	data_source: string,
+	table_name: string,
+): Promise<number | undefined> {
 	return call('insights.api.data_sources.get_data_source_table_row_count', {
 		data_source,
 		table_name,
+	}).catch((e: Error) => {
+		showErrorToast(e, false)
+		return undefined
 	})
 }
 

@@ -174,7 +174,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         self.assertNotIn("negative_is_better", options_of(chart)[0])
 
     # @feature charts.number-readings upgrade.number-older-shapes
-    def test_every_reading_is_given_the_options_it_is_drawn_with(self):
+    def test_every_reading_is_given_the_options_it_is_shown_with(self):
         chart = config("Revenue", "Profit", "Churn", options=[{"color": "red"}])
 
         self.assertTrue(normalize(chart))

@@ -1,8 +1,12 @@
 import frappe
+import ibis
 import sqlglot as sg
 
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
 from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import as_user, create_user, delete_users
 
 SITE_DB = "Site DB"
 
@@ -22,29 +26,31 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         self.dialect = self.data_source.get_sqlglot_dialect()
         self.builder = IbisQueryBuilder(self.make_query_doc([]))
 
-    def make_query_doc(self, operations):
+    def make_query_doc(self, operations, use_live_connection=1):
         return frappe._dict(
             name="Native SQL Test",
             title="Native SQL Test",
-            use_live_connection=1,
+            use_live_connection=use_live_connection,
             operations=frappe.as_json(operations),
         )
 
-    def run_native_sql(self, raw_sql):
+    def run_native_sql(self, raw_sql, use_live_connection=1):
         """Execute `raw_sql` the way a native query operation does."""
         operations = [{"type": "sql", "data_source": SITE_DB, "raw_sql": raw_sql}]
-        return IbisQueryBuilder(self.make_query_doc(operations)).build().execute()
+        return IbisQueryBuilder(self.make_query_doc(operations, use_live_connection)).build().execute()
 
     def rewrite(self, raw_sql, replace_map=None):
+        """Runs only the rewrite, with an unfiltered binding for each table.
+
+        It skips `_get_sql_table_bindings`, so the result does not depend on the
+        permissions of the user who runs the test.
+        """
         if replace_map is None:
             tables = self.builder._get_sql_table_names(raw_sql, dialect=self.dialect)
-            replace_map = self.builder._get_sql_table_bindings(
-                SITE_DB,
-                tables,
-                dialect=self.dialect,
-                use_live_connection=True,
-                check_permissions=False,
-            )
+            replace_map = {
+                table: ibis.to_sql(InsightsTablev3.get_ibis_table(SITE_DB, table, use_live_connection=True))
+                for table in tables
+            }
         return self.builder._replace_sql_tables(raw_sql, replace_map, dialect=self.dialect)
 
     def cte_names(self, sql):
@@ -117,7 +123,7 @@ class TestNativeSQL(InsightsIntegrationTestCase):
     # @feature query.native-sql
     def test_two_spellings_of_one_table_produce_no_cte(self):
         # MariaDB matches CTE names case-insensitively, so a CTE per spelling was
-        # rejected with "Duplicate query name". A reference carries no name.
+        # rejected with "Duplicate query name". A reference has no name.
         raw_sql = "select a.name from `tabUser` a join tabuser b on a.name = b.name"
         replace_map = {
             "tabUser": "SELECT * FROM `tabUser`",
@@ -126,9 +132,100 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
         rewritten = self.rewrite(raw_sql, replace_map)
 
-        # each reference reads its own binding, and neither carries a name
+        # each reference reads its own binding, and neither has a name
         self.assertEqual(self.cte_names(rewritten), [])
         self.assertEqual(self.table_names(rewritten), ["tabUser", "tabuser"])
+
+    # @feature query.native-sql
+    def test_a_cte_hides_a_table_only_inside_its_own_block(self):
+        """A CTE applies only inside the query block that declares it. Outside
+        that block the name is the real table, and it must get a binding: only
+        the binding applies the reader's permissions."""
+        raw_sql = (
+            "select u.name from (with `tabUser` as (select 1 as n) select n from `tabUser`) s "
+            "join `tabUser` u on 1 = 1"
+        )
+
+        self.assertEqual(self.builder._get_sql_table_names(raw_sql, dialect=self.dialect), {"tabUser"})
+
+        # inside its own block, the CTE does hide the table
+        hidden = "with `tabUser` as (select 1 as n) select n from `tabUser`"
+        self.assertEqual(self.builder._get_sql_table_names(hidden, dialect=self.dialect), set())
+
+    # @feature query.native-sql
+    def test_a_derived_table_aliased_after_a_table_does_not_hide_it(self):
+        """An alias does not declare a table. A subquery aliased with a real
+        table's name does not hide that table, and only the table's binding
+        applies the reader's permissions."""
+        raw_sql = "select u.name from (select 1 as n) as `tabUser` join `tabUser` as u on 1 = 1"
+
+        self.assertEqual(self.builder._get_sql_table_names(raw_sql, dialect=self.dialect), {"tabUser"})
+
+        rewritten = self.rewrite(raw_sql, {"tabUser": "SELECT * FROM `tabUser`"})
+
+        # the real table gets its binding; the aliased subquery is unchanged
+        self.assertIn("AS u", rewritten)
+        self.assertIn("(SELECT 1 AS n) AS `tabUser`", rewritten)
+
+    # @feature query.native-sql
+    def test_a_cte_reference_is_left_alone_where_the_same_name_is_bound(self):
+        """Table extraction and the rewrite use the same scope rule. Binding the
+        CTE reference would point it at rows without the CTE's columns."""
+        raw_sql = (
+            "select u.name from (with `tabUser` as (select 1 as n) select n from `tabUser`) s "
+            "join `tabUser` u on 1 = 1"
+        )
+
+        rewritten = self.rewrite(raw_sql, {"tabUser": "SELECT * FROM `tabUser`"})
+
+        self.assertEqual(self.cte_names(rewritten), ["tabUser"])
+        self.assertIn("SELECT n FROM `tabUser`", rewritten)
+        self.assertIn("AS u", rewritten)
+
+    # @feature query.native-sql permissions.not-permitted-chart
+    def test_a_reader_with_every_row_still_loses_a_column_they_may_not_read(self):
+        """A reader who may read every row gets no `WHERE`. A held-back column
+        must still be removed."""
+        reader = "native_sql_permlevel@test.com"
+        create_user(reader, first_name="Native", last_name="Reader", roles="System Manager")
+        self.addCleanup(delete_users, reader)
+        # `ToDo` gives System Manager read on every row, so the permission query
+        # adds no WHERE
+        setter = frappe.get_doc(
+            {
+                "doctype": "Property Setter",
+                "doctype_or_field": "DocField",
+                "doc_type": "ToDo",
+                "field_name": "status",
+                "property": "permlevel",
+                "value": 1,
+                "property_type": "Int",
+            }
+        ).insert(ignore_permissions=True)
+        frappe.clear_cache(doctype="ToDo")
+        self.addCleanup(frappe.clear_cache, doctype="ToDo")
+        self.addCleanup(frappe.delete_doc, "Property Setter", setter.name, force=True)
+
+        with as_user(reader), db_connections():
+            rows = self.run_native_sql("select * from `tabToDo` limit 1")
+
+        self.assertIn("description", rows.columns)
+        self.assertNotIn("status", rows.columns)
+
+    # @feature query.native-sql permissions.site-user-permissions
+    def test_a_reader_narrowed_by_rows_runs_native_sql_on_the_data_store(self):
+        """On the data store, the rows desk permits are read from the live site
+        into an in-memory table. The SQL sent to DuckDB reads that table."""
+        reader = "native_sql_rows@test.com"
+        create_user(reader, first_name="Native", last_name="Rows", roles="Insights User")
+        self.addCleanup(delete_users, reader)
+
+        with as_user(reader), db_connections():
+            rows = self.run_native_sql(
+                "select status, count(*) as todos from tabToDo group by status", use_live_connection=0
+            )
+
+        self.assertEqual(list(rows.columns), ["status", "todos"])
 
     # @feature query.native-sql
     def test_table_name_needing_quotes_runs_on_the_source(self):
@@ -166,10 +263,12 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
     # @feature query.native-sql-one-statement
     def test_a_schema_qualified_table_is_refused(self):
-        # the binding is looked up by the bare name, so reading `sales.orders`
+        # a binding is looked up by the bare name, so reading `sales.orders`
         # would bind whichever `orders` the default schema holds
         with self.assertRaises(frappe.ValidationError):
-            self.builder._get_sql_table_names("select * from sales.orders", dialect=self.dialect)
+            self.builder._validate_native_sql(
+                "select * from sales.orders", use_live_connection=True, dialect=self.dialect
+            )
 
     # --- the format button ---
 

@@ -86,7 +86,7 @@ class TestRescaleItems(unittest.TestCase):
 
     # @feature upgrade.older-grid-read
     def test_a_grain_card_keeps_its_sparkline_band(self):
-        """The card's own rule and not the server's: a grain card draws its own
+        """The card's own rule and not the server's: a grain card renders its own
         readings as the series, so the band is there and the cell holds it."""
         configs = {
             "latest": number_config(

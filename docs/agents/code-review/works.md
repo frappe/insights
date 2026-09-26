@@ -80,12 +80,12 @@ The baseline the taste sits on. A likely bug that would ship is a blocker.
   transaction or background-job code, follow how Frappe itself uses the primitive; grep for
   real usage before accepting one read off a signature. *Precedent: `frappe.set_user` in a
   request handler logged the clicking user out.*
-- **Guest-reachable code.** Grep `allow_guest=True` under `insights/` to name the doors.
-  New code reachable from one, or a new door, names its gate. Guest-reachable code that reads
+- **Guest-reachable code.** Grep `allow_guest=True` under `insights/` to name the endpoints.
+  New code reachable from one, or a new endpoint, names its gate. Guest-reachable code that reads
   user data, or a write into a customer's source database, is a blocker. *"i don't want
   to create tables in the database, that's a hard no"*.
 - **Permissions.** `ignore_permissions=True`, a new whitelisted method, or a widened
-  visibility rung needs the gate named. Apply the framework's permissions rather than
+  visibility level needs the gate named. Apply the framework's permissions rather than
   invent a per-user scheme. A narrow endpoint beats a widened grant. Do not flag a check
   an earlier layer already enforces — role permissions run before the controller hook.
 - **Known defect classes.** The 2026-08 audit found five recurring classes. When the diff

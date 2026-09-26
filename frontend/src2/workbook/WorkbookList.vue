@@ -2,26 +2,23 @@
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
 import { QuickFilter } from '@framework/ui/QuickFilter'
 import { useMagicKeys, whenever } from '@vueuse/core'
-import { Avatar, Breadcrumbs, MultiSelect, call } from 'frappe-ui'
+import { Avatar, Breadcrumbs, MultiSelect } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
-import { LayoutTemplate as LayoutTemplateIcon, PlusIcon } from 'lucide-vue-next'
+import { PlusIcon } from 'lucide-vue-next'
 import { accessIcon, accessLabel, AccessSource, useAccessSources } from '../components/access'
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
-import session from '../session'
 import { __ } from '../translation'
 import { WorkbookListItem } from '../types/workbook.types'
 import useUserStore from '../users/users'
 import useWorkbook, { newWorkbookName } from './workbook'
+import { pastedWorkbook } from './workbook_file'
 import useWorkbooks from './workbooks'
-import WorkbookTemplates, { WorkbookTemplate } from './WorkbookTemplates.vue'
-import { useTelemetry } from '../telemetry'
 
 const router = useRouter()
 const userStore = useUserStore()
 const workbookStore = useWorkbooks()
-const { capture } = useTelemetry()
 
 const {
 	options: sourceOptions,
@@ -95,39 +92,16 @@ function openNewWorkbook() {
 		.finally(() => (creatingWorkbook.value = false))
 }
 
-// workbook library (the prebuilt workbooks installed apps seed) — a permanent
-// "Library" button surfaces it whenever the library is non-empty. importing is an admin
-// action for v1, so only admins fetch it; non-admins just receive the shared
-// workbooks in their list once an admin imports.
-const templates = ref<WorkbookTemplate[]>([])
-const showTemplates = ref(false)
-function fetchTemplates() {
-	if (!session.user.is_admin) return
-	call('insights.api.templates.get_workbook_templates').then(
-		(data: WorkbookTemplate[]) => (templates.value = data || []),
-	)
-}
-wheneverChanges(() => session.user.is_admin, fetchTemplates, { immediate: true })
-
-function openLibrary() {
-	showTemplates.value = true
-	capture('workbook_library_opened')
-}
-
 const isNarrowed = computed(() => wireFilters.value.length > 0)
 
 const keys = useMagicKeys()
 const cmdV = keys['Meta+V']
 whenever(cmdV, () => {
 	if (!navigator.clipboard) return
-	navigator.clipboard.readText().then((text) => {
-		try {
-			const json = JSON.parse(text)
-			if (json.type === 'Workbook') {
-				workbookStore.importWorkbook(json)
-			}
-		} catch (e) {}
-	})
+	navigator.clipboard
+		.readText()
+		.then(pastedWorkbook)
+		.then((workbook) => workbook && workbookStore.importWorkbook(workbook))
 })
 
 watchEffect(() => {
@@ -140,16 +114,6 @@ watchEffect(() => {
 		<Breadcrumbs :items="[{ label: __('Workbooks'), route: '/workbook' }]" />
 		<div class="flex items-center gap-2">
 			<Button
-				v-if="templates.length"
-				:label="__('Library')"
-				variant="outline"
-				@click="openLibrary"
-			>
-				<template #prefix>
-					<LayoutTemplateIcon class="w-4" />
-				</template>
-			</Button>
-			<Button
 				:label="__('New Workbook')"
 				variant="solid"
 				@click="openNewWorkbook"
@@ -161,8 +125,6 @@ watchEffect(() => {
 			</Button>
 		</div>
 	</header>
-
-	<WorkbookTemplates v-model="showTemplates" :templates="templates" @refresh="fetchTemplates" />
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
@@ -268,22 +230,10 @@ watchEffect(() => {
 				{{
 					isNarrowed
 						? __('Try a different search or filter.')
-						: templates.length
-						  ? __('Create a workbook, or start from a prebuilt one.')
-						  : __('No workbooks to display.')
+						: __('No workbooks to display.')
 				}}
 			</div>
 			<div v-if="!isNarrowed" class="mt-4 flex items-center gap-2">
-				<Button
-					v-if="templates.length"
-					:label="__('Library')"
-					variant="outline"
-					@click="openLibrary"
-				>
-					<template #prefix>
-						<LayoutTemplateIcon class="w-4" />
-					</template>
-				</Button>
 				<Button
 					v-if="sources.includes('created')"
 					:label="__('New Workbook')"

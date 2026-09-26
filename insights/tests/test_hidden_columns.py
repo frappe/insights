@@ -104,10 +104,10 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         reader = create_test_query(ADMIN, self.workbook, title="Reads Hidden Columns", operations=operations)
         with as_user(ADMIN):
             result = reader.execute(force=True)
-            offered = reader.get_columns_for_selection()
+            selectable = reader.get_columns_for_selection()
         by_name = {c["name"]: c for c in result["columns"]}
         self.assertTrue(by_name["todos__currency"].get("hidden"))
-        self.assertNotIn("todos__currency", [c["name"] for c in offered])
+        self.assertNotIn("todos__currency", [c["name"] for c in selectable])
 
     # @feature query.summarize-currency-carried
     def test_a_carried_column_is_marked_and_its_value_still_rides_in_the_row(self):
@@ -120,22 +120,22 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         self.assertNotIn(None, result["currency_symbols"])
 
     # @feature query.summarize-currency-carried
-    def test_a_group_holding_a_row_without_a_code_carries_none(self):
+    def test_a_group_holding_a_row_without_a_code_holds_none(self):
         # min and max skip nulls, so a null row must void the group on its own
         _, by_status = self.carried()
         self.assertIsNone(by_status["Closed"])
 
     # @feature query.summarize-currency-carried
-    def test_a_carried_column_is_not_offered_to_the_author(self):
+    def test_a_carried_column_is_not_listed_for_the_author(self):
         with as_user(ADMIN):
-            offered = frappe.get_doc(DT.QUERY, self.query).get_columns_for_selection()
-        names = [c["name"] for c in offered]
+            selectable = frappe.get_doc(DT.QUERY, self.query).get_columns_for_selection()
+        names = [c["name"] for c in selectable]
         self.assertIn("todos", names)
         self.assertNotIn("todos__currency", names)
 
     # @feature query.summarize-currency-carried
-    def test_a_currency_column_that_is_gone_carries_none_rather_than_failing(self):
-        # a missing column must not fail the query, and it carries null, not the site currency
+    def test_a_currency_column_that_is_gone_holds_none_rather_than_failing(self):
+        # a missing column must not fail the query, and it holds null, not the site currency
         operations = copy.deepcopy(OPERATIONS)
         operations[-1]["measures"][0]["currency_column"] = "no_such_column"
         query = create_test_query(ADMIN, self.workbook, title="Missing Currency", operations=operations)
