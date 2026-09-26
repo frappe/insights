@@ -183,6 +183,24 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
         self.assertEqual([row.role for row in dashboard.visible_to_roles], ["Desk User"])
 
     # @feature standard.ship
+    def test_an_imported_dashboard_is_read_by_the_roles_the_file_names(self):
+        """A board is read by the roles that read its tables. A role the site
+        lacks is dropped, and a file cannot make a dashboard Public."""
+        file = standard_file()
+        dashboard = file["dashboards"][DASHBOARD]
+        dashboard["visibility"] = "Public"
+        dashboard["visible_to_roles"] = [
+            {"role": "System Manager"},
+            {"role": "No Such Role"},
+            {"role": "Guest"},
+        ]
+        self.import_file(file)
+
+        dashboard = frappe.get_doc(DT.DASHBOARD, DASHBOARD)
+        self.assertEqual(dashboard.visibility, "Roles")
+        self.assertEqual([row.role for row in dashboard.visible_to_roles], ["System Manager"])
+
+    # @feature standard.ship
     def test_an_imported_member_lands_in_the_folder_the_file_titles(self):
         self.import_file()
 
@@ -273,7 +291,12 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
         self.assertNotIn("run_as_owner", file["charts"][CHART])
         self.assertNotIn("is_standard", file["charts"][CHART])
         self.assertNotIn("visibility", file["dashboards"][DASHBOARD])
-        self.assertNotIn("visible_to_roles", file["dashboards"][DASHBOARD])
+
+    # @feature standard.file-format
+    def test_a_file_names_the_roles_that_read_each_dashboard(self):
+        file = self.exported()
+
+        self.assertEqual(file["dashboards"][DASHBOARD]["visible_to_roles"], [{"role": "Desk User"}])
 
 
 class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCase):
@@ -604,6 +627,18 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
         dashboard = frappe.get_doc(DT.DASHBOARD, "selling-overview")
         self.assertEqual(dashboard.visibility, "Roles")
         self.assertEqual([row.role for row in dashboard.visible_to_roles], ["Desk User"])
+
+    # @feature standard.mark
+    def test_a_marked_dashboard_keeps_the_roles_it_names(self):
+        board = frappe.get_doc(DT.DASHBOARD, self.built.dashboard)
+        board.visibility = "Roles"
+        board.append("visible_to_roles", {"role": "System Manager"})
+        board.save()
+        self.mark()
+
+        dashboard = frappe.get_doc(DT.DASHBOARD, "selling-overview")
+        self.assertEqual(dashboard.visibility, "Roles")
+        self.assertEqual([row.role for row in dashboard.visible_to_roles], ["System Manager"])
 
     # @feature standard.mark
     def test_two_folders_of_one_type_never_share_a_title(self):

@@ -14,7 +14,7 @@ from frappe.website.utils import cleanup_page_name
 from insights import standard
 from insights.desk import claims_on, refuse_delete_while_claimed
 from insights.insights.query_utils import referenced_queries
-from insights.permissions import ROLES, can_copy, can_write, check_trusted_code_author
+from insights.permissions import ROLES, UNNAMEABLE_ROLES, can_copy, can_write, check_trusted_code_author
 from insights.telemetry import capture
 from insights.utils import deep_convert_dict_to_dict
 
@@ -33,13 +33,23 @@ MEMBER_DOCTYPES = {
 }
 
 
-def standard_dashboard_visibility() -> dict:
-    """The visibility of a dashboard an app ships.
+def standard_dashboard_visibility(roles: list[str] | None = None) -> dict:
+    """The visibility of a dashboard an app ships: `roles`, or every desk user.
 
-    Frappe gives Desk User to every System User automatically. So the list
-    needs no upkeep, and portal users do not see desk content.
+    A role the site lacks is dropped, so a board over another app's tables is
+    left to admins where that app is not installed. Frappe gives Desk User to
+    every System User automatically, so the fallback needs no upkeep and portal
+    users do not see desk content.
     """
-    return {"visibility": ROLES, "visible_to_roles": [{"role": "Desk User"}]}
+    if roles is None:
+        roles = ["Desk User"]
+    roles = [role for role in roles if role not in UNNAMEABLE_ROLES and frappe.db.exists("Role", role)]
+    return {"visibility": ROLES, "visible_to_roles": [{"role": role} for role in roles]}
+
+
+def dashboard_roles(dashboard) -> list[str] | None:
+    """The roles a dashboard names, or None when it names none."""
+    return [row.get("role") for row in dashboard.get("visible_to_roles") or []] or None
 
 
 class InsightsWorkbook(Document):
@@ -273,9 +283,9 @@ class InsightsWorkbook(Document):
             dashboard = deep_convert_dict_to_dict(dashboard)
             dashboard["items"] = frappe.as_json(_rewrite_dashboard_items(dashboard.get("items"), id_map))
             if keep_names:
-                # The file never sets these. So a hand-edited file cannot hide a
-                # shipped dashboard from desk users.
-                dashboard.update(standard_dashboard_visibility())
+                # A file names roles, never a level. So a hand-edited file cannot
+                # make a shipped dashboard Public.
+                dashboard.update(standard_dashboard_visibility(dashboard_roles(dashboard)))
 
             id_map[name] = _restore_member(
                 "Insights Dashboard v3",
@@ -467,6 +477,17 @@ class InsightsWorkbook(Document):
             c.folder = folder_title.get(c.folder)
         for d in dashboards:
             d["items"] = frappe.parse_json(d["items"])
+            if shipped:
+                d["visible_to_roles"] = frappe.get_all(
+                    "Has Role",
+                    {
+                        "parenttype": "Insights Dashboard v3",
+                        "parent": d.name,
+                        "parentfield": "visible_to_roles",
+                    },
+                    ["role"],
+                    order_by="idx asc",
+                )
 
         return {
             "folders": [{"title": f.title, "type": f.type, "sort_order": f.sort_order} for f in folders],
@@ -519,7 +540,9 @@ class InsightsWorkbook(Document):
         # and a shipped chart must not. So no dashboard stays Public.
         for dashboard in frappe.get_all("Insights Dashboard v3", {"workbook": name}, pluck="name"):
             doc = frappe.get_doc("Insights Dashboard v3", dashboard)
-            doc.update(standard_dashboard_visibility())
+            doc.update(
+                standard_dashboard_visibility(dashboard_roles(doc) if doc.visibility == ROLES else None)
+            )
             doc.save(ignore_permissions=True)
         # Save each chart as a document, so `validate_run_as_owner` runs. It
         # makes sure a shipped chart does not run as owner.
