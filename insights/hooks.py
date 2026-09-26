@@ -35,7 +35,6 @@ add_to_apps_screen = [
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/insights/css/insights.css"
-app_include_js = "insights_nudge.bundle.js"
 
 # a desk page with an island needs the app's mount path to build links
 extend_bootinfo = "insights.desk.boot_app_path"
