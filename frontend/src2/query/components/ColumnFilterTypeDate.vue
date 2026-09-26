@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { wheneverChanges } from '../../helpers'
+import session from '../../session'
 import { __ } from '../../translation'
 import dayjs from '../../helpers/dayjs'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import useSettings from '../../settings/settings'
 import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 import DatePicker from './DatePicker.vue'
 
@@ -27,8 +27,6 @@ wheneverChanges(currentSection, () => {
 	}
 })
 
-const settings = useSettings()
-
 const getValue = (date: Date) =>
 	date.toLocaleDateString('en-US', {
 		month: 'short',
@@ -39,7 +37,7 @@ const getRange = (start: Day, end: Day) => `${getValue(start.toDate())} - ${getV
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 function startOfWeek() {
-	const weekStartsOn = WEEKDAYS.indexOf(settings.doc.week_starts_on || 'Monday')
+	const weekStartsOn = WEEKDAYS.indexOf(session.site.week_starts_on)
 	// dayjs counts days from Sunday, WEEKDAYS from Monday
 	const today = dayjs()
 	const dayOfWeek = (today.day() + 6) % 7
@@ -48,7 +46,7 @@ function startOfWeek() {
 
 const predefinedRanges = computed(() => {
 	const weekStart = startOfWeek()
-	const fyStart = dayjs(settings.doc.fiscal_year_start || '04-01-1999')
+	const fyStart = dayjs(session.site.fiscal_year_start)
 	return [
 		{ label: __('Today'), value: 'Day', description: getValue(new Date()) },
 		{

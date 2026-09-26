@@ -351,9 +351,23 @@ def get_current_date_range(unit, anchor=None):
 
 def get_fiscal_year_start_date():
     fiscal_year_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
-    if not fiscal_year_start or get_date_str(fiscal_year_start) == "0001-01-01":
-        return getdate("1995-04-01")
-    return getdate(fiscal_year_start)
+    # frappe returns an unset date field as 0001-01-01, not None
+    if fiscal_year_start and get_date_str(fiscal_year_start) != "0001-01-01":
+        return getdate(fiscal_year_start)
+    return get_erpnext_fiscal_year_start() or getdate("1995-04-01")
+
+
+def get_erpnext_fiscal_year_start():
+    if not frappe.db.table_exists("Fiscal Year"):
+        return None
+
+    today = getdate()
+    return frappe.db.get_value(
+        "Fiscal Year",
+        {"disabled": 0, "year_start_date": ("<=", today), "year_end_date": (">=", today)},
+        "year_start_date",
+        order_by="year_start_date desc",
+    )
 
 
 def get_fy_start(date):

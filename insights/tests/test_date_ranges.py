@@ -5,6 +5,7 @@ from sqlalchemy import column as sa_column
 
 from insights.insights.query_builders.sql_functions import (
     get_date_range,
+    get_fiscal_year_start_date,
     get_window,
     handle_timespan,
     shift_anchor,
@@ -13,6 +14,8 @@ from insights.tests.base import InsightsIntegrationTestCase
 
 # 2022-11-26 is a Saturday
 NOW = "insights.insights.query_builders.sql_functions.nowdate"
+
+ERPNEXT_FY = "insights.insights.query_builders.sql_functions.get_erpnext_fiscal_year_start"
 
 # 2026-08-10 is a Monday
 ANCHOR = getdate("2026-08-10")
@@ -317,3 +320,29 @@ class TestDirectionalSpans(InsightsIntegrationTestCase):
             },
             include_current=True,
         )
+
+
+class TestFiscalYearStart(InsightsIntegrationTestCase):
+    # @feature settings.fiscal-year-start
+    def test_the_setting_wins_over_erpnext(self):
+        with (
+            self.change_settings("Insights Settings", fiscal_year_start="2020-07-01"),
+            patch(ERPNEXT_FY, return_value=getdate("2026-01-01")),
+        ):
+            self.assertEqual(get_fiscal_year_start_date(), getdate("2020-07-01"))
+
+    # @feature settings.fiscal-year-start
+    def test_an_unset_setting_reads_erpnext_fiscal_year(self):
+        with (
+            self.change_settings("Insights Settings", fiscal_year_start=None),
+            patch(ERPNEXT_FY, return_value=getdate("2026-01-01")),
+        ):
+            self.assertEqual(get_fiscal_year_start_date(), getdate("2026-01-01"))
+
+    # @feature settings.fiscal-year-start
+    def test_without_either_it_starts_in_april(self):
+        with (
+            self.change_settings("Insights Settings", fiscal_year_start=None),
+            patch(ERPNEXT_FY, return_value=None),
+        ):
+            self.assertEqual(get_fiscal_year_start_date(), getdate("1995-04-01"))

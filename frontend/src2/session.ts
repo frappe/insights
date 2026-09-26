@@ -25,7 +25,7 @@ type SiteInfo = {
 	country: string
 	/** The day a week is counted from, as `Insights Settings` names it. */
 	week_starts_on: string
-	/** The date a fiscal year starts on, as `Insights Settings` holds it. */
+	/** The date a fiscal year starts on: `Insights Settings`, else ERPNext's current Fiscal Year. */
 	fiscal_year_start: string
 	// stands in for a measure that names no currency column
 	currency: string | null
