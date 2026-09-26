@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Button, FormControl, Popover, usePortalTarget } from 'frappe-ui'
 import { ChevronLeft, ChevronRight, Layers, Rows3, Search } from 'lucide-vue-next'
+import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, ref } from 'vue'
 import { __ } from '../../translation'
 import { columnLabel, type DrillDimension } from './drill_stack'
@@ -65,6 +66,18 @@ const portalTarget = usePortalTarget()
 // inside this menu.
 const rowClass = 'w-full !justify-start'
 
+// The anchor is fixed to the viewport, so the menu would stay put while the
+// value it drills slides away. Scrolling inside the menu is left alone.
+const menu = ref<HTMLElement>()
+useEventListener(
+	window,
+	'scroll',
+	(event: Event) => {
+		if (!menu.value?.contains(event.target as Node)) emit('close')
+	},
+	{ capture: true, passive: true },
+)
+
 function openDimensions() {
 	pane.value = 'dimensions'
 	// a long list is the case the search exists for, so the reader lands in it
@@ -76,6 +89,7 @@ function openDimensions() {
 	<Teleport :to="portalTarget ?? 'body'">
 		<Popover
 			:open="true"
+			:auto-focus="false"
 			side="bottom"
 			align="start"
 			@update:open="(open: boolean) => !open && emit('close')"
@@ -87,7 +101,7 @@ function openDimensions() {
 				/>
 			</template>
 
-			<div class="w-56 p-1.5">
+			<div ref="menu" class="w-56 p-1.5">
 				<div v-if="pane === 'actions'" class="flex flex-col gap-0.5">
 					<Button
 						v-if="props.canRows !== false"

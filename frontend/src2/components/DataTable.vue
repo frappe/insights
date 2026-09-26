@@ -639,7 +639,7 @@ function toggleNewColumn() {
 								getTextWrapClass(col.name),
 								isNumberColumn(col.name) ? 'tnum text-right' : 'text-left',
 								isNumberColumn(col.name) && props.onDrilldown
-									? 'cursor-pointer'
+									? 'cursor-pointer hover:ring-1 hover:ring-inset hover:ring-outline-gray-4'
 									: '',
 								isStickyColumn(col.name) ? 'sticky z-[1] bg-surface-base' : '',
 							]"
@@ -649,7 +649,7 @@ function toggleNewColumn() {
 								...getCellPaint(col.name, row[col.name]),
 							}"
 							height="30px"
-							@dblclick="
+							@click="
 								isNumberColumn(col.name) && props.onDrilldown?.(col, row, $event)
 							"
 						>
