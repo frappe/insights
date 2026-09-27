@@ -387,6 +387,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 |---|---|
 | data-store.import-table | An admin imports a source table into the data store and queries run against the copy. |
 | data-store.import-row-limit | An admin caps how many rows an import copies. |
+| data-store.sync-schedule | An admin sets a cron schedule on a stored table, and the table is imported when the schedule is due, counted from its last import. |
 | data-store.list | An admin browses the stored tables and searches them by name. |
 | data-store.import-cursor | An incremental import's cursor describes what is in the store, not what a run intended. |
 | data-store.import-script-sandbox | An import job's script reads Frappe data, calls its client and inserts into its table; it cannot write to the site, enqueue a job, call a method, send mail or register a commit hook. |

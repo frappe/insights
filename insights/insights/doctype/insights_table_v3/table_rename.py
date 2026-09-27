@@ -17,6 +17,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_ta
 # the Data Store copy. Nothing else holds them, and only a person can type them again.
 IMPORT_SETTINGS_FIELDS = (
     "sync_mode",
+    "sync_schedule",
     "sync_from",
     "sync_cursor_column",
     "sync_primary_key_column",

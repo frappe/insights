@@ -7,6 +7,7 @@ from hashlib import md5
 import frappe
 import ibis
 import sqlglot as sg
+from croniter import croniter
 from frappe.model.document import Document
 from frappe.permissions import get_valid_perms
 from frappe.query_builder.functions import Count, Max, Sum
@@ -42,6 +43,7 @@ class InsightsTablev3(Document):
         sync_from: DF.Datetime | None
         sync_mode: DF.Literal["Full", "Incremental"]
         sync_primary_key_column: DF.Data | None
+        sync_schedule: DF.Data
         sync_strategy: DF.Literal["Append Only", "Update or Insert"]
         table: DF.Data
     # end: auto-generated types
@@ -50,6 +52,12 @@ class InsightsTablev3(Document):
         self.name = get_table_name(self.data_source, self.table)
 
     def validate(self):
+        if not croniter.is_valid(self.sync_schedule):
+            frappe.throw(
+                frappe._("{0} is not a cron expression.").format(frappe.bold(self.sync_schedule)),
+                title=frappe._("Invalid Sync Schedule"),
+            )
+
         if self.sync_mode == "Incremental":
             self._validate_incremental_sync_config()
 

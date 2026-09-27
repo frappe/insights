@@ -192,9 +192,9 @@ doc_events = {
 scheduler_events = {
     "all": [
         "insights.insights.doctype.insights_alert.insights_alert.send_alerts",
+        "insights.api.data_store.sync_tables",
     ],
     "daily": [
-        "insights.api.data_store.sync_tables",
         "insights.telemetry_scan.run_site_scan",
     ],
     "weekly": [
