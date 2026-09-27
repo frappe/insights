@@ -44,3 +44,8 @@ class InsightsTableImportLog(Document):
         frappe.only_for("System Manager")
         self.status = "Failed"
         self.db_update()
+
+
+def on_doctype_update():
+    # A table's newest import is looked up on every scheduler tick.
+    frappe.db.add_index("Insights Table Import Log", ["data_source", "table_name", "started_at"])

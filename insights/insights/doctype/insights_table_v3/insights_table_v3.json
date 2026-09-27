@@ -17,6 +17,7 @@
   "columns",
   "sync_section",
   "sync_mode",
+  "sync_schedule",
   "sync_from",
   "column_break_poei",
   "sync_strategy",
@@ -105,6 +106,14 @@
    "options": "Full\nIncremental"
   },
   {
+   "default": "@daily",
+   "description": "A cron expression for when the table is imported, such as <b>@hourly</b> or <b>*/15 * * * *</b>.",
+   "fieldname": "sync_schedule",
+   "fieldtype": "Data",
+   "label": "Sync Schedule",
+   "reqd": 1
+  },
+  {
    "default": "Append Only",
    "depends_on": "eval:doc.sync_mode == 'Incremental'",
    "description": "Choose how incremental sync writes rows: <b>Append Only</b> adds new rows, while <b>Update or Insert</b> updates matching keys and inserts new rows.",
@@ -161,7 +170,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-16 12:00:00.000000",
+ "modified": "2026-09-27 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",

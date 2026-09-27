@@ -10,14 +10,17 @@ import frappe
 import ibis
 import pandas as pd
 from duckdb import IOException
+from frappe.utils import add_to_date, now_datetime
 
 import insights
+from insights.api.data_store import sync_tables
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import open_local_duckdb
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WarehouseTable,
     WarehouseTableImporter,
     WarehouseTableWriter,
 )
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
 
 # A reader in this process shares the DuckDB instance, so it never conflicts.
@@ -272,6 +275,54 @@ class TestMissingTableNotice(InsightsIntegrationTestCase):
             self.make_table().announce_missing_table(import_running=True)
 
         toast.assert_not_called()
+
+
+class TestSyncSchedule(InsightsIntegrationTestCase):
+    TABLE = "sync_schedule_table"
+
+    @classmethod
+    def before_class(cls):
+        frappe.get_doc(
+            {
+                "doctype": "Insights Table v3",
+                "table": cls.TABLE,
+                "label": cls.TABLE,
+                "data_source": "Site DB",
+                "stored": 1,
+                "sync_schedule": "@hourly",
+            }
+        ).insert(ignore_permissions=True)
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc("Insights Table v3", get_table_name("Site DB", cls.TABLE), force=True)
+
+    def after_test(self):
+        frappe.db.delete("Insights Table Import Log", {"table_name": self.TABLE})
+
+    def start_import(self, minutes_ago, status):
+        log = frappe.new_doc("Insights Table Import Log")
+        log.data_source = "Site DB"
+        log.table_name = self.TABLE
+        log.status = status
+        log.started_at = add_to_date(now_datetime(), minutes=-minutes_ago)
+        log.insert(ignore_permissions=True)
+
+    def imported_tables(self):
+        with patch("frappe.enqueue") as enqueue:
+            sync_tables()
+        return [call.kwargs.get("table_name") for call in enqueue.call_args_list]
+
+    # @feature data-store.sync-schedule
+    def test_a_table_is_imported_once_its_schedule_is_due_since_its_last_import(self):
+        self.start_import(minutes_ago=120, status="Completed")
+        self.assertIn(self.TABLE, self.imported_tables())
+
+    # @feature data-store.sync-schedule
+    def test_a_failed_import_waits_for_the_next_due_time_instead_of_retrying_every_tick(self):
+        self.start_import(minutes_ago=120, status="Completed")
+        self.start_import(minutes_ago=10, status="Failed")
+        self.assertNotIn(self.TABLE, self.imported_tables())
 
 
 class TestImportRowLimit(InsightsIntegrationTestCase):
