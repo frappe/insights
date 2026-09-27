@@ -85,8 +85,11 @@ def sync_tables():
     now = now_datetime()
     for table in tables:
         last = started.get((table.data_source, table.table)) or table.creation
-        if croniter(table.sync_schedule, last).get_next(datetime) <= now:
-            import_table(table.data_source, table.table)
+        try:
+            if croniter(table.sync_schedule, last).get_next(datetime) <= now:
+                import_table(table.data_source, table.table)
+        except Exception:
+            frappe.log_error(title=f"Error scheduling import of {table.table}")
 
 
 def update_failed_sync_status():

@@ -3,6 +3,7 @@ import sys
 import tempfile
 import time
 from contextlib import contextmanager, suppress
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -10,7 +11,7 @@ import frappe
 import ibis
 import pandas as pd
 from duckdb import IOException
-from frappe.utils import add_to_date, now_datetime
+from frappe.utils import add_to_date
 
 import insights
 from insights.api.data_store import sync_tables
@@ -279,6 +280,8 @@ class TestMissingTableNotice(InsightsIntegrationTestCase):
 
 class TestSyncSchedule(InsightsIntegrationTestCase):
     TABLE = "sync_schedule_table"
+    # an @hourly table falls due on the hour, so a moving clock would decide the outcome
+    HALF_PAST = datetime(2026, 1, 1, 12, 30)
 
     @classmethod
     def before_class(cls):
@@ -305,11 +308,14 @@ class TestSyncSchedule(InsightsIntegrationTestCase):
         log.data_source = "Site DB"
         log.table_name = self.TABLE
         log.status = status
-        log.started_at = add_to_date(now_datetime(), minutes=-minutes_ago)
+        log.started_at = add_to_date(self.HALF_PAST, minutes=-minutes_ago)
         log.insert(ignore_permissions=True)
 
     def imported_tables(self):
-        with patch("frappe.enqueue") as enqueue:
+        with (
+            patch("frappe.enqueue") as enqueue,
+            patch("insights.api.data_store.now_datetime", return_value=self.HALF_PAST),
+        ):
             sync_tables()
         return [call.kwargs.get("table_name") for call in enqueue.call_args_list]
 
