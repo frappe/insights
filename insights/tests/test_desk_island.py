@@ -1,5 +1,6 @@
 import io
 import json
+import shutil
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
@@ -16,6 +17,7 @@ from insights.desk import (
     install_custom_fields,
     island_for,
     report_dangling_claims,
+    shipped_files,
 )
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -328,6 +330,20 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         desk_dashboard.reload()
         self.assertEqual(desk_dashboard.insights_dashboard, self.dashboard.name)
         self.assertEqual(desk_dashboard.modified, modified)
+
+    # @feature desk.shipped-claim
+    def test_finds_the_files_sync_dashboards_imports(self):
+        folder = Path(frappe.get_module_path("insights", "insights_dashboard"))
+        self.assertFalse(folder.exists())
+        self.addCleanup(shutil.rmtree, folder)
+        (folder / "selling").mkdir(parents=True)
+        (folder / "selling" / "selling.json").write_text("{}")
+        (folder / "selling" / "notes.json").write_text("{}")
+
+        files = shipped_files("Dashboard")
+
+        self.assertIn(str(folder / "selling" / "selling.json"), files)
+        self.assertNotIn(str(folder / "selling" / "notes.json"), files)
 
     # @feature desk.shipped-claim
     def test_an_existing_field_keeps_its_values(self):

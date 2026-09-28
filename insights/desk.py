@@ -27,7 +27,6 @@ state for the Insights content. A permission check here would make one desk
 page render differently for two readers.
 """
 
-import glob
 import os
 
 import click
@@ -207,17 +206,18 @@ def fill_shipped_claims(doctype: str) -> None:
     fieldname = DESK_ISLANDS[doctype]["fieldname"]
     for path in shipped_files(doctype):
         doc = frappe.get_file_json(path)
-        if doc.get(fieldname) and frappe.db.exists(doctype, doc["name"]):
+        if doc.get(fieldname) and frappe.db.exists(doctype, doc.get("name")):
             frappe.db.set_value(doctype, doc["name"], fieldname, doc[fieldname], update_modified=False)
 
 
 def shipped_files(doctype: str) -> list[str]:
+    """The `<name>/<name>.json` files that `sync_dashboards` imports for `doctype`."""
     folder = DESK_ISLANDS[doctype]["folder"]
-    return [
-        path
-        for app in frappe.get_installed_apps()
-        for module in frappe.local.app_modules.get(app) or []
-        for path in glob.glob(
-            os.path.join(frappe.get_module_path(module, folder.format(module=module)), "*", "*.json")
-        )
-    ]
+    paths = []
+    for app in frappe.get_installed_apps():
+        for module in frappe.local.app_modules.get(app) or []:
+            path = frappe.get_module_path(module, folder.format(module=module))
+            for name in os.listdir(path) if os.path.isdir(path) else []:
+                if os.path.isfile(file := os.path.join(path, name, f"{name}.json")):
+                    paths.append(file)
+    return paths
