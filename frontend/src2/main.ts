@@ -13,6 +13,17 @@ import session from './session.ts'
 
 setConfig('resourceFetcher', frappeRequest)
 
+// A deploy replaces the hashed chunks, so a tab opened before it fails to load
+// one. Reload to fetch the new build, but not again within a minute, so a chunk
+// that is missing from the new build too does not reload the page in a loop.
+window.addEventListener('vite:preloadError', (event) => {
+	const lastReload = Number(sessionStorage.getItem('insights:chunk-reload'))
+	if (Date.now() - lastReload < 60_000) return
+	sessionStorage.setItem('insights:chunk-reload', String(Date.now()))
+	event.preventDefault()
+	window.location.reload()
+})
+
 // Default to light until charts are themed for dark (Phase 2); dark stays
 // opt-in via the toggle so users aren't dropped into a half-themed UI.
 if (!localStorage.getItem('theme')) localStorage.setItem('theme', 'light')
