@@ -16,10 +16,10 @@ await buildIslands({
 
 	// The SPA's plugin. Without it the Number grid's `@xl:` columns compile to nothing.
 	tailwindPlugins: ['@tailwindcss/container-queries'],
-	// Set just above the current build. An island that renders the full dashboard
-	// bundles its own Vue, frappe-ui, the chart library and the app's stylesheet,
-	// about 1.72 MB.
-	budget: 1800 * 1024,
+	// Set just above the current build. It counts raw JS plus raw CSS. The
+	// dashboard island bundles its own Vue, frappe-ui, the chart library and the
+	// app's stylesheet, about 1.59 MB.
+	budget: 1650 * 1024,
 	// The budget catches these imports late and only by size. Each one pulls in
 	// something a reader cannot use: routed pages, the builder's stores, or a
 	// resource load that needs a role. They are checked after vite removes types,
