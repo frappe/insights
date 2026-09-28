@@ -16,6 +16,7 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
 from insights import not_permitted, user_permissions
+from insights.exceptions import QueryRefused
 from insights.permission_user import get_permission_user
 from insights.utils import InsightsDataSourcev3
 
@@ -725,8 +726,22 @@ def get_permission_query(doctype, parent_doctype=None, user=None):
     # separately (`insights.user_permissions.narrowing`), because a card that
     # does not say it is scoped reads as the whole number.
     user = user or frappe.session.user
-    sql = str(
-        frappe.get_list(
+    sql = str(permitted_list_query(doctype, parent_doctype, user))
+    # Record it for the user the filter was built for. A Public chart runs as
+    # its owner, and the reader must not see the owner's grants.
+    user_permissions.record(user, user_permissions.narrowing(doctype, user, parent_doctype))
+    return sql
+
+
+def permitted_list_query(doctype, parent_doctype, user):
+    """Frappe's list query for `doctype`, which runs the site's permission hooks.
+
+    A hook that fails leaves no row filter, so the run is refused. Frappe's own
+    error names whatever the hook tripped on, which reads as a permission error
+    on an unrelated doctype, so the refusal names the table as well.
+    """
+    try:
+        return frappe.get_list(
             doctype,
             fields=["name"],
             order_by=None,
@@ -734,11 +749,14 @@ def get_permission_query(doctype, parent_doctype=None, user=None):
             user=user,
             run=False,
         )
-    )
-    # Record it for the user the filter was built for. A Public chart runs as
-    # its owner, and the reader must not see the owner's grants.
-    user_permissions.record(user, user_permissions.narrowing(doctype, user, parent_doctype))
-    return sql
+    except frappe.PermissionError:
+        raise
+    except Exception as e:
+        frappe.clear_last_message()
+        frappe.throw(
+            frappe._("Could not apply permissions on {0}: {1}").format(doctype, e),
+            QueryRefused,
+        )
 
 
 def get_parents(child_doctype):
