@@ -1,5 +1,9 @@
 import io
+import json
+import shutil
 from contextlib import redirect_stdout
+from pathlib import Path
+from unittest.mock import patch
 
 import frappe
 import frappe.client
@@ -9,9 +13,11 @@ from frappe.utils.island import get_ui_islands
 from insights.desk import (
     DESK_ISLANDS,
     boot_app_path,
+    fill_shipped_claims,
     install_custom_fields,
     island_for,
     report_dangling_claims,
+    shipped_files,
 )
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -310,3 +316,37 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertIn(f"Dashboard Chart {desk_chart.name} links {chart.name}", printed.getvalue())
         self.assertIn(f"Dashboard {desk_dashboard.name} links {dashboard.name}", printed.getvalue())
         self.assertNotIn(kept.name, printed.getvalue())
+
+    # @feature desk.shipped-claim
+    def test_a_new_field_takes_the_claim_its_shipped_file_names(self):
+        desk_dashboard = self.desk_dashboard()
+        modified = frappe.db.get_value("Dashboard", desk_dashboard.name, "modified")
+        file = Path(frappe.get_site_path("shipped_desk_dashboard.json"))
+        file.write_text(json.dumps({"name": desk_dashboard.name, "insights_dashboard": self.dashboard.name}))
+        self.addCleanup(file.unlink)
+        with patch("insights.desk.shipped_files", return_value=[str(file)]):
+            fill_shipped_claims("Dashboard")
+
+        desk_dashboard.reload()
+        self.assertEqual(desk_dashboard.insights_dashboard, self.dashboard.name)
+        self.assertEqual(desk_dashboard.modified, modified)
+
+    # @feature desk.shipped-claim
+    def test_finds_the_files_sync_dashboards_imports(self):
+        folder = Path(frappe.get_module_path("insights", "insights_dashboard"))
+        self.assertFalse(folder.exists())
+        self.addCleanup(shutil.rmtree, folder)
+        (folder / "selling").mkdir(parents=True)
+        (folder / "selling" / "selling.json").write_text("{}")
+        (folder / "selling" / "notes.json").write_text("{}")
+
+        files = shipped_files("Dashboard")
+
+        self.assertIn(str(folder / "selling" / "selling.json"), files)
+        self.assertNotIn(str(folder / "selling" / "notes.json"), files)
+
+    # @feature desk.shipped-claim
+    def test_an_existing_field_keeps_its_values(self):
+        with patch("insights.desk.fill_shipped_claims") as fill:
+            install_custom_fields()
+        fill.assert_not_called()

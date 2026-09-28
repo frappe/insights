@@ -314,6 +314,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | desk.dashboard-island | A desk Dashboard linked to an Insights dashboard shows the Insights dashboard instead of its own. Desk renders an unlinked one itself. |
 | desk.chart-island | A desk Dashboard Chart linked to an Insights chart shows the Insights chart instead of its own. Desk renders an unlinked one itself. |
 | desk.dangling-claim | A migrate lists each desk Dashboard and Dashboard Chart that links to an Insights dashboard or chart that no longer exists, and never fails because of one. |
+| desk.shipped-claim | A desk Dashboard or Dashboard Chart an app ships links the Insights content its file names, even when the app was installed before Insights. |
 | desk.dashboard-page | `/app/insights-dashboard/<dashboard>` shows that dashboard to a desk user. The route, or a sidebar item's route options, names the dashboard. |
 
 ## data-source

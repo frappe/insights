@@ -27,6 +27,8 @@ state for the Insights content. A permission check here would make one desk
 page render differently for two readers.
 """
 
+import os
+
 import click
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
@@ -42,6 +44,7 @@ DESK_ISLANDS = {
         "label": "Insights Dashboard",
         "options": "Insights Dashboard v3",
         "insert_after": "dashboard_name",
+        "folder": "{module}_dashboard",
         "island": "insights.dashboard",
         "prop": "dashboard",
     },
@@ -50,6 +53,7 @@ DESK_ISLANDS = {
         "label": "Insights Chart",
         "options": "Insights Chart v3",
         "insert_after": "chart_name",
+        "folder": "dashboard_chart",
         "island": "insights.chart",
         "prop": "chart",
     },
@@ -170,6 +174,11 @@ def install_custom_fields() -> None:
     Idempotent, and run on every migrate. The fields are ours but the doctypes
     are not, so nothing else restores them if a site loses them.
     """
+    new = [
+        doctype
+        for doctype, field in DESK_ISLANDS.items()
+        if not frappe.db.exists("Custom Field", {"dt": doctype, "fieldname": field["fieldname"]})
+    ]
     create_custom_fields(
         {
             doctype: [
@@ -184,3 +193,31 @@ def install_custom_fields() -> None:
             for doctype, field in DESK_ISLANDS.items()
         }
     )
+    for doctype in new:
+        fill_shipped_claims(doctype)
+
+
+def fill_shipped_claims(doctype: str) -> None:
+    """Set the claims that the installed apps' `doctype` files carry.
+
+    A file imported before the field existed lost its claim, and an unchanged
+    file is never imported again.
+    """
+    fieldname = DESK_ISLANDS[doctype]["fieldname"]
+    for path in shipped_files(doctype):
+        doc = frappe.get_file_json(path)
+        if doc.get(fieldname) and frappe.db.exists(doctype, doc.get("name")):
+            frappe.db.set_value(doctype, doc["name"], fieldname, doc[fieldname], update_modified=False)
+
+
+def shipped_files(doctype: str) -> list[str]:
+    """The `<name>/<name>.json` files that `sync_dashboards` imports for `doctype`."""
+    folder = DESK_ISLANDS[doctype]["folder"]
+    paths = []
+    for app in frappe.get_installed_apps():
+        for module in frappe.local.app_modules.get(app) or []:
+            path = frappe.get_module_path(module, folder.format(module=module))
+            for name in os.listdir(path) if os.path.isdir(path) else []:
+                if os.path.isfile(file := os.path.join(path, name, f"{name}.json")):
+                    paths.append(file)
+    return paths
