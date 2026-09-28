@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ChartContainer } from 'frappe-ui/charts'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, inject, ref, watch } from 'vue'
 import DataTable from '../../components/DataTable.vue'
-import ExportDialog from '../../components/ExportDialog.vue'
 import { findRows } from '../../components/result_pane/find'
 import ResultFooter from '../../components/result_pane/ResultFooter.vue'
 import ResultStatus from '../../components/result_pane/ResultStatus.vue'
@@ -38,6 +37,7 @@ const pagination = usePagination({
 	enabled: true,
 })
 
+const ExportDialog = defineAsyncComponent(() => import('../../components/ExportDialog.vue'))
 const showExportDialog = ref(false)
 watch(
 	() => props.download?.downloading,
@@ -117,7 +117,7 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 		</div>
 
 		<ExportDialog
-			v-if="props.download"
+			v-if="props.download && showExportDialog"
 			v-model="showExportDialog"
 			:downloading="props.download.downloading"
 			:default-filename="props.title"

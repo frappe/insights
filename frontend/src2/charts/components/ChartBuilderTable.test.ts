@@ -1,8 +1,17 @@
-import { describe, expect, it } from 'vitest'
+import { Dropdown } from 'frappe-ui'
+import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h, reactive } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { chartPreviewKey } from '../chart_preview'
 import ChartBuilderTable from './ChartBuilderTable.vue'
+
+vi.mock('frappe-ui', async (importOriginal) => {
+	const { h } = await import('vue')
+	return {
+		...(await importOriginal<object>()),
+		Dropdown: { render: () => h('span', { 'data-menu': '' }) },
+	}
+})
 
 // The table's header sort and date grain write the chart config.
 // `ChartBuilder.vue` makes the sidebar inert for a caller who may not write the
@@ -30,7 +39,7 @@ async function table(readOnly: boolean) {
 	const app = createSSRApp({ render: () => h(ChartBuilderTable, { readOnly }) })
 	app.provide('chart', reactive({ doc: { chart_type: 'Bar', config: {} } }))
 	app.provide(chartPreviewKey, preview as any)
-	app.component('Dropdown', { render: () => h('span', { 'data-menu': '' }) })
+	app.component('Dropdown', Dropdown)
 	// The app registers the other frappe-ui components globally. This test does
 	// not, so it silences the warnings for unresolved components.
 	app.config.warnHandler = () => {}
