@@ -39,16 +39,6 @@ add_to_apps_screen = [
 # a desk page with an island needs the app's mount path to build links
 extend_bootinfo = "insights.desk.boot_app_path"
 
-# Island name -> the bundle name `frontend/build-islands.mjs` writes into
-# assets.json. The two are the same string. `frappe.ui.mount_island` and
-# `get_island_assets` look names up here. Without an entry, a desk document
-# claimed in `insights/desk.py` mounts nothing and shows an empty div. Keep it in
-# sync with `DESK_ISLANDS` in `insights/desk.py` by hand.
-ui_islands = {
-    "insights.chart": "insights.chart",
-    "insights.dashboard": "insights.dashboard",
-}
-
 # include js, css files in header of web template
 # web_include_css = "/assets/insights/css/insights.css"
 # web_include_js = "/assets/insights/js/insights.js"
