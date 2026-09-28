@@ -63,6 +63,8 @@ import {
 	SourceArgs,
 	SQL,
 	SQLArgs,
+	SQLColumn,
+	SQLColumnArgs,
 	Summarize,
 	SummarizeArgs,
 	Table,
@@ -99,6 +101,16 @@ export const expression = (expression: string): Expression => ({
 	type: 'expression',
 	expression,
 })
+
+// the server's summarize carries a money measure's currency code under this name;
+// `CARRIED_CURRENCY_SUFFIX` in ibis_utils.py must match
+export const currencyColumnName = (measure_name: string) => `${measure_name}__currency`
+
+// `undefined`: the measure names no column. `null`: the row mixes currencies.
+export function getRowCurrency(row: any, measure_name: string): string | null | undefined {
+	const key = currencyColumnName(measure_name)
+	return key in (row || {}) ? (row[key] ?? null) : undefined
+}
 
 // export const window_operation = (options: WindowOperationArgs): WindowOperation => ({
 // 	type: 'window_operation',
@@ -351,6 +363,18 @@ export const query_operation_types = {
 			return `${op.new_name}`
 		},
 	},
+	// No popover entry: the v2 migrator is the only writer.
+	sql_column: {
+		label: __('SQL column (from v2)'),
+		type: 'sql_column',
+		icon: ScrollText,
+		color: 'gray',
+		class: 'text-gray-600 bg-gray-100',
+		init: (args: SQLColumnArgs): SQLColumn => ({ type: 'sql_column', ...args }),
+		getDescription: (op: SQLColumn) => {
+			return `${op.new_name}`
+		},
+	},
 	summarize: {
 		label: __('Summarize'),
 		type: 'summarize',
@@ -445,6 +469,7 @@ export const cast = query_operation_types.cast.init
 export const filter = query_operation_types.filter.init
 export const filter_group = query_operation_types.filter_group.init
 export const mutate = query_operation_types.mutate.init
+export const sql_column = query_operation_types.sql_column.init
 export const summarize = query_operation_types.summarize.init
 export const pivot_wider = query_operation_types.pivot_wider.init
 export const order_by = query_operation_types.order_by.init

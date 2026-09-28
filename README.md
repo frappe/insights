@@ -175,13 +175,13 @@ To setup the repository locally follow the steps mentioned below:
 
 ## Compatibility Matrix
 
-| Insights Branch | Frappe Framework Version            | Node Version |
-|-----------------|-------------------------------------|--------------|
-| main            | version-14, version-15              | v18+         |
-| version-3       | version-14, version-15              | v18+         |
-| develop         | develop                             | v18+         |
+A [nightly workflow](.github/workflows/compat-matrix.yml) installs each branch and runs the test suite, on the Node and Python each Frappe branch supports. Pull requests into version-3 run it too. It verifies these combinations:
 
-> Note: Frappe v14 supports Node v14 and above, but Insights requires Node v18 and above. So, while using Insights with Frappe v14, please ensure that Node v18+ is installed.
+| Insights Branch | Frappe Framework       | Node   | Python     |
+|-----------------|------------------------|--------|------------|
+| main            | version-15             | 18     | 3.10       |
+| version-3       | version-15, version-16 | 18, 24 | 3.10, 3.14 |
+| develop         | develop                | 24     | 3.14       |
 
 ## Learn and connect
 

@@ -6,13 +6,19 @@ question, and their workbooks answer it.
 
 The table the stats answer for is the one the name identifies. `autoname` builds
 that name from the data source and the table, so the two cannot disagree.
+
+The import stats read `Insights Table Import Log`. A finished import writes the
+status "Completed", so that is the value the last-import filter has to name.
 """
 
 import frappe
-from frappe.utils import set_request
+from frappe.utils import add_days, now_datetime, set_request
 
 from insights.api import run_doc_method
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
+    get_table_name,
+    get_table_stats,
+)
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_test_workbook
 from insights.tests.permissions_utils import (
@@ -163,3 +169,107 @@ class TestStatsNameReadableQueriesOnlyWithTeamPermissions(
     StatsNameReadableQueriesOnly, InsightsIntegrationTestCase
 ):
     ENABLE_PERMISSIONS = 1
+
+
+IMPORT_DS = "Site DB"
+IMPORT_TABLE = "tabImportStatsTable"
+
+
+class TestStatsReportTheLastImport(InsightsIntegrationTestCase):
+    """The last-import stats come from the newest log the import finished.
+
+    The status a finished import writes is "Completed". A filter on any other
+    value matches nothing, and the panel reports an empty last import.
+    """
+
+    @classmethod
+    def before_class(cls):
+        cls.table = get_table_name(IMPORT_DS, IMPORT_TABLE)
+        if frappe.db.exists(DT.TABLE, cls.table):
+            frappe.delete_doc(DT.TABLE, cls.table, force=True)
+
+        doc = frappe.get_doc(
+            {
+                "doctype": DT.TABLE,
+                "data_source": IMPORT_DS,
+                "table": IMPORT_TABLE,
+                "label": IMPORT_TABLE,
+                "stored": 1,
+                "last_synced_on": now_datetime(),
+            }
+        )
+        doc.flags.ignore_links = True
+        doc.insert(ignore_permissions=True)
+
+    @classmethod
+    def after_class(cls):
+        frappe.db.delete("Insights Table Import Log", {"table_name": IMPORT_TABLE})
+        frappe.delete_doc(DT.TABLE, cls.table, force=True)
+
+    def before_test(self):
+        frappe.db.delete("Insights Table Import Log", {"table_name": IMPORT_TABLE})
+
+    def log_import(self, status, rows=0, seconds=0, days_ago=0):
+        log = frappe.get_doc(
+            {
+                "doctype": "Insights Table Import Log",
+                "data_source": IMPORT_DS,
+                "table_name": IMPORT_TABLE,
+                "status": status,
+                "rows_imported": rows,
+                "time_taken": seconds,
+            }
+        )
+        log.flags.ignore_links = True
+        log.insert(ignore_permissions=True)
+        if days_ago:
+            frappe.db.set_value(
+                "Insights Table Import Log",
+                log.name,
+                "creation",
+                add_days(now_datetime(), -days_ago),
+                update_modified=False,
+            )
+        return log
+
+    def stats(self):
+        return get_table_stats(IMPORT_DS, IMPORT_TABLE)
+
+    def test_a_completed_log_reports_its_rows_and_duration(self):
+        self.log_import("Completed", rows=1500, seconds=42)
+
+        stats = self.stats()
+        self.assertEqual(stats["last_import_rows"], 1500)
+        self.assertEqual(stats["last_import_duration"], 42)
+
+    def test_the_newest_completed_log_wins(self):
+        self.log_import("Completed", rows=100, seconds=5, days_ago=3)
+        self.log_import("Completed", rows=900, seconds=11)
+
+        stats = self.stats()
+        self.assertEqual(stats["last_import_rows"], 900)
+        self.assertEqual(stats["last_import_duration"], 11)
+
+    def test_a_later_failure_does_not_replace_the_last_import(self):
+        """The last import is the last one that finished, not the last attempt."""
+        self.log_import("Completed", rows=700, seconds=9, days_ago=1)
+        self.log_import("Failed", rows=0, seconds=2)
+
+        stats = self.stats()
+        self.assertEqual(stats["last_import_rows"], 700)
+        self.assertEqual(stats["last_import_duration"], 9)
+
+    def test_the_stats_count_every_attempt_and_the_failures(self):
+        self.log_import("Completed", rows=700, seconds=9, days_ago=1)
+        self.log_import("Failed", rows=0, seconds=2)
+
+        stats = self.stats()
+        self.assertEqual(stats["total_syncs"], 2)
+        self.assertEqual(stats["total_sync_time"], 11)
+        self.assertEqual(stats["failed_syncs"], 1)
+
+    def test_no_log_reports_an_empty_last_import(self):
+        stats = self.stats()
+        self.assertEqual(stats["last_import_rows"], 0)
+        self.assertEqual(stats["last_import_duration"], 0)
+        self.assertEqual(stats["total_syncs"], 0)

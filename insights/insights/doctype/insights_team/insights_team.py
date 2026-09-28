@@ -1,6 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from collections import Counter
+
 import frappe
 from frappe.core.doctype.role.role import get_users as get_users_with_role
 from frappe.model.document import Document
@@ -11,6 +13,15 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     exec_with_return,
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+from insights.telemetry import capture_share_granted
+
+# the resource types a team grant may name, and the `object` each reports as
+SHARED_OBJECT = {
+    "Insights Data Source v3": "data_source",
+    "Insights Table v3": "table",
+    "Insights Dashboard v3": "dashboard",
+    "Insights Chart v3": "chart",
+}
 
 
 class InsightsTeam(Document):
@@ -45,12 +56,7 @@ class InsightsTeam(Document):
                 frappe.throw("Admin team name cannot be changed")
 
         for d in self.team_permissions:
-            if d.resource_type not in [
-                "Insights Data Source v3",
-                "Insights Table v3",
-                "Insights Dashboard v3",
-                "Insights Chart v3",
-            ]:
+            if d.resource_type not in SHARED_OBJECT:
                 frappe.throw(f"Invalid resource type: {d.resource_type}")
 
     def on_trash(self):
@@ -61,6 +67,21 @@ class InsightsTeam(Document):
         clear_cache()
         if self.team_name == "Admin" and self.has_value_changed("team_members"):
             self.set_admin_roles()
+        self.capture_new_grants()
+
+    def capture_new_grants(self):
+        before = self.get_doc_before_save()
+        held_before = set()
+        if before:
+            held_before = {(d.resource_type, d.resource_name) for d in before.team_permissions}
+
+        granted = Counter(
+            d.resource_type
+            for d in self.team_permissions
+            if (d.resource_type, d.resource_name) not in held_before
+        )
+        for resource_type, count in granted.items():
+            capture_share_granted(SHARED_OBJECT[resource_type], "team", count)
 
     def prevent_admin_team_deletion(self):
         if self.team_name == "Admin":
@@ -261,9 +282,7 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 
 
 def check_table_permission(data_source, table, user=None, raise_error=True):
-    if not frappe.db.get_single_value("Insights Settings", "enable_permissions") or frappe.flags.get(
-        "insights_for_public_access"
-    ):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
         return True
 
     user = user or frappe.session.user
@@ -286,9 +305,7 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
 
 
 def get_table_restrictions(data_source, table, user=None):
-    if not frappe.db.get_single_value("Insights Settings", "enable_permissions") or frappe.flags.get(
-        "insights_for_public_access"
-    ):
+    if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
         return []
 
     user = user or frappe.session.user
@@ -309,8 +326,8 @@ def get_table_restrictions(data_source, table, user=None):
     return table_restrictions
 
 
-def apply_table_restrictions(table, data_source, table_name):
-    restrictions = get_table_restrictions(data_source, table_name)
+def apply_table_restrictions(table, data_source, table_name, user=None):
+    restrictions = get_table_restrictions(data_source, table_name, user=user)
     if not restrictions:
         return table
 

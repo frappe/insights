@@ -1,6 +1,18 @@
+import { ref } from 'vue'
 import useDocumentResource from '../helpers/resource'
 import { __ } from '../translation'
 import { createToast } from '../helpers/toasts'
+
+/** Shared, because a tab inside the dialog can ask the dialog to close - the
+ * migration tab routes to a workbook, which would otherwise open behind it. */
+export const showSettingsDialog = ref(false)
+
+/** Set with `showSettingsDialog` to open the dialog on a named tab. */
+export const settingsTab = ref('')
+
+/** Which surface asked for that tab, for telemetry. Set it beside `settingsTab`;
+ * the tab reads it once and clears it. Empty means the user found the tab. */
+export const settingsOpenedFrom = ref('')
 
 let settings = undefined as Settings | undefined
 export default function useSettings() {

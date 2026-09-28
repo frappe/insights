@@ -5,6 +5,7 @@ import frappe
 from frappe.model.document import Document
 
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
+from insights.telemetry import capture_share_granted
 from insights.utils import deep_convert_dict_to_dict
 
 
@@ -23,6 +24,7 @@ class InsightsChartv3(Document):
         folder: DF.Data | None
         is_public: DF.Check
         old_name: DF.Data | None
+        permission_user: DF.Link | None
         query: DF.Link | None
         sort_order: DF.Int
         title: DF.Data | None
@@ -43,6 +45,34 @@ class InsightsChartv3(Document):
         from insights.permissions import check_chart_query_access
 
         check_chart_query_access(self)
+
+    @frappe.whitelist()
+    def update_access(self, is_public: bool):
+        """Publish this chart, or withdraw it.
+
+        Publishing is a grant of the publisher's own read access to everyone
+        with the link, so it is the `share` permission and not `write`. The
+        publisher is recorded here because the public execution has no caller of
+        its own to filter rows by. `is_public` and `permission_user` are both
+        permlevel 1, so this method is the only way in.
+
+        The `query` link needs no check here. This writes neither link nor
+        content, and a caller who reached this method can read the chart, which
+        `_build_query_permission_query` already turns into read on its query.
+        """
+        if not frappe.has_permission("Insights Chart v3", ptype="share", doc=self.name):
+            frappe.throw(frappe._("You do not have permission to share this chart"), frappe.PermissionError)
+
+        is_public = bool(frappe.parse_json(is_public))
+        was_public = self.is_public
+        self.db_set(
+            {
+                "is_public": int(is_public),
+                "permission_user": frappe.session.user if is_public else None,
+            }
+        )
+        if is_public and not was_public:
+            capture_share_granted("chart", "public", 1)
 
     def before_save(self):
         self.set_data_query()

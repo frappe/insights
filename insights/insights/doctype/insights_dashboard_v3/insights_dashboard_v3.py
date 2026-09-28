@@ -10,9 +10,12 @@ from frappe.model.document import Document
 from frappe.query_builder import Interval
 from frappe.query_builder.functions import Now
 from frappe.utils.html_utils import sanitize_html
-from frappe.utils.telemetry import capture
 
+from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File
+
+# Which page the view came from, as `docs/telemetry.md` names them.
+VIEW_SURFACES = {"workbook", "shared", "dashboards"}
 
 
 class InsightsDashboardv3(Document):
@@ -32,6 +35,7 @@ class InsightsDashboardv3(Document):
         items: DF.JSON | None
         linked_charts: DF.TableMultiSelect[InsightsDashboardChartv3]
         old_name: DF.Data | None
+        permission_user: DF.Link | None
         preview_image: DF.Data | None
         share_link: DF.Data | None
         title: DF.Data | None
@@ -71,7 +75,7 @@ class InsightsDashboardv3(Document):
         check_dashboard_chart_access(self)
 
     @frappe.whitelist()
-    def track_view(self):
+    def track_view(self, surface: str | None = None):
         view_log = frappe.qb.DocType("View Log")
         last_viewed_recently = frappe.db.get_value(
             view_log,
@@ -85,6 +89,10 @@ class InsightsDashboardv3(Document):
         )
         if not last_viewed_recently:
             self.add_viewed(force=True)
+
+        if surface not in VIEW_SURFACES:
+            surface = "shared" if frappe.session.user == "Guest" else "workbook"
+        capture("dashboard_viewed", interval="1d", surface=surface)
 
     def get_valid_dict(self, *args, **kwargs):
         if isinstance(self.items, list):
@@ -299,12 +307,24 @@ class InsightsDashboardv3(Document):
             for share in org_shares:
                 frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
 
-        self.db_set("is_public", is_public)
+        was_public = self.is_public
 
-        if people_with_access:
-            capture("dashboard_shared_with_user", "insights")
-        if is_public:
-            capture("dashboard_set_public", "insights")
+        # a public execution has no caller of its own, so the rows it returns are
+        # filtered by whoever published the dashboard
+        self.db_set(
+            {
+                "is_public": is_public,
+                "permission_user": frappe.session.user if is_public else None,
+            }
+        )
+
+        newly_shared = set(people_with_access) - set(existing_share_users)
+        if newly_shared:
+            capture_share_granted("dashboard", "user", len(newly_shared))
+        if is_shared_with_organization and not org_shares:
+            capture_share_granted("dashboard", "org", 1)
+        if is_public and not was_public:
+            capture_share_granted("dashboard", "public", 1)
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:
@@ -374,10 +394,17 @@ def generate_preview_key(dashboard: str):
     The key names its dashboard, so a leaked key reads that dashboard and the
     charts and queries on it — the same documents the preview image itself
     shows — and nothing else.
+
+    It names its viewer too. The render arrives as Guest, so the rows it draws
+    are filtered by the user the key was cut for, and the image shows what that
+    user would see.
     """
     try:
         key = frappe.generate_hash()
-        frappe.cache.set_value(f"insights_preview_key:{key}", dashboard)
+        frappe.cache.set_value(
+            f"insights_preview_key:{key}",
+            {"dashboard": dashboard, "user": frappe.session.user},
+        )
         yield key
     finally:
         frappe.cache.delete_value(f"insights_preview_key:{key}")

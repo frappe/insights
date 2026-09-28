@@ -39,9 +39,7 @@ class TestSQLBuilder(unittest.TestCase):
     def test_joins(self):
         from sqlalchemy import column, select, table, text
 
-        todo = table(
-            "tabToDo", column("name"), column("allocated_to"), column("reference_name")
-        )
+        todo = table("tabToDo", column("name"), column("allocated_to"), column("reference_name"))
         user = table("tabUser", column("name"), column("full_name"))
         comment = table("tabComment", column("name"))
 
@@ -64,17 +62,17 @@ class TestSQLBuilder(unittest.TestCase):
         with patch(nowdate_path, return_value="2022-11-26"):
             assertions_map = {
                 "Current Day": ["2022-11-26", "2022-11-26"],
-                "Current Week": ["2022-11-20", "2022-11-26"],
+                "Current Week": ["2022-11-21", "2022-11-27"],
                 "Current Month": ["2022-11-01", "2022-11-30"],
                 "Current Quarter": ["2022-10-01", "2022-12-31"],
                 "Current Year": ["2022-01-01", "2022-12-31"],
                 "Last 1 Day": ["2022-11-25", "2022-11-25"],
-                "Last 1 Week": ["2022-11-13", "2022-11-19"],
+                "Last 1 Week": ["2022-11-14", "2022-11-20"],
                 "Last 1 Month": ["2022-10-01", "2022-10-31"],
                 "Last 1 Quarter": ["2022-07-01", "2022-09-30"],
                 "Last 1 Year": ["2021-01-01", "2021-12-31"],
                 "Next 1 Day": ["2022-11-27", "2022-11-27"],
-                "Next 1 Week": ["2022-11-27", "2022-12-03"],
+                "Next 1 Week": ["2022-11-28", "2022-12-04"],
                 "Next 1 Month": ["2022-12-01", "2022-12-31"],
                 "Next 1 Quarter": ["2023-01-01", "2023-03-31"],
                 "Next 1 Year": ["2023-01-01", "2023-12-31"],
@@ -85,17 +83,17 @@ class TestSQLBuilder(unittest.TestCase):
 
             assertions_with_include_current = {
                 "Current Day": ["2022-11-26", "2022-11-26"],
-                "Current Week": ["2022-11-20", "2022-11-26"],
+                "Current Week": ["2022-11-21", "2022-11-27"],
                 "Current Month": ["2022-11-01", "2022-11-30"],
                 "Current Quarter": ["2022-10-01", "2022-12-31"],
                 "Current Year": ["2022-01-01", "2022-12-31"],
                 "Last 1 Day": ["2022-11-25", "2022-11-26"],
-                "Last 1 Week": ["2022-11-13", "2022-11-26"],
+                "Last 1 Week": ["2022-11-14", "2022-11-27"],
                 "Last 1 Month": ["2022-10-01", "2022-11-30"],
                 "Last 1 Quarter": ["2022-07-01", "2022-12-31"],
                 "Last 1 Year": ["2021-01-01", "2022-12-31"],
                 "Next 1 Day": ["2022-11-26", "2022-11-27"],
-                "Next 1 Week": ["2022-11-20", "2022-12-03"],
+                "Next 1 Week": ["2022-11-21", "2022-12-04"],
                 "Next 1 Month": ["2022-11-01", "2022-12-31"],
                 "Next 1 Quarter": ["2022-10-01", "2023-03-31"],
                 "Next 1 Year": ["2022-01-01", "2023-12-31"],

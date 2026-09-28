@@ -4,6 +4,8 @@ import SidebarLink from './SidebarLink.vue'
 
 export type Tab = {
 	label: string
+	/** Stable handle for opening a tab from elsewhere, since `label` is translated. */
+	key?: string
 	component?: any
 	icon?: any
 }

@@ -19,12 +19,14 @@ export type ColumnMeasure = {
 	data_type: MeasureDataType
 	aggregation: AggregationType
 	format?: DataFormat
+	currency_column?: string
 }
 export type ExpressionMeasure = {
 	measure_name: string
 	expression: Expression
 	data_type: MeasureDataType
 	format?: DataFormat
+	currency_column?: string
 }
 export type MeasureOption = Measure & { label: string; value: string }
 export type Dimension = {
@@ -134,6 +136,14 @@ export type Union = { type: 'union' } & UnionArgs
 export type MutateArgs = { new_name: string; data_type: ColumnDataType; expression: Expression }
 export type Mutate = { type: 'mutate' } & MutateArgs
 
+export type SQLColumnArgs = {
+	new_name: string
+	data_type: ColumnDataType
+	raw_sql: string
+	data_source: string
+}
+export type SQLColumn = { type: 'sql_column' } & SQLColumnArgs
+
 export type SummarizeArgs = { measures: Measure[]; dimensions: Dimension[] }
 export type Summarize = { type: 'summarize' } & SummarizeArgs
 
@@ -181,6 +191,7 @@ export type Operation =
 	| Join
 	| Union
 	| Mutate
+	| SQLColumn
 	| Summarize
 	| OrderBy
 	| Limit
@@ -193,6 +204,7 @@ export type QueryResultRow = Record<string, any>
 export type QueryResultColumn = {
 	name: string
 	type: ColumnDataType
+	hidden?: boolean
 }
 
 export type DropdownOption = {

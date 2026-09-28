@@ -51,7 +51,7 @@ function onDrop(event: DragEvent) {
 	if (!dashboard.editing) {
 		dashboard.editing = true
 	}
-	dashboard.addChart([chart])
+	dashboard.addChart([chart], 'drag')
 }
 
 const showShareDialog = ref(false)

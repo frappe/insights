@@ -9,18 +9,25 @@ import frappe
 from insights.insights.doctype.insights_team.insights_team import is_admin
 
 
+def has_role(role, user=None):
+    """Whether `user` clears the gate `check_role(role)` keeps.
+
+    Exported so a caller that only wants the answer - a UI asking whether to
+    offer a button - reads the same rule the endpoint enforces.
+    """
+    user = user or frappe.session.user
+    if user == "Administrator":
+        return True
+    if role in frappe.get_roles(user):
+        return True
+    return role == "Insights User" and is_admin(user)
+
+
 def check_role(role):
     def decorator(function):
         @wraps(function)
         def wrapper(*args, **kwargs):
-            if frappe.session.user == "Administrator":
-                return function(*args, **kwargs)
-
-            has_required_role = role in frappe.get_roles(frappe.session.user)
-            if role == "Insights User" and is_admin(frappe.session.user):
-                has_required_role = True
-
-            if not has_required_role:
+            if not has_role(role):
                 frappe.throw(
                     frappe._("You do not have permission to access this resource"),
                     frappe.PermissionError,

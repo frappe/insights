@@ -96,7 +96,6 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
                 }
             ).insert()
             chart.query = self.owner_query
-            chart.is_public = 1
             with self.assertRaises(frappe.PermissionError):
                 chart.save()
 
@@ -136,8 +135,7 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
     def test_publishing_your_own_chart_still_works(self):
         with self.as_user(OWNER):
             chart = frappe.get_doc(DT.CHART, self.owner_chart)
-            chart.is_public = 1
-            chart.save()
+            chart.update_access(is_public=True)
             self.assertTrue(frappe.db.get_value(DT.CHART, chart.name, "is_public"))
 
     def test_publishing_your_own_dashboard_still_works(self):

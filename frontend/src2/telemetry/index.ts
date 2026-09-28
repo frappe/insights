@@ -4,6 +4,8 @@
 import { reactive, readonly, ref, type App } from 'vue'
 import type { Router, RouteLocationNormalized } from 'vue-router'
 
+import session from '../session'
+
 import {
   fetchBootConfig,
   loadPulseClient,
@@ -28,7 +30,13 @@ export function useTelemetry() {
     },
     capture: (event_name: string, data: Record<string, any> = {}) => {
       if (!isEnabled.value || !appName.value) return
-      client?.capture(event_name, appName.value, data)
+      // The properties `docs/telemetry.md` puts on every event. The backend reads
+      // them from the site. The browser reads them from `insights.api.get_site_info`.
+      client?.capture(event_name, appName.value, {
+        app_version: session.site.app_version,
+        entry: session.site.entry,
+        ...data,
+      })
     },
     getDistinctId: () => client?.getDistinctId?.() ?? '',
   })

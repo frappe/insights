@@ -8,7 +8,6 @@ from contextlib import contextmanager
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils.telemetry import capture
 from ibis import BaseBackend
 
 import insights
@@ -18,6 +17,8 @@ from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 imp
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
+from insights.insights.doctype.insights_table_v3.table_rename import rename_tables
+from insights.telemetry import capture, error_kind
 
 from .connectors.bigquery import get_bigquery_connection
 from .connectors.clickhouse import get_clickhouse_connection
@@ -37,6 +38,11 @@ from .connectors.sqlite import get_sqlite_connection
 
 class DataSourceConnectionError(frappe.ValidationError):
     pass
+
+
+def source_type(database_type: str | None, is_site_db: bool = False) -> str:
+    """The value `docs/telemetry.md` puts on a source's `type`."""
+    return "site_db" if is_site_db else (database_type or "unknown").lower()
 
 
 class InsightsDataSourceDocument:
@@ -82,7 +88,7 @@ class InsightsDataSourceDocument:
 
     def after_insert(self):
         if not self.is_site_db:
-            capture("data_source_created", "insights")
+            capture("data_source_created", type=self.source_type, ssl=bool(self.use_ssl))
 
     def on_update(self):
         if self.type == "REST API":
@@ -386,6 +392,18 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return schema, table
         return schemas[0], table_name
 
+    def table_identity(self, table_name: str) -> str:
+        """Name the remote table `table_name` points at, free of the spelling of the day.
+
+        `format_table_name` answers differently once the number of configured schemas
+        changes, so the stored name is a spelling, not an identity. Matching the remote
+        list against stored spellings makes one table look like two (frappe/insights#1371).
+        """
+        if self.database_type != "PostgreSQL":
+            return table_name
+        schema, table = self.split_table_name(table_name)
+        return f"{schema}.{table}"
+
     def get_table_list(self):
         db = self._get_ibis_backend()
 
@@ -412,26 +430,34 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         return db.list_tables(database=database_name)
 
+    @property
+    def source_type(self):
+        return source_type(self.database_type, self.is_site_db)
+
     @frappe.whitelist()
     def test_connection(self, raise_exception: bool | None = False):
+        """Reach the source once and report whether it answered.
+
+        Every test arrives here, the button and the save alike, so the outcome
+        is counted once. What the driver said stays here. Only the kind of
+        failure travels. The message and the host it names do not.
+        """
+        try:
+            self.attempt_connection()
+        except Exception as e:
+            capture("data_source_tested", type=self.source_type, ok=False, error_kind=error_kind(e))
+            if raise_exception:
+                raise e
+            return
+
+        capture("data_source_tested", type=self.source_type, ok=True)
+        return True
+
+    def attempt_connection(self):
         if self.type == "REST API":
-            return self.test_api_connection(raise_exception)
-
-        try:
+            self.get_api_client().test_connection()
+        else:
             self.get_table_list()
-            return True
-        except Exception as e:
-            if raise_exception:
-                raise e
-
-    def test_api_connection(self, raise_exception: bool | None = False):
-        client = self.get_api_client()
-        try:
-            client.test_connection()
-            return True
-        except Exception as e:
-            if raise_exception:
-                raise e
 
     def get_api_client(self):
         if self.type != "REST API":
@@ -455,21 +481,47 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 "Insights Table v3",
                 {"data_source": self.name},
             )
-
-        new_tables = set(remote_tables)
-        if not force:
-            existing_tables = frappe.get_all(
-                "Insights Table v3",
-                {"data_source": self.name},
-                pluck="table",
-            )
-            new_tables = set(remote_tables) - set(existing_tables)
-
-        if not new_tables:
+            InsightsTablev3.bulk_create(self.name, list(set(remote_tables)))
+            self.update_table_links(force)
             return
 
+        new_tables, renames = self.reconcile_table_names(remote_tables)
+        if not new_tables and not renames:
+            return
+
+        rename_tables(self.name, renames)
         InsightsTablev3.bulk_create(self.name, list(new_tables))
         self.update_table_links(force)
+
+    def reconcile_table_names(self, remote_tables: list[str]) -> tuple[set[str], dict[str, str]]:
+        """Split the remote list into tables to create and stored names to re-spell.
+
+        A record already exists for a remote table whenever some stored name has the same
+        `table_identity`. That name may not be the one `get_table_list` reports today, so
+        the record is renamed. A second record would import the same table a second time.
+        """
+        stored_names = frappe.get_all(
+            "Insights Table v3",
+            {"data_source": self.name},
+            pluck="table",
+        )
+
+        stored_by_identity = {}
+        for name in stored_names:
+            stored_by_identity.setdefault(self.table_identity(name), []).append(name)
+
+        new_tables = set()
+        renames = {}
+        for remote in set(remote_tables):
+            matches = stored_by_identity.get(self.table_identity(remote))
+            if not matches:
+                new_tables.add(remote)
+                continue
+            for stored in matches:
+                if stored != remote:
+                    renames[stored] = remote
+
+        return new_tables, renames
 
     def update_table_links(self, force=False):
         links = []

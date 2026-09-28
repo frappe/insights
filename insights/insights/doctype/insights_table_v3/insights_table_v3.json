@@ -10,6 +10,8 @@
   "column_break_3",
   "data_source",
   "last_synced_on",
+  "estimated_row_count",
+  "estimated_on",
   "row_limit",
   "stored",
   "sync_section",
@@ -56,6 +58,19 @@
    "fieldname": "last_synced_on",
    "fieldtype": "Datetime",
    "label": "Last Synced On",
+   "read_only": 1
+  },
+  {
+   "description": "Catalog estimate, written by the daily telemetry scan",
+   "fieldname": "estimated_row_count",
+   "fieldtype": "Int",
+   "label": "Estimated Row Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "estimated_on",
+   "fieldtype": "Datetime",
+   "label": "Estimated On",
    "read_only": 1
   },
   {
@@ -138,7 +153,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-17 11:46:50.112615",
+ "modified": "2026-09-16 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",

@@ -30,6 +30,31 @@
 					},
 					{
 						"type": "join",
+						"join_type": "left",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabCompany"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "default_currency"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "company"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
+						"type": "join",
 						"join_type": "inner",
 						"table": {
 							"type": "table",
@@ -67,7 +92,8 @@
 							"company",
 							"actual_qty",
 							"valuation_rate",
-							"stock_value"
+							"stock_value",
+							"default_currency"
 						]
 					}
 				]
@@ -106,6 +132,31 @@
 						]
 					},
 					{
+						"type": "join",
+						"join_type": "left",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabCompany"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "default_currency"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "company"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
 						"type": "mutate",
 						"new_name": "incoming_value",
 						"data_type": "Decimal",
@@ -134,7 +185,8 @@
 							"actual_qty",
 							"stock_value_difference",
 							"incoming_value",
-							"outgoing_value"
+							"outgoing_value",
+							"default_currency"
 						]
 					}
 				]
@@ -213,6 +265,31 @@
 					},
 					{
 						"type": "join",
+						"join_type": "left",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabCompany"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "default_currency"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "company"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
+						"type": "join",
 						"join_type": "inner",
 						"table": {
 							"type": "query",
@@ -264,7 +341,8 @@
 							"stock_value",
 							"last_movement_date",
 							"days_since_movement",
-							"ageing_bucket"
+							"ageing_bucket",
+							"default_currency"
 						]
 					}
 				]
@@ -361,7 +439,8 @@
 							"column_name": "stock_value",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						}
 					],
 					"number_column_options": [
@@ -389,7 +468,8 @@
 							"column_name": "stock_value_difference",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						}
 					],
 					"number_column_options": [
@@ -444,7 +524,8 @@
 							"column_name": "stock_value",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						}
 					],
 					"number_column_options": [
@@ -718,7 +799,8 @@
 							"column_name": "stock_value",
 							"data_type": "Decimal",
 							"aggregation": "sum",
-							"format": "currency"
+							"format": "currency",
+							"currency_column": "default_currency"
 						},
 						{
 							"measure_name": "days_since_movement",

@@ -1,15 +1,16 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import json
 import os
 
 import frappe
 from frappe.defaults import get_user_default, set_user_default
 from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
-from frappe.utils import cint
 
-from insights.api.shared import is_public
+import insights
+from insights.api.shared import get_public_permission_user, is_public
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
@@ -20,7 +21,9 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
 from insights.insights.doctype.insights_team.insights_team import (
     check_data_source_permission,
 )
-from insights.utils import get_owned_file
+from insights.permission_user import permission_user
+from insights.telemetry import get_entry
+from insights.utils import get_currency_symbols, get_owned_file
 
 
 @insights_whitelist()
@@ -28,39 +31,65 @@ def get_app_version():
     return frappe.get_attr("insights" + ".__version__")
 
 
-@frappe.whitelist(allow_guest=True, methods=["GET"])
+@insights_whitelist(role="Insights Admin")
+def get_security_update():
+    """The Insights release with security fixes that the framework's weekly update check found."""
+    from frappe.utils.frappecloud import on_frappecloud
+
+    if frappe.get_system_settings("disable_system_update_notification"):
+        return
+
+    current_version = frappe.get_attr("insights.__version__")
+    updates = json.loads(frappe.cache.get_value("changelog-update-info") or "{}")
+    for app in (app for apps in updates.values() for app in apps):
+        # the issue count describes the version the weekly check ran on, which the site may have left;
+        # a framework before v15.26 cached no count
+        if (
+            app.get("app_name") == "insights"
+            and app.get("current_version") == current_version
+            and app.get("security_issues")
+        ):
+            return {
+                "current_version": current_version,
+                "available_version": app["available_version"],
+                "security_issues": app["security_issues"],
+                "advisories_url": f"https://github.com/{app['org_name']}/insights/security/advisories",
+                "frappe_cloud_url": f"https://frappecloud.com/dashboard/sites/{frappe.local.site}"
+                if on_frappecloud()
+                else None,
+            }
+
+
+@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's display
+# currency, which a public dashboard already prints
 def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
-    dashboard needs them to print an amount the way the workbook does, and they
-    say nothing a public dashboard does not already show."""
-    return get_currency_info()
+    dashboard needs them to print an amount the way the workbook does."""
+    return {
+        # the two properties `docs/telemetry.md` puts on every event. The browser
+        # has no other way to read them, and only a signed-in one ever sends one
+        **(
+            {"app_version": insights.__version__, "entry": get_entry()}
+            if frappe.session.user != "Guest"
+            else {}
+        ),
+        **get_currency_info(),
+    }
 
 
 def get_currency_info():
-    """The site's display currency, as the client needs it to print an amount.
+    """The site's currency: the code a measure that names no column prints in.
+
+    Its symbol is the one entry the client starts with.
 
     The `currency` global default covers a site with ERPNext and one without:
     ERPNext's Global Defaults writes `default_currency` into it, and plain Frappe
-    writes `System Settings.currency` into it. `hide_currency_symbol` empties the
-    symbol, which is how a site says amounts print bare.
+    writes `System Settings.currency` into it.
     """
     # System Settings writes the default only when the field changes, so read the
     # field too — a site installed with a currency has never "changed" it
     currency = frappe.db.get_default("currency") or frappe.db.get_single_value("System Settings", "currency")
-    if not currency:
-        return {"currency": None, "currency_symbol": "", "currency_symbol_on_right": False}
-
-    hidden = cint(frappe.defaults.get_global_default("hide_currency_symbol"))
-    symbol, on_right = frappe.db.get_value("Currency", currency, ["symbol", "symbol_on_right"]) or (
-        None,
-        None,
-    )
-    return {
-        "currency": currency,
-        # a currency with no symbol of its own prints as its code, the way fmt_money does
-        "currency_symbol": "" if hidden else (symbol or currency),
-        "currency_symbol_on_right": bool(on_right),
-    }
+    return {"currency": currency or None, "currency_symbols": get_currency_symbols([currency])}
 
 
 @insights_whitelist()
@@ -92,7 +121,9 @@ def get_user_info():
         "country": frappe.db.get_single_value("System Settings", "country"),
         "locale": locale,
         "is_v2_instance": frappe.db.count("Insights Query") > 0,
-        "default_version": get_user_default("insights_default_version", frappe.session.user),
+        # "" and not None: the value goes straight back to `update_default_version`,
+        # which is typed `str` and rejects a null for a user who never chose one.
+        "default_version": get_user_default("insights_default_version", frappe.session.user) or "",
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
         "fiscal_year_start": frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
@@ -224,7 +255,12 @@ def get_doc(doctype: str, name: str | int):
     except frappe.PermissionError:
         if not is_public(doctype, name):
             raise
-        return frappe.get_doc(doctype, name).as_dict()
+        doc = frappe.get_doc(doctype, name)
+        # the framework's own read path drops permlevel fields, and this branch
+        # goes around it. `permission_user` names a real person, so a public
+        # document must not carry it out to the internet.
+        doc.apply_fieldlevel_read_permissions()
+        return doc.as_dict()
 
 
 def _execute_doc_method(doc, method: str, args: dict | None = None, ignore_permissions=False):
@@ -283,14 +319,13 @@ def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
         if not is_public_method(doctype, method):
             raise frappe.PermissionError("You don't have permission to access this method")
 
+        # the caller is a Guest with no permissions of its own, so the rows come
+        # back filtered by the user the publisher recorded - not unfiltered.
         doc = frappe.get_doc(doctype, name)
-        frappe.flags.insights_for_public_access = True
-        try:
+        with permission_user(get_public_permission_user(doctype, name)):
             return _execute_doc_method(
                 doc, method, public_method_args(doctype, method, args), ignore_permissions=True
             )
-        finally:
-            frappe.flags.insights_for_public_access = False
 
 
 # A public execution runs what the publisher published, so the public surface is
@@ -307,7 +342,7 @@ PUBLIC_METHOD_ARGS = {
         "search_term",
         "adhoc_filters",
     },
-    ("Insights Dashboard v3", "track_view"): set(),
+    ("Insights Dashboard v3", "track_view"): {"surface"},
 }
 
 

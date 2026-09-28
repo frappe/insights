@@ -139,12 +139,15 @@ class TableImportJobRun:
         self.rows_written = 0
         self.last_log_time = None
         self._table_writer: TableWriter | None = None
+        self.job_state: JobState | None = None
 
     def execute(self):
         try:
             self._prepare_execution()
             self._run_script()
             self._commit_table()
+            # The cursor moves only after the rows it points past are stored.
+            self.job_state.save()
             self._mark_success()
         except Exception as e:
             self._rollback_table()
@@ -172,6 +175,7 @@ class TableImportJobRun:
 
         # Create the table writer for writing data
         self._table_writer = TableWriter(self)
+        self.job_state = JobState(self.job)
 
         self._log("Execution started")
 
@@ -192,7 +196,7 @@ class TableImportJobRun:
         _globals = {
             "client": self.data_source.get_api_client(),
             "table": table_interface,
-            "state": JobState(self.job),
+            "state": self.job_state,
             "secrets": JobSecrets(self.job),
             "log": self._log,
             "pandas": frappe._dict(
@@ -251,7 +255,8 @@ class TableImportJobRun:
         self.job.db_set(
             {
                 "last_run": now(),
-                "last_status": "Success",
+                # An empty response and an empty day look the same from here.
+                "last_status": "Success" if self.rows_written else "Success (No Rows)",
                 "last_log": self.log.name,
             },
             commit=True,
@@ -422,6 +427,13 @@ class TableWriter:
 
 
 class JobState:
+    """What the script carries between runs — usually the cursor its next run starts from.
+
+    Buffered in memory, written by `save()` on the success path only. A `db_set`
+    here lands inside the open transaction and the next log line commits it, so
+    a failed DuckDB commit used to leave the cursor past rows nothing wrote.
+    """
+
     def __init__(self, job: InsightsTableImportJob):
         self._job = job
         self._state = self._load_state()
@@ -434,7 +446,7 @@ class JobState:
             frappe.log_error(title=f"Invalid state JSON for job {self._job.name}")
             return {}
 
-    def _save_state(self):
+    def save(self):
         self._job.db_set("state", dump(self._state))
 
     def get(self, key: str, default=None):
@@ -442,16 +454,12 @@ class JobState:
 
     def set(self, key: str, value):
         self._state[key] = value
-        self._save_state()
 
     def delete(self, key: str):
-        if key in self._state:
-            del self._state[key]
-            self._save_state()
+        self._state.pop(key, None)
 
     def clear(self):
         self._state = {}
-        self._save_state()
 
 
 class JobSecrets:
