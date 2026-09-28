@@ -1,6 +1,6 @@
 import { DonutChart } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
-import { donutChart, type DonutChartSpec } from './fixtures'
+import { donutChart, loadedComponent, type DonutChartSpec } from './fixtures'
 import { adaptChart } from './index'
 
 // Props, never an echarts option: what the ring is rendered from is v2's concern.
@@ -15,13 +15,13 @@ const propsOf = (spec: DonutChartSpec) => adapt(spec).props
 
 describe('a donut', () => {
 	// @feature charts.type-donut
-	it('names the column the segments are read from and the one they are sized by', () => {
+	it('names the column the segments are read from and the one they are sized by', async () => {
 		const { component, props } = adapt({
 			title: 'Revenue share',
 			category: 'category',
 			measure: 'revenue',
 		})
-		expect(component).toBe(DonutChart)
+		expect(await loadedComponent(component)).toBe(DonutChart)
 		expect(props.title).toBe('Revenue share')
 		expect(props.category).toBe('category')
 		expect(props.value).toBe('revenue')

@@ -1,10 +1,12 @@
+import { defineAsyncComponent } from 'vue'
 import { toTitleCase } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants'
 import type { MapChartConfig } from '../../types/chart.types'
 import type { QueryResultRow } from '../../types/query.types'
-import MapChart from '../components/MapChart.vue'
 import { numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
+
+const MapChart = defineAsyncComponent(() => import('../components/MapChart.vue'))
 
 // Map is filler 2: Insights renders the plot, on v2's `useChart` and inside v2's
 // chrome. What keeps it out of the library is the geography layer — a GeoJSON

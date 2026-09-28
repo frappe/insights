@@ -1,4 +1,4 @@
-import { ScatterChart } from 'frappe-ui/charts'
+import { defineAsyncComponent } from 'vue'
 import type {
 	ReferenceLine as PlotReferenceLine,
 	ScatterChartProps,
@@ -7,6 +7,10 @@ import type {
 import type { BubbleChartConfig } from '../../types/chart.types'
 import { numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
+
+const ScatterChart = defineAsyncComponent(() =>
+	import('frappe-ui/charts').then((m) => m.ScatterChart),
+)
 
 export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefined {
 	const config = input.config as BubbleChartConfig

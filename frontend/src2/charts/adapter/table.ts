@@ -1,4 +1,4 @@
-import type { InjectionKey, Ref } from 'vue'
+import { defineAsyncComponent, type InjectionKey, type Ref } from 'vue'
 import { column, rawRowOf } from '../../query/helpers'
 import type { FormatGroupArgs } from '../../query/components/formatting_utils'
 import type { NumberFormat, TableChartConfig } from '../../types/chart.types'
@@ -12,8 +12,9 @@ import type {
 	SortDirection,
 	SortOrder,
 } from '../../types/query.types'
-import TableChart from '../components/TableChart.vue'
 import type { ChartAdapterInput, ChartFiller, ResultDownload, ResultPage } from './types'
+
+const TableChart = defineAsyncComponent(() => import('../components/TableChart.vue'))
 
 // Table is filler 3: no plot at all. A table maps no value to a visual
 // property, so v2's scope rule keeps it out of the library and Insights renders

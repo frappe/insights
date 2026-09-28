@@ -1,6 +1,6 @@
 import { HeatmapChart } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
-import { heatmapChart, type HeatmapChartSpec } from './fixtures'
+import { heatmapChart, loadedComponent, type HeatmapChartSpec } from './fixtures'
 import { adaptChart } from './index'
 
 function adapt(spec: HeatmapChartSpec) {
@@ -11,7 +11,7 @@ function adapt(spec: HeatmapChartSpec) {
 
 describe('a heatmap', () => {
 	// @feature charts.type-heatmap
-	it('names the two columns the grid is cut by, and what colors a cell', () => {
+	it('names the two columns the grid is cut by, and what colors a cell', async () => {
 		const input = heatmapChart({
 			title: 'Orders by day and hour',
 			x: 'day',
@@ -20,7 +20,7 @@ describe('a heatmap', () => {
 		})
 		const { component, props } = adaptChart(input)!
 
-		expect(component).toBe(HeatmapChart)
+		expect(await loadedComponent(component)).toBe(HeatmapChart)
 		expect(props.title).toBe('Orders by day and hour')
 		expect(props.x).toBe('day')
 		expect(props.y).toBe('hour')
