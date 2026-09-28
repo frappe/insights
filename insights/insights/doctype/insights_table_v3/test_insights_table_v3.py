@@ -75,3 +75,21 @@ class TestUserPermissionColumns(FrappeTestCase):
             table_module.get_permitted_columns_for_table = original
 
         self.assertEqual(list(result.columns), ["name", "secret"])
+
+
+class TestPermissionHookFailure(FrappeTestCase):
+    # @feature permissions.site-user-permissions
+    def test_failing_permission_hook_refuses_with_the_table(self):
+        # a permission hook that fails, such as File's on a site with a leftover
+        # DocPerm row for a removed doctype, leaves no row filter to apply
+        from unittest.mock import patch
+
+        from insights.exceptions import QueryRefused
+
+        missing = frappe.DoesNotExistError("DocType CRM Lead not found")
+        with patch("frappe.get_list", side_effect=missing):
+            with self.assertRaises(QueryRefused) as refusal:
+                table_module.get_permission_query("File", user="Administrator")
+
+        self.assertIn("File", str(refusal.exception))
+        self.assertIn("CRM Lead", str(refusal.exception))

@@ -14,6 +14,7 @@ from ibis import Table
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
+from insights.exceptions import QueryRefused
 from insights.permission_user import get_permission_user
 from insights.utils import InsightsDataSourcev3
 
@@ -469,8 +470,18 @@ def get_permission_query(doctype, parent_doctype=None, user=None):
     # Used purely as a row filter (semi_join on `name`), so we only need `name` plus the
     # permission WHERE/match conditions. Column-level (permlevel) restrictions are applied
     # separately via apply_column_permissions().
-    return str(
-        frappe.get_list(
+    return str(permitted_list_query(doctype, parent_doctype, user))
+
+
+def permitted_list_query(doctype, parent_doctype, user):
+    """Frappe's list query for `doctype`, which runs the site's permission hooks.
+
+    A hook that fails leaves no row filter, so the run is refused. Frappe's own
+    error names whatever the hook tripped on, which reads as a permission error
+    on an unrelated doctype, so the refusal names the table as well.
+    """
+    try:
+        return frappe.get_list(
             doctype,
             fields=["name"],
             order_by=None,
@@ -478,7 +489,14 @@ def get_permission_query(doctype, parent_doctype=None, user=None):
             user=user,
             run=False,
         )
-    )
+    except frappe.PermissionError:
+        raise
+    except Exception as e:
+        frappe.clear_last_message()
+        frappe.throw(
+            frappe._("Could not apply permissions on {0}: {1}").format(doctype, e),
+            QueryRefused,
+        )
 
 
 def get_parents(child_doctype):
