@@ -34,6 +34,26 @@ await buildIslands({
 		// bundle a second 40 kB client and a second connection with it.
 		/^socket\.io-client$/,
 	],
+	plugins: [requireImportedComponents()],
 	production: process.argv.includes('--production'),
 	watch: process.argv.includes('--watch'),
 })
+
+// The SPA registers frappe-ui components globally and an island does not. A
+// template tag with no import works in the SPA and renders nothing on a desk
+// page. Vue compiles such a tag to `resolveComponent`, so the build fails on it.
+function requireImportedComponents() {
+	return {
+		name: 'insights-require-imported-components',
+		moduleParsed({ id, code }) {
+			if (!/\/src2\/[^?]*\.vue(\?|$)/.test(id) || !code) return
+			const tags = [...code.matchAll(/resolveComponent\("([^"]+)"/g)].map((m) => m[1])
+			if (tags.length)
+				this.error(
+					`${id.split('?')[0]} renders ${tags.join(
+						', ',
+					)} without importing it. Islands register no global components.`,
+				)
+		},
+	}
+}
