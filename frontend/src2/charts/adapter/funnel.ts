@@ -1,9 +1,13 @@
-import { FunnelChart } from 'frappe-ui/charts'
+import { defineAsyncComponent } from 'vue'
 import type { FunnelChartProps, FunnelStageEvent } from 'frappe-ui/charts'
 import type { FunnelChartConfig } from '../../types/chart.types'
 import type { Measure, QueryResultRow } from '../../types/query.types'
 import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
+
+const FunnelChart = defineAsyncComponent(() =>
+	import('frappe-ui/charts').then((m) => m.FunnelChart),
+)
 
 // A funnel is stored in two shapes and v2 reads one: a stage column and a value
 // column, one row per stage. The grouped shape is already that. The Measures

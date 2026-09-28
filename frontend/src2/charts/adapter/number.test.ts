@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { emptyResult } from '../../query/helpers'
 import { ROW_HEIGHT } from '../../dashboard/grid_placement'
 import type { NumberChartConfig } from '../../types/chart.types'
-import { numberChart, type NumberChartSpec } from './fixtures'
+import { numberChart, loadedComponent, type NumberChartSpec } from './fixtures'
 import { defaultComparisonLabel, numberCardRows } from './number'
 import { adaptChart, rendersOwnCards } from './index'
 import NumberCards from '../components/NumberCards.vue'
@@ -29,7 +29,7 @@ const revenue = { name: 'Revenue', readings: [12300] }
 
 describe('a Number Chart with several values', () => {
 	// @feature charts.type-number
-	it('previews every reading, one card behind each of them', () => {
+	it('previews every reading, one card behind each of them', async () => {
 		// What the workbook editor renders: the chart states three readings, so all
 		// three stand side by side. It renders no chrome — the card around it is the
 		// one every other chart type gets.
@@ -41,7 +41,7 @@ describe('a Number Chart with several values', () => {
 			],
 		})
 
-		expect(component).toBe(NumberCards)
+		expect(await loadedComponent(component)).toBe(NumberCards)
 		expect(props.cards.map((card: any) => card.title)).toEqual(['Revenue', 'Profit', 'Items'])
 		expect(props.cards.map((card: any) => card.value)).toEqual([100, 40, 7])
 	})

@@ -1,7 +1,6 @@
 import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
 import { debounce, isEqual } from 'es-toolkit'
-import { toPng } from 'html-to-image'
 import { call, toast } from 'frappe-ui'
 import type { Socket } from 'socket.io-client'
 import {
@@ -174,18 +173,21 @@ export function showErrorToast(err: Error, raise = true) {
 }
 
 export function downloadImage(element: HTMLElement, filename: string, scale = 2, options = {}) {
-	return toPng(element, {
-		width: element.scrollWidth,
-		height: element.scrollHeight,
-		pixelRatio: scale,
-		backgroundColor: 'white',
-		style: {
-			width: `${element.scrollWidth}px`,
-			height: `${element.scrollHeight}px`,
-			overflow: 'visible',
-		},
-		...options,
-	})
+	return import('html-to-image')
+		.then(({ toPng }) =>
+			toPng(element, {
+				width: element.scrollWidth,
+				height: element.scrollHeight,
+				pixelRatio: scale,
+				backgroundColor: 'white',
+				style: {
+					width: `${element.scrollWidth}px`,
+					height: `${element.scrollHeight}px`,
+					overflow: 'visible',
+				},
+				...options,
+			}),
+		)
 		.then((dataUrl) => {
 			const link = document.createElement('a')
 			link.download = filename

@@ -8,6 +8,7 @@ import {
 	mapChart,
 	sankeyChart,
 	tableChart,
+	loadedComponent,
 } from './fixtures'
 import { adaptChart } from './index'
 import type { ChartAdapterInput } from './types'
@@ -30,7 +31,7 @@ const drillable: Array<[string, ChartAdapterInput]> = [
 
 describe.each(drillable)('the %s chart', (_type, input) => {
 	// @feature charts.drill-segment
-	it('names an event its component declares', () => {
+	it('names an event its component declares', async () => {
 		const filler = adaptChart(input)
 		if (!filler) throw new Error('the adapter rendered nothing for this Chart')
 		// every chart listed here is drillable, so a missing block is the failure
@@ -40,7 +41,7 @@ describe.each(drillable)('the %s chart', (_type, input) => {
 		// `<script setup>` compiles `defineEmits` down to this, for a frappe-ui
 		// chart and an Insights one alike. A component declaring none has nothing
 		// to check against, which fails here rather than passing on an empty list.
-		const declared = (filler.component as { emits?: string[] }).emits
+		const declared = ((await loadedComponent(filler.component)) as { emits?: string[] }).emits
 
 		expect(declared).toEqual(expect.arrayContaining(Object.keys(filler.drillDown!)))
 	})

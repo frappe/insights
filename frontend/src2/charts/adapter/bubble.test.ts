@@ -1,6 +1,6 @@
 import { ScatterChart } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
-import { bubbleChart, type BubbleChartSpec } from './fixtures'
+import { bubbleChart, loadedComponent, type BubbleChartSpec } from './fixtures'
 import { adaptChart } from './index'
 
 function adapt(spec: BubbleChartSpec) {
@@ -13,7 +13,7 @@ const propsOf = (spec: BubbleChartSpec) => adapt(spec).props
 
 describe('a bubble chart', () => {
 	// @feature charts.type-bubble charts.bubble-size-name-color
-	it('reads one Measure against another, sized and named by two more columns', () => {
+	it('reads one Measure against another, sized and named by two more columns', async () => {
 		const input = bubbleChart({
 			title: 'Revenue vs profit',
 			x: 'revenue',
@@ -24,7 +24,7 @@ describe('a bubble chart', () => {
 		})
 		const { component, props } = adaptChart(input)!
 
-		expect(component).toBe(ScatterChart)
+		expect(await loadedComponent(component)).toBe(ScatterChart)
 		expect(props.title).toBe('Revenue vs profit')
 		expect(props.x).toBe('revenue')
 		expect(props.y).toBe('profit')

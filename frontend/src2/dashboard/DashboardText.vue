@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DOMPurify from 'dompurify'
+import { Dialog } from 'frappe-ui'
 import { computed, defineAsyncComponent, inject, ref, shallowRef, unref, watch } from 'vue'
 import { WorkbookDashboardText } from '../types/workbook.types'
 import { Dashboard } from './dashboard'

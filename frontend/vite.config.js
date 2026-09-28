@@ -104,11 +104,6 @@ export default defineConfig({
 			input: {
 				main: path.resolve(__dirname, 'index.html'),
 			},
-			output: {
-				manualChunks: {
-					'frappe-ui': ['frappe-ui'],
-				},
-			},
 		},
 	},
 	optimizeDeps: {

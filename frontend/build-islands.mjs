@@ -16,10 +16,10 @@ await buildIslands({
 
 	// The SPA's plugin. Without it the Number grid's `@xl:` columns compile to nothing.
 	tailwindPlugins: ['@tailwindcss/container-queries'],
-	// Set just above the current build. An island that renders the full dashboard
-	// bundles its own Vue, frappe-ui, the chart library and the app's stylesheet,
-	// about 1.72 MB.
-	budget: 1800 * 1024,
+	// Set just above the current build. It counts raw JS plus raw CSS. The
+	// dashboard island bundles its own Vue, frappe-ui, the chart library and the
+	// app's stylesheet, about 1.59 MB.
+	budget: 1650 * 1024,
 	// The budget catches these imports late and only by size. Each one pulls in
 	// something a reader cannot use: routed pages, the builder's stores, or a
 	// resource load that needs a role. They are checked after vite removes types,
@@ -34,6 +34,26 @@ await buildIslands({
 		// bundle a second 40 kB client and a second connection with it.
 		/^socket\.io-client$/,
 	],
+	plugins: [requireImportedComponents()],
 	production: process.argv.includes('--production'),
 	watch: process.argv.includes('--watch'),
 })
+
+// The SPA registers frappe-ui components globally and an island does not. A
+// template tag with no import works in the SPA and renders nothing on a desk
+// page. Vue compiles such a tag to `resolveComponent`, so the build fails on it.
+function requireImportedComponents() {
+	return {
+		name: 'insights-require-imported-components',
+		moduleParsed({ id, code }) {
+			if (!/\/src2\/[^?]*\.vue(\?|$)/.test(id) || !code) return
+			const tags = [...code.matchAll(/resolveComponent\("([^"]+)"/g)].map((m) => m[1])
+			if (tags.length)
+				this.error(
+					`${id.split('?')[0]} renders ${tags.join(
+						', ',
+					)} without importing it. Islands register no global components.`,
+				)
+		},
+	}
+}

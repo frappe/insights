@@ -1,6 +1,6 @@
 import { FunnelChart } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
-import { funnelChart, type FunnelChartSpec } from './fixtures'
+import { funnelChart, loadedComponent, type FunnelChartSpec } from './fixtures'
 import { adaptChart } from './index'
 
 function adapt(spec: FunnelChartSpec) {
@@ -19,7 +19,7 @@ const lifecycle = [
 
 describe('a funnel built from one row per stage', () => {
 	// @feature charts.type-funnel
-	it('names the stage column and the value column, and hands the rows over', () => {
+	it('names the stage column and the value column, and hands the rows over', async () => {
 		const input = funnelChart({
 			title: 'Order lifecycle',
 			dimension: 'status',
@@ -28,7 +28,7 @@ describe('a funnel built from one row per stage', () => {
 		})
 		const { component, props } = adaptChart(input)!
 
-		expect(component).toBe(FunnelChart)
+		expect(await loadedComponent(component)).toBe(FunnelChart)
 		expect(props.title).toBe('Order lifecycle')
 		expect(props.category).toBe('status')
 		expect(props.value).toBe('items')

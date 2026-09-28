@@ -1,6 +1,6 @@
 import { SankeyChart } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
-import { sankeyChart, type SankeyChartSpec } from './fixtures'
+import { sankeyChart, loadedComponent, type SankeyChartSpec } from './fixtures'
 import { adaptChart } from './index'
 
 function adapt(spec: SankeyChartSpec) {
@@ -11,7 +11,7 @@ function adapt(spec: SankeyChartSpec) {
 
 describe('a sankey', () => {
 	// @feature charts.type-sankey
-	it('names the node a flow leaves, the one it arrives at, and what runs along it', () => {
+	it('names the node a flow leaves, the one it arrives at, and what runs along it', async () => {
 		const input = sankeyChart({
 			title: 'Traffic to category',
 			source: 'traffic_source',
@@ -20,7 +20,7 @@ describe('a sankey', () => {
 		})
 		const { component, props } = adaptChart(input)!
 
-		expect(component).toBe(SankeyChart)
+		expect(await loadedComponent(component)).toBe(SankeyChart)
 		expect(props.title).toBe('Traffic to category')
 		expect(props.source).toBe('traffic_source')
 		expect(props.target).toBe('category')

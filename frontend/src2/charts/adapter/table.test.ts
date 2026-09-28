@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import TableChart from '../components/TableChart.vue'
-import { tableChart, type TableChartSpec } from './fixtures'
+import { tableChart, loadedComponent, type TableChartSpec } from './fixtures'
 import { adaptChart } from './index'
 import type { ChartAdapterInput } from './types'
 
@@ -17,11 +17,11 @@ const propsOf = (spec: TableChartSpec) => adapt(tableChart(spec)).props
 
 describe('the grid', () => {
 	// @feature charts.type-table
-	it('renders the result as it stands, formatted for reading', () => {
+	it('renders the result as it stands, formatted for reading', async () => {
 		const input = tableChart({ rows: ['region'], values: ['revenue'] })
 		const { component, props } = adapt(input)
 
-		expect(component).toBe(TableChart)
+		expect(await loadedComponent(component)).toBe(TableChart)
 		expect(props.columns).toBe(input.result.columns)
 		expect(props.rows).toBe(input.result.formattedRows)
 	})

@@ -7,6 +7,7 @@
 // rests on: if a case here cannot be said in the new shape, the split lost
 // something.
 
+import type { Component, ComponentOptions } from 'vue'
 import type { GranularityType } from '../../helpers/constants'
 import type { ConditionalColor, FormatGroupArgs } from '../../query/components/formatting_utils'
 import type {
@@ -848,3 +849,12 @@ const columnOfMeasure = (measure: Measure): QueryResultColumn => ({
 	name: measure.measure_name,
 	type: measure.data_type,
 })
+
+/**
+ * The component a filler renders. A chart type other than Bar and Line is split
+ * out of the entry, so its filler holds an async wrapper until it loads.
+ */
+export async function loadedComponent(component: Component) {
+	const load = (component as ComponentOptions).__asyncLoader
+	return load ? await load() : component
+}
