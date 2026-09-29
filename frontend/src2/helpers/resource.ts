@@ -36,7 +36,7 @@ export default function useDocumentResource<T extends Document>(
 	name: string,
 	options: DocumentResourceOptions<T>,
 ) {
-	const doc = ref(options.initialDoc)
+	const doc = ref(copy(options.initialDoc))
 	const originalDoc = ref(copy(options.initialDoc))
 	const docname = ref(String(name))
 	const isLocal = ref(docname.value.startsWith('new-'))
