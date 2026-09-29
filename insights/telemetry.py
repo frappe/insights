@@ -95,9 +95,7 @@ def get_entry():
     """How the site came to run Insights."""
     if "erpnext" in frappe.get_installed_apps():
         return "erpnext_site"
-    if frappe.conf.get("fc_team"):
-        return "saas_trial"
-    return "self_hosted"
+    return "insights_site"
 
 
 def error_kind(exc: BaseException) -> str:

@@ -130,7 +130,6 @@ def site_profile() -> dict:
     standard = sorted(app for app in installed if is_standard_app(app))
 
     props = {
-        "frappe_cloud": bool(frappe.conf.get("fc_team")),
         "apps": standard,
         "custom_apps": len(installed) - len(standard),
         "site_age_days": site_age(),
