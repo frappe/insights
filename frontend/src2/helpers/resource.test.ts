@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 // later edit reaches the server.
 
 const answers: { update?: (args: any) => Promise<any> } = {}
+let inserted = 0
 
 vi.mock('frappe-ui', async () => ({
 	...((await vi.importActual('frappe-ui')) as object),
@@ -18,6 +19,9 @@ vi.mock('frappe-ui', async () => ({
 				title: 'Sales',
 				visibility: 'Private',
 			})
+		}
+		if (method === 'frappe.client.insert') {
+			return Promise.resolve({ ...args.doc, name: `chart-${++inserted}` })
 		}
 		if (method === 'frappe.client.set_value') {
 			return answers.update!(args)
@@ -107,5 +111,26 @@ describe('a document the server refuses', () => {
 
 		expect(alert.doc.title).toBe('Sales dropped')
 		expect(alert.isdirty).toBe(true)
+	})
+})
+
+describe('two documents opened from one default', () => {
+	// @feature workbook.add-items
+	it('keep their own objects once both are inserted', async () => {
+		// a shallow copy of one default, as `chart.ts` opens a new chart
+		const EMPTY_CHART = { doctype: 'Insights Chart v3', name: '', owner: '', config: {} }
+		const newChart = (name: string) =>
+			useDocumentResource<any>('Insights Chart v3', name, {
+				initialDoc: { ...EMPTY_CHART, name },
+				disableLocalStorage: true,
+			})
+		const first = newChart('new-chart-a')
+		const second = newChart('new-chart-b')
+		await first.insert()
+		await second.insert()
+
+		first.doc.config.x_axis = { dimension: { column_name: 'status' } }
+
+		expect(second.doc.config).toEqual({})
 	})
 })
