@@ -439,6 +439,32 @@ test.describe('charts', () => {
 		).toBeVisible()
 	})
 
+	// @feature charts.y-axis-series
+	test('a user adds a measure to a chart with no series', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS, { y_axis: { series: [] } }),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		const yAxis = section(page, 'Y Axis')
+		await yAxis.getByRole('button', { name: '+ Add series' }).click()
+		await yAxis.getByRole('button', { name: 'Select a column' }).click()
+		await page.getByText('Unique count of...', { exact: true }).click()
+		const measureDialog = page.getByRole('dialog', { name: 'Select a column' })
+		await measureDialog.getByText('customer_id', { exact: true }).click()
+
+		await expect(yAxis.getByRole('button', { name: 'Select a column' })).toHaveCount(0)
+	})
+
 	// @feature charts.sort charts.preview-table-sort
 	test('a user sorts a chart and flips it to descending', async ({
 		page,
