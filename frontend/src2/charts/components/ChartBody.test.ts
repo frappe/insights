@@ -199,4 +199,35 @@ describe('a chart its author explained', () => {
 		expect(html).not.toContain(`>${DESCRIPTION}<`)
 		expect(html).toContain('12,300')
 	})
+
+	// @feature charts.description-and-info
+	it('prints a Number chart description once while the chart has no reading', async () => {
+		const read = makeChartRead({
+			doc: {
+				name: 'chart-3',
+				title: 'Revenue',
+				chart_type: 'Number',
+				config: numberChart({ values: [] }).config,
+				can_write: false,
+			} as any,
+			requestKey: () => 'the same question',
+			fetchData: () => Promise.resolve({ columns: [], rows: [] }),
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+		await read.load()
+		const app = createSSRApp({
+			render: () =>
+				h(ChartBody, {
+					chart: read,
+					title: 'Revenue',
+					description: DESCRIPTION,
+					info: INFO,
+				}),
+		})
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
+
+		expect(html.split(DESCRIPTION)).toHaveLength(2)
+		expect(html).toContain(`aria-label="${INFO}"`)
+	})
 })

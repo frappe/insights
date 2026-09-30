@@ -268,12 +268,12 @@ const fillerEvents = computed(() =>
 // title, so it goes in `#title-suffix`, not in `#actions` at the end of the row.
 const scope = computed(() => scopeText(props.chart.scopedBy, props.chart.narrowedByPermissions))
 
-// A Number card has no line under its title, so its description goes behind the
-// mark with the info.
-const info = computed(() => {
-	const description = ownsStates.value ? props.description : undefined
-	return [description, props.info].filter(Boolean).join('\n\n')
-})
+// A Number card has no line under its title, so there the description goes
+// behind the mark with the info. The block that stands in for a chart with no
+// cards prints it as a line, so it gets the info alone.
+const cardInfo = computed(() =>
+	ownsStates.value ? [props.description, props.info].filter(Boolean).join('\n\n') : props.info,
+)
 
 // echarts hands over the point, not the event, so the capture phase records
 // the click position before the chart's own handler runs.
@@ -302,9 +302,9 @@ function reportSegment(target: DrillDownTarget) {
 			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
 		>
-			<template v-if="info || scope" #title-suffix>
+			<template v-if="cardInfo || scope" #title-suffix>
 				<span class="flex items-center gap-1.5">
-					<InfoMark v-if="info" :text="info" />
+					<InfoMark v-if="cardInfo" :text="cardInfo" />
 					<ScopeMark
 						:applied="props.chart.scopedBy"
 						:narrowed="props.chart.narrowedByPermissions"
@@ -328,9 +328,9 @@ function reportSegment(target: DrillDownTarget) {
 			:error="headline"
 			:empty="true"
 		>
-			<template v-if="info || scope" #title-suffix>
+			<template v-if="props.info || scope" #title-suffix>
 				<span class="flex items-center gap-1.5">
-					<InfoMark v-if="info" :text="info" />
+					<InfoMark v-if="props.info" :text="props.info" />
 					<ScopeMark
 						:applied="props.chart.scopedBy"
 						:narrowed="props.chart.narrowedByPermissions"
