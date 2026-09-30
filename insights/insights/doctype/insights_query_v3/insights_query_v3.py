@@ -267,7 +267,7 @@ class InsightsQueryv3(Document):
         Nothing else about it leaves the site: the SQL, the message and the names
         of columns and tables all stay here.
         """
-        from insights.telemetry import capture, error_kind
+        from insights.telemetry import caller, capture, error_kind
 
         with suppress(Exception):  # nosemgrep - telemetry never fails the run it reports on
             capture(
@@ -276,6 +276,7 @@ class InsightsQueryv3(Document):
                 error_kind=error_kind(exc),
                 data_store=not self.use_live_connection,
                 source_type=self.source_type,
+                caller=caller(),
             )
 
     @frappe.whitelist()
