@@ -46,6 +46,12 @@ jobs:
           cache: yarn
           cache-dependency-path: frontend/yarn.lock
 
+      # `@framework/ui` links to `../../frappe/ui`.
+      - name: Check out frappe's UI package
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/frappe/frappe ../frappe
+          git -C ../frappe sparse-checkout set ui
+
       - name: Install frontend dependencies
         run: yarn --cwd frontend install --frozen-lockfile
 
