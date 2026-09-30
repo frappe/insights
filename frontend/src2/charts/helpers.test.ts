@@ -3,7 +3,6 @@ import {
 	dataSelection,
 	ensureConfigSlots,
 	getGranularity,
-	infoMarkText,
 	moveNumberReadingOptions,
 	normalizeChartConfig,
 	removeNumberReading,
@@ -348,20 +347,4 @@ describe('a config saved in an older shape', () => {
 			expect(normalizeChartConfig(structuredClone(once), chart_type)).toEqual(once)
 		})
 	}
-})
-
-// The mark's tooltip is a portal that opens on hover, so a card render cannot
-// reach it. Its text is tested here.
-describe('what the info mark says', () => {
-	// @feature charts.description-and-info
-	it('says the info, and a Number card says its description above it', () => {
-		expect(infoMarkText('Trials', 'Paid = moved to a paid plan.', false)).toBe(
-			'Paid = moved to a paid plan.',
-		)
-		expect(infoMarkText('Trials', 'Paid = moved to a paid plan.', true)).toBe(
-			'Trials\n\nPaid = moved to a paid plan.',
-		)
-		expect(infoMarkText('Trials', null, true)).toBe('Trials')
-		expect(infoMarkText(null, null, true)).toBe('')
-	})
 })

@@ -15,7 +15,7 @@ import {
 } from '../adapter'
 import type { ChartRead } from '../chart_view'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
-import { infoMarkText } from '../helpers'
+import { infoMarkText } from '../info_mark'
 import { scopeText } from '../scoped_by'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import ScopeMark from './ScopeMark.vue'
@@ -269,9 +269,9 @@ const fillerEvents = computed(() =>
 // title, so it goes in `#title-suffix`, not in `#actions` at the end of the row.
 const scope = computed(() => scopeText(props.chart.scopedBy, props.chart.narrowedByPermissions))
 
-// The block that stands in for a chart with no cards prints the description as
-// a line, so its mark says the info alone.
-const cardInfo = computed(() => infoMarkText(props.description, props.info, ownsStates.value))
+const info = computed(() =>
+	infoMarkText(props.description, props.info, ownsStates.value && Boolean(filler.value)),
+)
 
 // echarts hands over the point, not the event, so the capture phase records
 // the click position before the chart's own handler runs.
@@ -300,10 +300,10 @@ function reportSegment(target: DrillDownTarget) {
 			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
 		>
-			<template v-if="cardInfo || scope" #title-suffix>
+			<template v-if="info || scope" #title-suffix>
 				<span class="flex items-center gap-1.5">
-					<TitleMark v-if="cardInfo" :icon="InfoIcon" :label="__('Info')">
-						<div class="whitespace-pre-line">{{ cardInfo }}</div>
+					<TitleMark v-if="info" :icon="InfoIcon" :label="__('Info')">
+						<div class="whitespace-pre-line">{{ info }}</div>
 					</TitleMark>
 					<ScopeMark
 						:applied="props.chart.scopedBy"
@@ -328,10 +328,10 @@ function reportSegment(target: DrillDownTarget) {
 			:error="headline"
 			:empty="true"
 		>
-			<template v-if="props.info || scope" #title-suffix>
+			<template v-if="info || scope" #title-suffix>
 				<span class="flex items-center gap-1.5">
-					<TitleMark v-if="props.info" :icon="InfoIcon" :label="__('Info')">
-						<div class="whitespace-pre-line">{{ props.info }}</div>
+					<TitleMark v-if="info" :icon="InfoIcon" :label="__('Info')">
+						<div class="whitespace-pre-line">{{ info }}</div>
 					</TitleMark>
 					<ScopeMark
 						:applied="props.chart.scopedBy"

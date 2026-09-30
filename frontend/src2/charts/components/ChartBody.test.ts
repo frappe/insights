@@ -3,6 +3,7 @@ import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { numberChart, tableChart } from '../adapter/fixtures'
 import { makeChartRead } from '../chart_view'
+import { infoMarkText } from '../info_mark'
 import { scopeText } from '../scoped_by'
 import ChartBody from './ChartBody.vue'
 import ChartChrome from './ChartChrome.vue'
@@ -236,5 +237,21 @@ describe('a chart its author explained', () => {
 
 		expect(html.split(DESCRIPTION)).toHaveLength(2)
 		expect(html).toContain('aria-label="Info"')
+	})
+})
+
+// The mark's tooltip is a portal that opens on hover, so a card render cannot
+// reach it. Its text is tested here.
+describe('what the info mark says', () => {
+	// @feature charts.description-and-info
+	it('says the info, and a Number card says its description above it', () => {
+		expect(infoMarkText('Trials', 'Paid = moved to a paid plan.', false)).toBe(
+			'Paid = moved to a paid plan.',
+		)
+		expect(infoMarkText('Trials', 'Paid = moved to a paid plan.', true)).toBe(
+			'Trials\n\nPaid = moved to a paid plan.',
+		)
+		expect(infoMarkText('Trials', null, true)).toBe('Trials')
+		expect(infoMarkText(null, null, true)).toBe('')
 	})
 })
