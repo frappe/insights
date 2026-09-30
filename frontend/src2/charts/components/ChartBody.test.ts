@@ -173,9 +173,10 @@ describe('a chart its author explained', () => {
 		const title = html.indexOf('>Trials<')
 		expect(title).toBeGreaterThan(-1)
 		expect(html.indexOf(`>${DESCRIPTION}<`)).toBeGreaterThan(title)
-		// the info is the mark's label and the tooltip's body, never a line in the card
-		expect(html).toContain(`aria-label="${INFO}"`)
-		expect(html).not.toContain(`>${INFO}<`)
+		// the info is the tooltip's body, never a line in the card. The mark is
+		// named, so a screen reader reads the text once, as the tooltip
+		expect(html).toContain('aria-label="Info"')
+		expect(html).not.toContain(INFO)
 	})
 
 	// @feature charts.description-and-info
@@ -195,8 +196,8 @@ describe('a chart its author explained', () => {
 		app.config.warnHandler = () => {}
 		const html = await renderToString(app)
 
-		expect(html).toContain(`aria-label="${DESCRIPTION}\n\n${INFO}"`)
-		expect(html).not.toContain(`>${DESCRIPTION}<`)
+		expect(html).toContain('aria-label="Info"')
+		expect(html).not.toContain(DESCRIPTION)
 		expect(html).toContain('12,300')
 	})
 
@@ -228,6 +229,6 @@ describe('a chart its author explained', () => {
 		const html = await renderToString(app)
 
 		expect(html.split(DESCRIPTION)).toHaveLength(2)
-		expect(html).toContain(`aria-label="${INFO}"`)
+		expect(html).toContain('aria-label="Info"')
 	})
 })
