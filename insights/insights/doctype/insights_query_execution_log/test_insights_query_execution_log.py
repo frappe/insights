@@ -21,6 +21,7 @@ class TestInsightsQueryExecutionLog(FrappeTestCase):
         frappe.db.set_value(doc.doctype, doc.name, "creation", creation, update_modified=False)
         return doc.name
 
+    # @feature data-store.execution-log-retention
     def test_clears_logs_older_than_retention(self):
         old = self.create_log(20)
         recent = self.create_log(5)
@@ -30,6 +31,7 @@ class TestInsightsQueryExecutionLog(FrappeTestCase):
         self.assertFalse(frappe.db.exists("Insights Query Execution Log", old))
         self.assertTrue(frappe.db.exists("Insights Query Execution Log", recent))
 
+    # @feature data-store.execution-log-retention
     def test_default_retention_covers_data_store_cleanup_window(self):
         # prune_unused_tables skips pruning unless the log is older than UNUSED_TABLE_DAYS
         retention = frappe.get_hooks("default_log_clearing_doctypes")["Insights Query Execution Log"][-1]
