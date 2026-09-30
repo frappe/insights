@@ -234,6 +234,7 @@ class IbisQueryBuilder:
         self.active_operation_idx = active_operation_idx
         self.use_live_connection = bool(doc.use_live_connection)
         self.force = False
+        self.import_if_not_exists = True
         self.operations = doc.operations
         # held-back keys for the columns this query's removes and renames took
         # off `self.query`. The author does not see them either; see `_whole_tables`
@@ -445,13 +446,18 @@ class IbisQueryBuilder:
                 table_args.data_source,
                 table_args.table_name,
                 use_live_connection=self.use_live_connection,
+                import_if_not_exists=self.import_if_not_exists,
             )
         if table_args.type == "query":
             self.check_query_reference(table_args.query_name)
             if self.stored_workbook:
                 check_source_workbook(self.stored_workbook, table_args.query_name)
             q = frappe.get_doc("Insights Query v3", table_args.query_name)
-            builder = q.get_builder(use_live_connection=self.use_live_connection, force=self.force)
+            builder = q.get_builder(
+                use_live_connection=self.use_live_connection,
+                force=self.force,
+                import_if_not_exists=self.import_if_not_exists,
+            )
             _table, dropped_by_writer = builder.query, builder.dropped_by_writer
 
         if _table is None:
@@ -1251,6 +1257,7 @@ class IbisQueryBuilder:
                 data_source,
                 table_name,
                 use_live_connection=use_live_connection,
+                import_if_not_exists=self.import_if_not_exists,
             )
             db._register_in_memory_tables(table_expr)
             bindings[table_name] = table_expr

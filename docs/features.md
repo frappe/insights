@@ -393,6 +393,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.malformed-request-refused | A request with a wrongly typed argument is refused with a message, not a crash. |
 | permissions.get-keeps-no-write | A new endpoint accepts only POST unless it is listed to accept GET, and a test fails when an endpoint that accepts GET commits, enqueues a job before the commit or writes to DuckDB. |
 | permissions.search-respects-access | A search over workbooks and columns returns only what the caller may read. |
+| permissions.agent-profile-respects-access | A column an agent profiles, of a saved query or an unsaved pipeline, is refused every table, column and query the caller could not read through a saved query. |
 
 ## data-store
 
@@ -406,6 +407,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.import-script-sandbox | An import job's script reads Frappe data, calls its client and inserts into its table; it cannot write to the site, enqueue a job, call a method, send mail or register a commit hook. |
 | data-store.failed-import-notice | A reader is told when a table's newest import failed, and nothing while one runs or a retry is queued. |
 | data-store.write-lock | A write waits for readers to finish and gives up at a timeout. |
+| data-store.run-without-import | A run that asks not to import refuses a data store table that is not stored yet and names it, instead of reading an empty table and queuing its import. |
 | data-store.division-by-zero | A division by zero returns null in the data store, as it does on the live connection. |
 | data-store.cleanup-prunes-stale | The weekly cleanup drops a table no query has used, and keeps one used recently, nested, freshly imported or incremental. |
 | data-store.cleanup-keeps-unexplained | The cleanup deletes only what it can rebuild and keeps an unexplained orphan. |
@@ -465,6 +467,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | tooling.workbook-skill-verify | The workbook skill's verify step reads a chart config the way the app does, so an agent authoring over the API is told what it got wrong. |
 | tooling.feature-coverage | The coverage table is generated from the `@feature` directives on the tests, and CI fails when a test has none or names a slug the feature list does not. |
 | tooling.e2e-seeding | An e2e test gets a seeded workbook, chart and viewer over REST before the browser opens. |
+| tooling.agent-run-unsaved-query | An agent runs a pipeline without saving a query, through the method the Builder runs an unsaved query with, and gets a page of its rows. |
+| tooling.agent-profile-column | An agent profiles a column of a saved query or an unsaved pipeline in one call: row, null and distinct counts, range, most frequent values, and coverage per value of another column. Both columns are exact result column names. The answer is cached for 10 minutes unless forced, and a Data Store table that is not stored fails the call, never queues an import. |
 
 ## telemetry
 

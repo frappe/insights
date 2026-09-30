@@ -108,6 +108,7 @@ ENDPOINTS_ACCEPTING_GET = [
     "insights.insights.doctype.insights_query_v3.insights_query_v3.InsightsQueryv3.get_columns_for_selection",
     "insights.insights.doctype.insights_query_v3.insights_query_v3.InsightsQueryv3.get_count",
     "insights.insights.doctype.insights_query_v3.insights_query_v3.InsightsQueryv3.get_distinct_column_values",
+    "insights.insights.doctype.insights_query_v3.insights_query_v3.InsightsQueryv3.profile_column",
     "insights.insights.doctype.insights_settings.insights_settings.InsightsSettings.update_settings",
     "insights.insights.doctype.insights_table_import_log.insights_table_import_log.InsightsTableImportLog.mark_as_failed",
     "insights.insights.doctype.insights_table_v3.insights_table_v3.InsightsTablev3.get_stats",

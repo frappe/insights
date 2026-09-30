@@ -16,10 +16,11 @@ from ibis import _
 
 from insights import standard
 from insights.decorators import insights_whitelist
-from insights.exceptions import QueryRefused
+from insights.exceptions import QueryRefused, UnknownColumn
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
+    clamp,
     execute_ibis_query,
     get_columns_from_schema,
     is_carried_currency_column,
@@ -42,6 +43,8 @@ from insights.utils import (
     get_currency_symbols,
     refuse_delete_while_linked,
 )
+
+MAX_PROFILE_VALUES = 1_000
 
 
 class InsightsQueryv3(Document):
@@ -201,11 +204,13 @@ class InsightsQueryv3(Document):
         """
         return self.flags.execution_reference or self.name
 
-    def build(self, active_operation_idx=None, use_live_connection=None, force=False):
-        return self.get_builder(active_operation_idx, use_live_connection, force).query
+    def build(
+        self, active_operation_idx=None, use_live_connection=None, force=False, import_if_not_exists=True
+    ):
+        return self.get_builder(active_operation_idx, use_live_connection, force, import_if_not_exists).query
 
     def get_builder(
-        self, active_operation_idx=None, use_live_connection=None, force=False
+        self, active_operation_idx=None, use_live_connection=None, force=False, import_if_not_exists=True
     ) -> IbisQueryBuilder:
         """The builder after building this query. A caller that names a column
         needs it, because `get_column` refuses a held-back name."""
@@ -215,6 +220,7 @@ class InsightsQueryv3(Document):
         )
         # a script runs while the query is built, so only the builder can skip its cache
         builder.force = force
+        builder.import_if_not_exists = import_if_not_exists
         if builder.build() is None:
             frappe.throw("Failed to build query", QueryRefused)
 
@@ -280,15 +286,22 @@ class InsightsQueryv3(Document):
         force: bool = False,
         page: int = 1,
         page_size: int = 100,
+        import_if_not_exists: bool = True,
     ):
         """Run this query and answer with its rows.
 
         Every surface's run arrives here: the builder, the SQL and script
         editors, and the query a chart mints from its config. So this method
         reports a failure once, and the failure travels on unchanged.
+
+        A Data Store run of a table not stored yet reads an empty table and
+        queues its import. Without `import_if_not_exists` it raises
+        `TableNotStored` instead.
         """
         try:
-            return self._run(active_operation_idx, adhoc_filters, force, page, page_size)
+            return self._run(
+                active_operation_idx, adhoc_filters, force, page, page_size, import_if_not_exists
+            )
         except Exception as e:
             self.capture_failure(e)
             raise
@@ -300,9 +313,12 @@ class InsightsQueryv3(Document):
         force: bool = False,
         page: int = 1,
         page_size: int = 100,
+        import_if_not_exists: bool = True,
     ):
         with set_adhoc_filters(adhoc_filters):
-            ibis_query = self.build(active_operation_idx, force=force)
+            ibis_query = self.build(
+                active_operation_idx, force=force, import_if_not_exists=import_if_not_exists
+            )
 
         results, time_taken = execute_ibis_query(
             ibis_query,
@@ -527,6 +543,97 @@ class InsightsQueryv3(Document):
         return [low, high]
 
     @insights_whitelist()
+    def profile_column(
+        self, column_name: str, by: str | None = None, limit: int = 20, force: bool = False
+    ) -> dict:
+        """What the values of `column_name` look like, for an agent that is still asking questions.
+
+        Answers the row count, the null count, the distinct count, the smallest
+        and largest value, and the `limit` most frequent values with their share
+        of all rows. With `by`, it also answers `coverage`: the share of rows with
+        a value in `column_name`, for each of the `limit` most frequent values of `by`.
+
+        It accepts GET, so it never imports: a Data Store table that is not
+        stored refuses it with `TableNotStored`.
+        """
+        builder = self.get_builder(force=force, import_if_not_exists=False)
+        limit = clamp(limit, 1, MAX_PROFILE_VALUES)
+
+        def column(name):
+            # `get_column` also answers a stored name that drifted, such as the one
+            # column ending in `_<name>`. A name the agent typed is exact
+            resolved = builder.get_column(name)
+            if resolved.get_name() != name:
+                frappe.throw(frappe._("Column {0} does not exist in the table").format(name), UnknownColumn)
+            return resolved
+
+        selected = {"value": column(column_name)}
+        if by:
+            selected["group"] = column(by)
+        table = builder.query.select(**selected)
+
+        [summary] = self.run_records(
+            table.aggregate(
+                row_count=_.count(),
+                null_count=_.count() - table.value.count(),
+                distinct_count=table.value.nunique(),
+                min=table.value.min(),
+                max=table.value.max(),
+            ),
+            force,
+        )
+        row_count = summary["row_count"]
+
+        top_values = self.run_records(
+            table.filter(table.value.notnull())
+            .group_by("value")
+            .aggregate(count=_.count())
+            .order_by([ibis.desc("count"), "value"])
+            .limit(limit),
+            force,
+        )
+        profile = {
+            "column": column_name,
+            **summary,
+            "top_values": [
+                {"value": row["value"], "count": row["count"], "share": share(row["count"], row_count)}
+                for row in top_values
+            ],
+        }
+        if not by:
+            return profile
+
+        coverage = self.run_records(
+            table.group_by("group")
+            .aggregate(row_count=_.count(), non_null_count=table.value.count())
+            .order_by([ibis.desc("row_count"), "group"])
+            .limit(limit),
+            force,
+        )
+        profile["by"] = by
+        profile["coverage"] = [
+            {
+                "value": row["group"],
+                "row_count": row["row_count"],
+                "non_null_count": row["non_null_count"],
+                "share": share(row["non_null_count"], row["row_count"]),
+            }
+            for row in coverage
+        ]
+        return profile
+
+    def run_records(self, query, force: bool) -> list[dict]:
+        results, _time_taken = execute_ibis_query(
+            query,
+            paginate=False,
+            force=force,
+            cache_expiry=60 * 10,
+            reference_doctype=self.doctype,
+            reference_name=self.execution_reference,
+        )
+        return results.to_dict(orient="records")
+
+    @insights_whitelist()
     @answers_refusal(list)
     def get_columns_for_selection(self, active_operation_idx: int | None = None):
         ibis_query = self.build(active_operation_idx)
@@ -613,6 +720,10 @@ class InsightsQueryv3(Document):
                     imported_count += 1
 
         return {"message": f"Importing {imported_count} table(s) to data store", "count": imported_count}
+
+
+def share(part, whole) -> float | None:
+    return part / whole if whole else None
 
 
 def delete_variable_secrets(variables) -> None:

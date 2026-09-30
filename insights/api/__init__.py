@@ -271,7 +271,7 @@ def check_stored_document(doctype: str, name: str):
 
 
 @frappe.whitelist()
-def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
+def run_doc_method(method: str, docs: dict | str, args: dict | str | None = None):
     docs = frappe.parse_json(docs)
     doctype, name = docs.get("doctype"), docs.get("name")
 
