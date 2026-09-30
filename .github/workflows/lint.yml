@@ -65,3 +65,9 @@ jobs:
 
       - name: Run Semgrep rules
         run: pre-commit run semgrep --hook-stage pre-push --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.event.pull_request.head.sha }}
+
+      # The hook above scans changed files only, so a rule change is checked against existing code here.
+      - name: Scan the tree with the app's Semgrep rules
+        run: |
+          pip install semgrep==1.177.0
+          semgrep --config .semgrep/insights.yml --error --metrics off --disable-version-check insights
