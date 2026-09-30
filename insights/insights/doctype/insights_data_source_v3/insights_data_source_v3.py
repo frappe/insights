@@ -91,6 +91,9 @@ class InsightsDataSourceDocument:
             capture("data_source_created", type=self.source_type, ssl=bool(self.use_ssl))
 
     def on_update(self):
+        # db_set loads the saved row as the doc before save, which hides a change
+        credentials_changed = self.has_credentials_changed()
+
         if self.type == "REST API":
             self.db_set(
                 {
@@ -114,7 +117,6 @@ class InsightsDataSourceDocument:
         self.status = "Active" if self.test_connection() else "Inactive"
         self.db_set("status", self.status)
 
-        credentials_changed = self.has_credentials_changed()
         if (
             self.status == "Active"
             and credentials_changed
