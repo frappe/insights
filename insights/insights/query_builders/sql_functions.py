@@ -4,6 +4,7 @@ from contextlib import contextmanager, suppress
 from typing import ClassVar, NamedTuple
 
 import frappe
+import ibis
 from frappe.utils.data import (
     add_to_date,
     get_date_str,
@@ -598,24 +599,28 @@ def is_calendar(column):
 
 
 def typed_instant(column, instant: datetime.datetime):
-    """`instant` as a literal of the column's own type.
+    """`instant` as a literal of the column's own type, its zone included.
 
     Each engine reads text its own way: SQLite compares a date as text, so
     '2026-08-05' sorts before '2026-08-05 00:00:00', and SQL Server parses text
-    by the login's date format.
+    by the login's date format. BigQuery compares no TIMESTAMP with a DATETIME.
     """
-    return instant.date() if column.type().is_date() else instant
+    if column.type().is_date():
+        return instant.date()
+    return ibis.literal(instant, type=column.type())
 
 
 def day_bounds(column, first, last):
     """The column, the start of day `first` and the start of the day after `last`.
 
-    A column that holds dates as text is read as a date.
+    A column that holds dates as text is compared as text, against bare dates:
+    ISO text sorts as the dates it spells, and a cast fails the whole query on
+    one value that is not a date.
     """
-    if not is_calendar(column):
-        column = column.cast("date")
     start = midnight(getdate(first))
     end = midnight(getdate(last) + datetime.timedelta(days=1))
+    if not is_calendar(column):
+        return column, start.date().isoformat(), end.date().isoformat()
     return column, typed_instant(column, start), typed_instant(column, end)
 
 

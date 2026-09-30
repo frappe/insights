@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import datetime
 from typing import ClassVar
 from unittest.mock import patch
 
@@ -7,6 +8,7 @@ import frappe
 import ibis
 from ibis.backends.postgres import Backend as PostgresBackend
 
+from insights.insights.doctype.insights_chart_v3.chart_drill import _timestamp
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     sparkline_operations,
@@ -509,6 +511,8 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
         "day": "2026-08-05",
         "afternoon": "2026-08-05 13:00:00",
         "after": "2026-08-06",
+        "blank": "",
+        "not a date": "n/a",
     }
 
     def matched(self, engine, data_type, rules, rows=None):
@@ -530,7 +534,9 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
 
         connection = ibis.sqlite.connect()
         connection.raw_sql(f"create table stamps (label TEXT, at {self.SQLITE_TYPES[data_type]})")
-        values = ", ".join(f"('{label}', {f"'{at}'" if at else 'NULL'})" for label, at in rows.items())
+        values = ", ".join(
+            f"('{label}', {'NULL' if at is None else f"'{at}'"})" for label, at in rows.items()
+        )
         connection.raw_sql(f"insert into stamps values {values}")
         builder = IbisQueryBuilder(self.make_query_doc([]))
         builder.query = connection.table("stamps")
@@ -555,13 +561,14 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
                         )
 
     # @feature query.filter-date-on-datetime
-    def test_a_drill_bound_with_a_time_of_day_reads_the_column_type(self):
-        """The rows behind a day of a chart: `>=` its midnight and `<` the next one."""
-        bounds = [(">=", "2026-08-05 00:00:00"), ("<", "2026-08-06 00:00:00")]
+    def test_a_drill_into_a_day_reads_the_rows_its_card_counts(self):
+        bounds = [(">=", _timestamp(datetime(2026, 8, 5))), ("<", _timestamp(datetime(2026, 8, 6)))]
+        cases = [(data_type, self.ROWS[data_type], self.DAY_ROWS[data_type]) for data_type in self.ROWS]
+        cases.append(("String", self.TEXT_DATES, ["day", "afternoon"]))
         for engine in ENGINES:
-            for data_type in self.ROWS:
+            for data_type, rows, expected in cases:
                 with self.subTest(engine=engine, data_type=data_type):
-                    self.assert_matches(engine, data_type, bounds, self.DAY_ROWS[data_type])
+                    self.assert_matches(engine, data_type, bounds, expected, rows)
 
     # @feature query.filter-relative-date
     def test_a_span_on_dates_held_as_text_takes_in_the_whole_day(self):

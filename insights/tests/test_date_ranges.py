@@ -9,6 +9,7 @@ from insights.insights.query_builders.sql_functions import (
     get_window,
     handle_timespan,
     shift_anchor,
+    within_days,
 )
 from insights.tests.base import InsightsIntegrationTestCase
 
@@ -347,3 +348,28 @@ class TestFiscalYearStart(InsightsIntegrationTestCase):
             patch(ERPNEXT_FY, return_value=None),
         ):
             self.assertEqual(get_fiscal_year_start_date(), getdate("1995-04-01"))
+
+
+class TestDayBoundTypes(InsightsIntegrationTestCase):
+    """A bound is a literal of its column's type. Each engine reads text by its own
+    rules: SQL Server by the login's date format, and BigQuery compares no
+    TIMESTAMP with a DATETIME."""
+
+    def compiled(self, column_type, dialect):
+        entries = ibis.table({"posted": column_type}, name="entries")
+        return ibis.to_sql(
+            entries.filter(within_days(entries.posted, "2026-08-05", "2026-08-05")), dialect=dialect
+        )
+
+    # @feature query.filter-date-on-datetime
+    def test_a_bound_takes_the_type_of_its_column(self):
+        cases = [
+            ("timestamp", "mssql", "DATETIME2FROMPARTS(2026, 8, 5"),
+            ("timestamp('UTC')", "bigquery", "TIMESTAMP('2026-08-05T00:00:00+00:00')"),
+            ("timestamp('Asia/Kolkata')", "postgres", "'2026-08-05T00:00:00+05:30' AS TIMESTAMPTZ"),
+            ("date", "mssql", "DATEFROMPARTS(2026, 8, 5)"),
+            ("string", "mysql", ">= '2026-08-05'"),
+        ]
+        for column_type, dialect, bound in cases:
+            with self.subTest(column_type=column_type, dialect=dialect):
+                self.assertIn(bound, self.compiled(column_type, dialect))

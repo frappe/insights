@@ -1114,11 +1114,18 @@ def _filter_group(filters: list[dict]) -> dict:
 
 
 def _timestamp(value) -> str:
-    """A bucket end as the engine reads it: a time of day keeps no date."""
+    """A bucket end as the engine reads it: a time of day keeps no date.
+
+    A bound at midnight is a bare date, so it reaches `day_bounds` the way a
+    date span does, and a card and its drill count the same rows.
+    """
     if isinstance(value, time):
         return value.strftime("%H:%M:%S")
 
-    return get_datetime(value).strftime("%Y-%m-%d %H:%M:%S")
+    instant = get_datetime(value)
+    if instant.time() == time():
+        return instant.strftime("%Y-%m-%d")
+    return instant.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _is_bucket(dimension: dict | None) -> bool:
