@@ -75,7 +75,8 @@ const bucketColors = computed(() => {
 	})
 })
 
-function colorOf(value: number) {
+function colorOf(value: number | null) {
+	if (value === null) return tokens.value.gridline
 	const bucket = props.buckets.findIndex(
 		(b, index) => (index === 0 ? value >= b.min : value > b.min) && value <= b.max,
 	)

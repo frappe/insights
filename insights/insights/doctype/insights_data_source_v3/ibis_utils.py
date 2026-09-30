@@ -3,7 +3,7 @@ import sys
 import time
 import traceback
 from contextlib import contextmanager
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from functools import cached_property
 
 import frappe
@@ -35,9 +35,12 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     strip_schema_prefix,
 )
 from insights.insights.query_builders.sql_functions import (
-    add_start_and_end_time,
+    day_bounds,
     handle_timespan,
+    is_calendar,
     resolve_timespan,
+    typed_instant,
+    within_days,
 )
 from insights.insights.query_utils import (
     check_source_workbook,
@@ -134,7 +137,7 @@ FILTER_OPERATORS = {
     "within": lambda x, y: handle_timespan(x, y),
 }
 
-# A bare date on a timestamp column names a whole day, so each operator reads
+# A bare date on a date or timestamp column names a whole day, so each operator reads
 # it as the day's bounds rather than its midnight: `<=` takes the whole day,
 # `>` starts the next one.
 DAY_OPERATORS = {
@@ -183,8 +186,17 @@ def parse_bare_date(value):
         return None  # nosemgrep - a value that does not parse names no date
 
 
-def midnight(day):
-    return datetime.combine(day, datetime.min.time())
+def typed_value(column, value):
+    """A date or time a filter names, typed as the column it is compared with. See `typed_instant`."""
+    if isinstance(value, list):
+        return [typed_value(column, item) for item in value]
+    if not isinstance(value, str) or not is_calendar(column):
+        return value
+    try:
+        instant = datetime.fromisoformat(value)
+    except ValueError:
+        return value
+    return value if instant.tzinfo else typed_instant(column, instant)
 
 
 def pivot_name(column):
@@ -672,8 +684,8 @@ class IbisQueryBuilder:
             end = filter_value[1]
 
             first, last = parse_bare_date(start), parse_bare_date(end)
-            if first and last and left.type().is_timestamp():
-                return (left >= midnight(first)) & (left < midnight(last) + timedelta(days=1))
+            if first and last:
+                return within_days(left, first, last)
 
             if isinstance(start, str) and isinstance(end, str):
                 contains_time = ":" in start or ":" in end
@@ -684,11 +696,10 @@ class IbisQueryBuilder:
             filter_value = [start, end]
 
         day = parse_bare_date(filter_value) if right_column is None else None
-        if day and filter_operator in DAY_OPERATORS and left.type().is_timestamp():
-            start = midnight(day)
-            return DAY_OPERATORS[filter_operator](left, start, start + timedelta(days=1))
+        if day and filter_operator in DAY_OPERATORS and is_calendar(left):
+            return DAY_OPERATORS[filter_operator](*day_bounds(left, day, day))
 
-        right_value = right_column if right_column is not None else filter_value
+        right_value = right_column if right_column is not None else typed_value(left, filter_value)
         return operator_fn(left, right_value)
 
     def get_operator(self, operator):
@@ -904,8 +915,7 @@ class IbisQueryBuilder:
         base = self.query
         rows = []
         for start, end in sorted({resolve_timespan(window) for window in windowed.windows}):
-            bounds = add_start_and_end_time([start, end])
-            self.query = base.filter(column.between(*bounds))
+            self.query = base.filter(within_days(column, start, end))
 
             aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
             aggregates = {agg.get_name(): agg for agg in aggregates}

@@ -26,6 +26,7 @@ import type {
 	QueryResult,
 	QueryResultColumn,
 } from '../../types/query.types'
+import { formatResultRows } from '../../query/helpers'
 import type { ChartAdapterInput } from './types'
 
 type DimensionSpec = string | { name: string; type?: ColumnDataType; granularity?: GranularityType }
@@ -857,4 +858,173 @@ const columnOfMeasure = (measure: Measure): QueryResultColumn => ({
 export async function loadedComponent(component: Component) {
 	const load = (component as ComponentOptions).__asyncLoader
 	return load ? await load() : component
+}
+
+// One result every chart type is adapted over: the values that have reached a
+// screen wrong before. A null in a Dimension and in a Measure, a number the
+// driver sent as text, a decimal, the largest safe integer, an empty string, and
+// dates at midnight and on month, week and year boundaries. No cell holds a zero
+// or the text "null", so either one on the way out was made up on the way.
+
+const ADVERSARIAL_COLUMNS: QueryResultColumn[] = [
+	{ name: 'region', type: 'String' },
+	{ name: 'channel', type: 'String' },
+	{ name: 'order_month', type: 'Date' },
+	{ name: 'order_week', type: 'Date' },
+	{ name: 'created_at', type: 'Datetime' },
+	{ name: 'status', type: 'Text' },
+	{ name: 'revenue', type: 'Decimal' },
+	{ name: 'units', type: 'Integer' },
+]
+
+const ADVERSARIAL_GRAINS: Record<string, GranularityType> = {
+	order_month: 'month',
+	order_week: 'week',
+	created_at: 'day',
+}
+
+const ADVERSARIAL_ROWS: Record<string, any>[] = [
+	{
+		region: 'India',
+		channel: 'Web',
+		order_month: '2025-12-01',
+		order_week: '2025-12-29',
+		created_at: '2025-12-31 00:00:00',
+		status: 'Paid',
+		revenue: 1200.55,
+		units: 3,
+	},
+	{
+		region: null,
+		channel: 'Store',
+		order_month: '2026-01-01',
+		order_week: '2026-01-05',
+		created_at: '2026-01-01 00:00:00',
+		status: null,
+		revenue: '1500.25',
+		units: Number.MAX_SAFE_INTEGER,
+	},
+	{
+		region: 'Japan',
+		channel: null,
+		order_month: '2026-02-01',
+		order_week: '2026-02-02',
+		created_at: '2026-02-28 00:00:00',
+		status: '',
+		revenue: null,
+		units: 7,
+	},
+	{
+		region: 'Brazil',
+		channel: 'Partner',
+		order_month: null,
+		order_week: null,
+		created_at: null,
+		status: 'Refunded',
+		revenue: -0.1,
+		units: null,
+	},
+	{
+		region: '',
+		channel: '',
+		order_month: '2026-03-01',
+		order_week: '2026-03-30',
+		created_at: '2026-03-01 00:00:00',
+		status: 'Paid',
+		revenue: 0.000125,
+		units: 12,
+	},
+]
+
+export function adversarialResult(): QueryResult {
+	const result = resultWith(
+		ADVERSARIAL_COLUMNS,
+		ADVERSARIAL_ROWS.map((row) => ({ ...row })),
+	)
+	result.formattedRows = formatResultRows(result, ADVERSARIAL_GRAINS)
+	return result
+}
+
+function adversarialDimension(name: string): Dimension {
+	const column = ADVERSARIAL_COLUMNS.find((c) => c.name === name)!
+	return {
+		...toDimension({ name, type: column.type }),
+		...(ADVERSARIAL_GRAINS[name] ? { granularity: ADVERSARIAL_GRAINS[name] } : {}),
+	}
+}
+
+const ADVERSARIAL_CONFIGS: Record<string, () => object> = {
+	Bar: axisConfig,
+	Line: axisConfig,
+	Row: axisConfig,
+	Number: () => ({
+		number_columns: ['revenue', 'units'].map((name) => ({ ...toMeasure(name), id: name })),
+		number_column_options: [{}, {}],
+		sparkline: true,
+		date_column: adversarialDimension('order_month'),
+	}),
+	Donut: () => ({
+		label_column: adversarialDimension('region'),
+		value_column: toMeasure('revenue'),
+	}),
+	Funnel: () => ({
+		label_column: adversarialDimension('channel'),
+		value_column: toMeasure('revenue'),
+	}),
+	Table: () => ({
+		rows: ['region', 'channel', 'order_month', 'order_week', 'created_at', 'status'].map(
+			adversarialDimension,
+		),
+		columns: [],
+		values: [toMeasure('revenue'), toMeasure('units')],
+		order_by: [],
+	}),
+	Map: () => ({
+		location_column: adversarialDimension('region'),
+		value_column: toMeasure('revenue'),
+		map_type: 'world',
+	}),
+	Bubble: () => ({
+		xAxis: toMeasure('revenue'),
+		yAxis: toMeasure('units'),
+		dimension: adversarialDimension('region'),
+		quadrant_column: adversarialDimension('channel'),
+	}),
+	Sankey: () => ({
+		source_column: adversarialDimension('region'),
+		target_column: adversarialDimension('channel'),
+		value_column: toMeasure('revenue'),
+	}),
+	Heatmap: () => ({
+		x_column: adversarialDimension('order_month'),
+		y_column: adversarialDimension('region'),
+		value_column: toMeasure('revenue'),
+	}),
+}
+
+function axisConfig() {
+	return {
+		x_axis: { dimension: adversarialDimension('order_month') },
+		y_axis: {
+			series: [toMeasure('revenue'), toMeasure('units')].map((measure) => ({ measure })),
+		},
+	}
+}
+
+/**
+ * The types that hand the renderer something other than the result's rows: a Map
+ * folds them into regions, a Number Chart reads the newest one. Every other type
+ * must pass the rows on whole.
+ */
+export const RESHAPES_ROWS = ['Map', 'Number']
+
+/** A Chart of `chart_type` over the adversarial result, reading every column it can. */
+export function adversarialChart(chart_type: string): ChartAdapterInput {
+	const config = ADVERSARIAL_CONFIGS[chart_type]
+	if (!config) throw new Error(`fixtures.ts states no adversarial config for ${chart_type}`)
+	return {
+		chart_type,
+		config: config() as unknown as ChartConfig,
+		result: adversarialResult(),
+	}
 }

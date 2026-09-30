@@ -1,8 +1,15 @@
+import os
+import re
+from datetime import datetime
+from typing import ClassVar
 from unittest.mock import patch
 
 import frappe
+import ibis
 from ibis.backends.postgres import Backend as PostgresBackend
 
+from insights.exceptions import QueryRefused
+from insights.insights.doctype.insights_chart_v3.chart_drill import _bucket_filters
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     sparkline_operations,
@@ -10,6 +17,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
+from insights.utils import deep_convert_dict_to_dict as _dict
 
 
 class IbisQueryBuilderTestCase(InsightsIntegrationTestCase):
@@ -434,3 +442,162 @@ class TestIbisDivision(IbisQueryBuilderTestCase):
             connection = get_postgres_connection(FakeDataSource())
         sql = connection.compile(query.unbind())
         self.assertEqual(sql.count('NULLIF("t0"."income", 0)'), len(mutations))
+
+
+def picker_operators(kind):
+    """The operators the filter picker offers a column of `kind`, read off its table."""
+    path = os.path.join(
+        frappe.get_app_path("insights"),
+        "..",
+        "frontend",
+        "src2",
+        "components",
+        "filter_picker",
+        "filter_picker.ts",
+    )
+    with open(path) as source:
+        table = re.search(rf"\n\t{kind}: \[(.*?)\n\t\]", source.read(), re.S).group(1)
+    operators = re.findall(r"operator: '([^']+)'", table)
+    assert operators, f"read no operator off the picker's {kind} table"
+    return operators
+
+
+ENGINES = ("duckdb", "sqlite")
+
+
+class TestIbisDateOperators(IbisQueryBuilderTestCase):
+    """Every date operator the picker offers, given the one day a reader picked."""
+
+    DAY = "2026-08-05"
+    VALUES: ClassVar[dict] = {
+        "between": [DAY, DAY],
+        "within": {"span": "current day", "anchor": DAY},
+    }
+    ROWS: ClassVar[dict] = {
+        "Date": {
+            "before": "2026-08-04",
+            "day": "2026-08-05",
+            "after": "2026-08-06",
+            "unset": None,
+        },
+        "Datetime": {
+            "before": "2026-08-04 23:00:00",
+            "midnight": "2026-08-05 00:00:00",
+            "evening": "2026-08-05 17:30:00",
+            "last instant": "2026-08-05 23:59:59.500000",
+            "after": "2026-08-06 00:00:00",
+            "unset": None,
+        },
+    }
+    DAY_ROWS: ClassVar[dict] = {"Date": ["day"], "Datetime": ["midnight", "evening", "last instant"]}
+
+    def expected(self, data_type, operator):
+        day = self.DAY_ROWS[data_type]
+        return {
+            "between": day,
+            "within": day,
+            "=": day,
+            "!=": ["before", "after"],
+            ">": ["after"],
+            ">=": [*day, "after"],
+            "<": ["before"],
+            "<=": ["before", *day],
+            "is_set": ["before", *day, "after"],
+            "is_not_set": ["unset"],
+        }[operator]
+
+    SQLITE_TYPES: ClassVar[dict] = {"Date": "DATE", "Datetime": "TIMESTAMP", "String": "TEXT"}
+    TEXT_DATES: ClassVar[dict] = {
+        "before": "2026-08-04",
+        "day": "2026-08-05",
+        "afternoon": "2026-08-05 13:00:00",
+        "after": "2026-08-06",
+        "blank": "",
+        "not a date": "n/a",
+    }
+
+    def matched(self, engine, data_type, rules, rows=None):
+        """The labels of the rows each `(operator, value)` rule keeps, on DuckDB or SQLite."""
+        rows = rows or self.ROWS[data_type]
+        column = {"type": "column", "column_name": "at"}
+        filters = [
+            {"type": "filter", "column": column, "operator": operator, "value": value}
+            for operator, value in rules
+        ]
+        if engine == "duckdb":
+            table = [{"label": label, "at": at} for label, at in rows.items()]
+            operations = [
+                {"type": "code", "code": f"results = {table}"},
+                {"type": "cast", "column": column, "data_type": data_type},
+                *filters,
+            ]
+            return list(self.build_query(operations).execute()["label"])
+
+        connection = ibis.sqlite.connect()
+        connection.raw_sql(f"create table stamps (label TEXT, at {self.SQLITE_TYPES[data_type]})")
+        values = ", ".join(
+            f"('{label}', {'NULL' if at is None else f"'{at}'"})" for label, at in rows.items()
+        )
+        connection.raw_sql(f"insert into stamps values {values}")
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        builder.query = connection.table("stamps")
+        for rule in filters:
+            builder.query = builder.apply_filter(_dict(rule))
+        return list(builder.query.execute()["label"])
+
+    def assert_matches(self, engine, data_type, rules, expected, rows=None):
+        order = list(rows or self.ROWS[data_type])
+        matched = self.matched(engine, data_type, rules, rows)
+        self.assertEqual(sorted(matched, key=order.index), expected)
+
+    # @feature query.filter-date-on-datetime
+    def test_every_picker_date_operator_reads_a_day_as_the_whole_day(self):
+        for engine in ENGINES:
+            for operator in picker_operators("date"):
+                for data_type in self.ROWS:
+                    with self.subTest(engine=engine, operator=operator, data_type=data_type):
+                        value = self.VALUES.get(operator, self.DAY)
+                        self.assert_matches(
+                            engine, data_type, [(operator, value)], self.expected(data_type, operator)
+                        )
+
+    # @feature query.filter-date-on-datetime
+    def test_a_drill_into_a_day_reads_the_rows_its_card_counts(self):
+        day = _bucket_filters("at", (datetime(2026, 8, 5), datetime(2026, 8, 6)))
+        rules = [(rule["operator"], rule["value"]) for rule in day]
+        cases = [(data_type, self.ROWS[data_type], self.DAY_ROWS[data_type]) for data_type in self.ROWS]
+        cases.append(("String", self.TEXT_DATES, ["day", "afternoon"]))
+        for engine in ENGINES:
+            for data_type, rows, expected in cases:
+                with self.subTest(engine=engine, data_type=data_type):
+                    self.assert_matches(engine, data_type, rules, expected, rows)
+
+    # @feature query.filter-date-on-datetime
+    def test_a_bound_with_a_time_of_day_takes_the_column_type(self):
+        """An hour of a chart, drilled: SQL Server reads a text bound by the login's date format."""
+        hour = _bucket_filters("at", (datetime(2026, 8, 5, 17), datetime(2026, 8, 5, 18)))
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        builder.query = ibis.table({"at": "timestamp"}, name="stamps")
+        for rule in hour:
+            builder.query = builder.apply_filter(_dict(rule))
+        self.assertIn("DATETIME2FROMPARTS(2026, 8, 5, 17", ibis.to_sql(builder.query, dialect="mssql"))
+
+    # @feature query.filter-date-on-datetime
+    def test_a_span_on_a_time_column_is_refused(self):
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        builder.query = ibis.table({"at": "time"}, name="stamps")
+        rule = {
+            "type": "filter",
+            "column": {"type": "column", "column_name": "at"},
+            "operator": "within",
+            "value": {"span": "current day"},
+        }
+        self.assertRaises(QueryRefused, builder.apply_filter, _dict(rule))
+
+    # @feature query.filter-relative-date
+    def test_a_span_on_dates_held_as_text_takes_in_the_whole_day(self):
+        for engine in ENGINES:
+            for operator in ("within", "between"):
+                with self.subTest(engine=engine, operator=operator):
+                    rule = (operator, self.VALUES[operator])
+                    self.assert_matches(engine, "String", [rule], ["day", "afternoon"], self.TEXT_DATES)

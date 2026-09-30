@@ -4,6 +4,7 @@ from contextlib import contextmanager, suppress
 from typing import ClassVar, NamedTuple
 
 import frappe
+import ibis
 from frappe.utils.data import (
     add_to_date,
     get_date_str,
@@ -19,6 +20,8 @@ from frappe.utils.data import (
 from sqlalchemy import Column, select, table
 from sqlalchemy import column as sa_column
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
+
+from insights.exceptions import QueryRefused
 
 DATE_TYPES = ("Date", "Datetime")
 
@@ -158,8 +161,7 @@ class Functions:
         if function == "sum_if":
             return func.sum(case((args[0], args[1]), else_=0))
         if function == "between":
-            dates = add_start_and_end_time([args[1], args[2]])
-            return args[0].between(*dates)
+            return within_days(args[0], args[1], args[2])
         if function == "replace":
             return func.replace(args[0], args[1], args[2])
         if function == "substring":
@@ -228,8 +230,7 @@ class Functions:
 
 
 def handle_timespan(column, timespan):
-    dates = add_start_and_end_time(list(resolve_timespan(timespan)))
-    return column.between(*dates)
+    return within_days(column, *resolve_timespan(timespan))
 
 
 def resolve_timespan(timespan) -> tuple[datetime.date, datetime.date]:
@@ -591,16 +592,50 @@ def shift_anchor(anchor: datetime.date, unit: str, count: int) -> datetime.date:
     raise Exception(f"Invalid shift unit - {unit}")
 
 
-def add_start_and_end_time(dates):
-    if not dates:
-        return dates
+def midnight(day):
+    return datetime.datetime.combine(day, datetime.time())
 
-    dates[0] = getdate(dates[0])
-    dates[1] = getdate(dates[1])
-    dates[0] = dates[0].strftime("%Y-%m-%d 00:00:00")
-    dates[1] = dates[1].strftime("%Y-%m-%d 23:59:59")
 
-    return dates
+def is_calendar(column):
+    return column.type().is_date() or column.type().is_timestamp()
+
+
+def typed_instant(column, instant: datetime.datetime):
+    """`instant` as a literal of the column's own type, its zone included.
+
+    Each engine reads text its own way: SQLite compares a date as text, so
+    '2026-08-05' sorts before '2026-08-05 00:00:00', and SQL Server parses text
+    by the login's date format. BigQuery compares no TIMESTAMP with a DATETIME.
+    """
+    if column.type().is_date():
+        return instant.date()
+    return ibis.literal(instant, type=column.type())
+
+
+def day_bounds(column, first, last):
+    """The column, the start of day `first` and the start of the day after `last`.
+
+    A column that holds dates as text is compared as text, against bare dates:
+    ISO text sorts as the dates it spells, and a cast fails the whole query on
+    one value that is not a date.
+    """
+    if column.type().is_time():
+        frappe.throw(
+            frappe._("{0} is a Time column and names no day, so no span can filter it").format(
+                column.get_name()
+            ),
+            QueryRefused,
+        )
+    start = midnight(getdate(first))
+    end = midnight(getdate(last) + datetime.timedelta(days=1))
+    if not is_calendar(column):
+        return column, start.date().isoformat(), end.date().isoformat()
+    return column, typed_instant(column, start), typed_instant(column, end)
+
+
+def within_days(column, first, last):
+    column, start, end = day_bounds(column, first, last)
+    return (column >= start) & (column < end)
 
 
 class BinaryOperations:

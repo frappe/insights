@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
+import ibis
 from frappe.utils.data import get_date_str, getdate
-from sqlalchemy import column as sa_column
 
 from insights.insights.query_builders.sql_functions import (
     get_date_range,
@@ -9,6 +9,7 @@ from insights.insights.query_builders.sql_functions import (
     get_window,
     handle_timespan,
     shift_anchor,
+    within_days,
 )
 from insights.tests.base import InsightsIntegrationTestCase
 
@@ -183,53 +184,54 @@ class TestShiftAnchor(InsightsIntegrationTestCase):
 
 class TestTimespanFilter(InsightsIntegrationTestCase):
     def compiled(self, timespan):
-        expression = handle_timespan(sa_column("posting_date"), timespan)
-        return str(expression.compile(compile_kwargs={"literal_binds": True}))
+        entries = ibis.table({"posting_date": "timestamp"}, name="entries")
+        # SQLite prints a timestamp literal as the text it compares
+        return ibis.to_sql(entries.filter(handle_timespan(entries.posting_date, timespan)), dialect="sqlite")
 
     # @feature query.filter-relative-date
     def test_a_to_date_span_filters_up_to_today(self):
         with patch(NOW, return_value="2026-08-10"):
             sql = self.compiled("Month to Date")
-            self.assertIn("2026-08-01 00:00:00", sql)
-            self.assertIn("2026-08-10 23:59:59", sql)
+            self.assertIn(">= '2026-08-01 00:00:00'", sql)
+            self.assertIn("< '2026-08-11 00:00:00'", sql)
 
     # @feature settings.week-start
     def test_an_existing_span_is_unchanged(self):
         with self.change_settings("Insights Settings", week_starts_on="Monday"):
             with patch(NOW, return_value="2022-11-26"):
                 sql = self.compiled("Current Week")
-                self.assertIn("2022-11-21 00:00:00", sql)
-                self.assertIn("2022-11-27 23:59:59", sql)
+                self.assertIn(">= '2022-11-21 00:00:00'", sql)
+                self.assertIn("< '2022-11-28 00:00:00'", sql)
 
     # @feature query.filter-relative-date
     def test_a_span_given_as_a_list_is_joined(self):
         with patch(NOW, return_value="2022-11-26"):
             sql = self.compiled(["Last", "7", "Days"])
-            self.assertIn("2022-11-19 00:00:00", sql)
-            self.assertIn("2022-11-25 23:59:59", sql)
+            self.assertIn(">= '2022-11-19 00:00:00'", sql)
+            self.assertIn("< '2022-11-26 00:00:00'", sql)
 
     # @feature query.filter-relative-date
     def test_a_span_given_as_a_list_with_a_number_in_it_is_joined(self):
         """The column header seeds the count as a number, not as its word."""
         with patch(NOW, return_value="2022-11-26"):
             sql = self.compiled(["Last", 1, "Day"])
-            self.assertIn("2022-11-25 00:00:00", sql)
-            self.assertIn("2022-11-25 23:59:59", sql)
+            self.assertIn(">= '2022-11-25 00:00:00'", sql)
+            self.assertIn("< '2022-11-26 00:00:00'", sql)
 
     # @feature query.filter-relative-date
     def test_a_span_naming_no_count_reads_as_one_period(self):
         with patch(NOW, return_value="2022-11-26"):
             sql = self.compiled("Last Month")
-            self.assertIn("2022-10-01 00:00:00", sql)
-            self.assertIn("2022-10-31 23:59:59", sql)
+            self.assertIn(">= '2022-10-01 00:00:00'", sql)
+            self.assertIn("< '2022-11-01 00:00:00'", sql)
 
     # @feature query.filter-relative-date-shift
     def test_a_span_can_pin_its_own_anchor(self):
         """A card that must read the same figure whenever it is opened."""
         with patch(NOW, return_value="2026-11-30"):
             sql = self.compiled({"span": "month to date", "anchor": "2026-08-10"})
-            self.assertIn("2026-08-01 00:00:00", sql)
-            self.assertIn("2026-08-10 23:59:59", sql)
+            self.assertIn(">= '2026-08-01 00:00:00'", sql)
+            self.assertIn("< '2026-08-11 00:00:00'", sql)
 
     # @feature query.filter-relative-date-shift
     def test_a_shift_moves_the_anchor_and_the_span_is_measured_again(self):
@@ -242,15 +244,15 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
                     "shift": {"unit": "fiscal year", "count": -1},
                 }
             )
-            self.assertIn("2025-08-01 00:00:00", sql)
-            self.assertIn("2025-08-10 23:59:59", sql)
+            self.assertIn(">= '2025-08-01 00:00:00'", sql)
+            self.assertIn("< '2025-08-11 00:00:00'", sql)
 
     # @feature query.filter-relative-date-shift
     def test_a_shift_with_no_anchor_moves_today(self):
         with patch(NOW, return_value="2026-08-10"):
             sql = self.compiled({"span": "month to date", "shift": {"unit": "year", "count": -1}})
-            self.assertIn("2025-08-01 00:00:00", sql)
-            self.assertIn("2025-08-10 23:59:59", sql)
+            self.assertIn(">= '2025-08-01 00:00:00'", sql)
+            self.assertIn("< '2025-08-11 00:00:00'", sql)
 
     # @feature query.filter-relative-date
     def test_a_value_naming_no_span_is_rejected(self):
@@ -346,3 +348,28 @@ class TestFiscalYearStart(InsightsIntegrationTestCase):
             patch(ERPNEXT_FY, return_value=None),
         ):
             self.assertEqual(get_fiscal_year_start_date(), getdate("1995-04-01"))
+
+
+class TestDayBoundTypes(InsightsIntegrationTestCase):
+    """A bound is a literal of its column's type. Each engine reads text by its own
+    rules: SQL Server by the login's date format, and BigQuery compares no
+    TIMESTAMP with a DATETIME."""
+
+    def compiled(self, column_type, dialect):
+        entries = ibis.table({"posted": column_type}, name="entries")
+        return ibis.to_sql(
+            entries.filter(within_days(entries.posted, "2026-08-05", "2026-08-05")), dialect=dialect
+        )
+
+    # @feature query.filter-date-on-datetime
+    def test_a_bound_takes_the_type_of_its_column(self):
+        cases = [
+            ("timestamp", "mssql", "DATETIME2FROMPARTS(2026, 8, 5"),
+            ("timestamp('UTC')", "bigquery", "TIMESTAMP('2026-08-05T00:00:00+00:00')"),
+            ("timestamp('Asia/Kolkata')", "postgres", "'2026-08-05T00:00:00+05:30' AS TIMESTAMPTZ"),
+            ("date", "mssql", "DATEFROMPARTS(2026, 8, 5)"),
+            ("string", "mysql", ">= '2026-08-05'"),
+        ]
+        for column_type, dialect, bound in cases:
+            with self.subTest(column_type=column_type, dialect=dialect):
+                self.assertIn(bound, self.compiled(column_type, dialect))
