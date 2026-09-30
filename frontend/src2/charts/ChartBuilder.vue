@@ -132,7 +132,6 @@ const showShareDialog = ref(false)
 							<Textarea
 								:placeholder="__('Definitions and caveats')"
 								:rows="3"
-								:debounce="500"
 								:model-value="chart.doc.info ?? ''"
 								@update:model-value="chart.doc.info = $event"
 							/>
