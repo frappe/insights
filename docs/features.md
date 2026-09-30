@@ -395,6 +395,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.get-keeps-no-write | A new endpoint accepts only POST unless it is listed to accept GET, and a test fails when an endpoint that accepts GET commits, enqueues a job before the commit or writes to DuckDB. |
 | permissions.search-respects-access | A search over workbooks and columns returns only what the caller may read. |
 | permissions.agent-profile-respects-access | A column an agent profiles, of a saved query or an unsaved pipeline, is refused every table, column and query the caller could not read through a saved query. |
+| permissions.agent-verify-respects-access | Verifying a workbook runs and names only the queries, charts and dashboards the caller may read. |
 
 ## data-store
 
@@ -470,6 +471,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | tooling.e2e-seeding | An e2e test gets a seeded workbook, chart and viewer over REST before the browser opens. |
 | tooling.agent-run-unsaved-query | An agent runs a pipeline without saving a query, through the method the Builder runs an unsaved query with, and gets a page of its rows. |
 | tooling.agent-profile-column | An agent profiles a column of a saved query or an unsaved pipeline in one call: row, null and distinct counts, range, most frequent values, and coverage per value of another column. Both columns are exact result column names. The answer is cached for 10 minutes unless forced, and a Data Store table that is not stored fails the call, never queues an import. |
+| tooling.agent-verify-workbook | An agent verifies a workbook in one call: every query and chart runs, every dashboard item names a chart the agent may read and every filter link resolves, and each dashboard's charts render with the filters it has of those given. A chart on a query that reads a table not stored is reported so and not run, a given filter no dashboard has is an error, and a chart sort its result has no column for is named, failing the chart only when it has a limit. |
 
 ## telemetry
 

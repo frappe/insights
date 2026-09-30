@@ -115,7 +115,7 @@ def create_test_query(owner, workbook, title=TEST_QUERY_TITLE, operations=None):
         ).insert()
 
 
-def create_test_chart(owner, workbook, query=None, title=TEST_CHART_TITLE):
+def create_test_chart(owner, workbook, query=None, title=TEST_CHART_TITLE, chart_type="Bar", config=None):
     with as_user(owner):
         chart = frappe.get_doc(
             {
@@ -123,8 +123,8 @@ def create_test_chart(owner, workbook, query=None, title=TEST_CHART_TITLE):
                 "title": title,
                 "workbook": workbook,
                 "query": query,
-                "chart_type": "Bar",
-                "config": {},
+                "chart_type": chart_type,
+                "config": config or {},
             }
         ).insert()
     return frappe.get_doc(DT.CHART, chart.name)
@@ -913,9 +913,9 @@ def _source_operation(query):
     return {"type": "source", "table": {"type": "query", "workbook": 0, "query_name": query}}
 
 
-def create_test_dashboard(owner, workbook, chart=None, title=TEST_DASHBOARD_TITLE):
+def create_test_dashboard(owner, workbook, chart=None, title=TEST_DASHBOARD_TITLE, items=None):
     with as_user(owner):
-        items = []
+        items = list(items or [])
         if chart:
             items.append({"id": "chart-1", "type": "chart", "chart": chart})
 
