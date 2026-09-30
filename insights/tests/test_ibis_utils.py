@@ -13,8 +13,8 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
-from insights.insights.query_builders.sql_functions import within_days
 from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
+from insights.utils import deep_convert_dict_to_dict as _dict
 
 
 class IbisQueryBuilderTestCase(InsightsIntegrationTestCase):
@@ -459,6 +459,9 @@ def picker_operators(kind):
     return operators
 
 
+ENGINES = ("duckdb", "sqlite")
+
+
 class TestIbisDateOperators(IbisQueryBuilderTestCase):
     """Every date operator the picker offers, given the one day a reader picked."""
 
@@ -500,47 +503,70 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
             "is_not_set": ["unset"],
         }[operator]
 
-    def matched(self, data_type, operator):
-        rows = [{"label": label, "at": at} for label, at in self.ROWS[data_type].items()]
+    SQLITE_TYPES: ClassVar[dict] = {"Date": "DATE", "Datetime": "TIMESTAMP", "String": "TEXT"}
+    TEXT_DATES: ClassVar[dict] = {
+        "before": "2026-08-04",
+        "day": "2026-08-05",
+        "afternoon": "2026-08-05 13:00:00",
+        "after": "2026-08-06",
+    }
+
+    def matched(self, engine, data_type, rules, rows=None):
+        """The labels of the rows each `(operator, value)` rule keeps, on DuckDB or SQLite."""
+        rows = rows or self.ROWS[data_type]
         column = {"type": "column", "column_name": "at"}
-        operations = [
-            {"type": "code", "code": f"results = {rows}"},
-            {"type": "cast", "column": column, "data_type": data_type},
-            {
-                "type": "filter",
-                "column": column,
-                "operator": operator,
-                "value": self.VALUES.get(operator, self.DAY),
-            },
+        filters = [
+            {"type": "filter", "column": column, "operator": operator, "value": value}
+            for operator, value in rules
         ]
-        return list(self.build_query(operations).execute()["label"])
+        if engine == "duckdb":
+            table = [{"label": label, "at": at} for label, at in rows.items()]
+            operations = [
+                {"type": "code", "code": f"results = {table}"},
+                {"type": "cast", "column": column, "data_type": data_type},
+                *filters,
+            ]
+            return list(self.build_query(operations).execute()["label"])
+
+        connection = ibis.sqlite.connect()
+        connection.raw_sql(f"create table stamps (label TEXT, at {self.SQLITE_TYPES[data_type]})")
+        values = ", ".join(f"('{label}', {f"'{at}'" if at else 'NULL'})" for label, at in rows.items())
+        connection.raw_sql(f"insert into stamps values {values}")
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        builder.query = connection.table("stamps")
+        for rule in filters:
+            builder.query = builder.apply_filter(_dict(rule))
+        return list(builder.query.execute()["label"])
+
+    def assert_matches(self, engine, data_type, rules, expected, rows=None):
+        order = list(rows or self.ROWS[data_type])
+        matched = self.matched(engine, data_type, rules, rows)
+        self.assertEqual(sorted(matched, key=order.index), expected)
 
     # @feature query.filter-date-on-datetime
     def test_every_picker_date_operator_reads_a_day_as_the_whole_day(self):
-        for operator in picker_operators("date"):
+        for engine in ENGINES:
+            for operator in picker_operators("date"):
+                for data_type in self.ROWS:
+                    with self.subTest(engine=engine, operator=operator, data_type=data_type):
+                        value = self.VALUES.get(operator, self.DAY)
+                        self.assert_matches(
+                            engine, data_type, [(operator, value)], self.expected(data_type, operator)
+                        )
+
+    # @feature query.filter-date-on-datetime
+    def test_a_drill_bound_with_a_time_of_day_reads_the_column_type(self):
+        """The rows behind a day of a chart: `>=` its midnight and `<` the next one."""
+        bounds = [(">=", "2026-08-05 00:00:00"), ("<", "2026-08-06 00:00:00")]
+        for engine in ENGINES:
             for data_type in self.ROWS:
-                with self.subTest(operator=operator, data_type=data_type):
-                    order = list(self.ROWS[data_type])
-                    self.assertEqual(
-                        sorted(self.matched(data_type, operator), key=order.index),
-                        self.expected(data_type, operator),
-                    )
+                with self.subTest(engine=engine, data_type=data_type):
+                    self.assert_matches(engine, data_type, bounds, self.DAY_ROWS[data_type])
 
-
-class TestWithinDaysOnSQLite(InsightsIntegrationTestCase):
     # @feature query.filter-relative-date
-    def test_a_day_on_a_sqlite_date_column_takes_in_the_whole_day(self):
-        connection = ibis.sqlite.connect()
-        connection.raw_sql("create table stamps (d DATE, t TIMESTAMP)")
-        connection.raw_sql(
-            "insert into stamps values"
-            " ('2026-08-04', '2026-08-04 23:00:00'),"
-            " ('2026-08-05', '2026-08-05 00:00:00'),"
-            " ('2026-08-05', '2026-08-05 23:59:59.5'),"
-            " ('2026-08-06', '2026-08-06 00:00:00')"
-        )
-        stamps = connection.table("stamps")
-        for column in ("d", "t"):
-            with self.subTest(column=stamps[column].type()):
-                day = within_days(stamps[column], "2026-08-05", "2026-08-05")
-                self.assertEqual(stamps.filter(day).count().execute(), 2)
+    def test_a_span_on_dates_held_as_text_takes_in_the_whole_day(self):
+        for engine in ENGINES:
+            for operator in ("within", "between"):
+                with self.subTest(engine=engine, operator=operator):
+                    rule = (operator, self.VALUES[operator])
+                    self.assert_matches(engine, "String", [rule], ["day", "afternoon"], self.TEXT_DATES)

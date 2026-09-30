@@ -589,18 +589,39 @@ def shift_anchor(anchor: datetime.date, unit: str, count: int) -> datetime.date:
     raise Exception(f"Invalid shift unit - {unit}")
 
 
-def within_days(column, first, last):
-    """From the start of day `first` up to the start of the day after `last`.
+def midnight(day):
+    return datetime.datetime.combine(day, datetime.time())
 
-    A Date column takes date bounds: SQLite stores a date as text, and
-    '2026-08-05' sorts before '2026-08-05 00:00:00'. BigQuery compares no
-    TIMESTAMP with a DATE, so every other column takes the text.
+
+def is_calendar(column):
+    return column.type().is_date() or column.type().is_timestamp()
+
+
+def typed_instant(column, instant: datetime.datetime):
+    """`instant` as a literal of the column's own type.
+
+    Each engine reads text its own way: SQLite compares a date as text, so
+    '2026-08-05' sorts before '2026-08-05 00:00:00', and SQL Server parses text
+    by the login's date format.
     """
-    start = getdate(first)
-    end = getdate(last) + datetime.timedelta(days=1)
-    if column.type().is_date():
-        return (column >= start) & (column < end)
-    return (column >= f"{start} 00:00:00") & (column < f"{end} 00:00:00")
+    return instant.date() if column.type().is_date() else instant
+
+
+def day_bounds(column, first, last):
+    """The column, the start of day `first` and the start of the day after `last`.
+
+    A column that holds dates as text is read as a date.
+    """
+    if not is_calendar(column):
+        column = column.cast("date")
+    start = midnight(getdate(first))
+    end = midnight(getdate(last) + datetime.timedelta(days=1))
+    return column, typed_instant(column, start), typed_instant(column, end)
+
+
+def within_days(column, first, last):
+    column, start, end = day_bounds(column, first, last)
+    return (column >= start) & (column < end)
 
 
 class BinaryOperations:
