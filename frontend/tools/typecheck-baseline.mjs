@@ -20,7 +20,19 @@ function runVueTsc() {
 		{ cwd: frontendDir, encoding: 'utf8' },
 	)
 	const output = `${result.stdout || ''}${result.stderr || ''}`
-	return output.split('\n')
+	return { status: result.status, error: result.error, output, lines: output.split('\n') }
+}
+
+// vue-tsc exits 0 when clean and 2 when it reports type errors. Anything else means it did
+// not run, so zero parsed errors would be no evidence.
+function assertRan(run, errorCount) {
+	const clean = run.status === 0 && errorCount === 0
+	const typeErrors = run.status === 2 && errorCount > 0
+	if (clean || typeErrors) return
+	const reason = run.error ? run.error.message : `exit status ${run.status}`
+	console.error(`typecheck: vue-tsc did not run (${reason}). Run "yarn install" in frontend.`)
+	if (run.output.trim()) console.error(run.output)
+	process.exit(1)
 }
 
 // Groups an error's own line with any indented continuation lines that follow it.
@@ -86,8 +98,10 @@ function writeBaseline(errors) {
 	writeFileSync(baselinePath, keys.join('\n') + (keys.length ? '\n' : ''))
 }
 
-const lines = runVueTsc()
-const errors = parseErrors(lines).filter(isFrontendSource)
+const run = runVueTsc()
+const allErrors = parseErrors(run.lines)
+assertRan(run, allErrors.length)
+const errors = allErrors.filter(isFrontendSource)
 
 if (update) {
 	writeBaseline(errors)
