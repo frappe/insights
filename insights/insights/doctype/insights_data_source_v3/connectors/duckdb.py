@@ -64,10 +64,6 @@ def open_local_duckdb(
     if not read_only and allowed_dir:
         resolved_dir = os.path.realpath(allowed_dir)
         resolved_dir_escaped = _escape_sql_path(resolved_dir)
-
-        with suppress(Exception):
-            db.raw_sql("SET enable_external_access = true")
-
         db.raw_sql(f"SET allowed_directories = ['{resolved_dir_escaped}']")
     else:
         db.raw_sql("SET enable_external_access = false")
@@ -122,7 +118,7 @@ def local_duckdb_write_lock(
     deadline = time.monotonic() + timeout
     lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
     with filelock(lock_name, timeout=timeout):
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - the write open waits for, or fails on, a connection left open
             cached = insights.db_connections.pop(cache_key, None)
             if cached:
                 cached.disconnect()

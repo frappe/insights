@@ -23,7 +23,7 @@ def default_properties() -> dict:
 
 def capture(event: str, interval: str | None = None, **props):
     """Send one event. Telemetry never fails the action it reports on."""
-    with suppress(Exception):
+    with suppress(Exception):  # nosemgrep - telemetry never fails the action it reports on
         frappe_telemetry.capture(
             event,
             "insights",

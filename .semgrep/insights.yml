@@ -52,6 +52,26 @@ rules:
           regex: ^(pass|return( None| \[\]| \{\}| False| 0)?)$
       - focus-metavariable: $BODY
 
+  - id: suppress-swallows-failure
+    languages: [python]
+    severity: ERROR
+    message: >-
+      `suppress(Exception)` hides every failure in the block, as `except Exception: pass`
+      does. Handle the error, suppress only the error you expect, or end the line with
+      `# nosemgrep - <why no failure matters here>`.
+    paths:
+      exclude:
+        - /insights/patches/
+        - /insights/tests/
+        - test_*.py
+    patterns:
+      - pattern: |
+          with contextlib.suppress(..., $ERROR, ...):
+              ...
+      - metavariable-regex:
+          metavariable: $ERROR
+          regex: ^(Exception|BaseException)$
+
   - id: patch-writes-without-controller
     languages: [python]
     severity: ERROR
