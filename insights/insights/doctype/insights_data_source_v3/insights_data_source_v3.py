@@ -111,12 +111,16 @@ class InsightsDataSourceDocument:
 
             return
 
-        credentials_changed = self.has_credentials_changed()
-        if not self.is_site_db and credentials_changed and self.database_type in ["MariaDB", "PostgreSQL"]:
-            self.db_set("is_frappe_db", is_frappe_db(self))
-
         self.status = "Active" if self.test_connection() else "Inactive"
         self.db_set("status", self.status)
+
+        credentials_changed = self.has_credentials_changed()
+        if (
+            self.status == "Active"
+            and credentials_changed
+            and self.database_type in ["MariaDB", "PostgreSQL"]
+        ):
+            self.db_set("is_frappe_db", is_frappe_db(self))
 
         if self.status == "Active" and credentials_changed:
             self.update_table_list()

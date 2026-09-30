@@ -48,10 +48,11 @@ setRouter({
  * Load the session first, as the SPA does in its router guard. An island
  * formats numbers and dates as soon as it has rows, and a chart does not
  * re-read the reader's locale or the site's currency later. If the session
- * fails to load, the island still mounts and uses the defaults.
+ * fails to load, the island does not mount, and the host shows the error: the
+ * defaults would draw every number in the wrong locale.
  */
 export async function mountIsland(component: any, el: HTMLElement, context: Record<string, any>) {
-	await session.initialize().catch(() => {})
+	await session.initialize()
 
 	return mountVueIsland(el, {
 		...context,

@@ -61,7 +61,4 @@ class InsightsSettings(Document):
 
     @property
     def is_subscribed(self):
-        try:
-            return 1 if frappe.conf.sk_insights else 0
-        except Exception:
-            return None
+        return 1 if frappe.conf.sk_insights else 0
