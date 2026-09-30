@@ -65,9 +65,13 @@ rules:
         - /insights/tests/
         - test_*.py
     patterns:
-      - pattern: |
-          with contextlib.suppress(..., $ERROR, ...):
-              ...
+      - pattern-either:
+          - pattern: |
+              with contextlib.suppress(..., $ERROR, ...):
+                  ...
+          - pattern: |
+              with contextlib.suppress(..., (..., $ERROR, ...), ...):
+                  ...
       - metavariable-regex:
           metavariable: $ERROR
           regex: ^(Exception|BaseException)$
