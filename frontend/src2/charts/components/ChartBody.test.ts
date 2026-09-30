@@ -198,6 +198,12 @@ describe('a chart its author explained', () => {
 
 		expect(html).toContain('aria-label="Info"')
 		expect(html).not.toContain(DESCRIPTION)
+		// the card's own `title` names the reading on hover. An empty one around
+		// the mark keeps the browser from showing it over the mark's tooltip
+		const mark = html.indexOf('aria-label="Info"')
+		expect(html.lastIndexOf('title=""', mark)).toBeGreaterThan(
+			html.lastIndexOf('title="Revenue"', mark),
+		)
 		expect(html).toContain('12,300')
 	})
 

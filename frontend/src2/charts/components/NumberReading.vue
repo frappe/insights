@@ -95,8 +95,12 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 				<ChartStateMessage :failure="failure" />
 			</template>
 
+			<!-- An empty `title` ends the card's: a mark's own tooltip is what shows
+			     when the reader points at it. -->
 			<template v-if="$slots['title-suffix']" #title-suffix>
-				<slot name="title-suffix" />
+				<span class="flex items-center" title="">
+					<slot name="title-suffix" />
+				</span>
 			</template>
 
 			<!-- The retry sits in the title row, which has zero height, so the
