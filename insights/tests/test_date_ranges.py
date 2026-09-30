@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
+import ibis
 from frappe.utils.data import get_date_str, getdate
-from sqlalchemy import column as sa_column
 
 from insights.insights.query_builders.sql_functions import (
     get_date_range,
@@ -183,8 +183,8 @@ class TestShiftAnchor(InsightsIntegrationTestCase):
 
 class TestTimespanFilter(InsightsIntegrationTestCase):
     def compiled(self, timespan):
-        expression = handle_timespan(sa_column("posting_date"), timespan)
-        return str(expression.compile(compile_kwargs={"literal_binds": True}))
+        entries = ibis.table({"posting_date": "timestamp"}, name="entries")
+        return ibis.to_sql(entries.filter(handle_timespan(entries.posting_date, timespan)))
 
     # @feature query.filter-relative-date
     def test_a_to_date_span_filters_up_to_today(self):

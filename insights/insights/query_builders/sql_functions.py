@@ -592,10 +592,14 @@ def shift_anchor(anchor: datetime.date, unit: str, count: int) -> datetime.date:
 def within_days(column, first, last):
     """From the start of day `first` up to the start of the day after `last`.
 
-    An end at 23:59:59 dropped a timestamp in the last second of the day.
+    A Date column takes date bounds: SQLite stores a date as text, and
+    '2026-08-05' sorts before '2026-08-05 00:00:00'. BigQuery compares no
+    TIMESTAMP with a DATE, so every other column takes the text.
     """
     start = getdate(first)
     end = getdate(last) + datetime.timedelta(days=1)
+    if column.type().is_date():
+        return (column >= start) & (column < end)
     return (column >= f"{start} 00:00:00") & (column < f"{end} 00:00:00")
 
 

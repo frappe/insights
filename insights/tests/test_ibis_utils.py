@@ -4,6 +4,7 @@ from typing import ClassVar
 from unittest.mock import patch
 
 import frappe
+import ibis
 from ibis.backends.postgres import Backend as PostgresBackend
 
 from insights.insights.doctype.insights_chart_v3.chart_query import (
@@ -12,6 +13,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
+from insights.insights.query_builders.sql_functions import within_days
 from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
 
 
@@ -452,7 +454,9 @@ def picker_operators(kind):
     )
     with open(path) as source:
         table = re.search(rf"\n\t{kind}: \[(.*?)\n\t\]", source.read(), re.S).group(1)
-    return re.findall(r"operator: '([^']+)'", table)
+    operators = re.findall(r"operator: '([^']+)'", table)
+    assert operators, f"read no operator off the picker's {kind} table"
+    return operators
 
 
 class TestIbisDateOperators(IbisQueryBuilderTestCase):
@@ -521,3 +525,22 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
                         sorted(self.matched(data_type, operator), key=order.index),
                         self.expected(data_type, operator),
                     )
+
+
+class TestWithinDaysOnSQLite(InsightsIntegrationTestCase):
+    # @feature query.filter-relative-date
+    def test_a_day_on_a_sqlite_date_column_takes_in_the_whole_day(self):
+        connection = ibis.sqlite.connect()
+        connection.raw_sql("create table stamps (d DATE, t TIMESTAMP)")
+        connection.raw_sql(
+            "insert into stamps values"
+            " ('2026-08-04', '2026-08-04 23:00:00'),"
+            " ('2026-08-05', '2026-08-05 00:00:00'),"
+            " ('2026-08-05', '2026-08-05 23:59:59.5'),"
+            " ('2026-08-06', '2026-08-06 00:00:00')"
+        )
+        stamps = connection.table("stamps")
+        for column in ("d", "t"):
+            with self.subTest(column=stamps[column].type()):
+                day = within_days(stamps[column], "2026-08-05", "2026-08-05")
+                self.assertEqual(stamps.filter(day).count().execute(), 2)
