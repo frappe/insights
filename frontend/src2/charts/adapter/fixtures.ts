@@ -1011,6 +1011,13 @@ function axisConfig() {
 	}
 }
 
+/**
+ * The types that hand the renderer something other than the result's rows: a Map
+ * folds them into regions, a Number Chart reads the newest one. Every other type
+ * must pass the rows on whole.
+ */
+export const RESHAPES_ROWS = ['Map', 'Number']
+
 /** A Chart of `chart_type` over the adversarial result, reading every column it can. */
 export function adversarialChart(chart_type: string): ChartAdapterInput {
 	const config = ADVERSARIAL_CONFIGS[chart_type]

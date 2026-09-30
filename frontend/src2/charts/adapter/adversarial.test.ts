@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CHARTS } from '../../types/chart.types'
 import type { QueryResult } from '../../types/query.types'
-import { adversarialChart } from './fixtures'
+import { adversarialChart, RESHAPES_ROWS } from './fixtures'
 import { adaptChart } from './index'
 
 // Every chart type over the one result that holds what has reached a screen
@@ -90,7 +90,9 @@ describe.each(CHARTS)('a %s chart over nulls, text numbers and boundary dates', 
 
 	// @feature charts.every-type-draws-what-the-result-holds
 	it('drops no row and merges no two values of a column', () => {
-		for (const rows of rowArraysOf(filler?.props, input.result)) {
+		const found = rowArraysOf(filler?.props, input.result)
+		if (!RESHAPES_ROWS.includes(chart_type)) expect(found).not.toHaveLength(0)
+		for (const rows of found) {
 			expect(rows).toHaveLength(input.result.rows.length)
 			for (const { name } of input.result.columns) {
 				const distinct = (list: any[]) =>
