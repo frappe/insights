@@ -252,7 +252,7 @@ class WarehouseTableWriter:
         return total_rows
 
     def _table_exists(self, db: DuckDBBackend) -> bool:
-        return bool(db.list_tables(like=f"^{self.table_name}$"))
+        return self.table_name in db.list_tables()
 
     def _add_missing_columns(self, db: DuckDBBackend, incoming: Table) -> None:
         """Add columns the source has gained since the last import.
