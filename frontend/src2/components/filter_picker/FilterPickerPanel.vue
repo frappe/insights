@@ -553,6 +553,8 @@ const cancelled = ref(false)
 // a pick left open commits when the popover closes: a tick on the multi stage,
 // or the days the calendar wrote into the input
 onBeforeUnmount(() => {
+	// a range still on its way belongs to a picker the reader has closed
+	rangeRequest++
 	if (cancelled.value) return
 	if (!draft.value) {
 		// A list the reader emptied is the filter taken off, not a pick half made.
