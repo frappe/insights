@@ -88,6 +88,15 @@ class TestValidateExpression(unittest.TestCase):
         result = self._validate("amount.sum()")
         self.assertTrue(result["is_valid"], result)
 
+    @unittest.skipUnless(is_safe_exec_enabled(), "expression execution requires server scripts enabled")
+    # @feature query.expression-column-named-like-io
+    def test_the_editor_reads_a_column_named_like_an_io_method_as_the_run_does(self):
+        columns = json.dumps([{"value": "to_date", "description": "String"}])
+
+        self.assertTrue(utils.validate_expression("q.to_date", columns)["is_valid"])
+        with self.assertRaises(frappe.PermissionError):
+            utils.validate_expression("q.to_csv('/tmp/does-not-matter.csv')", columns)
+
     # --- the help the editor prints beside an expression ---
 
     # @feature query.expression-help
@@ -424,6 +433,35 @@ class TestEvaluateExpression(InsightsIntegrationTestCase):
             "'day' is a column and a function",
             "q['day']",
         )
+
+    # @feature query.expression-column-named-like-io
+    def test_a_column_named_like_a_reader_reads_as_a_column_bare_and_on_a_table(self):
+        query = self.build(
+            rename("description", "from_plan"),
+            mutate("bare", "from_plan.length()"),
+            mutate("on_table", "q.from_plan.length()"),
+        )
+
+        self.assertIn("bare", query.columns)
+        self.assertIn("on_table", query.columns)
+
+    # @feature query.expression-cannot-reach-files
+    def test_a_column_named_like_a_writer_reaches_no_file(self):
+        """A table's own method outranks its column on attribute access, and a
+        bare name was once `getattr(table, name)`, the bound method."""
+        import os
+        import tempfile
+
+        target = os.path.join(tempfile.gettempdir(), "insights_expression_column_probe.csv")
+        from insights.exceptions import ExpressionSyntaxError
+
+        for expression, refusal in (
+            (f"to_csv({target!r})", ExpressionSyntaxError),
+            (f"q.to_csv({target!r})", frappe.PermissionError),
+        ):
+            with self.subTest(expression=expression), self.assertRaises(refusal):
+                self.build(rename("description", "to_csv"), mutate("written", expression))
+            self.assertFalse(os.path.exists(target))
 
     # @feature query.expression-column-named-like-function
     def test_the_validator_reads_a_column_named_like_a_function_as_the_run_does(self):

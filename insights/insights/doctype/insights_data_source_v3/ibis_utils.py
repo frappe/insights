@@ -1742,7 +1742,7 @@ def exec_with_return(
     _globals: dict | None = None,
     _locals: dict | None = None,
 ):
-    assert_expression_has_no_io(script)
+    assert_expression_has_no_io(script, _globals)
 
     tree = ast.parse(script)
 

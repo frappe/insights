@@ -1,4 +1,5 @@
 import ast
+import functools
 import json
 import re
 import sys
@@ -46,19 +47,46 @@ def is_refused_in_expression(name: str) -> bool:
     return is_io_attribute(name) or name in BACKEND_ATTRIBUTE_NAMES or name in RUN_ATTRIBUTE_NAMES
 
 
-def assert_expression_has_no_io(expression: str) -> None:
+@functools.cache
+def ibis_attribute_names() -> frozenset[str]:
+    names = set(dir(ibis))
+    classes = [ir.Expr]
+    while classes:
+        cls = classes.pop()
+        names.update(dir(cls))
+        classes.extend(cls.__subclasses__())
+    return frozenset(names)
+
+
+def is_column_attribute(obj, name: str) -> bool:
+    """Whether `obj.name` reads a column of the table `obj`.
+
+    A name that ibis defines on any expression is never one: on the table it is
+    the method, and `safe_eval` checks no attribute at run time, so the same name
+    on a column would be reachable too.
+    """
+    return isinstance(obj, ir.Table) and name in obj.columns and name not in ibis_attribute_names()
+
+
+def assert_expression_has_no_io(expression: str, context: dict | None = None) -> None:
     """Refuse an expression that names an I/O, backend or run attribute.
 
     Checked in the source rather than at evaluation: RestrictedPython compiles
     `a.b` to a guard call passing the literal `b` and leaves no `getattr`, so an
-    attribute name is always spelled out here.
+    attribute name is always spelled out here. An I/O name that is a column of a
+    table in `context` passes.
     """
+    tables = None
     for name in attributes_of(expression):
         if is_refused_in_expression(name):
-            frappe.throw(
-                f"'{name}' is not available in an expression",
-                frappe.PermissionError,
-            )
+            if tables is None:
+                tables = {key: value for key, value in (context or {}).items() if isinstance(value, ir.Table)}
+            if is_io_attribute(name) and any(is_column_attribute(t, name) for t in tables.values()):
+                continue
+            message = f"'{name}' is not available in an expression"
+            if holder := next((key for key, table in tables.items() if name in table.columns), None):
+                message += f". Read the column as {holder}['{name}']"
+            frappe.throw(message, frappe.PermissionError)
 
 
 def runs_sql(expression: str) -> bool:
@@ -512,11 +540,13 @@ def handle_attribute_error(error: AttributeError, line: int = 1):
 
 def validate_types(expression: str, columns: list[dict]):
     schema = get_ibis_dtype(columns)
+    validation_table = ibis.table(schema, name="validation_table")
+    # the run's source check, which lets through a column named like an I/O method
+    assert_expression_has_no_io(expression, table_names(validation_table))
     if not schema:
         return {"is_valid": True, "errors": []}
 
     try:
-        validation_table = ibis.table(schema, name="validation_table")
         from insights.insights.doctype.insights_data_source_v3.sandbox import expression_globals
 
         eval_context = eval_script(validation_table, expression)
@@ -573,9 +603,6 @@ def validate_expression(expression: str, column_options: str):
     syntax_result = validate_syntax(expression)
     if not syntax_result["is_valid"]:
         return syntax_result
-
-    # validate_types() below evaluates the expression, so the same rule applies
-    assert_expression_has_no_io(expression)
 
     tree = ast.parse(expression)
     name_result = validate_names(tree, columns)

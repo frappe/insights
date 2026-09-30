@@ -16,7 +16,7 @@ from frappe.utils.safe_exec import NamespaceDict, get_python_builtins, get_safe_
 
 from insights.permission_user import script_session
 
-from .ibis.utils import BACKEND_ATTRIBUTE_NAMES, is_io_attribute
+from .ibis.utils import BACKEND_ATTRIBUTE_NAMES, is_column_attribute, is_io_attribute
 
 SCRIPT_NAMES = ("FrappeClient", "json", "orjson", "as_json", "_dict", "dict", "log", "_", "scrub")
 SCRIPT_FRAPPE = (
@@ -266,7 +266,7 @@ def no_io(guard):
         if (getattr(owner, "__module__", None) or "").partition(".")[0] in ("pandas", "ibis", "numpy") and (
             name in ARRAY_WRITERS
             or name in BACKEND_ATTRIBUTE_NAMES
-            or (is_io_attribute(name) and name not in IN_MEMORY)
+            or (is_io_attribute(name) and name not in IN_MEMORY and not is_column_attribute(obj, name))
         ):
             raise frappe.PermissionError(
                 f"Code in a query cannot reach a file or a connection through {name}"
