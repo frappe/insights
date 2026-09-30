@@ -207,7 +207,7 @@ def _dashboard_chart_counts(names: list[str]) -> dict[str, int]:
     return {str(row.parent): row.charts for row in rows}
 
 
-@insights_whitelist()
+@insights_whitelist(methods=["POST"])
 def update_dashboard_preview(dashboard_name: str):
     frappe.has_permission("Insights Dashboard v3", ptype="read", doc=dashboard_name, throw=True)
     dashboard = frappe.get_doc("Insights Dashboard v3", dashboard_name)
