@@ -59,6 +59,10 @@ _Avoid_: palette (it is how the picker behaves, not what it is called. "palette"
 A column or expression aggregated with an aggregation type (sum, count, …).
 _Avoid_: metric
 
+**Trend line**:
+The straight least-squares fit through a Measure's plotted points, drawn over the Chart as a reference line. Stored as a reference line whose `aggregate` is `trend`. A point's x is its position, so every period is one step.
+_Avoid_: slope line, regression line, fit line
+
 **Dimension**:
 A column that results are grouped or split by, optionally at a Grain.
 _Avoid_: group-by column

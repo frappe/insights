@@ -93,6 +93,9 @@ export type YAxis = {
 	reference_lines?: ReferenceLine[]
 }
 export type ReferenceAggregate = 'average' | 'median' | 'min' | 'max' | 'sum'
+// What a computed line reads off its Measure: a flat aggregate, or a trend line,
+// the straight least-squares fit through the Measure's plotted points.
+export type ReferenceComputed = ReferenceAggregate | 'trend'
 export type ReferenceLine = {
 	// What this line is, for as long as it exists. The form keys its rows on it:
 	// keyed by index, removing one re-keys every line after it and an open
@@ -108,7 +111,7 @@ export type ReferenceLine = {
 	// definition, and a copy can disagree with it.
 	value?: number | string
 	measure_name?: string
-	aggregate?: ReferenceAggregate
+	aggregate?: ReferenceComputed
 	// What develop called the same thing before this branch named it `aggregate`.
 	// The patch dropped it from every stored config. The server's read path
 	// still reads it, for a config an import delivers.

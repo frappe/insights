@@ -7,6 +7,7 @@ import type {
 	ChartTooltipColumn,
 	ChartValueAxisOptions,
 	ChartXAxisOptions,
+	ChartTokens,
 	ReferenceLine as PlotReferenceLine,
 	SeriesStyle,
 	TimeGrain,
@@ -18,6 +19,7 @@ import { getFormattedDate } from '../../query/helpers'
 import type {
 	MixedChartConfig,
 	ReferenceAggregate,
+	ReferenceLabelPlacement,
 	ReferenceLine,
 	Series,
 	SeriesLine,
@@ -86,10 +88,13 @@ function adaptAxisChart(
 	}
 
 	const seriesConfig: Record<string, SeriesStyle> = {}
+	const trends = trendLinesFor(config, columns, input.result.rows, horizontal, input.tokens)
 	for (const column of columns) {
 		const series = seriesByColumn.get(column)
 		const owns = series ? columnsOwned.get(series) === 1 : false
 		const style = styleFor(config, series, mark, owns, overlap)
+		const trend = trends.get(column)
+		if (trend) style.echartOptions = { ...style.echartOptions, markLine: trend }
 		if (Object.keys(style).length) seriesConfig[column] = style
 	}
 
@@ -347,6 +352,8 @@ function referenceLinesFor(
 ): PlotReferenceLine[] {
 	const lines: PlotReferenceLine[] = []
 	for (const line of config.y_axis?.reference_lines || []) {
+		// a trend line is not a rule at one value. See `trendLinesFor`.
+		if (line.aggregate === 'trend') continue
 		// A line labels itself in the scale it is plotted against, so a rule on the
 		// right axis reads as that axis's ticks do.
 		const on = line.align === 'Right' && rightFormat ? rightFormat : format
@@ -398,7 +405,7 @@ function aggregatePositionOf(
 ): ReferencePosition | undefined {
 	const aggregate = line.aggregate
 	const measure = line.measure_name
-	if (!aggregate || !measure) return
+	if (!aggregate || aggregate === 'trend' || !measure) return
 
 	const sources = columns.filter((column) => measureNameFor(config, column) === measure)
 
@@ -441,4 +448,114 @@ function aggregateOf(aggregate: ReferenceAggregate, values: number[]): number {
 
 	const total = values.reduce((sum, value) => sum + value, 0)
 	return aggregate === 'sum' ? total : total / values.length
+}
+
+/**
+ * The straight line through `values` that misses them least, by least squares.
+ * A value's x is its position, so a gap in the dates is one step, like every
+ * other. Nulls are skipped. Fewer than two points fit no line.
+ */
+export function fitLine(
+	values: (number | null)[],
+): { slope: number; intercept: number } | undefined {
+	const points = values.flatMap((y, x) => (y === null ? [] : [{ x, y }]))
+	if (points.length < 2) return
+
+	const meanX = points.reduce((sum, p) => sum + p.x, 0) / points.length
+	const meanY = points.reduce((sum, p) => sum + p.y, 0) / points.length
+	let covariance = 0
+	let variance = 0
+	for (const { x, y } of points) {
+		covariance += (x - meanX) * (y - meanY)
+		variance += (x - meanX) ** 2
+	}
+	const slope = covariance / variance
+	return { slope, intercept: meanY - slope * meanX }
+}
+
+/**
+ * Each trend line, as the `markLine` of the series it fits, keyed by column.
+ *
+ * v2 draws a reference line as a rule at one value, on a host series of its own,
+ * and a trend line has two ends at different heights. So it rides its own series,
+ * through the series' `echartOptions`, and is drawn the way v2 draws a rule: the
+ * same ink, weight, dash and label plate. Riding the series, it sits on that
+ * series' axis, and the legend hides it with the series. `silent` keeps it out
+ * of the tooltip and the click.
+ *
+ * A split plots a Measure as several columns, and one fit through all of them
+ * means nothing, so each column gets its own. The line runs from the first
+ * point it fits to the last.
+ */
+function trendLinesFor(
+	config: MixedChartConfig,
+	columns: string[],
+	rows: QueryResultRow[],
+	horizontal: boolean,
+	tokens?: ChartTokens,
+): Map<string, Record<string, any>> {
+	const x = config.x_axis?.dimension?.dimension_name
+	const byColumn = new Map<string, Record<string, any>[]>()
+	for (const line of config.y_axis?.reference_lines || []) {
+		if (line.aggregate !== 'trend' || !line.measure_name || !x) continue
+		for (const column of columns) {
+			if (measureNameFor(config, column) !== line.measure_name) continue
+			const values = rows.map((row) => toNumber(row[column]))
+			const fit = fitLine(values)
+			if (!fit) continue
+
+			const first = values.findIndex((value) => value !== null)
+			const last = values.length - 1 - [...values].reverse().findIndex((v) => v !== null)
+			const coord = (index: number) => {
+				const point = [rows[index][x], fit.intercept + fit.slope * index]
+				return horizontal ? point.reverse() : point
+			}
+			const color = line.color || tokens?.axisLabel
+			const label = line.label || __('{0} trend', column)
+			const entry = [
+				{
+					coord: coord(first),
+					lineStyle: {
+						...(line.dashed ? dashedLine(REFERENCE_LINE_WIDTH) : {}),
+						width: REFERENCE_LINE_WIDTH,
+						color,
+					},
+					label: {
+						show: true,
+						position: LABEL_PLACEMENTS[line.label_placement ?? 'end-top'],
+						formatter: () => label,
+						color,
+						fontSize: DATA_LABEL_FONT_SIZE,
+						backgroundColor: tokens
+							? `color-mix(in srgb, ${tokens.backdrop} ${LABEL_PLATE_OPACITY}%, transparent)`
+							: undefined,
+						padding: LABEL_PADDING,
+					},
+				},
+				{ coord: coord(last) },
+			]
+			byColumn.set(column, [...(byColumn.get(column) || []), entry])
+		}
+	}
+	return new Map(
+		[...byColumn].map(([column, data]) => [column, { silent: true, symbol: 'none', data }]),
+	)
+}
+
+// v2's reference-line style, in `frappe-ui/src/charts/referenceLines.ts`. The
+// package exports none of it, so the values are restated here.
+const REFERENCE_LINE_WIDTH = 1
+const DATA_LABEL_FONT_SIZE = 11
+const LABEL_PADDING = [2, 4]
+const LABEL_PLATE_OPACITY = 80
+const LABEL_PLACEMENTS: Record<ReferenceLabelPlacement, string> = {
+	'start-top': 'insideStartTop',
+	'start-bottom': 'insideStartBottom',
+	'end-top': 'insideEndTop',
+	'end-bottom': 'insideEndBottom',
+}
+
+/** v2's `dashedLine`: dash and gap in multiples of the width. */
+function dashedLine(width: number) {
+	return { type: [width * 3.5, width * 3], width }
 }

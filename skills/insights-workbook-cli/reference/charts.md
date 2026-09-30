@@ -132,6 +132,7 @@ Keys on every chart config:
   aggregate of one of the chart's own measures, named and not copied — or a constant with `value`.
   `axis: "x"` plots a vertical rule at a category or date value. `align` picks the axis a `y` rule
   is read against, and `label_placement`, `color` and `dashed` are the rest of its look.
+- A trend line is a reference line with `"aggregate": "trend"`: the straight least-squares fit through a plotted measure's points, by position, so each period is one step. Write `{ "axis": "y", "measure_name": "Revenue", "aggregate": "trend", "dashed": true }`. It sits on the axis of the measure's own series, so `align` does nothing. A split gets one line per split value. Nulls are skipped, and a series with fewer than two points gets none. The label defaults to "<column> trend". Hiding the series in the legend hides its trend line too. Use it on a timeline, when the question is which way a measure is heading.
 - `tooltip: { "measures": [ ... ] }`: measures that reach the tooltip and nothing else — no series,
   no legend entry, no place on the value axis. For the count behind a rate, or a target beside an
   actual. A dimension cannot go here: every tooltip value is one per plotted row.

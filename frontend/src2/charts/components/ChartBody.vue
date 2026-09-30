@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button, LoadingIndicator } from 'frappe-ui'
-import { ChartContainer } from 'frappe-ui/charts'
+import { ChartContainer, useChartTokens } from 'frappe-ui/charts'
 import { RefreshCcw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { refusalDetail, refusalHeadline } from '../../not_permitted'
@@ -81,6 +81,11 @@ const config = computed(() => {
 })
 const result = computed(() => props.chart.result || emptyResult())
 
+// read against the card, so a trend line takes the ink v2 gives a rule here, and
+// again when the theme flips
+const root = ref<HTMLElement>()
+const { tokens } = useChartTokens(root)
+
 // Whether the filler renders the states itself. A property of the chart type, so
 // it is settled before there is a result to adapt.
 const ownsStates = computed(() => rendersOwnCards(chart_type.value))
@@ -101,6 +106,7 @@ const filler = computed(() => {
 		comparisonRows: props.chart.comparisonRows,
 		title: props.title,
 		description: props.description || undefined,
+		tokens: tokens.value,
 		reading: props.reading,
 		readonly: readonly.value,
 		sort: props.chart.sort,
@@ -284,7 +290,12 @@ function reportSegment(target: DrillDownTarget) {
 </script>
 
 <template>
-	<div class="relative h-full w-full" data-testid="chart" @click.capture="rememberPoint">
+	<div
+		ref="root"
+		class="relative h-full w-full"
+		data-testid="chart"
+		@click.capture="rememberPoint"
+	>
 		<component
 			v-if="filler && (state === 'chart' || ownsStates)"
 			:is="filler.component"

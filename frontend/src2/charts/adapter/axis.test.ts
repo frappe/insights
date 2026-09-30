@@ -1,6 +1,7 @@
-import { BarChart, LineChart } from 'frappe-ui/charts'
+import { BarChart, LineChart, type ChartTokens } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
 import type { ReferenceLine } from '../../types/chart.types'
+import { fitLine } from './axis'
 import { adaptChart } from './index'
 import { axisChart, type AxisChartSpec } from './fixtures'
 
@@ -823,5 +824,118 @@ describe('drilling into a point', () => {
 			// what the card then looks the column up by
 			expect(input.result.columns.map((c) => c.name)).toContain(target!.column)
 		}
+	})
+})
+
+describe('the fit a trend line draws', () => {
+	// @feature charts.trend-line
+	it('fits the slope and intercept by least squares, x being the position', () => {
+		expect(fitLine([1, 3, 5, 7])).toEqual({ slope: 2, intercept: 1 })
+		expect(fitLine([2, 4, 3])).toEqual({ slope: 0.5, intercept: 2.5 })
+	})
+
+	// @feature charts.trend-line
+	it('skips a null and keeps the position of every point after it', () => {
+		const fit = fitLine([1, null, 5, 7])
+		expect(fit?.slope).toBeCloseTo(2)
+		expect(fit?.intercept).toBeCloseTo(1)
+	})
+
+	// @feature charts.trend-line
+	it('fits nothing through fewer than two points', () => {
+		expect(fitLine([])).toBeUndefined()
+		expect(fitLine([null, 4, null])).toBeUndefined()
+	})
+})
+
+describe('a trend line', () => {
+	const tokens = { axisLabel: 'oklch(0.58 0 0)', backdrop: '#242424' } as ChartTokens
+	const trend = { aggregate: 'trend', measure_name: 'revenue', dashed: true } as const
+	const spec = (overrides: Partial<AxisChartSpec> = {}): AxisChartSpec => ({
+		type: 'Line',
+		dimension: 'region',
+		categories: ['North', 'South', 'East'],
+		measures: ['revenue'],
+		readings: { revenue: [10, 30, 50] },
+		referenceLines: [trend],
+		...overrides,
+	})
+	const propsWith = (overrides: Partial<AxisChartSpec> = {}) => {
+		const filler = adaptChart({ ...axisChart(spec(overrides)), tokens })
+		if (!filler) throw new Error('the adapter rendered nothing for this Chart')
+		return filler.props
+	}
+	const markLineOf = (props: Record<string, any>, column: string) =>
+		props.seriesConfig?.[column]?.echartOptions?.markLine
+
+	// @feature charts.trend-line
+	it('rides the series it fits, silent, in the ink v2 gives a reference line', () => {
+		const props = propsWith()
+		expect(props.referenceLines).toBeUndefined()
+		expect(markLineOf(props, 'revenue')).toEqual({
+			silent: true,
+			symbol: 'none',
+			data: [
+				[
+					{
+						coord: ['North', 10],
+						lineStyle: { type: [3.5, 3], width: 1, color: tokens.axisLabel },
+						label: {
+							show: true,
+							position: 'insideEndTop',
+							formatter: expect.any(Function),
+							color: tokens.axisLabel,
+							fontSize: 11,
+							backgroundColor: 'color-mix(in srgb, #242424 80%, transparent)',
+							padding: [2, 4],
+						},
+					},
+					{ coord: ['East', 50] },
+				],
+			],
+		})
+		expect(markLineOf(props, 'revenue').data[0][0].label.formatter()).toBe('revenue trend')
+	})
+
+	// @feature charts.trend-line
+	it('takes the color and label its author gave it', () => {
+		const props = propsWith({
+			referenceLines: [{ ...trend, color: '#ff0000', label: 'Direction' }],
+		})
+		const start = markLineOf(props, 'revenue').data[0][0]
+		expect(start.lineStyle.color).toBe('#ff0000')
+		expect(start.label.color).toBe('#ff0000')
+		expect(start.label.formatter()).toBe('Direction')
+	})
+
+	// @feature charts.trend-line
+	it('fits each column of a split on its own', () => {
+		const props = propsWith({
+			splitBy: { dimension: 'channel', into: ['Retail', 'Online'] },
+			readings: { Retail: [10, 20, 30], Online: [60, 40, 20] },
+		})
+		expect(markLineOf(props, 'Retail').data[0].map((p: any) => p.coord)).toEqual([
+			['North', 10],
+			['East', 30],
+		])
+		expect(markLineOf(props, 'Online').data[0].map((p: any) => p.coord)).toEqual([
+			['North', 60],
+			['East', 20],
+		])
+	})
+
+	// @feature charts.trend-line
+	it('runs from the first point it fits to the last, and fits no line through one point', () => {
+		const props = propsWith({
+			categories: ['North', 'South', 'East', 'West'],
+			readings: { revenue: [null, 10, 30, null] },
+		})
+		expect(markLineOf(props, 'revenue').data[0].map((p: any) => p.coord)).toEqual([
+			['South', 10],
+			['East', 30],
+		])
+		expect(markLineOf(propsWith({ readings: { revenue: [null, 10, null] } }), 'revenue')).toBe(
+			undefined,
+		)
 	})
 })
