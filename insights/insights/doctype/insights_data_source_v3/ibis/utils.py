@@ -511,6 +511,9 @@ def handle_attribute_error(error: AttributeError, line: int = 1):
     if obj is None or attr_name is None:
         return create_error(line=line, column=0, message=f"Type error: {error_msg}")
 
+    if isinstance(obj, ir.Table):
+        return create_error(line=line, column=0, message=f"Column '{attr_name}' not found.")
+
     message = f"Type error: {error_msg}"
     hint = None
 

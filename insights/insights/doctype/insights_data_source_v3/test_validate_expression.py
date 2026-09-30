@@ -97,6 +97,16 @@ class TestValidateExpression(unittest.TestCase):
         with self.assertRaises(frappe.PermissionError):
             utils.validate_expression("q.to_csv('/tmp/does-not-matter.csv')", columns)
 
+    @unittest.skipUnless(is_safe_exec_enabled(), "expression execution requires server scripts enabled")
+    # @feature query.expression-validation
+    def test_the_editor_refuses_a_missing_column_read_as_an_attribute(self):
+        """A missing attribute once read as `None`, so `q.nope` was valid."""
+        for expression in ("q.nope", "q.nope > 1"):
+            with self.subTest(expression=expression):
+                result = self._validate(expression)
+                self.assertFalse(result["is_valid"])
+                self.assertEqual(result["errors"][0]["message"], "Column 'nope' not found.")
+
     # --- the help the editor prints beside an expression ---
 
     # @feature query.expression-help
@@ -210,6 +220,16 @@ def rename(column_name, new_name):
     return {"type": "rename", "column": {"type": "column", "column_name": column_name}, "new_name": new_name}
 
 
+def join_on(expression):
+    return {
+        "type": "join",
+        "join_type": "left",
+        "table": {"type": "table", "data_source": "Site DB", "table_name": "tabUser"},
+        "select_columns": [{"type": "column", "column_name": "full_name"}],
+        "join_condition": {"join_expression": {"type": "expression", "expression": expression}},
+    }
+
+
 def custom_operation(expression):
     return {"type": "custom_operation", "expression": {"type": "expression", "expression": expression}}
 
@@ -298,6 +318,19 @@ class TestEvaluateExpression(InsightsIntegrationTestCase):
         )
         # its own text prints the expression tree of each argument
         self.assertNotIn("DatabaseTable", frappe.parse_json(frappe.local.message_log[-1])["message"])
+
+    # @feature query.expression-error-names-operation
+    def test_a_join_condition_names_the_join_and_the_expression(self):
+        from insights.exceptions import UnknownColumn
+
+        for expression in ("t1.allocated_to == t2.nope", "on = t1.allocated_to == t2.nope\non"):
+            with self.subTest(expression=expression):
+                self.assert_refused(
+                    UnknownColumn,
+                    [join_on(expression)],
+                    "Operation 2 (join): UnknownColumn: AttributeError: 'Table' object has no attribute 'nope'",
+                    f"Expression: {expression}",
+                )
 
     # @feature query.expression-error-names-operation
     def test_a_custom_operation_names_the_operation_and_the_expression(self):

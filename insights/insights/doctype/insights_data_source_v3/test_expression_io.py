@@ -110,6 +110,16 @@ class TestExpressionIsolation(UnitTestCase):
                 exec_with_return(expression, {**get_functions(), **context})
             self.assertIn(f"Read the column as {hint}", str(refusal.exception))
 
+    # @feature query.join-expression
+    def test_a_missing_attribute_is_an_error_on_every_line(self):
+        """A missing attribute once read as `None` on a line before the last, so a
+        join condition of two lines joined every row to every row."""
+        q = ibis.memtable({"a": [1]})
+        for expression in ("q.nope", "on = q.nope\non"):
+            with self.subTest(expression=expression), self.assertRaises(AttributeError) as error:
+                exec_with_return(expression, {**get_functions(), "q": q})
+            self.assertIs(error.exception.obj, q)
+
     # @feature query.expression-cannot-reach-files
     def test_every_io_backend_and_run_name_ibis_defines_is_refused(self):
         """Enumerated from ibis, so a release that adds a name is tested with it."""
