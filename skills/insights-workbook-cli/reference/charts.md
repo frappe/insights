@@ -2,34 +2,25 @@
 
 A chart has a `title`, a base `query` (one query doc), a `chart_type`, and a `config` (JSON).
 
-**The chart does the aggregation.** At render time the chart builds a new data query that sources
-FROM its base query. It appends its own `summarize` from the config (or `pivot_wider` when a split
-or columns dimension is set), then `order_by` and `limit`. Insights applies dashboard filters to the
-base query *before* that aggregation. So base queries stay per-row.
+**The chart does the aggregation.** At render time the chart builds a new data query that sources FROM its base query. It appends its own `summarize` from the config (or `pivot_wider` when a split or columns dimension is set), then `order_by` and `limit`. Insights applies dashboard filters to the base query *before* that aggregation. So base queries stay per-row.
 
 Chart types: `Number`, `Bar`, `Line`, `Row`, `Donut`, `Funnel`, `Table`, `Map`, `Bubble`, `Sankey`, `Heatmap`.
 
 ## Titles
 
-The title is the label the reader always sees. A dashboard has no headings, so the titles hold its
-structure. Each title must name its chart on its own.
+The title is the label the reader always sees. A dashboard has no headings, so the titles hold its structure. Each title must name its chart on its own.
 
-State the measure, then the grain: "Revenue, per Month". "Sites That Published, Template Against the
-Rest". "Top 10 Customers by Order Value".
+State the measure, then the grain: "Revenue, per Month". "Sites That Published, Template Against the Rest". "Top 10 Customers by Order Value".
 
-**Never put a date, a date range or an era in a title.** Not "Revenue Since 2026-07-08", not "Signups,
-Last 6 Weeks", not "Q3". Three reasons, and each one alone is enough:
+**Never put a date, a date range or an era in a title.** Not "Revenue Since 2026-07-08", not "Signups, Last 6 Weeks", not "Q3". Three reasons, and each one alone is enough:
 
 - The dashboard filter owns the period, and the user changes it. The title then lies.
 - A relative period ("Last 6 Weeks") is true on the day you write it and wrong every day after.
-- A date you hardcode into a query filter is a fact about the data, not about the chart. It belongs
-  in your reply to the user, where you can explain it.
+- A date you hardcode into a query filter is a fact about the data, not about the chart. It belongs in your reply to the user, where you can explain it.
 
-The same goes for a count you measured today. "Top 34 Template Groups" becomes wrong when the 35th
-appears. Write "Top Template Groups".
+The same goes for a count you measured today. "Top 34 Template Groups" becomes wrong when the 35th appears. Write "Top Template Groups".
 
-Say the era in your reply instead: "the age charts start at 2026-07-08, the first blank-start event,
-because a blank start leaves no trace before it."
+Say the era in your reply instead: "the age charts start at 2026-07-08, the first blank-start event, because a blank start leaves no trace before it."
 
 ## Description and info
 
@@ -40,23 +31,16 @@ Two optional text fields on the chart document, beside `title`. Both show beside
 - A Number chart shows neither: each card shows the reading's name, not the chart title, and has no line under it. Put a reading's info in its `number_column_options` entry instead (see Number below).
 - The no-dates rule for titles applies to both.
 
-Measures and dimensions in a config use the same shapes as in the operations section. They reference
-columns of the **base query's result**, not of the source table. Expression measures work anywhere a
-measure does.
+Measures and dimensions in a config use the same shapes as in the operations section. They reference columns of the **base query's result**, not of the source table. Expression measures work anywhere a measure does.
 
 Keys on every chart config:
 
-- `number_format`: how the chart prints a number — `{ "shorten": true, "decimals": 2, "prefix": "",
-  "suffix": "" }`. Every value of the chart inherits it.
-- `number_formats`: one Measure's own format, keyed by `measure_name`, overriding `number_format`
-  key by key. A chart plotting one measure writes the Measure's entry and leaves the default empty.
+- `number_format`: how the chart prints a number — `{ "shorten": true, "decimals": 2, "prefix": "", "suffix": "" }`. Every value of the chart inherits it.
+- `number_formats`: one Measure's own format, keyed by `measure_name`, overriding `number_format` key by key. A chart plotting one measure writes the Measure's entry and leaves the default empty.
 - The unit belongs to the measure, not to a prefix. Set `format: "currency"` or `format: "percent"` on the measure (see `operations.md`). A `prefix` or `suffix` you write overrides the unit's symbol, so do not hard-code a currency symbol.
 
-- `order_by`: list of `{ "column": { "type": "column", "column_name": "..." }, "direction": "asc"|"desc" }`.
-  The names here are **post-aggregation** names, so sorting by a measure uses its `measure_name`
-  (`"Revenue"`), not the underlying column.
-- `limit`: integer (use it for top-N). A `Table` pages through every row, `limit` at a time, so a
-  top-N table puts a `limit` operation in its query instead.
+- `order_by`: list of `{ "column": { "type": "column", "column_name": "..." }, "direction": "asc"|"desc" }`. The names here are **post-aggregation** names, so sorting by a measure uses its `measure_name` (`"Revenue"`), not the underlying column.
+- `limit`: integer (use it for top-N). A `Table` pages through every row, `limit` at a time, so a top-N table puts a `limit` operation in its query instead.
 - `filters`: a chart-local filter group. Use `{"logical_operator": "And", "filters": []}` when unused.
 
 ## Number (reading cards)
@@ -85,22 +69,11 @@ Keys on every chart config:
 }
 ```
 
-- **Number cards do not show the chart title.** `measure_name` is the visible label. Make it readable
-  ("Avg Invoice Value", not `avg_invoice_value`). The no-dates rule applies to a `measure_name` too.
-- The card shows the **last row's** value. Without a `window` the query gives one aggregated row,
-  the grand total. A snapshot card wants that. `window` is what groups the card by date: `grain`
-  ("month") gives one row per period in the data, `span` ("month to date") one row per stretch of
-  the calendar. Either needs `date_column`.
-- `number_column_options` is positional: one entry per measure, same order. It holds what belongs
-  to the reading: `comparison`, `target`, `negative_is_better`, `color`, `info`.
+- **Number cards do not show the chart title.** `measure_name` is the visible label. Make it readable ("Avg Invoice Value", not `avg_invoice_value`). The no-dates rule applies to a `measure_name` too.
+- The card shows the **last row's** value. Without a `window` the query gives one aggregated row, the grand total. A snapshot card wants that. `window` is what groups the card by date: `grain` ("month") gives one row per period in the data, `span` ("month to date") one row per stretch of the calendar. Either needs `date_column`.
+- `number_column_options` is positional: one entry per measure, same order. It holds what belongs to the reading: `comparison`, `target`, `negative_is_better`, `color`, `info`.
 - `info` on a reading's options entry is the text behind an info mark beside that reading's name, for its definitions and caveats, as on any chart. A Number chart has no chart-level `description` or `info`: leave both empty.
-- A comparison belongs to one reading, in that reading's options entry. `source` is `previous`,
-  `last year`, `constant` (with `value`) or `measure` (with `measure`). `show` prints the gap as a
-  percent (`change`, the default) or a signed number (`delta`), and `label` renames it. `previous`
-  and `last year` both need a Period. Beside a `grain` the comparison is the period one grain before
-  the reading's, matched by date, and a period with no data prints no figure. Beside a `span`
-  Insights fetches the earlier period itself and matches it by date. `last year` needs a `span`, and
-  prints nothing beside a `grain`. A second comparison is a second card.
+- A comparison belongs to one reading, in that reading's options entry. `source` is `previous`, `last year`, `constant` (with `value`) or `measure` (with `measure`). `show` prints the gap as a percent (`change`, the default) or a signed number (`delta`), and `label` renames it. `previous` and `last year` both need a Period. Beside a `grain` the comparison is the period one grain before the reading's, matched by date, and a period with no data prints no figure. Beside a `span` Insights fetches the earlier period itself and matches it by date. `last year` needs a `span`, and prints nothing beside a `grain`. A second comparison is a second card.
 - `target` sits beside it, also per reading: `{ "value": 750000 }` or `{ "measure": { ... } }`.
 - The card sorts its own periods. An `order_by` on the date column is replaced, so do not write one.
 - `sparkline` is chart-level and plots only beside a `window`. A `grain` card plots its own periods. A `span` card runs a second query one grain finer, and plots nothing for a span of a day. Without a `window` there is no series.
@@ -123,25 +96,13 @@ Keys on every chart config:
 ```
 
 - Renders as: summarize by the x-axis dimension, one series per measure.
-- `split_by: { "dimension": {...}, "max_split_values": 10 }` pivots the series by that dimension (one
-  line or bar per value). Cap it. One series per customer is unreadable.
-- Bar `y_axis` extras: `stack`, `normalize`, `overlap`. Line: `smooth`, `show_area`,
-  `show_data_points`. Per-series `type: "line" | "bar"` gives a mixed chart. `align: "Right"` puts a
-  series on the secondary axis. A chart with bars on both axes neither stacks, overlaps nor normalizes. Bars beside a line on the other axis still stack.
-- `y_axis.reference_lines`: a list of rules across the plot. Each is
-  `{ "axis": "y", "measure_name": "Revenue", "aggregate": "average", "label": "Average" }` — an
-  aggregate of one of the chart's own measures, named and not copied — or a constant with `value`.
-  `axis: "x"` plots a vertical rule at a category or date value. `align` picks the axis a `y` rule
-  is read against, and `label_placement`, `color` and `dashed` are the rest of its look.
+- `split_by: { "dimension": {...}, "max_split_values": 10 }` pivots the series by that dimension (one line or bar per value). Cap it. One series per customer is unreadable.
+- Bar `y_axis` extras: `stack`, `normalize`, `overlap`. Line: `smooth`, `show_area`, `show_data_points`. Per-series `type: "line" | "bar"` gives a mixed chart. `align: "Right"` puts a series on the secondary axis. A chart with bars on both axes neither stacks, overlaps nor normalizes. Bars beside a line on the other axis still stack.
+- `y_axis.reference_lines`: a list of rules across the plot. Each is `{ "axis": "y", "measure_name": "Revenue", "aggregate": "average", "label": "Average" }` — an aggregate of one of the chart's own measures, named and not copied — or a constant with `value`. `axis: "x"` plots a vertical rule at a category or date value. `align` picks the axis a `y` rule is read against, and `label_placement`, `color` and `dashed` are the rest of its look.
 - `"show_trend_line": true` on a series draws its trend line: the straight least-squares fit through the series' plotted points, each at its date or number on the x axis. It draws only when the x axis is a date or a number: a category axis may be sorted by a measure, and a line through a ranking says nothing. A `Row` chart plots a number x axis as categories, so there it draws only on a date. A series stacked with another draws none, because it is plotted at its stack height or share and the fit reads its own values. Under `stack` without `overlap`, or under `normalize`, bars stack with bars and areas with areas, a split's values stack with each other (so a stacked split gets none, even when the result holds one value), and a line never stacks. So a lone bar, a line beside stacked bars, or overlapped bars (`overlap` cancels `stack`) still get one. A `Row` chart draws every series as a bar, so there a line-typed series stacks like the bars. It is dashed, in the series' color, on the series' axis, and labelled "<series> trend". A split gets one line per split value. Nulls are skipped, and a series with fewer than two points gets none. Hiding the series in the legend hides its trend line too. Use it on a timeline, when the question is which way a measure is heading.
-- `tooltip: { "measures": [ ... ] }`: measures that reach the tooltip and nothing else — no series,
-  no legend entry, no place on the value axis. For the count behind a rate, or a target beside an
-  actual. A dimension cannot go here: every tooltip value is one per plotted row.
-- `Row` is a horizontal bar. Use it for a top-N ranking: dimension on `x_axis`, `order_by` the
-  measure name desc, `limit: 10`.
-- Put a time series on `Line`, with the date dimension on the x-axis. A chart nobody sorted runs
-  forwards on its own. An `order_by` you write wins over that, so sort only when the reading is a
-  ranking rather than a timeline.
+- `tooltip: { "measures": [ ... ] }`: measures that reach the tooltip and nothing else — no series, no legend entry, no place on the value axis. For the count behind a rate, or a target beside an actual. A dimension cannot go here: every tooltip value is one per plotted row.
+- `Row` is a horizontal bar. Use it for a top-N ranking: dimension on `x_axis`, `order_by` the measure name desc, `limit: 10`.
+- Put a time series on `Line`, with the date dimension on the x-axis. A chart nobody sorted runs forwards on its own. An `order_by` you write wins over that, so sort only when the reading is a ranking rather than a timeline.
 
 ## Donut / Funnel
 
@@ -151,10 +112,7 @@ Keys on every chart config:
   "max_slices": 8 }
 ```
 
-Use `Donut` for part-of-whole with few categories. `Funnel` takes the same `label_column` and
-`value_column`, and orders the stages by `order_by`. It also takes
-`measures: [...]`, where each measure is one stage. Sortable stage labels (`"1. Total"`,
-`"2. Ordered"`) keep the funnel in order.
+Use `Donut` for part-of-whole with few categories. `Funnel` takes the same `label_column` and `value_column`, and orders the stages by `order_by`. It also takes `measures: [...]`, where each measure is one stage. Sortable stage labels (`"1. Total"`, `"2. Ordered"`) keep the funnel in order.
 
 ## Table
 
@@ -170,36 +128,26 @@ Use `Donut` for part-of-whole with few categories. `Funnel` takes the same `labe
 }
 ```
 
-Empty `columns` gives a grouped table (summarize by `rows`). Non-empty `columns` pivots, capped by
-`max_column_values`. Other options: `show_column_totals`, `enable_color_scale`.
+Empty `columns` gives a grouped table (summarize by `rows`). Non-empty `columns` pivots, capped by `max_column_values`. Other options: `show_column_totals`, `enable_color_scale`.
 
-To show a detail listing with one row per document, put the identifying columns in `rows`. A group by
-a unique column such as `name` yields one row each. Use `max` for pass-through numbers that must not
-be summed.
+To show a detail listing with one row per document, put the identifying columns in `rows`. A group by a unique column such as `name` yields one row each. Use `max` for pass-through numbers that must not be summed.
 
 ## The rest (rarely needed)
 
 - `Map`: `location_column` (dimension), `value_column` (measure), `map_type: "world" | "india"`.
 - `Bubble`: `xAxis`, `yAxis`, `size_column` (measures), `dimension` (one point per value).
 - `Sankey`: `source_column`, `target_column` (dimensions), `value_column` (measure).
-- `Heatmap`: `x_column`, `y_column` (dimensions) and `value_column` (measure) — one cell per pair of
-  their values. `show_values` prints the number in the cell, `palette` is `sequential` (a magnitude)
-  or `diverging` (centered on zero, for signed data), and `min`/`max` pin the ends of the color scale
-  that the data's own ends set otherwise.
+- `Heatmap`: `x_column`, `y_column` (dimensions) and `value_column` (measure) — one cell per pair of their values. `show_values` prints the number in the cell, `palette` is `sequential` (a magnitude) or `diverging` (centered on zero, for signed data), and `min`/`max` pin the ends of the color scale that the data's own ends set otherwise.
 
 ## Choosing
 
-Single number → `Number`. Over time → `Line`. Compare categories → `Bar`. Ranked top-N → `Row`.
-Part of a whole, few slices → `Donut`. Stages → `Funnel`. Row-level detail or a cross-tab → `Table`.
-Two dimensions against one measure → `Heatmap`.
-Keep the existing chart type unless the request implies a change.
+Single number → `Number`. Over time → `Line`. Compare categories → `Bar`. Ranked top-N → `Row`. Part of a whole, few slices → `Donut`. Stages → `Funnel`. Row-level detail or a cross-tab → `Table`. Two dimensions against one measure → `Heatmap`. Keep the existing chart type unless the request implies a change.
 
 ## Making it readable
 
 The chart type is the easy half. These four decide whether anyone can read the result.
 
-**Count the dimension before you pick the chart.** A dimension you have not counted is a chart you
-cannot size. Count it in the scratch query with `summarize` and `count_distinct`. Then:
+**Count the dimension before you pick the chart.** A dimension you have not counted is a chart you cannot size. Count it in the scratch query with `summarize` and `count_distinct`. Then:
 
 | Distinct values | Use |
 |---|---|
@@ -209,42 +157,24 @@ cannot size. Count it in the scratch query with `summarize` and `count_distinct`
 | more | `Row` with `order_by` desc and `limit: 10`, and say it is a top 10 |
 | hundreds | `Table`. A bar per customer is a smear, not a chart. |
 
-The same cap applies to `split_by` and to a `Table`'s pivot `columns`. One line per value of a
-high-cardinality column is unreadable at any size.
+The same cap applies to `split_by` and to a `Table`'s pivot `columns`. One line per value of a high-cardinality column is unreadable at any size.
 
-**A share needs its n beside it.** A normalized stacked bar plots a bucket of 14 rows exactly as
-strongly as a bucket of 545. Pair it with a `Table` beside it. The table holds the raw counts and the
-distinct entity count. The bar gives the shape. The table gives the n, so nobody misreads a thin
-bucket as a strong result.
+**A share needs its n beside it.** A normalized stacked bar plots a bucket of 14 rows exactly as strongly as a bucket of 545. Pair it with a `Table` beside it. The table holds the raw counts and the distinct entity count. The bar gives the shape. The table gives the n, so nobody misreads a thin bucket as a strong result.
 
-**Lead with the answer.** The first chart is the one that answers the user's question. Readings above
-trends, trends above breakdowns, detail tables last. A dashboard that opens on a breakdown makes the
-reader hunt.
+**Lead with the answer.** The first chart is the one that answers the user's question. Readings above trends, trends above breakdowns, detail tables last. A dashboard that opens on a breakdown makes the reader hunt.
 
-**Prefer fewer charts.** Every chart must earn its grid rows. Two charts that show the same cut in
-different shapes are one chart and a decision you did not make.
+**Prefer fewer charts.** Every chart must earn its grid rows. Two charts that show the same cut in different shapes are one chart and a decision you did not make.
 
 ## Drill down
 
-Every chart drills down, and costs nothing to author. This works only if the base query stays
-per-row.
+Every chart drills down, and costs nothing to author. This works only if the base query stays per-row.
 
-The reader clicks a series element on an axis, donut, funnel or map chart. On a `Number` card or a
-`Table` the reader double-clicks a numeric cell. Insights then finds the **last** `summarize` or
-`pivot_wider` in the chart's data query. It cuts the pipeline off just before that step, refilters by
-that row's dimension values, and opens the result in a dialog.
+The reader clicks a series element on an axis, donut, funnel or map chart. On a `Number` card or a `Table` the reader double-clicks a numeric cell. Insights then finds the **last** `summarize` or `pivot_wider` in the chart's data query. It cuts the pipeline off just before that step, refilters by that row's dimension values, and opens the result in a dialog.
 
-The chart's own aggregation is that `summarize`. So with a per-row base query, **one click lands on
-the source rows behind the number**: the invoices, the events, the documents. That is the payoff of
-rule 1 in `rules.md`, and the strongest reason not to pre-aggregate.
+The chart's own aggregation is that `summarize`. So with a per-row base query, **one click lands on the source rows behind the number**: the invoices, the events, the documents. That is the payoff of rule 1 in `rules.md`, and the strongest reason not to pre-aggregate.
 
 Three things to know:
 
-- **A pre-aggregated base query costs a click.** The first drill-down lands on the base query's
-  aggregated rows, not the source rows. The dialog's own table drills again to reach them. It works.
-  It is one click of confusion you authored.
-- **A pipeline that aggregates nowhere cannot drill down at all.** Insights cuts at the last
-  `summarize` or `pivot_wider` in the chart's own pipeline. With none it answers "Nothing here
-  aggregates any rows, so there is nothing behind it".
-- **The clicked column must be numeric** on a `Number` card and a `Table`. A count measure typed as
-  `String` renders and cannot be drilled. Type every measure.
+- **A pre-aggregated base query costs a click.** The first drill-down lands on the base query's aggregated rows, not the source rows. The dialog's own table drills again to reach them. It works. It is one click of confusion you authored.
+- **A pipeline that aggregates nowhere cannot drill down at all.** Insights cuts at the last `summarize` or `pivot_wider` in the chart's own pipeline. With none it answers "Nothing here aggregates any rows, so there is nothing behind it".
+- **The clicked column must be numeric** on a `Number` card and a `Table`. A count measure typed as `String` renders and cannot be drilled. Type every measure.
