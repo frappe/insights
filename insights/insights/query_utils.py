@@ -14,7 +14,7 @@ def runs_stored_procedure(raw_sql: str) -> bool:
 
 def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> list[frappe._dict]:
     try:
-        parsed = sg.parse_one(raw_sql, dialect=dialect)
+        parsed = sg.parse_one(sqlparse.format(raw_sql, strip_comments=True), dialect=dialect)
     except Exception:
         return []  # nosemgrep - an unparseable query runs nothing, so it reads no table
 
