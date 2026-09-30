@@ -7,6 +7,7 @@ import NumberInput from '../components/NumberInput.vue'
 import LazyTextInput from '../components/LazyTextInput.vue'
 import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
+import { rendersOwnCards } from './adapter'
 import useChart from './chart'
 import useChartPreview, { chartPreviewKey } from './chart_preview'
 import ChartBuilderActions from './components/ChartBuilderActions.vue'
@@ -124,7 +125,7 @@ const showShareDialog = ref(false)
 							<LazyTextInput
 								type="text"
 								:placeholder="
-									chart.doc.chart_type === 'Number'
+									rendersOwnCards(chart.doc.chart_type)
 										? __('Shown behind the info mark')
 										: __('A line under the title')
 								"
