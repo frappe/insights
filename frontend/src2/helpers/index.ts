@@ -167,6 +167,8 @@ function asText(html: string) {
 		.replace(/&amp;/g, '&')
 }
 
+export function showErrorToast(err: Error, raise: false): void
+export function showErrorToast(err: Error, raise?: true): never
 export function showErrorToast(err: Error, raise = true) {
 	toast.error(getErrorMessage(err))
 	if (raise) throw err
