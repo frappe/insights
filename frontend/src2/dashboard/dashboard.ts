@@ -542,7 +542,7 @@ function makeDashboard(name: string) {
 	}
 
 	function getFilterColumnRange(filter_name: string) {
-		return dashboard.call('get_filter_column_range', { filter_name })
+		return dashboard.call('get_filter_column_range', { filter_name }, { showError: false })
 	}
 
 	function getShareLink() {
