@@ -33,11 +33,11 @@ because a blank start leaves no trace before it."
 
 ## Description and info
 
-Two optional text fields on the chart document, beside `title`. Both show wherever the chart shows its title: a dashboard, a Number card and the workbook's chart view.
+Two optional text fields on the chart document, beside `title`. Both show beside the chart title on a dashboard, a shared link and the workbook's chart view. A desk island prints its own header and shows neither.
 
 - `info` is the text behind an info mark beside the title. The reader sees it on hover or focus. Put definitions and caveats here: what a measure counts, what a status means, what the data leaves out. "Paid = a site running this product moved to a paid plan within 30 days of the trial." Line breaks are kept.
 - `description` is one line printed under the title. Leave it empty. Write one only when the title cannot carry what every reader must see at a glance. It takes height from the plot on every dashboard that shows the chart.
-- A Number card has no line under its title, so it shows `description` behind the info mark, above `info`.
+- A Number card shows the reading's name, not the chart title, and has no line under it. So `description` shows behind the info mark, above `info`, on each reading a dashboard cell shows, and on the first card of the chart view.
 - The no-dates rule for titles applies to both.
 
 Measures and dimensions in a config use the same shapes as in the operations section. They reference
