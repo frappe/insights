@@ -91,7 +91,9 @@ describe.each(CHARTS)('a %s chart over nulls, text numbers and boundary dates', 
 	// @feature charts.every-type-draws-what-the-result-holds
 	it('drops no row and merges no two values of a column', () => {
 		const found = rowArraysOf(filler?.props, input.result)
-		if (!RESHAPES_ROWS.includes(chart_type)) expect(found).not.toHaveLength(0)
+		// a type that reshapes its rows says so in the fixture, and is held to it
+		if (RESHAPES_ROWS.includes(chart_type)) expect(found).toHaveLength(0)
+		else expect(found).not.toHaveLength(0)
 		for (const rows of found) {
 			expect(rows).toHaveLength(input.result.rows.length)
 			for (const { name } of input.result.columns) {
