@@ -132,7 +132,7 @@ Keys on every chart config:
   aggregate of one of the chart's own measures, named and not copied — or a constant with `value`.
   `axis: "x"` plots a vertical rule at a category or date value. `align` picks the axis a `y` rule
   is read against, and `label_placement`, `color` and `dashed` are the rest of its look.
-- `"show_trend_line": true` on a series draws its trend line: the straight least-squares fit through the series' plotted points, by position, so each period is one step. It is dashed, in the series' color, on the series' axis, and labelled "<series> trend". A split gets one line per split value. Nulls are skipped, and a series with fewer than two points gets none. Hiding the series in the legend hides its trend line too. Use it on a timeline, when the question is which way a measure is heading.
+- `"show_trend_line": true` on a series draws its trend line: the straight least-squares fit through the series' plotted points, each at its date or number on the x axis. It draws only when the x axis is a date or a number: a category axis may be sorted by a measure, and a line through a ranking says nothing. It is dashed, in the series' color, on the series' axis, and labelled "<series> trend". A split gets one line per split value. Nulls are skipped, and a series with fewer than two points gets none. Hiding the series in the legend hides its trend line too. Use it on a timeline, when the question is which way a measure is heading.
 - `tooltip: { "measures": [ ... ] }`: measures that reach the tooltip and nothing else — no series,
   no legend entry, no place on the value axis. For the count behind a rate, or a target beside an
   actual. A dimension cannot go here: every tooltip value is one per plotted row.

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { BarChartConfig, YAxisBar } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
+import { plottedXAxisType } from '../adapter/axis'
 import { hasBarsOnBothAxes } from '../helpers'
 import ReferenceLinesConfig from './ReferenceLinesConfig.vue'
 import SplitByConfig from './SplitByConfig.vue'
@@ -29,12 +30,22 @@ const config = defineModel<BarChartConfig>({
 const barsOnBothAxes = computed(() =>
 	hasBarsOnBothAxes(config.value.y_axis.series, 'bar', props.chartType === 'Row'),
 )
+
+const scaledXAxis = computed(
+	() =>
+		plottedXAxisType(config.value.x_axis?.dimension, props.chartType === 'Row') !== 'category',
+)
 </script>
 
 <template>
 	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
 
-	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions" :config="config">
+	<YAxisConfig
+		v-model="config.y_axis"
+		:column-options="props.columnOptions"
+		:config="config"
+		:scaled-x-axis="scaledXAxis"
+	>
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle
 				:label="__('Stack')"

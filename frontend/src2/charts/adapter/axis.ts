@@ -448,24 +448,25 @@ function aggregateOf(aggregate: ReferenceAggregate, values: number[]): number {
 }
 
 /**
- * The straight line through `values` that misses them least, by least squares.
- * A value's x is its position, so a gap in the dates is one step, like every
- * other. Nulls are skipped. Fewer than two points fit no line.
+ * The straight line through `points` that misses them least, by least squares.
+ * A point with no value is skipped. Fewer than two points, or two at one x, fit
+ * no line.
  */
 export function fitLine(
-	values: (number | null)[],
+	points: { x: number; y: number | null }[],
 ): { slope: number; intercept: number } | undefined {
-	const points = values.flatMap((y, x) => (y === null ? [] : [{ x, y }]))
-	if (points.length < 2) return
+	const fitted = points.filter((point): point is { x: number; y: number } => point.y !== null)
+	if (fitted.length < 2) return
 
-	const meanX = points.reduce((sum, p) => sum + p.x, 0) / points.length
-	const meanY = points.reduce((sum, p) => sum + p.y, 0) / points.length
+	const meanX = fitted.reduce((sum, p) => sum + p.x, 0) / fitted.length
+	const meanY = fitted.reduce((sum, p) => sum + p.y, 0) / fitted.length
 	let covariance = 0
 	let variance = 0
-	for (const { x, y } of points) {
+	for (const { x, y } of fitted) {
 		covariance += (x - meanX) * (y - meanY)
 		variance += (x - meanX) ** 2
 	}
+	if (!variance) return
 	const slope = covariance / variance
 	return { slope, intercept: meanY - slope * meanX }
 }
@@ -479,6 +480,10 @@ export function fitLine(
  * their split's. Riding the series, it sits on that series' axis, and the legend
  * hides it with the series. `silent` keeps it out of the tooltip and the click.
  * The dash, weight and label plate are v2's for a reference line.
+ *
+ * It fits the points where the axis plots them: a date at its time, a number at
+ * its value, as v2's `plotRows` places them. So a skipped period is a gap and
+ * the author's sort does not move the line.
  */
 function trendLinesFor(
 	config: MixedChartConfig,
@@ -487,24 +492,35 @@ function trendLinesFor(
 	horizontal: boolean,
 	tokens?: ChartTokens,
 ): Map<string, Record<string, any>> {
-	const x = config.x_axis?.dimension?.dimension_name
+	const dimension = config.x_axis?.dimension
 	const lines = new Map<string, Record<string, any>>()
-	if (!x) return lines
+	const type = plottedXAxisType(dimension, horizontal)
+	// A category axis sits its rows in the order they arrive, which may be a
+	// ranking, so a line through them says nothing. Only a scale is fitted.
+	if (!dimension || type === 'category') return lines
+
+	const x = dimension.dimension_name
+	const place = type === 'value' ? toNumber : (value: any) => toDate(value)?.getTime() ?? null
+	const placed = rows.flatMap((row) => {
+		const at = place(row[x])
+		return at === null ? [] : [{ row, at }]
+	})
+
 	for (const column of columns) {
 		if (!seriesFor(config, column)?.show_trend_line) continue
-		const values = rows.map((row) => toNumber(row[column]))
-		const fit = fitLine(values)
+		const points = placed.map(({ row, at }) => ({ x: at, y: toNumber(row[column]) }))
+		const fit = fitLine(points)
 		if (!fit) continue
 
-		const first = values.findIndex((value) => value !== null)
-		const last = values.length - 1 - [...values].reverse().findIndex((v) => v !== null)
-		const coord = (index: number) => {
-			const point = [rows[index][x], fit.intercept + fit.slope * index]
+		// from the smallest x the series plots to the largest
+		const xs = points.filter((point) => point.y !== null).map((point) => point.x)
+		const coord = (at: number) => {
+			const point = [at, fit.intercept + fit.slope * at]
 			return horizontal ? point.reverse() : point
 		}
 		const label = __('{0} trend', seriesLabel(column))
 		const start = {
-			coord: coord(first),
+			coord: coord(xs.reduce((low, at) => (at < low ? at : low))),
 			lineStyle: dashedLine(REFERENCE_LINE_WIDTH),
 			label: {
 				show: true,
@@ -517,10 +533,37 @@ function trendLinesFor(
 				padding: LABEL_PADDING,
 			},
 		}
-		lines.set(column, { silent: true, symbol: 'none', data: [[start, { coord: coord(last) }]] })
+		const end = { coord: coord(xs.reduce((high, at) => (at > high ? at : high))) }
+		lines.set(column, { silent: true, symbol: 'none', data: [[start, end]] })
 	}
 	return lines
 }
+
+/**
+ * The axis the x column is plotted on, as v2 resolves it (`resolveXAxis` in
+ * `frappe-ui/src/charts/axisChartCommon.ts`): a horizontal bar chart has no
+ * scale to put a number on, so it draws one as categories.
+ */
+export function plottedXAxisType(
+	dimension: Dimension | undefined,
+	horizontal: boolean,
+): 'category' | 'time' | 'value' {
+	const type = dimension ? xAxisFor(dimension).type || 'category' : 'category'
+	return type === 'value' && horizontal ? 'category' : type
+}
+
+/**
+ * Where a scaled axis puts a date: v2's `toDate` in
+ * `frappe-ui/src/charts/format.ts`, restated because the package does not
+ * export it. `plotRows` places a row at this time, and drops one without it.
+ */
+function toDate(value: any): Date | null {
+	if (value instanceof Date) return isNaN(value.getTime()) ? null : value
+	if (typeof value !== 'string' || !ISO_DATE.test(value)) return null
+	const parsed = new Date(value)
+	return isNaN(parsed.getTime()) ? null : parsed
+}
+const ISO_DATE = /^\d{4}-\d{2}(-\d{2})?([T ]\d{2}:\d{2}(:\d{2})?)?/
 
 /**
  * What the legend calls a series: v2's `seriesLabel` over a column with no label

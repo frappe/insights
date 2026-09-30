@@ -827,33 +827,50 @@ describe('drilling into a point', () => {
 	})
 })
 
+const at = (...ys: (number | null)[]) => ys.map((y, x) => ({ x, y }))
+
 describe('the fit a trend line draws', () => {
 	// @feature charts.trend-line
-	it('fits the slope and intercept by least squares, x being the position', () => {
-		expect(fitLine([1, 3, 5, 7])).toEqual({ slope: 2, intercept: 1 })
-		expect(fitLine([2, 4, 3])).toEqual({ slope: 0.5, intercept: 2.5 })
+	it('fits the slope and intercept by least squares', () => {
+		expect(fitLine(at(1, 3, 5, 7))).toEqual({ slope: 2, intercept: 1 })
+		expect(fitLine(at(2, 4, 3))).toEqual({ slope: 0.5, intercept: 2.5 })
+		expect(
+			fitLine([
+				{ x: 0, y: 10 },
+				{ x: 1, y: 20 },
+				{ x: 3, y: 40 },
+			]),
+		).toEqual({ slope: 10, intercept: 10 })
 	})
 
 	// @feature charts.trend-line
-	it('skips a null and keeps the position of every point after it', () => {
-		const fit = fitLine([1, null, 5, 7])
+	it('skips a point with no value', () => {
+		const fit = fitLine(at(1, null, 5, 7))
 		expect(fit?.slope).toBeCloseTo(2)
 		expect(fit?.intercept).toBeCloseTo(1)
 	})
 
 	// @feature charts.trend-line
-	it('fits nothing through fewer than two points', () => {
+	it('fits nothing through fewer than two points, or two at one x', () => {
 		expect(fitLine([])).toBeUndefined()
-		expect(fitLine([null, 4, null])).toBeUndefined()
+		expect(fitLine(at(null, 4, null))).toBeUndefined()
+		expect(
+			fitLine([
+				{ x: 1, y: 4 },
+				{ x: 1, y: 6 },
+			]),
+		).toBeUndefined()
 	})
 })
 
 describe('a trend line', () => {
 	const tokens = { axisLabel: 'oklch(0.58 0 0)', backdrop: '#242424' } as ChartTokens
+	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
+	const time = (date: string) => new Date(date).getTime()
 	const spec = (overrides: Partial<AxisChartSpec> = {}): AxisChartSpec => ({
 		type: 'Line',
-		dimension: 'region',
-		categories: ['North', 'South', 'East'],
+		dimension: month,
+		categories: ['2026-01-01', '2026-02-01', '2026-03-01'],
 		measures: [{ name: 'revenue', trendLine: true }],
 		readings: { revenue: [10, 30, 50] },
 		...overrides,
@@ -870,7 +887,11 @@ describe('a trend line', () => {
 
 	// @feature charts.trend-line
 	it('rides the series it fits, silent and dashed, in the series color', () => {
-		const props = propsWith()
+		const props = propsWith({
+			dimension: { name: 'week_number', type: 'Integer' },
+			categories: [1, 2, 3],
+		})
+		expect(props.xAxis.type).toBe('value')
 		expect(props.referenceLines).toBeUndefined()
 		expect(markLineOf(props, 'revenue')).toEqual({
 			silent: true,
@@ -878,7 +899,7 @@ describe('a trend line', () => {
 			data: [
 				[
 					{
-						coord: ['North', 10],
+						coord: [1, 10],
 						// no color: echarts draws a series' markLine in the series' own
 						lineStyle: { type: [3.5, 3], width: 1 },
 						label: {
@@ -890,11 +911,45 @@ describe('a trend line', () => {
 							padding: [2, 4],
 						},
 					},
-					{ coord: ['East', 50] },
+					{ coord: [3, 50] },
 				],
 			],
 		})
 		expect(markLineOf(props, 'revenue').data[0][0].label.formatter()).toBe('Revenue trend')
+	})
+
+	// @feature charts.trend-line
+	it('fits a date where the axis plots it, so a skipped month is a gap', () => {
+		const props = propsWith({
+			categories: ['2026-01-01', '2026-02-01', '2026-04-01'],
+			readings: { revenue: [10, 20, 40] },
+		})
+		const [start, end] = endsOf(props, 'revenue')
+		expect(start[0]).toBe(time('2026-01-01'))
+		expect(start[1]).toBeCloseTo(10, 0)
+		expect(end[0]).toBe(time('2026-04-01'))
+		expect(end[1]).toBeCloseTo(40, 0)
+	})
+
+	// @feature charts.trend-line
+	it('runs from the earliest date to the latest whatever order the rows arrive in', () => {
+		// sorted by revenue, descending: January, March, February
+		const props = propsWith({
+			categories: ['2026-01-01', '2026-03-01', '2026-02-01'],
+			readings: { revenue: [30, 20, 10] },
+		})
+		const [start, end] = endsOf(props, 'revenue')
+		expect(start[0]).toBe(time('2026-01-01'))
+		expect(end[0]).toBe(time('2026-03-01'))
+		// the fit of Jan 30, Feb 10, Mar 20 runs from 25 to 15
+		expect(start[1]).toBeCloseTo(25, 0)
+		expect(end[1]).toBeCloseTo(15, 0)
+	})
+
+	// @feature charts.trend-line
+	it('draws none on a category axis, whose order may be a ranking', () => {
+		const props = propsWith({ dimension: 'region', categories: ['North', 'South', 'East'] })
+		expect(markLineOf(props, 'revenue')).toBeUndefined()
 	})
 
 	// @feature charts.trend-line
@@ -908,26 +963,20 @@ describe('a trend line', () => {
 			splitBy: { dimension: 'channel', into: ['retail', 'online'] },
 			readings: { retail: [10, 20, 30], online: [60, 40, 20] },
 		})
-		expect(endsOf(props, 'retail')).toEqual([
-			['North', 10],
-			['East', 30],
-		])
-		expect(endsOf(props, 'online')).toEqual([
-			['North', 60],
-			['East', 20],
-		])
+		expect(endsOf(props, 'retail').map(([, y]: number[]) => Math.round(y))).toEqual([10, 30])
+		expect(endsOf(props, 'online').map(([, y]: number[]) => Math.round(y))).toEqual([60, 20])
 		expect(markLineOf(props, 'online').data[0][0].label.formatter()).toBe('Online trend')
 	})
 
 	// @feature charts.trend-line
-	it('runs from the first point it fits to the last, and fits no line through one point', () => {
+	it('runs between the points it fits, and fits no line through one point', () => {
 		const props = propsWith({
-			categories: ['North', 'South', 'East', 'West'],
+			categories: ['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01'],
 			readings: { revenue: [null, 10, 30, null] },
 		})
-		expect(endsOf(props, 'revenue')).toEqual([
-			['South', 10],
-			['East', 30],
+		expect(endsOf(props, 'revenue').map(([x]: number[]) => x)).toEqual([
+			time('2026-02-01'),
+			time('2026-03-01'),
 		])
 		expect(markLineOf(propsWith({ readings: { revenue: [null, 10, null] } }), 'revenue')).toBe(
 			undefined,

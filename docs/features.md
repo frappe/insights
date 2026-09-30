@@ -134,7 +134,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.line-area | A user fills the area under a line. |
 | charts.line-data-points | A user shows a marker on each point of a line. |
 | charts.reference-lines | A user plots a reference line at a constant or at the average, median, min, max or sum of a measure, with a label, color and dash. |
-| charts.trend-line | A user turns on a series' trend line, the straight fit through its plotted points, drawn dashed in the series' color. |
+| charts.trend-line | A user turns on a series' trend line on a date or number x axis: the straight fit through its points where the axis plots them, drawn dashed in the series' color. |
 | charts.sort | A user sorts a chart by a column and flips the direction; a date axis runs forwards unless the author turns it. |
 | charts.filter | A user filters a chart independently of its query. |
 | charts.limit | A user caps the rows the chart's query returns. |

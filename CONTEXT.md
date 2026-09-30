@@ -60,7 +60,7 @@ A column or expression aggregated with an aggregation type (sum, count, …).
 _Avoid_: metric
 
 **Trend line**:
-The straight least-squares fit through one Series' plotted points, drawn over it, dashed, in its color. Stored on the Series as `show_trend_line`. A point's x is its position, so every period is one step.
+The straight least-squares fit through one Series' plotted points, drawn over it, dashed, in its color. Stored on the Series as `show_trend_line`. It fits each point where the x axis plots it, a date at its time and a number at its value, so it is offered only on a date or number x axis.
 _Avoid_: slope line, regression line, fit line
 
 **Dimension**:
