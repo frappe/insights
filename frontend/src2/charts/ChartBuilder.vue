@@ -123,7 +123,11 @@ const showShareDialog = ref(false)
 						<InlineFormControlLabel :label="__('Description')">
 							<LazyTextInput
 								type="text"
-								:placeholder="__('A line under the title')"
+								:placeholder="
+									chart.doc.chart_type === 'Number'
+										? __('Shown behind the info mark')
+										: __('A line under the title')
+								"
 								:model-value="chart.doc.description ?? ''"
 								@update:model-value="chart.doc.description = $event"
 							/>
