@@ -24,7 +24,6 @@ How a reader plans, searches, traces and confirms, how it writes its file, and h
 - When a cache is cleared, clear it at every layer that holds the same data, the document cache included.
 - A watcher or effect never writes what it watches, and never starts again the call that fed it.
 - A patch or a background job gives the same result when it runs twice, and when two copies run at the same time. If it cannot, the change says why.
-- A patch that writes without the controller (`db_insert`, `db_set`, a hook called by hand) names each hook it skips. *One such patch needed four later fixes.*
 - Before you call deliberate-looking code wrong, read its history for why it was chosen. *`Min` was deliberate in a prune window, and `Max` would have turned pruning off.*
 - Read the base when the finding depends on whether something worked before.
 - Every candidate, doubtful ones included, goes on the list. Filtering waits for confirmation.
@@ -32,7 +31,7 @@ How a reader plans, searches, traces and confirms, how it writes its file, and h
 
 ## Confirm
 
-- Confirm each candidate on its own by reading the code that decides it, framework and frappe-ui source included. Never confirm by reasoning from what you expect.
+- Confirm each candidate on its own by reading the code that decides it, framework and frappe-ui source included. Never confirm by reasoning from what you expect. A candidate is anything the report states: a finding, a deferred item, an owner to decide, a proposed guard or fix. *A review deferred 20 write methods that accept GET as open to cross-site requests, without reading that frappe rolls back a GET request's database transaction. Writes to Redis, files or DuckDB stay.*
 - Check a claim, a "resolved" reply or a premise in the PR description in the code before you accept it, whoever wrote it.
 - A claim that a finding depends on (a recorded decision, a tool that exists, how upstream behaves, how the framework uses a feature) cites the line you read, not memory.
 - Read a cited line whole. A decorator's arguments are part of the claim. *`allow_guest=True` was read and `methods=["GET"]` beside it was not. Every member got a blank app the next day.*

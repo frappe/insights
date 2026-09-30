@@ -72,18 +72,12 @@ Tests are judged by `docs/agents/testing.md`, including its pre-merge prune. A g
 Security. `allow_guest=True` under `insights/` marks the guest endpoints.
 
 - Code reachable from a guest endpoint, a new whitelisted method, `ignore_permissions=True` or a wider visibility level names the check that protects it.
-- A whitelisted method that writes sets `methods=["POST"]`, as `frappe.client` does. Frappe allows GET by default and checks the CSRF token only on POST, PUT, DELETE and PATCH.
 - An existing document's stored fields are read from the database, not from the request body.
 - User input that reaches raw SQL or the expression sandbox is checked for escaping and for the sandbox's limits.
 - `v-html` never renders HTML that a user controls.
 - A request to a URL a user chooses follows `docs/adr/outbound-http-to-user-chosen-urls.md`.
 - A connection error shown to the user never includes the credential or the connection string.
 - A new engine or backend keeps every protection the existing one has.
-
-Values.
-
-- A date filter, time grain or comparison says which time zone it uses and where its boundaries fall: midnight, the first day of the week, and a datetime compared with a date. *Only `between` was padded to the whole day, so `equals` a date matched nothing on a datetime column.*
-- A value keeps its type and its null from the source database to the screen. Check numbers stored as text, decimals, large integers, and null against zero or empty. *Rows with no split value went to a column named `"null"` and disappeared from the chart.*
 
 Errors and states.
 
