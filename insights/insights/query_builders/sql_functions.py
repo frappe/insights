@@ -620,7 +620,12 @@ def day_bounds(column, first, last):
     one value that is not a date.
     """
     if column.type().is_time():
-        frappe.throw(frappe._("A Time column names no day, so no span can filter it"), QueryRefused)
+        frappe.throw(
+            frappe._("{0} is a Time column and names no day, so no span can filter it").format(
+                column.get_name()
+            ),
+            QueryRefused,
+        )
     start = midnight(getdate(first))
     end = midnight(getdate(last) + datetime.timedelta(days=1))
     if not is_calendar(column):
