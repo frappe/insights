@@ -1,7 +1,8 @@
 import { BarChart, LineChart, type ChartTokens } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
 import type { ReferenceLine } from '../../types/chart.types'
-import { fitLine } from './axis'
+import { fitLine, takesTrendLine } from './axis'
+import { normalizeChartConfig } from '../helpers'
 import { adaptChart } from './index'
 import { axisChart, type AxisChartSpec } from './fixtures'
 
@@ -977,16 +978,48 @@ describe('a trend line', () => {
 	})
 
 	// @feature charts.trend-line
-	it('draws none while the chart stacks, plain or to 100%', () => {
+	it('draws none on a series stacked with another, plain or to 100%', () => {
 		const split = {
 			type: 'Bar' as const,
 			splitBy: { dimension: 'channel', into: ['retail', 'online'] },
 			readings: { retail: [10, 20, 30], online: [60, 40, 20] },
 		}
+		const twoBars = {
+			type: 'Bar' as const,
+			measures: [{ name: 'revenue', trendLine: true }, 'refunds'],
+		}
 		for (const stacking of [{ stacked: true }, { normalized: true }]) {
-			const props = propsWith({ ...split, ...stacking })
-			expect(props.stacked).toBeTruthy()
-			expect(markLineOf(props, 'online')).toBeUndefined()
+			const splitProps = propsWith({ ...split, ...stacking })
+			expect(splitProps.stacked).toBeTruthy()
+			expect(markLineOf(splitProps, 'online')).toBeUndefined()
+			expect(markLineOf(propsWith({ ...twoBars, ...stacking }), 'revenue')).toBeUndefined()
+		}
+	})
+
+	// @feature charts.trend-line
+	it("draws on a new chart's one measure, as a Bar and as a Line", () => {
+		// a new chart is a Bar with its stack flag on, and a switch to Line keeps it
+		const drawn = axisChart(spec())
+		for (const chart_type of ['Bar', 'Line'] as const) {
+			const config = normalizeChartConfig({}, 'Bar') as any
+			expect(config.y_axis.stack).toBe(true)
+			config.x_axis = (drawn.config as any).x_axis
+			config.y_axis.series = (drawn.config as any).y_axis.series
+			const filler = adaptChart({ ...drawn, chart_type, config, tokens })
+			expect(markLineOf(filler!.props, 'revenue')).toBeDefined()
+		}
+	})
+
+	// @feature charts.trend-line
+	it('draws on a series no other stacks with: a line beside stacked bars, a lone bar', () => {
+		const beside = propsWith({
+			type: 'Bar',
+			stacked: true,
+			measures: ['units', 'refunds', { name: 'revenue', mark: 'line', trendLine: true }],
+		})
+		expect(markLineOf(beside, 'revenue')).toBeDefined()
+		for (const stacking of [{ stacked: true }, { normalized: true }]) {
+			expect(markLineOf(propsWith({ type: 'Bar', ...stacking }), 'revenue')).toBeDefined()
 		}
 	})
 
@@ -1019,5 +1052,40 @@ describe('a trend line', () => {
 		expect(markLineOf(propsWith({ readings: { revenue: [null, 10, null] } }), 'revenue')).toBe(
 			undefined,
 		)
+	})
+})
+
+describe('whether a series is offered a trend line', () => {
+	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
+	const configOf = (overrides: Partial<AxisChartSpec>) =>
+		axisChart({ type: 'Bar', dimension: month, measures: ['revenue'], ...overrides })
+			.config as any
+	const offered = (config: any, chartMark: 'bar' | 'line' = 'bar', horizontal = false) =>
+		config.y_axis.series.map((series: any) =>
+			takesTrendLine(config, series, chartMark, horizontal),
+		)
+
+	// @feature charts.trend-line
+	it('answers per series, as the adapter draws', () => {
+		expect(offered(configOf({ stacked: true }))).toEqual([true])
+		expect(offered(configOf({ type: 'Line', stacked: true }), 'line')).toEqual([true])
+		expect(offered(configOf({ stacked: true, measures: ['revenue', 'refunds'] }))).toEqual([
+			false,
+			false,
+		])
+		expect(
+			offered(
+				configOf({
+					stacked: true,
+					measures: ['units', 'refunds', { name: 'revenue', mark: 'line' }],
+				}),
+			),
+		).toEqual([false, false, true])
+		expect(
+			offered(
+				configOf({ stacked: true, splitBy: { dimension: 'channel', into: ['a', 'b'] } }),
+			),
+		).toEqual([false])
+		expect(offered(configOf({ dimension: 'region' }))).toEqual([false])
 	})
 })

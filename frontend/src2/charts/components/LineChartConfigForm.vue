@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { LineChartConfig, SeriesLine, YAxisLine } from '../../types/chart.types'
-import { computed } from 'vue'
+import { LineChartConfig, Series, SeriesLine, YAxisLine } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
-import { takesTrendLines } from '../adapter/axis'
+import { takesTrendLine } from '../adapter/axis'
 import ReferenceLinesConfig from './ReferenceLinesConfig.vue'
 import SplitByConfig from './SplitByConfig.vue'
 import TooltipConfig from './TooltipConfig.vue'
@@ -23,7 +22,9 @@ const config = defineModel<LineChartConfig>({
 	}),
 })
 
-const trendLines = computed(() => takesTrendLines(config.value, 'line', false))
+function offersTrendLine(series: Series) {
+	return takesTrendLine(config.value, series, 'line', false)
+}
 </script>
 
 <template>
@@ -33,7 +34,7 @@ const trendLines = computed(() => takesTrendLines(config.value, 'line', false))
 		v-model="config.y_axis"
 		:column-options="props.columnOptions"
 		:config="config"
-		:trend-lines="trendLines"
+		:takes-trend-line="offersTrendLine"
 	>
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle :label="__('Curved lines')" v-model="(y_axis as YAxisLine).smooth" />

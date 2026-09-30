@@ -6,7 +6,7 @@ import DraggableList from '../../components/DraggableList.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import NumberInput from '../../components/NumberInput.vue'
 import { copy } from '../../helpers'
-import { AxisChartConfig, NumberFormatConfig } from '../../types/chart.types'
+import { AxisChartConfig, NumberFormatConfig, Series } from '../../types/chart.types'
 import { ColumnOption, MeasureOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
 import MeasurePicker from './MeasurePicker.vue'
@@ -16,11 +16,12 @@ import NumberFormatSection from './NumberFormatSection.vue'
 // `config` is the whole Chart's, beside the axis: how a number prints is the
 // Chart's to default and each Measure's to override, and the axis owns neither.
 //
-// `trendLines`: whether the chart can draw a trend line. See `takesTrendLines`.
+// `takesTrendLine`: whether a series is offered a trend line. See `takesTrendLine`
+// in the axis adapter.
 const props = defineProps<{
 	columnOptions: ColumnOption[]
 	config: NumberFormatConfig
-	trendLines?: boolean
+	takesTrendLine?: (series: Series) => boolean
 }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
 	required: true,
@@ -92,7 +93,7 @@ const updateColor = debounce((color: string, idx: number) => {
 							</InlineFormControlLabel>
 							<Toggle :label="__('Data labels')" v-model="item.show_data_labels" />
 							<Toggle
-								v-if="props.trendLines"
+								v-if="props.takesTrendLine?.(item)"
 								:label="__('Trend line')"
 								v-model="item.show_trend_line"
 							/>

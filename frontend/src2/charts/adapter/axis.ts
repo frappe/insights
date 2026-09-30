@@ -86,14 +86,38 @@ function adaptAxisChart(
 		if (series) columnsOwned.set(series, (columnsOwned.get(series) || 0) + 1)
 	}
 
+	const styles = new Map(
+		columns.map((column) => {
+			const series = seriesByColumn.get(column)
+			const owns = series ? columnsOwned.get(series) === 1 : false
+			return [column, styleFor(config, series, mark, owns, overlap)]
+		}),
+	)
+
+	// A column v2 stacks onto another plots its stack height or its share, and a
+	// fit reads its own values, so it takes no trend line.
+	const stacked = Boolean(stackingFor(y_axis, barsOnBothAxes))
+	const markOfColumn = (column: string) => styles.get(column)?.type || mark
+	const trends =
+		plottedXAxisType(dimension, horizontal) === 'category'
+			? new Map()
+			: trendLinesFor(
+					config,
+					columns.filter(
+						(column) =>
+							!stacksWithAnother(
+								stacked,
+								markOfColumn(column),
+								columns.filter((other) => other !== column).map(markOfColumn),
+							),
+					),
+					input.result.rows,
+					horizontal,
+					input.tokens,
+			  )
+
 	const seriesConfig: Record<string, SeriesStyle> = {}
-	const trends = takesTrendLines(config, mark, horizontal)
-		? trendLinesFor(config, columns, input.result.rows, horizontal, input.tokens)
-		: new Map()
-	for (const column of columns) {
-		const series = seriesByColumn.get(column)
-		const owns = series ? columnsOwned.get(series) === 1 : false
-		const style = styleFor(config, series, mark, owns, overlap)
+	for (const [column, style] of styles) {
 		const trend = trends.get(column)
 		if (trend) style.echartOptions = { ...style.echartOptions, markLine: trend }
 		if (Object.keys(style).length) seriesConfig[column] = style
@@ -117,14 +141,14 @@ function adaptAxisChart(
 	if (Object.keys(seriesConfig).length) props.seriesConfig = seriesConfig
 	if (horizontal) props.horizontal = true
 
-	const stacked = stackingFor(y_axis, barsOnBothAxes)
-	if (stacked) props.stacked = stacked
+	const stacking = stackingFor(y_axis, barsOnBothAxes)
+	if (stacking) props.stacked = stacking
 
 	// One formatter per axis, not per series: v2 prints a value against the axis
 	// it is read on, and an axis has one scale. The first series plotted on it
 	// says how that scale reads.
 	const primary = numberFormatter(config, measureOn(config, 'Left'), input.result.rows)
-	props.yAxis = valueAxisFor(y_axis, Boolean(stacked === 'normalized'), primary)
+	props.yAxis = valueAxisFor(y_axis, stacking === 'normalized', primary)
 
 	const rightMeasure = measureOn(config, 'Right')
 	const secondary = rightMeasure
@@ -247,12 +271,7 @@ function styleFor(
 	const line = (config.y_axis || {}) as YAxisLine
 	const style: SeriesStyle = {}
 
-	// The form wrote 'Line' where the type declares 'line'.
-	// `insights.patches.normalize_chart_configs` folded the stored ones. A config
-	// an import delivers must still not silently plot the chart's own mark.
-	const asked = (series?.type?.toLowerCase() as ChartMark) || mark
-	const area = asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
-	const type = area ? 'area' : asked
+	const type = markOf(config, series, mark)
 	if (type !== mark) style.type = type
 
 	if (ownsOneColumn && series?.color?.[0]) style.color = series.color[0]
@@ -601,22 +620,49 @@ function clipLine(
 }
 
 /**
- * Whether the chart can draw a trend line, for the adapter and for the form that
- * offers one.
+ * Whether the form offers `series` a trend line. The adapter asks the same two
+ * things of each column it plots.
  *
- * Its x axis must be a scale. A category axis sits its rows in the order they
- * arrive, which may be a ranking, so a line through them says nothing. And it
- * must not stack: v2 plots a stacked series at its stack height or its share,
- * and the fit reads the series' own values.
+ * The x axis must be a scale. A category axis sits its rows in the order they
+ * arrive, which may be a ranking, so a line through them says nothing. And v2
+ * must not stack the series with another: it plots a stacked series at its stack
+ * height or its share, and the fit reads the series' own values.
  */
-export function takesTrendLines(
+export function takesTrendLine(
 	config: MixedChartConfig,
+	series: Series,
 	mark: ChartMark,
 	horizontal: boolean,
 ): boolean {
 	if (plottedXAxisType(config.x_axis?.dimension, horizontal) === 'category') return false
-	const barsOnBothAxes = hasBarsOnBothAxes(config.y_axis?.series, mark, horizontal)
-	return !stackingFor(config.y_axis, barsOnBothAxes)
+	const all = (config.y_axis?.series || []).filter((s) => s.measure?.measure_name)
+	const stacked = Boolean(stackingFor(config.y_axis, hasBarsOnBothAxes(all, mark, horizontal)))
+	const own = markOf(config, series, mark)
+	const others = all.filter((other) => other !== series).map((s) => markOf(config, s, mark))
+	// a split plots the series once per value, and those stack with each other
+	if (config.split_by?.dimension?.column_name) others.push(own)
+	return !stacksWithAnother(stacked, own, others)
+}
+
+/**
+ * Whether v2 stacks a series of `mark` with another: `stackKey` in
+ * `frappe-ui/src/charts/axisChartOptions.ts`, restated because the package does
+ * not export it. Marks stack among their own and a line never does, and a series
+ * alone in its stack keeps its own values (`stackShares`).
+ */
+function stacksWithAnother(stacked: boolean, mark: ChartMark, others: ChartMark[]): boolean {
+	return stacked && mark !== 'line' && others.includes(mark)
+}
+
+/** What a Series plots as: its own mark, else the chart's, and a line with its area filled is an area. */
+function markOf(config: MixedChartConfig, series: Series | undefined, mark: ChartMark): ChartMark {
+	const line = (config.y_axis || {}) as YAxisLine
+	// The form wrote 'Line' where the type declares 'line'.
+	// `insights.patches.normalize_chart_configs` folded the stored ones. A config
+	// an import delivers must still not silently plot the chart's own mark.
+	const asked = (series?.type?.toLowerCase() as ChartMark) || mark
+	const area = asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
+	return area ? 'area' : asked
 }
 
 /**
