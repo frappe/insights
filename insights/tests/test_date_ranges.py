@@ -191,7 +191,7 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
         with patch(NOW, return_value="2026-08-10"):
             sql = self.compiled("Month to Date")
             self.assertIn("2026-08-01 00:00:00", sql)
-            self.assertIn("2026-08-10 23:59:59", sql)
+            self.assertIn("2026-08-11 00:00:00", sql)
 
     # @feature settings.week-start
     def test_an_existing_span_is_unchanged(self):
@@ -199,14 +199,14 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
             with patch(NOW, return_value="2022-11-26"):
                 sql = self.compiled("Current Week")
                 self.assertIn("2022-11-21 00:00:00", sql)
-                self.assertIn("2022-11-27 23:59:59", sql)
+                self.assertIn("2022-11-28 00:00:00", sql)
 
     # @feature query.filter-relative-date
     def test_a_span_given_as_a_list_is_joined(self):
         with patch(NOW, return_value="2022-11-26"):
             sql = self.compiled(["Last", "7", "Days"])
             self.assertIn("2022-11-19 00:00:00", sql)
-            self.assertIn("2022-11-25 23:59:59", sql)
+            self.assertIn("2022-11-26 00:00:00", sql)
 
     # @feature query.filter-relative-date
     def test_a_span_given_as_a_list_with_a_number_in_it_is_joined(self):
@@ -214,14 +214,14 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
         with patch(NOW, return_value="2022-11-26"):
             sql = self.compiled(["Last", 1, "Day"])
             self.assertIn("2022-11-25 00:00:00", sql)
-            self.assertIn("2022-11-25 23:59:59", sql)
+            self.assertIn("2022-11-26 00:00:00", sql)
 
     # @feature query.filter-relative-date
     def test_a_span_naming_no_count_reads_as_one_period(self):
         with patch(NOW, return_value="2022-11-26"):
             sql = self.compiled("Last Month")
             self.assertIn("2022-10-01 00:00:00", sql)
-            self.assertIn("2022-10-31 23:59:59", sql)
+            self.assertIn("2022-11-01 00:00:00", sql)
 
     # @feature query.filter-relative-date-shift
     def test_a_span_can_pin_its_own_anchor(self):
@@ -229,7 +229,7 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
         with patch(NOW, return_value="2026-11-30"):
             sql = self.compiled({"span": "month to date", "anchor": "2026-08-10"})
             self.assertIn("2026-08-01 00:00:00", sql)
-            self.assertIn("2026-08-10 23:59:59", sql)
+            self.assertIn("2026-08-11 00:00:00", sql)
 
     # @feature query.filter-relative-date-shift
     def test_a_shift_moves_the_anchor_and_the_span_is_measured_again(self):
@@ -243,14 +243,14 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
                 }
             )
             self.assertIn("2025-08-01 00:00:00", sql)
-            self.assertIn("2025-08-10 23:59:59", sql)
+            self.assertIn("2025-08-11 00:00:00", sql)
 
     # @feature query.filter-relative-date-shift
     def test_a_shift_with_no_anchor_moves_today(self):
         with patch(NOW, return_value="2026-08-10"):
             sql = self.compiled({"span": "month to date", "shift": {"unit": "year", "count": -1}})
             self.assertIn("2025-08-01 00:00:00", sql)
-            self.assertIn("2025-08-10 23:59:59", sql)
+            self.assertIn("2025-08-11 00:00:00", sql)
 
     # @feature query.filter-relative-date
     def test_a_value_naming_no_span_is_rejected(self):

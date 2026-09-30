@@ -35,9 +35,9 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     strip_schema_prefix,
 )
 from insights.insights.query_builders.sql_functions import (
-    add_start_and_end_time,
     handle_timespan,
     resolve_timespan,
+    within_days,
 )
 from insights.insights.query_utils import (
     check_source_workbook,
@@ -672,8 +672,8 @@ class IbisQueryBuilder:
             end = filter_value[1]
 
             first, last = parse_bare_date(start), parse_bare_date(end)
-            if first and last and left.type().is_timestamp():
-                return (left >= midnight(first)) & (left < midnight(last) + timedelta(days=1))
+            if first and last:
+                return within_days(left, first, last)
 
             if isinstance(start, str) and isinstance(end, str):
                 contains_time = ":" in start or ":" in end
@@ -904,8 +904,7 @@ class IbisQueryBuilder:
         base = self.query
         rows = []
         for start, end in sorted({resolve_timespan(window) for window in windowed.windows}):
-            bounds = add_start_and_end_time([start, end])
-            self.query = base.filter(column.between(*bounds))
+            self.query = base.filter(within_days(column, start, end))
 
             aggregates = [self.translate_measure(measure) for measure in summarize_args.measures]
             aggregates = {agg.get_name(): agg for agg in aggregates}

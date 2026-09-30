@@ -158,8 +158,7 @@ class Functions:
         if function == "sum_if":
             return func.sum(case((args[0], args[1]), else_=0))
         if function == "between":
-            dates = add_start_and_end_time([args[1], args[2]])
-            return args[0].between(*dates)
+            return within_days(args[0], args[1], args[2])
         if function == "replace":
             return func.replace(args[0], args[1], args[2])
         if function == "substring":
@@ -228,8 +227,7 @@ class Functions:
 
 
 def handle_timespan(column, timespan):
-    dates = add_start_and_end_time(list(resolve_timespan(timespan)))
-    return column.between(*dates)
+    return within_days(column, *resolve_timespan(timespan))
 
 
 def resolve_timespan(timespan) -> tuple[datetime.date, datetime.date]:
@@ -591,16 +589,14 @@ def shift_anchor(anchor: datetime.date, unit: str, count: int) -> datetime.date:
     raise Exception(f"Invalid shift unit - {unit}")
 
 
-def add_start_and_end_time(dates):
-    if not dates:
-        return dates
+def within_days(column, first, last):
+    """From the start of day `first` up to the start of the day after `last`.
 
-    dates[0] = getdate(dates[0])
-    dates[1] = getdate(dates[1])
-    dates[0] = dates[0].strftime("%Y-%m-%d 00:00:00")
-    dates[1] = dates[1].strftime("%Y-%m-%d 23:59:59")
-
-    return dates
+    An end at 23:59:59 dropped a timestamp in the last second of the day.
+    """
+    start = getdate(first)
+    end = getdate(last) + datetime.timedelta(days=1)
+    return (column >= f"{start} 00:00:00") & (column < f"{end} 00:00:00")
 
 
 class BinaryOperations:
