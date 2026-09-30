@@ -85,6 +85,7 @@ const updateColor = debounce((color: string, idx: number) => {
 								/>
 							</InlineFormControlLabel>
 							<Toggle :label="__('Data labels')" v-model="item.show_data_labels" />
+							<Toggle :label="__('Trend line')" v-model="item.show_trend_line" />
 							<slot name="series-settings" :series="item" :idx="index" />
 						</template>
 					</MeasurePicker>

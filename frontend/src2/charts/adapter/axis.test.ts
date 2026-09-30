@@ -850,14 +850,12 @@ describe('the fit a trend line draws', () => {
 
 describe('a trend line', () => {
 	const tokens = { axisLabel: 'oklch(0.58 0 0)', backdrop: '#242424' } as ChartTokens
-	const trend = { aggregate: 'trend', measure_name: 'revenue', dashed: true } as const
 	const spec = (overrides: Partial<AxisChartSpec> = {}): AxisChartSpec => ({
 		type: 'Line',
 		dimension: 'region',
 		categories: ['North', 'South', 'East'],
-		measures: ['revenue'],
+		measures: [{ name: 'revenue', trendLine: true }],
 		readings: { revenue: [10, 30, 50] },
-		referenceLines: [trend],
 		...overrides,
 	})
 	const propsWith = (overrides: Partial<AxisChartSpec> = {}) => {
@@ -867,9 +865,11 @@ describe('a trend line', () => {
 	}
 	const markLineOf = (props: Record<string, any>, column: string) =>
 		props.seriesConfig?.[column]?.echartOptions?.markLine
+	const endsOf = (props: Record<string, any>, column: string) =>
+		markLineOf(props, column)?.data[0].map((point: any) => point.coord)
 
 	// @feature charts.trend-line
-	it('rides the series it fits, silent, in the ink v2 gives a reference line', () => {
+	it('rides the series it fits, silent and dashed, in the series color', () => {
 		const props = propsWith()
 		expect(props.referenceLines).toBeUndefined()
 		expect(markLineOf(props, 'revenue')).toEqual({
@@ -879,12 +879,12 @@ describe('a trend line', () => {
 				[
 					{
 						coord: ['North', 10],
-						lineStyle: { type: [3.5, 3], width: 1, color: tokens.axisLabel },
+						// no color: echarts draws a series' markLine in the series' own
+						lineStyle: { type: [3.5, 3], width: 1 },
 						label: {
 							show: true,
 							position: 'insideEndTop',
 							formatter: expect.any(Function),
-							color: tokens.axisLabel,
 							fontSize: 11,
 							backgroundColor: 'color-mix(in srgb, #242424 80%, transparent)',
 							padding: [2, 4],
@@ -894,34 +894,29 @@ describe('a trend line', () => {
 				],
 			],
 		})
-		expect(markLineOf(props, 'revenue').data[0][0].label.formatter()).toBe('revenue trend')
+		expect(markLineOf(props, 'revenue').data[0][0].label.formatter()).toBe('Revenue trend')
 	})
 
 	// @feature charts.trend-line
-	it('takes the color and label its author gave it', () => {
-		const props = propsWith({
-			referenceLines: [{ ...trend, color: '#ff0000', label: 'Direction' }],
-		})
-		const start = markLineOf(props, 'revenue').data[0][0]
-		expect(start.lineStyle.color).toBe('#ff0000')
-		expect(start.label.color).toBe('#ff0000')
-		expect(start.label.formatter()).toBe('Direction')
+	it('draws none for a series that did not ask for one', () => {
+		expect(markLineOf(propsWith({ measures: ['revenue'] }), 'revenue')).toBeUndefined()
 	})
 
 	// @feature charts.trend-line
-	it('fits each column of a split on its own', () => {
+	it('fits each column of a split on its own, named as the legend names it', () => {
 		const props = propsWith({
-			splitBy: { dimension: 'channel', into: ['Retail', 'Online'] },
-			readings: { Retail: [10, 20, 30], Online: [60, 40, 20] },
+			splitBy: { dimension: 'channel', into: ['retail', 'online'] },
+			readings: { retail: [10, 20, 30], online: [60, 40, 20] },
 		})
-		expect(markLineOf(props, 'Retail').data[0].map((p: any) => p.coord)).toEqual([
+		expect(endsOf(props, 'retail')).toEqual([
 			['North', 10],
 			['East', 30],
 		])
-		expect(markLineOf(props, 'Online').data[0].map((p: any) => p.coord)).toEqual([
+		expect(endsOf(props, 'online')).toEqual([
 			['North', 60],
 			['East', 20],
 		])
+		expect(markLineOf(props, 'online').data[0][0].label.formatter()).toBe('Online trend')
 	})
 
 	// @feature charts.trend-line
@@ -930,7 +925,7 @@ describe('a trend line', () => {
 			categories: ['North', 'South', 'East', 'West'],
 			readings: { revenue: [null, 10, 30, null] },
 		})
-		expect(markLineOf(props, 'revenue').data[0].map((p: any) => p.coord)).toEqual([
+		expect(endsOf(props, 'revenue')).toEqual([
 			['South', 10],
 			['East', 30],
 		])

@@ -8,7 +8,7 @@ import ColorInput from '../../components/ColorInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import {
 	AxisChartConfig,
-	ReferenceComputed,
+	ReferenceAggregate,
 	ReferenceLabelPlacement,
 	ReferenceLine,
 } from '../../types/chart.types'
@@ -42,14 +42,13 @@ const labelPlacementOptions: { label: string; value: ReferenceLabelPlacement }[]
 	{ label: __('Start, below'), value: 'start-bottom' },
 ]
 
-const atOptions: { label: string; value: ReferenceComputed | '' }[] = [
+const atOptions: { label: string; value: ReferenceAggregate | '' }[] = [
 	{ label: __('Constant'), value: '' },
 	{ label: __('Average'), value: 'average' },
 	{ label: __('Median'), value: 'median' },
 	{ label: __('Min'), value: 'min' },
 	{ label: __('Max'), value: 'max' },
 	{ label: __('Sum'), value: 'sum' },
-	{ label: __('Trend'), value: 'trend' },
 ]
 
 function addReferenceLine() {
@@ -64,7 +63,7 @@ function removeReferenceLine(index: number) {
 }
 
 // A line sits at one thing, so switching kind drops what the other kind held.
-function setAggregate(line: ReferenceLine, aggregate: ReferenceComputed | '') {
+function setAggregate(line: ReferenceLine, aggregate: ReferenceAggregate | '') {
 	if (!aggregate) {
 		delete line.aggregate
 		delete line.measure_name
@@ -74,8 +73,6 @@ function setAggregate(line: ReferenceLine, aggregate: ReferenceComputed | '') {
 	line.aggregate = aggregate
 	// An aggregate is a number, so it is read on a value axis and nowhere else.
 	line.axis = 'y'
-	// dashed, so a fit does not read as one more measured series
-	if (aggregate === 'trend' && line.dashed === undefined) line.dashed = true
 	// A chart that names no Measure yet leaves the picker empty rather than
 	// writing `undefined` into the config as the Measure this line reads.
 	const first = measureOptions.value[0]
@@ -137,9 +134,8 @@ function setAggregate(line: ReferenceLine, aggregate: ReferenceComputed | '') {
 									]"
 								/>
 							</InlineFormControlLabel>
-							<!-- a trend line rides its series, so it sits on that series' axis -->
 							<InlineFormControlLabel
-								v-if="(line.axis || 'y') === 'y' && line.aggregate !== 'trend'"
+								v-if="(line.axis || 'y') === 'y'"
 								:label="__('Align')"
 							>
 								<FormControl

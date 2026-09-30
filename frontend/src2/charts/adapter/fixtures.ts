@@ -50,6 +50,7 @@ type MeasureSpec =
 			area?: boolean
 			smooth?: boolean
 			dataPoints?: boolean
+			trendLine?: boolean
 	  }
 
 export type AxisChartSpec = {
@@ -213,6 +214,7 @@ function toSeries(measure: MeasureSpecObject): Series {
 		...(measure.area ? { show_area: true } : {}),
 		...(measure.smooth ? { smooth: true } : {}),
 		...(measure.dataPoints ? { show_data_points: true } : {}),
+		...(measure.trendLine ? { show_trend_line: true } : {}),
 	}
 }
 

@@ -19,7 +19,6 @@ import { getFormattedDate } from '../../query/helpers'
 import type {
 	MixedChartConfig,
 	ReferenceAggregate,
-	ReferenceLabelPlacement,
 	ReferenceLine,
 	Series,
 	SeriesLine,
@@ -352,8 +351,6 @@ function referenceLinesFor(
 ): PlotReferenceLine[] {
 	const lines: PlotReferenceLine[] = []
 	for (const line of config.y_axis?.reference_lines || []) {
-		// a trend line is not a rule at one value. See `trendLinesFor`.
-		if (line.aggregate === 'trend') continue
 		// A line labels itself in the scale it is plotted against, so a rule on the
 		// right axis reads as that axis's ticks do.
 		const on = line.align === 'Right' && rightFormat ? rightFormat : format
@@ -405,7 +402,7 @@ function aggregatePositionOf(
 ): ReferencePosition | undefined {
 	const aggregate = line.aggregate
 	const measure = line.measure_name
-	if (!aggregate || aggregate === 'trend' || !measure) return
+	if (!aggregate || !measure) return
 
 	const sources = columns.filter((column) => measureNameFor(config, column) === measure)
 
@@ -474,18 +471,14 @@ export function fitLine(
 }
 
 /**
- * Each trend line, as the `markLine` of the series it fits, keyed by column.
+ * Each series' trend line, as its `markLine`, keyed by column.
  *
- * v2 draws a reference line as a rule at one value, on a host series of its own,
- * and a trend line has two ends at different heights. So it rides its own series,
- * through the series' `echartOptions`, and is drawn the way v2 draws a rule: the
- * same ink, weight, dash and label plate. Riding the series, it sits on that
- * series' axis, and the legend hides it with the series. `silent` keeps it out
- * of the tooltip and the click.
- *
- * A split plots a Measure as several columns, and one fit through all of them
- * means nothing, so each column gets its own. The line runs from the first
- * point it fits to the last.
+ * v2 draws a reference line as a rule at one value, and a trend line has two ends
+ * at different heights. So it rides the series it fits, through the series'
+ * `echartOptions`, and takes the series' own color: a split's lines each take
+ * their split's. Riding the series, it sits on that series' axis, and the legend
+ * hides it with the series. `silent` keeps it out of the tooltip and the click.
+ * The dash, weight and label plate are v2's for a reference line.
  */
 function trendLinesFor(
 	config: MixedChartConfig,
@@ -495,51 +488,50 @@ function trendLinesFor(
 	tokens?: ChartTokens,
 ): Map<string, Record<string, any>> {
 	const x = config.x_axis?.dimension?.dimension_name
-	const byColumn = new Map<string, Record<string, any>[]>()
-	for (const line of config.y_axis?.reference_lines || []) {
-		if (line.aggregate !== 'trend' || !line.measure_name || !x) continue
-		for (const column of columns) {
-			if (measureNameFor(config, column) !== line.measure_name) continue
-			const values = rows.map((row) => toNumber(row[column]))
-			const fit = fitLine(values)
-			if (!fit) continue
+	const lines = new Map<string, Record<string, any>>()
+	if (!x) return lines
+	for (const column of columns) {
+		if (!seriesFor(config, column)?.show_trend_line) continue
+		const values = rows.map((row) => toNumber(row[column]))
+		const fit = fitLine(values)
+		if (!fit) continue
 
-			const first = values.findIndex((value) => value !== null)
-			const last = values.length - 1 - [...values].reverse().findIndex((v) => v !== null)
-			const coord = (index: number) => {
-				const point = [rows[index][x], fit.intercept + fit.slope * index]
-				return horizontal ? point.reverse() : point
-			}
-			const color = line.color || tokens?.axisLabel
-			const label = line.label || __('{0} trend', column)
-			const entry = [
-				{
-					coord: coord(first),
-					lineStyle: {
-						...(line.dashed ? dashedLine(REFERENCE_LINE_WIDTH) : {}),
-						width: REFERENCE_LINE_WIDTH,
-						color,
-					},
-					label: {
-						show: true,
-						position: LABEL_PLACEMENTS[line.label_placement ?? 'end-top'],
-						formatter: () => label,
-						color,
-						fontSize: DATA_LABEL_FONT_SIZE,
-						backgroundColor: tokens
-							? `color-mix(in srgb, ${tokens.backdrop} ${LABEL_PLATE_OPACITY}%, transparent)`
-							: undefined,
-						padding: LABEL_PADDING,
-					},
-				},
-				{ coord: coord(last) },
-			]
-			byColumn.set(column, [...(byColumn.get(column) || []), entry])
+		const first = values.findIndex((value) => value !== null)
+		const last = values.length - 1 - [...values].reverse().findIndex((v) => v !== null)
+		const coord = (index: number) => {
+			const point = [rows[index][x], fit.intercept + fit.slope * index]
+			return horizontal ? point.reverse() : point
 		}
+		const label = __('{0} trend', seriesLabel(column))
+		const start = {
+			coord: coord(first),
+			lineStyle: dashedLine(REFERENCE_LINE_WIDTH),
+			label: {
+				show: true,
+				position: 'insideEndTop',
+				formatter: () => label,
+				fontSize: DATA_LABEL_FONT_SIZE,
+				backgroundColor: tokens
+					? `color-mix(in srgb, ${tokens.backdrop} ${LABEL_PLATE_OPACITY}%, transparent)`
+					: undefined,
+				padding: LABEL_PADDING,
+			},
+		}
+		lines.set(column, { silent: true, symbol: 'none', data: [[start, { coord: coord(last) }]] })
 	}
-	return new Map(
-		[...byColumn].map(([column, data]) => [column, { silent: true, symbol: 'none', data }]),
-	)
+	return lines
+}
+
+/**
+ * What the legend calls a series: v2's `seriesLabel` over a column with no label
+ * of its own, which is `formatLabel` in `frappe-ui/src/charts/format.ts`. The
+ * package exports neither, so the rule is restated here.
+ */
+function seriesLabel(column: string) {
+	return column
+		.split('_')
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(' ')
 }
 
 // v2's reference-line style, in `frappe-ui/src/charts/referenceLines.ts`. The
@@ -548,12 +540,6 @@ const REFERENCE_LINE_WIDTH = 1
 const DATA_LABEL_FONT_SIZE = 11
 const LABEL_PADDING = [2, 4]
 const LABEL_PLATE_OPACITY = 80
-const LABEL_PLACEMENTS: Record<ReferenceLabelPlacement, string> = {
-	'start-top': 'insideStartTop',
-	'start-bottom': 'insideStartBottom',
-	'end-top': 'insideEndTop',
-	'end-bottom': 'insideEndBottom',
-}
 
 /** v2's `dashedLine`: dash and gap in multiples of the width. */
 function dashedLine(width: number) {
