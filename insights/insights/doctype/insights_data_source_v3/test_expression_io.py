@@ -10,6 +10,7 @@ The rule is held here rather than a list of names, so an ibis upgrade that adds
 a reader does not quietly become reachable.
 """
 
+import datetime
 import os
 import tempfile
 
@@ -84,6 +85,41 @@ class TestExpressionIsolation(UnitTestCase):
             os.remove(target)
         self.assert_refused(f"q.to_csv({target!r})")
         self.assertFalse(os.path.exists(target))
+
+    # @feature query.expression-cannot-reach-files
+    def test_a_column_named_like_a_table_method_is_a_column(self):
+        """A table's method outranks its column on attribute access, so a bare
+        column read by attribute would be the bound method."""
+        from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
+
+        target = os.path.join(tempfile.gettempdir(), "insights_expression_column_test.csv")
+        for name in ("to_csv", "sql", "execute"):
+            with self.subTest(name=name):
+                if os.path.exists(target):
+                    os.remove(target)
+                builder = IbisQueryBuilder(frappe._dict(name="t", operations="[]", use_live_connection=0))
+                builder.query = ibis.memtable({name: ["x"]})
+
+                self.assertEqual(
+                    builder.evaluate_expression(f"{name}.length()").get_name(), f"StringLength({name})"
+                )
+                with self.assertRaises(TypeError):
+                    builder.evaluate_expression(f"{name}({target!r})")
+                self.assertFalse(os.path.exists(target))
+
+    # @feature query.expression-cannot-reach-files
+    def test_functions_read_a_column_named_like_a_table_method_as_a_column(self):
+        from insights.insights.doctype.insights_data_source_v3.ibis.functions import count, get_retention_data
+
+        previous = frappe.flags.current_ibis_query
+        self.addCleanup(setattr, frappe.flags, "current_ibis_query", previous)
+        frappe.flags.current_ibis_query = ibis.memtable(
+            {"execute": [datetime.date(2026, 1, 1), datetime.date(2026, 1, 2)], "sql": ["u1", "u1"]}
+        )
+
+        self.assertEqual(count().op().arg.name, "execute")
+        retention = get_retention_data("execute", "sql", "day")
+        self.assertIn("retention", retention.columns)
 
     # @feature query.expression-cannot-reach-files
     def test_the_rule_holds_for_a_multi_statement_script(self):

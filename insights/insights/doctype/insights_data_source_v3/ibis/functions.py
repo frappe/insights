@@ -36,7 +36,7 @@ def count(
     if column is None:
         query = frappe.flags.current_ibis_query
         column = query.columns[0]
-        column = getattr(query, column)
+        column = query[column]
 
     if group_by is not None:
         return column.count(where=where).over(group_by=group_by, order_by=order_by)
@@ -1385,10 +1385,10 @@ def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: st
         frappe.throw("Query not found")
 
     if isinstance(date_column, str):
-        date_column = getattr(query, date_column)
+        date_column = query[date_column]
 
     if isinstance(id_column, str):
-        id_column = getattr(query, id_column)
+        id_column = query[id_column]
 
     if date_column.type().is_timestamp():
         date_column = date_column.cast("date")

@@ -344,6 +344,26 @@ class TestQuerying(InsightsIntegrationTestCase):
         self.assertEqual(first, [])
         self.assertEqual(second, [])
 
+    # @feature query.filter-values
+    def test_distinct_values_of_a_column_named_like_a_table_method(self):
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Method Named Column",
+            operations=[
+                table_source(),
+                self.prefix_filter(),
+                {"type": "rename", "column": column("status"), "new_name": "execute"},
+            ],
+        )
+
+        with db_connections():
+            values = self.get_query(query.name).get_distinct_column_values("execute")
+
+        self.assertEqual(sorted(values), ["Closed", "Open"])
+
     # @feature query.source-query
     def test_query_can_use_another_query_as_its_source(self):
         self.seed_todos()
