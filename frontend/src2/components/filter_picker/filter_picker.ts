@@ -4,7 +4,7 @@
 // overview row prints.
 
 import type { Component } from 'vue'
-import { FIELDTYPES, type FilterType } from '../../helpers/constants'
+import { FIELDTYPES, isCalendarDateType, type FilterType } from '../../helpers/constants'
 import dayjs from '../../helpers/dayjs'
 import { endOfPeriod, shiftPeriods, startOfPeriod } from '../../helpers/calendar'
 import {
@@ -38,7 +38,8 @@ export type FilterKind = 'text' | 'number' | 'date'
 
 export function kindOf(type: ColumnDataType): FilterKind {
 	if (FIELDTYPES.NUMBER.includes(type)) return 'number'
-	if (FIELDTYPES.DATE.includes(type)) return 'date'
+	// a Time names no day, so it has no span to filter by
+	if (isCalendarDateType(type)) return 'date'
 	return 'text'
 }
 

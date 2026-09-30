@@ -1,5 +1,5 @@
 import { FILTER_TYPE_KINDS, operators } from '../../components/filter_picker/filter_picker'
-import { FIELDTYPES, FilterType } from '../../helpers/constants'
+import { FIELDTYPES, FilterType, isCalendarDateType } from '../../helpers/constants'
 import {
 	ColumnDataType,
 	FilterExpression,
@@ -46,7 +46,7 @@ export function isFilterExpressionValid(filter: FilterExpression) {
 export function getFilterType(columnType: ColumnDataType): FilterType {
 	if (FIELDTYPES.TEXT.includes(columnType)) return 'String'
 	if (FIELDTYPES.NUMBER.includes(columnType)) return 'Number'
-	if (FIELDTYPES.DATE.includes(columnType)) return 'Date'
+	if (isCalendarDateType(columnType)) return 'Date'
 	return 'String'
 }
 
