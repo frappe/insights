@@ -94,6 +94,38 @@ function adaptAxisChart(
 		}),
 	)
 
+	// A horizontal bar chart runs its value axis across the plot and plots only
+	// one, so v2 reads every series against the primary there. Nothing here asks
+	// which way the bars run: knowing it twice is how the two answers drift apart.
+	const onRight = (column: string) => seriesByColumn.get(column)?.align === 'Right'
+	const right = columns.filter(onRight)
+
+	const props: BarChartProps = {
+		title: input.title,
+		subtitle: input.description,
+		data: input.result.rows,
+		x,
+		y: columns.filter((column) => !onRight(column)),
+		xAxis: xAxisFor(dimension),
+	}
+	if (right.length) props.y2 = right
+	if (horizontal) props.horizontal = true
+
+	const stacking = stackingFor(y_axis, barsOnBothAxes)
+	if (stacking) props.stacked = stacking
+
+	// One formatter per axis, not per series: v2 prints a value against the axis
+	// it is read on, and an axis has one scale. The first series plotted on it
+	// says how that scale reads.
+	const primary = numberFormatter(config, measureOn(config, 'Left'), input.result.rows)
+	props.yAxis = valueAxisFor(y_axis, stacking === 'normalized', primary)
+
+	const rightMeasure = measureOn(config, 'Right')
+	const secondary = rightMeasure
+		? numberFormatter(config, rightMeasure, input.result.rows)
+		: undefined
+	if (secondary) props.y2Axis = { format: secondary }
+
 	// A column v2 stacks onto another plots its stack height or its share, and a
 	// fit reads its own values, so it takes no trend line.
 	const stacked = Boolean(stackingFor(y_axis, barsOnBothAxes))
@@ -113,6 +145,8 @@ function adaptAxisChart(
 					),
 					input.result.rows,
 					horizontal,
+					// v2 reads a horizontal chart's every series on its one value axis
+					(column) => (onRight(column) && !horizontal ? props.y2Axis : props.yAxis),
 					input.tokens,
 			  )
 
@@ -123,38 +157,7 @@ function adaptAxisChart(
 		if (Object.keys(style).length) seriesConfig[column] = style
 	}
 
-	// A horizontal bar chart runs its value axis across the plot and plots only
-	// one, so v2 reads every series against the primary there. Nothing here asks
-	// which way the bars run: knowing it twice is how the two answers drift apart.
-	const onRight = (column: string) => seriesByColumn.get(column)?.align === 'Right'
-	const right = columns.filter(onRight)
-
-	const props: BarChartProps = {
-		title: input.title,
-		subtitle: input.description,
-		data: input.result.rows,
-		x,
-		y: columns.filter((column) => !onRight(column)),
-		xAxis: xAxisFor(dimension),
-	}
-	if (right.length) props.y2 = right
 	if (Object.keys(seriesConfig).length) props.seriesConfig = seriesConfig
-	if (horizontal) props.horizontal = true
-
-	const stacking = stackingFor(y_axis, barsOnBothAxes)
-	if (stacking) props.stacked = stacking
-
-	// One formatter per axis, not per series: v2 prints a value against the axis
-	// it is read on, and an axis has one scale. The first series plotted on it
-	// says how that scale reads.
-	const primary = numberFormatter(config, measureOn(config, 'Left'), input.result.rows)
-	props.yAxis = valueAxisFor(y_axis, stacking === 'normalized', primary)
-
-	const rightMeasure = measureOn(config, 'Right')
-	const secondary = rightMeasure
-		? numberFormatter(config, rightMeasure, input.result.rows)
-		: undefined
-	if (secondary) props.y2Axis = { format: secondary }
 
 	// A reference line reads any Measure the Chart includes, plotted or not: a rule
 	// often computes from a tooltip target.
@@ -511,6 +514,7 @@ function trendLinesFor(
 	columns: string[],
 	rows: QueryResultRow[],
 	horizontal: boolean,
+	axisOf: (column: string) => ChartValueAxisOptions | undefined,
 	tokens?: ChartTokens,
 ): Map<string, Record<string, any>> {
 	const dimension = config.x_axis?.dimension
@@ -538,10 +542,9 @@ function trendLinesFor(
 			(point): point is { x: number; y: number } => point.y !== null,
 		)
 		const xs = plotted.map((point) => point.x)
-		const onRight = seriesFor(config, column)?.align === 'Right'
 		const range = valueRange(
 			plotted.map((point) => point.y),
-			onRight ? undefined : config.y_axis,
+			axisOf(column),
 		)
 		const ends = clipLine(
 			fit,
@@ -575,12 +578,12 @@ function trendLinesFor(
 }
 
 /**
- * The values a series' axis always shows: from the bound its author set, else
- * from zero or the series' lowest value, to the bound its author set, else to
- * zero or its highest. The axis may reach further for another series, never
- * less far. Only the primary axis takes the author's bounds.
+ * The values a series' axis always shows: from the bound the axis was handed,
+ * else from zero or the series' lowest value, to the bound it was handed, else
+ * to zero or its highest. The axis may reach further for another series, never
+ * less far.
  */
-function valueRange(values: number[], axis?: MixedChartConfig['y_axis']): [number, number] {
+function valueRange(values: number[], axis?: ChartValueAxisOptions): [number, number] {
 	const low = values.reduce((least, value) => (value < least ? value : least), 0)
 	const high = values.reduce((most, value) => (value > most ? value : most), 0)
 	return [

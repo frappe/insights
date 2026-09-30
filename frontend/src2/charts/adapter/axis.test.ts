@@ -992,6 +992,20 @@ describe('a trend line', () => {
 	})
 
 	// @feature charts.trend-line
+	it("stops at the author's bounds on a Row chart, whose one value axis reads every series", () => {
+		const props = propsWith({
+			type: 'Row',
+			measures: [{ name: 'revenue', axis: 'right', trendLine: true }],
+			categories: ['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01'],
+			readings: { revenue: [1, 2, 10, 30] },
+			min: 5,
+		})
+		// a Row chart swaps the pair: value first
+		const [start] = endsOf(props, 'revenue')
+		expect(start[0]).toBe(5)
+	})
+
+	// @feature charts.trend-line
 	it('stops at the bounds the author set on the axis', () => {
 		const props = propsWith({ readings: { revenue: [10, 30, 50] }, max: 40 })
 		const [, end] = endsOf(props, 'revenue')
