@@ -81,8 +81,8 @@ const config = computed(() => {
 })
 const result = computed(() => props.chart.result || emptyResult())
 
-// read against the card, so a trend line takes the ink v2 gives a rule here, and
-// again when the theme flips
+// read against the card, so a trend line's label sits on the plate v2 gives a
+// rule's label here, and again when the theme flips
 const root = ref<HTMLElement>()
 const { tokens } = useChartTokens(root)
 

@@ -39,8 +39,9 @@ export type ChartAdapterInput = {
 	description?: string
 	/**
 	 * The plot's colors, resolved against the page and again on a theme flip. A
-	 * trend line reads them, because v2 draws it through no rule of its own. Left
-	 * out by a surface that draws no reference lines, a drill's breakdown.
+	 * trend line's label plate reads them, because v2 draws the line through no
+	 * rule of its own. Left out by a surface that draws no trend line, a drill's
+	 * breakdown.
 	 */
 	tokens?: ChartTokens
 	/**
