@@ -4,7 +4,9 @@ Date: 2026-09-11
 
 ## Status
 
-Accepted. Built in `frontend/src2/components/filter_picker/`, wired to the dashboard filter, the table chart card and the drill rows. The builder's column filter is still to be wired. Until then its legacy header filter and the picker overwrite each other's adhoc dict on the drill grid.
+Accepted. Built in `frontend/src2/components/filter_picker/`, wired to the dashboard filter, every chart card but a number card, and the drill rows. The builder's column filter is still to be wired. Until then its legacy header filter and the picker overwrite each other's adhoc dict on the drill grid.
+
+Amended 2026-09-30: every chart card but a number card has a card filter, not only the table card. It was rejected as out of scope for the table effort, in favour of cross-filtering, which is not built. The two do not compete: a click on a chart element can set the same filter later. A split chart offers only its x-axis, because its other columns are series named after the split's values.
 
 ## Context
 
@@ -26,7 +28,6 @@ The list stands on reka's `ComboboxRoot`, since frappe-ui's `Combobox` has no se
 
 - Include/exclude tabs instead of an operator; from/to inputs inferring the operator.
 - A sentence typed into one input; flat column · operator · value rows; chips in the toolbar; a Done row; dates without an operator stage.
-- A filter button on every chart. Clicking a chart element to cross-filter is a separate effort.
 - Keying card filters by the source query: lands before the summarize, so no measures and no chart labels.
 
 ## Consequences
