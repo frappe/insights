@@ -38,7 +38,7 @@ Why: the cheapest correct fix is at the layer that owns the concept. At the wron
 
 - The framework, frappe-ui, or the app? It belongs in the framework when the split is clean there, not only when a second app asks for it.
 - Does a path that does this job already exist, in the app or in the framework? One job gets one user experience and one implementation.
-- A new dependency names its job, and why no installed package does it.
+- A new dependency names its job, and why no installed package does it. A version change of an existing one is read as code: what changed upstream between the two versions, and each caller of it.
 - Before you accept a workaround for a framework limit, read how the framework implements the limit. The limit is often a parameter the app can set. *A client-side scheduler was built around `@concurrent_limit()`, whose `wait_timeout` the app can set.*
 - When the app works around a framework gap, the gap gets an issue. A code comment is not a record.
 - A dependency across layers is accepted when it makes the design simpler, and the review names it.
@@ -70,7 +70,6 @@ Why: name the right end design and the step toward it, so a quick fix does not m
 - A shortcut is fine when it is cheap and the later step to the right design is known. Name that step.
 - A breaking change tells users what happens to their data, removes the old behaviour only after a notice or a setting, and carries no old code into the new path. Count the affected sites from a source that sees all of them, not from opt-in telemetry.
 - A feature added only to serve a migration is behind a setting, and names when it is removed.
-- A dependency version change is reviewed as code: read what changed upstream between the two versions, and find each caller of what changed. *Four fixes in nine days followed frappe-ui version changes.*
 - What the change does not have to fix: a defect older than the change, outside the lines it rewrites, is deferred to an issue, or to a private advisory for security. It becomes this change's defect when the change makes it worse or easier to reach.
 - Say when the right design is not known yet. A reuse that works but feels wrong stays flagged.
 
@@ -85,13 +84,14 @@ Why: prove that the design holds, and make the next mistake fail a guard instead
 - A cost: a query count or a timing against the base.
 - Any owner: one test through the real path for each kind of user and data from part 1 that the owner treats differently. The repo's testing guide says at which level it sits.
 
+A fix for one instance of a class gets a guard that checks every instance, the ones that exist too: a test over the list the framework keeps, such as every whitelisted method or every doctype. A lint that runs only on changed lines passes the instances that already exist. *A fix pinned 11 write methods to POST. The review deferred the other 20, and asked for no test over `frappe.allowed_http_methods_for_whitelisted_func` that would list them and block new ones.* The guard proves its list is complete, and fails when it checks nothing. *A typecheck gate passed on every pull request because CI never installed `vue-tsc`, and it read no output as no errors.*
+
 Do not ask for tests of helpers, configuration or plumbing. The real-path test covers them, and extra tests cost review time.
 
 **Reading.** Readers trace questions, not files, and report against the repo's must-fix rules (`reading.md`). Readers have missed these:
 
 - A value's identity, not only its content. When code keeps an object by reference, find where that object came from on the first write.
 - A new field that refines an existing key: list every reader of the old key.
-- A failure the user sees as a normal value: an `except`, a `.catch` or a default that turns an error into an empty chart, a zero or a spinner that never stops.
 - A defect older than the change, on a line the change touches, is reported with its own severity and marked older. Never drop it or lower it. *A map that drew empty regions black was filed as old and not fixed, and it reached users.*
 - A type error on a field that a dependency does not declare is a live defect.
 - Whether a path is reachable is judged against the consumers the feature is built for, not only the apps installed today.
@@ -117,7 +117,7 @@ Why: a fix is a small design change, held to parts 3 to 5. *On the 11-round revi
 - A security fix's branch, commits, tests and comments name the rule it enforces, not the attack.
 - Minor findings wait until the code stops changing. Then they get one pass, with the same check.
 - The plan sets a limit on passes. At the limit, the open findings go to the maintainer to rule on or defer.
-- After the last pass, write a short retro: for each top class of finding, the guard or rule that would have stopped it, as a diff to this playbook or the repo's rules.
+- After the last pass, write a short retro. For each top class of finding, name the lowest layer that would have stopped it: first a guard in the code or the framework, then a wider scope for a rule that exists and did not apply, and a new rule only when neither works. A new rule names the other cases it catches. Write each as a diff.
 
 ## Size
 
