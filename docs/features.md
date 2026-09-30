@@ -244,6 +244,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.filter-row | No card shares a row with a dashboard filter; of the two, the one placed lower moves below the other. |
 | dashboard.text-block | A user adds a text block and its rich text is saved safe to render. |
 | dashboard.remove-item | A user removes an item from the dashboard. |
+| dashboard.item-layout-ids | Save gives an item with no grid cell, part of one or one the grid cannot read its type's size at the left, below the others; a Number chart gets one card's width. An item whose cell id an earlier item holds gets a new id. |
 | dashboard.reset-layout | A user discards unsaved layout changes. |
 | dashboard.rename | A user renames a dashboard. |
 | dashboard.refresh | A reader reloads a dashboard's chart data, with or without the cache. |
