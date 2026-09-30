@@ -1,12 +1,18 @@
 import os
 import re
+import unittest
 from datetime import datetime
+from types import SimpleNamespace
 from typing import ClassVar
 from unittest.mock import patch
 
 import frappe
 import ibis
+from ibis.backends.clickhouse import Backend as ClickHouseBackend
 from ibis.backends.postgres import Backend as PostgresBackend
+from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
+from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
+from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 
 import insights
 from insights.exceptions import QueryRefused
@@ -15,6 +21,8 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     sparkline_operations,
 )
+from insights.insights.doctype.insights_data_source_v3.connectors.bigquery import get_bigquery_connection
+from insights.insights.doctype.insights_data_source_v3.connectors.clickhouse import get_clickhouse_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import connect_duckdb
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
@@ -653,7 +661,7 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
 
 class TestIbisRemoveColumns(IbisQueryBuilderTestCase):
     """ibis drops fewer than half of a table's columns by star, and the stock
-    DuckDB compiler loses the star's exclusions."""
+    DuckDB, ClickHouse and BigQuery compilers lose the star's exclusions."""
 
     def remove_note(self, query):
         builder = IbisQueryBuilder(self.make_query_doc([]))
@@ -663,6 +671,11 @@ class TestIbisRemoveColumns(IbisQueryBuilderTestCase):
     def remove_after_join(self, orders, customers):
         joined = orders.left_join(customers, orders.id == customers.order_id)
         return self.remove_note(joined.mutate(double=joined.amount * 2))
+
+    def unbound_tables(self):
+        orders = ibis.table({"id": "int64", "note": "string", "amount": "int64"}, name="orders")
+        customers = ibis.table({"order_id": "int64", "customer": "string"}, name="customers")
+        return orders, customers
 
     # @feature query.remove-column
     def test_a_remove_takes_the_column_off_on_duckdb(self):
@@ -689,6 +702,39 @@ class TestIbisRemoveColumns(IbisQueryBuilderTestCase):
 
         self.assertNotIn("note", result.columns)
         self.assertEqual(list(result["double"]), [20, 40])
+
+    # @feature query.remove-column query.join
+    def test_a_remove_after_a_join_compiles_to_except_on_clickhouse(self):
+        with patch("ibis.clickhouse.connect", return_value=ClickHouseBackend()):
+            connection = get_clickhouse_connection(FakeDataSource())
+
+        sql = connection.compile(self.remove_after_join(*self.unbound_tables()))
+
+        self.assertIn('.* EXCEPT ("note")', sql)
+
+    # @feature query.remove-column query.join
+    def test_a_remove_after_a_join_compiles_to_except_on_bigquery(self):
+        # the BigQuery backend is an optional extra, so its module is a stand-in
+        ibis.bigquery = SimpleNamespace(connect=lambda **kwargs: SimpleNamespace())
+        self.addCleanup(delattr, ibis, "bigquery")
+        with patch("google.oauth2.service_account.Credentials.from_service_account_info"):
+            connection = get_bigquery_connection(FakeDataSource(bigquery_service_account_key="{}"))
+
+        expr = self.remove_after_join(*self.unbound_tables())
+        sql = connection.compiler.to_sqlglot(expr).sql(dialect="bigquery")
+
+        self.assertIn(".* EXCEPT (`note`)", sql)
+
+    @unittest.expectedFailure
+    # @feature query.remove-column query.join
+    def test_the_stock_compilers_keep_a_star_exclusion(self):
+        """ibis 12 fixes them. When this passes, delete `connectors/compilers.py`."""
+        expr = self.remove_after_join(*self.unbound_tables())
+        for compiler in (DuckDBCompiler(), ClickHouseCompiler(), BigQueryCompiler()):
+            with self.subTest(compiler=type(compiler).__name__):
+                self.assertRegex(
+                    compiler.to_sqlglot(expr).sql(dialect=compiler.dialect), r"\.\* (EXCLUDE|EXCEPT) \("
+                )
 
     # @feature query.remove-column
     def test_insights_opens_duckdb_only_through_connect_duckdb(self):
