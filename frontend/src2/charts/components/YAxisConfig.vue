@@ -16,12 +16,11 @@ import NumberFormatSection from './NumberFormatSection.vue'
 // `config` is the whole Chart's, beside the axis: how a number prints is the
 // Chart's to default and each Measure's to override, and the axis owns neither.
 //
-// `scaledXAxis`: the x axis plots dates or numbers on a scale, which is the only
-// axis a trend line is fitted on. See `trendLinesFor`.
+// `trendLines`: whether the chart can draw a trend line. See `takesTrendLines`.
 const props = defineProps<{
 	columnOptions: ColumnOption[]
 	config: NumberFormatConfig
-	scaledXAxis?: boolean
+	trendLines?: boolean
 }>()
 const y_axis = defineModel<AxisChartConfig['y_axis']>({
 	required: true,
@@ -93,7 +92,7 @@ const updateColor = debounce((color: string, idx: number) => {
 							</InlineFormControlLabel>
 							<Toggle :label="__('Data labels')" v-model="item.show_data_labels" />
 							<Toggle
-								v-if="props.scaledXAxis"
+								v-if="props.trendLines"
 								:label="__('Trend line')"
 								v-model="item.show_trend_line"
 							/>

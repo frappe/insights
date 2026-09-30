@@ -87,7 +87,9 @@ function adaptAxisChart(
 	}
 
 	const seriesConfig: Record<string, SeriesStyle> = {}
-	const trends = trendLinesFor(config, columns, input.result.rows, horizontal, input.tokens)
+	const trends = takesTrendLines(config, mark, horizontal)
+		? trendLinesFor(config, columns, input.result.rows, horizontal, input.tokens)
+		: new Map()
 	for (const column of columns) {
 		const series = seriesByColumn.get(column)
 		const owns = series ? columnsOwned.get(series) === 1 : false
@@ -494,10 +496,8 @@ function trendLinesFor(
 ): Map<string, Record<string, any>> {
 	const dimension = config.x_axis?.dimension
 	const lines = new Map<string, Record<string, any>>()
+	if (!dimension) return lines
 	const type = plottedXAxisType(dimension, horizontal)
-	// A category axis sits its rows in the order they arrive, which may be a
-	// ranking, so a line through them says nothing. Only a scale is fitted.
-	if (!dimension || type === 'category') return lines
 
 	const x = dimension.dimension_name
 	const place = type === 'value' ? toNumber : (value: any) => toDate(value)?.getTime() ?? null
@@ -540,11 +540,30 @@ function trendLinesFor(
 }
 
 /**
+ * Whether the chart can draw a trend line, for the adapter and for the form that
+ * offers one.
+ *
+ * Its x axis must be a scale. A category axis sits its rows in the order they
+ * arrive, which may be a ranking, so a line through them says nothing. And it
+ * must not stack: v2 plots a stacked series at its stack height or its share,
+ * and the fit reads the series' own values.
+ */
+export function takesTrendLines(
+	config: MixedChartConfig,
+	mark: ChartMark,
+	horizontal: boolean,
+): boolean {
+	if (plottedXAxisType(config.x_axis?.dimension, horizontal) === 'category') return false
+	const barsOnBothAxes = hasBarsOnBothAxes(config.y_axis?.series, mark, horizontal)
+	return !stackingFor(config.y_axis, barsOnBothAxes)
+}
+
+/**
  * The axis the x column is plotted on, as v2 resolves it (`resolveXAxis` in
  * `frappe-ui/src/charts/axisChartCommon.ts`): a horizontal bar chart has no
  * scale to put a number on, so it draws one as categories.
  */
-export function plottedXAxisType(
+function plottedXAxisType(
 	dimension: Dimension | undefined,
 	horizontal: boolean,
 ): 'category' | 'time' | 'value' {

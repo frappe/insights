@@ -953,6 +953,20 @@ describe('a trend line', () => {
 	})
 
 	// @feature charts.trend-line
+	it('draws none while the chart stacks, plain or to 100%', () => {
+		const split = {
+			type: 'Bar' as const,
+			splitBy: { dimension: 'channel', into: ['retail', 'online'] },
+			readings: { retail: [10, 20, 30], online: [60, 40, 20] },
+		}
+		for (const stacking of [{ stacked: true }, { normalized: true }]) {
+			const props = propsWith({ ...split, ...stacking })
+			expect(props.stacked).toBeTruthy()
+			expect(markLineOf(props, 'online')).toBeUndefined()
+		}
+	})
+
+	// @feature charts.trend-line
 	it('draws none for a series that did not ask for one', () => {
 		expect(markLineOf(propsWith({ measures: ['revenue'] }), 'revenue')).toBeUndefined()
 	})
