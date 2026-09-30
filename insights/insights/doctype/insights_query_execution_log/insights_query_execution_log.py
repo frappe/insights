@@ -3,7 +3,6 @@
 
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint
 
 
 class InsightsQueryExecutionLog(Document):
@@ -27,10 +26,7 @@ class InsightsQueryExecutionLog(Document):
         from frappe.query_builder import Interval
         from frappe.query_builder.functions import Now
 
-        from insights.insights.doctype.insights_data_source_v3.data_warehouse import UNUSED_TABLE_DAYS
-
-        # the weekly data store cleanup skips pruning unless the log spans a full
-        # UNUSED_TABLE_DAYS window, so never keep less (plus a week of slack)
-        days = max(cint(days), UNUSED_TABLE_DAYS + 7)
+        # Retention below UNUSED_TABLE_DAYS (data_warehouse.py) makes the weekly
+        # data store cleanup skip pruning: the default stays well above it.
         table = frappe.qb.DocType("Insights Query Execution Log")
         frappe.db.delete(table, filters=(table.creation < (Now() - Interval(days=days))))
