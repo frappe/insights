@@ -68,7 +68,7 @@ If you delete a workbook, you delete its queries, charts, dashboards and folders
 
 - `items` holds chart and filter items. The model has a third type, `text`. Never author it. See `dashboards.md` for the layout grid, the merge rule and the filter link syntax.
 - A chart item names the chart's real document name. A filter link names the real query name in its `` `query`.`column` `` value.
-- Every item needs a unique `layout.i`.
+- Save never refuses a layout. It gives an item that lacks part of its cell the rest, below the others, and an item whose `layout.i` an earlier item holds a new one.
 
 ## Insights Folder
 

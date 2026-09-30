@@ -2,7 +2,7 @@
 
 A skill that lets a coding agent build, edit and explain Frappe Insights workbooks on a live site over `frappectl`. It needs no Insights source and installs nothing on the site. It supports Insights 4 (develop) sites only.
 
-`SKILL.md` is the procedure. `reference/` is the workbook contract. `examples/build_workbook.py` is the template the agent copies.
+`SKILL.md` is the procedure. `reference/` is the workbook contract. `examples/build_workbook.py` is the build script the agent copies or imports. It holds the client, the probes, the in-place upsert and the verify.
 
 ## Install
 
@@ -35,8 +35,7 @@ The agent reads the `description` in `SKILL.md` and suggests the skill when a ta
 
 An agent with no skill loader takes a prompt instead. Write it wherever that agent keeps its prompts, with the real path in place of `$SKILL`:
 
-> Read `$SKILL/SKILL.md` and follow it. Read the files under `$SKILL/reference/` when it
-> tells you to.
+> Read `$SKILL/SKILL.md` and follow it. Read the files under `$SKILL/reference/` when it tells you to.
 
 ### 3. Give it a site
 

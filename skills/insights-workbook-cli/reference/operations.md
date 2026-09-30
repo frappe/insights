@@ -84,7 +84,9 @@ Operators: `= != > >= < <= in not_in between within contains not_contains starts
 { "type": "cast", "column": { "type": "column", "column_name": "posting_date" }, "data_type": "Date" }
 ```
 
-An early `select` keeps a wide table readable. Keep every column a chart or a dashboard filter needs. `rename` sanitizes new names (spaces and hyphens become underscores). Write snake_case yourself, so later operations reference what you expect. `remove` skips missing columns silently.
+An early `select` keeps a wide table readable. Keep every column a chart or a dashboard filter needs. `rename` sanitizes new names (spaces and hyphens become underscores). Write snake_case yourself, so later operations reference what you expect. `remove` skips missing columns silently. On an older site, a `remove` of fewer than half of the columns fails on the data store, ClickHouse and BigQuery. There, `select` the columns to keep.
+
+A number that holds a Unix timestamp does not compare with a date: `epoch >= today()` fails with "not comparable". `cast` it to `Datetime` first. To get a `Date`, cast to `Datetime`, then cast again to `Date`. A direct cast from a number to `Date` gives null on MariaDB and fails on the data store.
 
 ## mutate
 
@@ -118,8 +120,8 @@ An early `select` keeps a wide table readable. Keep every column a chart or a da
 - `join_type`: `inner | left | right | full`.
 - `select_columns` are the columns to pull from the right table. The join key comes along too.
 - The right table may be a `query` table. To change grain, join a summarized helper query back to detail. That is the standard pattern.
-- The join adds a suffix to a conflicting right-side name. Do not rely on that. Use `rename` first.
-- Expression condition: `"join_condition": { "join_expression": { "type": "expression", "expression": "left.customer == right.name" } }`.
+- A right-side column whose name the left side already has gets a prefix: the right table's name in snake_case, then `_`. Joining `tabUser` on `name` adds `tabuser_name`. For a `query` table, the prefix is the name of a table that query reads. Do not rely on it. Use `select_columns` and `rename` to name what you keep.
+- Expression condition: the expression sees the query being built as `t1` and the right table as `t2`. A bare column name is a `t1` column. There is no `left` or `right`. `"join_condition": { "join_expression": { "type": "expression", "expression": "(t1.customer == t2.name) & (t1.company == t2.company)" } }`.
 
 ## union
 

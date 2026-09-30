@@ -1,12 +1,14 @@
 """The pure verify helpers in the workbook skill's build template.
 
 `skills/insights-workbook-cli/examples/build_workbook.py` is a template an agent copies,
-so it never runs in this app. Its three name-set helpers are what decide whether a
+so it never runs in this app. Its name-set helpers are what decide whether a
 workbook verifies, and each case below is a defect that shipped once.
 """
 
 import importlib.util
+import io
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 
 TEMPLATE = (
@@ -26,31 +28,27 @@ def load_template():
 
 
 class TestReadConfig(unittest.TestCase):
-    """`read_config` splits a chart config into the names it reads, produces and sorts by."""
+    """`read_config` finds the names a chart config reads from its base query."""
 
     @classmethod
     def setUpClass(cls):
         cls.read_config = staticmethod(load_template().read_config)
 
     # @feature tooling.workbook-skill-verify
-    def test_measure_names_its_column_and_its_output(self):
-        source, output, _ = self.read_config(
-            {"values": [{"measure_name": "Revenue", "column_name": "base_net_total"}]}
-        )
+    def test_measure_names_its_column(self):
+        source = self.read_config({"values": [{"measure_name": "Revenue", "column_name": "base_net_total"}]})
         self.assertEqual(source, {"base_net_total"})
-        self.assertEqual(output, {"Revenue"})
 
     # @feature tooling.workbook-skill-verify
     def test_row_count_measure_names_no_column(self):
-        source, output, _ = self.read_config(
+        source = self.read_config(
             {"number_columns": [{"measure_name": "Invoices", "column_name": "count", "aggregation": "count"}]}
         )
         self.assertEqual(source, set())
-        self.assertEqual(output, {"Invoices"})
 
     # @feature tooling.workbook-skill-verify
     def test_expression_measure_names_no_column(self):
-        source, output, _ = self.read_config(
+        source = self.read_config(
             {
                 "number_columns": [
                     {"measure_name": "Net", "expression": {"expression": "sum(debit) - sum(credit)"}}
@@ -58,74 +56,23 @@ class TestReadConfig(unittest.TestCase):
             }
         )
         self.assertEqual(source, set())
-        self.assertEqual(output, {"Net"})
 
     # @feature tooling.workbook-skill-verify
-    def test_dimension_without_dimension_name_comes_out_under_its_column(self):
-        """translate_dimension names by `dimension_name or column_name`."""
-        source, output, sorted_by = self.read_config(
-            {
-                "rows": [{"column_name": "customer", "data_type": "String"}],
-                "order_by": [{"column": {"column_name": "customer"}}],
-            }
-        )
+    def test_dimension_reads_its_column_whatever_its_name(self):
+        source = self.read_config({"rows": [{"dimension_name": "Customer", "column_name": "customer"}]})
         self.assertEqual(source, {"customer"})
-        self.assertEqual(output, {"customer"})
-        self.assertEqual(sorted_by - output, set(), "a sort on a plain dimension is valid")
-
-    # @feature tooling.workbook-skill-verify
-    def test_dimension_with_dimension_name_comes_out_under_that_name(self):
-        source, output, _ = self.read_config(
-            {"rows": [{"dimension_name": "Customer", "column_name": "customer"}]}
-        )
-        self.assertEqual(source, {"customer"})
-        self.assertEqual(output, {"Customer"})
-
-    # @feature tooling.workbook-skill-verify
-    def test_granularity_keeps_the_column_name(self):
-        source, output, sorted_by = self.read_config(
-            {
-                "x_axis": {
-                    "dimension": {"column_name": "posting_date", "data_type": "Date", "granularity": "month"}
-                },
-                "order_by": [{"column": {"column_name": "posting_date"}}],
-            }
-        )
-        self.assertEqual(source, {"posting_date"})
-        self.assertEqual(output, {"posting_date"})
-        self.assertEqual(sorted_by - output, set())
 
     # @feature tooling.workbook-skill-verify
     def test_misspelled_dimension_column_is_reported(self):
         """A column and a dimension name misspelled the same way must not cancel out."""
-        source, _, _ = self.read_config(
+        source = self.read_config(
             {"x_axis": {"dimension": {"dimension_name": "postng", "column_name": "postng"}}}
         )
         self.assertEqual(source, {"postng"})
 
     # @feature tooling.workbook-skill-verify
-    def test_sort_by_a_measure_name_is_valid(self):
-        _, output, sorted_by = self.read_config(
-            {
-                "values": [{"measure_name": "Order Value", "column_name": "base_grand_total"}],
-                "order_by": [{"column": {"column_name": "Order Value"}}],
-            }
-        )
-        self.assertEqual(sorted_by - output, set())
-
-    # @feature tooling.workbook-skill-verify
-    def test_misspelled_sort_is_reported(self):
-        _, output, sorted_by = self.read_config(
-            {
-                "values": [{"measure_name": "Order Value", "column_name": "base_grand_total"}],
-                "order_by": [{"column": {"column_name": "Order Vaule"}}],
-            }
-        )
-        self.assertEqual(sorted_by - output, {"Order Vaule"})
-
-    # @feature tooling.workbook-skill-verify
     def test_order_by_names_are_not_source_columns(self):
-        source, _, _ = self.read_config(
+        source = self.read_config(
             {
                 "values": [{"measure_name": "Revenue", "column_name": "base_net_total"}],
                 "order_by": [{"column": {"column_name": "Revenue"}}],
@@ -134,8 +81,8 @@ class TestReadConfig(unittest.TestCase):
         self.assertEqual(source, {"base_net_total"})
 
     # @feature tooling.workbook-skill-verify
-    def test_chart_filter_column_is_read_but_not_produced(self):
-        source, output, _ = self.read_config(
+    def test_chart_filter_column_is_read(self):
+        source = self.read_config(
             {
                 "filters": {
                     "logical_operator": "And",
@@ -144,7 +91,6 @@ class TestReadConfig(unittest.TestCase):
             }
         )
         self.assertEqual(source, {"status"})
-        self.assertEqual(output, set())
 
 
 class TestSourceTables(unittest.TestCase):
@@ -213,6 +159,40 @@ class TestQueryChain(unittest.TestCase):
             "q2": [{"type": "source", "table": {"type": "query", "query_name": "q1"}}],
         }
         self.assertEqual(self.query_chain("q1", operations), {"q1", "q2"})
+
+
+class TestDroppedSort(unittest.TestCase):
+    """A chart drops a sort its result has no column for. That fails it only with a `limit`."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.template = load_template()
+
+    def chart(self, **entry):
+        return {"charts": [{"name": "c1", "title": "Top", "rows": 3, **entry}]}
+
+    def report(self, result):
+        """The exit code, and what was printed."""
+        out = io.StringIO()
+        with redirect_stdout(out):
+            return self.template.report(result), out.getvalue()
+
+    # @feature tooling.workbook-skill-verify
+    def test_a_sort_the_result_lacks_is_found(self):
+        config = {"order_by": [{"column": {"column_name": "Revenue"}}, {"column": {"column_name": "region"}}]}
+        self.assertEqual(self.template.unresolved_sorts(config, [{"name": "region"}]), ["Revenue"])
+
+    # @feature tooling.workbook-skill-verify
+    def test_a_dropped_sort_without_a_limit_is_a_warning(self):
+        code, out = self.report(self.chart(ok=True, unresolved_order_by=["Revenue"]))
+        self.assertEqual(code, 0)
+        self.assertIn("warning: chart c1 (Top) sorts by ['Revenue']", out)
+
+    # @feature tooling.workbook-skill-verify
+    def test_a_dropped_sort_with_a_limit_fails_naming_the_sort(self):
+        code, out = self.report(self.chart(ok=False, unresolved_order_by=["Revenue"]))
+        self.assertEqual(code, 1)
+        self.assertIn("- chart c1 (Top) sorts by ['Revenue']", out)
 
 
 if __name__ == "__main__":
