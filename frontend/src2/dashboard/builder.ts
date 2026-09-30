@@ -82,7 +82,9 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 			if (!linked) return Promise.resolve([])
 			return dashboard.getDistinctColumnValues(filter_name, search_term, linked)
 		},
-		filterRange: (filter_name: string) => dashboard.getFilterColumnRange(filter_name),
+		filterRange: (filter_name: string) =>
+			// eslint-disable-next-line no-restricted-syntax -- `callMethod` has shown the error, so the picker must not
+			dashboard.getFilterColumnRange(filter_name).catch(() => undefined),
 		cardFilters: computed(() => dashboard.cardFilters),
 		setCardFilters: dashboard.setCardFilters,
 		cardValues: (chart: string, column: string, search_term?: string) =>

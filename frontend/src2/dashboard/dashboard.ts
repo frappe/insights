@@ -538,7 +538,7 @@ function makeDashboard(name: string) {
 			dashboard: dashboard.doc.name,
 			chart: chart_name,
 			column,
-		}).catch(showErrorToast)
+		})
 	}
 
 	function getFilterColumnRange(filter_name: string) {
