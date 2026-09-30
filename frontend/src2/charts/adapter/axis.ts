@@ -512,15 +512,31 @@ function trendLinesFor(
 		const fit = fitLine(points)
 		if (!fit) continue
 
-		// from the smallest x the series plots to the largest
-		const xs = points.filter((point) => point.y !== null).map((point) => point.x)
-		const coord = (at: number) => {
-			const point = [at, fit.intercept + fit.slope * at]
-			return horizontal ? point.reverse() : point
-		}
+		// from the smallest x the series plots to the largest, cut to the value
+		// axis: echarts drops a line with an end off it, and does not widen the
+		// axis to take it
+		const plotted = points.filter(
+			(point): point is { x: number; y: number } => point.y !== null,
+		)
+		const xs = plotted.map((point) => point.x)
+		const onRight = seriesFor(config, column)?.align === 'Right'
+		const range = valueRange(
+			plotted.map((point) => point.y),
+			onRight ? undefined : config.y_axis,
+		)
+		const ends = clipLine(
+			fit,
+			[
+				xs.reduce((low, at) => (at < low ? at : low)),
+				xs.reduce((high, at) => (at > high ? at : high)),
+			],
+			range,
+		)
+		if (!ends) continue
+		const coord = ([at, value]: number[]) => (horizontal ? [value, at] : [at, value])
 		const label = __('{0} trend', seriesLabel(column))
 		const start = {
-			coord: coord(xs.reduce((low, at) => (at < low ? at : low))),
+			coord: coord(ends[0]),
 			lineStyle: dashedLine(REFERENCE_LINE_WIDTH),
 			label: {
 				show: true,
@@ -533,10 +549,55 @@ function trendLinesFor(
 				padding: LABEL_PADDING,
 			},
 		}
-		const end = { coord: coord(xs.reduce((high, at) => (at > high ? at : high))) }
+		const end = { coord: coord(ends[1]) }
 		lines.set(column, { silent: true, symbol: 'none', data: [[start, end]] })
 	}
 	return lines
+}
+
+/**
+ * The values a series' axis always shows: from the bound its author set, else
+ * from zero or the series' lowest value, to the bound its author set, else to
+ * zero or its highest. The axis may reach further for another series, never
+ * less far. Only the primary axis takes the author's bounds.
+ */
+function valueRange(values: number[], axis?: MixedChartConfig['y_axis']): [number, number] {
+	const low = values.reduce((least, value) => (value < least ? value : least), 0)
+	const high = values.reduce((most, value) => (value > most ? value : most), 0)
+	return [
+		typeof axis?.min === 'number' ? axis.min : low,
+		typeof axis?.max === 'number' ? axis.max : high,
+	]
+}
+
+/**
+ * The part of the fitted line between `from` and `to` on x that stays inside
+ * `range` on y, as its two ends. Each end moves along the line, so the slope
+ * holds. None when the line never enters the range.
+ */
+function clipLine(
+	fit: { slope: number; intercept: number },
+	[from, to]: [number, number],
+	[low, high]: [number, number],
+): [number[], number[]] | undefined {
+	const y = (x: number) => fit.intercept + fit.slope * x
+	let start = from
+	let end = to
+	if (fit.slope) {
+		const atLow = (low - fit.intercept) / fit.slope
+		const atHigh = (high - fit.intercept) / fit.slope
+		start = Math.max(start, Math.min(atLow, atHigh))
+		end = Math.min(end, Math.max(atLow, atHigh))
+	} else if (y(from) < low || y(from) > high) {
+		return
+	}
+	if (start > end) return
+	// the ends land on the bound itself, which the float arithmetic can miss
+	const clamp = (value: number) => Math.min(high, Math.max(low, value))
+	return [
+		[start, clamp(y(start))],
+		[end, clamp(y(end))],
+	]
 }
 
 /**

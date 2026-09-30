@@ -953,6 +953,30 @@ describe('a trend line', () => {
 	})
 
 	// @feature charts.trend-line
+	it('stops where the fit leaves the value axis, keeping its slope', () => {
+		// a series that starts low fits below zero at its first month, and
+		// echarts drops a line with an end off the axis
+		const props = propsWith({
+			categories: ['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01'],
+			readings: { revenue: [1, 2, 10, 30] },
+		})
+		const [start, end] = endsOf(props, 'revenue')
+		expect(start[1]).toBe(0)
+		expect(start[0]).toBeGreaterThan(time('2026-01-01'))
+		expect(end[0]).toBe(time('2026-04-01'))
+		expect(end[1]).toBeGreaterThan(0)
+		expect(end[1]).toBeLessThanOrEqual(30)
+	})
+
+	// @feature charts.trend-line
+	it('stops at the bounds the author set on the axis', () => {
+		const props = propsWith({ readings: { revenue: [10, 30, 50] }, max: 40 })
+		const [, end] = endsOf(props, 'revenue')
+		expect(end[1]).toBe(40)
+		expect(end[0]).toBeLessThan(time('2026-03-01'))
+	})
+
+	// @feature charts.trend-line
 	it('draws none while the chart stacks, plain or to 100%', () => {
 		const split = {
 			type: 'Bar' as const,
