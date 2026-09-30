@@ -141,6 +141,15 @@ class TestWarehouse(InsightsIntegrationTestCase):
                 ],
             )
 
+    def test_writer_append_mode_keeps_rows_of_a_table_named_with_regex_characters(self):
+        with self.patched_warehouse() as db:
+            table = "orders_(eu)"
+            self.write_to_table(db, table, [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
+            self.write_to_table(
+                db, table, [{"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"}], mode="append"
+            )
+            self.assertEqual([row["id"] for row in self.read_rows(db, table)], [1, 2])
+
     def test_writer_upsert_mode_updates_matching_primary_keys(self):
         with self.patched_warehouse() as db:
             self.write_to_table(db, "t", [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
