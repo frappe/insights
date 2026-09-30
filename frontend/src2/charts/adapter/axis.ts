@@ -600,18 +600,22 @@ function clipLine(
 	[low, high]: [number, number],
 ): [number[], number[]] | undefined {
 	const y = (x: number) => fit.intercept + fit.slope * x
+	// The fit is float arithmetic, so a flat series fits a hair off its own
+	// value, which is a bound of the range. The range is tested a hair wider,
+	// and each end then set on the bound it passed.
+	const hair = 1e-9 * Math.max(1, Math.abs(low), Math.abs(high))
+	const [wideLow, wideHigh] = [low - hair, high + hair]
 	let start = from
 	let end = to
 	if (fit.slope) {
-		const atLow = (low - fit.intercept) / fit.slope
-		const atHigh = (high - fit.intercept) / fit.slope
+		const atLow = (wideLow - fit.intercept) / fit.slope
+		const atHigh = (wideHigh - fit.intercept) / fit.slope
 		start = Math.max(start, Math.min(atLow, atHigh))
 		end = Math.min(end, Math.max(atLow, atHigh))
-	} else if (y(from) < low || y(from) > high) {
+	} else if (y(from) < wideLow || y(from) > wideHigh) {
 		return
 	}
 	if (start > end) return
-	// the ends land on the bound itself, which the float arithmetic can miss
 	const clamp = (value: number) => Math.min(high, Math.max(low, value))
 	return [
 		[start, clamp(y(start))],

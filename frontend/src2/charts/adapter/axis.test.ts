@@ -970,6 +970,28 @@ describe('a trend line', () => {
 	})
 
 	// @feature charts.trend-line
+	it('draws a flat line through a series that holds one decimal value', () => {
+		// a flat fit lands a float step off the series' own max, which is the
+		// top of the range it is cut to
+		const months = Array.from(
+			{ length: 12 },
+			(_, i) => `2026-${String(i + 1).padStart(2, '0')}-01`,
+		)
+		for (let k = 1; k < 100; k++) {
+			for (let n = 3; n <= 12; n++) {
+				const value = k / 100
+				const props = propsWith({
+					categories: months.slice(0, n),
+					readings: { revenue: Array(n).fill(value) },
+				})
+				const ends = endsOf(props, 'revenue')
+				expect(ends, `${n} points at ${value}`).toBeDefined()
+				for (const [, y] of ends) expect(y).toBeCloseTo(value, 9)
+			}
+		}
+	})
+
+	// @feature charts.trend-line
 	it('stops at the bounds the author set on the axis', () => {
 		const props = propsWith({ readings: { revenue: [10, 30, 50] }, max: 40 })
 		const [, end] = endsOf(props, 'revenue')
