@@ -227,7 +227,7 @@ watch(
 
 		const id = ++rangeRequest
 		const fetched = await props.rangeProvider(column.value).catch((error) => {
-			showErrorToast(error, false)
+			if (id === rangeRequest) showErrorToast(error, false)
 			return undefined
 		})
 		if (id === rangeRequest) range.value = fetched
