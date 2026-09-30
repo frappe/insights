@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { numberChart, tableChart } from '../adapter/fixtures'
-import { makeChartRead } from '../chart_view'
+import { makeChartRead, type ChartRead } from '../chart_view'
 import { infoMarkText } from '../info_mark'
 import { scopeText } from '../scoped_by'
 import ChartBody from './ChartBody.vue'
@@ -206,6 +206,39 @@ describe('a chart its author explained', () => {
 			html.lastIndexOf('title="Revenue"', mark),
 		)
 		expect(html).toContain('12,300')
+	})
+
+	// @feature charts.description-and-info
+	it('marks a Number card that has a description alone, and never a Table', async () => {
+		const number = cardAnswering(rows)
+		await number.load()
+		const table = tableChart({ values: [{ name: 'Revenue' }] })
+		const grid = makeChartRead({
+			doc: {
+				name: 'chart-4',
+				title: 'Trials',
+				chart_type: 'Table',
+				config: table.config,
+				can_write: false,
+			} as any,
+			requestKey: () => 'the same question',
+			fetchData: () => Promise.resolve(table.result),
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+		await grid.load()
+		const render = (props: { chart: ChartRead; title: string; reading?: string }) => {
+			const app = createSSRApp({
+				render: () => h(ChartBody, { description: DESCRIPTION, ...props }),
+			})
+			app.config.warnHandler = () => {}
+			return renderToString(app)
+		}
+
+		const card = await render({ chart: number, title: 'Revenue', reading: 'Revenue' })
+		expect(card).toContain('aria-label="Info"')
+		const tableHtml = await render({ chart: grid, title: 'Trials' })
+		expect(tableHtml).toContain(`>${DESCRIPTION}<`)
+		expect(tableHtml).not.toContain('aria-label="Info"')
 	})
 
 	// @feature charts.description-and-info
