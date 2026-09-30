@@ -314,8 +314,7 @@ def filter_permitted_columns(
     try:
         allowed = get_permitted_columns_for_table(strip_schema_prefix(table_name), user=user)
     except Exception:
-        # a table the meta cannot explain cannot be checked, so report nothing
-        return []  # nosemgrep - an empty list fails closed
+        return []  # nosemgrep - a table the meta cannot check reports no column, so it fails closed
 
     return [column for column in columns if column.get("name") in allowed]
 
