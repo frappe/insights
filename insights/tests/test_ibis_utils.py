@@ -1,3 +1,6 @@
+import os
+import re
+from typing import ClassVar
 from unittest.mock import patch
 
 import frappe
@@ -434,3 +437,87 @@ class TestIbisDivision(IbisQueryBuilderTestCase):
             connection = get_postgres_connection(FakeDataSource())
         sql = connection.compile(query.unbind())
         self.assertEqual(sql.count('NULLIF("t0"."income", 0)'), len(mutations))
+
+
+def picker_operators(kind):
+    """The operators the filter picker offers a column of `kind`, read off its table."""
+    path = os.path.join(
+        frappe.get_app_path("insights"),
+        "..",
+        "frontend",
+        "src2",
+        "components",
+        "filter_picker",
+        "filter_picker.ts",
+    )
+    with open(path) as source:
+        table = re.search(rf"\n\t{kind}: \[(.*?)\n\t\]", source.read(), re.S).group(1)
+    return re.findall(r"operator: '([^']+)'", table)
+
+
+class TestIbisDateOperators(IbisQueryBuilderTestCase):
+    """Every date operator the picker offers, given the one day a reader picked."""
+
+    DAY = "2026-08-05"
+    VALUES: ClassVar[dict] = {
+        "between": [DAY, DAY],
+        "within": {"span": "current day", "anchor": DAY},
+    }
+    ROWS: ClassVar[dict] = {
+        "Date": {
+            "before": "2026-08-04",
+            "day": "2026-08-05",
+            "after": "2026-08-06",
+            "unset": None,
+        },
+        "Datetime": {
+            "before": "2026-08-04 23:00:00",
+            "midnight": "2026-08-05 00:00:00",
+            "evening": "2026-08-05 17:30:00",
+            "last instant": "2026-08-05 23:59:59.500000",
+            "after": "2026-08-06 00:00:00",
+            "unset": None,
+        },
+    }
+    DAY_ROWS: ClassVar[dict] = {"Date": ["day"], "Datetime": ["midnight", "evening", "last instant"]}
+
+    def expected(self, data_type, operator):
+        day = self.DAY_ROWS[data_type]
+        return {
+            "between": day,
+            "within": day,
+            "=": day,
+            "!=": ["before", "after"],
+            ">": ["after"],
+            ">=": [*day, "after"],
+            "<": ["before"],
+            "<=": ["before", *day],
+            "is_set": ["before", *day, "after"],
+            "is_not_set": ["unset"],
+        }[operator]
+
+    def matched(self, data_type, operator):
+        rows = [{"label": label, "at": at} for label, at in self.ROWS[data_type].items()]
+        column = {"type": "column", "column_name": "at"}
+        operations = [
+            {"type": "code", "code": f"results = {rows}"},
+            {"type": "cast", "column": column, "data_type": data_type},
+            {
+                "type": "filter",
+                "column": column,
+                "operator": operator,
+                "value": self.VALUES.get(operator, self.DAY),
+            },
+        ]
+        return list(self.build_query(operations).execute()["label"])
+
+    # @feature query.filter-date-on-datetime
+    def test_every_picker_date_operator_reads_a_day_as_the_whole_day(self):
+        for operator in picker_operators("date"):
+            for data_type in self.ROWS:
+                with self.subTest(operator=operator, data_type=data_type):
+                    order = list(self.ROWS[data_type])
+                    self.assertEqual(
+                        sorted(self.matched(data_type, operator), key=order.index),
+                        self.expected(data_type, operator),
+                    )
