@@ -235,13 +235,15 @@ class ATickRunsEveryAlert(InsightsIntegrationTestCase):
 
     # @feature alerts.failed-run-recorded
     def test_a_failed_record_of_a_failed_run_does_not_stop_the_tick(self):
-        self.assertEqual(self.tried(requests.ConnectionError("down"), "record_execution"), self.alerts)
+        self.assertEqual(
+            self.tried(requests.ConnectionError("down"), "record_execution"), sorted(self.alerts)
+        )
 
     # @feature alerts.failed-run-recorded
     def test_a_failed_stop_of_a_refused_alert_does_not_stop_the_tick(self):
         from insights.insights.doctype.insights_alert.insights_alert import SendRefused
 
-        self.assertEqual(self.tried(SendRefused("disabled"), "stop"), self.alerts)
+        self.assertEqual(self.tried(SendRefused("disabled"), "stop"), sorted(self.alerts))
 
 
 class TestEmailRecipients(InsightsIntegrationTestCase):
