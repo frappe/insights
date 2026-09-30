@@ -74,8 +74,7 @@ class InsightsTablev3(Document):
         try:
             remote = InsightsDataSourcev3.get_doc(self.data_source).get_ibis_table(self.table)
         except Exception:
-            # Can't connect right now — skip validation rather than blocking save.
-            return
+            return  # nosemgrep - a source that is down must not block the save, and the import reports the failure
 
         self.sync_strategy = self.sync_strategy or "Append Only"
 
@@ -315,8 +314,7 @@ def filter_permitted_columns(
     try:
         allowed = get_permitted_columns_for_table(strip_schema_prefix(table_name), user=user)
     except Exception:
-        # a table the meta cannot explain cannot be checked, so report nothing
-        return []
+        return []  # nosemgrep - a table the meta cannot check reports no column, so it fails closed
 
     return [column for column in columns if column.get("name") in allowed]
 
@@ -561,7 +559,7 @@ def desk_reads_table(table: str, user: str | None = None) -> bool:
     try:
         return not not_permitted.unreadable_doctypes(table, user)
     except frappe.DoesNotExistError:
-        return False
+        return False  # nosemgrep - a table without a doctype allows nobody
 
 
 def desk_readable_tables(user: str) -> set[str]:

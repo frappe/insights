@@ -218,7 +218,7 @@ def rename_warehouse_table(data_source: str, old_table: str, new_table: str) -> 
             db.raw_sql(f"ALTER TABLE {old_name} RENAME TO {new_name}")
         return True
     except Exception:
-        return False
+        return False  # nosemgrep - the caller marks the table for a fresh import
 
 
 def drop_warehouse_table(data_source: str, table: str) -> None:

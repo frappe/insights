@@ -180,7 +180,7 @@ def parse_bare_date(value):
     try:
         return date.fromisoformat(value)
     except ValueError:
-        return None
+        return None  # nosemgrep - a value that does not parse names no date
 
 
 def midnight(day):

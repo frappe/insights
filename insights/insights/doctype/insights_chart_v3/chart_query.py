@@ -1398,7 +1398,7 @@ def _as_number(value):
     try:
         number = float(value)
     except (TypeError, ValueError):
-        return None
+        return None  # nosemgrep - a value that does not convert names no number
     if number != number or number in (float("inf"), float("-inf")):
         return None
     return int(number) if number.is_integer() else number

@@ -70,8 +70,7 @@ function handleSaveVariables(variables: any[]) {
 		.then(() => {
 			showVariablesDialog.value = false
 		})
-		// `updateVariables` has already told the author what went wrong and
-		// rethrown. The dialog stays open over the values it could not save.
+		// eslint-disable-next-line no-restricted-syntax -- `updateVariables` has already told the author what went wrong and rethrown. The dialog stays open over the values it could not save.
 		.catch(() => {})
 }
 </script>

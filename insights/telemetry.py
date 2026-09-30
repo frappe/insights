@@ -23,7 +23,7 @@ def default_properties() -> dict:
 
 def capture(event: str, interval: str | None = None, **props):
     """Send one event. Telemetry never fails the action it reports on."""
-    with suppress(Exception):
+    with suppress(Exception):  # nosemgrep - telemetry never fails the action it reports on
         frappe_telemetry.capture(
             event,
             "insights",
@@ -85,8 +85,7 @@ def is_standard_app(app: str) -> bool:
     try:
         publishers = frappe.get_hooks("app_publisher", app_name=app) or []
     except Exception:
-        # reading the hook imports the app, which a faked or broken one cannot satisfy
-        return False
+        return False  # nosemgrep - an app whose hooks cannot be imported does not leave the site
     return any(normalized_publisher(publisher) in STANDARD_PUBLISHERS for publisher in publishers)
 
 

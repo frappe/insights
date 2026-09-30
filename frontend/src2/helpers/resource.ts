@@ -168,18 +168,19 @@ export default function useDocumentResource<T extends Document>(
 		isLoaded.value = true
 	}
 
-	async function callMethod(method: string, args: any = {}) {
+	// `showError: false` leaves the failure to a caller that knows whether it
+	// still matters, like a request the reader has already moved on from
+	async function callMethod(method: string, args: any = {}, { showError = true } = {}) {
 		isLoading.value = true
-		const response = await call(methods.call, {
+		const request = call(methods.call, {
 			method,
 			docs: {
 				...(doc.value || {}),
 				__islocal: isLocal.value,
 			},
 			args,
-		})
-			.catch(showErrorToast)
-			.finally(() => (isLoading.value = false))
+		}).finally(() => (isLoading.value = false))
+		const response = await (showError ? request.catch(showErrorToast) : request)
 		return response.message
 	}
 

@@ -82,7 +82,7 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 			if (!linked) return Promise.resolve([])
 			return dashboard.getDistinctColumnValues(filter_name, search_term, linked)
 		},
-		filterRange: (filter_name: string) => dashboard.getFilterColumnRange(filter_name),
+		filterRange: dashboard.getFilterColumnRange,
 		cardFilters: computed(() => dashboard.cardFilters),
 		setCardFilters: dashboard.setCardFilters,
 		cardValues: (chart: string, column: string, search_term?: string) =>

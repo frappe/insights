@@ -771,7 +771,7 @@ def is_workbook_file(workbook_data) -> bool:
     try:
         data = frappe.parse_json(workbook_data)
     except ValueError:
-        return False
+        return False  # nosemgrep - text that is not JSON is not a workbook file
     return isinstance(data, dict) and (
         data.get("doctype") == "Insights Workbook" or data.get("type") == "Workbook"
     )

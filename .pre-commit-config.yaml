@@ -67,6 +67,20 @@ repos:
           - --quiet
           - --skip-unknown-extensions
 
+      # The hook above scans changed files only, so a rule change is checked against existing code here.
+      - id: semgrep
+        name: Scan the tree with the app's semgrep rules
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
+        args:
+          - --config=.semgrep/insights.yml
+          - --error
+          - --metrics=off
+          - --disable-version-check
+          - --quiet
+          - .
+
   - repo: local
     hooks:
       - id: typecheck

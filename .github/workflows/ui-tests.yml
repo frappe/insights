@@ -109,6 +109,10 @@ jobs:
         working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
         run: yarn lint:e2e
 
+      - name: Lint the app
+        working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
+        run: yarn lint
+
       - name: Configure the site
         working-directory: ${{ env.BENCH_PATH }}
         run: |

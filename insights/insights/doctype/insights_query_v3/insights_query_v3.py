@@ -263,7 +263,7 @@ class InsightsQueryv3(Document):
         """
         from insights.telemetry import capture, error_kind
 
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - telemetry never fails the run it reports on
             capture(
                 "query_failed",
                 interface=self.interface,
@@ -321,7 +321,7 @@ class InsightsQueryv3(Document):
         codes = {row[name] for name in carried for row in results}
 
         sql = None
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - a display hint; without it the result reads as not aggregated
             for op in frappe.parse_json(self.operations) or []:
                 if op.get("type") == "sql" and op.get("raw_sql"):
                     sql = op.get("raw_sql")
@@ -644,7 +644,7 @@ def _sql_has_group_by(sql: str) -> bool:
             if stmt is not None and stmt.find(sqlglot_exp.Group) is not None:
                 return True
     except Exception:
-        pass
+        pass  # nosemgrep - SQL that does not parse is read as having no GROUP BY
     return False
 
 

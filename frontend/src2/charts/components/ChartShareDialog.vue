@@ -36,6 +36,7 @@ chart.doc.name &&
 			publishedByDashboard.value = reach?.published_by_dashboard || null
 			onPublicDashboard.value = Boolean(reach?.on_public_dashboard)
 		})
+		// eslint-disable-next-line no-restricted-syntax -- `callMethod` has shown the error
 		.catch(() => {})
 
 // Every level above Private reaches users who were not named one by one. The
