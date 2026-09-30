@@ -44,6 +44,10 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.expression-sandbox | An expression reads Frappe data only with the permissions of the user it runs as. It cannot write, make outbound requests, run SQL, enqueue a job, call a method, send mail or register a commit hook. |
 | query.expression-json | An expression reads a key out of a JSON column, typed, and blanks a placeholder value. |
 | query.expression-help | The expression editor autocompletes and lists the available functions. |
+| query.expression-error-names-operation | An expression that fails in a run is refused with a message that names the operation, the expression and the cause. |
+| query.error-names-operation | A query that fails in a run is refused with a message that names the operation it failed in, and for a query it reads, that query's title. The failure keeps its class. |
+| query.error-detail | A failed run tells everyone which operation failed and its class, and only whoever may edit the query the cause and the expression. |
+| query.expression-column-named-like-function | A column named like a function, such as `day`, reads as the column where an expression uses it as a value, and as the function where it calls it. |
 | query.summarize | A user groups rows by a dimension and aggregates measures. |
 | query.summarize-grain | A date dimension in a summarize groups at a grain, and a time column only at a clock grain. |
 | query.summarize-aggregations | A measure aggregates as sum, count, average, min, max or distinct count. |

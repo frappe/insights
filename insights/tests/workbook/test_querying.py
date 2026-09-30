@@ -4,6 +4,7 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import add_days, nowdate
 
+from insights.exceptions import ExpressionSyntaxError, UnknownColumn
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import CircularQueryReferenceError
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import InsightsIntegrationTestCase
@@ -439,6 +440,66 @@ class TestQuerying(InsightsIntegrationTestCase):
 
         with self.assertRaises(CircularQueryReferenceError):
             first_query_doc.save()
+
+    # @feature query.error-names-operation
+    def test_a_failure_in_a_query_read_by_another_names_both_operations_and_the_query(self):
+        workbook = create_test_workbook(USER_1)
+        broken = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Broken",
+            operations=[
+                table_source(),
+                {
+                    "type": "mutate",
+                    "new_name": "doubled",
+                    "data_type": "Auto",
+                    "expression": {"type": "expression", "expression": "foo * 2"},
+                },
+            ],
+        )
+        reader = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Reads Broken",
+            operations=[query_source(broken.name)],
+        )
+
+        frappe.clear_messages()
+        with as_user(USER_1), self.assertRaises(UnknownColumn) as refusal:
+            execute_test_query(reader.name)
+        message = (
+            "Operation 1 (source): Operation 2 (mutate 'doubled') in query "
+            "'Workbook Flow Test Query Broken': UnknownColumn: NameError: name 'foo' is not defined. Expression: foo * 2"
+        )
+        self.assertEqual(str(refusal.exception), message)
+        self.assertEqual([m["message"] for m in frappe.local.message_log], [message])
+
+    # @feature query.error-names-operation
+    def test_a_python_error_in_a_query_read_by_another_is_named_and_escaped_once(self):
+        workbook = create_test_workbook(USER_1)
+        broken = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query P&L",
+            operations=[table_source(), {"type": "cast", "column": column("status"), "data_type": "Money"}],
+        )
+        reader = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Reads P&L",
+            operations=[query_source(broken.name)],
+        )
+
+        frappe.clear_messages()
+        with as_user(USER_1), self.assertRaises(KeyError):
+            execute_test_query(reader.name)
+        self.assertEqual(
+            [m["message"] for m in frappe.local.message_log],
+            [
+                "Operation 1 (source): Operation 2 (cast) in query 'Workbook Flow Test Query P&amp;L': KeyError: 'Money'"
+            ],
+        )
 
     def seed_todo_without_a_date(self):
         todo = frappe.get_doc(
@@ -934,9 +995,13 @@ class TestQuerying(InsightsIntegrationTestCase):
             "another user's email": "frappe.utils.get_user_info_for_avatar('Administrator')['email']",
             "a field through a currency": "frappe.format_value(1, _dict(fieldtype='Currency', options='User:x:email'), _dict(doctype='P', x='Administrator'))",
         }
-        not_in_sandbox = (AttributeError, "module has no attribute")
-        # frappe's read check puts its message in the message log, so the error text is empty
-        not_readable = (frappe.PermissionError, "^$")
+        not_in_sandbox = (ExpressionSyntaxError, "module has no attribute")
+        # frappe's read check raises a bare error and leaves its message in
+        # `frappe.flags`, and the build puts it behind the operation
+        not_readable = (
+            frappe.PermissionError,
+            r"^Operation 2 \(mutate 'read'\): PermissionError: You need the 'read' permission",
+        )
         refusal = {
             "set_value": not_in_sandbox,
             "save": not_readable,
@@ -950,7 +1015,7 @@ class TestQuerying(InsightsIntegrationTestCase):
             "http": not_in_sandbox,
             # `frappe.db` returns a no-op for a name it does not have
             "after_commit": (
-                (AttributeError, TypeError),
+                ExpressionSyntaxError,
                 "has no attribute 'add'|'NoneType' object is not callable",
             ),
             "commit": not_in_sandbox,
@@ -1070,7 +1135,7 @@ class TestQuerying(InsightsIntegrationTestCase):
                 ],
             )
             with self.subTest(name=name), as_user(USER_1):
-                with self.assertRaises(AttributeError):
+                with self.assertRaisesRegex(ExpressionSyntaxError, "AttributeError"):
                     execute_test_query(query.name)
                 self.assertFalse(
                     validate_expression(relation, '[{"value": "name", "description": "String"}]')["is_valid"]

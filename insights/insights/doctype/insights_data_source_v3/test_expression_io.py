@@ -18,6 +18,7 @@ import frappe
 import ibis
 from frappe.tests import UnitTestCase
 
+from insights.exceptions import ExpressionSyntaxError
 from insights.insights.doctype.insights_data_source_v3.ibis.utils import get_functions
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
 
@@ -103,7 +104,7 @@ class TestExpressionIsolation(UnitTestCase):
                 self.assertEqual(
                     builder.evaluate_expression(f"{name}.length()").get_name(), f"StringLength({name})"
                 )
-                with self.assertRaises(TypeError):
+                with self.assertRaises(ExpressionSyntaxError):
                     builder.evaluate_expression(f"{name}({target!r})")
                 self.assertFalse(os.path.exists(target))
 

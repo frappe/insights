@@ -9,6 +9,7 @@ import frappe
 
 from insights.api.view import get_chart_data, get_dashboard
 from insights.api.workbooks import update_share_permissions
+from insights.exceptions import UnknownColumn
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
 from insights.not_permitted import NotPermitted
@@ -532,7 +533,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             frappe.get_doc(DT.QUERY, alerted).evaluate_alert_expression("status == 'Open'")
 
         self.assertEqual([row["name"] for row in self.fetch(kept)["rows"]], [self.todo])
-        with self.assertRaises(NameError):
+        with self.assertRaises(UnknownColumn):
             self.fetch(unknown)
 
     def mutate(self, new_name, expression):
@@ -588,7 +589,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
     def test_a_held_back_column_named_off_a_table_in_an_expression_is_not_permitted(self):
         """In a join expression or a custom operation, `t1.status`, `t2.status`
         and `q.status` name the held-back column, and are refused like a bare
-        `status`."""
+        `status`. So do `t1['status']`, `t2['status']` and `q['status']`."""
         plain = self.create_query("Plain", source("tabToDo"))
 
         def joined(expression, columns=("priority",)):
@@ -615,6 +616,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             "t2": joined(on.format("t2.status")),
             "t1, nothing selected": joined(on.format("t1.status"), columns=()),
             "q": custom("q.filter(q.status == 'Open')"),
+            "t1 item": joined(on.format("t1['status']")),
+            "t2 item": joined(on.format("t2['status']")),
+            "q item": custom("q.filter(q['status'] == 'Open')"),
         }
         charts = {kind: self.create_chart(kind, operations, "name") for kind, operations in shapes.items()}
         # a column the reader can still read, and a column that does not exist
@@ -622,6 +626,9 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             "kept", joined(on.format("t2.priority").replace("'Open'", "t1.priority")), "name"
         )
         unknown = self.create_chart("unknown", custom("q.filter(q.no_such_column == 'Open')"), "name")
+        unknown_item = self.create_chart(
+            "unknown item", custom("q.filter(q['no_such_column'] == 'Open')"), "name"
+        )
 
         self.make_status_permlevel()
 
@@ -632,8 +639,52 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
                 self.assertEqual(refusal.exception.doctypes, ["ToDo"])
 
         self.assertEqual([row["name"] for row in self.fetch(kept)["rows"]], [self.todo])
-        with self.assertRaises(AttributeError):
-            self.fetch(unknown)
+        for chart in (unknown, unknown_item):
+            with self.assertRaises(UnknownColumn):
+                self.fetch(chart)
+
+    # @feature query.error-detail
+    def test_a_reader_who_may_not_edit_the_query_is_told_the_operation_and_the_class(self):
+        """An expression's source and an error's own text are the author's. A
+        script's error may hold a key it sent."""
+        failing = {
+            "expression": (
+                [
+                    *source("tabToDo"),
+                    {
+                        "type": "custom_operation",
+                        "expression": {"type": "expression", "expression": "q.filter(q.no_such_column == 1)"},
+                    },
+                ],
+                UnknownColumn,
+            ),
+            "python": (
+                [
+                    *source("tabToDo"),
+                    {
+                        "type": "cast",
+                        "column": {"type": "column", "column_name": "status"},
+                        "data_type": "Money",
+                    },
+                ],
+                KeyError,
+            ),
+        }
+        for kind, (operations, error) in failing.items():
+            chart = self.create_chart(f"failing {kind}", operations, "name")
+            for user in (READER, "Administrator"):
+                with self.subTest(kind=kind, user=user):
+                    frappe.clear_messages()
+                    with as_user(user), db_connections(), self.assertRaises(error):
+                        frappe.get_doc(DT.CHART, chart).fetch(force=True)
+                    shown = [frappe.parse_json(m)["message"] for m in frappe.local.message_log]
+                    self.assertEqual(len(shown), 1)
+                    self.assertIn(f"Operation 2 ({operations[1]['type']})", shown[0])
+                    if user == READER:
+                        self.assertTrue(shown[0].endswith(f": {error.__name__}"), shown[0])
+                    else:
+                        self.assertIn(f"': {error.__name__}: ", shown[0])
+                        self.assertIn("no_such_column" if kind == "expression" else "'Money'", shown[0])
 
     # @feature permissions.not-permitted-chart
     def test_a_sql_column_that_names_a_held_back_column_is_not_permitted(self):

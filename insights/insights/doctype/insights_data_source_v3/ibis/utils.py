@@ -11,6 +11,8 @@ from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, NamespaceDict, saf
 from ibis import selectors as s
 from jedi import Script
 
+from insights.exceptions import ExpressionSyntaxError
+
 # An expression describes a query. It does not move data in or out, so the
 # context holds no name that opens a path, a URL or a backend connection.
 # Expressed as a rule rather than a list, so an ibis release that adds
@@ -72,6 +74,47 @@ def attributes_of(expression: str) -> set[str]:
         return set()
 
     return {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+
+
+def names_read(expression: str) -> set[str]:
+    """The names and the attribute names an expression reads."""
+    try:
+        tree = ast.parse(expression)
+    except SyntaxError:
+        return set()
+
+    return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)} | attributes_of(expression)
+
+
+def called_names(expression: str) -> set[str]:
+    """The plain names an expression calls, such as `sum` in `sum(amount)`."""
+    try:
+        tree = ast.parse(expression)
+    except SyntaxError:
+        return set()
+
+    return {
+        node.func.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+
+def item_reads(expression: str) -> set[tuple[str, str]]:
+    """The `name['column']` reads in an expression, as `(name, column)`."""
+    try:
+        tree = ast.parse(expression)
+    except SyntaxError:
+        return set()
+
+    return {
+        (node.value.id, node.slice.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Subscript)
+        and isinstance(node.value, ast.Name)
+        and isinstance(node.slice, ast.Constant)
+        and isinstance(node.slice.value, str)
+    }
 
 
 def get_functions():
@@ -351,7 +394,7 @@ def validate_variable_name(node, tree, available_functions: set[str], available_
 def validate_names(tree, columns: list[dict]):
     functions = get_functions()
     available_functions = set(functions.keys())
-    available_columns = {col.get("value") for col in columns}
+    available_columns = {col.get("value") for col in columns} | table_names(None).keys()
 
     # treat locally assigned variables as valid names so that reusing them
     assigned_vars = {
@@ -374,11 +417,57 @@ def validate_names(tree, columns: list[dict]):
     return {"is_valid": len(errors) == 0, "errors": errors}
 
 
-def eval_script(table, schema: dict[str, str]):
-    script = get_functions()
-    for col_name in schema:
-        script[col_name] = table[col_name]
-    return script
+def table_names(query, right=None) -> dict:
+    """The tables an expression reads by name: the query being built as `q`, and
+    for a join also as `t1`, beside the join's other table as `t2`."""
+    if right is None:
+        return {"q": query}
+    return {"q": query, "t1": query, "t2": right}
+
+
+def expression_context(expression: str, query, functions: dict, right=None) -> dict:
+    """The names an expression reads: its tables, the columns of `query` and `functions`.
+
+    A column named like a function, such as `day`, is the column where the
+    expression reads it as a value and the function where it calls it. A
+    namespace, such as `ibis`, is read through its attributes as a function is
+    called.
+    """
+    # by item: a table's method outranks its column of the same name on attribute access
+    columns = {col: query[col] for col in query.columns}
+    # a table outranks a column of its name, so `q['q']` always reads the column
+    context = {**columns, **functions, **table_names(query, right)}
+    shared = columns.keys() & functions.keys()
+    if not shared:
+        return context
+
+    tree = ast.parse(expression)
+    called = {id(node.func) for node in ast.walk(tree) if isinstance(node, ast.Call)}
+    namespaces = {name for name in shared if not callable(functions[name])}
+    called |= {
+        id(node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id in namespaces
+    }
+    calls, values = set(), set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and node.id in shared:
+            (calls if id(node) in called else values).add(node.id)
+
+    if both := sorted(calls & values):
+        raise ExpressionSyntaxError(
+            f"'{both[0]}' is a column and a function, and this expression uses it as both. "
+            f"Write the column as q['{both[0]}']"
+        )
+    for name in values:
+        context[name] = columns[name]
+    return context
+
+
+def eval_script(table, expression: str):
+    return expression_context(expression, table, get_functions())
 
 
 # Functions that are not supported by certain column types like `DateColumn.sum()`
@@ -430,9 +519,12 @@ def validate_types(expression: str, columns: list[dict]):
         validation_table = ibis.table(schema, name="validation_table")
         from insights.insights.doctype.insights_data_source_v3.sandbox import expression_globals
 
-        eval_context = eval_script(validation_table, schema)
+        eval_context = eval_script(validation_table, expression)
         safe_exec(expression, {**expression_globals(), **eval_context})  # nosemgrep
         return {"is_valid": True, "errors": []}
+
+    except ExpressionSyntaxError as e:
+        return {"is_valid": False, "errors": [create_error(1, 0, str(e))]}
 
     except (AttributeError, TypeError) as e:
         _, _, tb = sys.exc_info()

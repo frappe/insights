@@ -1,4 +1,5 @@
 import ast
+import html
 import sys
 import time
 import traceback
@@ -14,13 +15,15 @@ import sqlglot as sg
 import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_eval, safe_exec
+from ibis.common.annotations import SignatureValidationError
+from ibis.common.exceptions import IbisTypeError
 from ibis.expr.datatypes import DataType
 from ibis.expr.operations.relations import DatabaseTable, Field
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
 import insights
-from insights import create_toast, not_permitted, user_permissions
+from insights import not_permitted, user_permissions
 from insights.cache_utils import make_digest
 from insights.exceptions import (
     ExpressionSyntaxError,
@@ -54,7 +57,15 @@ from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import fiscal_year_start, week_start
-from .ibis.utils import assert_expression_has_no_io, get_functions
+from .ibis.utils import (
+    assert_expression_has_no_io,
+    called_names,
+    expression_context,
+    get_functions,
+    item_reads,
+    names_read,
+    table_names,
+)
 from .sandbox import NotDefined, expression_globals, script_globals
 
 try:
@@ -169,6 +180,14 @@ PIVOT_TAILS = "insights_pivot_tails"
 # `full` is the client's word for what ibis calls an outer join
 JOIN_TYPES = {"inner": "inner", "left": "left", "right": "right", "full": "outer"}
 
+# frappe's exceptions, and so every one Insights derives from them. Each carries
+# a message for the reader. Any other error is a Python or ibis one
+FRAPPE_ERRORS = tuple(
+    value
+    for value in vars(frappe.exceptions).values()
+    if isinstance(value, type) and issubclass(value, Exception) and value.__module__ == "frappe.exceptions"
+)
+
 
 class CircularQueryReferenceError(frappe.ValidationError):
     """Raised when a circular query reference is detected during query building."""
@@ -270,24 +289,51 @@ class IbisQueryBuilder:
             self.check_trusted_code()
             self.query = None
             for idx, operation in enumerate(self.operations):
+                operation = _dict(operation)
                 try:
-                    operation = _dict(operation)
                     self.query = self.perform_operation(operation)
                 except (CircularQueryReferenceError, not_permitted.NotPermitted):
                     # Not Permitted is a normal answer, not a broken operation. The
-                    # card names what it needs; a toast would blame the author
+                    # card names what it needs
                     raise
-                except BaseException as e:
-                    operation_type_title = operation.type.title()
-                    create_toast(
-                        title=f"Failed to Build {self.title} Query",
-                        message=f"Please check the {operation_type_title} operation at position {idx + 1}",
-                        type="error",
-                    )
-                    raise e
+                except Exception as e:
+                    self.throw_in_operation(e, idx, operation)
             return self.query
         finally:
             frappe.local._insights_building_queries.discard(self.doc.name)
+
+    def throw_in_operation(self, error: Exception, idx: int, operation) -> None:
+        """Throw `error` again, led by the operation it failed in, and for a
+        nested query by its title. The UI and frappectl show the message log, so
+        the new message replaces the error's own.
+
+        The cause is the error's class, then its own text and, for an
+        expression, its source. Only whoever may edit the query reads the text,
+        as `throw_connection_error` tells the driver's text only to whoever may
+        configure the source. Every other reader, a Guest on a public dashboard
+        included, gets the class alone."""
+        named = f" '{operation.new_name}'" if operation.get("new_name") else ""
+        where = f"Operation {idx + 1} ({operation.type}{named})"
+        if len(frappe.local._insights_building_queries) > 1:
+            where += f" in query '{self.title}'"
+
+        log = frappe.local.message_log
+        if log and log[-1].get("__frappe_exc_id") == getattr(error, "__frappe_exc_id", False):
+            frappe.clear_last_message()
+        if nested := getattr(error, "operation_message", None):
+            # a query this one reads named its operation already, and `str()` of a
+            # `SyntaxError` or a `KeyError` does not read the message it was thrown with
+            cause = nested
+        elif not frappe.has_permission("Insights Query v3", "write", self.doc):
+            cause = type(error).__name__
+        elif isinstance(error, FRAPPE_ERRORS):
+            # a bare `raise frappe.PermissionError` leaves its message in the flags
+            text = str(error) or frappe.flags.error_message
+            cause = f"{type(error).__name__}: {text}" if text else type(error).__name__
+        else:
+            cause = html.escape(f"{type(error).__name__}: {error}", quote=False)
+        error.operation_message = f"{html.escape(where, quote=False)}: {cause}"
+        frappe.throw(error.operation_message, error)
 
     def check_trusted_code(self):
         from insights.permissions import check_trusted_code_author
@@ -1352,7 +1398,7 @@ class IbisQueryBuilder:
             return first_column.count().name(measure.measure_name)
 
         if "expression" in measure:
-            column = self.evaluate_expression(measure.expression.expression)
+            column = self.evaluate_expression(measure.expression.expression, name=measure.measure_name)
             dtype = self.get_ibis_dtype(measure.data_type)
             column = column.cast(dtype)
         else:
@@ -1444,39 +1490,89 @@ class IbisQueryBuilder:
 
         frappe.throw(f"Granularity {granularity} is not supported for Time columns", QueryRefused)
 
-    def evaluate_expression(self, expression, right=None):
+    def evaluate_expression(self, expression, right=None, name=None):
         """`right` is a join's other table and its author's removals. It is named
-        `t2`, beside the query being built as `t1`."""
-        if not expression or not expression.strip():
-            raise ExpressionSyntaxError(f"Invalid expression: {expression}")
-
+        `t2`, beside the query being built as `t1`. `name` is the measure the
+        expression makes, for the error."""
+        expression = expression or ""
         frappe.flags.current_ibis_query = self.query
-        tables = [(self.query, self.dropped_by_writer)]
-        context = frappe._dict()
-        context.q = self.query
-        context.update(self.get_current_columns())
-        context.update(get_functions())
-        if right:
-            tables.append(right)
-            context.t1, context.t2 = self.query, right[0]
         try:
-            ret = exec_with_return(expression, context)
-        except (NameError, AttributeError) as e:
-            # the context holds only the columns left to the reader, so a
-            # held-back name is missing here, bare or on a table, as it is from
-            # `get_column`
-            named_on = self.query if isinstance(e, NameError) else e.obj
-            for table, dropped_by_writer in tables:
-                if table is named_on and (doctype := self.held_back(e.name, table, dropped_by_writer)):
-                    not_permitted.refuse([doctype])
+            context = expression_context(expression, self.query, get_functions(), right[0] if right else None)
+            return exec_with_return(expression, context)
+        except ExpressionSyntaxError as e:
+            self.refuse_expression(expression, name, e)
+        except FRAPPE_ERRORS:
             raise
-        frappe.flags.current_ibis_query = None
-        return ret
+        except Exception as e:
+            self.refuse_expression(expression, name, e, self.reads_missing_column(expression, e, right))
+        finally:
+            frappe.flags.current_ibis_query = None
 
-    def get_current_columns(self):
-        # TODO: handle collisions with function names
-        # by item: a table's method outranks its column of the same name on attribute access
-        return {col: self.query[col] for col in self.query.schema().names}
+    def reads_missing_column(self, expression, error, right=None) -> bool:
+        """Whether `error` is a read of a column its table does not have: bare, as
+        an attribute or as an item. The context holds only the columns left to the
+        reader, so a held-back column is missing here too. It is refused as not
+        permitted, as `get_column` refuses it."""
+        if isinstance(error, NameError):
+            if error.name in called_names(expression):
+                return False
+            reads = [(self.query, error.name)]
+        elif isinstance(error, AttributeError) and isinstance(error.obj, IbisQuery):
+            reads = [(error.obj, error.name)]
+        elif isinstance(error, IbisTypeError):
+            tables = table_names(self.query, right[0] if right else None)
+            reads = [
+                (tables[table], column)
+                for table, column in item_reads(expression)
+                if table in tables and column not in tables[table].columns
+            ]
+        else:
+            return False
+
+        relations = [(self.query, self.dropped_by_writer), *([right] if right else [])]
+        for relation, dropped_by_writer in relations:
+            for table, column in reads:
+                if table is relation and (doctype := self.held_back(column, table, dropped_by_writer)):
+                    not_permitted.refuse([doctype])
+        return bool(reads)
+
+    def refuse_expression(self, expression, name, error, reads_missing_column=False):
+        """Throw an expression's failure as the engine's own error, naming the
+        cause and the expression. A bare Python error reaches the caller as the
+        last line of its traceback, which for a syntax error is `^`. The build
+        loop names the operation."""
+        if isinstance(error, SyntaxError):
+            # RestrictedPython's refusal holds its messages in `msg`, with no position
+            detail = "; ".join(error.msg) if isinstance(error.msg, tuple) else error.msg
+            cause = f"SyntaxError: {detail}"
+            if error.lineno:
+                cause += f" at line {error.lineno}, column {error.offset}"
+            if underscored := sorted(
+                name for name in names_read(expression) if name.startswith("_") and name in self.query.columns
+            ):
+                cause += f". Read the column as q['{underscored[0]}']"
+        elif isinstance(error, ExpressionSyntaxError):
+            cause = str(error)
+        elif isinstance(error, SignatureValidationError) and error.errors:
+            # its own text prints the expression tree of every argument
+            failures = (
+                (arg, type(value).__name__ if isinstance(value, Expr) else repr(value), pattern.describe())
+                for arg, value, pattern in error.errors
+            )
+            cause = "SignatureValidationError: " + "; ".join(
+                f"`{arg}`: {value} is not {pattern}" for arg, value, pattern in failures
+            )
+        else:
+            cause = f"{type(error).__name__}: {error}"
+        if name:
+            cause = f"Measure '{name}': {cause}"
+        if expression.strip():
+            cause = f"{cause}. Expression: {expression}"
+
+        frappe.throw(
+            html.escape(cause, quote=False),
+            UnknownColumn if reads_missing_column else ExpressionSyntaxError,
+        )
 
 
 def clamp(value, lo: int, hi: int) -> int:
@@ -1651,7 +1747,7 @@ def exec_with_return(
     tree = ast.parse(script)
 
     if not tree.body:
-        raise ExpressionSyntaxError("Empty code")
+        raise ExpressionSyntaxError("the expression is empty")
 
     output_expression = script
 

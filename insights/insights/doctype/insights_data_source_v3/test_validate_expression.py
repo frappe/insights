@@ -5,6 +5,7 @@ import json
 import unittest
 
 import frappe
+import ibis
 from frappe.utils.safe_exec import is_safe_exec_enabled
 
 from insights.insights.doctype.insights_data_source_v3.ibis import functions, utils
@@ -179,3 +180,269 @@ class TestValidateExpressionSandbox(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.get_value("ToDo", todo, "description"), "validate")
         self.assertNotIn(functions.if_else, frappe.db.after_commit._functions)
         self.assertTrue(utils.validate_expression("amount.sum()", self.columns)["is_valid"])
+
+
+TODO_SOURCE = {
+    "type": "source",
+    "table": {"type": "table", "data_source": "Site DB", "table_name": "tabToDo"},
+}
+
+
+def mutate(new_name, expression, data_type="Auto"):
+    return {
+        "type": "mutate",
+        "new_name": new_name,
+        "data_type": data_type,
+        "expression": {"type": "expression", "expression": expression},
+    }
+
+
+def rename(column_name, new_name):
+    return {"type": "rename", "column": {"type": "column", "column_name": column_name}, "new_name": new_name}
+
+
+def custom_operation(expression):
+    return {"type": "custom_operation", "expression": {"type": "expression", "expression": expression}}
+
+
+class TestEvaluateExpression(InsightsIntegrationTestCase):
+    """What a run does with an expression, as `IbisQueryBuilder` evaluates it."""
+
+    def build(self, *operations):
+        from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
+        from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
+
+        query = frappe._dict(
+            name="Evaluate Expression Test",
+            title="Evaluate Expression Test",
+            use_live_connection=1,
+            operations=frappe.as_json([TODO_SOURCE, *operations]),
+        )
+        with db_connections():
+            return IbisQueryBuilder(query).build()
+
+    def assert_refused(self, exception, operations, *parts):
+        frappe.clear_messages()
+        with self.assertRaises(exception) as refusal:
+            self.build(*operations)
+        # the message log is what the UI and frappectl show; a bare SyntaxError left it empty
+        shown = frappe.parse_json(frappe.local.message_log[-1])["message"]
+        for part in parts:
+            self.assertIn(part, str(refusal.exception))
+            self.assertIn(part, shown)
+
+    # @feature query.expression-error-names-operation
+    def test_an_unknown_name_names_the_mutate_and_its_column(self):
+        from insights.exceptions import UnknownColumn
+
+        self.assert_refused(
+            UnknownColumn,
+            [mutate("doubled", "foo * 2")],
+            "Operation 2 (mutate 'doubled'): UnknownColumn: NameError: name 'foo' is not defined. Expression: foo * 2",
+        )
+
+    # @feature query.expression-error-names-operation
+    def test_a_syntax_error_names_the_filter_and_the_position(self):
+        from insights.exceptions import ExpressionSyntaxError
+
+        self.assert_refused(
+            ExpressionSyntaxError,
+            [{"type": "filter", "expression": {"type": "expression", "expression": "status =="}}],
+            "Operation 2 (filter): ExpressionSyntaxError: SyntaxError: invalid syntax at line 1, column",
+            "Expression: status ==",
+        )
+
+    # @feature query.expression-error-names-operation
+    def test_a_type_error_names_the_measure(self):
+        from insights.exceptions import ExpressionSyntaxError
+
+        summarize = {
+            "type": "summarize",
+            "dimensions": [],
+            "measures": [
+                {
+                    "measure_name": "total_length",
+                    "data_type": "Integer",
+                    "expression": {"type": "expression", "expression": "status.no_such_method()"},
+                }
+            ],
+        }
+        self.assert_refused(
+            ExpressionSyntaxError,
+            [summarize],
+            "Operation 2 (summarize): ExpressionSyntaxError: Measure 'total_length': AttributeError:",
+            "no_such_method",
+            "Expression: status.no_such_method()",
+        )
+
+    # @feature query.expression-error-names-operation
+    def test_an_ibis_error_outside_ibis_error_is_wrapped(self):
+        """ibis's `SignatureValidationError` is not an `IbisError`, so a list of
+        the classes to wrap once let it out bare."""
+        from insights.exceptions import ExpressionSyntaxError
+
+        self.assert_refused(
+            ExpressionSyntaxError,
+            [mutate("gap", "date - status")],
+            "Operation 2 (mutate 'gap'): ExpressionSyntaxError: SignatureValidationError: `other`: StringColumn is not coercible",
+            "Expression: date - status",
+        )
+        # its own text prints the expression tree of each argument
+        self.assertNotIn("DatabaseTable", frappe.parse_json(frappe.local.message_log[-1])["message"])
+
+    # @feature query.expression-error-names-operation
+    def test_a_custom_operation_names_the_operation_and_the_expression(self):
+        from insights.exceptions import UnknownColumn
+
+        self.assert_refused(
+            UnknownColumn,
+            [custom_operation("q.filter(q.nope == 'Open')")],
+            "Operation 2 (custom_operation): UnknownColumn: AttributeError: 'Table' object has no attribute 'nope'",
+            "Expression: q.filter(q.nope == 'Open')",
+        )
+
+    # @feature query.expression-error-names-operation
+    def test_an_alert_condition_names_the_cause_and_the_expression(self):
+        from insights.exceptions import UnknownColumn
+        from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
+
+        query = frappe.get_doc(
+            {
+                "doctype": "Insights Query v3",
+                "title": "Evaluate Expression Test",
+                "use_live_connection": 1,
+                "operations": frappe.as_json([TODO_SOURCE]),
+            }
+        )
+        frappe.clear_messages()
+        with db_connections(), self.assertRaises(UnknownColumn):
+            query.evaluate_alert_expression("state == 'Open'")
+        self.assertEqual(
+            [frappe.parse_json(m)["message"] for m in frappe.local.message_log],
+            ["NameError: name 'state' is not defined. Expression: state == 'Open'"],
+        )
+
+    # @feature query.expression-error-names-operation
+    def test_an_expression_of_only_a_comment_is_empty_and_says_so(self):
+        from insights.exceptions import ExpressionSyntaxError
+
+        self.assert_refused(
+            ExpressionSyntaxError,
+            [{"type": "filter", "expression": {"type": "expression", "expression": "# note"}}],
+            "Operation 2 (filter): ExpressionSyntaxError: the expression is empty. Expression: # note",
+        )
+
+    # @feature query.expression-error-names-operation
+    def test_a_column_named_with_an_underscore_is_refused_with_the_way_to_read_it(self):
+        from insights.exceptions import ExpressionSyntaxError
+
+        self.assert_refused(
+            ExpressionSyntaxError,
+            [mutate("assigned", "_assign + 'x'")],
+            "Operation 2 (mutate 'assigned'): ExpressionSyntaxError: SyntaxError: Line 1: \"_assign\" is an invalid variable name",
+            "Read the column as q['_assign']. Expression: _assign + 'x'",
+        )
+        self.assertNotIn("line None", frappe.parse_json(frappe.local.message_log[-1])["message"])
+
+    # @feature query.expression-error-names-operation
+    def test_a_misspelled_function_is_not_an_unknown_column(self):
+        from insights.exceptions import ExpressionSyntaxError
+
+        self.assert_refused(
+            ExpressionSyntaxError,
+            [mutate("total", "sumx(status)")],
+            "NameError: name 'sumx' is not defined",
+        )
+
+    # @feature query.expression-error-names-operation
+    def test_a_functions_own_refusal_keeps_its_class_and_names_the_operation(self):
+        self.assert_refused(
+            frappe.ValidationError,
+            [mutate("amount", "json_value(description, 'amount', 'money')")],
+            "Operation 2 (mutate 'amount'): ValidationError: Invalid type 'money' for json_value",
+        )
+        with self.assertRaises(frappe.ValidationError) as refusal:
+            self.build(mutate("amount", "json_value(description, 'amount', 'money')"))
+        self.assertIs(type(refusal.exception), frappe.ValidationError)
+
+    # @feature query.error-names-operation
+    def test_a_python_error_keeps_its_class_and_names_the_operation(self):
+        cast = {"type": "cast", "column": {"type": "column", "column_name": "status"}, "data_type": "Money"}
+        self.assert_refused(KeyError, [cast], "Operation 2 (cast): KeyError: 'Money'")
+
+    # @feature query.expression-error-names-operation
+    def test_an_expression_outside_a_build_names_the_cause_and_the_expression(self):
+        """An alert evaluates its condition on a built query, outside any operation."""
+        from insights.exceptions import UnknownColumn
+        from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
+
+        builder = IbisQueryBuilder(frappe._dict(name="t", operations="[]", use_live_connection=0))
+        builder.query = ibis.memtable({"status": ["Open"]})
+        frappe.clear_messages()
+        with self.assertRaises(UnknownColumn) as refusal:
+            builder.evaluate_expression("state == 'Open'")
+        self.assertEqual(
+            str(refusal.exception),
+            "NameError: name 'state' is not defined. Expression: state == 'Open'",
+        )
+
+    # @feature query.expression-error-names-operation
+    def test_a_missing_column_read_by_item_is_an_unknown_column(self):
+        from insights.exceptions import UnknownColumn
+
+        self.assert_refused(
+            UnknownColumn,
+            [mutate("doubled", "q['no_such_column'] * 2")],
+            "Operation 2 (mutate 'doubled'): UnknownColumn: IbisTypeError: Column 'no_such_column' is not found",
+            "Expression: q['no_such_column'] * 2",
+        )
+
+    # @feature query.expression-column-named-like-function
+    def test_a_column_named_day_reads_as_the_column_as_a_value_and_as_the_function_when_called(self):
+        query = self.build(
+            rename("description", "day"),
+            mutate("day_length", "day.length()"),
+            mutate("day_of_date", "day(date)"),
+        )
+
+        self.assertTrue(query.schema()["day_length"].is_integer())
+        self.assertTrue(query.schema()["day_of_date"].is_integer())
+
+    # @feature query.expression-column-named-like-function
+    def test_a_column_named_like_a_namespace_leaves_the_namespace_to_an_attribute_read(self):
+        query = self.build(rename("description", "ibis"), mutate("one", "ibis.literal(1)"))
+
+        self.assertTrue(query.schema()["one"].is_integer())
+
+    # @feature query.expression-column-named-like-function
+    def test_a_column_named_like_a_function_used_both_ways_is_refused_with_the_way_to_write_it(self):
+        from insights.exceptions import ExpressionSyntaxError
+
+        self.assert_refused(
+            ExpressionSyntaxError,
+            [rename("description", "day"), mutate("both", "day(date) + day.length()")],
+            "'day' is a column and a function",
+            "q['day']",
+        )
+
+    # @feature query.expression-column-named-like-function
+    def test_the_validator_reads_a_column_named_like_a_function_as_the_run_does(self):
+        columns = json.dumps(
+            [{"value": "day", "description": "String"}, {"value": "created", "description": "Datetime"}]
+        )
+
+        self.assertTrue(utils.validate_expression("day(created)", columns)["is_valid"])
+        self.assertTrue(utils.validate_expression("day.length()", columns)["is_valid"])
+        both = utils.validate_expression("day(created) + day.length()", columns)
+        self.assertFalse(both["is_valid"])
+        self.assertIn("'day' is a column and a function", both["errors"][0]["message"])
+
+    # @feature query.expression-column-named-like-function
+    def test_the_validator_reads_q_as_the_run_does(self):
+        """The collision error tells the author to write `q['day']`, so the editor must accept it."""
+        columns = json.dumps([{"value": "day", "description": "Integer"}])
+
+        self.assertTrue(utils.validate_expression("q['day'] + 1", columns)["is_valid"])
+        unknown = utils.validate_expression("q['nope'] + 1", columns)
+        self.assertFalse(unknown["is_valid"])
+        self.assertIn("Column 'nope' is not found", unknown["errors"][0]["message"])
