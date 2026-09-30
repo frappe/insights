@@ -240,6 +240,41 @@ class TestQuerying(InsightsIntegrationTestCase):
         self.assertEqual(len(result["rows"]), 3)
         self.assertEqual({row["full_name"] for row in result["rows"]}, {"Workbook Flow User"})
 
+    # @feature query.remove-column query.join
+    def test_a_remove_after_a_join_takes_the_column_off(self):
+        # a code operation's rows live in the data store, so this runs on DuckDB;
+        # only an admin may write one
+        workbook = create_test_workbook("Administrator")
+        orders = [{"id": 1, "note": "a", "amount": 10}, {"id": 2, "note": "b", "amount": 20}]
+        customers = create_test_query(
+            "Administrator",
+            workbook.name,
+            title="Workbook Flow Test Query Customers",
+            operations=[{"type": "code", "code": f"results = {[{'order_id': 1, 'customer': 'x'}]}"}],
+        )
+        query = create_test_query(
+            "Administrator",
+            workbook.name,
+            title="Workbook Flow Test Query Join Remove",
+            operations=[
+                {"type": "code", "code": f"results = {orders}"},
+                {
+                    "type": "join",
+                    "join_type": "left",
+                    "table": {"type": "query", "query_name": customers.name},
+                    "select_columns": [column("customer")],
+                    "join_condition": {"left_column": column("id"), "right_column": column("order_id")},
+                },
+                {"type": "remove", "column_names": ["note"]},
+                {"type": "order_by", "column": column("id"), "direction": "asc"},
+            ],
+        )
+
+        result = execute_test_query(query.name)
+
+        self.assertEqual([col["name"] for col in result["columns"]], ["id", "amount", "customer", "order_id"])
+        self.assertEqual(len(result["rows"]), 2)
+
     # @feature query.summarize
     def test_query_summary_groups_filtered_rows_by_status(self):
         self.seed_todos()

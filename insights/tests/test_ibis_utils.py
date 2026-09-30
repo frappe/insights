@@ -8,12 +8,14 @@ import frappe
 import ibis
 from ibis.backends.postgres import Backend as PostgresBackend
 
+import insights
 from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_chart_v3.chart_drill import _bucket_filters
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     sparkline_operations,
 )
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import connect_duckdb
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
@@ -647,3 +649,65 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
                 with self.subTest(engine=engine, operator=operator):
                     rule = (operator, self.VALUES[operator])
                     self.assert_matches(engine, "String", [rule], ["day", "afternoon"], self.TEXT_DATES)
+
+
+class TestIbisRemoveColumns(IbisQueryBuilderTestCase):
+    """ibis drops fewer than half of a table's columns by star, and the stock
+    DuckDB compiler loses the star's exclusions."""
+
+    def remove_note(self, query):
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        builder.query = query
+        return builder.apply_remove(_dict({"column_names": ["note"]}))
+
+    def remove_after_join(self, orders, customers):
+        joined = orders.left_join(customers, orders.id == customers.order_id)
+        return self.remove_note(joined.mutate(double=joined.amount * 2))
+
+    # @feature query.remove-column
+    def test_a_remove_takes_the_column_off_on_duckdb(self):
+        orders = connect_duckdb().create_table(
+            "orders",
+            ibis.memtable(
+                {"id": [1, 2], "note": ["a", "b"], "amount": [10, 20], "kind": ["x", "y"], "paid": [1, 0]}
+            ),
+        )
+
+        result = self.remove_note(orders).order_by("id").execute()
+
+        self.assertEqual(list(result.columns), ["id", "amount", "kind", "paid"])
+
+    # @feature query.remove-column query.join
+    def test_a_remove_after_a_join_takes_the_column_off_on_duckdb(self):
+        connection = connect_duckdb()
+        orders = connection.create_table(
+            "orders", ibis.memtable({"id": [1, 2], "note": ["a", "b"], "amount": [10, 20]})
+        )
+        customers = connection.create_table("customers", ibis.memtable({"order_id": [1], "customer": ["x"]}))
+
+        result = self.remove_after_join(orders, customers).order_by("id").execute()
+
+        self.assertNotIn("note", result.columns)
+        self.assertEqual(list(result["double"]), [20, 40])
+
+    # @feature query.remove-column
+    def test_insights_opens_duckdb_only_through_connect_duckdb(self):
+        """`connect_duckdb` sets the compiler that keeps a removed column off."""
+        package = os.path.dirname(insights.__file__)
+        opener = os.path.join(
+            package, "insights", "doctype", "insights_data_source_v3", "connectors", "duckdb.py"
+        )
+        direct = re.compile(r"ibis\.duckdb\.connect\(|ibis\.connect\(\s*[\"']duckdb")
+        bypasses = []
+        for root, _, files in os.walk(package):
+            for name in files:
+                path = os.path.join(root, name)
+                if not name.endswith(".py") or name.startswith("test_") or path == opener:
+                    continue
+                if os.path.join(package, "tests") in path:
+                    continue
+                with open(path) as source:
+                    if direct.search(source.read()):
+                        bypasses.append(os.path.relpath(path, package))
+
+        self.assertEqual(bypasses, [])
