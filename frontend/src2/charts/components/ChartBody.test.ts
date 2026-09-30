@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
-import { numberChart } from '../adapter/fixtures'
+import { numberChart, tableChart } from '../adapter/fixtures'
 import { makeChartRead } from '../chart_view'
 import { scopeText } from '../scoped_by'
 import ChartBody from './ChartBody.vue'
+import ChartChrome from './ChartChrome.vue'
 
 // A Number chart has the least space. A reading is one line tall, so any line
 // the chrome adds is taken from the number.
@@ -140,5 +141,62 @@ describe('a card the reader may not read the data behind', () => {
 		expect(html).not.toContain('12,300')
 		// a retry cannot help, because the reader cannot change their permissions
 		expect(html).not.toContain('Retry')
+	})
+})
+
+const DESCRIPTION = 'Trials started this month'
+const INFO = 'Paid = a site running this product moved to a paid plan within 30 days of the trial.'
+
+describe('a chart its author explained', () => {
+	// @feature charts.description-and-info
+	it('prints the description under the title and keeps the info behind a mark', async () => {
+		const table = tableChart({ values: [{ name: 'Revenue' }] })
+		const read = makeChartRead({
+			doc: {
+				name: 'chart-2',
+				title: 'Trials',
+				description: DESCRIPTION,
+				info: INFO,
+				chart_type: 'Table',
+				config: table.config,
+				can_write: false,
+			} as any,
+			requestKey: () => 'the same question',
+			fetchData: () => Promise.resolve(table.result),
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+		await read.load()
+		const app = createSSRApp({ render: () => h(ChartChrome, { chart: read }) })
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
+
+		const title = html.indexOf('>Trials<')
+		expect(title).toBeGreaterThan(-1)
+		expect(html.indexOf(`>${DESCRIPTION}<`)).toBeGreaterThan(title)
+		// the info is the mark's label and the tooltip's body, never a line in the card
+		expect(html).toContain(`aria-label="${INFO}"`)
+		expect(html).not.toContain(`>${INFO}<`)
+	})
+
+	// @feature charts.description-and-info
+	it('puts a Number card description behind the mark, as the card has no line for it', async () => {
+		const read = cardAnswering(rows)
+		await read.load()
+		const app = createSSRApp({
+			render: () =>
+				h(ChartBody, {
+					chart: read,
+					title: 'Revenue',
+					reading: 'Revenue',
+					description: DESCRIPTION,
+					info: INFO,
+				}),
+		})
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
+
+		expect(html).toContain(`aria-label="${DESCRIPTION}\n\n${INFO}"`)
+		expect(html).not.toContain(`>${DESCRIPTION}<`)
+		expect(html).toContain('12,300')
 	})
 })

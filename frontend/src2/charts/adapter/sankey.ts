@@ -20,6 +20,7 @@ export function adaptSankeyChart(input: ChartAdapterInput): ChartFiller | undefi
 
 	const props: SankeyChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		data: input.result.rows,
 		source,
 		target,

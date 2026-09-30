@@ -434,6 +434,8 @@ class InsightsWorkbook(Document):
             fields=[
                 "name",
                 "title",
+                "description",
+                "info",
                 "workbook",
                 "folder",
                 "sort_order",

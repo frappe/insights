@@ -101,6 +101,7 @@ function adaptAxisChart(
 
 	const props: BarChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		data: input.result.rows,
 		x,
 		y: columns.filter((column) => !onRight(column)),

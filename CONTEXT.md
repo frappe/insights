@@ -36,6 +36,14 @@ Charts aggregate; a mid-pipeline `summarize` in a query is a grain change, not
 presentation.
 _Avoid_: visual, graph
 
+**Description**:
+A chart's optional line under its title, stored as `description`: Frappe's word for the short line under a field. frappe-ui's charts print it as their `subtitle`. A Number card has no such line, so there it shows behind the Info mark.
+_Avoid_: subtitle (it is frappe-ui's prop, not the stored field), caption
+
+**Info**:
+A chart's optional longer text — definitions and caveats — behind a mark beside its title, shown on hover or focus. Stored as `info`.
+_Avoid_: tooltip (how it is shown, and a chart's own tooltip is on its plot), help, notes
+
 **Dashboard**:
 A grid of charts, filters, and text blocks; each item has a Layout.
 

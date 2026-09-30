@@ -17,6 +17,7 @@ import type { ChartRead } from '../chart_view'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
 import { scopeText } from '../scoped_by'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
+import InfoMark from './InfoMark.vue'
 import ScopeMark from './ScopeMark.vue'
 import ChartStateMessage from './ChartStateMessage.vue'
 
@@ -52,6 +53,10 @@ const props = defineProps<{
 	// heads the chart. Left out, no title is shown anywhere in it — which is what
 	// a host that prints its own asks for.
 	title?: string
+	// the line under the title, and the text behind the mark beside it. Like the
+	// title, a host that prints its own header leaves them out.
+	description?: string | null
+	info?: string | null
 	// which reading to show, for a Number Chart. A host that shows one reading per
 	// cell says which. One that renders the chart says nothing and gets them all.
 	reading?: string
@@ -95,6 +100,7 @@ const filler = computed(() => {
 		sparklineResult: props.chart.sparklineResult,
 		comparisonRows: props.chart.comparisonRows,
 		title: props.title,
+		description: props.description || undefined,
 		reading: props.reading,
 		readonly: readonly.value,
 		sort: props.chart.sort,
@@ -256,6 +262,13 @@ const fillerEvents = computed(() =>
 // title, so it goes in `#title-suffix`, not in `#actions` at the end of the row.
 const scope = computed(() => scopeText(props.chart.scopedBy, props.chart.narrowedByPermissions))
 
+// A Number card has no line under its title, so its description goes behind the
+// mark with the info.
+const info = computed(() => {
+	const description = ownsStates.value ? props.description : undefined
+	return [description, props.info].filter(Boolean).join('\n\n')
+})
+
 // echarts hands over the point, not the event, so the capture phase records
 // the click position before the chart's own handler runs.
 const clickedAt = shallowRef<ClickPoint>({ x: 0, y: 0 })
@@ -278,11 +291,14 @@ function reportSegment(target: DrillDownTarget) {
 			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
 		>
-			<template v-if="scope" #title-suffix>
-				<ScopeMark
-					:applied="props.chart.scopedBy"
-					:narrowed="props.chart.narrowedByPermissions"
-				/>
+			<template v-if="info || scope" #title-suffix>
+				<span class="flex items-center gap-1.5">
+					<InfoMark v-if="info" :text="info" />
+					<ScopeMark
+						:applied="props.chart.scopedBy"
+						:narrowed="props.chart.narrowedByPermissions"
+					/>
+				</span>
 			</template>
 
 			<template v-if="$slots.actions" #actions>
@@ -296,15 +312,19 @@ function reportSegment(target: DrillDownTarget) {
 		<ChartContainer
 			v-else
 			:title="props.title"
+			:subtitle="props.description || undefined"
 			:loading="state === 'loading'"
 			:error="headline"
 			:empty="true"
 		>
-			<template v-if="scope" #title-suffix>
-				<ScopeMark
-					:applied="props.chart.scopedBy"
-					:narrowed="props.chart.narrowedByPermissions"
-				/>
+			<template v-if="info || scope" #title-suffix>
+				<span class="flex items-center gap-1.5">
+					<InfoMark v-if="info" :text="info" />
+					<ScopeMark
+						:applied="props.chart.scopedBy"
+						:narrowed="props.chart.narrowedByPermissions"
+					/>
+				</span>
 			</template>
 
 			<!-- The acts stay put through every state: a chart that failed is a

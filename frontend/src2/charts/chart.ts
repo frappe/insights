@@ -134,6 +134,8 @@ const INITIAL_DOC: InsightsChartv3 = {
 	name: '',
 	owner: '',
 	title: '',
+	description: '',
+	info: '',
 	workbook: '',
 	query: '',
 	chart_type: '',

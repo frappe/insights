@@ -11,7 +11,7 @@ Chart types: `Number`, `Bar`, `Line`, `Row`, `Donut`, `Funnel`, `Table`, `Map`, 
 
 ## Titles
 
-The title is the only label the reader gets. A dashboard has no headings, so the titles hold its
+The title is the label the reader always sees. A dashboard has no headings, so the titles hold its
 structure. Each title must name its chart on its own.
 
 State the measure, then the grain: "Revenue, per Month". "Sites That Published, Template Against the
@@ -30,6 +30,15 @@ appears. Write "Top Template Groups".
 
 Say the era in your reply instead: "the age charts start at 2026-07-08, the first blank-start event,
 because a blank start leaves no trace before it."
+
+## Description and info
+
+Two optional text fields on the chart document, beside `title`. Both show wherever the chart shows its title: a dashboard, a Number card and the workbook's chart view.
+
+- `info` is the text behind an info mark beside the title. The reader sees it on hover or focus. Put definitions and caveats here: what a measure counts, what a status means, what the data leaves out. "Paid = a site running this product moved to a paid plan within 30 days of the trial." Line breaks are kept.
+- `description` is one line printed under the title. Leave it empty. Write one only when the title cannot carry what every reader must see at a glance. It takes height from the plot on every dashboard that shows the chart.
+- A Number card has no line under its title, so it shows `description` behind the info mark, above `info`.
+- The no-dates rule for titles applies to both.
 
 Measures and dimensions in a config use the same shapes as in the operations section. They reference
 columns of the **base query's result**, not of the source table. Expression measures work anywhere a

@@ -337,6 +337,21 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(response["chart_type"], "Table")
         self.assertFalse(response["can_write"])
 
+    # @feature charts.description-and-info
+    def test_a_reader_who_cannot_open_the_chart_gets_its_description_and_info(self):
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+        explained = {"description": "Trials this month", "info": "Paid = moved to a paid plan."}
+        # `db_set` adds `modified` to the dict it is handed
+        chart.db_set(dict(explained))
+
+        with as_user(DESK_USER):
+            self.assertFalse(frappe.has_permission(DT.CHART, doc=chart.name))
+            on_dashboard = get_dashboard(dashboard=dashboard.name)["charts"][0]
+            alone = get_chart(chart=chart.name, dashboard=dashboard.name)
+
+        for presented in (on_dashboard, alone):
+            self.assertEqual({key: presented[key] for key in explained}, explained)
+
     # @feature permissions.non-insights-user permissions.chart-run-as-owner
     def test_a_reader_without_an_insights_role_fetches_chart_data(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")

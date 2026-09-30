@@ -69,7 +69,14 @@ describe('a donut', () => {
 			measure: 'revenue',
 			legendPosition: 'right',
 		})
-		expect(Object.keys(props)).toEqual(['title', 'data', 'category', 'value', 'format'])
+		expect(Object.keys(props)).toEqual([
+			'title',
+			'subtitle',
+			'data',
+			'category',
+			'value',
+			'format',
+		])
 	})
 
 	// @feature charts.type-donut

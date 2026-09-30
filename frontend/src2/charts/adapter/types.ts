@@ -34,6 +34,8 @@ export type ChartAdapterInput = {
 	recordLinks?: RecordLinks
 	/** Printed by the chrome. It belongs to the Chart, not to its config. */
 	title?: string
+	/** The line under the title, printed by the chrome as v2's `subtitle`. */
+	description?: string
 	/**
 	 * The one reading to show, by its `id`, for the type that states several — a
 	 * Number Chart. A dashboard cell is one reading, so the cell names it. A

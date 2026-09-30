@@ -73,6 +73,8 @@ export type CardFilter = {
 export type ChartViewDoc = {
 	name: string
 	title: string
+	description?: string | null
+	info?: string | null
 	chart_type: string
 	config: InsightsChartv3['config']
 	can_write?: boolean

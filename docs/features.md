@@ -106,6 +106,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.switch-type-keeps-config | A user changes chart type and the config survives where the new type has the same slot. |
 | charts.query-picker | A user picks which workbook query the chart reads. |
 | charts.title | A user titles a chart. |
+| charts.description-and-info | An author gives a chart a description under its title and info behind a mark beside it, and every reader of the chart sees both. |
 | charts.missing-slot-message | A half-configured chart says which slot is missing, in the words the form uses. |
 | charts.preview | The builder previews an unsaved config and shows the rows and SQL that fed it. |
 | charts.preview-table-sort | A user sorts the preview rows by a column. |

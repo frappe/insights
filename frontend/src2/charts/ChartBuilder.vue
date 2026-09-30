@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
-import { Badge } from 'frappe-ui'
+import { Badge, Textarea } from 'frappe-ui'
 import { computed, onBeforeUnmount, provide, ref } from 'vue'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import NumberInput from '../components/NumberInput.vue'
@@ -20,6 +20,7 @@ import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
+import { __ } from '../translation'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
 
@@ -114,6 +115,26 @@ const showShareDialog = ref(false)
 								type="text"
 								placeholder="Title"
 								v-model="chart.doc.title"
+							/>
+						</InlineFormControlLabel>
+						<!-- the server sends an empty field as null. Bound as '', a blur
+						     on an empty field changes nothing, where writing '' over
+						     null would save the chart -->
+						<InlineFormControlLabel :label="__('Description')">
+							<LazyTextInput
+								type="text"
+								:placeholder="__('A line under the title')"
+								:model-value="chart.doc.description ?? ''"
+								@update:model-value="chart.doc.description = $event"
+							/>
+						</InlineFormControlLabel>
+						<InlineFormControlLabel :label="__('Info')">
+							<Textarea
+								:placeholder="__('Definitions and caveats')"
+								:rows="3"
+								:debounce="500"
+								:model-value="chart.doc.info ?? ''"
+								@update:model-value="chart.doc.info = $event"
 							/>
 						</InlineFormControlLabel>
 					</div>
