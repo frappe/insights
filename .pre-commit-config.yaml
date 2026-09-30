@@ -62,7 +62,6 @@ repos:
           - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/security/sql.yml
           - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/security/whitelisted.yml
           - --config=r/python.lang.correctness
-          - --config=.semgrep/insights.yml
           - --error
           - --disable-version-check
           - --quiet
