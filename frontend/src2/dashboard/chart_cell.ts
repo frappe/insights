@@ -10,7 +10,7 @@ import { numberReadings } from '../charts/adapter/number'
 import { tableFindKey } from '../charts/adapter/table'
 import type { ChartRead } from '../charts/chart_view'
 import type { Filter } from '../components/filter_picker/filter_picker'
-import type { NumberChartConfig } from '../types/chart.types'
+import type { AxisChartConfig, NumberChartConfig } from '../types/chart.types'
 import type { QueryResultColumn } from '../types/query.types'
 import type { DashboardView, DashboardViewItem } from './view'
 
@@ -37,18 +37,28 @@ export function useChartCell(props: ChartCellProps) {
 		() => props.item.reading ?? numberReadings(read.value?.doc.config as NumberChartConfig)[0],
 	)
 
-	// Only a table card has a card filter, because only a table shows the rows
-	// the filter applies to. The reader picks a column of those rows, and the page
-	// sends the filter with the card's request.
+	// Find narrows the rows a table shows, so only a table card has it. The card
+	// filter narrows any card but a number card, and the page sends it with the
+	// card's request.
 	const isTable = computed(() => read.value?.doc.chart_type === 'Table')
+	const filterable = computed(
+		() =>
+			Boolean(read.value) &&
+			read.value?.doc.chart_type !== 'Number' &&
+			read.value?.canFilter !== false,
+	)
 
 	// The filter uses the card's result columns, because the server applies it
 	// after the chart's summarize. A dimension shows under the chart's label for
 	// it. A measure is a column too, so "count over 5" filters on the total on
-	// screen.
+	// screen. A split names its columns after the split's values and plots them as
+	// series, so a split chart offers only its x-axis.
 	const columns = computed<QueryResultColumn[]>(() => {
-		if (!isTable.value) return []
-		return read.value?.result.columns || []
+		if (!filterable.value) return []
+		const result = read.value?.result.columns || []
+		const config = read.value?.doc.config as AxisChartConfig
+		if (!config.split_by?.dimension?.column_name) return result
+		return result.filter((column) => column.name === config.x_axis?.dimension?.dimension_name)
 	})
 
 	// "Reset filters" clears the dashboard filters that apply to this card and the
@@ -61,7 +71,6 @@ export function useChartCell(props: ChartCellProps) {
 		if (props.item.chart) props.dashboard.resetCardFilters(props.item.chart)
 	}
 
-	const filterable = computed(() => read.value?.canFilter !== false)
 	const cardFilters = computed<Filter[]>({
 		get: () => (props.item.chart && props.dashboard.cardFilters[props.item.chart]) || [],
 		set: (filters) => {

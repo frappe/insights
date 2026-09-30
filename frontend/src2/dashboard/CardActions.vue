@@ -1,9 +1,9 @@
 <script setup lang="ts">
-// The title row of a table card: the reader's two acts on the rows in front of
-// them. Filter is the host's and reaches the server as a card filter; find is
-// the table's and never leaves the browser. Both are icons here, the size of
-// the edit and expand icons they stand beside, because a card's title row is
-// the card's title.
+// The title row of a card: the reader's two acts on what is in front of them.
+// Filter is the host's and reaches the server as a card filter; find is the
+// table's and never leaves the browser, so only a table card has it. Both are
+// icons here, the size of the edit and expand icons they stand beside, because
+// a card's title row is the card's title.
 //
 // The find text is the card's state, so it is a model rather than something
 // held here: the card is what hands it to the grid.
@@ -17,13 +17,13 @@ import type { QueryResultColumn } from '../types/query.types'
 
 const props = defineProps<{
 	filterable: boolean
+	findable: boolean
 	columns: QueryResultColumn[]
 	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
 	rangeProvider: (column: QueryResultColumn) => Promise<[number, number] | undefined>
-	/** Whether the acts wait for the card to be pointed at. A public link has no
-	 *  hover affordances to keep company with, so there they stand. They reveal
-	 *  on hover over the card's own `card` group, because the grid cell around
-	 *  it is a group too. */
+	/** Whether the acts wait for the card to be pointed at. They reveal on hover
+	 *  over the card's own `card` group, because the grid cell around it is a
+	 *  group too. */
 	reveal?: boolean
 }>()
 
@@ -51,6 +51,9 @@ const revealClass = computed(() =>
 		? 'opacity-0 transition-opacity group-hover/card:opacity-100'
 		: '',
 )
+// a filtered card keeps its filter button in view: its count is what says the
+// card is narrowed
+const filterRevealClass = computed(() => (filters.value.length ? '' : revealClass.value))
 const filterTooltip = computed(() =>
 	filters.value.length ? __('Filters ({0})', String(filters.value.length)) : __('Filter'),
 )
@@ -74,7 +77,7 @@ const filterTooltip = computed(() =>
 				<Search class="size-4 text-ink-gray-5" stroke-width="1.5" />
 			</template>
 		</TextInput>
-		<Tooltip v-else :text="__('Find')">
+		<Tooltip v-else-if="props.findable" :text="__('Find')">
 			<Button variant="ghost" :class="revealClass" @click="openFind()">
 				<Search class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
 			</Button>
@@ -98,7 +101,7 @@ const filterTooltip = computed(() =>
 				<Tooltip :text="filterTooltip">
 					<Button
 						:variant="filters.length || pickerOpen ? 'subtle' : 'ghost'"
-						:class="revealClass"
+						:class="filterRevealClass"
 						:label="filters.length ? String(filters.length) : undefined"
 						@click="toggle()"
 					>

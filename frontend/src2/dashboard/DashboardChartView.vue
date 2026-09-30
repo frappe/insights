@@ -6,10 +6,10 @@ import ChartView from '../charts/ChartView.vue'
 import { navigate } from '../helpers/navigation'
 import { __ } from '../translation'
 import { useChartCell, type ChartCellProps } from './chart_cell'
-import TableCardActions from './TableCardActions.vue'
+import CardActions from './CardActions.vue'
 
-// A chart cell as a reader gets it: a read-only card. On a table, the reader can
-// also filter and find rows.
+// A chart cell as a reader gets it: a read-only card. The reader can filter any
+// card but a number card, and find rows on a table.
 const props = defineProps<ChartCellProps>()
 
 const {
@@ -47,16 +47,18 @@ const chartRoute = computed(() =>
 		:actions-revealed="actionsActive"
 		@reset-filters="resetFilters"
 	>
-		<template v-if="isTable" #actions>
-			<TableCardActions
+		<template v-if="isTable || filterable" #actions="{ expanded }">
+			<CardActions
 				v-model:filters="cardFilters"
 				v-model:find-text="findText"
 				v-model:find-open="findOpen"
 				v-model:active="actionsActive"
 				:filterable="filterable"
+				:findable="isTable"
 				:columns="columns"
 				:values-provider="valuesProvider"
 				:range-provider="rangeProvider"
+				:reveal="!isTable && !expanded"
 			/>
 		</template>
 		<!-- hidden until hover, like the card's other actions. The card reveals
