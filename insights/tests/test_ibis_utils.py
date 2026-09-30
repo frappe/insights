@@ -25,6 +25,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors.bigquery impor
 from insights.insights.doctype.insights_data_source_v3.connectors.clickhouse import get_clickhouse_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import connect_duckdb
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
+from insights.insights.doctype.insights_data_source_v3.ibis.functions import date_diff
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
 from insights.utils import deep_convert_dict_to_dict as _dict
@@ -757,3 +758,54 @@ class TestIbisRemoveColumns(IbisQueryBuilderTestCase):
                         bypasses.append(os.path.relpath(path, package))
 
         self.assertEqual(bypasses, [])
+
+
+DATE_DIFF_UNITS = ("second", "minute", "hour", "day")
+DATE_DIFF_CASES = (
+    ("2025-12-31 23:00:00", "2026-01-02 01:00:00", {"second": 93600, "minute": 1560, "hour": 26, "day": 2}),
+    ("2026-01-01 23:59:00", "2026-01-02 00:01:00", {"second": 120, "minute": 2, "hour": 0, "day": 1}),
+    ("1969-12-31 20:00:00", "1969-12-31 23:00:00", {"second": 10800, "minute": 180, "hour": 3, "day": 0}),
+)
+
+
+class TestIbisDateDiff(IbisQueryBuilderTestCase):
+    # @feature query.expression-date-diff
+    def test_date_diff_counts_whole_units_between_two_datetimes_on_duckdb(self):
+        rows = [{"started_at": start, "ended_at": end} for start, end, _ in DATE_DIFF_CASES]
+        operations = [{"type": "code", "code": f"results = {rows}"}]
+        for name in ("started_at", "ended_at"):
+            operations.append(
+                {
+                    "type": "cast",
+                    "column": {"type": "column", "column_name": name},
+                    "data_type": "Datetime",
+                }
+            )
+        for unit in DATE_DIFF_UNITS:
+            operations.append(
+                {
+                    "type": "mutate",
+                    "new_name": unit,
+                    "data_type": "Integer",
+                    "expression": {
+                        "type": "expression",
+                        "expression": f"date_diff(ended_at, started_at, '{unit}')",
+                    },
+                }
+            )
+
+        result = self.build_query(operations).execute()
+
+        self.assertEqual(
+            [{unit: int(row[unit]) for unit in DATE_DIFF_UNITS} for _, row in result.iterrows()],
+            [expected for _, _, expected in DATE_DIFF_CASES],
+        )
+
+    # @feature query.expression-date-diff
+    def test_date_diff_counts_a_second_across_its_boundary_on_sqlite(self):
+        start = ibis.literal("2026-01-01 09:59:59.900").cast("timestamp")
+        end = ibis.literal("2026-01-01 10:00:01.100").cast("timestamp")
+
+        seconds = ibis.sqlite.connect().execute(date_diff(end, start, "second").name("seconds"))
+
+        self.assertEqual(seconds, 1)

@@ -18,6 +18,10 @@ from insights.tests.factories import (
     create_test_workbook,
     execute_test_query,
 )
+from insights.tests.test_ibis_utils import (
+    DATE_DIFF_CASES,
+    DATE_DIFF_UNITS,
+)
 
 TODO_PREFIX = "Insights Querying Test"
 
@@ -274,6 +278,39 @@ class TestQuerying(InsightsIntegrationTestCase):
 
         self.assertEqual([col["name"] for col in result["columns"]], ["id", "amount", "customer", "order_id"])
         self.assertEqual(len(result["rows"]), 2)
+
+    # @feature query.expression-date-diff
+    def test_date_diff_counts_whole_units_between_two_datetimes(self):
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        for start, end, expected in DATE_DIFF_CASES:
+            query = create_test_query(
+                USER_1,
+                workbook.name,
+                title=f"Workbook Flow Test Query Date Diff {start}",
+                operations=[
+                    table_source(),
+                    self.prefix_filter(),
+                    {"type": "limit", "limit": 1},
+                    *(
+                        {
+                            "type": "mutate",
+                            "new_name": unit,
+                            "data_type": "Integer",
+                            "expression": {
+                                "type": "expression",
+                                "expression": f"date_diff(literal('{end}'), literal('{start}'), '{unit}')",
+                            },
+                        }
+                        for unit in DATE_DIFF_UNITS
+                    ),
+                ],
+            )
+
+            row = execute_test_query(query.name)["rows"][0]
+
+            with self.subTest(start=start, end=end):
+                self.assertEqual({unit: row[unit] for unit in DATE_DIFF_UNITS}, expected)
 
     # @feature query.summarize
     def test_query_summary_groups_filtered_rows_by_status(self):

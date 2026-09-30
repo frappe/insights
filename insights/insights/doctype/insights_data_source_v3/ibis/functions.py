@@ -893,16 +893,30 @@ def format_date(column: ir.DateValue, format_str: str):
     return column.strftime(format_str)
 
 
+_SECONDS_PER_UNIT = {"hour": 3600, "minute": 60, "second": 1}
+
+
 def date_diff(column: ir.DateValue, other: ir.DateValue, unit: str = "day"):
     """
     def date_diff(column, other, unit)
 
-    Calculate the difference between two date columns. The unit can be year, quarter, month, week, or day.
+    Calculate `column` minus `other`. The unit can be year, quarter, month, week, day, hour, minute, or second. Hour, minute and second count the whole units elapsed between the two datetimes. Day counts the days between the two dates. Larger units compare the dates, and each database counts them its own way: DuckDB, which the data store runs on, counts the month, quarter and year boundaries crossed and the whole weeks elapsed. MariaDB and MySQL count the whole units elapsed. Postgres counts the whole months and years elapsed, and rounds weeks and quarters to the nearest whole unit. SQLite has only day and smaller units.
 
     Examples:
-    - date_diff(order_date, delivery_date, 'day')
-    - date_diff(order_date, delivery_date, 'week')
+    - date_diff(delivery_date, order_date, 'day')
+    - date_diff(delivery_date, order_date, 'week')
+    - date_diff(resolved_on, opened_on, 'hour')
     """
+
+    if unit in _SECONDS_PER_UNIT:
+        if not column.type().is_timestamp():
+            column = column.cast("timestamp")
+        if not other.type().is_timestamp():
+            other = other.cast("timestamp")
+        # not by epoch: SQLite's drops each side's fraction, and MariaDB's is null
+        # before 1970. SQLite keeps no part finer than a millisecond
+        seconds = _whole_seconds_between(column, other) + (column.millisecond() - other.millisecond()) / 1000
+        return (seconds.abs() // _SECONDS_PER_UNIT[unit] * seconds.sign()).cast("int64")
 
     if not column.type().is_date():
         column = column.cast("date")
@@ -910,6 +924,13 @@ def date_diff(column: ir.DateValue, other: ir.DateValue, unit: str = "day"):
         other = other.cast("date")
 
     return column.delta(other, unit=unit)
+
+
+def _whole_seconds_between(column: ir.TimestampValue, other: ir.TimestampValue):
+    def second_of_day(value):
+        return value.hour() * 3600 + value.minute() * 60 + value.second()
+
+    return date_diff(column, other, "day") * 86400 + second_of_day(column) - second_of_day(other)
 
 
 def time_diff(
@@ -920,7 +941,7 @@ def time_diff(
     """
     def time_diff(column, other, unit)
 
-    Calculate the difference between two time columns. The unit can be hour, minute, second, millisecond, microsecond, nanosecond
+    Calculate the difference between the times of day of two columns, ignoring their dates. The unit can be hour, minute, second, millisecond, microsecond, nanosecond. Use date_diff for the time between two datetimes.
 
     Examples:
     - time_diff(start_time, end_time, 'hour')

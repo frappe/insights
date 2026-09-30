@@ -48,6 +48,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.error-names-operation | A query that fails in a run is refused with a message that names the operation it failed in, and for a query it reads, that query's title. The failure keeps its class. |
 | query.error-detail | A failed run tells everyone which operation failed and its class, and only whoever may edit the query the cause and the expression. |
 | query.expression-column-named-like-function | A column named like a function, such as `day`, reads as the column where an expression uses it as a value, and as the function where it calls it. |
+| query.expression-date-diff | `date_diff` counts whole hours, minutes or seconds between two datetimes, and days between their dates. Weeks, months, quarters and years follow each database's own rule. |
 | query.expression-column-named-like-io | A column whose name starts like an I/O method, such as `from_plan`, reads as a column in an expression. |
 | query.summarize | A user groups rows by a dimension and aggregates measures. |
 | query.summarize-grain | A date dimension in a summarize groups at a grain, and a time column only at a clock grain. |
