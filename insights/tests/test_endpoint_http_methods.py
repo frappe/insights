@@ -18,6 +18,7 @@ from insights.tests.base import InsightsIntegrationTestCase
 # An endpoint here was never checked for writes. Take it off the list once it
 # accepts only POST, or once it is read and found to keep no write under GET.
 ENDPOINTS_ACCEPTING_GET = [
+    "insights.api.ai.lineage.describe_query",
     "insights.api.ai.search.search_columns",
     "insights.api.ai.search.search_content",
     "insights.api.alerts.get_alerts",

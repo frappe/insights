@@ -1,6 +1,8 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from collections.abc import Callable
+
 import frappe
 import sqlglot as sg
 import sqlparse
@@ -212,14 +214,44 @@ def get_direct_dependencies(query_name: str, operations_by_name: dict[str, list]
     A forward edge is already in the row, and the edge table is rebuilt by a
     background job that runs after the save commits, so it lags every write.
 
-    Only the edge table answers the reverse question - who references this query.
-    `get_lineage_graph` and `get_last_execution_per_table` still read it forwards,
-    where a report that lags one job is the whole point of the index.
+    Only the edge table answers the reverse question - who references this query -
+    so `downstream_queries` reads it and lags one job. `get_lineage_graph` and
+    `get_last_execution_per_table` still read it forwards, where a report that
+    lags one job is the whole point of the index.
     """
     if not query_name:
         return []
 
     return list(referenced_queries(query_operations(query_name, operations_by_name)))
+
+
+def downstream_queries(start: str, readable: Callable[[set[str]], set[str]]) -> list[str]:
+    """The queries that read `start` through every hop, nearest first.
+
+    `readable` narrows each hop before the walk goes on, so a caller that may
+    not read a query is not walked through it either.
+    """
+    seen = {start}
+    frontier = {start}
+    found = []
+    while frontier:
+        reached = (
+            set(
+                frappe.get_all(
+                    "Insights Query Reference",
+                    filters={"ref_type": "Query", "ref_query": ["in", list(frontier)]},
+                    pluck="query",
+                    distinct=True,
+                )
+            )
+            - seen
+        )
+        if reached:
+            reached = readable(reached)
+        seen |= reached
+        found.extend(sorted(reached))
+        frontier = reached
+    return found
 
 
 def transitive_closure(
