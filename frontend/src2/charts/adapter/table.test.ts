@@ -145,9 +145,22 @@ describe('the sort', () => {
 	})
 
 	// @feature charts.table-header-sort
-	it('allows a reader no sort at all', () => {
-		// A sort re-runs the query off a rewritten config, and a reader holds
-		// neither half, so the arrow is left out rather than shown dead.
+	it('sorts for a reader through the surface, never the config', () => {
+		const input = tableChart({
+			rows: ['category'],
+			values: ['revenue'],
+			sortedBy: [{ column: 'revenue', direction: 'desc' }],
+		})
+		const sorted: [string, string][] = []
+		const sort = (column: string, direction: string) => sorted.push([column, direction])
+		adapt({ ...input, readonly: true, sort }).props.onSortChange('category', 'asc')
+
+		expect(sorted).toEqual([['category', 'asc']])
+		expect(adapt(input).props.sortOrder).toEqual({ revenue: 'desc' })
+	})
+
+	// @feature charts.table-header-sort
+	it('shows no arrow on a read-only surface that cannot sort', () => {
 		const input = tableChart({
 			rows: ['category'],
 			values: ['revenue'],

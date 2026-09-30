@@ -576,3 +576,43 @@ describe('a card paged past its first page', () => {
 		expect(read.exportResults).toBeUndefined()
 	})
 })
+
+// A reader's sort is sent with the request and never written to the chart.
+
+describe('a reader sorting a saved table', () => {
+	const sortedBy = (column_name: string, direction: 'asc' | 'desc') => ({
+		column: { type: 'column', column_name },
+		direction,
+	})
+
+	// @feature charts.table-header-sort
+	it('asks for the chart in their order, starting from the order on screen', async () => {
+		answers.set('insights.api.view.get_chart_data', () =>
+			northThenSouth(1).then((answer) => ({ ...answer, can_read_rows: true })),
+		)
+		const config = { order_by: [sortedBy('region', 'desc')] } as any
+		const chartDoc = { name: 'chart-11', title: '', chart_type: 'Table', config }
+		const read = useChartView(chartDoc.name, undefined, chartDoc)
+
+		await read.load()
+		await read.sort!('count', 'asc')
+
+		const expected = [sortedBy('region', 'desc'), sortedBy('count', 'asc')]
+		expect(calls.map((call) => call.args.order_by)).toEqual([undefined, expected])
+		expect(read.readerOrder).toEqual(expected)
+		expect(read.doc.config.order_by).toEqual([sortedBy('region', 'desc')])
+	})
+
+	// @feature charts.table-header-sort
+	it('is not offered to a reader allowed only the chart', async () => {
+		answers.set('insights.api.view.get_chart_data', () =>
+			northThenSouth(1).then((answer) => ({ ...answer, can_read_rows: false })),
+		)
+		const chartDoc = { name: 'chart-12', title: '', chart_type: 'Table', config: {} as any }
+		const read = useChartView(chartDoc.name, undefined, chartDoc)
+
+		await read.load()
+
+		expect(read.sort).toBeUndefined()
+	})
+})
