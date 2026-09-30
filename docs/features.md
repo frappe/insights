@@ -102,6 +102,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.type-sankey | A user shows a query as a Sankey diagram. |
 | charts.type-heatmap | A user shows a query as a Heatmap. |
 | charts.every-type-covered | Every chart type derives its query, and a type added without a derivation is caught. |
+| charts.every-type-draws-what-the-result-holds | Every chart type draws a null as a gap and never as 0 or "null", keeps every row, and a type added later is checked too. |
 | charts.switch-type-keeps-config | A user changes chart type and the config survives where the new type has the same slot. |
 | charts.query-picker | A user picks which workbook query the chart reads. |
 | charts.title | A user titles a chart. |
