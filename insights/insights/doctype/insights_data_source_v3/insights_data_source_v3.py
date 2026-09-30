@@ -124,7 +124,8 @@ class InsightsDataSourceDocument:
         ):
             self.db_set("is_frappe_db", is_frappe_db(self))
 
-        if self.status == "Active" and credentials_changed:
+        # a REST API source's tables come from its imports, which Update Tables lists
+        if self.status == "Active" and credentials_changed and self.type != "REST API":
             self.update_table_list()
 
     def has_credentials_changed(self):

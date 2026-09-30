@@ -1,9 +1,11 @@
 import os
+from unittest.mock import patch
 
 import duckdb
 import frappe
 from frappe.utils import get_files_path
 
+from insights.insights.doctype.insights_data_source_v3.connectors.rest_api import RestAPIClient
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT
 
@@ -22,6 +24,7 @@ class TestNewDataSourceTables(InsightsIntegrationTestCase):
     def after_class(cls):
         for name in frappe.get_all(DT.DATA_SOURCE, {"database_name": DATABASE_NAME}, pluck="name"):
             frappe.delete_doc(DT.DATA_SOURCE, name, force=True, ignore_permissions=True)
+        frappe.delete_doc_if_exists(DT.DATA_SOURCE, "new_rest_api_source_tables", force=True)
         os.remove(cls.path)
 
     # @feature data-source.table-list
@@ -37,3 +40,18 @@ class TestNewDataSourceTables(InsightsIntegrationTestCase):
 
         tables = frappe.get_all(DT.TABLE, {"data_source": source.name}, pluck="table")
         self.assertCountEqual(tables, ["orders", "customers"])
+
+    # @feature data-source.table-list
+    def test_a_new_rest_api_source_lists_no_tables(self):
+        with patch.object(RestAPIClient, "test_connection"):
+            source = frappe.get_doc(
+                {
+                    "doctype": DT.DATA_SOURCE,
+                    "title": "New REST API Source Tables",
+                    "type": "REST API",
+                    "api_base_url": "https://api.example.com",
+                    "schema": "rest_api_source_no_import_yet",
+                }
+            ).insert()
+
+        self.assertEqual(frappe.get_all(DT.TABLE, {"data_source": source.name}), [])
