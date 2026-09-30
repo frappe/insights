@@ -96,7 +96,7 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.get_writes = []
-        cls.enterClassContext(watch_get_writes(cls.get_writes))
+        cls.addClassCleanup(watch_get_writes(cls.get_writes).close)
         with as_user("Administrator"):
             cls.before_class()
             if cls.COMMIT_AFTER_CLASS_SETUP:
