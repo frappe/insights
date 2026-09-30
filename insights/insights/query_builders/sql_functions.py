@@ -21,6 +21,8 @@ from sqlalchemy import Column, select, table
 from sqlalchemy import column as sa_column
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
 
+from insights.exceptions import QueryRefused
+
 DATE_TYPES = ("Date", "Datetime")
 
 
@@ -617,6 +619,8 @@ def day_bounds(column, first, last):
     ISO text sorts as the dates it spells, and a cast fails the whole query on
     one value that is not a date.
     """
+    if column.type().is_time():
+        frappe.throw(frappe._("A Time column names no day, so no span can filter it"), QueryRefused)
     start = midnight(getdate(first))
     end = midnight(getdate(last) + datetime.timedelta(days=1))
     if not is_calendar(column):

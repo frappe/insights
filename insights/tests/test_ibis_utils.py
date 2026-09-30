@@ -8,7 +8,8 @@ import frappe
 import ibis
 from ibis.backends.postgres import Backend as PostgresBackend
 
-from insights.insights.doctype.insights_chart_v3.chart_drill import _timestamp
+from insights.exceptions import QueryRefused
+from insights.insights.doctype.insights_chart_v3.chart_drill import _bucket_filters
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     sparkline_operations,
@@ -562,13 +563,36 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
 
     # @feature query.filter-date-on-datetime
     def test_a_drill_into_a_day_reads_the_rows_its_card_counts(self):
-        bounds = [(">=", _timestamp(datetime(2026, 8, 5))), ("<", _timestamp(datetime(2026, 8, 6)))]
+        day = _bucket_filters("at", (datetime(2026, 8, 5), datetime(2026, 8, 6)))
+        rules = [(rule["operator"], rule["value"]) for rule in day]
         cases = [(data_type, self.ROWS[data_type], self.DAY_ROWS[data_type]) for data_type in self.ROWS]
         cases.append(("String", self.TEXT_DATES, ["day", "afternoon"]))
         for engine in ENGINES:
             for data_type, rows, expected in cases:
                 with self.subTest(engine=engine, data_type=data_type):
-                    self.assert_matches(engine, data_type, bounds, expected, rows)
+                    self.assert_matches(engine, data_type, rules, expected, rows)
+
+    # @feature query.filter-date-on-datetime
+    def test_a_bound_with_a_time_of_day_takes_the_column_type(self):
+        """An hour of a chart, drilled: SQL Server reads a text bound by the login's date format."""
+        hour = _bucket_filters("at", (datetime(2026, 8, 5, 17), datetime(2026, 8, 5, 18)))
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        builder.query = ibis.table({"at": "timestamp"}, name="stamps")
+        for rule in hour:
+            builder.query = builder.apply_filter(_dict(rule))
+        self.assertIn("DATETIME2FROMPARTS(2026, 8, 5, 17", ibis.to_sql(builder.query, dialect="mssql"))
+
+    # @feature query.filter-date-on-datetime
+    def test_a_span_on_a_time_column_is_refused(self):
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        builder.query = ibis.table({"at": "time"}, name="stamps")
+        rule = {
+            "type": "filter",
+            "column": {"type": "column", "column_name": "at"},
+            "operator": "within",
+            "value": {"span": "current day"},
+        }
+        self.assertRaises(QueryRefused, builder.apply_filter, _dict(rule))
 
     # @feature query.filter-relative-date
     def test_a_span_on_dates_held_as_text_takes_in_the_whole_day(self):
