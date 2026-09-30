@@ -12,7 +12,7 @@ import { useDebounceFn } from '@vueuse/core'
 import { toast } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
 import type { Filter } from '../../components/filter_picker/filter_picker'
-import { getErrorMessage } from '../../helpers'
+import { getErrorMessage, showErrorToast } from '../../helpers'
 import { saveExportedFile } from '../../query/export_file'
 import { column, emptyResult, formatResultRows, order_by } from '../../query/helpers'
 import type { ResultTable } from '../../query/result_table'
@@ -239,7 +239,7 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 		valuesProvider: (column: QueryResultColumn) => (search: string) =>
 			source.values(column.name, search, others(column.name)),
 		rangeProvider: (column: QueryResultColumn) =>
-			source.range(column.name, others(column.name)),
+			source.range(column.name, others(column.name)).catch(showErrorToast),
 
 		downloading,
 		exportResults: computed(() => (level.value.can_export ? exportRows : undefined)),

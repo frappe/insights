@@ -576,7 +576,7 @@ function makeDashboardPage(
 				dashboard: state.name,
 				filter_name,
 				filters: state.filters,
-			}),
+			}).catch(showErrorToast),
 		cardFilters: computed(() => state.cardFilters),
 		setCardFilters,
 		cardValues: (chart: string, column: string, search_term?: string) =>
@@ -587,7 +587,11 @@ function makeDashboardPage(
 				search_term,
 			}),
 		cardRange: (chart: string, column: string) =>
-			call('insights.api.view.get_card_range', { dashboard: state.name, chart, column }),
+			call('insights.api.view.get_card_range', {
+				dashboard: state.name,
+				chart,
+				column,
+			}).catch(showErrorToast),
 		filtered,
 		resetCardFilters,
 		chartView: (chart: string) => reads.get(chart),

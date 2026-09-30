@@ -8,7 +8,6 @@ import { watchDebounced } from '@vueuse/core'
 import { ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 import { isMac } from '../../composables/useShortcut'
-import { showErrorToast } from '../../helpers'
 import { columnIcon } from '../../query/column_icon'
 import { __ } from '../../translation'
 import type { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
@@ -226,10 +225,8 @@ watch(
 		if (!props.rangeProvider || !column.value) return
 
 		const id = ++rangeRequest
-		const fetched = await props.rangeProvider(column.value).catch((error) => {
-			if (id === rangeRequest) showErrorToast(error, false)
-			return undefined
-		})
+		// eslint-disable-next-line no-restricted-syntax -- the provider has shown the error, and the picker offers no range
+		const fetched = await props.rangeProvider(column.value).catch(() => undefined)
 		if (id === rangeRequest) range.value = fetched
 	},
 	{ immediate: true },

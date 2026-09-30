@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import Toggle from '../../components/Toggle.vue'
 import VisibilitySelector from '../../components/VisibilitySelector.vue'
-import { copyToClipboard, showErrorToast } from '../../helpers'
+import { copyToClipboard } from '../../helpers'
 import { confirmDialog } from '../../helpers/confirm_dialog'
 import { __ } from '../../translation'
 import { Chart } from '../chart'
@@ -36,7 +36,8 @@ chart.doc.name &&
 			publishedByDashboard.value = reach?.published_by_dashboard || null
 			onPublicDashboard.value = Boolean(reach?.on_public_dashboard)
 		})
-		.catch((error) => showErrorToast(error, false))
+		// eslint-disable-next-line no-restricted-syntax -- `callMethod` has shown the error
+		.catch(() => {})
 
 // Every level above Private reaches users who were not named one by one. The
 // server uses the same rule for what counts as published. `Roles` with no role
