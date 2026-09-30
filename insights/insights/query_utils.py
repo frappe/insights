@@ -18,7 +18,7 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
     except Exception:
         # If parsing fails, we return an empty list to avoid blocking the user from saving their query.
         # In the future, we may want to log these exceptions to help improve our SQL parsing capabilities.
-        return []
+        return []  # nosemgrep - `apply_sql` parses the query again and refuses it, so only saving sees this
 
     table_refs = []
     seen_refs = set()

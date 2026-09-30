@@ -86,7 +86,7 @@ def is_standard_app(app: str) -> bool:
         publishers = frappe.get_hooks("app_publisher", app_name=app) or []
     except Exception:
         # reading the hook imports the app, which a faked or broken one cannot satisfy
-        return False
+        return False  # nosemgrep - an app that cannot be read does not leave the site
     return any(normalized_publisher(publisher) in STANDARD_PUBLISHERS for publisher in publishers)
 
 

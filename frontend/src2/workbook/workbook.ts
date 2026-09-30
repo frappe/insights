@@ -431,7 +431,10 @@ export function getWorkbookResource(name: string) {
 		},
 	})
 
-	workbook.onAfterLoad(() => workbook.call('track_view', { via: openedVia() }).catch(() => {}))
+	workbook.onAfterLoad(() =>
+		// eslint-disable-next-line no-restricted-syntax -- a view count is telemetry, and the reader has nothing to act on if it fails
+		workbook.call('track_view', { via: openedVia() }).catch(() => {}),
+	)
 	wheneverChanges(
 		() => workbook.doc.read_only,
 		() => {

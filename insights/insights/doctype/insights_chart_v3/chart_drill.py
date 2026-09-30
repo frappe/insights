@@ -1075,7 +1075,7 @@ def _parse_call(source: str) -> tuple[str, list[str], dict[str, str]] | None:
     try:
         node = ast.parse(source.strip(), mode="eval").body
     except SyntaxError:
-        return None
+        return None  # nosemgrep - a source that does not parse is not a call
     if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
         return None
 

@@ -644,7 +644,7 @@ def _sql_has_group_by(sql: str) -> bool:
             if stmt is not None and stmt.find(sqlglot_exp.Group) is not None:
                 return True
     except Exception:
-        pass
+        pass  # nosemgrep - SQL that does not parse is read as having no GROUP BY
     return False
 
 

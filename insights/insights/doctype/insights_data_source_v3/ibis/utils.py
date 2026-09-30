@@ -191,7 +191,7 @@ def get_code_completions(code: str, column_options: str | None = None):
                 col.get("value"): col.get("data_type", "Unknown") for col in columns if col.get("value")
             }
         except (json.JSONDecodeError, TypeError):
-            pass
+            pass  # nosemgrep - completions work without column types
 
     current_function = None
 

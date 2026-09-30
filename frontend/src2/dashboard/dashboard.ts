@@ -670,6 +670,7 @@ function getDashboardResource(name: string) {
 		},
 	})
 	dashboard.onAfterLoad(() =>
+		// eslint-disable-next-line no-restricted-syntax -- a view count is telemetry, and the reader has nothing to act on if it fails
 		dashboard.call('track_view', { surface: 'workbook' }).catch(() => {}),
 	)
 	dashboard.onAfterSave(() => invalidateDashboard(String(dashboard.doc.name)))

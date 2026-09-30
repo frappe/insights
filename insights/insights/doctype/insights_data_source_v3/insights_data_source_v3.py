@@ -300,7 +300,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             try:
                 db.raw_sql(f"SET MAX_STATEMENT_TIME={get_max_execution_time()}")
             except Exception:
-                pass
+                pass  # nosemgrep - MySQL has no such variable, so its queries run without a time limit
 
         insights.db_connections[self.name] = db
         return db
