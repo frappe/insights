@@ -1,9 +1,74 @@
+import inspect
+import sys
+from contextlib import ExitStack
 from typing import ClassVar
+from unittest.mock import patch
 
 import frappe
+from frappe.database.database import Database
 from frappe.tests import IntegrationTestCase
+from frappe.utils import background_jobs
 
+from insights.insights.doctype.insights_data_source_v3 import data_warehouse
+from insights.insights.doctype.insights_data_source_v3.connectors import duckdb
 from insights.tests.factories import as_user, is_visible
+
+
+def get_whitelisted_caller():
+    """The innermost whitelisted function on the call stack.
+
+    Innermost, because `run_doc_method` accepts GET and Frappe checks the
+    document method it dispatches to on its own.
+    """
+    functions = {inspect.unwrap(fn).__code__: fn for fn in frappe.whitelisted}
+    frame = sys._getframe(2)
+    while frame:
+        if fn := functions.get(frame.f_code):
+            return fn
+        frame = frame.f_back
+
+
+def watch_get_writes(writes: list[str]) -> ExitStack:
+    """Record every write that a GET request would keep.
+
+    Frappe rolls back the database after a GET request, and drops the jobs
+    enqueued after commit with it. So a cross-site link to an endpoint changes
+    nothing unless the endpoint commits, enqueues a job that does not wait for
+    the commit, or writes to DuckDB. Such an endpoint must accept only POST.
+    """
+
+    def record(write):
+        fn = get_whitelisted_caller()
+        if (
+            fn
+            and fn.__module__.startswith("insights.")
+            and "GET" in frappe.allowed_http_methods_for_whitelisted_func[fn]
+        ):
+            writes.append(f"{fn.__module__}.{fn.__qualname__} {write} but accepts GET")
+
+    def watch(owner, name, write, is_write=lambda *args, **kwargs: True):
+        original = getattr(owner, name)
+
+        def watcher(*args, **kwargs):
+            if is_write(*args, **kwargs):
+                record(write)
+            return original(*args, **kwargs)
+
+        return patch.object(owner, name, watcher)
+
+    def opens_for_write(path, read_only=True, *args, **kwargs):
+        return not read_only
+
+    def runs_without_commit(*args, enqueue_after_commit=False, **kwargs):
+        return not enqueue_after_commit
+
+    stack = ExitStack()
+    stack.enter_context(watch(Database, "commit", "commits"))
+    stack.enter_context(watch(background_jobs, "enqueue", "enqueues a job", runs_without_commit))
+    stack.enter_context(watch(frappe, "enqueue", "enqueues a job", runs_without_commit))
+    for module in (duckdb, data_warehouse):
+        stack.enter_context(watch(module, "open_local_duckdb", "writes to DuckDB", opens_for_write))
+    return stack
 
 
 class InsightsIntegrationTestCase(IntegrationTestCase):
@@ -30,6 +95,8 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.get_writes = []
+        cls.enterClassContext(watch_get_writes(cls.get_writes))
         with as_user("Administrator"):
             cls.before_class()
             if cls.COMMIT_AFTER_CLASS_SETUP:
@@ -37,6 +104,13 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
                 # connection — Site DB opens its own `ibis.mysql.connect`, which
                 # cannot see this transaction.
                 frappe.db.commit()  # nosemgrep
+        cls.assert_no_get_writes()
+
+    @classmethod
+    def assert_no_get_writes(cls):
+        writes, cls.get_writes[:] = list(dict.fromkeys(cls.get_writes)), []
+        if writes:
+            raise AssertionError("Pass methods=['POST'] to their whitelist decorator:\n" + "\n".join(writes))
 
     @classmethod
     def tearDownClass(cls):
@@ -55,6 +129,7 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
         self.original_user = frappe.session.user
         self.addCleanup(frappe.set_user, self.original_user)
         frappe.set_user("Administrator")
+        self.addCleanup(self.assert_no_get_writes)
         self.before_test()
         if self.SAVEPOINT:
             frappe.db.savepoint(self.SAVEPOINT)

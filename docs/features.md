@@ -380,6 +380,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.site-user-permissions | A site-database source applies the user's desk row and column permissions to what a query returns. |
 | permissions.import-without-access | A user imports a workbook, query or chart file without access to the originals it was exported from. |
 | permissions.malformed-request-refused | A request with a wrongly typed argument is refused with a message, not a crash. |
+| permissions.get-keeps-no-write | A GET request changes nothing: an endpoint that commits, enqueues a job or writes to DuckDB accepts only POST. |
 | permissions.search-respects-access | A search over workbooks and columns returns only what the caller may read. |
 
 ## data-store
