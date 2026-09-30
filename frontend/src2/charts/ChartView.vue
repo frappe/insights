@@ -25,9 +25,8 @@ const props = withDefaults(
 		// whether a filter applies to this card, so an empty card can say why
 		filtered?: boolean
 		/**
-		 * True for a reader, who cannot act on the rows: sorting needs a query, and
-		 * a reader cannot run one. It also selects the reader's wording of each
-		 * message.
+		 * True for a reader, who cannot change the chart: a sort is theirs and is
+		 * not saved. It also selects the reader's wording of each message.
 		 */
 		readonly?: boolean
 		hideMaximize?: boolean

@@ -1290,7 +1290,7 @@ def can_read_rows(doc, user=None) -> bool:
     """Whether this caller may get more of `doc` than the chart as saved.
 
     More means a breakdown, the rows behind a segment, a file download, a card
-    filter of their own, a page past the chart's `limit`, and the SQL and
+    filter or sort of their own, a page past the chart's `limit`, and the SQL and
     operations it ran. The chart as saved is the stored chart and its dashboard
     filters. Every endpoint that answers for a chart checks this:
     `insights.api.view`, `insights.api.authoring`, the chart's `fetch` and its

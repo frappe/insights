@@ -103,14 +103,15 @@ def get_chart_data(
     card_filters: list | None = None,
     force: bool = False,
     page: int = 1,
+    order_by: list | None = None,
 ):
     """A chart's rows, fetched under the permissions its Run as owner setting selects.
 
     `filters` is the dashboard filter state, keyed by filter name.
     `card_filters` is the reader's own filter on this card. It names a column
     the card shows, so it exposes nothing the card does not. Pages past the
-    first are for readers `can_read_rows` allows. Everyone else gets the
-    chart's one page.
+    first and `order_by`, the reader's own sort, are for readers `can_read_rows`
+    allows. Everyone else gets the chart's one page in the chart's own order.
 
     A chart that reads a table or a permlevel column the reader may not read is
     **Not Permitted**: it does not run, and the answer names the doctypes it
@@ -119,7 +120,7 @@ def get_chart_data(
     name = resolve_chart(chart, dashboard)
     doc = frappe.get_doc(CHART, name)
 
-    return chart_answer(doc, routed_filters(name, dashboard, filters), card_filters, force, page)
+    return chart_answer(doc, routed_filters(name, dashboard, filters), card_filters, force, page, order_by)
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
@@ -148,16 +149,22 @@ def download_chart_rows(
     filters: dict | None = None,
     card_filters: list | None = None,
     format: str = "csv",
+    order_by: list | None = None,
 ):
-    """Every row behind the pages of `get_chart_data` as a file, under the same filters."""
+    """Every row behind the pages of `get_chart_data` as a file, under the same filters and sort."""
     name = resolve_chart(chart, dashboard)
     doc = frappe.get_doc(CHART, name)
 
-    return doc.export_rows(format, routed_filters(name, dashboard, filters), card_filters)
+    return doc.export_rows(format, routed_filters(name, dashboard, filters), card_filters, order_by)
 
 
 def chart_answer(
-    doc, adhoc_filters: dict | None, card_filters: list | None, force: bool = False, page: int = 1
+    doc,
+    adhoc_filters: dict | None,
+    card_filters: list | None,
+    force: bool = False,
+    page: int = 1,
+    order_by: list | None = None,
 ) -> dict:
     """A saved chart's data, as its reader gets it.
 
@@ -171,7 +178,9 @@ def chart_answer(
     # fetch, the card keeps the older `modified`, so a drill is refused instead
     # of running on the changed pipeline
     chart = present_chart(doc)
-    result = doc.fetch(force=force, adhoc_filters=adhoc_filters, card_filters=card_filters, page=page)
+    result = doc.fetch(
+        force=force, adhoc_filters=adhoc_filters, card_filters=card_filters, page=page, order_by=order_by
+    )
     reads_rows = can_read_rows(doc)
 
     return {

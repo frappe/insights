@@ -1,6 +1,6 @@
 import type { Component } from 'vue'
 import type { ChartConfig, ChartType } from '../../types/chart.types'
-import type { QueryResult, QueryResultRow } from '../../types/query.types'
+import type { QueryResult, QueryResultRow, SortDirection } from '../../types/query.types'
 import type { RecordLinks } from '../record_link'
 
 // The contract every chart type is adapted against.
@@ -43,9 +43,16 @@ export type ChartAdapterInput = {
 	reading?: string
 	/**
 	 * The surface cannot change the Chart. A control that rewrites the config —
-	 * a table's sort — is left out rather than rendered dead.
+	 * a table's sort — is left out rather than rendered dead, unless `sort`
+	 * gives the reader one of their own.
 	 */
 	readonly?: boolean
+	/**
+	 * Where a reader's sort goes, on a `readonly` surface that can re-run the
+	 * Chart in another order. The config it was handed already holds that order.
+	 */
+	// eslint-disable-next-line no-unused-vars
+	sort?: (column_name: string, direction: SortDirection) => void
 	/**
 	 * The surface can answer a drill. Inspecting a cell changes nothing about the
 	 * Chart, so it is not `readonly` that decides this — it is whether the source

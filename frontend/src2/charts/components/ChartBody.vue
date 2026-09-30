@@ -43,11 +43,10 @@ import ChartStateMessage from './ChartStateMessage.vue'
 //
 // `readonly` is for a surface that cannot change the chart. A surface may say
 // so, and a chart the reader may not edit is read-only wherever it is rendered —
-// read off the document, so no host has to remember to pass it. It decides two
-// things, and they are the same thing: a table's sort rewrites the chart's config
-// and re-runs its query, which a reader holds neither half of, so the control is
-// not shown rather than shown and dead — and for the same reason a reader is
-// told about the data ("No data") where an author is told about the config.
+// read off the document, so no host has to remember to pass it. A reader owns no
+// config: a table's sort re-runs the chart in the reader's order without
+// writing it back, and a reader is told about the data ("No data") where an
+// author is told about the config.
 const props = defineProps<{
 	chart: ChartRead
 	// heads the chart. Left out, no title is shown anywhere in it — which is what
@@ -70,7 +69,11 @@ const emit = defineEmits<{
 const readonly = computed(() => props.readonly || props.chart.doc.can_write === false)
 
 const chart_type = computed(() => props.chart.doc.chart_type)
-const config = computed(() => props.chart.doc.config)
+// a reader's sort is held by the read, not written to the config
+const config = computed(() => {
+	const order = props.chart.readerOrder
+	return order ? { ...props.chart.doc.config, order_by: order } : props.chart.doc.config
+})
 const result = computed(() => props.chart.result || emptyResult())
 
 // Whether the filler renders the states itself. A property of the chart type, so
@@ -94,6 +97,7 @@ const filler = computed(() => {
 		title: props.title,
 		reading: props.reading,
 		readonly: readonly.value,
+		sort: props.chart.sort,
 		drillable: props.chart.drillable,
 		executing: props.chart.executing,
 		page: props.chart.goToPage

@@ -1011,6 +1011,25 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(lines[0], "description,count")
         self.assertEqual(len(lines), 1 + len(OWNER_TODOS))
 
+    # @feature charts.table-header-sort
+    def test_a_reader_who_may_read_rows_sorts_without_changing_the_chart(self):
+        chart, dashboard = self.paged_content()
+        config = chart.config
+
+        def first_row(user, direction):
+            order_by = [{"column": {"column_name": "description"}, "direction": direction}]
+            data = self.fetch_data(user, chart.name, dashboard.name, order_by=order_by, force=True)
+            return self.descriptions(data)
+
+        self.assertEqual(first_row(OWNER, "asc"), [min(OWNER_TODOS)])
+        self.assertEqual(first_row(OWNER, "desc"), [max(OWNER_TODOS)])
+        self.assertEqual(frappe.db.get_value(DT.CHART, chart.name, "config"), config)
+
+        # a reader who gets only the chart gets its own order
+        chart_only = self.descriptions(self.fetch_data(DESK_USER, chart.name, dashboard.name, force=True))
+        self.assertEqual(first_row(DESK_USER, "asc"), chart_only)
+        self.assertEqual(first_row(DESK_USER, "desc"), chart_only)
+
     # @feature charts.table-pager charts.export-rows permissions.chart-run-as-owner
     def test_a_reader_of_a_run_as_owner_chart_keeps_its_one_page(self):
         """The same three endpoints, for a reader of a run-as-owner chart who may not write it."""

@@ -180,6 +180,7 @@ class InsightsChartv3(Document):
         adhoc_filters: dict | None = None,
         card_filters: list | None = None,
         page: int = 1,
+        order_by: list | None = None,
     ):
         """Fetch this chart's rows under the permissions declared on this document.
 
@@ -194,6 +195,10 @@ class InsightsChartv3(Document):
         column the card shows, and it lands on the card's own derived query, so
         it is taken from the request on every surface.
 
+        `order_by` is the reader's own sort, in place of the chart's. Like a later
+        page it brings rows past the chart's `limit` into view, so only a caller
+        that `can_read_rows` allows gets it.
+
         A span card's sparkline comes back under `sparkline`. It runs here
         and not through a call of its own so that a client never has to know
         which cards need a second fetch, and so that a filter cannot reach one
@@ -202,13 +207,14 @@ class InsightsChartv3(Document):
         chart = frappe.get_doc(self.doctype, self.name)
         if not can_read_rows(chart):
             page = 1
+            order_by = None
         page_size = frappe.parse_json(chart.config or "{}").get("limit") or 100
         # every span in this fetch resolves against this day. A drill sends it
         # back, so the drill cuts rows for the same day
         read_on = str(getdate(reading_day()))
         adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
 
-        query = chart.get_query()
+        query = chart.get_query(chart.get_operations(order_by))
         with runs_as(chart):
             result = query.execute(
                 force=force,
@@ -268,6 +274,7 @@ class InsightsChartv3(Document):
         format: str = "csv",
         adhoc_filters: dict | None = None,
         card_filters: list | None = None,
+        order_by: list | None = None,
     ) -> str:
         """Every row behind the pages of `fetch`, as a file, under the same filters.
 
@@ -279,7 +286,8 @@ class InsightsChartv3(Document):
             frappe.throw(_("You are not allowed to download data"), exc=frappe.PermissionError)
         adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
         with runs_as(self):
-            return self.get_query().export_rows(format, adhoc_filters=adhoc_filters)
+            query = self.get_query(self.get_operations(order_by))
+            return query.export_rows(format, adhoc_filters=adhoc_filters)
 
     def periods_oldest_last(self, rows: list[dict]) -> list[dict]:
         """The rows the card reads, in the order every reader expects them.
@@ -409,15 +417,20 @@ class InsightsChartv3(Document):
         query.flags.execution_reference = self.query
         return query
 
-    def get_operations(self):
+    def get_operations(self, order_by: list | None = None):
         """The operations that produce the chart's rows.
 
         The source query, the chart's own filters, its summarize or pivot, and its
         sort, derived here from the config every time the chart runs. A config
         that cannot be rendered raises an error. A fallback to the source query
         would show its raw rows under the chart's title.
+
+        `order_by` is a reader's sort, in the config's shape, replacing the
+        chart's own.
         """
         config = frappe.parse_json(self.config or "{}")
+        if order_by is not None:
+            config["order_by"] = reader_order(order_by)
         errors = config_errors(self.chart_type, self.query, config)
         if errors:
             frappe.throw(
@@ -516,3 +529,17 @@ def import_chart(chart, workbook):
     new_chart.insert()
 
     return new_chart.name
+
+
+def reader_order(order_by: list) -> list[dict]:
+    """A reader's sort, rebuilt from the column names and directions alone.
+
+    It comes from the request, so nothing else it holds reaches derivation.
+    """
+    order = []
+    for sort in frappe.parse_json(order_by) or []:
+        column_name = ((sort or {}).get("column") or {}).get("column_name")
+        direction = (sort or {}).get("direction")
+        if isinstance(column_name, str) and column_name and direction in ("asc", "desc"):
+            order.append({"column": {"type": "column", "column_name": column_name}, "direction": direction})
+    return order

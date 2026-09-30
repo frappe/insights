@@ -164,7 +164,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.table-totals | A user adds a totals row or a totals column. |
 | charts.table-color-scale | A user colors cells by magnitude. |
 | charts.table-conditional-formatting | A user adds a formatting rule to a Table chart and it reaches the column, or every pivoted column, it names. |
-| charts.table-header-sort | A user sorts a Table chart by clicking a column header, and the sort is saved to the chart; a reader sorts nothing. |
+| charts.table-header-sort | A user sorts a Table chart by clicking a column header, and the sort is saved to the chart. A reader who may read its rows sorts their own view without changing the chart. |
 | charts.table-record-link | A Table cell that names a desk document opens its form; every other cell stays a value. |
 | charts.table-pager | A reader who may read a Table chart's rows pages past its first page and sees the row count. A reader who may see only the chart itself gets only its first page. |
 | charts.table-loading | A Table chart's card, not its grid, veils a run in flight. |

@@ -8,7 +8,7 @@
 // did not produce.
 
 import { call } from 'frappe-ui'
-import { computed, reactive, ref, shallowRef, unref, type ComputedRef } from 'vue'
+import { computed, reactive, ref, shallowRef, unref, type ComputedRef, type Ref } from 'vue'
 import { copy, getErrorMessage } from '../helpers'
 import { useResultExport } from '../helpers/result_export'
 import { stableStringify } from '../helpers/stable_stringify'
@@ -21,8 +21,10 @@ import type {
 	FilterOperator,
 	FilterValue,
 	Operation,
+	OrderByArgs,
 	QueryResult,
 	QueryResultColumn,
+	SortDirection,
 } from '../types/query.types'
 import type { ChartType } from '../types/chart.types'
 import type { InsightsChartv3, FilterValues, WorkbookDashboardItem } from '../types/workbook.types'
@@ -40,6 +42,7 @@ import {
 	fetchViewDrillRowsRange,
 	fetchViewDrillRowsValues,
 } from './drill/drill_api'
+import { sortBy } from './adapter/table'
 import { normalizeChartConfig } from './helpers'
 import { labelWindowRows } from './window'
 
@@ -175,6 +178,9 @@ export type ChartSource = {
 		rendered: ChartViewDoc,
 	) => DrillRowsSource
 	drillable?: boolean
+	// the reader's own sort, for a source whose endpoint takes one. Unset, the
+	// Chart runs in its own order
+	readerOrder?: Ref<OrderByArgs[] | undefined>
 }
 
 export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
@@ -448,6 +454,17 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 
 	const drillable = source.drillable ?? true
 
+	// A reader's sort starts from the order on screen. It brings rows past the
+	// Chart's limit into view, as a later page does, so it needs the same
+	// allowance.
+	function sort(column_name: string, direction: SortDirection) {
+		const order = source.readerOrder!
+		const next = { order_by: copy(order.value ?? doc.value.config.order_by ?? []) }
+		sortBy(next, column_name, direction)
+		order.value = next.order_by
+		return load()
+	}
+
 	return reactive({
 		doc,
 		drillable,
@@ -478,6 +495,8 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		currentPage,
 		pageSize,
 		goToPage: computed(() => (paged.value ? goToPage : undefined)),
+		readerOrder: computed(() => source.readerOrder?.value),
+		sort: computed(() => (source.readerOrder && canReadRows.value ? sort : undefined)),
 		fetchResultCount: computed(() =>
 			paged.value && source.fetchCount ? fetchResultCount : undefined,
 		),
@@ -593,14 +612,17 @@ function makeSavedChartView(
 
 	if (chartDoc) assignChartDoc(doc, chartDoc)
 
+	const readerOrder = ref<OrderByArgs[]>()
+
 	// A reader changes none of the config, so the request holds only the chart
-	// name and the caller's filters. Filters go by name: the server reads the
-	// filter links of the dashboard named here.
+	// name, the caller's filters and the reader's sort. Filters go by name: the
+	// server reads the filter links of the dashboard named here.
 	const request = (filterContext?: DashboardFilterContext) => ({
 		chart: chart_name,
 		dashboard: filterContext?.dashboard,
 		filters: filterContext?.filters,
 		card_filters: filterContext?.cardFilters,
+		order_by: readerOrder.value,
 	})
 
 	return makeChartRead(
@@ -629,6 +651,7 @@ function makeSavedChartView(
 					...request(filterContext),
 					format,
 				}),
+			readerOrder,
 			// A drill reads rows, so a guest is not allowed it. The endpoint also
 			// refuses Guest.
 			drillable: session.isLoggedIn,
