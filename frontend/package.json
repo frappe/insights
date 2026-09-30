@@ -34,7 +34,7 @@
 		"echarts": "^6.1.0",
 		"es-toolkit": "^1.34.1",
 		"feather-icons": "^4.28.0",
-		"frappe-ui": "github:frappe/frappe-ui#f6453abe0acb457e62c6563ef25f8b63b3bf415c",
+		"frappe-ui": "github:frappe/frappe-ui#77c3975f9bf889585d7588a7adbc1f2ea1c3b8aa",
 		"html-to-image": "^1.11.13",
 		"lucide-vue-next": "^0.484.0",
 		"pinia": "^2.0.30",

@@ -305,6 +305,21 @@ describe('the second value axis', () => {
 		expect(props.y2).toEqual(['margin_rate'])
 	})
 
+	// @feature charts.series-align charts.series-data-labels
+	it('prints the second axis in its own Measure’s unit, which its data labels read', () => {
+		const props = propsOf({
+			type: 'Bar',
+			dimension: 'region',
+			measures: [
+				'revenue',
+				{ name: 'margin_rate', mark: 'line', axis: 'right', format: 'percent' },
+			],
+			dataLabels: true,
+		})
+		expect(props.seriesConfig?.margin_rate?.showDataLabels).toBe(true)
+		expect(props.y2Axis?.format?.(0.3)).toBe('30%')
+	})
+
 	// @feature charts.series-align
 	it('shows no second axis when every Series is aligned left', () => {
 		const props = propsOf({
