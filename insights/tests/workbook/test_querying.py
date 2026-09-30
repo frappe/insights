@@ -21,6 +21,7 @@ from insights.tests.factories import (
 from insights.tests.test_ibis_utils import (
     DATE_DIFF_CASES,
     DATE_DIFF_UNITS,
+    FIRST_ROW_CASES,
 )
 
 TODO_PREFIX = "Insights Querying Test"
@@ -311,6 +312,27 @@ class TestQuerying(InsightsIntegrationTestCase):
 
             with self.subTest(start=start, end=end):
                 self.assertEqual({unit: row[unit] for unit in DATE_DIFF_UNITS}, expected)
+
+    # @feature query.expression-first-last-row
+    def test_first_and_last_row_follow_the_direction_of_a_sorted_key(self):
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        for expression, expected in FIRST_ROW_CASES:
+            query = create_test_query(
+                USER_1,
+                workbook.name,
+                title=f"Workbook Flow Test Query First Row {expression}",
+                operations=[
+                    table_source(),
+                    self.prefix_filter(),
+                    {"type": "filter", "expression": {"type": "expression", "expression": expression}},
+                ],
+            )
+
+            rows = execute_test_query(query.name)["rows"]
+
+            with self.subTest(expression=expression):
+                self.assertEqual(sorted(row["description"].split()[-1] for row in rows), expected)
 
     # @feature query.summarize
     def test_query_summary_groups_filtered_rows_by_status(self):

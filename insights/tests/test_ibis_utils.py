@@ -809,3 +809,53 @@ class TestIbisDateDiff(IbisQueryBuilderTestCase):
         seconds = ibis.sqlite.connect().execute(date_diff(end, start, "second").name("seconds"))
 
         self.assertEqual(seconds, 1)
+
+
+FIRST_ROW_CASES = (
+    ("filter_first_row(group_by=status, order_by=date)", ["Alpha", "Beta"]),
+    ("filter_first_row(group_by=status, order_by=date, sort_order='desc')", ["Beta", "Gamma"]),
+    ("filter_first_row(group_by=status, order_by=desc(date))", ["Beta", "Gamma"]),
+    ("filter_first_row(group_by=status, order_by=asc(date), sort_order='desc')", ["Alpha", "Beta"]),
+    ("is_first_row(group_by=status, order_by=desc(date)) == 1", ["Beta", "Gamma"]),
+    ("is_last_row(group_by=status, order_by=desc(date)) == 1", ["Alpha", "Beta"]),
+    ("is_last_row(group_by=status, order_by=[desc(date)]) == 1", ["Alpha", "Beta"]),
+)
+
+
+class TestIbisFirstRow(IbisQueryBuilderTestCase):
+    # @feature query.expression-first-last-row
+    def test_first_and_last_row_follow_the_direction_of_a_sorted_key_on_duckdb(self):
+        rows = [
+            {"name": "Alpha", "status": "Open", "date": "2026-01-01"},
+            {"name": "Beta", "status": "Closed", "date": "2026-01-02"},
+            {"name": "Gamma", "status": "Open", "date": "2026-01-03"},
+        ]
+        for expression, expected in FIRST_ROW_CASES:
+            operations = [
+                {"type": "code", "code": f"results = {rows}"},
+                {"type": "filter", "expression": {"type": "expression", "expression": expression}},
+            ]
+
+            result = self.build_query(operations).execute()
+
+            with self.subTest(expression=expression):
+                self.assertEqual(sorted(result["name"]), expected)
+
+    # @feature query.expression-first-last-row
+    def test_first_and_last_row_with_no_order_by_are_refused(self):
+        rows = [{"name": "Alpha", "status": "Open"}, {"name": "Gamma", "status": "Open"}]
+        for expression in (
+            "is_first_row(group_by=status) == 1",
+            "is_last_row(group_by=status) == 1",
+            "filter_first_row()",
+        ):
+            operations = [
+                {"type": "code", "code": f"results = {rows}"},
+                {"type": "filter", "expression": {"type": "expression", "expression": expression}},
+            ]
+
+            with (
+                self.subTest(expression=expression),
+                self.assertRaisesRegex(frappe.ValidationError, "pass order_by"),
+            ):
+                self.build_query(operations)

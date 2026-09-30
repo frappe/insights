@@ -1226,19 +1226,36 @@ def percentage_change(column: ir.Column, date_column: ir.DateColumn, offset=1):
     return ((column - prev_value) * 100) / abs(prev_value)
 
 
+def _row_order(order_by, sort_order, reverse=False):
+    keys = order_by if isinstance(order_by, list | tuple) else [order_by]
+    row_order = []
+    for key in keys:
+        if key is None:
+            continue
+        if isinstance(key, ir.Value) and isinstance(key.op(), ibis.expr.operations.SortKey):
+            sort_key = key.op()
+        else:
+            sort_key = ibis.asc(key).op() if sort_order == "asc" else ibis.desc(key).op()
+        if reverse:
+            sort_key = sort_key.copy(ascending=not sort_key.ascending)
+        row_order.append(sort_key.to_expr())
+    if not row_order:
+        raise ValueError("pass order_by, such as order_by=date, to say which row is first")
+    return row_order
+
+
 def is_first_row(group_by=None, order_by=None, sort_order="asc"):
     """
     def is_first_row(group_by=None, order_by=None, sort_order="asc")
 
-    Check if the row is the first row in the group. Provide group_by and order_by columns for partitioning and ordering.
+    Return 1 for the first row in each group and 0 for the other rows. order_by sets the row order and is required, and group_by the groups. sort_order sets the direction of an order_by column. A column wrapped in asc() or desc() keeps its own direction.
 
     Examples:
-    - is_first_row()
     - is_first_row(group_by=user_id, order_by=date)
-    - is_first_row(group_by=[user_id, month(date)], order_by=asc(date))
+    - is_first_row(group_by=user_id, order_by=desc(date))
+    - is_first_row(group_by=[user_id, month(date)], order_by=[priority, desc(date)])
     """
-    _order_by = ibis.asc(order_by) if sort_order == "asc" else ibis.desc(order_by)
-    index = row_number().over(group_by=group_by, order_by=_order_by)
+    index = row_number().over(group_by=group_by, order_by=_row_order(order_by, sort_order))
     return if_else(index == 0, 1, 0)
 
 
@@ -1246,15 +1263,14 @@ def is_last_row(group_by=None, order_by=None, sort_order="asc"):
     """
     def is_last_row(group_by=None, order_by=None, sort_order="asc")
 
-    Check if the row is the last row in the group. Provide group_by and order_by columns for partitioning and ordering.
+    Return 1 for the last row in each group and 0 for the other rows. order_by sets the row order and is required, and group_by the groups. sort_order sets the direction of an order_by column. A column wrapped in asc() or desc() keeps its own direction.
 
     Examples:
-    - is_last_row()
     - is_last_row(group_by=user_id, order_by=date)
-    - is_last_row(group_by=[user_id, month(date)], order_by=asc(date))
+    - is_last_row(group_by=user_id, order_by=desc(date))
+    - is_last_row(group_by=[user_id, month(date)], order_by=[priority, desc(date)])
     """
-    _order_by = ibis.desc(order_by) if sort_order == "asc" else ibis.asc(order_by)
-    index = row_number().over(group_by=group_by, order_by=_order_by)
+    index = row_number().over(group_by=group_by, order_by=_row_order(order_by, sort_order, reverse=True))
     return if_else(index == 0, 1, 0)
 
 
@@ -1262,15 +1278,14 @@ def filter_first_row(group_by=None, order_by=None, sort_order="asc"):
     """
     def filter_first_row(group_by=None, order_by=None, sort_order="asc")
 
-    Filter to keep only the first row of each group. Provide group_by and order_by columns for partitioning and ordering.
+    Filter to keep only the first row of each group. order_by sets the row order and is required, and group_by the groups. sort_order sets the direction of an order_by column. A column wrapped in asc() or desc() keeps its own direction.
 
     Examples:
-    - filter_first_row()
     - filter_first_row(group_by=user_id, order_by=date)
-    - filter_first_row(group_by=[user_id, month(date)], order_by=asc(date))
+    - filter_first_row(group_by=user_id, order_by=desc(date))
+    - filter_first_row(group_by=[user_id, month(date)], order_by=[priority, desc(date)])
     """
-    _order_by = ibis.asc(order_by) if sort_order == "asc" else ibis.desc(order_by)
-    index = row_number().over(group_by=group_by, order_by=_order_by)
+    index = row_number().over(group_by=group_by, order_by=_row_order(order_by, sort_order))
     return index == 0
 
 
