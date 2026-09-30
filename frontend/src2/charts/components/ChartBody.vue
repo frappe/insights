@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button, LoadingIndicator } from 'frappe-ui'
 import { ChartContainer, useChartTokens } from 'frappe-ui/charts'
-import { RefreshCcw } from 'lucide-vue-next'
+import { InfoIcon, RefreshCcw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { refusalDetail, refusalHeadline } from '../../not_permitted'
 import { __ } from '../../translation'
@@ -17,8 +17,8 @@ import type { ChartRead } from '../chart_view'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
 import { scopeText } from '../scoped_by'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
-import InfoMark from './InfoMark.vue'
 import ScopeMark from './ScopeMark.vue'
+import TitleMark from './TitleMark.vue'
 import ChartStateMessage from './ChartStateMessage.vue'
 
 // The chart itself: the type it is, the data it has, and every state in between.
@@ -304,7 +304,9 @@ function reportSegment(target: DrillDownTarget) {
 		>
 			<template v-if="cardInfo || scope" #title-suffix>
 				<span class="flex items-center gap-1.5">
-					<InfoMark v-if="cardInfo" :text="cardInfo" />
+					<TitleMark v-if="cardInfo" :icon="InfoIcon" :label="cardInfo">
+						<div class="whitespace-pre-line">{{ cardInfo }}</div>
+					</TitleMark>
 					<ScopeMark
 						:applied="props.chart.scopedBy"
 						:narrowed="props.chart.narrowedByPermissions"
@@ -330,7 +332,9 @@ function reportSegment(target: DrillDownTarget) {
 		>
 			<template v-if="props.info || scope" #title-suffix>
 				<span class="flex items-center gap-1.5">
-					<InfoMark v-if="props.info" :text="props.info" />
+					<TitleMark v-if="props.info" :icon="InfoIcon" :label="props.info">
+						<div class="whitespace-pre-line">{{ props.info }}</div>
+					</TitleMark>
 					<ScopeMark
 						:applied="props.chart.scopedBy"
 						:narrowed="props.chart.narrowedByPermissions"
