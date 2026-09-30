@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import frappe
 import ibis
+import pandas as pd
 from ibis.backends.clickhouse import Backend as ClickHouseBackend
 from ibis.backends.postgres import Backend as PostgresBackend
 from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
@@ -25,7 +26,11 @@ from insights.insights.doctype.insights_data_source_v3.connectors.bigquery impor
 from insights.insights.doctype.insights_data_source_v3.connectors.clickhouse import get_clickhouse_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import connect_duckdb
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
-from insights.insights.doctype.insights_data_source_v3.ibis.functions import date_diff
+from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
+    date_diff,
+    percentage_change,
+    previous_period_value,
+)
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
 from insights.utils import deep_convert_dict_to_dict as _dict
@@ -859,3 +864,248 @@ class TestIbisFirstRow(IbisQueryBuilderTestCase):
                 self.assertRaisesRegex(frappe.ValidationError, "pass order_by"),
             ):
                 self.build_query(operations)
+
+
+# March holds no Open row and February no Closed row, so a row read would reach
+# across the gap
+PERIOD_VALUE_ROWS = (
+    ("Open", "2026-01-05"),
+    ("Open", "2026-01-20"),
+    ("Open", "2026-02-10"),
+    ("Open", "2026-04-03"),
+    ("Closed", "2026-01-07"),
+    ("Closed", "2026-03-15"),
+    ("Open", None),
+)
+PERIOD_VALUE_EXPRESSIONS = {
+    "previous": "previous_period_value(todo_count, month)",
+    "previous_2": "previous_period_value(todo_count, month, 2)",
+    "next": "next_period_value(todo_count, month)",
+    "change": "percentage_change(todo_count, month)",
+}
+PERIOD_VALUE_CASES = {
+    ("Closed", "2026-01-01"): {"previous": None, "previous_2": None, "next": None, "change": None},
+    ("Closed", "2026-03-01"): {"previous": None, "previous_2": 1, "next": None, "change": None},
+    ("Open", "2026-01-01"): {"previous": None, "previous_2": None, "next": 1, "change": None},
+    ("Open", "2026-02-01"): {"previous": 2, "previous_2": None, "next": None, "change": -50},
+    ("Open", "2026-04-01"): {"previous": None, "previous_2": 1, "next": None, "change": None},
+    ("Open", None): {"previous": None, "previous_2": None, "next": None, "change": None},
+}
+
+
+def period_value_operations(source_operations):
+    return [
+        *source_operations,
+        {
+            "type": "summarize",
+            "measures": [{"measure_name": "todo_count", "column_name": "name", "aggregation": "count"}],
+            "dimensions": [
+                {"column_name": "status", "data_type": "String", "dimension_name": "status"},
+                {
+                    "column_name": "date",
+                    "data_type": "Date",
+                    "granularity": "month",
+                    "dimension_name": "month",
+                },
+            ],
+        },
+        *(
+            {
+                "type": "mutate",
+                "new_name": new_name,
+                "data_type": "Decimal",
+                "expression": {"type": "expression", "expression": expression},
+            }
+            for new_name, expression in PERIOD_VALUE_EXPRESSIONS.items()
+        ),
+    ]
+
+
+def read_period_values(rows):
+    def value(v):
+        return None if pd.isna(v) else int(v)
+
+    return {
+        (row["status"], None if pd.isna(row["month"]) else str(row["month"])[:10]): {
+            key: value(row[key]) for key in PERIOD_VALUE_EXPRESSIONS
+        }
+        for row in rows
+    }
+
+
+# 2026-01-03 holds no row, so a row read would take 2026-01-04 back to 2026-01-02
+RAW_DATE_ROWS = ("2026-01-01", "2026-01-02", "2026-01-04")
+RAW_DATE_CASES = {"2026-01-01": None, "2026-01-02": "2026-01-01", "2026-01-04": None}
+RAW_DATE_EXPRESSION = "previous_period_value(date, date, 1, 'day')"
+
+
+def read_raw_date_values(rows):
+    return {
+        str(row["date"])[:10]: None
+        if row["previous"] is None or pd.isna(row["previous"])
+        else str(row["previous"])[:10]
+        for row in rows
+    }
+
+
+class TestIbisPeriodValue(IbisQueryBuilderTestCase):
+    def source_operations(self, rows, data_type="Date"):
+        return [
+            {"type": "code", "code": f"results = {rows}"},
+            {"type": "cast", "column": {"type": "column", "column_name": "date"}, "data_type": data_type},
+        ]
+
+    def mutate_previous(self, expression):
+        return {
+            "type": "mutate",
+            "new_name": "previous",
+            "data_type": "Decimal",
+            "expression": {"type": "expression", "expression": expression},
+        }
+
+    # @feature query.expression-period-value
+    def test_period_values_read_the_period_n_grains_away_on_duckdb(self):
+        rows = [
+            {"name": str(i), "status": status, "date": date}
+            for i, (status, date) in enumerate(PERIOD_VALUE_ROWS)
+        ]
+
+        result = self.build_query(period_value_operations(self.source_operations(rows))).execute()
+
+        self.assertEqual(read_period_values(result.to_dict("records")), PERIOD_VALUE_CASES)
+
+    # @feature query.expression-period-value
+    def test_a_date_nothing_grouped_reads_the_day_before_at_the_day_grain_on_duckdb(self):
+        rows = [{"date": date} for date in RAW_DATE_ROWS]
+        operations = [
+            *self.source_operations(rows),
+            {**self.mutate_previous(RAW_DATE_EXPRESSION), "data_type": "Date"},
+        ]
+
+        result = self.build_query(operations).execute()
+
+        self.assertEqual(read_raw_date_values(result.to_dict("records")), RAW_DATE_CASES)
+
+    # @feature query.expression-period-value
+    def test_a_datetime_summarized_by_month_and_renamed_reads_the_month_before(self):
+        rows = [
+            {"amount": 10, "date": "2026-01-15 10:00:00"},
+            {"amount": 20, "date": "2026-02-02 09:00:00"},
+            {"amount": 30, "date": "2026-04-20 18:00:00"},
+        ]
+        operations = [
+            *self.source_operations(rows, "Datetime"),
+            {
+                "type": "summarize",
+                "measures": [{"measure_name": "amount", "column_name": "amount", "aggregation": "sum"}],
+                "dimensions": [
+                    {
+                        "column_name": "date",
+                        "data_type": "Datetime",
+                        "granularity": "month",
+                        "dimension_name": "date",
+                    }
+                ],
+            },
+            {"type": "rename", "column": {"type": "column", "column_name": "date"}, "new_name": "month"},
+            self.mutate_previous("previous_period_value(amount, month)"),
+        ]
+
+        result = self.build_query(operations).execute()
+
+        previous = {str(row["month"])[:7]: row["previous"] for row in result.to_dict("records")}
+        self.assertEqual(previous["2026-02"], 10)
+        self.assertTrue(pd.isna(previous["2026-01"]) and pd.isna(previous["2026-04"]))
+
+    # @feature query.expression-period-value
+    def test_a_period_value_reads_the_grain_it_is_given(self):
+        rows = [{"amount": 10, "date": "2026-01-01"}, {"amount": 20, "date": "2026-03-01"}]
+        operations = [
+            *self.source_operations(rows),
+            self.mutate_previous("previous_period_value(amount, date, 2, 'month')"),
+        ]
+
+        result = self.build_query(operations).execute()
+
+        previous = {str(row["date"])[:10]: row["previous"] for row in result.to_dict("records")}
+        self.assertEqual(previous["2026-03-01"], 10)
+        self.assertTrue(pd.isna(previous["2026-01-01"]))
+
+    # @feature query.expression-period-value
+    def test_a_period_value_on_a_date_nothing_grouped_is_refused(self):
+        for data_type in ("Date", "Datetime"):
+            rows = [{"amount": 10, "date": "2026-01-01 10:00:00"}]
+            operations = [
+                *self.source_operations(rows, data_type),
+                self.mutate_previous("previous_period_value(amount, date)"),
+            ]
+
+            with (
+                self.subTest(data_type=data_type),
+                self.assertRaisesRegex(frappe.ValidationError, "cannot tell the period of date"),
+            ):
+                self.build_query(operations)
+
+    # @feature query.expression-period-value
+    def test_a_percentage_change_from_zero_is_null(self):
+        table = ibis.memtable(
+            {"date": pd.to_datetime(["2026-01-01", "2026-02-01"]).date, "amount": [0, 5]},
+            schema={"date": "date", "amount": "int64"},
+        )
+
+        result = table.mutate(change=percentage_change(table.amount, table.date, 1, "month")).execute()
+
+        self.assertTrue(result["change"].isna().all())
+
+    # @feature query.expression-period-value
+    def test_period_values_read_the_grain_they_are_given_on_sqlite(self):
+        # mid-period dates: Postgres rounded a quarter's date difference, and
+        # SQLite has none above a day. SQLite before 3.46, which CI runs, cannot
+        # subtract a computed number of days
+        monthly = ("2025-12-10", "2026-01-10", "2026-02-10", "2026-03-10", "2026-04-10")
+        cases = {
+            "week": (("2026-01-07", "2026-01-14", "2026-01-28"), [None, 1, None]),
+            "month": (monthly, [None, 1, 2, 3, 4]),
+            "quarter": (monthly, [None, 1, 1, 1, 4]),
+            "year": (monthly, [None, 1, 1, 1, 1]),
+        }
+        con = ibis.sqlite.connect()
+        for grain, (dates, previous) in cases.items():
+            table = con.create_table(
+                f"period_values_{grain}",
+                pd.DataFrame({"date": pd.to_datetime(dates).date, "amount": range(1, len(dates) + 1)}),
+                schema=ibis.schema({"date": "date", "amount": "int64"}),
+            )
+            result = table.mutate(
+                previous=previous_period_value(table.amount, table.date, 1, grain)
+            ).order_by("date")
+
+            with self.subTest(grain=grain), patch("sqlite3.sqlite_version_info", (3, 45, 1)):
+                self.assertEqual(
+                    [None if pd.isna(v) else int(v) for v in result.execute()["previous"]], previous
+                )
+
+    # @feature query.expression-period-value
+    def test_period_values_group_by_every_column_but_the_date_itself(self):
+        # a regex reading of the name kept "Date (Month)" as a group, and took
+        # "posting_date" for "date"
+        for date_column, other_column in (("Date (Month)", "Date (Month) label"), ("date", "posting_date")):
+            table = ibis.memtable(
+                {
+                    date_column: pd.to_datetime(
+                        ["2026-01-01", "2026-02-01", "2026-01-01", "2026-02-01"]
+                    ).date,
+                    other_column: ["a", "a", "b", "b"],
+                    "amount": [1, 2, 10, 20],
+                },
+                schema={date_column: "date", other_column: "string", "amount": "int64"},
+            )
+            result = table.mutate(
+                previous=previous_period_value(table.amount, table[date_column], 1, "month")
+            ).order_by([other_column, date_column])
+
+            with self.subTest(date_column=date_column):
+                self.assertEqual(
+                    [None if pd.isna(v) else int(v) for v in result.execute()["previous"]],
+                    [None, 1, None, 10],
+                )

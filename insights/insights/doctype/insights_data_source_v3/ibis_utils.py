@@ -56,7 +56,7 @@ from insights.permission_user import get_permission_user, script_session
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
-from .ibis.functions import fiscal_year_start, week_start
+from .ibis.functions import _apply_granularity
 from .ibis.utils import (
     assert_expression_has_no_io,
     called_names,
@@ -1415,7 +1415,7 @@ class IbisQueryBuilder:
             return col.name(dimension.dimension_name or dimension.column_name)
 
         if self.is_date_type(dimension.data_type) and dimension.granularity:
-            col = self.apply_granularity(col, dimension.granularity, dimension.data_type)
+            col = _apply_granularity(col, dimension.granularity, dimension.data_type)
             col = col.cast(self.get_ibis_dtype(dimension.data_type))
         return col.name(dimension.dimension_name or dimension.column_name)
 
@@ -1427,46 +1427,6 @@ class IbisQueryBuilder:
         if aggregate is None:
             frappe.throw(f"Aggregate function {aggregate_function} is not supported", QueryRefused)
         return aggregate(column)
-
-    def apply_granularity(self, column, granularity, data_type=None):
-        supported_granularities = [
-            "second",
-            "minute",
-            "hour",
-            "day",
-            "week",
-            "month",
-            "quarter",
-            "year",
-            "fiscal_year",
-        ]
-        if granularity not in supported_granularities:
-            supported = ", ".join(supported_granularities)
-            frappe.throw(
-                frappe._(
-                    "Granularity {0} is not supported for {1} columns. Supported granularities: {2}"
-                ).format(granularity, data_type, supported),
-                QueryRefused,
-                title=frappe._("Unsupported Granularity"),
-            )
-
-        if granularity == "week":
-            return week_start(column).name(column.get_name())
-        if granularity == "fiscal_year":
-            return fiscal_year_start(column).name(column.get_name())
-
-        truncate_unit = {
-            "second": "s",
-            "minute": "m",
-            "hour": "h",
-            "day": "D",
-            "quarter": "Q",
-            "month": "M",
-            "year": "Y",
-        }
-        if granularity not in truncate_unit:
-            frappe.throw(f"Granularity {granularity} is not supported", QueryRefused)
-        return column.truncate(truncate_unit[granularity]).name(column.get_name())
 
     def apply_time_granularity(self, column, granularity):
         supported_granularities = ["second", "minute", "hour"]

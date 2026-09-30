@@ -22,6 +22,14 @@ from insights.tests.test_ibis_utils import (
     DATE_DIFF_CASES,
     DATE_DIFF_UNITS,
     FIRST_ROW_CASES,
+    PERIOD_VALUE_CASES,
+    PERIOD_VALUE_ROWS,
+    RAW_DATE_CASES,
+    RAW_DATE_EXPRESSION,
+    RAW_DATE_ROWS,
+    period_value_operations,
+    read_period_values,
+    read_raw_date_values,
 )
 
 TODO_PREFIX = "Insights Querying Test"
@@ -333,6 +341,67 @@ class TestQuerying(InsightsIntegrationTestCase):
 
             with self.subTest(expression=expression):
                 self.assertEqual(sorted(row["description"].split()[-1] for row in rows), expected)
+
+    # @feature query.expression-period-value
+    def test_period_values_read_the_period_n_grains_away(self):
+        for status, date in PERIOD_VALUE_ROWS:
+            todo = frappe.get_doc(
+                {
+                    "doctype": "ToDo",
+                    "description": f"{TODO_PREFIX} {status}",
+                    "status": status,
+                    "date": date,
+                    "allocated_to": USER_1,
+                }
+            ).insert(ignore_permissions=True)
+            # a ToDo saved with no date takes today's
+            todo.db_set("date", date)
+        frappe.db.commit()  # nosemgrep
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Period Value",
+            operations=period_value_operations([table_source(), self.prefix_filter()]),
+        )
+
+        rows = execute_test_query(query.name)["rows"]
+
+        self.assertEqual(read_period_values(rows), PERIOD_VALUE_CASES)
+
+    # @feature query.expression-period-value
+    def test_a_date_nothing_grouped_reads_the_day_before_at_the_day_grain(self):
+        for date in RAW_DATE_ROWS:
+            frappe.get_doc(
+                {
+                    "doctype": "ToDo",
+                    "description": f"{TODO_PREFIX} {date}",
+                    "date": date,
+                    "allocated_to": USER_1,
+                }
+            ).insert(ignore_permissions=True)
+        frappe.db.commit()  # nosemgrep
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Raw Date Period Value",
+            operations=[
+                table_source(),
+                self.prefix_filter(),
+                {"type": "select", "column_names": ["date"]},
+                {
+                    "type": "mutate",
+                    "new_name": "previous",
+                    "data_type": "Date",
+                    "expression": {"type": "expression", "expression": RAW_DATE_EXPRESSION},
+                },
+            ],
+        )
+
+        rows = execute_test_query(query.name)["rows"]
+
+        self.assertEqual(read_raw_date_values(rows), RAW_DATE_CASES)
 
     # @feature query.summarize
     def test_query_summary_groups_filtered_rows_by_status(self):

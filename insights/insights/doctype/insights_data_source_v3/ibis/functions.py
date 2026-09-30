@@ -2,11 +2,13 @@ import math
 
 import frappe
 import ibis
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.selectors as s
 import pandas as pd
 from frappe.utils import now_datetime
 
+from insights.exceptions import QueryRefused
 from insights.insights.query_builders.sql_functions import (
     get_fiscal_year_start_date,
     get_week_start_day_index,
@@ -1178,52 +1180,169 @@ def next_value(column: ir.Column, group_by=None, order_by=None, offset=1):
     return column.lead(offset).over(group_by=group_by, order_by=order_by)
 
 
-def previous_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1):
-    """
-    def previous_period_value(column, date_column, offset=1)
+_DATE_GRAINS = ("day", "week", "month", "quarter", "year", "fiscal_year")
+_DATETIME_GRAINS = ("second", "minute", "hour", *_DATE_GRAINS)
 
-    Get the value of a column in the previous period. If the date values are at month level then the previous month value will be returned. Similarly, at year level, the previous year value will be returned.
+
+def _grains(dtype):
+    return _DATETIME_GRAINS if dtype.is_timestamp() else _DATE_GRAINS
+
+
+def _apply_granularity(column, granularity, data_type=None):
+    """`column` moved to the start of its `granularity` period, keeping its name.
+    The underscore keeps it out of the expression functions."""
+    supported_granularities = [
+        "second",
+        "minute",
+        "hour",
+        "day",
+        "week",
+        "month",
+        "quarter",
+        "year",
+        "fiscal_year",
+    ]
+    if granularity not in supported_granularities:
+        supported = ", ".join(supported_granularities)
+        frappe.throw(
+            frappe._("Granularity {0} is not supported for {1} columns. Supported granularities: {2}").format(
+                granularity, data_type, supported
+            ),
+            QueryRefused,
+            title=frappe._("Unsupported Granularity"),
+        )
+
+    if granularity == "week":
+        return week_start(column).name(column.get_name())
+    if granularity == "fiscal_year":
+        return fiscal_year_start(column).name(column.get_name())
+
+    truncate_unit = {
+        "second": "s",
+        "minute": "m",
+        "hour": "h",
+        "day": "D",
+        "quarter": "Q",
+        "month": "M",
+        "year": "Y",
+    }
+    return column.truncate(truncate_unit[granularity]).name(column.get_name())
+
+
+def _period_grain(date_column: ir.Value):
+    """The grain a summarize or a granularity function grouped `date_column` at,
+    read from the expressions that made the column, or None when nothing did."""
+    node = date_column.op()
+    while True:
+        if isinstance(node, ops.Alias | ops.Cast):
+            node = node.arg
+            continue
+        if not isinstance(node, ops.Field):
+            break
+        rel = node.rel
+        while not isinstance(rel, ops.Project | ops.Aggregate | ops.JoinChain) and hasattr(rel, "parent"):
+            rel = rel.parent
+        if not isinstance(rel, ops.Project | ops.Aggregate | ops.JoinChain) or node.name not in rel.values:
+            break
+        node = rel.values[node.name]
+
+    for value in node.find((ops.Field, ops.Cast)):
+        if not value.dtype.is_temporal():
+            continue
+        for grain in _grains(value.dtype):
+            if _apply_granularity(value.to_expr(), grain, value.dtype).op().arg == node:
+                return grain
+
+
+def _period_key(date_column, grain):
+    """A number for each period, and the step between two periods' numbers.
+    It uses no backend's date difference above a day: SQLite has none, and Postgres
+    rounds a quarter's."""
+    if grain == "week":
+        # not by week_start: SQLite before 3.46 cannot subtract a computed number of days.
+        # 1970-01-01 is a Thursday, day 3 of a week that starts on Monday
+        days = date_diff(date_column, ibis.date(1970, 1, 1), "day")
+        return days - ((days + 3 - get_week_start_day_index()) % 7 + 7) % 7, 7
+    period_start = _apply_granularity(date_column, grain, date_column.type())
+    if grain in _SECONDS_PER_UNIT:
+        return _whole_seconds_between(period_start, ibis.timestamp("1970-01-01 00:00:00")), _SECONDS_PER_UNIT[
+            grain
+        ]
+    if grain in ("year", "fiscal_year"):
+        return period_start.year(), 1
+    if grain in ("month", "quarter"):
+        return period_start.year() * 12 + period_start.month(), 3 if grain == "quarter" else 1
+    return date_diff(period_start, ibis.date(1970, 1, 1), "day"), 1
+
+
+def _period_window(column: ir.Column, date_column, offset, grain):
+    """The value of `column` in the period `offset` grains away from each row's:
+    before it for a positive offset, after it for a negative one."""
+    if isinstance(date_column, str):
+        date_column = frappe.flags.current_ibis_query[date_column]
+    date_column_name = date_column.get_name()
+    grain = grain or _period_grain(date_column)
+    if not grain:
+        raise ValueError(
+            f"cannot tell the period of {date_column_name}. Summarize it by a granularity, or pass the grain, such as 'month'"
+        )
+    if grain not in _grains(date_column.type()):
+        raise ValueError(
+            f"{date_column_name} has no {grain} period. Pass one of: {', '.join(_grains(date_column.type()))}"
+        )
+    period, step = _period_key(date_column, grain)
+    window = column.max().over(
+        group_by=(~s.numeric() & ~s.cols(date_column_name)),
+        # MariaDB takes a RANGE frame only over a single sort key, and a nulls-last
+        # order compiles to a second one
+        order_by=ibis.asc(period, nulls_first=True),
+        range=(-offset * step, -offset * step),
+    )
+    # a null key's RANGE frame is its null peers, whatever the offset
+    return ibis.cases((period.notnull(), window))
+
+
+def previous_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1, grain=None):
+    """
+    def previous_period_value(column, date_column, offset=1, grain=None)
+
+    Get the value of a column in the period `offset` periods before the row's own, or null when that period has no row or the row has no date. The period is the granularity `date_column` was summarized by, such as month or year. Pass `grain`, such as 'day' or 'month', for a date nothing summarized, such as a table's own date column or one read after a union or a join. Rows are compared within groups of the same values in every column that is neither numeric nor `date_column`, so expect one row per period in each group.
 
     Examples:
     - previous_period_value(amount, date)
     - previous_period_value(amount, date, 2)
+    - previous_period_value(amount, date, 1, 'month')
     """
-    date_column_name = date_column.get_name() if hasattr(date_column, "get_name") else date_column
-    return column.lag(offset).over(
-        group_by=(~s.numeric() & ~s.matches(date_column_name)),
-        order_by=ibis.asc(date_column_name),
-    )
+    return _period_window(column, date_column, offset, grain)
 
 
-def next_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1):
+def next_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1, grain=None):
     """
-    def next_period_value(column, date_column, offset=1)
+    def next_period_value(column, date_column, offset=1, grain=None)
 
-    Get the value of a column in the next period. If the date values are at month level then the next month value will be returned. Similarly, at year level, the next year value will be returned.
+    Get the value of a column in the period `offset` periods after the row's own, or null when that period has no row or the row has no date. The period is the granularity `date_column` was summarized by, such as month or year. Pass `grain`, such as 'day' or 'month', for a date nothing summarized, such as a table's own date column or one read after a union or a join. Rows are compared within groups of the same values in every column that is neither numeric nor `date_column`, so expect one row per period in each group.
 
     Examples:
     - next_period_value(amount, date)
     - next_period_value(amount, date, 2)
+    - next_period_value(amount, date, 1, 'month')
     """
-    date_column_name = date_column.get_name() if hasattr(date_column, "get_name") else date_column
-    return column.lead(offset).over(
-        group_by=(~s.numeric() & ~s.matches(date_column_name)),
-        order_by=ibis.asc(date_column_name),
-    )
+    return _period_window(column, date_column, -offset, grain)
 
 
-def percentage_change(column: ir.Column, date_column: ir.DateColumn, offset=1):
+def percentage_change(column: ir.Column, date_column: ir.DateColumn, offset=1, grain=None):
     """
-    def percentage_change(column, date_column, offset=1)
+    def percentage_change(column, date_column, offset=1, grain=None)
 
-    Calculate the percentage change of a column in the previous period. If the date values are at month level then percentage change from the previous month will be calculated. Similarly, at year level, percentage change from the previous year will be calculated.
+    Calculate the percentage change of a column from its value in the period `offset` periods before, as previous_period_value reads it. Null when that value is null or zero.
 
     Examples:
     - percentage_change(amount, date)
     - percentage_change(amount, date, 2)
+    - percentage_change(amount, date, 1, 'month')
     """
-    prev_value = previous_period_value(column, date_column, offset)
-    return ((column - prev_value) * 100) / abs(prev_value)
+    prev_value = previous_period_value(column, date_column, offset, grain)
+    return ibis.cases((prev_value != 0, ((column - prev_value) * 100) / abs(prev_value)))
 
 
 def _row_order(order_by, sort_order, reverse=False):

@@ -50,6 +50,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.expression-column-named-like-function | A column named like a function, such as `day`, reads as the column where an expression uses it as a value, and as the function where it calls it. |
 | query.expression-date-diff | `date_diff` counts whole hours, minutes or seconds between two datetimes, and days between their dates. Weeks, months, quarters and years follow each database's own rule. |
 | query.expression-first-last-row | `is_first_row`, `is_last_row` and `filter_first_row` pick the end of each group in the order of their keys, and refuse a call with no key. A key wrapped in `asc()` or `desc()` keeps its own direction. |
+| query.expression-period-value | `previous_period_value`, `next_period_value` and `percentage_change` read the period a given number of grains away from the row's own, at the grain its date was summarized by or the one passed, and refuse a date with neither. A period with no row, a row with no date, and a change from zero read as null. |
 | query.expression-column-named-like-io | A column whose name starts like an I/O method, such as `from_plan`, reads as a column in an expression. |
 | query.summarize | A user groups rows by a dimension and aggregates measures. |
 | query.summarize-grain | A date dimension in a summarize groups at a grain, and a time column only at a clock grain. |

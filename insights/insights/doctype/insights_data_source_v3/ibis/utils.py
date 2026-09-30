@@ -154,6 +154,7 @@ def get_functions():
         "ibis",
         "ir",
         "math",
+        "ops",
         "pd",
         "s",
     ]
