@@ -270,7 +270,7 @@ def accept_invitation(key: str):
     frappe.local.response["location"] = get_app_url()
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def invite_users(emails: str):
     if not emails:
         return

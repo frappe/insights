@@ -123,7 +123,7 @@ class InsightsAlert(Document):
         if not can_read_referenced_query(self.query):
             frappe.throw(_("You do not have permission to access this query"), frappe.PermissionError)
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def send_alert(self, force: bool = False):
         # Sending mails the author's recipients, so read access is not enough,
         # and `run_doc_method` and the desk form check only read. Check the user
@@ -331,7 +331,7 @@ class InsightsAlert(Document):
         next_execution = self.get_next_execution()
         return next_execution <= now_datetime()
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def test_alert(self):
         self.send_alert(force=True)
 

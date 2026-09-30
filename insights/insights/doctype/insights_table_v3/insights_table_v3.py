@@ -182,14 +182,14 @@ class InsightsTablev3(Document):
         if get_table_name(self.data_source or "", self.table or "") != self.name:
             frappe.throw(frappe._("Table {0} is not {1}.{2}").format(self.name, self.data_source, self.table))
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
         self.check_identity()
         wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def clear_warehouse_data(self):
         frappe.only_for("Insights Admin")
         self.check_identity()

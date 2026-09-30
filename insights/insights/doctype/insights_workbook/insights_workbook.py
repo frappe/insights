@@ -496,7 +496,7 @@ class InsightsWorkbook(Document):
             "dashboards": {d.name: d for d in dashboards},
         }
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def mark_as_standard(self, name: str | None = None, module: str | None = None):
         """Make this workbook standard in `module`, and return its new name.
 
