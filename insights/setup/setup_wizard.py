@@ -24,7 +24,7 @@ def check_demo_data_exists() -> bool:
         return factory.demo_data_exists()
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def setup_demo_data():
     if frappe.flags.in_test or os.environ.get("CI"):
         return

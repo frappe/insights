@@ -458,7 +458,7 @@ class InsightsQueryv3(Document):
         new_query.insert()
         return new_query.name
 
-    @insights_whitelist(role="Insights Admin")
+    @insights_whitelist(role="Insights Admin", methods=["POST"])
     def refresh_stored_tables(self):
         """Import all source tables used in this query to the data store"""
         tables = self.get_source_tables()

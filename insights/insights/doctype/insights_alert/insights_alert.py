@@ -86,7 +86,7 @@ class InsightsAlert(Document):
         if not frappe.has_permission("Insights Query v3", "read", self.query):
             frappe.throw("You do not have permission to access this query")
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def send_alert(self, force: bool = False):
         results = self.evaluate_condition()
         if not results and not force:
@@ -221,7 +221,7 @@ class InsightsAlert(Document):
         next_execution = self.get_next_execution()
         return next_execution <= now_datetime()
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def test_alert(self):
         self.send_alert(force=True)
 

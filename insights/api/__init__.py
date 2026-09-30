@@ -196,7 +196,7 @@ def get_file_data(filename: str):
             raise
 
 
-@insights_whitelist()
+@insights_whitelist(methods=["POST"])
 def import_csv_data(filename: str, tablename: str = ""):
     check_data_source_permission("uploads")
 

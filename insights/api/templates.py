@@ -278,7 +278,7 @@ def _template_import_result(workbook_name: str) -> dict:
     return {"workbook": workbook_name, "dashboard": first_dashboard}
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def create_workbook_from_template(template_name: str) -> dict:
     from insights.insights.doctype.insights_workbook.insights_workbook import import_workbook
 
@@ -386,7 +386,7 @@ def _update_imported_workbook(template_name: str, workbook_name: str) -> None:
     _stamp_template_version(workbook_name, manifest)
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def update_workbook_from_template(template_name: str) -> dict:
     """Re-take the shipped version into the already-imported workbook, in place.
     The library offers this when a newer version ships; a customized copy is
