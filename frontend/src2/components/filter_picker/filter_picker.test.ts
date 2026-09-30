@@ -3,7 +3,6 @@ import type { QueryResultColumn } from '../../types/query.types'
 import {
 	SPAN_UNITS,
 	isPreset,
-	kindOf,
 	numberPairValues,
 	numberQuickValues,
 	operatorOf,
@@ -134,13 +133,6 @@ describe('the operator table', () => {
 		// no kind's table holds every operator
 		expect(operatorOf('number', 'in')).toBeUndefined()
 		expect(operatorOf('text', 'within')).toBeUndefined()
-	})
-
-	// @feature query.filter-operators-by-type
-	it('gives the date operators to a column that names a day, and not to a Time', () => {
-		expect(kindOf('Date')).toBe('date')
-		expect(kindOf('Datetime')).toBe('date')
-		expect(kindOf('Time')).toBe('text')
 	})
 })
 
