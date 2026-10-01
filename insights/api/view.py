@@ -616,6 +616,8 @@ def present_chart(doc) -> dict:
     return {
         "name": doc.name,
         "title": doc.title,
+        "description": doc.description,
+        "info": doc.info,
         "chart_type": doc.chart_type,
         "config": present_config(doc.config),
         # a drill sends it back, and is refused once the chart or a query it

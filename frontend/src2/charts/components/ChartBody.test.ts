@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
-import { numberChart } from '../adapter/fixtures'
+import { numberChart, tableChart } from '../adapter/fixtures'
 import { makeChartRead } from '../chart_view'
 import { scopeText } from '../scoped_by'
 import ChartBody from './ChartBody.vue'
+import ChartChrome from './ChartChrome.vue'
 
 // A Number chart has the least space. A reading is one line tall, so any line
 // the chrome adds is taken from the number.
@@ -140,5 +141,141 @@ describe('a card the reader may not read the data behind', () => {
 		expect(html).not.toContain('12,300')
 		// a retry cannot help, because the reader cannot change their permissions
 		expect(html).not.toContain('Retry')
+	})
+})
+
+const DESCRIPTION = 'Trials started this month'
+const INFO = 'Paid = a site running this product moved to a paid plan within 30 days of the trial.'
+
+describe('a chart its author explained', () => {
+	// @feature charts.description-and-info
+	it('prints the description under the title and keeps the info behind a mark', async () => {
+		const table = tableChart({ values: [{ name: 'Revenue' }] })
+		const read = makeChartRead({
+			doc: {
+				name: 'chart-2',
+				title: 'Trials',
+				description: DESCRIPTION,
+				info: INFO,
+				chart_type: 'Table',
+				config: table.config,
+				can_write: false,
+			} as any,
+			requestKey: () => 'the same question',
+			fetchData: () => Promise.resolve(table.result),
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+		await read.load()
+		const app = createSSRApp({ render: () => h(ChartChrome, { chart: read }) })
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
+
+		const title = html.indexOf('>Trials<')
+		expect(title).toBeGreaterThan(-1)
+		expect(html.indexOf(`>${DESCRIPTION}<`)).toBeGreaterThan(title)
+		// the info is the tooltip's body, never a line in the card. The mark is
+		// named, so a screen reader reads the text once, as the tooltip
+		expect(html).toContain('aria-label="Info"')
+		expect(html).not.toContain(INFO)
+	})
+
+	// @feature charts.description-and-info
+	it('shows a Number card neither the chart description nor the chart info', async () => {
+		const read = cardAnswering(rows)
+		await read.load()
+		const app = createSSRApp({
+			render: () =>
+				h(ChartBody, {
+					chart: read,
+					title: 'Revenue',
+					reading: 'Revenue',
+					description: DESCRIPTION,
+					info: INFO,
+				}),
+		})
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
+
+		expect(html).not.toContain(DESCRIPTION)
+		expect(html).not.toContain('aria-label="Info"')
+		expect(html).toContain('12,300')
+	})
+
+	// @feature charts.description-and-info
+	it('shows a Number chart with no reading its title alone', async () => {
+		const read = makeChartRead({
+			doc: {
+				name: 'chart-3',
+				title: 'Revenue',
+				chart_type: 'Number',
+				config: numberChart({ values: [] }).config,
+				can_write: false,
+			} as any,
+			requestKey: () => 'the same question',
+			fetchData: () => Promise.resolve({ columns: [], rows: [] }),
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+		await read.load()
+		const app = createSSRApp({
+			render: () =>
+				h(ChartBody, {
+					chart: read,
+					title: 'Revenue',
+					description: DESCRIPTION,
+					info: INFO,
+				}),
+		})
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
+
+		expect(html).toContain('>Revenue<')
+		expect(html).not.toContain(DESCRIPTION)
+		expect(html).not.toContain('aria-label="Info"')
+	})
+})
+
+describe('a Number chart whose readings each carry their info', () => {
+	// @feature charts.description-and-info
+	it('marks the card of a reading that has info, and only that card', async () => {
+		const spec = numberChart({
+			values: [
+				{ name: 'Paid', readings: [12300], info: INFO },
+				{ name: 'Trials', readings: [400] },
+			],
+		})
+		const read = makeChartRead({
+			doc: {
+				name: 'chart-5',
+				title: 'Funnel',
+				chart_type: 'Number',
+				config: spec.config,
+				can_write: false,
+			} as any,
+			requestKey: () => 'the same question',
+			fetchData: () =>
+				Promise.resolve({ columns: spec.result.columns, rows: spec.result.rows }),
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+		await read.load()
+		const render = (reading: string) => {
+			const app = createSSRApp({
+				render: () => h(ChartBody, { chart: read, title: 'Funnel', reading }),
+			})
+			app.config.warnHandler = () => {}
+			return renderToString(app)
+		}
+
+		const paid = await render('Paid')
+		expect(paid).toContain('aria-label="Info"')
+		// the info is the tooltip's body, never a line in the card
+		expect(paid).not.toContain(INFO)
+		// the card's own `title` names the reading on hover. An empty one around
+		// the mark keeps the browser from showing it over the mark's tooltip
+		const mark = paid.indexOf('aria-label="Info"')
+		expect(paid.lastIndexOf('title=""', mark)).toBeGreaterThan(
+			paid.lastIndexOf('title="Paid"', mark),
+		)
+
+		expect(await render('Trials')).not.toContain('aria-label="Info"')
 	})
 })

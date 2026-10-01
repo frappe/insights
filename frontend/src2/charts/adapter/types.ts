@@ -1,3 +1,4 @@
+import type { ChartTokens } from 'frappe-ui/charts'
 import type { Component } from 'vue'
 import type { ChartConfig, ChartType } from '../../types/chart.types'
 import type { QueryResult, QueryResultRow, SortDirection } from '../../types/query.types'
@@ -34,6 +35,15 @@ export type ChartAdapterInput = {
 	recordLinks?: RecordLinks
 	/** Printed by the chrome. It belongs to the Chart, not to its config. */
 	title?: string
+	/** The line under the title, printed by the chrome as v2's `subtitle`. */
+	description?: string
+	/**
+	 * The plot's colors, resolved against the page and again on a theme flip. A
+	 * trend line's label plate reads them, because v2 draws the line through no
+	 * rule of its own. Left out by a surface that draws no trend line, a drill's
+	 * breakdown.
+	 */
+	tokens?: ChartTokens
 	/**
 	 * The one reading to show, by its `id`, for the type that states several — a
 	 * Number Chart. A dashboard cell is one reading, so the cell names it. A

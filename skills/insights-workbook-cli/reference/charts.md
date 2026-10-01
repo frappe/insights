@@ -11,7 +11,7 @@ Chart types: `Number`, `Bar`, `Line`, `Row`, `Donut`, `Funnel`, `Table`, `Map`, 
 
 ## Titles
 
-The title is the only label the reader gets. A dashboard has no headings, so the titles hold its
+The title is the label the reader always sees. A dashboard has no headings, so the titles hold its
 structure. Each title must name its chart on its own.
 
 State the measure, then the grain: "Revenue, per Month". "Sites That Published, Template Against the
@@ -30,6 +30,15 @@ appears. Write "Top Template Groups".
 
 Say the era in your reply instead: "the age charts start at 2026-07-08, the first blank-start event,
 because a blank start leaves no trace before it."
+
+## Description and info
+
+Two optional text fields on the chart document, beside `title`. Both show beside the chart title on a dashboard, a shared link and the workbook's chart view. A desk island prints its own header and shows neither.
+
+- `info` is the text behind an info mark beside the title. The reader sees it on hover or focus. Put definitions and caveats here: what a measure counts, what a status means, what the data leaves out. "Paid = a site running this product moved to a paid plan within 30 days of the trial." Line breaks are kept.
+- `description` is one line printed under the title. Leave it empty. Write one only when the title cannot carry what every reader must see at a glance. It takes height from the plot on every dashboard that shows the chart.
+- A Number chart shows neither: each card shows the reading's name, not the chart title, and has no line under it. Put a reading's info in its `number_column_options` entry instead (see Number below).
+- The no-dates rule for titles applies to both.
 
 Measures and dimensions in a config use the same shapes as in the operations section. They reference
 columns of the **base query's result**, not of the source table. Expression measures work anywhere a
@@ -83,7 +92,8 @@ Keys on every chart config:
   ("month") gives one row per period in the data, `span` ("month to date") one row per stretch of
   the calendar. Either needs `date_column`.
 - `number_column_options` is positional: one entry per measure, same order. It holds what belongs
-  to the reading: `comparison`, `target`, `negative_is_better`, `color`.
+  to the reading: `comparison`, `target`, `negative_is_better`, `color`, `info`.
+- `info` on a reading's options entry is the text behind an info mark beside that reading's name, for its definitions and caveats, as on any chart. A Number chart has no chart-level `description` or `info`: leave both empty.
 - A comparison belongs to one reading, in that reading's options entry. `source` is `previous`,
   `last year`, `constant` (with `value`) or `measure` (with `measure`). `show` prints the gap as a
   percent (`change`, the default) or a signed number (`delta`), and `label` renames it. `previous`
@@ -123,6 +133,7 @@ Keys on every chart config:
   aggregate of one of the chart's own measures, named and not copied — or a constant with `value`.
   `axis: "x"` plots a vertical rule at a category or date value. `align` picks the axis a `y` rule
   is read against, and `label_placement`, `color` and `dashed` are the rest of its look.
+- `"show_trend_line": true` on a series draws its trend line: the straight least-squares fit through the series' plotted points, each at its date or number on the x axis. It draws only when the x axis is a date or a number: a category axis may be sorted by a measure, and a line through a ranking says nothing. A `Row` chart plots a number x axis as categories, so there it draws only on a date. A series stacked with another draws none, because it is plotted at its stack height or share and the fit reads its own values. Under `stack` without `overlap`, or under `normalize`, bars stack with bars and areas with areas, a split's values stack with each other (so a stacked split gets none, even when the result holds one value), and a line never stacks. So a lone bar, a line beside stacked bars, or overlapped bars (`overlap` cancels `stack`) still get one. A `Row` chart draws every series as a bar, so there a line-typed series stacks like the bars. It is dashed, in the series' color, on the series' axis, and labelled "<series> trend". A split gets one line per split value. Nulls are skipped, and a series with fewer than two points gets none. Hiding the series in the legend hides its trend line too. Use it on a timeline, when the question is which way a measure is heading.
 - `tooltip: { "measures": [ ... ] }`: measures that reach the tooltip and nothing else — no series,
   no legend entry, no place on the value axis. For the count behind a rate, or a target beside an
   actual. A dimension cannot go here: every tooltip value is one per plotted row.

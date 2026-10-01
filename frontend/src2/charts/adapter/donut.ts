@@ -18,6 +18,7 @@ export function adaptDonutChart(input: ChartAdapterInput): ChartFiller | undefin
 
 	const props: DonutChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		data: input.result.rows,
 		category,
 		value,

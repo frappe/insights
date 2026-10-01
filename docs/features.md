@@ -106,6 +106,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.switch-type-keeps-config | A user changes chart type and the config survives where the new type has the same slot. |
 | charts.query-picker | A user picks which workbook query the chart reads. |
 | charts.title | A user titles a chart. |
+| charts.description-and-info | An author gives a chart a description under its title and info behind a mark beside it, and every reader of the chart sees both. On a Number chart, info belongs to each reading and sits beside its name. |
 | charts.missing-slot-message | A half-configured chart says which slot is missing, in the words the form uses. |
 | charts.preview | The builder previews an unsaved config and shows the rows and SQL that fed it. |
 | charts.preview-table-sort | A user sorts the preview rows by a column. |
@@ -133,6 +134,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.line-area | A user fills the area under a line. |
 | charts.line-data-points | A user shows a marker on each point of a line. |
 | charts.reference-lines | A user plots a reference line at a constant or at the average, median, min, max or sum of a measure, with a label, color and dash. |
+| charts.trend-line | A user turns on a series' trend line on a date or number x axis, unless the series is stacked with another: the straight fit through its points where the axis plots them, drawn dashed in the series' color. |
 | charts.sort | A user sorts a chart by a column and flips the direction; a date axis runs forwards unless the author turns it. |
 | charts.filter | A user filters a chart independently of its query. |
 | charts.limit | A user caps the rows the chart's query returns. |

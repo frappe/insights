@@ -50,7 +50,9 @@ class InsightsChartv3(Document):
 
         chart_type: DF.Data | None
         config: DF.JSON | None
+        description: DF.Data | None
         folder: DF.Data | None
+        info: DF.SmallText | None
         is_standard: DF.Check
         kept_for_desk: DF.Check
         old_name: DF.Data | None
@@ -461,6 +463,8 @@ class InsightsChartv3(Document):
             "doc": {
                 "name": self.name,
                 "title": self.title,
+                "description": self.description,
+                "info": self.info,
                 "workbook": self.workbook,
                 "query": self.query,
                 "chart_type": self.chart_type,

@@ -273,6 +273,8 @@ class ImportingOneChartIncludesItsQuery(InsightsIntegrationTestCase):
                 {
                     "doctype": DT.CHART,
                     "title": "chart to paste",
+                    "description": "Trials this month",
+                    "info": "Paid = moved to a paid plan.",
                     "workbook": cls.workbook,
                     "query": cls.query,
                     "chart_type": "Bar",
@@ -300,6 +302,16 @@ class ImportingOneChartIncludesItsQuery(InsightsIntegrationTestCase):
         query = frappe.db.get_value(DT.CHART, imported, "query")
         self.assertNotEqual(query, self.query, "the chart must not point back at the source site")
         self.assertEqual(frappe.db.get_value(DT.QUERY, query, "workbook"), self.target)
+
+    # @feature charts.copy-paste charts.description-and-info
+    def test_a_pasted_chart_keeps_its_description_and_info(self):
+        with as_user(IMPORTER):
+            imported = import_chart(self.file, self.target)
+
+        self.assertEqual(
+            frappe.db.get_value(DT.CHART, imported, ["description", "info"]),
+            ("Trials this month", "Paid = moved to a paid plan."),
+        )
 
 
 class ImportingAcrossSitesIgnoresTheWorkbookNameInTheFile(InsightsIntegrationTestCase):
@@ -388,6 +400,8 @@ class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
                     {
                         "doctype": DT.CHART,
                         "title": "format chart",
+                        "description": "Trials this month",
+                        "info": "Paid = moved to a paid plan.",
                         "workbook": cls.workbook,
                         "query": cls.query,
                         "chart_type": "Bar",
@@ -455,6 +469,17 @@ class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.get_value("Insights Folder", chart.folder, "title"), "Revenue")
         self.assertEqual(
             frappe.db.get_value("Insights Folder", chart.folder, "workbook"), imported["workbook"]
+        )
+
+    # @feature standard.file-format charts.description-and-info
+    def test_an_imported_chart_keeps_its_description_and_info(self):
+        with as_user(IMPORTER):
+            imported = import_workbook(self.file)
+        self.made_workbooks.append(imported["workbook"])
+
+        self.assertEqual(
+            frappe.db.get_value(DT.CHART, imported["names"][self.chart], ["description", "info"]),
+            ("Trials this month", "Paid = moved to a paid plan."),
         )
 
     # @feature standard.file-format

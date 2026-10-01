@@ -1,8 +1,14 @@
-import { BarChart, LineChart } from 'frappe-ui/charts'
+import * as echarts from 'echarts'
+import { BarChart, LineChart, type ChartTokens } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
 import type { ReferenceLine } from '../../types/chart.types'
+import { fitLine, takesTrendLine } from './axis'
+import { normalizeChartConfig } from '../helpers'
 import { adaptChart } from './index'
 import { axisChart, type AxisChartSpec } from './fixtures'
+import { buildAxisChartOption } from '../../../node_modules/frappe-ui/src/charts/axisChartOptions'
+import { normalizeAxisChartProps } from '../../../node_modules/frappe-ui/src/charts/seriesData'
+import { resolveChartTokens } from '../../../node_modules/frappe-ui/src/charts/tokens'
 
 // Everything here asserts on the props a chart is handed. What echarts renders
 // from them is v2's concern, and v2 tests it.
@@ -824,4 +830,515 @@ describe('drilling into a point', () => {
 			expect(input.result.columns.map((c) => c.name)).toContain(target!.column)
 		}
 	})
+})
+
+const at = (...ys: (number | null)[]) => ys.map((y, x) => ({ x, y }))
+
+describe('the fit a trend line draws', () => {
+	// @feature charts.trend-line
+	it('fits the slope and intercept by least squares', () => {
+		expect(fitLine(at(1, 3, 5, 7))).toEqual({ slope: 2, intercept: 1 })
+		expect(fitLine(at(2, 4, 3))).toEqual({ slope: 0.5, intercept: 2.5 })
+		expect(
+			fitLine([
+				{ x: 0, y: 10 },
+				{ x: 1, y: 20 },
+				{ x: 3, y: 40 },
+			]),
+		).toEqual({ slope: 10, intercept: 10 })
+	})
+
+	// @feature charts.trend-line
+	it('skips a point with no value', () => {
+		const fit = fitLine(at(1, null, 5, 7))
+		expect(fit?.slope).toBeCloseTo(2)
+		expect(fit?.intercept).toBeCloseTo(1)
+	})
+
+	// @feature charts.trend-line
+	it('fits nothing through fewer than two points, or two at one x', () => {
+		expect(fitLine([])).toBeUndefined()
+		expect(fitLine(at(null, 4, null))).toBeUndefined()
+		expect(
+			fitLine([
+				{ x: 1, y: 4 },
+				{ x: 1, y: 6 },
+			]),
+		).toBeUndefined()
+	})
+})
+
+describe('a trend line', () => {
+	const tokens = { axisLabel: 'oklch(0.58 0 0)', backdrop: '#242424' } as ChartTokens
+	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
+	const time = (date: string) => new Date(date).getTime()
+	const spec = (overrides: Partial<AxisChartSpec> = {}): AxisChartSpec => ({
+		type: 'Line',
+		dimension: month,
+		categories: ['2026-01-01', '2026-02-01', '2026-03-01'],
+		measures: [{ name: 'revenue', trendLine: true }],
+		readings: { revenue: [10, 30, 50] },
+		...overrides,
+	})
+	const propsWith = (overrides: Partial<AxisChartSpec> = {}) => {
+		const filler = adaptChart({ ...axisChart(spec(overrides)), tokens })
+		if (!filler) throw new Error('the adapter rendered nothing for this Chart')
+		return filler.props
+	}
+	const markLineOf = (props: Record<string, any>, column: string) =>
+		props.seriesConfig?.[column]?.echartOptions?.markLine
+	const endsOf = (props: Record<string, any>, column: string) =>
+		markLineOf(props, column)?.data[0].map((point: any) => point.coord)
+
+	// @feature charts.trend-line
+	it('rides the series it fits, silent and dashed, in the series color', () => {
+		const props = propsWith({
+			dimension: { name: 'week_number', type: 'Integer' },
+			categories: [1, 2, 3],
+		})
+		expect(props.xAxis.type).toBe('value')
+		expect(props.referenceLines).toBeUndefined()
+		expect(markLineOf(props, 'revenue')).toEqual({
+			silent: true,
+			symbol: 'none',
+			data: [
+				[
+					{
+						coord: [1, 10],
+						// no color: echarts draws a series' markLine in the series' own
+						lineStyle: { type: [3.5, 3], width: 1 },
+						label: {
+							show: true,
+							position: 'insideEndTop',
+							formatter: expect.any(Function),
+							fontSize: 11,
+							backgroundColor: 'color-mix(in srgb, #242424 80%, transparent)',
+							padding: [2, 4],
+						},
+					},
+					{ coord: [3, 50] },
+				],
+			],
+		})
+		expect(markLineOf(props, 'revenue').data[0][0].label.formatter()).toBe('Revenue trend')
+	})
+
+	// @feature charts.trend-line
+	it('fits a date where the axis plots it, so a skipped month is a gap', () => {
+		const props = propsWith({
+			categories: ['2026-01-01', '2026-02-01', '2026-04-01'],
+			readings: { revenue: [10, 20, 40] },
+		})
+		const [start, end] = endsOf(props, 'revenue')
+		expect(start[0]).toBe(time('2026-01-01'))
+		expect(start[1]).toBeCloseTo(10, 0)
+		expect(end[0]).toBe(time('2026-04-01'))
+		expect(end[1]).toBeCloseTo(40, 0)
+	})
+
+	// @feature charts.trend-line
+	it('runs from the earliest date to the latest whatever order the rows arrive in', () => {
+		// sorted by revenue, descending: January, March, February
+		const props = propsWith({
+			categories: ['2026-01-01', '2026-03-01', '2026-02-01'],
+			readings: { revenue: [30, 20, 10] },
+		})
+		const [start, end] = endsOf(props, 'revenue')
+		expect(start[0]).toBe(time('2026-01-01'))
+		expect(end[0]).toBe(time('2026-03-01'))
+		// the fit of Jan 30, Feb 10, Mar 20 runs from 25 to 15
+		expect(start[1]).toBeCloseTo(25, 0)
+		expect(end[1]).toBeCloseTo(15, 0)
+	})
+
+	// @feature charts.trend-line
+	it('draws none on a category axis, whose order may be a ranking', () => {
+		const props = propsWith({ dimension: 'region', categories: ['North', 'South', 'East'] })
+		expect(markLineOf(props, 'revenue')).toBeUndefined()
+	})
+
+	// @feature charts.trend-line
+	it('stops where the fit leaves the value axis, keeping its slope', () => {
+		// a series that starts low fits below zero at its first month, and
+		// echarts drops a line with an end off the axis
+		const props = propsWith({
+			categories: ['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01'],
+			readings: { revenue: [1, 2, 10, 30] },
+		})
+		const [start, end] = endsOf(props, 'revenue')
+		expect(start[1]).toBe(0)
+		expect(start[0]).toBeGreaterThan(time('2026-01-01'))
+		expect(end[0]).toBe(time('2026-04-01'))
+		expect(end[1]).toBeGreaterThan(0)
+		expect(end[1]).toBeLessThanOrEqual(30)
+	})
+
+	// @feature charts.trend-line
+	it('draws a flat line through a series that holds one decimal value', () => {
+		// a flat fit lands a float step off the series' own max, which is the
+		// top of the range it is cut to
+		const months = Array.from(
+			{ length: 12 },
+			(_, i) => `2026-${String(i + 1).padStart(2, '0')}-01`,
+		)
+		for (let k = 1; k < 100; k++) {
+			for (let n = 3; n <= 12; n++) {
+				const value = k / 100
+				const props = propsWith({
+					categories: months.slice(0, n),
+					readings: { revenue: Array(n).fill(value) },
+				})
+				const ends = endsOf(props, 'revenue')
+				expect(ends, `${n} points at ${value}`).toBeDefined()
+				for (const [, y] of ends) expect(y).toBeCloseTo(value, 9)
+			}
+		}
+	})
+
+	// @feature charts.trend-line
+	it("stops at the author's bounds on a Row chart, whose one value axis reads every series", () => {
+		const props = propsWith({
+			type: 'Row',
+			measures: [{ name: 'revenue', axis: 'right', trendLine: true }],
+			categories: ['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01'],
+			readings: { revenue: [1, 2, 10, 30] },
+			min: 5,
+		})
+		// a Row chart swaps the pair: value first
+		const [start] = endsOf(props, 'revenue')
+		expect(start[0]).toBe(5)
+	})
+
+	// @feature charts.trend-line
+	it('runs as far as the axis another series stretches, not its own values alone', () => {
+		// the fit of 10, 10, 100 starts at -5, and the axis reaches -100 for refunds
+		const props = propsWith({
+			dimension: { name: 'week_number', type: 'Integer' },
+			categories: [1, 2, 3],
+			measures: [{ name: 'revenue', trendLine: true }, 'refunds'],
+			readings: { revenue: [10, 10, 100], refunds: [-100, 0, 0] },
+		})
+		const [start, end] = endsOf(props, 'revenue')
+		expect(start[0]).toBe(1)
+		expect(start[1]).toBeCloseTo(-5)
+		expect(end).toEqual([3, 85])
+	})
+
+	// @feature charts.trend-line
+	it('runs as high as the stack beside it, not its raw values', () => {
+		// the fit of 0, 10, 20, 30, 35 ends at 37, past every raw value and
+		// under the stacked bars' 40
+		const props = propsWith({
+			type: 'Bar',
+			stacked: true,
+			dimension: { name: 'week_number', type: 'Integer' },
+			categories: [1, 2, 3, 4, 5],
+			measures: ['a', 'b', { name: 'revenue', mark: 'line', trendLine: true }],
+			readings: {
+				a: [20, 20, 20, 20, 20],
+				b: [20, 20, 20, 20, 20],
+				revenue: [0, 10, 20, 30, 35],
+			},
+		})
+		const [, end] = endsOf(props, 'revenue')
+		expect(end[0]).toBe(5)
+		expect(end[1]).toBeCloseTo(37)
+	})
+
+	// @feature charts.trend-line
+	it('stops at 100 beside a 100% stack, whose axis v2 pins there', () => {
+		const props = propsWith({
+			type: 'Bar',
+			normalized: true,
+			dimension: { name: 'week_number', type: 'Integer' },
+			categories: [1, 2, 3],
+			measures: ['a', 'b', { name: 'rate', mark: 'line', trendLine: true }],
+			readings: { a: [10, 10, 10], b: [10, 10, 10], rate: [40, 100, 160] },
+		})
+		const [start, end] = endsOf(props, 'rate')
+		expect(start).toEqual([1, 40])
+		expect(end[1]).toBe(100)
+		expect(end[0]).toBeCloseTo(2)
+	})
+
+	// @feature charts.trend-line
+	it('stops at the bounds the author set on the axis', () => {
+		const props = propsWith({ readings: { revenue: [10, 30, 50] }, max: 40 })
+		const [, end] = endsOf(props, 'revenue')
+		expect(end[1]).toBe(40)
+		expect(end[0]).toBeLessThan(time('2026-03-01'))
+	})
+
+	// @feature charts.trend-line
+	it('draws none on a series stacked with another, plain or to 100%', () => {
+		const split = {
+			type: 'Bar' as const,
+			splitBy: { dimension: 'channel', into: ['retail', 'online'] },
+			readings: { retail: [10, 20, 30], online: [60, 40, 20] },
+		}
+		const twoBars = {
+			type: 'Bar' as const,
+			measures: [{ name: 'revenue', trendLine: true }, 'refunds'],
+		}
+		for (const stacking of [{ stacked: true }, { normalized: true }]) {
+			const splitProps = propsWith({ ...split, ...stacking })
+			expect(splitProps.stacked).toBeTruthy()
+			expect(markLineOf(splitProps, 'online')).toBeUndefined()
+			expect(markLineOf(propsWith({ ...twoBars, ...stacking }), 'revenue')).toBeUndefined()
+		}
+	})
+
+	// @feature charts.trend-line
+	it('draws none on a stacked Row chart, which draws a line series as a bar', () => {
+		for (const stacking of [{ stacked: true }, { normalized: true }]) {
+			const props = propsWith({
+				type: 'Row',
+				...stacking,
+				measures: [
+					{ name: 'units', trendLine: true },
+					{ name: 'revenue', mark: 'line', trendLine: true },
+				],
+			})
+			expect(markLineOf(props, 'units')).toBeUndefined()
+			expect(markLineOf(props, 'revenue')).toBeUndefined()
+			// v2 overrides a line on a horizontal chart, so none is asked for
+			expect(props.seriesConfig?.revenue?.type).toBeUndefined()
+		}
+	})
+
+	// @feature charts.trend-line
+	it("draws on a new chart's one measure, as a Bar and as a Line", () => {
+		// a new chart is a Bar with its stack flag on, and a switch to Line keeps it
+		const drawn = axisChart(spec())
+		for (const chart_type of ['Bar', 'Line'] as const) {
+			const config = normalizeChartConfig({}, 'Bar') as any
+			expect(config.y_axis.stack).toBe(true)
+			config.x_axis = (drawn.config as any).x_axis
+			config.y_axis.series = (drawn.config as any).y_axis.series
+			const filler = adaptChart({ ...drawn, chart_type, config, tokens })
+			expect(markLineOf(filler!.props, 'revenue')).toBeDefined()
+		}
+	})
+
+	// @feature charts.trend-line
+	it('draws on a series no other stacks with: a line beside stacked bars, a lone bar', () => {
+		const beside = propsWith({
+			type: 'Bar',
+			stacked: true,
+			measures: ['units', 'refunds', { name: 'revenue', mark: 'line', trendLine: true }],
+		})
+		expect(markLineOf(beside, 'revenue')).toBeDefined()
+		for (const stacking of [{ stacked: true }, { normalized: true }]) {
+			expect(markLineOf(propsWith({ type: 'Bar', ...stacking }), 'revenue')).toBeDefined()
+		}
+	})
+
+	// @feature charts.trend-line
+	it('draws none for a series that did not ask for one', () => {
+		expect(markLineOf(propsWith({ measures: ['revenue'] }), 'revenue')).toBeUndefined()
+	})
+
+	// @feature charts.trend-line
+	it('fits each column of a split on its own, named as the legend names it', () => {
+		const props = propsWith({
+			splitBy: { dimension: 'channel', into: ['retail', 'online'] },
+			readings: { retail: [10, 20, 30], online: [60, 40, 20] },
+		})
+		expect(endsOf(props, 'retail').map(([, y]: number[]) => Math.round(y))).toEqual([10, 30])
+		expect(endsOf(props, 'online').map(([, y]: number[]) => Math.round(y))).toEqual([60, 20])
+		expect(markLineOf(props, 'online').data[0][0].label.formatter()).toBe('Online trend')
+	})
+
+	// @feature charts.trend-line
+	it('runs between the points it fits, and fits no line through one point', () => {
+		const props = propsWith({
+			categories: ['2026-01-01', '2026-02-01', '2026-03-01', '2026-04-01'],
+			readings: { revenue: [null, 10, 30, null] },
+		})
+		expect(endsOf(props, 'revenue').map(([x]: number[]) => x)).toEqual([
+			time('2026-02-01'),
+			time('2026-03-01'),
+		])
+		expect(markLineOf(propsWith({ readings: { revenue: [null, 10, null] } }), 'revenue')).toBe(
+			undefined,
+		)
+	})
+})
+
+describe('whether a series is offered a trend line', () => {
+	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
+	const configOf = (overrides: Partial<AxisChartSpec>) =>
+		axisChart({ type: 'Bar', dimension: month, measures: ['revenue'], ...overrides })
+			.config as any
+	const offered = (config: any, chartMark: 'bar' | 'line' = 'bar', horizontal = false) =>
+		config.y_axis.series.map((series: any) =>
+			takesTrendLine(config, series, chartMark, horizontal),
+		)
+
+	// @feature charts.trend-line
+	it('answers per series, as the adapter draws', () => {
+		expect(offered(configOf({ stacked: true }))).toEqual([true])
+		expect(offered(configOf({ type: 'Line', stacked: true }), 'line')).toEqual([true])
+		expect(offered(configOf({ stacked: true, measures: ['revenue', 'refunds'] }))).toEqual([
+			false,
+			false,
+		])
+		expect(
+			offered(
+				configOf({
+					stacked: true,
+					measures: ['units', 'refunds', { name: 'revenue', mark: 'line' }],
+				}),
+			),
+		).toEqual([false, false, true])
+		expect(
+			offered(
+				configOf({ stacked: true, splitBy: { dimension: 'channel', into: ['a', 'b'] } }),
+			),
+		).toEqual([false])
+		expect(offered(configOf({ dimension: 'region' }))).toEqual([false])
+		expect(
+			offered(
+				configOf({
+					type: 'Row',
+					stacked: true,
+					measures: ['units', { name: 'revenue', mark: 'line' }],
+				}),
+				'bar',
+				true,
+			),
+		).toEqual([false, false])
+	})
+})
+
+// The trend line rides frappe-ui's option, so this reads that option rather than
+// Insights' restatement of its rules. frappe-ui exports neither builder, so they
+// are reached by path: a release that moves them fails the import, not the test.
+describe('the option frappe-ui builds', () => {
+	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
+	const cases: Array<[string, Partial<AxisChartSpec>, ((config: any) => void)?]> = []
+	for (const type of ['Bar', 'Row', 'Line'] as const) {
+		for (const stacking of [{}, { stacked: true }, { normalized: true }]) {
+			const named = `${type} ${Object.keys(stacking)[0] || 'unstacked'}`
+			cases.push([
+				`${named}, two series`,
+				{ type, ...stacking, measures: ['units', 'revenue'] },
+			])
+			cases.push([
+				`${named}, a line-typed series`,
+				{ type, ...stacking, measures: ['units', { name: 'revenue', mark: 'line' }] },
+			])
+			cases.push([
+				`${named}, a series typed as no mark v2 draws`,
+				{ type, ...stacking, measures: ['units', 'revenue'] },
+				// written by the API or an import, never by the form
+				(config) => (config.y_axis.series[1].type = 'scatter'),
+			])
+			cases.push([
+				`${named}, beside a series that dips below zero`,
+				{
+					type,
+					...stacking,
+					measures: ['units', 'revenue'],
+					readings: { units: [-100, 0, 0], revenue: [10, 10, 100] },
+				},
+			])
+			cases.push([
+				`${named}, a line beside two series, rising past their values`,
+				{
+					type,
+					...stacking,
+					measures: ['units', 'refunds', { name: 'revenue', mark: 'line' }],
+					readings: {
+						units: [10, 10, 10],
+						refunds: [10, 10, 10],
+						revenue: [40, 100, 160],
+					},
+				},
+			])
+			for (const into of [['a'], ['a', 'b']]) {
+				cases.push([
+					`${named}, split into ${into.length}`,
+					{ type, ...stacking, splitBy: { dimension: 'channel', into } },
+				])
+			}
+			cases.push([
+				`${named}, two Right series beside one with no measure yet`,
+				{
+					type,
+					...stacking,
+					measures: [
+						{ name: 'revenue', axis: 'right' },
+						{ name: 'refunds', axis: 'right' },
+					],
+				},
+				(config) => config.y_axis.series.unshift({ measure: {} }),
+			])
+		}
+	}
+
+	// @feature charts.trend-line
+	it.each(cases)(
+		'%s: a trend line rides only a series v2 leaves unstacked, inside its axis',
+		(_name, spec, edit) => {
+			const input = axisChart({
+				type: 'Bar',
+				dimension: month,
+				categories: ['2026-01-01', '2026-02-01', '2026-03-01'],
+				measures: ['revenue'],
+				...spec,
+			})
+			const config = input.config as any
+			edit?.(config)
+			for (const series of config.y_axis.series) series.show_trend_line = true
+			const tokens = resolveChartTokens()
+			const props = adaptChart({ ...input, config, tokens })!.props as any
+
+			// what `BarChart` and `LineChart` hand the builder
+			const normalized = normalizeAxisChartProps(props)
+			const option = buildAxisChartOption(
+				{
+					...normalized.config,
+					type: input.chart_type === 'Line' ? 'line' : 'bar',
+					stacked: props.stacked,
+					horizontal: props.horizontal,
+				},
+				{ tokens, hiddenSeries: [], width: 600, format: normalized.format },
+			) as any
+			const plotted = option.series.filter(
+				(series: any) => series.name && series.data?.length,
+			)
+			const chart = echarts.init(null as any, null as any, {
+				renderer: 'svg',
+				ssr: true,
+				width: 600,
+				height: 400,
+			})
+			chart.setOption({ ...option, animation: false })
+
+			plotted.forEach((series: any, index: number) => {
+				const alone =
+					!series.stack ||
+					!plotted.some((other: any) => other !== series && other.stack === series.stack)
+				// ruled: a split that stacks never takes one, even with one value
+				const split = Boolean(
+					config.split_by?.dimension?.column_name && props.stacked && series.stack,
+				)
+				expect(Boolean(series.markLine), series.name).toBe(alone && !split)
+				if (!series.markLine) return
+
+				const axes = (chart as any)
+					.getModel()
+					.getSeriesByIndex(index)
+					.coordinateSystem.getAxes()
+				const value = props.horizontal ? 0 : 1
+				const [low, high] = axes[value].scale.getExtent()
+				for (const end of series.markLine.data[0]) {
+					expect(end.coord[value]).toBeGreaterThanOrEqual(low)
+					expect(end.coord[value]).toBeLessThanOrEqual(high)
+				}
+			})
+			chart.dispose()
+		},
+	)
 })

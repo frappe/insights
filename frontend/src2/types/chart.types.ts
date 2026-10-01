@@ -128,6 +128,9 @@ export type Series = {
 	type?: 'line' | 'bar'
 	align?: 'Left' | 'Right'
 	show_data_labels?: boolean
+	// A trend line: the straight least-squares fit through this series' points,
+	// drawn over it, dashed, in its color
+	show_trend_line?: boolean
 	// A series plotted at zero opacity and kept out of the legend, i.e. a Measure
 	// that reached the tooltip and nothing else. `tooltip.measures` says that, so
 	// `insights.patches.normalize_chart_configs` moved it there. Read, never written.
@@ -277,6 +280,8 @@ export type NumberColumnOptions = {
 	target?: NumberTarget
 	/** The one number the reading is compared with. Naming none compares nothing. */
 	comparison?: NumberComparison
+	/** Definitions and caveats, behind a mark beside the reading's name. */
+	info?: string
 }
 
 export type DonutChartConfig = NumberFormatConfig & {

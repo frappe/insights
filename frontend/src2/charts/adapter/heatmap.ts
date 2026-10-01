@@ -24,6 +24,7 @@ export function adaptHeatmapChart(input: ChartAdapterInput): ChartFiller | undef
 
 	const props: HeatmapChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		data: input.result.rows,
 		x,
 		y,

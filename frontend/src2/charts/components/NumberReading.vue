@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Button } from 'frappe-ui'
 import { NumberCard } from 'frappe-ui/charts'
-import { RefreshCcw } from 'lucide-vue-next'
+import { InfoIcon, RefreshCcw } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { __ } from '../../translation'
 import type { NumberCardClickEvent, NumberCardEntry } from '../adapter/number'
 import type { ChartFailure } from '../adapter/types'
 import ChartStateMessage from './ChartStateMessage.vue'
+import TitleMark from './TitleMark.vue'
 
 // One reading of a Number Chart. Nothing here decorates: it fills its space and
 // reports a click.
@@ -37,10 +38,11 @@ const emit = defineEmits<{
 }>()
 
 // `column` is what a drill names, `missing` stands in for the reading it names,
-// and `height` is the row's to apply, so none of them is something the card shows.
+// `height` is the row's to apply, and `info` goes behind the mark, so none of
+// them is something the card is handed.
 const reading = computed(() => {
 	// eslint-disable-next-line no-unused-vars
-	const { column, missing, height, ...card } = props.card
+	const { column, missing, height, info, ...card } = props.card
 	return card
 })
 
@@ -95,8 +97,15 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 				<ChartStateMessage :failure="failure" />
 			</template>
 
-			<template v-if="$slots['title-suffix']" #title-suffix>
-				<slot name="title-suffix" />
+			<!-- An empty `title` ends the card's: a mark's own tooltip is what shows
+			     when the reader points at it. -->
+			<template v-if="card.info || $slots['title-suffix']" #title-suffix>
+				<span class="flex items-center gap-1.5" title="">
+					<TitleMark v-if="card.info" :icon="InfoIcon" :label="__('Info')">
+						<div class="whitespace-pre-line">{{ card.info }}</div>
+					</TitleMark>
+					<slot name="title-suffix" />
+				</span>
 			</template>
 
 			<!-- The retry sits in the title row, which has zero height, so the

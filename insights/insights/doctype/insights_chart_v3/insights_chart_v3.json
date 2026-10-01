@@ -5,6 +5,8 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "description",
+  "info",
   "workbook",
   "query",
   "sort_order",
@@ -25,6 +27,18 @@
    "fieldname": "title",
    "fieldtype": "Data",
    "label": "Title"
+  },
+  {
+   "description": "A short line under the title. Leave it empty unless the title needs one.",
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description"
+  },
+  {
+   "description": "Definitions and caveats, shown behind an info icon beside the title.",
+   "fieldname": "info",
+   "fieldtype": "Small Text",
+   "label": "Info"
   },
   {
    "fieldname": "query",
@@ -121,7 +135,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-23 22:12:13.287784",
+ "modified": "2026-09-30 22:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",

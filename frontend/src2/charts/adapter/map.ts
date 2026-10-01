@@ -31,6 +31,7 @@ export type MapBucket = { min: number; max: number }
 
 export type MapChartProps = {
 	title?: string
+	subtitle?: string
 	map: NonNullable<MapChartConfig['map_type']>
 	/** Names the measure in the tooltip. */
 	measure: string
@@ -62,6 +63,7 @@ export function adaptMapChart(input: ChartAdapterInput): ChartFiller | undefined
 
 	const props: MapChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		map,
 		measure: measure.name,
 		regions,

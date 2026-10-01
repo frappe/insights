@@ -36,6 +36,14 @@ Charts aggregate; a mid-pipeline `summarize` in a query is a grain change, not
 presentation.
 _Avoid_: visual, graph
 
+**Description**:
+A chart's optional line under its title, stored as `description`: Frappe's word for the short line under a field. frappe-ui's charts print it as their `subtitle`. A Number chart does not show it: its cards have no such line.
+_Avoid_: subtitle (it is frappe-ui's prop, not the stored field), caption
+
+**Info**:
+A chart's optional longer text — definitions and caveats — behind a mark beside its title, shown on hover or focus. Stored as `info`. A Number chart keeps it per Reading instead, in that reading's `number_column_options` entry, behind a mark beside the reading's name.
+_Avoid_: tooltip (how it is shown, and a chart's own tooltip is on its plot), help, notes
+
 **Dashboard**:
 A grid of charts, filters, and text blocks; each item has a Layout.
 
@@ -50,6 +58,10 @@ _Avoid_: palette (it is how the picker behaves, not what it is called. "palette"
 **Measure**:
 A column or expression aggregated with an aggregation type (sum, count, …).
 _Avoid_: metric
+
+**Trend line**:
+The straight least-squares fit through one Series' plotted points, drawn over it, dashed, in its color. Stored on the Series as `show_trend_line`. It fits each point where the x axis plots it, a date at its time and a number at its value, so it is offered only on a date or number x axis (a Row chart draws a number as categories, so there only on a date). A series stacked with another is plotted at its stack height or its share, not its own values, so it gets none. Bars stack with bars and areas with areas, a line never stacks, and a series alone in its stack keeps its own values. A Row chart draws every series as a bar, a line-typed one too.
+_Avoid_: slope line, regression line, fit line
 
 **Dimension**:
 A column that results are grouped or split by, optionally at a Grain.

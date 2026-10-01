@@ -41,6 +41,7 @@ export type TableCellEvent = { column: QueryResultColumn; row: QueryResultRow }
 
 export type TableChartProps = {
 	title?: string
+	subtitle?: string
 	columns: QueryResultColumn[]
 	/** Formatted for reading: a date prints at the grain it was grouped by. */
 	rows: QueryResultRow[]
@@ -78,6 +79,7 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 
 	const props: TableChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		columns: result.columns,
 		rows: result.formattedRows,
 		sortOrder: sortOrderOf(config),

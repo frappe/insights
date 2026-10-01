@@ -48,6 +48,8 @@ without a listing call first.
     "c-revenue-trend": {
       "name": "c-revenue-trend",
       "title": "Revenue Trend",
+      "description": null,                 // optional, see reference/charts.md
+      "info": null,
       "workbook": "wb-sales",
       "folder": "Revenue",
       "sort_order": 0,

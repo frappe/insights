@@ -50,6 +50,7 @@ type MeasureSpec =
 			area?: boolean
 			smooth?: boolean
 			dataPoints?: boolean
+			trendLine?: boolean
 	  }
 
 export type AxisChartSpec = {
@@ -213,6 +214,7 @@ function toSeries(measure: MeasureSpecObject): Series {
 		...(measure.area ? { show_area: true } : {}),
 		...(measure.smooth ? { smooth: true } : {}),
 		...(measure.dataPoints ? { show_data_points: true } : {}),
+		...(measure.trendLine ? { show_trend_line: true } : {}),
 	}
 }
 
@@ -538,6 +540,8 @@ type NumberValueSpec = {
 	comparison?: NumberComparison
 	/** The target column's data, one number per period. */
 	target?: (number | null)[]
+	/** Definitions and caveats, behind the card's mark. */
+	info?: string
 }
 
 export type NumberChartSpec = {
@@ -591,6 +595,7 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 				? { target: { measure: toMeasure(`${value.name}_target`) } }
 				: {}),
 			...(value.comparison ? { comparison: value.comparison } : {}),
+			...(value.info ? { info: value.info } : {}),
 		})),
 		sparkline: Boolean(spec.sparkline),
 		...(spec.sparklineColor ? { sparkline_color: spec.sparklineColor } : {}),

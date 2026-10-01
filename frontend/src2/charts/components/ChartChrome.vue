@@ -42,6 +42,8 @@ const card = computed(() => !rendersOwnCards(props.chart.doc.chart_type))
 				<ChartBody
 					:chart="props.chart"
 					:title="props.chart.doc.title"
+					:description="props.chart.doc.description"
+					:info="props.chart.doc.info"
 					:reading="props.reading"
 					:readonly="props.readonly"
 					:filtered="props.filtered"

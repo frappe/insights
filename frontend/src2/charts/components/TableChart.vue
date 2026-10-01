@@ -52,7 +52,7 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 </script>
 
 <template>
-	<ChartContainer :title="props.title">
+	<ChartContainer :title="props.title" :subtitle="props.subtitle">
 		<template v-if="$slots['title-suffix']" #title-suffix>
 			<slot name="title-suffix" />
 		</template>

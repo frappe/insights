@@ -184,6 +184,7 @@ function showTooltip(name: string, value: number) {
 <template>
 	<ChartContainer
 		:title="props.title"
+		:subtitle="props.subtitle"
 		:error="failed ? __('Could not load the map') : null"
 		:empty="!props.regions.length"
 	>
