@@ -256,20 +256,23 @@ describe('a chart its author explained', () => {
 			fetchDrillData: () => Promise.reject(new Error('not asked')),
 		})
 		await read.load()
-		const app = createSSRApp({
-			render: () =>
-				h(ChartBody, {
-					chart: read,
-					title: 'Revenue',
-					description: DESCRIPTION,
-					info: INFO,
-				}),
-		})
-		app.config.warnHandler = () => {}
-		const html = await renderToString(app)
+		const render = (info: string | null) => {
+			const app = createSSRApp({
+				render: () =>
+					h(ChartBody, { chart: read, title: 'Revenue', description: DESCRIPTION, info }),
+			})
+			app.config.warnHandler = () => {}
+			return renderToString(app)
+		}
 
+		const html = await render(INFO)
 		expect(html.split(DESCRIPTION)).toHaveLength(2)
 		expect(html).toContain('aria-label="Info"')
+
+		// the description is the line under the title, so no mark repeats it
+		const described = await render(null)
+		expect(described.split(DESCRIPTION)).toHaveLength(2)
+		expect(described).not.toContain('aria-label="Info"')
 	})
 })
 
