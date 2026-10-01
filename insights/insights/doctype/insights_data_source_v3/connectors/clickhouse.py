@@ -2,6 +2,13 @@
 # For license information, please see license.txt
 
 import ibis
+from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
+
+from .compilers import StarExceptDropColumns
+
+
+class InsightsClickHouseCompiler(StarExceptDropColumns, ClickHouseCompiler):
+    pass
 
 
 def get_clickhouse_connection(data_source):
@@ -13,7 +20,7 @@ def get_clickhouse_connection(data_source):
     password = data_source.get_password(raise_exception=False)
     data_source.port = int(data_source.port or 8123)
 
-    return ibis.clickhouse.connect(
+    db = ibis.clickhouse.connect(
         host=data_source.host,
         port=data_source.port,
         user=data_source.username,
@@ -23,3 +30,5 @@ def get_clickhouse_connection(data_source):
         secure=True if data_source.use_ssl else False,
         connect_timeout=5,
     )
+    db.compiler = InsightsClickHouseCompiler()
+    return db

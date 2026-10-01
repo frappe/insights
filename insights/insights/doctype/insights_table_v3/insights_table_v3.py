@@ -16,6 +16,7 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
 from insights import not_permitted, user_permissions
+from insights.exceptions import TableNotStored
 from insights.permission_user import get_permission_user
 from insights.utils import InsightsDataSourcev3
 
@@ -145,7 +146,7 @@ class InsightsTablev3(Document):
         )
 
     @staticmethod
-    def get_ibis_table(data_source, table_name, use_live_connection=False):
+    def get_ibis_table(data_source, table_name, use_live_connection=False, import_if_not_exists=True):
         from insights.insights.doctype.insights_team.insights_team import (
             apply_table_restrictions,
             check_table_permission,
@@ -161,19 +162,30 @@ class InsightsTablev3(Document):
         if not site_db:
             check_table_permission(data_source, table_name, user=user)
 
+        def readable(t):
+            if site_db:
+                granted = team_grant(data_source, table_name, user=user)
+                return apply_user_permissions(t, data_source, table_name, user=user, granted=granted)
+            return apply_table_restrictions(t, data_source, table_name, user=user)
+
         ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
         if not use_live_connection and ds_type != "REST API":
             wt = insights.warehouse.get_table(data_source, table_name)
-            t = wt.get_ibis_table(import_if_not_exists=True)
-        else:
-            ds = InsightsDataSourcev3.get_doc(data_source)
-            t = ds.get_ibis_table(table_name)
+            try:
+                t = wt.get_ibis_table(import_if_not_exists=import_if_not_exists)
+            except TableNotStored as not_stored:
+                # a reader the live read refuses is told only that, not that the table is not
+                # stored. Only the site database refuses there; other sources were decided above
+                if site_db:
+                    try:
+                        readable(InsightsDataSourcev3.get_doc(data_source).get_ibis_table(table_name))
+                    except not_permitted.NotPermitted:
+                        not_permitted.forget_refusal(not_stored)
+                        raise
+                raise
+            return readable(t)
 
-        if site_db:
-            granted = team_grant(data_source, table_name, user=user)
-            return apply_user_permissions(t, data_source, table_name, user=user, granted=granted)
-
-        return apply_table_restrictions(t, data_source, table_name, user=user)
+        return readable(InsightsDataSourcev3.get_doc(data_source).get_ibis_table(table_name))
 
     def check_identity(self):
         """`autoname` builds the name out of the data source and the table, so the

@@ -97,6 +97,24 @@ def get_entry():
     return "insights_site"
 
 
+def caller() -> str:
+    """How the request authenticated, for `docs/telemetry.md`'s `caller`.
+
+    Frappe keeps no record of which one it used, and it lets a login cookie
+    through beside an `Authorization` header it cannot verify, so the header
+    cannot answer. The session can: `frappe.set_user`, which a token login
+    calls, sets the session id to the user's name, while a login cookie resumes
+    a session under a random id.
+    """
+    if not frappe.request:
+        return "job"
+    if frappe.session.user == "Guest":
+        return "guest"
+    if frappe.session.sid == frappe.session.user:
+        return "token"
+    return "session"
+
+
 def error_kind(exc: BaseException) -> str:
     """Which kind of failure an exception is, from the closed list in `docs/telemetry.md`.
 

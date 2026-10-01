@@ -44,6 +44,14 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.expression-sandbox | An expression reads Frappe data only with the permissions of the user it runs as. It cannot write, make outbound requests, run SQL, enqueue a job, call a method, send mail or register a commit hook. |
 | query.expression-json | An expression reads a key out of a JSON column, typed, and blanks a placeholder value. |
 | query.expression-help | The expression editor autocompletes and lists the available functions. |
+| query.expression-error-names-operation | An expression that fails in a run is refused with a message that names the operation, the expression and the cause. |
+| query.error-names-operation | A query that fails in a run is refused with a message that names the operation it failed in, and for a query it reads, that query's title. The failure keeps its class. |
+| query.error-detail | A failed run tells everyone which operation failed and its class, and only whoever may edit the query the cause and the expression. |
+| query.expression-column-named-like-function | A column named like a function, such as `day`, reads as the column where an expression uses it as a value, and as the function where it calls it. |
+| query.expression-date-diff | `date_diff` counts whole hours, minutes or seconds between two datetimes, and days between their dates. Weeks, months, quarters and years follow each database's own rule. |
+| query.expression-first-last-row | `is_first_row`, `is_last_row` and `filter_first_row` pick the end of each group in the order of their keys, and refuse a call with no key. A key wrapped in `asc()` or `desc()` keeps its own direction. |
+| query.expression-period-value | `previous_period_value`, `next_period_value` and `percentage_change` read the period a given number of grains away from the row's own, at the grain its date was summarized by or the one passed, and refuse a date with neither. A period with no row, a row with no date, and a change from zero read as null. |
+| query.expression-column-named-like-io | A column whose name starts like an I/O method, such as `from_plan`, reads as a column in an expression. |
 | query.summarize | A user groups rows by a dimension and aggregates measures. |
 | query.summarize-grain | A date dimension in a summarize groups at a grain, and a time column only at a clock grain. |
 | query.summarize-aggregations | A measure aggregates as sum, count, average, min, max or distinct count. |
@@ -236,6 +244,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.filter-row | No card shares a row with a dashboard filter; of the two, the one placed lower moves below the other. |
 | dashboard.text-block | A user adds a text block and its rich text is saved safe to render. |
 | dashboard.remove-item | A user removes an item from the dashboard. |
+| dashboard.item-layout-ids | Save gives an item with no grid cell, part of one or one the grid cannot read its type's size at the left, below the others; a Number chart gets one card's width. An item whose cell id an earlier item holds gets a new id. |
 | dashboard.reset-layout | A user discards unsaved layout changes. |
 | dashboard.rename | A user renames a dashboard. |
 | dashboard.refresh | A reader reloads a dashboard's chart data, with or without the cache. |
@@ -385,6 +394,9 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.malformed-request-refused | A request with a wrongly typed argument is refused with a message, not a crash. |
 | permissions.get-keeps-no-write | A new endpoint accepts only POST unless it is listed to accept GET, and a test fails when an endpoint that accepts GET commits, enqueues a job before the commit or writes to DuckDB. |
 | permissions.search-respects-access | A search over workbooks and columns returns only what the caller may read. |
+| permissions.lineage-respects-access | A query's lineage names only the queries, charts and dashboards the caller may read, and does not walk through one they may not. |
+| permissions.agent-profile-respects-access | A column an agent profiles, of a saved query or an unsaved pipeline, is refused every table, column and query the caller could not read through a saved query. |
+| permissions.agent-verify-respects-access | Verifying a workbook runs and names only the queries, charts and dashboards the caller may read. |
 
 ## data-store
 
@@ -398,6 +410,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.import-script-sandbox | An import job's script reads Frappe data, calls its client and inserts into its table; it cannot write to the site, enqueue a job, call a method, send mail or register a commit hook. |
 | data-store.failed-import-notice | A reader is told when a table's newest import failed, and nothing while one runs or a retry is queued. |
 | data-store.write-lock | A write waits for readers to finish and gives up at a timeout. |
+| data-store.run-without-import | A run that asks not to import refuses a data store table that is not stored yet and names it, instead of reading an empty table and queuing its import. |
 | data-store.division-by-zero | A division by zero returns null in the data store, as it does on the live connection. |
 | data-store.cleanup-prunes-stale | The weekly cleanup drops a table no query has used, and keeps one used recently, nested, freshly imported or incremental. |
 | data-store.cleanup-keeps-unexplained | The cleanup deletes only what it can rebuild and keeps an unexplained orphan. |
@@ -457,6 +470,10 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | tooling.workbook-skill-verify | The workbook skill's verify step reads a chart config the way the app does, so an agent authoring over the API is told what it got wrong. |
 | tooling.feature-coverage | The coverage table is generated from the `@feature` directives on the tests, and CI fails when a test has none or names a slug the feature list does not. |
 | tooling.e2e-seeding | An e2e test gets a seeded workbook, chart and viewer over REST before the browser opens. |
+| tooling.query-lineage | An agent asks for a query's lineage in one call: the queries and tables it reads, through every hop, and the queries, charts, dashboards and filter links that read it. |
+| tooling.agent-run-unsaved-query | An agent runs a pipeline without saving a query, through the method the Builder runs an unsaved query with, and gets a page of its rows. |
+| tooling.agent-profile-column | An agent profiles a column of a saved query or an unsaved pipeline in one call: row, null and distinct counts, range, most frequent values, and coverage per value of another column. Both columns are exact result column names. The answer is cached for 10 minutes unless forced, and a Data Store table that is not stored fails the call, never queues an import. |
+| tooling.agent-verify-workbook | An agent verifies a workbook in one call: every query and chart runs, every dashboard item names a chart the agent may read and every filter link resolves, and each dashboard's charts render with the filters it has of those given. A chart on a query that reads a table not stored is reported so and not run, a given filter no dashboard has is an error, and a chart sort its result has no column for is named, failing the chart only when it has a limit. |
 
 ## telemetry
 

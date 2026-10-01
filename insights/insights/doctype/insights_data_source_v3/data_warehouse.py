@@ -21,6 +21,7 @@ from ibis.common.exceptions import TableNotFound
 from ibis.expr.types import Expr, Table
 
 import insights
+from insights.exceptions import TableNotStored
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     IMPORT_WRITE_LOCK_TIMEOUT,
     WRITE_LOCK_TIMEOUT,
@@ -355,7 +356,10 @@ class WarehouseTable:
                 )
             else:
                 frappe.throw(
-                    f"{self.table_name} of {self.data_source} is not imported to the data warehouse."
+                    frappe._("{0} of {1} is not stored in the Data Store").format(
+                        self.table_name, self.data_source
+                    ),
+                    TableNotStored,
                 )
         except Exception as e:
             frappe.log_error(e)
@@ -419,8 +423,8 @@ class WarehouseTable:
 
     def drop(self) -> None:
         """Drop this table from the warehouse. No-op if it does not exist."""
-        with insights.warehouse.get_write_connection(self.schema) as db:
-            db.drop_table(self.warehouse_table_name, force=True)
+        with insights.warehouse.get_write_connection() as db:
+            db.drop_table(self.warehouse_table_name, database=self.schema, force=True)
 
 
 class WarehouseTableImporter:

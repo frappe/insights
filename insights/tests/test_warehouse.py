@@ -183,6 +183,17 @@ class TestWarehouse(InsightsIntegrationTestCase):
                 ],
             )
 
+    # @feature data-store.run-without-import
+    def test_dropping_a_table_whose_schema_was_never_created_does_nothing(self):
+        # a fresh site's store has no schema until its first import
+        with self.patched_warehouse() as db:
+            WarehouseTable("Site DB", "tabToDo").drop()
+
+            db.raw_sql("CREATE SCHEMA site_db")
+            db.raw_sql("CREATE TABLE site_db.tabtodo AS SELECT 1 AS id")
+            WarehouseTable("Site DB", "tabToDo").drop()
+            self.assertNotIn("tabtodo", db.list_tables(database="site_db"))
+
     # @feature data-store.division-by-zero
     def test_a_division_by_zero_returns_null_as_on_the_live_connection(self):
         with self.warehouse_db() as db:

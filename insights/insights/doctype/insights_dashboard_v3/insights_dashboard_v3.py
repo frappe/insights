@@ -28,6 +28,12 @@ from insights.utils import DocShare, File, get_app_url
 # a filter links a column as "links": { '<chart>': "`<query>`.`<column>`" }
 LINK_COLUMN = re.compile(r"^`([^`]+)`\.`([^`]+)`$")
 
+# (w, h) the editor gives an item it adds, in `frontend/src2/dashboard/dashboard.ts`
+DEFAULT_CELL = {"chart": (10, 20), "text": (10, 5), "filter": (4, 2)}
+# A Number chart's one card with no comparison, as `numberCardRows` sizes it. The
+# grid sets the height from the chart's config when it renders.
+NUMBER_CELL = (4, 4)
+
 # Which page the view came from, as `docs/telemetry.md` names them.
 VIEW_SURFACES = {"workbook", "shared", "dashboards", "desk"}
 
@@ -64,6 +70,7 @@ class InsightsDashboardv3(Document):
     def before_validate(self):
         self.sanitize_text_items()
         self.drop_deleted_charts()
+        self.place_unplaced_items()
         # linked_charts is derived from items, so build it before anything
         # validates it - validate() runs before before_save()
         self.set_linked_charts()
@@ -87,6 +94,66 @@ class InsightsDashboardv3(Document):
             return
 
         self.items = [item for item in items if item.get("type") != "chart" or item.get("chart") in stored]
+
+    def place_unplaced_items(self):
+        """Give each item a cell id of its own and every key of its cell.
+
+        The grid keys every cell by `layout.i` and reads `x`, `y`, `w` and `h` of
+        each. The editor writes all five. An item written by any other caller that
+        lacks one, or holds one it cannot read, gets its type's size at the left,
+        under the lowest cell. An item whose id an earlier item holds gets a new
+        id. Nothing outside the item refers to it.
+        """
+        items = frappe.parse_json(self.items) or []
+        layouts = [item.get("layout") if isinstance(item.get("layout"), dict) else {} for item in items]
+        unsized = [not all(is_grid_number(layout.get(key)) for key in "xywh") for layout in layouts]
+        taken = {str(layout["i"]) for layout in layouts if layout.get("i")}
+        held = set()
+        bottom = max((layout_bottom(layout) for layout in layouts), default=0)
+        number_charts = self.number_charts(
+            item for item, needs_size in zip(items, unsized, strict=True) if needs_size
+        )
+        changed = False
+        for item, layout, needs_size in zip(items, layouts, unsized, strict=True):
+            if not layout.get("i") or str(layout["i"]) in held:
+                i = frappe.generate_hash(length=8)
+                while i in taken:
+                    i = frappe.generate_hash(length=8)
+                taken.add(i)
+                layout["i"] = i
+                changed = True
+            held.add(str(layout["i"]))
+
+            if needs_size:
+                w, h = self.default_cell(item, number_charts)
+                for key, default in (("x", 0), ("w", w), ("h", h), ("y", bottom)):
+                    if not is_grid_number(layout.get(key)):
+                        layout[key] = default
+                bottom = max(bottom, layout_bottom(layout))
+                changed = True
+            item["layout"] = layout
+
+        if changed:
+            self.items = items
+
+    @staticmethod
+    def number_charts(items) -> set[str]:
+        charts = {item.get("chart") for item in items if item.get("type") == "chart"} - {None}
+        if not charts:
+            return set()
+        return set(
+            frappe.get_all(
+                "Insights Chart v3",
+                filters={"name": ("in", sorted(charts)), "chart_type": "Number"},
+                pluck="name",
+            )
+        )
+
+    @staticmethod
+    def default_cell(item: dict, number_charts: set[str]) -> tuple[int, int]:
+        if item.get("type") == "chart" and item.get("chart") in number_charts:
+            return NUMBER_CELL
+        return DEFAULT_CELL.get(item.get("type"), DEFAULT_CELL["chart"])
 
     def sanitize_text_items(self):
         """A text item is authored as rich text and rendered as HTML.
@@ -510,6 +577,15 @@ class InsightsDashboardv3(Document):
         newly_shared = set(people_with_access) - set(existing_share_users)
         if newly_shared:
             capture_share_granted("dashboard", "user", len(newly_shared))
+
+
+def is_grid_number(value) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
+def layout_bottom(layout: dict) -> int:
+    y, h = layout.get("y"), layout.get("h")
+    return y + h if is_grid_number(y) and is_grid_number(h) else 0
 
 
 def filter_not_available():
