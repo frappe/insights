@@ -1033,6 +1033,24 @@ describe('a trend line', () => {
 	})
 
 	// @feature charts.trend-line
+	it('draws none on a stacked Row chart, which draws a line series as a bar', () => {
+		for (const stacking of [{ stacked: true }, { normalized: true }]) {
+			const props = propsWith({
+				type: 'Row',
+				...stacking,
+				measures: [
+					{ name: 'units', trendLine: true },
+					{ name: 'revenue', mark: 'line', trendLine: true },
+				],
+			})
+			expect(markLineOf(props, 'units')).toBeUndefined()
+			expect(markLineOf(props, 'revenue')).toBeUndefined()
+			// v2 overrides a line on a horizontal chart, so none is asked for
+			expect(props.seriesConfig?.revenue?.type).toBeUndefined()
+		}
+	})
+
+	// @feature charts.trend-line
 	it("draws on a new chart's one measure, as a Bar and as a Line", () => {
 		// a new chart is a Bar with its stack flag on, and a switch to Line keeps it
 		const drawn = axisChart(spec())
@@ -1123,5 +1141,16 @@ describe('whether a series is offered a trend line', () => {
 			),
 		).toEqual([false])
 		expect(offered(configOf({ dimension: 'region' }))).toEqual([false])
+		expect(
+			offered(
+				configOf({
+					type: 'Row',
+					stacked: true,
+					measures: ['units', { name: 'revenue', mark: 'line' }],
+				}),
+				'bar',
+				true,
+			),
+		).toEqual([false, false])
 	})
 })

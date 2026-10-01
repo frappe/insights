@@ -60,7 +60,7 @@ A column or expression aggregated with an aggregation type (sum, count, …).
 _Avoid_: metric
 
 **Trend line**:
-The straight least-squares fit through one Series' plotted points, drawn over it, dashed, in its color. Stored on the Series as `show_trend_line`. It fits each point where the x axis plots it, a date at its time and a number at its value, so it is offered only on a date or number x axis (a Row chart draws a number as categories, so there only on a date). A series stacked with another is plotted at its stack height or its share, not its own values, so it gets none. Bars stack with bars and areas with areas, a line never stacks, and a series alone in its stack keeps its own values.
+The straight least-squares fit through one Series' plotted points, drawn over it, dashed, in its color. Stored on the Series as `show_trend_line`. It fits each point where the x axis plots it, a date at its time and a number at its value, so it is offered only on a date or number x axis (a Row chart draws a number as categories, so there only on a date). A series stacked with another is plotted at its stack height or its share, not its own values, so it gets none. Bars stack with bars and areas with areas, a line never stacks, and a series alone in its stack keeps its own values. A Row chart draws every series as a bar, a line-typed one too.
 _Avoid_: slope line, regression line, fit line
 
 **Dimension**:

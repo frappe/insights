@@ -90,7 +90,7 @@ function adaptAxisChart(
 		columns.map((column) => {
 			const series = seriesByColumn.get(column)
 			const owns = series ? columnsOwned.get(series) === 1 : false
-			return [column, styleFor(config, series, mark, owns, overlap)]
+			return [column, styleFor(config, series, mark, owns, overlap, horizontal)]
 		}),
 	)
 
@@ -268,13 +268,14 @@ function styleFor(
 	mark: ChartMark,
 	ownsOneColumn: boolean,
 	overlap: boolean,
+	horizontal: boolean,
 ): SeriesStyle {
 	// the slots the normalizer writes, read the way every other line here reads
 	// them: an entry point that bypasses it must not blank the card
 	const line = (config.y_axis || {}) as YAxisLine
 	const style: SeriesStyle = {}
 
-	const type = markOf(config, series, mark)
+	const type = markOf(config, series, mark, horizontal)
 	if (type !== mark) style.type = type
 
 	if (ownsOneColumn && series?.color?.[0]) style.color = series.color[0]
@@ -644,8 +645,10 @@ export function takesTrendLine(
 	if (plottedXAxisType(config.x_axis?.dimension, horizontal) === 'category') return false
 	const all = (config.y_axis?.series || []).filter((s) => s.measure?.measure_name)
 	const stacked = Boolean(stackingFor(config.y_axis, hasBarsOnBothAxes(all, mark, horizontal)))
-	const own = markOf(config, series, mark)
-	const others = all.filter((other) => other !== series).map((s) => markOf(config, s, mark))
+	const own = markOf(config, series, mark, horizontal)
+	const others = all
+		.filter((other) => other !== series)
+		.map((s) => markOf(config, s, mark, horizontal))
 	// a split plots the series once per value, and those stack with each other
 	if (config.split_by?.dimension?.column_name) others.push(own)
 	return !stacksWithAnother(stacked, own, others)
@@ -661,8 +664,19 @@ function stacksWithAnother(stacked: boolean, mark: ChartMark, others: ChartMark[
 	return stacked && mark !== 'line' && others.includes(mark)
 }
 
-/** What a Series plots as: its own mark, else the chart's, and a line with its area filled is an area. */
-function markOf(config: MixedChartConfig, series: Series | undefined, mark: ChartMark): ChartMark {
+/**
+ * What a Series plots as: its own mark, else the chart's, and a line with its
+ * area filled is an area. A horizontal chart draws every series as a bar, as
+ * v2's `resolveMark` in `frappe-ui/src/charts/axisChartCommon.ts` does: its
+ * value axis runs across the plot, and only bars are drawn against it.
+ */
+function markOf(
+	config: MixedChartConfig,
+	series: Series | undefined,
+	mark: ChartMark,
+	horizontal: boolean,
+): ChartMark {
+	if (horizontal) return 'bar'
 	const line = (config.y_axis || {}) as YAxisLine
 	// The form wrote 'Line' where the type declares 'line'.
 	// `insights.patches.normalize_chart_configs` folded the stored ones. A config
