@@ -471,11 +471,7 @@ class InsightsQueryv3(Document):
 
         values_query = (
             builder.query.select(column_name)
-            .filter(
-                getattr(_, column_name).notnull()
-                if not search_term
-                else getattr(_, column_name).ilike(f"%{search_term}%")
-            )
+            .filter(_[column_name].notnull() if not search_term else _[column_name].ilike(f"%{search_term}%"))
             .distinct()
             .head(limit)
         )

@@ -116,6 +116,21 @@ results = [
 
         self.assertIn("Supported granularities: second, minute, hour", str(exc.exception))
 
+    # @feature query.summarize-aggregations
+    def test_a_row_count_reads_a_first_column_named_like_a_table_method(self):
+        query = self.build_query(
+            [
+                {"type": "code", "code": "results = [{'execute': 'a'}, {'execute': 'b'}]"},
+                {
+                    "type": "summarize",
+                    "measures": [{"measure_name": "rows", "column_name": "count", "aggregation": "count"}],
+                    "dimensions": [],
+                },
+            ]
+        )
+
+        self.assertEqual(query.execute()["rows"].tolist(), [2])
+
 
 class TestIbisPivotWider(IbisQueryBuilderTestCase):
     def pivot_totals(self, sales, max_column_values):
@@ -178,6 +193,37 @@ class TestIbisPivotWider(IbisQueryBuilderTestCase):
             self.assertEqual(self.pivot_totals(sales, 2), {"null": 150, "zulu": 200, "Others": 10})
         with self.subTest("no cut"):
             self.assertEqual(self.pivot_totals(sales, 3), {"alpha": 10, "zulu": 200, "null": 150})
+
+    # @feature charts.split-by-max-values query.pivot-wider
+    def test_pivot_reads_a_split_and_measure_named_like_table_methods(self):
+        """The cut ranks by the measure and folds the split's tail, both read by name."""
+        sales = [
+            {"month": "2026-01", "execute": "alpha", "sql": 10},
+            {"month": "2026-01", "execute": "bravo", "sql": 5},
+            {"month": "2026-01", "execute": "zulu", "sql": 100},
+        ]
+        operations = [
+            {"type": "code", "code": f"results = {sales}"},
+            {
+                "type": "pivot_wider",
+                "rows": [{"column_name": "month", "data_type": "String", "dimension_name": "month"}],
+                "columns": [{"column_name": "execute", "data_type": "String", "dimension_name": "execute"}],
+                "values": [
+                    {
+                        "column_name": "sql",
+                        "data_type": "Integer",
+                        "aggregation": "sum",
+                        "measure_name": "sql",
+                    }
+                ],
+                "max_column_values": 2,
+            },
+        ]
+
+        result = self.build_query(operations).execute()
+        self.assertEqual(
+            result.drop(columns=["month"]).sum().to_dict(), {"alpha": 10, "zulu": 100, "Others": 5}
+        )
 
 
 class TestIbisWindowedNumberCard(IbisQueryBuilderTestCase):

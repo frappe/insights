@@ -973,7 +973,7 @@ class IbisQueryBuilder:
                 selected_names = [str(v) for v in names.flatten()]
 
                 col_name = columns[0].get_name()
-                col_expr = getattr(self.query, col_name)
+                col_expr = self.query[col_name]
 
                 # replace values not in selected_names with 'Others'
                 # use ibis.case() since ibis.where isn't available on the module
@@ -1011,7 +1011,7 @@ class IbisQueryBuilder:
         The names come back in their own ascending order, which becomes the
         column order. A split on a date stays chronological that way.
         """
-        rank = getattr(self.query, value_names[0]).sum() if value_names else self.query.count()
+        rank = self.query[value_names[0]].sum() if value_names else self.query.count()
         ranked = self.query.aggregate(**{"__rank__": rank}, by=names_from)
         # names_from breaks a tie, so an equal measure keeps the same set every run
         ranked = ranked.order_by([ibis.desc("__rank__"), *names_from])
@@ -1348,7 +1348,7 @@ class IbisQueryBuilder:
     def translate_measure(self, measure):
         if measure.column_name == "count" and measure.aggregation == "count":
             first_column = self.query.columns[0]
-            first_column = getattr(self.query, first_column)
+            first_column = self.query[first_column]
             return first_column.count().name(measure.measure_name)
 
         if "expression" in measure:
@@ -1475,7 +1475,8 @@ class IbisQueryBuilder:
 
     def get_current_columns(self):
         # TODO: handle collisions with function names
-        return {col: getattr(self.query, col) for col in self.query.schema().names}
+        # by item: a table's method outranks its column of the same name on attribute access
+        return {col: self.query[col] for col in self.query.schema().names}
 
 
 def clamp(value, lo: int, hi: int) -> int:

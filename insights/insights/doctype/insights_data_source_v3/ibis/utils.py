@@ -377,7 +377,7 @@ def validate_names(tree, columns: list[dict]):
 def eval_script(table, schema: dict[str, str]):
     script = get_functions()
     for col_name in schema:
-        script[col_name] = getattr(table, col_name)
+        script[col_name] = table[col_name]
     return script
 
 
