@@ -134,12 +134,20 @@ function adaptAxisChart(
 			const series = seriesByColumn.get(column)
 			return series?.show_trend_line && takesTrendLine(config, series, mark, horizontal)
 		}),
-		columns,
 		input.result.rows,
 		horizontal,
-		// v2 reads a horizontal chart's every series on its one value axis
-		(column) => (onRight(column) && !horizontal ? 'y2' : 'y'),
-		{ y: props.yAxis, y2: props.y2Axis },
+		{
+			columns,
+			// v2 reads a horizontal chart's every series on its one value axis
+			axisOf: (column) => (onRight(column) && !horizontal ? 'y2' : 'y'),
+			bounds: { y: props.yAxis, y2: props.y2Axis },
+			// the stack v2 puts a column in, when it puts it in one
+			stackOf: (column) => {
+				const drawn = styles.get(column)?.type || mark
+				return stacksWithAnother(Boolean(stacking), drawn, [drawn]) ? drawn : undefined
+			},
+			normalized: stacking === 'normalized',
+		},
 		input.tokens,
 	)
 
@@ -506,11 +514,9 @@ export function fitLine(
 function trendLinesFor(
 	config: MixedChartConfig,
 	columns: string[],
-	plottedColumns: string[],
 	rows: QueryResultRow[],
 	horizontal: boolean,
-	axisOf: (column: string) => 'y' | 'y2',
-	axes: Record<'y' | 'y2', ChartValueAxisOptions | undefined>,
+	plot: PlottedValues,
 	tokens?: ChartTokens,
 ): Map<string, Record<string, any>> {
 	const dimension = config.x_axis?.dimension
@@ -526,17 +532,17 @@ function trendLinesFor(
 		return at === null ? [] : [{ row, at }]
 	})
 
-	// Every column the axis plots reaches it, not the trend's own alone. A
-	// stack's raw values are inside its sums, so they are read as they are.
 	const ranges = new Map<'y' | 'y2', [number, number]>()
 	const rangeOf = (axis: 'y' | 'y2') => {
-		if (!ranges.has(axis)) {
-			const values = plottedColumns
-				.filter((column) => axisOf(column) === axis)
-				.flatMap((column) => placed.map(({ row }) => toNumber(row[column])))
-				.filter((value): value is number => value !== null)
-			ranges.set(axis, valueRange(values, axes[axis]))
-		}
+		if (!ranges.has(axis))
+			ranges.set(
+				axis,
+				axisRange(
+					plot,
+					axis,
+					placed.map(({ row }) => row),
+				),
+			)
 		return ranges.get(axis)!
 	}
 
@@ -558,7 +564,7 @@ function trendLinesFor(
 				xs.reduce((low, at) => (at < low ? at : low)),
 				xs.reduce((high, at) => (at > high ? at : high)),
 			],
-			rangeOf(axisOf(column)),
+			rangeOf(plot.axisOf(column)),
 		)
 		if (!ends) continue
 		const coord = ([at, value]: number[]) => (horizontal ? [value, at] : [at, value])
@@ -581,6 +587,56 @@ function trendLinesFor(
 		lines.set(column, { silent: true, symbol: 'none', data: [[start, end]] })
 	}
 	return lines
+}
+
+/** What the chart plots on its value axes, for the range a trend line is cut to. */
+type PlottedValues = {
+	columns: string[]
+	axisOf: (column: string) => 'y' | 'y2'
+	bounds: Record<'y' | 'y2', ChartValueAxisOptions | undefined>
+	/** The stack a column joins, for one that stacks at all. */
+	stackOf: (column: string) => string | undefined
+	normalized: boolean
+}
+
+/**
+ * The values an axis always shows, from what v2 plots on it: every column's
+ * own value, and for columns stacked together, each row's stack. echarts stacks
+ * the positive values and the negative ones apart (`stackStrategy` 'samesign',
+ * its default, `echarts/lib/processor/dataStack.js`). A 100% stack's axis is
+ * pinned to 0 to 100 over any bound (`pinNormalizedAxes` in
+ * `frappe-ui/src/charts/axisChartOptions.ts`). A column alone in its stack plots
+ * its own values (`stackShares`).
+ */
+function axisRange(
+	plot: PlottedValues,
+	axis: 'y' | 'y2',
+	rows: QueryResultRow[],
+): [number, number] {
+	const onAxis = plot.columns.filter((column) => plot.axisOf(column) === axis)
+	const stacks = new Map<string, string[]>()
+	for (const column of onAxis) {
+		const stack = plot.stackOf(column)
+		if (stack) stacks.set(stack, [...(stacks.get(stack) || []), column])
+	}
+	const stacked = [...stacks.values()].filter((members) => members.length > 1)
+	if (plot.normalized && stacked.length) return [0, 100]
+
+	const inStack = new Set(stacked.flat())
+	const values = onAxis
+		.filter((column) => !inStack.has(column))
+		.flatMap((column) => rows.map((row) => toNumber(row[column])))
+		.filter((value): value is number => value !== null)
+	for (const members of stacked) {
+		for (const row of rows) {
+			const cells = members.map((column) => toNumber(row[column]) ?? 0)
+			values.push(
+				cells.reduce((sum, value) => (value > 0 ? sum + value : sum), 0),
+				cells.reduce((sum, value) => (value < 0 ? sum + value : sum), 0),
+			)
+		}
+	}
+	return valueRange(values, plot.bounds[axis])
 }
 
 /**

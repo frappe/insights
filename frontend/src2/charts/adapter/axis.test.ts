@@ -1025,6 +1025,43 @@ describe('a trend line', () => {
 	})
 
 	// @feature charts.trend-line
+	it('runs as high as the stack beside it, not its raw values', () => {
+		// the fit of 0, 10, 20, 30, 35 ends at 37, past every raw value and
+		// under the stacked bars' 40
+		const props = propsWith({
+			type: 'Bar',
+			stacked: true,
+			dimension: { name: 'week_number', type: 'Integer' },
+			categories: [1, 2, 3, 4, 5],
+			measures: ['a', 'b', { name: 'revenue', mark: 'line', trendLine: true }],
+			readings: {
+				a: [20, 20, 20, 20, 20],
+				b: [20, 20, 20, 20, 20],
+				revenue: [0, 10, 20, 30, 35],
+			},
+		})
+		const [, end] = endsOf(props, 'revenue')
+		expect(end[0]).toBe(5)
+		expect(end[1]).toBeCloseTo(37)
+	})
+
+	// @feature charts.trend-line
+	it('stops at 100 beside a 100% stack, whose axis v2 pins there', () => {
+		const props = propsWith({
+			type: 'Bar',
+			normalized: true,
+			dimension: { name: 'week_number', type: 'Integer' },
+			categories: [1, 2, 3],
+			measures: ['a', 'b', { name: 'rate', mark: 'line', trendLine: true }],
+			readings: { a: [10, 10, 10], b: [10, 10, 10], rate: [40, 100, 160] },
+		})
+		const [start, end] = endsOf(props, 'rate')
+		expect(start).toEqual([1, 40])
+		expect(end[1]).toBe(100)
+		expect(end[0]).toBeCloseTo(2)
+	})
+
+	// @feature charts.trend-line
 	it('stops at the bounds the author set on the axis', () => {
 		const props = propsWith({ readings: { revenue: [10, 30, 50] }, max: 40 })
 		const [, end] = endsOf(props, 'revenue')
@@ -1204,6 +1241,19 @@ describe('the option frappe-ui builds', () => {
 					...stacking,
 					measures: ['units', 'revenue'],
 					readings: { units: [-100, 0, 0], revenue: [10, 10, 100] },
+				},
+			])
+			cases.push([
+				`${named}, a line beside two series, rising past their values`,
+				{
+					type,
+					...stacking,
+					measures: ['units', 'refunds', { name: 'revenue', mark: 'line' }],
+					readings: {
+						units: [10, 10, 10],
+						refunds: [10, 10, 10],
+						revenue: [40, 100, 160],
+					},
 				},
 			])
 			for (const into of [['a'], ['a', 'b']]) {
