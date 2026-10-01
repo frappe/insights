@@ -1176,6 +1176,12 @@ describe('the option frappe-ui builds', () => {
 				`${named}, a line-typed series`,
 				{ type, ...stacking, measures: ['units', { name: 'revenue', mark: 'line' }] },
 			])
+			cases.push([
+				`${named}, a series typed as no mark v2 draws`,
+				{ type, ...stacking, measures: ['units', 'revenue'] },
+				// written by the API or an import, never by the form
+				(config) => (config.y_axis.series[1].type = 'scatter'),
+			])
 			for (const into of [['a'], ['a', 'b']]) {
 				cases.push([
 					`${named}, split into ${into.length}`,

@@ -678,9 +678,14 @@ function markOf(
 	// `insights.patches.normalize_chart_configs` folded the stored ones. A config
 	// an import delivers must still not silently plot the chart's own mark.
 	const asked = (series?.type?.toLowerCase() as ChartMark) || mark
+	// a mark v2 cannot draw, which only the API or an import can store, is
+	// drawn as the chart's own
+	if (!MARKS.includes(asked)) return mark
 	const area = asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
 	return area ? 'area' : asked
 }
+
+const MARKS: ChartMark[] = ['bar', 'line', 'area']
 
 /**
  * The axis the x column is plotted on, as v2 resolves it (`resolveXAxis` in
