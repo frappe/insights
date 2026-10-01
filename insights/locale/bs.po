@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-09-07 08:43\n"
+"PO-Revision-Date: 2026-09-28 10:15\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Bosnian\n"
 "MIME-Version: 1.0\n"
@@ -1183,7 +1183,7 @@ msgstr "Prisilno Osvježi"
 
 #: frontend/src2/query/components/ScriptQueryEditor.vue:103
 msgid "Force Run"
-msgstr "Prisilno Pokreni"
+msgstr "Prisilno Izvrši"
 
 #. Label of the foreign_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -1267,7 +1267,7 @@ msgstr "Sakriveno"
 
 #: frontend/src2/query/components/FormattingSelector.vue:59
 msgid "Highlight Cell"
-msgstr "Označi Ćeliju"
+msgstr "Odaberi Ćeliju"
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
 msgid "Horizontal"
@@ -1906,7 +1906,7 @@ msgstr "Odaberi kontrolnu tablu kao omiljenu da bi je vidjeli ovdje."
 
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
-msgstr "Označi kao neuspješno"
+msgstr "Odaberi kao neuspješno"
 
 #: frontend/src2/dashboard/DashboardText.vue:54
 msgid "Markdown supported"
@@ -2539,7 +2539,7 @@ msgstr "Izvrši"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
-msgstr "Pokreni {0} od {1}"
+msgstr "Izvrši {0} od {1}"
 
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
