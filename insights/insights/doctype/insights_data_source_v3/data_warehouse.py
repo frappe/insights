@@ -236,10 +236,7 @@ class WarehouseTableWriter:
         return total_rows
 
     def _table_exists(self, db: DuckDBBackend) -> bool:
-        try:
-            return db.list_tables(like=f"^{self.table_name}$")
-        except Exception:
-            return False
+        return bool(db.list_tables(like=f"^{self.table_name}$"))
 
     def _upsert(self, db: DuckDBBackend, incoming: Table) -> None:
         if not self.primary_key_column or not self.cursor_column:
