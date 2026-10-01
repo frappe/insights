@@ -1010,6 +1010,21 @@ describe('a trend line', () => {
 	})
 
 	// @feature charts.trend-line
+	it('runs as far as the axis another series stretches, not its own values alone', () => {
+		// the fit of 10, 10, 100 starts at -5, and the axis reaches -100 for refunds
+		const props = propsWith({
+			dimension: { name: 'week_number', type: 'Integer' },
+			categories: [1, 2, 3],
+			measures: [{ name: 'revenue', trendLine: true }, 'refunds'],
+			readings: { revenue: [10, 10, 100], refunds: [-100, 0, 0] },
+		})
+		const [start, end] = endsOf(props, 'revenue')
+		expect(start[0]).toBe(1)
+		expect(start[1]).toBeCloseTo(-5)
+		expect(end).toEqual([3, 85])
+	})
+
+	// @feature charts.trend-line
 	it('stops at the bounds the author set on the axis', () => {
 		const props = propsWith({ readings: { revenue: [10, 30, 50] }, max: 40 })
 		const [, end] = endsOf(props, 'revenue')
@@ -1181,6 +1196,15 @@ describe('the option frappe-ui builds', () => {
 				{ type, ...stacking, measures: ['units', 'revenue'] },
 				// written by the API or an import, never by the form
 				(config) => (config.y_axis.series[1].type = 'scatter'),
+			])
+			cases.push([
+				`${named}, beside a series that dips below zero`,
+				{
+					type,
+					...stacking,
+					measures: ['units', 'revenue'],
+					readings: { units: [-100, 0, 0], revenue: [10, 10, 100] },
+				},
 			])
 			for (const into of [['a'], ['a', 'b']]) {
 				cases.push([

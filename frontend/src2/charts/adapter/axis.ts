@@ -134,10 +134,12 @@ function adaptAxisChart(
 			const series = seriesByColumn.get(column)
 			return series?.show_trend_line && takesTrendLine(config, series, mark, horizontal)
 		}),
+		columns,
 		input.result.rows,
 		horizontal,
 		// v2 reads a horizontal chart's every series on its one value axis
-		(column) => (onRight(column) && !horizontal ? props.y2Axis : props.yAxis),
+		(column) => (onRight(column) && !horizontal ? 'y2' : 'y'),
+		{ y: props.yAxis, y2: props.y2Axis },
 		input.tokens,
 	)
 
@@ -504,9 +506,11 @@ export function fitLine(
 function trendLinesFor(
 	config: MixedChartConfig,
 	columns: string[],
+	plottedColumns: string[],
 	rows: QueryResultRow[],
 	horizontal: boolean,
-	axisOf: (column: string) => ChartValueAxisOptions | undefined,
+	axisOf: (column: string) => 'y' | 'y2',
+	axes: Record<'y' | 'y2', ChartValueAxisOptions | undefined>,
 	tokens?: ChartTokens,
 ): Map<string, Record<string, any>> {
 	const dimension = config.x_axis?.dimension
@@ -522,6 +526,20 @@ function trendLinesFor(
 		return at === null ? [] : [{ row, at }]
 	})
 
+	// Every column the axis plots reaches it, not the trend's own alone. A
+	// stack's raw values are inside its sums, so they are read as they are.
+	const ranges = new Map<'y' | 'y2', [number, number]>()
+	const rangeOf = (axis: 'y' | 'y2') => {
+		if (!ranges.has(axis)) {
+			const values = plottedColumns
+				.filter((column) => axisOf(column) === axis)
+				.flatMap((column) => placed.map(({ row }) => toNumber(row[column])))
+				.filter((value): value is number => value !== null)
+			ranges.set(axis, valueRange(values, axes[axis]))
+		}
+		return ranges.get(axis)!
+	}
+
 	for (const column of columns) {
 		const points = placed.map(({ row, at }) => ({ x: at, y: toNumber(row[column]) }))
 		const fit = fitLine(points)
@@ -534,17 +552,13 @@ function trendLinesFor(
 			(point): point is { x: number; y: number } => point.y !== null,
 		)
 		const xs = plotted.map((point) => point.x)
-		const range = valueRange(
-			plotted.map((point) => point.y),
-			axisOf(column),
-		)
 		const ends = clipLine(
 			fit,
 			[
 				xs.reduce((low, at) => (at < low ? at : low)),
 				xs.reduce((high, at) => (at > high ? at : high)),
 			],
-			range,
+			rangeOf(axisOf(column)),
 		)
 		if (!ends) continue
 		const coord = ([at, value]: number[]) => (horizontal ? [value, at] : [at, value])
@@ -570,10 +584,9 @@ function trendLinesFor(
 }
 
 /**
- * The values a series' axis always shows: from the bound the axis was handed,
- * else from zero or the series' lowest value, to the bound it was handed, else
- * to zero or its highest. The axis may reach further for another series, never
- * less far.
+ * The values an axis always shows: from the bound it was handed, else from zero
+ * or the lowest value it plots, to the bound it was handed, else to zero or the
+ * highest. It may reach further, never less far.
  */
 function valueRange(values: number[], axis?: ChartValueAxisOptions): [number, number] {
 	const low = values.reduce((least, value) => (value < least ? value : least), 0)
