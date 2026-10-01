@@ -1,3 +1,4 @@
+import * as echarts from 'echarts'
 import { BarChart, LineChart, type ChartTokens } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
 import type { ReferenceLine } from '../../types/chart.types'
@@ -5,6 +6,9 @@ import { fitLine, takesTrendLine } from './axis'
 import { normalizeChartConfig } from '../helpers'
 import { adaptChart } from './index'
 import { axisChart, type AxisChartSpec } from './fixtures'
+import { buildAxisChartOption } from '../../../node_modules/frappe-ui/src/charts/axisChartOptions'
+import { normalizeAxisChartProps } from '../../../node_modules/frappe-ui/src/charts/seriesData'
+import { resolveChartTokens } from '../../../node_modules/frappe-ui/src/charts/tokens'
 
 // Everything here asserts on the props a chart is handed. What echarts renders
 // from them is v2's concern, and v2 tests it.
@@ -1155,72 +1159,106 @@ describe('whether a series is offered a trend line', () => {
 	})
 })
 
-describe('the form and the adapter', () => {
+// The trend line rides frappe-ui's option, so this reads that option rather than
+// Insights' restatement of its rules. frappe-ui exports neither builder, so they
+// are reached by path: a release that moves them fails the import, not the test.
+describe('the option frappe-ui builds', () => {
 	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
-	const tokens = { axisLabel: 'oklch(0.58 0 0)', backdrop: '#242424' } as ChartTokens
-	const cases: Array<[string, Partial<AxisChartSpec>, (config: any) => void]> = [
-		['a lone stacked bar', { stacked: true }, () => {}],
-		['two stacked bars', { stacked: true, measures: ['revenue', 'refunds'] }, () => {}],
-		[
-			'a line beside stacked bars',
-			{ stacked: true, measures: ['units', 'refunds', { name: 'revenue', mark: 'line' }] },
-			() => {},
-		],
-		[
-			'a stacked split whose result holds one value',
-			{ stacked: true, splitBy: { dimension: 'channel', into: ['retail'] } },
-			() => {},
-		],
-		[
-			'two Right bars beside a series with no measure yet',
-			{
-				stacked: true,
-				measures: [
-					{ name: 'revenue', axis: 'right' },
-					{ name: 'refunds', axis: 'right' },
-				],
-			},
-			(config) => config.y_axis.series.unshift({ measure: {} }),
-		],
-		[
-			'a stacked Row chart with a line-typed series',
-			{ type: 'Row', stacked: true, measures: ['units', { name: 'revenue', mark: 'line' }] },
-			() => {},
-		],
-	]
+	const cases: Array<[string, Partial<AxisChartSpec>, ((config: any) => void)?]> = []
+	for (const type of ['Bar', 'Row', 'Line'] as const) {
+		for (const stacking of [{}, { stacked: true }, { normalized: true }]) {
+			const named = `${type} ${Object.keys(stacking)[0] || 'unstacked'}`
+			cases.push([
+				`${named}, two series`,
+				{ type, ...stacking, measures: ['units', 'revenue'] },
+			])
+			cases.push([
+				`${named}, a line-typed series`,
+				{ type, ...stacking, measures: ['units', { name: 'revenue', mark: 'line' }] },
+			])
+			for (const into of [['a'], ['a', 'b']]) {
+				cases.push([
+					`${named}, split into ${into.length}`,
+					{ type, ...stacking, splitBy: { dimension: 'channel', into } },
+				])
+			}
+			cases.push([
+				`${named}, two Right series beside one with no measure yet`,
+				{
+					type,
+					...stacking,
+					measures: [
+						{ name: 'revenue', axis: 'right' },
+						{ name: 'refunds', axis: 'right' },
+					],
+				},
+				(config) => config.y_axis.series.unshift({ measure: {} }),
+			])
+		}
+	}
 
-	describe.each(cases)('on %s', (_name, overrides, edit) => {
-		// @feature charts.trend-line
-		it('offer a trend line to the series the chart draws one on', () => {
+	// @feature charts.trend-line
+	it.each(cases)(
+		'%s: a trend line rides only a series v2 leaves unstacked, inside its axis',
+		(_name, spec, edit) => {
 			const input = axisChart({
 				type: 'Bar',
 				dimension: month,
+				categories: ['2026-01-01', '2026-02-01', '2026-03-01'],
 				measures: ['revenue'],
-				...overrides,
+				...spec,
 			})
 			const config = input.config as any
-			edit(config)
+			edit?.(config)
 			for (const series of config.y_axis.series) series.show_trend_line = true
-			const horizontal = input.chart_type === 'Row'
-			const filler = adaptChart({ ...input, config, tokens })
-			const drawn = new Set(
-				Object.entries(filler!.props.seriesConfig || {})
-					.filter(([, style]: [string, any]) => style.echartOptions?.markLine)
-					.map(([column]) => column),
+			const tokens = resolveChartTokens()
+			const props = adaptChart({ ...input, config, tokens })!.props as any
+
+			// what `BarChart` and `LineChart` hand the builder
+			const normalized = normalizeAxisChartProps(props)
+			const option = buildAxisChartOption(
+				{
+					...normalized.config,
+					type: input.chart_type === 'Line' ? 'line' : 'bar',
+					stacked: props.stacked,
+					horizontal: props.horizontal,
+				},
+				{ tokens, hiddenSeries: [], width: 600, format: normalized.format },
+			) as any
+			const plotted = option.series.filter(
+				(series: any) => series.name && series.data?.length,
 			)
-			const columns: string[] = [...filler!.props.y, ...(filler!.props.y2 || [])]
-			for (const series of config.y_axis.series) {
-				const name = series.measure?.measure_name
-				if (!name) continue
-				const own = config.split_by?.dimension?.column_name
-					? columns
-					: columns.filter((column) => column === name)
-				const offered = takesTrendLine(config, series, 'bar', horizontal)
-				expect(
-					own.every((column) => drawn.has(column)),
-					name,
-				).toBe(offered)
-			}
-		})
-	})
+			const chart = echarts.init(null as any, null as any, {
+				renderer: 'svg',
+				ssr: true,
+				width: 600,
+				height: 400,
+			})
+			chart.setOption({ ...option, animation: false })
+
+			plotted.forEach((series: any, index: number) => {
+				const alone =
+					!series.stack ||
+					!plotted.some((other: any) => other !== series && other.stack === series.stack)
+				// ruled: a split that stacks never takes one, even with one value
+				const split = Boolean(
+					config.split_by?.dimension?.column_name && props.stacked && series.stack,
+				)
+				expect(Boolean(series.markLine), series.name).toBe(alone && !split)
+				if (!series.markLine) return
+
+				const axes = (chart as any)
+					.getModel()
+					.getSeriesByIndex(index)
+					.coordinateSystem.getAxes()
+				const value = props.horizontal ? 0 : 1
+				const [low, high] = axes[value].scale.getExtent()
+				for (const end of series.markLine.data[0]) {
+					expect(end.coord[value]).toBeGreaterThanOrEqual(low)
+					expect(end.coord[value]).toBeLessThanOrEqual(high)
+				}
+			})
+			chart.dispose()
+		},
+	)
 })
