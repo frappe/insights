@@ -35,6 +35,8 @@ export type NumberCardEntry = NumberCardProps & {
 	missing?: boolean
 	/** The card's height in px, as a cell of `numberCardRows` rows gives it. */
 	height: number
+	/** The reading's info, behind a mark beside its name. */
+	info?: string
 }
 
 export type NumberCardClickEvent = { column: string }
@@ -156,6 +158,7 @@ function readingOf(
 		value: scale(latest),
 	}
 	if (options.color) card.color = options.color
+	if (options.info) card.info = options.info
 	if (format.prefix) card.prefix = format.prefix
 	if (format.suffix) card.suffix = format.suffix
 	// The card prints the prefixes and suffixes around what `format` and

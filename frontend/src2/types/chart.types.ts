@@ -280,6 +280,8 @@ export type NumberColumnOptions = {
 	target?: NumberTarget
 	/** The one number the reading is compared with. Naming none compares nothing. */
 	comparison?: NumberComparison
+	/** Definitions and caveats, behind a mark beside the reading's name. */
+	info?: string
 }
 
 export type DonutChartConfig = NumberFormatConfig & {

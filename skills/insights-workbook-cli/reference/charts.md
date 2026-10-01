@@ -37,7 +37,7 @@ Two optional text fields on the chart document, beside `title`. Both show beside
 
 - `info` is the text behind an info mark beside the title. The reader sees it on hover or focus. Put definitions and caveats here: what a measure counts, what a status means, what the data leaves out. "Paid = a site running this product moved to a paid plan within 30 days of the trial." Line breaks are kept.
 - `description` is one line printed under the title. Leave it empty. Write one only when the title cannot carry what every reader must see at a glance. It takes height from the plot on every dashboard that shows the chart.
-- A Number chart shows neither: each card shows the reading's name, not the chart title, and has no line under it.
+- A Number chart shows neither: each card shows the reading's name, not the chart title, and has no line under it. Put a reading's info in its `number_column_options` entry instead (see Number below).
 - The no-dates rule for titles applies to both.
 
 Measures and dimensions in a config use the same shapes as in the operations section. They reference
@@ -92,7 +92,8 @@ Keys on every chart config:
   ("month") gives one row per period in the data, `span` ("month to date") one row per stretch of
   the calendar. Either needs `date_column`.
 - `number_column_options` is positional: one entry per measure, same order. It holds what belongs
-  to the reading: `comparison`, `target`, `negative_is_better`, `color`.
+  to the reading: `comparison`, `target`, `negative_is_better`, `color`, `info`.
+- `info` on a reading's options entry is the text behind an info mark beside that reading's name, for its definitions and caveats, as on any chart. A Number chart has no chart-level `description` or `info`: leave both empty.
 - A comparison belongs to one reading, in that reading's options entry. `source` is `previous`,
   `last year`, `constant` (with `value`) or `measure` (with `measure`). `show` prints the gap as a
   percent (`change`, the default) or a signed number (`delta`), and `label` renames it. `previous`

@@ -540,6 +540,8 @@ type NumberValueSpec = {
 	comparison?: NumberComparison
 	/** The target column's data, one number per period. */
 	target?: (number | null)[]
+	/** Definitions and caveats, behind the card's mark. */
+	info?: string
 }
 
 export type NumberChartSpec = {
@@ -593,6 +595,7 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 				? { target: { measure: toMeasure(`${value.name}_target`) } }
 				: {}),
 			...(value.comparison ? { comparison: value.comparison } : {}),
+			...(value.info ? { info: value.info } : {}),
 		})),
 		sparkline: Boolean(spec.sparkline),
 		...(spec.sparklineColor ? { sparkline_color: spec.sparklineColor } : {}),

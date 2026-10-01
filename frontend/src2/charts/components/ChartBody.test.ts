@@ -233,3 +233,49 @@ describe('a chart its author explained', () => {
 		expect(html).not.toContain('aria-label="Info"')
 	})
 })
+
+describe('a Number chart whose readings each carry their info', () => {
+	// @feature charts.description-and-info
+	it('marks the card of a reading that has info, and only that card', async () => {
+		const spec = numberChart({
+			values: [
+				{ name: 'Paid', readings: [12300], info: INFO },
+				{ name: 'Trials', readings: [400] },
+			],
+		})
+		const read = makeChartRead({
+			doc: {
+				name: 'chart-5',
+				title: 'Funnel',
+				chart_type: 'Number',
+				config: spec.config,
+				can_write: false,
+			} as any,
+			requestKey: () => 'the same question',
+			fetchData: () =>
+				Promise.resolve({ columns: spec.result.columns, rows: spec.result.rows }),
+			fetchDrillData: () => Promise.reject(new Error('not asked')),
+		})
+		await read.load()
+		const render = (reading: string) => {
+			const app = createSSRApp({
+				render: () => h(ChartBody, { chart: read, title: 'Funnel', reading }),
+			})
+			app.config.warnHandler = () => {}
+			return renderToString(app)
+		}
+
+		const paid = await render('Paid')
+		expect(paid).toContain('aria-label="Info"')
+		// the info is the tooltip's body, never a line in the card
+		expect(paid).not.toContain(INFO)
+		// the card's own `title` names the reading on hover. An empty one around
+		// the mark keeps the browser from showing it over the mark's tooltip
+		const mark = paid.indexOf('aria-label="Info"')
+		expect(paid.lastIndexOf('title=""', mark)).toBeGreaterThan(
+			paid.lastIndexOf('title="Paid"', mark),
+		)
+
+		expect(await render('Trials')).not.toContain('aria-label="Info"')
+	})
+})

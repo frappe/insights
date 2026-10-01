@@ -1,5 +1,5 @@
 src2/App.vue: TS2339: Property 'id' does not exist on type 'VNode<RendererNode, RendererElement, { [key: string]: any; }>'.
-src2/charts/adapter/number.ts: TS2322: Type '{ column: string; title: string; value: number | null; }' is not assignable to type 'NumberCardEntry'. Property 'height' is missing in type '{ column: string; title: string; value: number | null; }' but required in type '{ column: string; missing?: boolean | undefined; height: number; }'.
+src2/charts/adapter/number.ts: TS2322: Type '{ column: string; title: string; value: number | null; }' is not assignable to type 'NumberCardEntry'. Property 'height' is missing in type '{ column: string; title: string; value: number | null; }' but required in type '{ column: string; missing?: boolean | undefined; height: number; info?: string | undefined; }'.
 src2/charts/ChartBuilder.vue: TS2322: Type '"orange"' is not assignable to type '"gray" | "red" | "blue" | "green" | "amber" | "violet" | undefined'.
 src2/charts/ChartBuilder.vue: TS2322: Type '"orange"' is not assignable to type '"gray" | "red" | "blue" | "green" | "amber" | "violet" | undefined'.
 src2/charts/ChartView.test.ts: TS2322: Type '(props: any) => VNode<RendererNode, RendererElement, { [key: string]: any; }>' is not assignable to type '() => any'. Target signature provides too few arguments. Expected 1 or more, but got 0.

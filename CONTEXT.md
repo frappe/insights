@@ -41,7 +41,7 @@ A chart's optional line under its title, stored as `description`: Frappe's word 
 _Avoid_: subtitle (it is frappe-ui's prop, not the stored field), caption
 
 **Info**:
-A chart's optional longer text — definitions and caveats — behind a mark beside its title, shown on hover or focus. Stored as `info`.
+A chart's optional longer text — definitions and caveats — behind a mark beside its title, shown on hover or focus. Stored as `info`. A Number chart keeps it per Reading instead, in that reading's `number_column_options` entry, behind a mark beside the reading's name.
 _Avoid_: tooltip (how it is shown, and a chart's own tooltip is on its plot), help, notes
 
 **Dashboard**:
