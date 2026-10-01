@@ -511,7 +511,8 @@ function trendLinesFor(
 ): Map<string, Record<string, any>> {
 	const dimension = config.x_axis?.dimension
 	const lines = new Map<string, Record<string, any>>()
-	if (!dimension) return lines
+	// placing every row is the cost, so a chart with no trend line pays none of it
+	if (!dimension || !columns.length) return lines
 	const type = plottedXAxisType(dimension, horizontal)
 
 	const x = dimension.dimension_name
