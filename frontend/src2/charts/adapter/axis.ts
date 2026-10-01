@@ -126,29 +126,20 @@ function adaptAxisChart(
 		: undefined
 	if (secondary) props.y2Axis = { format: secondary }
 
-	// A column v2 stacks onto another plots its stack height or its share, and a
-	// fit reads its own values, so it takes no trend line.
-	const stacked = Boolean(stackingFor(y_axis, barsOnBothAxes))
-	const markOfColumn = (column: string) => styles.get(column)?.type || mark
-	const trends =
-		plottedXAxisType(dimension, horizontal) === 'category'
-			? new Map()
-			: trendLinesFor(
-					config,
-					columns.filter(
-						(column) =>
-							!stacksWithAnother(
-								stacked,
-								markOfColumn(column),
-								columns.filter((other) => other !== column).map(markOfColumn),
-							),
-					),
-					input.result.rows,
-					horizontal,
-					// v2 reads a horizontal chart's every series on its one value axis
-					(column) => (onRight(column) && !horizontal ? props.y2Axis : props.yAxis),
-					input.tokens,
-			  )
+	// The form asks the same question of each Series, so a line is drawn exactly
+	// where a toggle offers one.
+	const trends = trendLinesFor(
+		config,
+		columns.filter((column) => {
+			const series = seriesByColumn.get(column)
+			return series?.show_trend_line && takesTrendLine(config, series, mark, horizontal)
+		}),
+		input.result.rows,
+		horizontal,
+		// v2 reads a horizontal chart's every series on its one value axis
+		(column) => (onRight(column) && !horizontal ? props.y2Axis : props.yAxis),
+		input.tokens,
+	)
 
 	const seriesConfig: Record<string, SeriesStyle> = {}
 	for (const [column, style] of styles) {
@@ -531,7 +522,6 @@ function trendLinesFor(
 	})
 
 	for (const column of columns) {
-		if (!seriesFor(config, column)?.show_trend_line) continue
 		const points = placed.map(({ row, at }) => ({ x: at, y: toNumber(row[column]) }))
 		const fit = fitLine(points)
 		if (!fit) continue
@@ -628,8 +618,8 @@ function clipLine(
 }
 
 /**
- * Whether the form offers `series` a trend line. The adapter asks the same two
- * things of each column it plots.
+ * Whether `series` takes a trend line: the form offers the toggle, and the
+ * adapter draws one, on this answer alone.
  *
  * The x axis must be a scale. A category axis sits its rows in the order they
  * arrive, which may be a ranking, so a line through them says nothing. And v2
@@ -643,13 +633,18 @@ export function takesTrendLine(
 	horizontal: boolean,
 ): boolean {
 	if (plottedXAxisType(config.x_axis?.dimension, horizontal) === 'category') return false
+	// the chart's own stack, which v2 is handed, reads every Series it holds
+	const stacked = Boolean(
+		stackingFor(config.y_axis, hasBarsOnBothAxes(config.y_axis?.series, mark, horizontal)),
+	)
 	const all = (config.y_axis?.series || []).filter((s) => s.measure?.measure_name)
-	const stacked = Boolean(stackingFor(config.y_axis, hasBarsOnBothAxes(all, mark, horizontal)))
 	const own = markOf(config, series, mark, horizontal)
 	const others = all
 		.filter((other) => other !== series)
 		.map((s) => markOf(config, s, mark, horizontal))
-	// a split plots the series once per value, and those stack with each other
+	// A split plots the series once per value, and those stack with each other.
+	// A config does not say how many values a result will hold, and a filter
+	// changes it, so a split always counts as stacked.
 	if (config.split_by?.dimension?.column_name) others.push(own)
 	return !stacksWithAnother(stacked, own, others)
 }

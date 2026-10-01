@@ -1154,3 +1154,73 @@ describe('whether a series is offered a trend line', () => {
 		).toEqual([false, false])
 	})
 })
+
+describe('the form and the adapter', () => {
+	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
+	const tokens = { axisLabel: 'oklch(0.58 0 0)', backdrop: '#242424' } as ChartTokens
+	const cases: Array<[string, Partial<AxisChartSpec>, (config: any) => void]> = [
+		['a lone stacked bar', { stacked: true }, () => {}],
+		['two stacked bars', { stacked: true, measures: ['revenue', 'refunds'] }, () => {}],
+		[
+			'a line beside stacked bars',
+			{ stacked: true, measures: ['units', 'refunds', { name: 'revenue', mark: 'line' }] },
+			() => {},
+		],
+		[
+			'a stacked split whose result holds one value',
+			{ stacked: true, splitBy: { dimension: 'channel', into: ['retail'] } },
+			() => {},
+		],
+		[
+			'two Right bars beside a series with no measure yet',
+			{
+				stacked: true,
+				measures: [
+					{ name: 'revenue', axis: 'right' },
+					{ name: 'refunds', axis: 'right' },
+				],
+			},
+			(config) => config.y_axis.series.unshift({ measure: {} }),
+		],
+		[
+			'a stacked Row chart with a line-typed series',
+			{ type: 'Row', stacked: true, measures: ['units', { name: 'revenue', mark: 'line' }] },
+			() => {},
+		],
+	]
+
+	describe.each(cases)('on %s', (_name, overrides, edit) => {
+		// @feature charts.trend-line
+		it('offer a trend line to the series the chart draws one on', () => {
+			const input = axisChart({
+				type: 'Bar',
+				dimension: month,
+				measures: ['revenue'],
+				...overrides,
+			})
+			const config = input.config as any
+			edit(config)
+			for (const series of config.y_axis.series) series.show_trend_line = true
+			const horizontal = input.chart_type === 'Row'
+			const filler = adaptChart({ ...input, config, tokens })
+			const drawn = new Set(
+				Object.entries(filler!.props.seriesConfig || {})
+					.filter(([, style]: [string, any]) => style.echartOptions?.markLine)
+					.map(([column]) => column),
+			)
+			const columns: string[] = [...filler!.props.y, ...(filler!.props.y2 || [])]
+			for (const series of config.y_axis.series) {
+				const name = series.measure?.measure_name
+				if (!name) continue
+				const own = config.split_by?.dimension?.column_name
+					? columns
+					: columns.filter((column) => column === name)
+				const offered = takesTrendLine(config, series, 'bar', horizontal)
+				expect(
+					own.every((column) => drawn.has(column)),
+					name,
+				).toBe(offered)
+			}
+		})
+	})
+})
