@@ -6,7 +6,7 @@ import { rendersOwnCards } from '../charts/adapter'
 import ChartRenderer from '../charts/components/ChartRenderer.vue'
 import { __ } from '../translation'
 import { useChartCell, type ChartCellProps } from './chart_cell'
-import TableCardActions from './TableCardActions.vue'
+import CardActions from './CardActions.vue'
 
 // A chart cell in the builder. Sorting writes the chart's config, and a drill
 // opens in the query builder.
@@ -49,13 +49,14 @@ const chartRoute = computed(() =>
 		:filtered="filtered"
 		@reset-filters="resetFilters"
 	>
-		<template v-if="isTable" #actions="{ expanded }">
-			<TableCardActions
+		<template v-if="isTable || filterable" #actions="{ expanded }">
+			<CardActions
 				v-model:filters="cardFilters"
 				v-model:find-text="findText"
 				v-model:find-open="findOpen"
 				v-model:active="actionsActive"
 				:filterable="filterable"
+				:findable="isTable"
 				:columns="columns"
 				:values-provider="valuesProvider"
 				:range-provider="rangeProvider"

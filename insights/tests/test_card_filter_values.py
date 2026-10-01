@@ -11,7 +11,7 @@ column, so they list no values rather than refusing a reader mid-action.
 
 import frappe
 
-from insights.api.view import get_card_range, get_card_values
+from insights.api.view import get_card_range, get_card_values, get_chart_data
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
@@ -150,6 +150,15 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
                     "y_axis": {"series": []},
                 },
             )
+            cls.split_bar = cls.make_chart(
+                "Bar",
+                {
+                    "order_by": [],
+                    "x_axis": {"dimension": dimension("description")},
+                    "y_axis": {"series": []},
+                    "split_by": {"dimension": dimension("status")},
+                },
+            )
             cls.dashboard = (
                 frappe.get_doc(
                     {
@@ -162,7 +171,7 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
                                 "chart": chart,
                                 "layout": {"i": chart, "x": 0, "y": index, "w": 10, "h": 8},
                             }
-                            for index, chart in enumerate([cls.table, cls.pivot, cls.bar])
+                            for index, chart in enumerate([cls.table, cls.pivot, cls.bar, cls.split_bar])
                         ],
                     }
                 )
@@ -176,7 +185,7 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
             frappe.get_doc(
                 {
                     "doctype": DT.CHART,
-                    "title": f"Card Filter {chart_type} {len(config.get('columns') or [])}",
+                    "title": f"Card Filter {chart_type} {len(config.get('columns') or [])} {bool(config.get('split_by'))}",
                     "workbook": cls.workbook,
                     "query": cls.query,
                     "chart_type": chart_type,
@@ -243,3 +252,15 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
     def test_a_column_the_card_does_not_show_is_refused(self):
         with self.assertRaises(frappe.DoesNotExistError):
             self.values(self.bar, "status")
+
+    # @feature dashboard.card-filter
+    def test_a_split_chart_is_filtered_on_its_x_axis(self):
+        """A split pivots the card's rows, and the filter lands after the pivot, on
+        the x-axis the pivot keeps."""
+        with as_user(AUTHOR), db_connections():
+            result = get_chart_data(
+                self.split_bar,
+                self.dashboard,
+                card_filters=[{"column": "description", "operator": "=", "value": CLOSED}],
+            )
+        self.assertEqual([row["description"] for row in result["rows"]], [CLOSED])
