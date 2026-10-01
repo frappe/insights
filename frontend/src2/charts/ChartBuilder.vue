@@ -7,7 +7,6 @@ import NumberInput from '../components/NumberInput.vue'
 import LazyTextInput from '../components/LazyTextInput.vue'
 import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
-import { rendersOwnCards } from './adapter'
 import useChart from './chart'
 import useChartPreview, { chartPreviewKey } from './chart_preview'
 import ChartBuilderActions from './components/ChartBuilderActions.vue'
@@ -118,24 +117,25 @@ const showShareDialog = ref(false)
 								v-model="chart.doc.title"
 							/>
 						</InlineFormControlLabel>
-						<!-- the server sends an empty field as null. Bound as '', a blur
-						     on an empty field changes nothing, where writing '' over
-						     null would save the chart -->
+					</div>
+				</CollapsibleSection>
+
+				<CollapsibleSection :title="__('Description')" collapsed>
+					<!-- the server sends an empty field as null. Bound as '', a blur
+					     on an empty field changes nothing, where writing '' over
+					     null would save the chart -->
+					<div class="flex flex-col gap-3">
 						<InlineFormControlLabel :label="__('Description')">
 							<LazyTextInput
 								type="text"
-								:placeholder="
-									rendersOwnCards(chart.doc.chart_type)
-										? __('Shown behind the info mark')
-										: __('A line under the title')
-								"
+								:placeholder="__('Description')"
 								:model-value="chart.doc.description ?? ''"
 								@update:model-value="chart.doc.description = $event"
 							/>
 						</InlineFormControlLabel>
 						<InlineFormControlLabel :label="__('Info')">
 							<Textarea
-								:placeholder="__('Definitions and caveats')"
+								:placeholder="__('Info')"
 								:rows="3"
 								:model-value="chart.doc.info ?? ''"
 								@update:model-value="chart.doc.info = $event"
