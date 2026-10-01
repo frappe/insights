@@ -37,7 +37,7 @@ presentation.
 _Avoid_: visual, graph
 
 **Description**:
-A chart's optional line under its title, stored as `description`: Frappe's word for the short line under a field. frappe-ui's charts print it as their `subtitle`. A Number card has no such line, so there it shows behind the Info mark.
+A chart's optional line under its title, stored as `description`: Frappe's word for the short line under a field. frappe-ui's charts print it as their `subtitle`. A Number chart does not show it: its cards have no such line.
 _Avoid_: subtitle (it is frappe-ui's prop, not the stored field), caption
 
 **Info**:

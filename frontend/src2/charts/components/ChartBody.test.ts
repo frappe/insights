@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { numberChart, tableChart } from '../adapter/fixtures'
-import { makeChartRead, type ChartRead } from '../chart_view'
-import { infoMarkText } from '../info_mark'
+import { makeChartRead } from '../chart_view'
 import { scopeText } from '../scoped_by'
 import ChartBody from './ChartBody.vue'
 import ChartChrome from './ChartChrome.vue'
@@ -181,7 +180,7 @@ describe('a chart its author explained', () => {
 	})
 
 	// @feature charts.description-and-info
-	it('puts a Number card description behind the mark, as the card has no line for it', async () => {
+	it('shows a Number card neither the chart description nor the chart info', async () => {
 		const read = cardAnswering(rows)
 		await read.load()
 		const app = createSSRApp({
@@ -197,52 +196,13 @@ describe('a chart its author explained', () => {
 		app.config.warnHandler = () => {}
 		const html = await renderToString(app)
 
-		expect(html).toContain('aria-label="Info"')
 		expect(html).not.toContain(DESCRIPTION)
-		// the card's own `title` names the reading on hover. An empty one around
-		// the mark keeps the browser from showing it over the mark's tooltip
-		const mark = html.indexOf('aria-label="Info"')
-		expect(html.lastIndexOf('title=""', mark)).toBeGreaterThan(
-			html.lastIndexOf('title="Revenue"', mark),
-		)
+		expect(html).not.toContain('aria-label="Info"')
 		expect(html).toContain('12,300')
 	})
 
 	// @feature charts.description-and-info
-	it('marks a Number card that has a description alone, and never a Table', async () => {
-		const number = cardAnswering(rows)
-		await number.load()
-		const table = tableChart({ values: [{ name: 'Revenue' }] })
-		const grid = makeChartRead({
-			doc: {
-				name: 'chart-4',
-				title: 'Trials',
-				chart_type: 'Table',
-				config: table.config,
-				can_write: false,
-			} as any,
-			requestKey: () => 'the same question',
-			fetchData: () => Promise.resolve(table.result),
-			fetchDrillData: () => Promise.reject(new Error('not asked')),
-		})
-		await grid.load()
-		const render = (props: { chart: ChartRead; title: string; reading?: string }) => {
-			const app = createSSRApp({
-				render: () => h(ChartBody, { description: DESCRIPTION, ...props }),
-			})
-			app.config.warnHandler = () => {}
-			return renderToString(app)
-		}
-
-		const card = await render({ chart: number, title: 'Revenue', reading: 'Revenue' })
-		expect(card).toContain('aria-label="Info"')
-		const tableHtml = await render({ chart: grid, title: 'Trials' })
-		expect(tableHtml).toContain(`>${DESCRIPTION}<`)
-		expect(tableHtml).not.toContain('aria-label="Info"')
-	})
-
-	// @feature charts.description-and-info
-	it('prints a Number chart description once while the chart has no reading', async () => {
+	it('shows a Number chart with no reading its title alone', async () => {
 		const read = makeChartRead({
 			doc: {
 				name: 'chart-3',
@@ -256,38 +216,20 @@ describe('a chart its author explained', () => {
 			fetchDrillData: () => Promise.reject(new Error('not asked')),
 		})
 		await read.load()
-		const render = (info: string | null) => {
-			const app = createSSRApp({
-				render: () =>
-					h(ChartBody, { chart: read, title: 'Revenue', description: DESCRIPTION, info }),
-			})
-			app.config.warnHandler = () => {}
-			return renderToString(app)
-		}
+		const app = createSSRApp({
+			render: () =>
+				h(ChartBody, {
+					chart: read,
+					title: 'Revenue',
+					description: DESCRIPTION,
+					info: INFO,
+				}),
+		})
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
 
-		const html = await render(INFO)
-		expect(html.split(DESCRIPTION)).toHaveLength(2)
-		expect(html).toContain('aria-label="Info"')
-
-		// the description is the line under the title, so no mark repeats it
-		const described = await render(null)
-		expect(described.split(DESCRIPTION)).toHaveLength(2)
-		expect(described).not.toContain('aria-label="Info"')
-	})
-})
-
-// The mark's tooltip is a portal that opens on hover, so a card render cannot
-// reach it. Its text is tested here.
-describe('what the info mark says', () => {
-	// @feature charts.description-and-info
-	it('says the info, and a Number card says its description above it', () => {
-		expect(infoMarkText('Trials', 'Paid = moved to a paid plan.', false)).toBe(
-			'Paid = moved to a paid plan.',
-		)
-		expect(infoMarkText('Trials', 'Paid = moved to a paid plan.', true)).toBe(
-			'Trials\n\nPaid = moved to a paid plan.',
-		)
-		expect(infoMarkText('Trials', null, true)).toBe('Trials')
-		expect(infoMarkText(null, null, true)).toBe('')
+		expect(html).toContain('>Revenue<')
+		expect(html).not.toContain(DESCRIPTION)
+		expect(html).not.toContain('aria-label="Info"')
 	})
 })

@@ -15,7 +15,6 @@ import {
 } from '../adapter'
 import type { ChartRead } from '../chart_view'
 import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../drill/segment_click'
-import { infoMarkText } from '../info_mark'
 import { scopeText } from '../scoped_by'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import ScopeMark from './ScopeMark.vue'
@@ -91,6 +90,11 @@ const { tokens } = useChartTokens(root)
 // it is settled before there is a result to adapt.
 const ownsStates = computed(() => rendersOwnCards(chart_type.value))
 
+// A Number chart's readings each carry their own info, and a card has no line
+// for a description, so the chart's own are not shown on it.
+const description = computed(() => (ownsStates.value ? undefined : props.description || undefined))
+const info = computed(() => (ownsStates.value ? undefined : props.info || undefined))
+
 const filler = computed(() => {
 	// the result outlives a chart type switch, so without this the adapter would
 	// run against the incoming type's still-empty config
@@ -106,7 +110,7 @@ const filler = computed(() => {
 		sparklineResult: props.chart.sparklineResult,
 		comparisonRows: props.chart.comparisonRows,
 		title: props.title,
-		description: props.description || undefined,
+		description: description.value,
 		tokens: tokens.value,
 		reading: props.reading,
 		readonly: readonly.value,
@@ -269,10 +273,6 @@ const fillerEvents = computed(() =>
 // title, so it goes in `#title-suffix`, not in `#actions` at the end of the row.
 const scope = computed(() => scopeText(props.chart.scopedBy, props.chart.narrowedByPermissions))
 
-const info = computed(() =>
-	infoMarkText(props.description, props.info, ownsStates.value && Boolean(filler.value)),
-)
-
 // echarts hands over the point, not the event, so the capture phase records
 // the click position before the chart's own handler runs.
 const clickedAt = shallowRef<ClickPoint>({ x: 0, y: 0 })
@@ -323,7 +323,7 @@ function reportSegment(target: DrillDownTarget) {
 		<ChartContainer
 			v-else
 			:title="props.title"
-			:subtitle="props.description || undefined"
+			:subtitle="description"
 			:loading="state === 'loading'"
 			:error="headline"
 			:empty="true"

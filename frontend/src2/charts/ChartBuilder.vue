@@ -7,6 +7,7 @@ import NumberInput from '../components/NumberInput.vue'
 import LazyTextInput from '../components/LazyTextInput.vue'
 import { downloadImage, waitUntil } from '../helpers'
 import { DropdownOption } from '../types/query.types'
+import { rendersOwnCards } from './adapter'
 import useChart from './chart'
 import useChartPreview, { chartPreviewKey } from './chart_preview'
 import ChartBuilderActions from './components/ChartBuilderActions.vue'
@@ -120,7 +121,13 @@ const showShareDialog = ref(false)
 					</div>
 				</CollapsibleSection>
 
-				<CollapsibleSection :title="__('Description')" collapsed>
+				<!-- a Number chart's readings carry their own info, and its cards have
+				     no line for a description -->
+				<CollapsibleSection
+					v-if="!rendersOwnCards(chart.doc.chart_type)"
+					:title="__('Description')"
+					collapsed
+				>
 					<!-- the server sends an empty field as null. Bound as '', a blur
 					     on an empty field changes nothing, where writing '' over
 					     null would save the chart -->
