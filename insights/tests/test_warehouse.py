@@ -23,6 +23,7 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import create_test_user
 
 # A reader in this process shares the DuckDB instance, so it never conflicts.
 # Only a second process reproduces the lock the web workers take in production.
@@ -92,6 +93,43 @@ class TestWarehouse(InsightsIntegrationTestCase):
         rows = db.table(table_name).order_by("id").execute()
         rows["modified"] = rows["modified"].dt.strftime("%Y-%m-%d %H:%M:%S")
         return rows.to_dict("records")
+
+    # @feature data-store.import-table
+    def test_only_unfinished_import_table_is_in_progress(self):
+        user = create_test_user("warehouse_import@example.com", role="Insights Admin")
+        table = WarehouseTable("import_progress_source", "import_progress_table")
+        importer = WarehouseTableImporter(table)
+        log = frappe.new_doc("Insights Table Import Log")
+        log.data_source = table.data_source
+        log.table_name = table.table_name
+        log.status = "In Progress"
+        log.started_at = datetime(2026, 1, 1, 12, 0)
+
+        with self.as_user(user.name):
+            self.assertFalse(importer.import_in_progress())
+            log.db_insert()
+            cases = (
+                (table.data_source, table.table_name, "In Progress", None, True),
+                (table.data_source, table.table_name, "In Progress", datetime(2026, 1, 1, 12, 1), False),
+                (table.data_source, table.table_name, "Completed", None, False),
+                (table.data_source, table.table_name, "Failed", None, False),
+                ("other_import_source", table.table_name, "In Progress", None, False),
+                (table.data_source, "other_import_table", "In Progress", None, False),
+            )
+            for data_source, table_name, status, ended_at, in_progress in cases:
+                with self.subTest(
+                    data_source=data_source, table_name=table_name, status=status, ended_at=ended_at
+                ):
+                    log.update(
+                        {
+                            "data_source": data_source,
+                            "table_name": table_name,
+                            "status": status,
+                            "ended_at": ended_at,
+                        }
+                    )
+                    log.db_update()
+                    self.assertEqual(importer.import_in_progress(), log.name if in_progress else None)
 
     # @feature data-store.import-table
     def test_writer_replace_mode(self):
