@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-09-07 08:43\n"
+"PO-Revision-Date: 2026-10-05 11:28\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Bosnian\n"
 "MIME-Version: 1.0\n"
@@ -966,7 +966,7 @@ msgstr "Omogući Dozvole"
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Enable Stored Procedure Execution"
-msgstr "Omogući izvršavanje pohranjenih procedura"
+msgstr "Omogući izvršenje spremljenih procedura"
 
 #. Label of the enabled (Check) field in DocType 'Insights Table Import Job'
 #: frontend/src2/query/components/QueryAlertsDialog.vue:44
@@ -1183,7 +1183,7 @@ msgstr "Prisilno Osvježi"
 
 #: frontend/src2/query/components/ScriptQueryEditor.vue:103
 msgid "Force Run"
-msgstr "Prisilno Pokreni"
+msgstr "Prisilno Izvrši"
 
 #. Label of the foreign_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -1267,7 +1267,7 @@ msgstr "Sakriveno"
 
 #: frontend/src2/query/components/FormattingSelector.vue:59
 msgid "Highlight Cell"
-msgstr "Označi Ćeliju"
+msgstr "Odaberi Ćeliju"
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:60
 msgid "Horizontal"
@@ -1755,7 +1755,7 @@ msgstr "Posljednji put izvršeno"
 #: frontend/src2/query/components/QueryAlertsDialog.vue:56
 #: insights/insights/doctype/insights_alert/insights_alert.json
 msgid "Last Execution"
-msgstr "Zadnje Izvršavanje"
+msgstr "Zadnje Izvršenje"
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:66
 msgid "Last Import Duration"
@@ -1906,7 +1906,7 @@ msgstr "Odaberi kontrolnu tablu kao omiljenu da bi je vidjeli ovdje."
 
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.js:7
 msgid "Mark as Failed"
-msgstr "Označi kao neuspješno"
+msgstr "Odaberi kao neuspješno"
 
 #: frontend/src2/dashboard/DashboardText.vue:54
 msgid "Markdown supported"
@@ -2244,7 +2244,7 @@ msgstr "Dozvole ažurirane"
 #. Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Persistent state storage for the script"
-msgstr "Trajno pohranjivanje stanja za skriptu"
+msgstr "Trajno spremanje stanja za skriptu"
 
 #: frontend/src2/query/components/source_selector/SourceSelectorDialog.vue:125
 msgid "Pick Starting Data"
@@ -2539,7 +2539,7 @@ msgstr "Izvrši"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
-msgstr "Pokreni {0} od {1}"
+msgstr "Izvrši {0} od {1}"
 
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
@@ -3331,7 +3331,7 @@ msgstr "Varijable"
 
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
-msgstr "Varijable se koriste za pohranjivanje osjetljivih informacija kao što su API ključevi i vjerodajnice. Na njih se može pozivati i kombinirati u vašem skriptu baš kao i na bilo koju drugu varijablu. Na primjer."
+msgstr "Varijable se koriste za spremanje osjetljivih informacija kao što su API ključevi i vjerodajnice. Na njih se može pozivati i kombinirati u vašem skriptu baš kao i na bilo koju drugu varijablu. Na primjer."
 
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:61
 msgid "Vertical"
