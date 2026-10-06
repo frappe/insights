@@ -26,6 +26,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         frappe.db.delete("Insights Query Execution Log")
         frappe.db.delete("Insights Query Reference")
         frappe.db.delete("Insights Table Import Log")
+        self.set_retention(90)
         self.cutoff = add_days(now_datetime(), -data_warehouse.UNUSED_TABLE_DAYS)
 
     # helpers
@@ -116,6 +117,22 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         ref.flags.ignore_links = True
         ref.insert(ignore_permissions=True)
 
+    def set_retention(self, days):
+        """Set the execution log's row in Log Settings; `None` removes the row."""
+        doctype = "Insights Query Execution Log"
+        log_settings = frappe.get_doc("Log Settings")
+        original = next((row.days for row in log_settings.logs_to_clear if row.ref_doctype == doctype), None)
+        self.addCleanup(self.write_retention, original)
+        self.write_retention(days)
+
+    def write_retention(self, days):
+        doctype = "Insights Query Execution Log"
+        log_settings = frappe.get_doc("Log Settings")
+        log_settings.logs_to_clear = [row for row in log_settings.logs_to_clear if row.ref_doctype != doctype]
+        if days is not None:
+            log_settings.register_doctype(doctype, days)
+        log_settings.save(ignore_permissions=True)
+
     def is_stored(self, table_name):
         return frappe.db.get_value("Insights Table v3", get_table_name(DATA_SOURCE, table_name), "stored")
 
@@ -157,8 +174,6 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         self.reference_table("q_child", "tabCleanupNested")
         self.reference_query("q_parent", "q_child")
         self.log_execution("q_parent", days_ago=2)
-        # the site's execution log must reach past the cutoff for pruning to run at all
-        self.log_execution("q_other", days_ago=90)
 
         prune_unused_tables(self.cutoff)
 
@@ -168,7 +183,6 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
     def test_keeps_freshly_imported_table_nobody_has_queried(self):
         self.create_table("tabCleanupFresh")
         self.log_import("tabCleanupFresh", days_ago=3)
-        self.log_execution("q_other", days_ago=90)
 
         prune_unused_tables(self.cutoff)
 
@@ -178,14 +192,24 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
     def test_keeps_incremental_table(self):
         self.create_table("tabCleanupIncremental", sync_mode="Incremental")
         self.log_import("tabCleanupIncremental", days_ago=90)
-        self.log_execution("q_other", days_ago=90)
 
         prune_unused_tables(self.cutoff)
 
         self.assertTrue(self.is_stored("tabCleanupIncremental"))
 
     # @feature data-store.cleanup-prunes-stale
-    def test_skips_pruning_when_execution_log_was_trimmed(self):
+    def test_prunes_unused_table_when_the_retention_emptied_the_log(self):
+        for days in (90, data_warehouse.UNUSED_TABLE_DAYS, None):
+            with self.subTest(retention=days):
+                self.set_retention(days)
+                table = self.create_table("tabCleanupIdle")
+                self.log_import("tabCleanupIdle", days_ago=60)
+
+                self.assertIn(table.name, prune_unused_tables(self.cutoff))
+
+    # @feature data-store.cleanup-prunes-stale
+    def test_skips_pruning_when_retention_is_shorter_than_the_unused_window(self):
+        self.set_retention(10)
         self.create_table("tabCleanupUnknown")
         self.log_import("tabCleanupUnknown", days_ago=90)
         self.log_execution("q_recent", days_ago=1)
