@@ -111,6 +111,7 @@ export type InsightsChartv3 = {
 	can_move_run_as_owner?: boolean
 	/** Whether the caller may widen the chart's Visibility (the server's `can_share`). */
 	can_share?: boolean
+	can_show_in_desk?: boolean
 	operations: Operation[]
 	use_live_connection?: boolean
 	config: ChartConfig & {

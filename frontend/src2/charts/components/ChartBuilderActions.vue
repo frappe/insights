@@ -3,6 +3,7 @@ import { Button, Dropdown } from 'frappe-ui'
 import {
 	Copy,
 	CopyPlus,
+	LayoutDashboard,
 	ExternalLink,
 	ImageDown,
 	MoreHorizontal,
@@ -77,6 +78,16 @@ const moreActions = computed(() =>
 				label: __('Copy JSON'),
 				icon: h(Copy, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
 				onClick: () => props.chart.copy(),
+			},
+			{
+				label: __('Show in Desk'),
+				icon: h(LayoutDashboard, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
+				onClick: () => props.chart.showInDesk(),
+				// the server makes the desk document from the saved chart
+				condition: () =>
+					session.user.has_desk_access &&
+					!props.chart.islocal &&
+					Boolean(props.chart.doc.can_show_in_desk),
 			},
 			{
 				label: __('Open in Desk'),
