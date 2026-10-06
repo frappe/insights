@@ -44,7 +44,7 @@ import {
 } from './drill/drill_api'
 import { sortBy } from './adapter/table'
 import { normalizeChartConfig } from './helpers'
-import { labelWindowRows } from './window'
+import { labelWindowRows, withLentPeriod, type NumberPeriod } from './window'
 
 /**
  * The server reads the dashboard's filter links to decide which query each
@@ -114,6 +114,10 @@ type ChartDataResponse = {
 	// comparison. `null` means the server asked and got no row. A missing key
 	// means the card's period does not allow that comparison
 	comparison_rows?: Record<string, number | null>
+	// the Period a dashboard lent a Number card that states none. Only the
+	// builder gets it: it renders the config it is editing, and a View's chart
+	// already holds it
+	period?: NumberPeriod
 	record_links?: RecordLinks
 	// an answer, not a failure: there is nothing to retry
 	not_permitted?: NotPermitted
@@ -197,10 +201,11 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	// its request, and the chart the rows came from when they do not. A display
 	// option does not change the request, so it shows at once. An edit that
 	// changes the rows waits for them.
+	const lentPeriod = shallowRef<NumberPeriod>()
 	const doc = computed(() => {
 		const shown = answered.value
-		if (!shown || source.requestKey?.(filterContext()) === shown.key) return current.value
-		return shown.doc
+		const answers = !shown || source.requestKey?.(filterContext()) === shown.key
+		return withLentPeriod(answers ? current.value : shown.doc, lentPeriod.value)
 	})
 	const result = ref<QueryResult>(emptyResult())
 	const sparklineResult = ref<QueryResult>()
@@ -261,6 +266,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		result.value = emptyResult()
 		sparklineResult.value = undefined
 		comparisonRows.value = undefined
+		lentPeriod.value = undefined
 	}
 
 	async function load(force = false) {
@@ -360,7 +366,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 				formattedRows: labelWindowRows(
 					formatResultRows(rows, response.granularity || {}),
 					chartDoc.chart_type,
-					chartDoc.config,
+					withLentPeriod(chartDoc, response.period).config,
 				),
 				columnOptions: rows.columns.map((column) => ({
 					label: column.name,
@@ -390,6 +396,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 			canExport.value = Boolean(response.can_export)
 			recordLinks.value = response.record_links
 			comparisonRows.value = response.comparison_rows
+			lentPeriod.value = response.period
 			scopedBy.value = response.user_permissions
 			narrowedByPermissions.value = Boolean(response.narrowed_by_permissions)
 			readOn.value = response.read_on

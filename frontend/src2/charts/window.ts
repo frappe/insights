@@ -73,8 +73,12 @@ export function windowPeriods(span: WindowSpan): number {
 }
 
 /**
- * The shift that names the span before this one: the same span, moved back by
- * its own length, so the two spans meet and never overlap.
+ * What a `previous` comparison over this span is called.
+ *
+ * The span before this one is the same span, moved back by its own length, so
+ * the two meet and never overlap. A span of whole periods is named by those
+ * periods, as a grain's previous period is. A to-date span stops partway into
+ * its period, so the stretch before it is the same part of the period before.
  *
  * Only the caption reads this. Which row a comparison is answered from is the
  * server's word — it resolves the span while the query runs, which is the one
@@ -83,10 +87,15 @@ export function windowPeriods(span: WindowSpan): number {
  * `_comparison_shift` in `chart_query.py` is the same derivation, and the two
  * have to agree on every span `get_window` accepts.
  */
-export function previousWindowShift(span?: string): WindowShift | undefined {
+export function previousWindowLabel(span?: string): string | undefined {
 	const parsed = parseWindowSpan(span)
 	if (!parsed) return undefined
-	return { unit: parsed.unit, count: -windowPeriods(parsed) }
+	if (parsed.shape === 'to date') return windowShiftLabel({ unit: parsed.unit, count: -1 })
+
+	const periods = windowPeriods(parsed)
+	return periods === 1
+		? __('vs previous {0}', windowUnitLabel(parsed.unit))
+		: __('vs previous {0} {1}', String(periods), windowUnitLabel(parsed.unit, true))
 }
 
 /** The period a card reads. One of `span` or `grain`, plus an optional anchor. */
@@ -221,6 +230,18 @@ export function periodOf(config: NumberChartConfig): NumberPeriod | undefined {
 }
 
 /**
+ * The chart as the server read it: with the Period a dashboard lent it, when it
+ * is a Number chart that states none of its own.
+ */
+export function withLentPeriod<T extends { chart_type: string; config: any }>(
+	chart: T,
+	period?: NumberPeriod,
+): T {
+	if (!period || chart.chart_type !== 'Number' || periodOf(chart.config)) return chart
+	return { ...chart, config: { ...chart.config, window: period } }
+}
+
+/**
  * The choice a period was written by, or the period itself when nothing here
  * wrote it. Empty when the card reads no period, which the picker shows as its
  * placeholder — there is no "None" to pick, because a date column that groups
@@ -352,19 +373,8 @@ export function labelWindowRows(
 	)
 }
 
-/** What a shifted span is called, when the author did not word it themselves. */
+/** What the same stretch one period back is called, when the author did not word it themselves. */
 export function windowShiftLabel(shift?: WindowShift): string | undefined {
-	if (!shift?.count || !WINDOW_UNITS.includes(shift.unit as WindowUnit)) return undefined
-
-	const away = Math.abs(shift.count)
-	const worded = windowUnitLabel(shift.unit as WindowUnit, away > 1)
-
-	if (shift.count < 0) {
-		return away === 1
-			? __('vs same period last {0}', worded)
-			: __('vs same period {0} {1} ago', String(away), worded)
-	}
-	return away === 1
-		? __('vs same period next {0}', worded)
-		: __('vs same period {0} {1} ahead', String(away), worded)
+	if (shift?.count !== -1 || !WINDOW_UNITS.includes(shift.unit as WindowUnit)) return undefined
+	return __('vs same period last {0}', windowUnitLabel(shift.unit as WindowUnit, false))
 }

@@ -9,7 +9,7 @@ import {
 	choiceOfPeriod,
 	labelOfChoice,
 	lastSpanSentence,
-	previousWindowShift,
+	previousWindowLabel,
 	periodOf,
 	periodOfChoice,
 	windowChoiceGroups,
@@ -186,22 +186,23 @@ describe('the period a card reads', () => {
 	})
 })
 
-describe('the window a comparison shifts to', () => {
+describe('what a comparison with the span before is called', () => {
 	// @feature charts.number-comparison charts.number-period-include-current
-	it('moves the span back by its own length, so the two windows never overlap', () => {
-		expect(previousWindowShift('month to date')).toEqual({ unit: 'month', count: -1 })
-		expect(previousWindowShift('current quarter')).toEqual({ unit: 'quarter', count: -1 })
-		expect(previousWindowShift('last 3 months')).toEqual({ unit: 'month', count: -3 })
+	it('names the whole periods the span steps back by, so the two spans never overlap', () => {
+		expect(previousWindowLabel('current month')).toBe('vs previous month')
+		expect(previousWindowLabel('current quarter')).toBe('vs previous quarter')
+		expect(previousWindowLabel('last 30 days')).toBe('vs previous 30 days')
+		expect(previousWindowLabel('last 3 months')).toBe('vs previous 3 months')
 		// The current period is part of the span, so the span before it is one
-		// period further back.
-		expect(previousWindowShift('last 3 months (include current)')).toEqual({
-			unit: 'month',
-			count: -4,
-		})
-		expect(previousWindowShift('fiscal year to date')).toEqual({
-			unit: 'fiscal year',
-			count: -1,
-		})
+		// period longer.
+		expect(previousWindowLabel('last 30 days (include current)')).toBe('vs previous 31 days')
+		expect(previousWindowLabel('last 3 months (include current)')).toBe('vs previous 4 months')
+	})
+
+	// @feature charts.number-comparison
+	it('names a to-date span by the same part of the period before', () => {
+		expect(previousWindowLabel('month to date')).toBe('vs same period last month')
+		expect(previousWindowLabel('fiscal year to date')).toBe('vs same period last fiscal year')
 	})
 
 	// @feature charts.number-comparison
@@ -209,16 +210,13 @@ describe('the window a comparison shifts to', () => {
 		// A hand-written span the picker never lists. `_span_periods` counts it
 		// as one, so the card fetches the month before — and a caption that could
 		// not read the span left that figure unworded.
-		expect(previousWindowShift('last month')).toEqual({ unit: 'month', count: -1 })
-		expect(previousWindowShift('last fiscal year')).toEqual({
-			unit: 'fiscal year',
-			count: -1,
-		})
+		expect(previousWindowLabel('last month')).toBe('vs previous month')
+		expect(previousWindowLabel('last fiscal year')).toBe('vs previous fiscal year')
 	})
 
 	// @feature charts.number-comparison
-	it('names no shift for a card with no window', () => {
-		expect(previousWindowShift(undefined)).toBeUndefined()
+	it('names nothing for a card with no window', () => {
+		expect(previousWindowLabel(undefined)).toBeUndefined()
 	})
 })
 
@@ -227,7 +225,7 @@ describe('what a shifted window is called', () => {
 	it('words the shift, so a year back needs no typing', () => {
 		expect(windowShiftLabel(LAST_YEAR)).toBe('vs same period last year')
 		expect(windowShiftLabel({ unit: 'month', count: -1 })).toBe('vs same period last month')
-		expect(windowShiftLabel({ unit: 'month', count: -3 })).toBe('vs same period 3 months ago')
+		expect(windowShiftLabel({ unit: 'month', count: -3 })).toBeUndefined()
 		expect(windowShiftLabel({ unit: 'fiscal year', count: -1 })).toBe(
 			'vs same period last fiscal year',
 		)

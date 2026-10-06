@@ -355,6 +355,37 @@ describe('the builder grid rendering a chart its author edited', () => {
 	})
 })
 
+describe('the builder grid rendering a card the dashboard lent a Period', () => {
+	// @feature charts.number-period-from-dashboard charts.preview
+	it('renders and drills the card by the Period, and leaves the edited config without it', async () => {
+		// `authoring.get_chart_data` returns `period` when a dashboard filter
+		// named the span a card with no Period of its own reads.
+		const chart = reactive({
+			doc: {
+				name: 'chart-36',
+				title: 'Sales',
+				chart_type: 'Number',
+				query: 'query-36',
+				config: { date_column: { column_name: 'date', dimension_name: 'date' } } as any,
+			},
+		}) as unknown as Chart
+		answers.set('insights.api.authoring.get_chart_data', () =>
+			Promise.resolve({
+				columns: [{ name: 'date', type: 'Date' }],
+				rows: [{ date: '2026-07-01' }, { date: '2026-08-01' }],
+				comparison_rows: { previous: 0 },
+				period: { span: 'current month' },
+			}),
+		)
+		const read = useChartPreview(chart)
+		await read.load()
+
+		expect((read.doc.config as any).window).toEqual({ span: 'current month' })
+		expect((read.drillSubject.chart.config as any).window).toEqual({ span: 'current month' })
+		expect((chart.doc.config as any).window).toBeUndefined()
+	})
+})
+
 describe('the builder drilling a chart its author is editing', () => {
 	// @feature charts.drill-changed-chart charts.preview
 	it('drills the version its rows ran as, not the one the document being edited holds', async () => {

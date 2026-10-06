@@ -76,7 +76,7 @@ One measure a Number chart states, shown as a card of its own — its value, its
 _Avoid_: KPI, metric, data point ("card" is the thing shown, "reading" is what it states)
 
 **Period**:
-The stretch of the date column one Number card reads, and the unit its comparison steps back by. Stored as `window`, holding one of a `span` or a `grain` and never both. It is the only thing that groups a card by date: left out, the card is one number over the whole result and its date column is used only by the sparkline.
+The stretch of the date column one Number card reads, and the unit its comparison steps back by. Stored as `window`, holding one of a `span` or a `grain` and never both. It is the only thing that groups a card by date: left out, the card reads a dashboard `within` filter on its date column as its Period, and with none is one number over the whole result, its date column used only by the sparkline.
 _Avoid_: slice, window (in prose — `window` is the stored key), timeframe
 
 **Span**:

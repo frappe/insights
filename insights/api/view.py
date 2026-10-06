@@ -117,10 +117,9 @@ def get_chart_data(
     **Not Permitted**: it does not run, and the answer names the doctypes it
     needs.
     """
-    name = resolve_chart(chart, dashboard)
-    doc = frappe.get_doc(CHART, name)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
 
-    return chart_answer(doc, routed_filters(name, dashboard, filters), card_filters, force, page, order_by)
+    return chart_answer(doc, adhoc_filters, card_filters, force, page, order_by)
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
@@ -136,10 +135,9 @@ def get_chart_count(
     For readers `can_read_rows` allows. A refusal raises, because the card asks
     for the count only when its data answer allowed it.
     """
-    name = resolve_chart(chart, dashboard)
-    doc = frappe.get_doc(CHART, name)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
 
-    return doc.count_rows(routed_filters(name, dashboard, filters), card_filters, force=force)
+    return doc.count_rows(adhoc_filters, card_filters, force=force)
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
@@ -152,10 +150,9 @@ def download_chart_rows(
     order_by: list | None = None,
 ):
     """Every row behind the pages of `get_chart_data` as a file, under the same filters and sort."""
-    name = resolve_chart(chart, dashboard)
-    doc = frappe.get_doc(CHART, name)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
 
-    return doc.export_rows(format, routed_filters(name, dashboard, filters), card_filters, order_by)
+    return doc.export_rows(format, adhoc_filters, card_filters, order_by)
 
 
 def chart_answer(
@@ -280,13 +277,12 @@ def get_drill_data(
     """
     check_can_drill()
 
-    name = resolve_chart(chart, dashboard)
-    doc = frappe.get_doc(CHART, name)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
 
     answer = drill_data(
         doc,
         drill_stack,
-        adhoc_filters=routed_filters(name, dashboard, filters),
+        adhoc_filters=adhoc_filters,
         sort=sort,
         find=find,
         page=page,
@@ -315,15 +311,14 @@ def download_drill_rows(
     download row limit. The request includes no more than that one does: the
     chart, the segments, and how to read them.
     """
-    name = resolve_chart(chart, dashboard)
-    doc = frappe.get_doc(CHART, name)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
     if not can_export(doc):
         frappe.throw(_("You are not allowed to download data"), exc=frappe.PermissionError)
 
     return drill_rows_export(
         doc,
         drill_stack,
-        adhoc_filters=routed_filters(name, dashboard, filters),
+        adhoc_filters=adhoc_filters,
         sort=sort,
         find=find,
         format=format,
@@ -350,15 +345,14 @@ def get_drill_rows_values(
     """
     check_can_drill()
 
-    name = resolve_chart(chart, dashboard)
-    doc = frappe.get_doc(CHART, name)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
 
     return drill_rows_values(
         doc,
         drill_stack,
         column,
         search_term=search_term,
-        adhoc_filters=routed_filters(name, dashboard, filters),
+        adhoc_filters=adhoc_filters,
         row_filters=row_filters,
     )
 
@@ -376,14 +370,13 @@ def get_drill_rows_range(
     """The range shown by a number filter on a rows level, limited like its values."""
     check_can_drill()
 
-    name = resolve_chart(chart, dashboard)
-    doc = frappe.get_doc(CHART, name)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
 
     return drill_rows_range(
         doc,
         drill_stack,
         column,
-        adhoc_filters=routed_filters(name, dashboard, filters),
+        adhoc_filters=adhoc_filters,
         row_filters=row_filters,
     )
 
@@ -397,6 +390,17 @@ def check_can_drill():
     """
     if frappe.session.user == "Guest":
         frappe.throw(_("Sign in to see what is behind this chart"), exc=frappe.PermissionError)
+
+
+def routed_chart(chart: str, dashboard: str | None, filters: dict | None):
+    """The chart a reference names, as the dashboard shows it, and the dashboard
+    filter state routed to it.
+
+    A Number card that states no Period reads the dashboard's span as its own
+    (`take_dashboard_period`), so every reader below gets that config.
+    """
+    doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
+    return doc, doc.take_dashboard_period(routed_filters(doc.name, dashboard, filters))
 
 
 def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> dict | None:

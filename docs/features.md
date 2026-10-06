@@ -157,6 +157,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.number-period | A user picks the period a card reads: a span the engine resolves against the clock, or a grain the card groups by. |
 | charts.number-period-last-n | A user sets how many units a Last N period spans. |
 | charts.number-period-include-current | A user includes the in-progress period in a card's window. |
+| charts.number-period-from-dashboard | A card that states no Period reads a dashboard's `within` date filter as its Period, so its comparison steps back from the dashboard's span. Any other date filter only narrows its rows. |
 | charts.number-date-column | A user picks the date column a card's period and sparkline read. |
 | charts.number-target | A user measures a reading against a constant or a measure and the card states the gap. |
 | charts.number-comparison | A user compares a reading with the previous period, the same period last year, a constant or a measure, and the card states the change. |

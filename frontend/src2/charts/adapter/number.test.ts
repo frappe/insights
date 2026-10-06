@@ -266,7 +266,7 @@ describe('the comparison', () => {
 			window: { span: 'last 3 months' },
 		})[0]
 		expect(span.delta).toBe(50)
-		expect(span.deltaCaption).toBe('vs same period 3 months ago')
+		expect(span.deltaCaption).toBe('vs previous 3 months')
 
 		const grain = cardsOf({ values: [asked], period: monthly, window: { grain: 'month' } })[0]
 		expect(grain.delta).toBe(50)
