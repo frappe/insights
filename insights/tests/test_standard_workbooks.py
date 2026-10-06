@@ -933,9 +933,7 @@ class WhatTheExportToAppDialogReads(InsightsIntegrationTestCase):
         # the list must match the framework's module list. Frappe never reads a
         # module that no app's `modules.txt` lists, so the next migrate deletes a
         # file written there as an orphan
-        from frappe.modules.utils import get_module_list
-
-        shipped = {(app, module) for app in installed for module in get_module_list(app)}
+        shipped = {(app, module) for app in installed for module in frappe.get_module_list(app)}
         self.assertTrue(
             all((module["app"], module["module"]) in shipped for module in modules),
             "a module no app ships cannot take a file",
