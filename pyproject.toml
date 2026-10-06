@@ -27,6 +27,11 @@ dependencies = [
 [tool.bench.frappe-dependencies]
 frappe = ">=15.0.0"
 
+[tool.bench.assets]
+build_dir = "./frontend"
+out_dir = "./insights/public/frontend"
+index_html_path = "./insights/www/_insights.html"
+
 [project.optional-dependencies]
 test = [
     "coverage~=7.10.0",
