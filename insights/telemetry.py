@@ -23,7 +23,7 @@ def default_properties() -> dict:
 
 def capture(event: str, interval: str | None = None, **props):
     """Send one event. Telemetry never fails the action it reports on."""
-    with suppress(Exception):
+    with suppress(Exception):  # nosemgrep - telemetry never fails the action it reports on
         frappe_telemetry.capture(
             event,
             "insights",
@@ -85,8 +85,7 @@ def is_standard_app(app: str) -> bool:
     try:
         publishers = frappe.get_hooks("app_publisher", app_name=app) or []
     except Exception:
-        # reading the hook imports the app, which a faked or broken one cannot satisfy
-        return False
+        return False  # nosemgrep - an app whose hooks cannot be imported does not leave the site
     return any(normalized_publisher(publisher) in STANDARD_PUBLISHERS for publisher in publishers)
 
 
@@ -96,6 +95,24 @@ def get_entry():
     if "erpnext" in frappe.get_installed_apps():
         return "erpnext_site"
     return "insights_site"
+
+
+def caller() -> str:
+    """How the request authenticated, for `docs/telemetry.md`'s `caller`.
+
+    Frappe keeps no record of which one it used, and it lets a login cookie
+    through beside an `Authorization` header it cannot verify, so the header
+    cannot answer. The session can: `frappe.set_user`, which a token login
+    calls, sets the session id to the user's name, while a login cookie resumes
+    a session under a random id.
+    """
+    if not frappe.request:
+        return "job"
+    if frappe.session.user == "Guest":
+        return "guest"
+    if frappe.session.sid == frappe.session.user:
+        return "token"
+    return "session"
 
 
 def error_kind(exc: BaseException) -> str:

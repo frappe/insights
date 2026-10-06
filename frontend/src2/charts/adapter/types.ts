@@ -1,6 +1,7 @@
+import type { ChartTokens } from 'frappe-ui/charts'
 import type { Component } from 'vue'
 import type { ChartConfig, ChartType } from '../../types/chart.types'
-import type { QueryResult, QueryResultRow } from '../../types/query.types'
+import type { QueryResult, QueryResultRow, SortDirection } from '../../types/query.types'
 import type { RecordLinks } from '../record_link'
 
 // The contract every chart type is adapted against.
@@ -34,6 +35,15 @@ export type ChartAdapterInput = {
 	recordLinks?: RecordLinks
 	/** Printed by the chrome. It belongs to the Chart, not to its config. */
 	title?: string
+	/** The line under the title, printed by the chrome as v2's `subtitle`. */
+	description?: string
+	/**
+	 * The plot's colors, resolved against the page and again on a theme flip. A
+	 * trend line's label plate reads them, because v2 draws the line through no
+	 * rule of its own. Left out by a surface that draws no trend line, a drill's
+	 * breakdown.
+	 */
+	tokens?: ChartTokens
 	/**
 	 * The one reading to show, by its `id`, for the type that states several — a
 	 * Number Chart. A dashboard cell is one reading, so the cell names it. A
@@ -43,9 +53,16 @@ export type ChartAdapterInput = {
 	reading?: string
 	/**
 	 * The surface cannot change the Chart. A control that rewrites the config —
-	 * a table's sort — is left out rather than rendered dead.
+	 * a table's sort — is left out rather than rendered dead, unless `sort`
+	 * gives the reader one of their own.
 	 */
 	readonly?: boolean
+	/**
+	 * Where a reader's sort goes, on a `readonly` surface that can re-run the
+	 * Chart in another order. The config it was handed already holds that order.
+	 */
+	// eslint-disable-next-line no-unused-vars
+	sort?: (column_name: string, direction: SortDirection) => void
 	/**
 	 * The surface can answer a drill. Inspecting a cell changes nothing about the
 	 * Chart, so it is not `readonly` that decides this — it is whether the source

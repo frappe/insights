@@ -1,5 +1,5 @@
 import { defineAsyncComponent } from 'vue'
-import { toTitleCase } from '../../helpers'
+import { toNumber, toTitleCase } from '../../helpers'
 import { FIELDTYPES } from '../../helpers/constants'
 import type { MapChartConfig } from '../../types/chart.types'
 import type { QueryResultRow } from '../../types/query.types'
@@ -18,7 +18,8 @@ const MapChart = defineAsyncComponent(() => import('../components/MapChart.vue')
 export type MapRegion = {
 	/** As the geography spells it. This is what echarts matches a shape by. */
 	name: string
-	value: number
+	/** `null` when no row behind it holds a number: a region with nothing measured, not a zero. */
+	value: number | null
 }
 
 /**
@@ -30,6 +31,7 @@ export type MapBucket = { min: number; max: number }
 
 export type MapChartProps = {
 	title?: string
+	subtitle?: string
 	map: NonNullable<MapChartConfig['map_type']>
 	/** Names the measure in the tooltip. */
 	measure: string
@@ -61,6 +63,7 @@ export function adaptMapChart(input: ChartAdapterInput): ChartFiller | undefined
 
 	const props: MapChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		map,
 		measure: measure.name,
 		regions,
@@ -84,7 +87,7 @@ export function adaptMapChart(input: ChartAdapterInput): ChartFiller | undefined
 type RegionFold = {
 	/** As the geography spells it. This is what echarts matches a shape by. */
 	name: string
-	value: number
+	value: number | null
 	rows: QueryResultRow[]
 }
 
@@ -112,8 +115,9 @@ function foldRegions(
 		const raw = row[location]
 		if (raw === null || raw === undefined || raw === '') continue
 		const name = mappings[raw as string] || toTitleCase(String(raw))
-		const region = fold.get(toTitleCase(name)) || { name, value: 0, rows: [] }
-		region.value += Number(row[measure]) || 0
+		const region = fold.get(toTitleCase(name)) || { name, value: null, rows: [] }
+		const value = toNumber(row[measure])
+		if (value !== null) region.value = (region.value ?? 0) + value
 		region.rows.push(row)
 		fold.set(toTitleCase(name), region)
 	}
@@ -123,7 +127,7 @@ function foldRegions(
 /** What the plot shows, descending by value, the way the classification reads them. */
 function regionsOf(fold: Map<string, RegionFold>): MapRegion[] {
 	return [...fold.values()]
-		.sort((a, b) => b.value - a.value)
+		.sort((a, b) => Number(a.value === null) - Number(b.value === null) || b.value! - a.value!)
 		.map(({ name, value }) => ({ name, value }))
 }
 
@@ -156,8 +160,8 @@ function rowForRegion(
  * cannot tell that from a negative reads the map wrong. The scale opens at the
  * smallest value, so the classes span exactly what the data does.
  */
-function naturalBreaks(values: number[]): MapBucket[] {
-	const valid = values.filter((v) => typeof v === 'number' && !isNaN(v))
+function naturalBreaks(values: (number | null)[]): MapBucket[] {
+	const valid = values.filter((v): v is number => typeof v === 'number' && !isNaN(v))
 	if (!valid.length) return []
 
 	const distinct = [...new Set(valid)].sort((a, b) => a - b)

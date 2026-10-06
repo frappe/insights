@@ -75,7 +75,8 @@ const bucketColors = computed(() => {
 	})
 })
 
-function colorOf(value: number) {
+function colorOf(value: number | null) {
+	if (value === null) return tokens.value.gridline
 	const bucket = props.buckets.findIndex(
 		(b, index) => (index === 0 ? value >= b.min : value > b.min) && value <= b.max,
 	)
@@ -183,6 +184,7 @@ function showTooltip(name: string, value: number) {
 <template>
 	<ChartContainer
 		:title="props.title"
+		:subtitle="props.subtitle"
 		:error="failed ? __('Could not load the map') : null"
 		:empty="!props.regions.length"
 	>

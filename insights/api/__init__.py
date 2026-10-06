@@ -195,7 +195,7 @@ def get_file_data(filename: str):
             raise
 
 
-@insights_whitelist()
+@insights_whitelist(methods=["POST"])
 def import_csv_data(filename: str, tablename: str = ""):
     check_data_source_permission("uploads")
 
@@ -271,7 +271,7 @@ def check_stored_document(doctype: str, name: str):
 
 
 @frappe.whitelist()
-def run_doc_method(method: str, docs: dict | str, args: dict | None = None):
+def run_doc_method(method: str, docs: dict | str, args: dict | str | None = None):
     docs = frappe.parse_json(docs)
     doctype, name = docs.get("doctype"), docs.get("name")
 

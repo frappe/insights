@@ -1,5 +1,6 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
+import html
 import re
 from datetime import datetime
 
@@ -14,6 +15,7 @@ from frappe.utils import escape_html, get_url, validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
 from insights.http import post_to_public_url, validate_public_url
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import FRAPPE_ERRORS
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
@@ -76,8 +78,11 @@ class InsightsAlert(Document):
 
         try:
             self.evaluate_condition()
+        except FRAPPE_ERRORS:
+            # the engine told its cause and the expression already
+            raise
         except Exception as e:
-            frappe.throw(f"Invalid condition: {e}")
+            frappe.throw(html.escape(f"{type(e).__name__}: {e}. Expression: {self.condition}", quote=False))
 
         self.set_permission_user()
 
@@ -123,7 +128,7 @@ class InsightsAlert(Document):
         if not can_read_referenced_query(self.query):
             frappe.throw(_("You do not have permission to access this query"), frappe.PermissionError)
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def send_alert(self, force: bool = False):
         # Sending mails the author's recipients, so read access is not enough,
         # and `run_doc_method` and the desk form check only read. Check the user
@@ -331,7 +336,7 @@ class InsightsAlert(Document):
         next_execution = self.get_next_execution()
         return next_execution <= now_datetime()
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def test_alert(self):
         self.send_alert(force=True)
 

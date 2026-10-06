@@ -9,7 +9,10 @@ proven here is that it names them right.
 
 import frappe
 
+from insights.api.authoring import get_chart_data as get_authoring_chart_data
+from insights.api.view import get_chart_data, get_drill_data
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
+from insights.insights.query_builders.sql_functions import read_on
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, delete_workbooks
 
@@ -102,6 +105,12 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
             frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
 
     def fetch(self, comparisons, anchor=ANCHOR, window=None):
+        chart = self.make_chart(comparisons, window or {"span": "month to date", "anchor": anchor})
+
+        with db_connections():
+            return frappe.get_doc(DT.CHART, chart.name).fetch(force=True)
+
+    def make_chart(self, comparisons, window):
         workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": WORKBOOK_TITLE}).insert()
         query = frappe.get_doc(
             {
@@ -120,12 +129,49 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
                 "workbook": workbook.name,
                 "query": query.name,
                 "chart_type": "Number",
-                "config": card_config(comparisons, window or {"span": "month to date", "anchor": anchor}),
+                "config": card_config(comparisons, window),
             }
         ).insert()
+        self.dashboard = frappe.get_doc(
+            {
+                "doctype": DT.DASHBOARD,
+                "title": "Comparison Rows Test Dashboard",
+                "workbook": workbook.name,
+                "items": [
+                    {
+                        "type": "chart",
+                        "chart": chart.name,
+                        "layout": {"i": "1", "x": 0, "y": 1, "w": 4, "h": 4},
+                    },
+                    {
+                        "type": "filter",
+                        "filter_name": "Date",
+                        "filter_type": "Date",
+                        "links": {chart.name: f"`{query.name}`.`date`"},
+                        "layout": {"i": "2", "x": 0, "y": 0, "w": 4, "h": 1},
+                    },
+                    {
+                        "type": "filter",
+                        "filter_name": "Range",
+                        "filter_type": "Date",
+                        "links": {chart.name: f"`{query.name}`.`date`"},
+                        "layout": {"i": "3", "x": 4, "y": 0, "w": 4, "h": 1},
+                    },
+                ],
+            }
+        ).insert()
+        return chart
 
-        with db_connections():
-            return frappe.get_doc(DT.CHART, chart.name).fetch(force=True)
+    def on_dashboard(self, comparisons, operator, value, window=None, range=None):
+        """The card as a dashboard filtered on its date column shows it, read on `ANCHOR`."""
+        chart = self.make_chart(comparisons, window)
+        filters = {"Date": {"operator": operator, "value": value}}
+        if range:
+            filters["Range"] = {"operator": "between", "value": range}
+
+        with read_on(ANCHOR), db_connections():
+            result = get_chart_data(chart.name, self.dashboard.name, filters=filters, force=True)
+        return chart, filters, result
 
     # @feature charts.number-comparison
     def test_two_readings_asking_different_questions_read_different_rows(self):
@@ -174,3 +220,91 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
 
         self.assertEqual(str(result["rows"][-1]["date"])[:10], "2026-08-09")
         self.assertEqual(result["comparison_rows"], {"previous": None})
+
+    # @feature charts.number-period-from-dashboard
+    def test_a_card_with_no_period_compares_the_dashboards_span_with_the_one_before(self):
+        """Read as a row filter, the span left the card one number and nothing
+        to step back from, so `previous` printed nothing."""
+        _, _, result = self.on_dashboard(["previous", "last year"], "within", "month to date")
+
+        self.assertEqual([row["count_0"] for row in result["rows"]], [1, 2, 3])
+        self.assertEqual(result["comparison_rows"], {"previous": 1, "last year": 0})
+        # the card labels its rows and words its comparison by the Period it read
+        self.assertEqual(result["chart"]["config"]["window"], {"span": "month to date"})
+
+    # @feature charts.number-period-from-dashboard
+    def test_a_date_range_on_the_dashboard_narrows_a_card_with_no_period_to_one_number(self):
+        _, _, result = self.on_dashboard(["previous"], "between", ["2026-07-01", "2026-08-10"])
+
+        self.assertEqual([row["count_0"] for row in result["rows"]], [5])
+        # asked, with no span to step back from
+        self.assertEqual(result["comparison_rows"], {"previous": None})
+        self.assertIsNone(result["chart"]["config"]["window"])
+
+    # @feature charts.number-period-from-dashboard
+    def test_a_second_filter_on_the_date_column_keeps_the_span_a_row_filter(self):
+        """Lent beside a range, the span's comparison stretch would be cut by
+        the range: half of July read as "previous month"."""
+        _, _, result = self.on_dashboard(
+            ["previous"], "within", "month to date", range=["2026-07-15", "2026-08-31"]
+        )
+
+        self.assertEqual([row["count_0"] for row in result["rows"]], [3])
+        self.assertEqual(result["comparison_rows"], {"previous": None})
+        self.assertIsNone(result["chart"]["config"]["window"])
+
+    # @feature charts.number-period-from-dashboard
+    def test_a_card_that_states_its_own_period_keeps_it_under_the_dashboards_span(self):
+        """The dashboard's span still narrows the rows, so this month reads empty
+        and the month before reads July's first ten days."""
+        _, _, result = self.on_dashboard(
+            ["previous"], "within", "last month", window={"span": "month to date", "anchor": ANCHOR}
+        )
+
+        self.assertEqual([row["count_0"] for row in result["rows"]], [2, 0])
+        self.assertEqual(result["comparison_rows"], {"previous": 0})
+        self.assertEqual(result["chart"]["config"]["window"], {"span": "month to date", "anchor": ANCHOR})
+
+    # @feature charts.number-period-from-dashboard charts.drill-number-card
+    def test_a_card_reading_the_dashboards_span_drills_into_that_span_alone(self):
+        chart, filters, _ = self.on_dashboard(["previous"], "within", "month to date")
+
+        with db_connections():
+            result = get_drill_data(
+                chart.name,
+                self.dashboard.name,
+                filters=filters,
+                drill_stack=[
+                    {
+                        "segment_filters": [{"column": "date", "operator": "=", "value": "2026-08-01"}],
+                        "action": {"rows": True, "measure": "count_0"},
+                        "read_on": ANCHOR,
+                    }
+                ],
+            )
+
+        self.assertEqual(
+            sorted(row["description"] for row in result["rows"]),
+            sorted(description for description, date in TODOS.items() if date.startswith("2026-08")),
+        )
+
+    # @feature charts.number-period-from-dashboard charts.preview
+    def test_the_builders_dashboard_grid_reads_the_card_as_its_reader_does(self):
+        """The builder renders the config it is editing, so it gets the lent
+        Period beside the rows rather than inside a config."""
+        chart, filters, _ = self.on_dashboard(["previous"], "within", "month to date")
+
+        with read_on(ANCHOR), db_connections():
+            result = get_authoring_chart_data(
+                chart.chart_type,
+                chart.query,
+                frappe.parse_json(chart.config),
+                chart_name=chart.name,
+                dashboard_items=frappe.parse_json(self.dashboard.items),
+                filters=filters,
+                force=True,
+            )
+
+        self.assertEqual([row["count_0"] for row in result["rows"]], [2, 3])
+        self.assertEqual(result["comparison_rows"], {"previous": 0})
+        self.assertEqual(result["period"], {"span": "month to date"})

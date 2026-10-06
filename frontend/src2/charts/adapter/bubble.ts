@@ -20,6 +20,7 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 
 	const props: ScatterChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		data: input.result.rows,
 		x,
 		y,

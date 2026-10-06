@@ -434,6 +434,8 @@ class InsightsWorkbook(Document):
             fields=[
                 "name",
                 "title",
+                "description",
+                "info",
                 "workbook",
                 "folder",
                 "sort_order",
@@ -496,7 +498,7 @@ class InsightsWorkbook(Document):
             "dashboards": {d.name: d for d in dashboards},
         }
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def mark_as_standard(self, name: str | None = None, module: str | None = None):
         """Make this workbook standard in `module`, and return its new name.
 
@@ -771,7 +773,7 @@ def is_workbook_file(workbook_data) -> bool:
     try:
         data = frappe.parse_json(workbook_data)
     except ValueError:
-        return False
+        return False  # nosemgrep - text that is not JSON is not a workbook file
     return isinstance(data, dict) and (
         data.get("doctype") == "Insights Workbook" or data.get("type") == "Workbook"
     )

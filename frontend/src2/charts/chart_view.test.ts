@@ -355,6 +355,37 @@ describe('the builder grid rendering a chart its author edited', () => {
 	})
 })
 
+describe('the builder grid rendering a card the dashboard lent a Period', () => {
+	// @feature charts.number-period-from-dashboard charts.preview
+	it('renders and drills the card by the Period, and leaves the edited config without it', async () => {
+		// `authoring.get_chart_data` returns `period` when a dashboard filter
+		// named the span a card with no Period of its own reads.
+		const chart = reactive({
+			doc: {
+				name: 'chart-36',
+				title: 'Sales',
+				chart_type: 'Number',
+				query: 'query-36',
+				config: { date_column: { column_name: 'date', dimension_name: 'date' } } as any,
+			},
+		}) as unknown as Chart
+		answers.set('insights.api.authoring.get_chart_data', () =>
+			Promise.resolve({
+				columns: [{ name: 'date', type: 'Date' }],
+				rows: [{ date: '2026-07-01' }, { date: '2026-08-01' }],
+				comparison_rows: { previous: 0 },
+				period: { span: 'current month' },
+			}),
+		)
+		const read = useChartPreview(chart)
+		await read.load()
+
+		expect((read.doc.config as any).window).toEqual({ span: 'current month' })
+		expect((read.drillSubject.chart.config as any).window).toEqual({ span: 'current month' })
+		expect((chart.doc.config as any).window).toBeUndefined()
+	})
+})
+
 describe('the builder drilling a chart its author is editing', () => {
 	// @feature charts.drill-changed-chart charts.preview
 	it('drills the version its rows ran as, not the one the document being edited holds', async () => {
@@ -574,5 +605,45 @@ describe('a card paged past its first page', () => {
 
 		expect(read.goToPage).toBeDefined()
 		expect(read.exportResults).toBeUndefined()
+	})
+})
+
+// A reader's sort is sent with the request and never written to the chart.
+
+describe('a reader sorting a saved table', () => {
+	const sortedBy = (column_name: string, direction: 'asc' | 'desc') => ({
+		column: { type: 'column', column_name },
+		direction,
+	})
+
+	// @feature charts.table-header-sort
+	it('asks for the chart in their order, starting from the order on screen', async () => {
+		answers.set('insights.api.view.get_chart_data', () =>
+			northThenSouth(1).then((answer) => ({ ...answer, can_read_rows: true })),
+		)
+		const config = { order_by: [sortedBy('region', 'desc')] } as any
+		const chartDoc = { name: 'chart-11', title: '', chart_type: 'Table', config }
+		const read = useChartView(chartDoc.name, undefined, chartDoc)
+
+		await read.load()
+		await read.sort!('count', 'asc')
+
+		const expected = [sortedBy('region', 'desc'), sortedBy('count', 'asc')]
+		expect(calls.map((call) => call.args.order_by)).toEqual([undefined, expected])
+		expect(read.readerOrder).toEqual(expected)
+		expect(read.doc.config.order_by).toEqual([sortedBy('region', 'desc')])
+	})
+
+	// @feature charts.table-header-sort
+	it('is not offered to a reader allowed only the chart', async () => {
+		answers.set('insights.api.view.get_chart_data', () =>
+			northThenSouth(1).then((answer) => ({ ...answer, can_read_rows: false })),
+		)
+		const chartDoc = { name: 'chart-12', title: '', chart_type: 'Table', config: {} as any }
+		const read = useChartView(chartDoc.name, undefined, chartDoc)
+
+		await read.load()
+
+		expect(read.sort).toBeUndefined()
 	})
 })

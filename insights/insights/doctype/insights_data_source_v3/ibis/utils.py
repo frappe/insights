@@ -1,4 +1,5 @@
 import ast
+import functools
 import json
 import re
 import sys
@@ -10,6 +11,8 @@ import ibis.expr.types as ir
 from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, NamespaceDict, safe_exec
 from ibis import selectors as s
 from jedi import Script
+
+from insights.exceptions import ExpressionSyntaxError
 
 # An expression describes a query. It does not move data in or out, so the
 # context holds no name that opens a path, a URL or a backend connection.
@@ -44,19 +47,46 @@ def is_refused_in_expression(name: str) -> bool:
     return is_io_attribute(name) or name in BACKEND_ATTRIBUTE_NAMES or name in RUN_ATTRIBUTE_NAMES
 
 
-def assert_expression_has_no_io(expression: str) -> None:
+@functools.cache
+def ibis_attribute_names() -> frozenset[str]:
+    names = set(dir(ibis))
+    classes = [ir.Expr]
+    while classes:
+        cls = classes.pop()
+        names.update(dir(cls))
+        classes.extend(cls.__subclasses__())
+    return frozenset(names)
+
+
+def is_column_attribute(obj, name: str) -> bool:
+    """Whether `obj.name` reads a column of the table `obj`.
+
+    A name that ibis defines on any expression is never one: on the table it is
+    the method, and `safe_eval` checks no attribute at run time, so the same name
+    on a column would be reachable too.
+    """
+    return isinstance(obj, ir.Table) and name in obj.columns and name not in ibis_attribute_names()
+
+
+def assert_expression_has_no_io(expression: str, context: dict | None = None) -> None:
     """Refuse an expression that names an I/O, backend or run attribute.
 
     Checked in the source rather than at evaluation: RestrictedPython compiles
     `a.b` to a guard call passing the literal `b` and leaves no `getattr`, so an
-    attribute name is always spelled out here.
+    attribute name is always spelled out here. An I/O name that is a column of a
+    table in `context` passes.
     """
+    tables = None
     for name in attributes_of(expression):
         if is_refused_in_expression(name):
-            frappe.throw(
-                f"'{name}' is not available in an expression",
-                frappe.PermissionError,
-            )
+            if tables is None:
+                tables = {key: value for key, value in (context or {}).items() if isinstance(value, ir.Table)}
+            if is_io_attribute(name) and any(is_column_attribute(t, name) for t in tables.values()):
+                continue
+            message = f"'{name}' is not available in an expression"
+            if holder := next((key for key, table in tables.items() if name in table.columns), None):
+                message += f". Read the column as {holder}['{name}']"
+            frappe.throw(message, frappe.PermissionError)
 
 
 def runs_sql(expression: str) -> bool:
@@ -74,6 +104,47 @@ def attributes_of(expression: str) -> set[str]:
     return {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
 
 
+def names_read(expression: str) -> set[str]:
+    """The names and the attribute names an expression reads."""
+    try:
+        tree = ast.parse(expression)
+    except SyntaxError:
+        return set()
+
+    return {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)} | attributes_of(expression)
+
+
+def called_names(expression: str) -> set[str]:
+    """The plain names an expression calls, such as `sum` in `sum(amount)`."""
+    try:
+        tree = ast.parse(expression)
+    except SyntaxError:
+        return set()
+
+    return {
+        node.func.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+
+def item_reads(expression: str) -> set[tuple[str, str]]:
+    """The `name['column']` reads in an expression, as `(name, column)`."""
+    try:
+        tree = ast.parse(expression)
+    except SyntaxError:
+        return set()
+
+    return {
+        (node.value.id, node.slice.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Subscript)
+        and isinstance(node.value, ast.Name)
+        and isinstance(node.slice, ast.Constant)
+        and isinstance(node.slice.value, str)
+    }
+
+
 def get_functions():
     import insights.insights.doctype.insights_data_source_v3.ibis.functions as functions
 
@@ -83,6 +154,7 @@ def get_functions():
         "ibis",
         "ir",
         "math",
+        "ops",
         "pd",
         "s",
     ]
@@ -191,7 +263,7 @@ def get_code_completions(code: str, column_options: str | None = None):
                 col.get("value"): col.get("data_type", "Unknown") for col in columns if col.get("value")
             }
         except (json.JSONDecodeError, TypeError):
-            pass
+            pass  # nosemgrep - completions work without column types
 
     current_function = None
 
@@ -351,7 +423,7 @@ def validate_variable_name(node, tree, available_functions: set[str], available_
 def validate_names(tree, columns: list[dict]):
     functions = get_functions()
     available_functions = set(functions.keys())
-    available_columns = {col.get("value") for col in columns}
+    available_columns = {col.get("value") for col in columns} | table_names(None).keys()
 
     # treat locally assigned variables as valid names so that reusing them
     assigned_vars = {
@@ -374,11 +446,57 @@ def validate_names(tree, columns: list[dict]):
     return {"is_valid": len(errors) == 0, "errors": errors}
 
 
-def eval_script(table, schema: dict[str, str]):
-    script = get_functions()
-    for col_name in schema:
-        script[col_name] = getattr(table, col_name)
-    return script
+def table_names(query, right=None) -> dict:
+    """The tables an expression reads by name: the query being built as `q`, and
+    for a join also as `t1`, beside the join's other table as `t2`."""
+    if right is None:
+        return {"q": query}
+    return {"q": query, "t1": query, "t2": right}
+
+
+def expression_context(expression: str, query, functions: dict, right=None) -> dict:
+    """The names an expression reads: its tables, the columns of `query` and `functions`.
+
+    A column named like a function, such as `day`, is the column where the
+    expression reads it as a value and the function where it calls it. A
+    namespace, such as `ibis`, is read through its attributes as a function is
+    called.
+    """
+    # by item: a table's method outranks its column of the same name on attribute access
+    columns = {col: query[col] for col in query.columns}
+    # a table outranks a column of its name, so `q['q']` always reads the column
+    context = {**columns, **functions, **table_names(query, right)}
+    shared = columns.keys() & functions.keys()
+    if not shared:
+        return context
+
+    tree = ast.parse(expression)
+    called = {id(node.func) for node in ast.walk(tree) if isinstance(node, ast.Call)}
+    namespaces = {name for name in shared if not callable(functions[name])}
+    called |= {
+        id(node.value)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id in namespaces
+    }
+    calls, values = set(), set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and node.id in shared:
+            (calls if id(node) in called else values).add(node.id)
+
+    if both := sorted(calls & values):
+        raise ExpressionSyntaxError(
+            f"'{both[0]}' is a column and a function, and this expression uses it as both. "
+            f"Write the column as q['{both[0]}']"
+        )
+    for name in values:
+        context[name] = columns[name]
+    return context
+
+
+def eval_script(table, expression: str):
+    return expression_context(expression, table, get_functions())
 
 
 # Functions that are not supported by certain column types like `DateColumn.sum()`
@@ -393,6 +511,9 @@ def handle_attribute_error(error: AttributeError, line: int = 1):
 
     if obj is None or attr_name is None:
         return create_error(line=line, column=0, message=f"Type error: {error_msg}")
+
+    if isinstance(obj, ir.Table):
+        return create_error(line=line, column=0, message=f"Column '{attr_name}' not found.")
 
     message = f"Type error: {error_msg}"
     hint = None
@@ -423,16 +544,21 @@ def handle_attribute_error(error: AttributeError, line: int = 1):
 
 def validate_types(expression: str, columns: list[dict]):
     schema = get_ibis_dtype(columns)
+    validation_table = ibis.table(schema, name="validation_table")
+    # the run's source check, which lets through a column named like an I/O method
+    assert_expression_has_no_io(expression, table_names(validation_table))
     if not schema:
         return {"is_valid": True, "errors": []}
 
     try:
-        validation_table = ibis.table(schema, name="validation_table")
         from insights.insights.doctype.insights_data_source_v3.sandbox import expression_globals
 
-        eval_context = eval_script(validation_table, schema)
+        eval_context = eval_script(validation_table, expression)
         safe_exec(expression, {**expression_globals(), **eval_context})  # nosemgrep
         return {"is_valid": True, "errors": []}
+
+    except ExpressionSyntaxError as e:
+        return {"is_valid": False, "errors": [create_error(1, 0, str(e))]}
 
     except (AttributeError, TypeError) as e:
         _, _, tb = sys.exc_info()
@@ -481,9 +607,6 @@ def validate_expression(expression: str, column_options: str):
     syntax_result = validate_syntax(expression)
     if not syntax_result["is_valid"]:
         return syntax_result
-
-    # validate_types() below evaluates the expression, so the same rule applies
-    assert_expression_has_no_io(expression)
 
     tree = ast.parse(expression)
     name_result = validate_names(tree, columns)

@@ -1075,7 +1075,7 @@ def _parse_call(source: str) -> tuple[str, list[str], dict[str, str]] | None:
     try:
         node = ast.parse(source.strip(), mode="eval").body
     except SyntaxError:
-        return None
+        return None  # nosemgrep - a source that does not parse is not a call
     if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
         return None
 
@@ -1094,11 +1094,20 @@ def _bucket_filters(column: str, bucket: tuple) -> list[dict]:
     if start is None:
         return [_rule(column, "is_not_set", "")]
 
+    if end is not None and _is_midnight(start) and _is_midnight(end):
+        # whole days are a span, and read as one the way the card's own span is
+        last = (get_datetime(end) - timedelta(days=1)).date()
+        return [_rule(column, "between", [str(get_datetime(start).date()), str(last)])]
+
     filters = [_rule(column, ">=", _timestamp(start))]
     if end is not None:
         filters.append(_rule(column, "<", _timestamp(end)))
 
     return filters
+
+
+def _is_midnight(value) -> bool:
+    return not isinstance(value, time) and get_datetime(value).time() == time()
 
 
 def _rule(column: str, operator: str, value) -> dict:

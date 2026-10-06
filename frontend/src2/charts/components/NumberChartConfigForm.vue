@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AddSlotButton from './AddSlotButton.vue'
-import { debounce } from 'frappe-ui'
+import { debounce, Textarea } from 'frappe-ui'
 import { computed } from 'vue'
 import ColorInput from '../../components/ColorInput.vue'
 import DraggableList from '../../components/DraggableList.vue'
@@ -69,6 +69,13 @@ function setNumberOption(index: number, option: keyof NumberColumnOptions, value
 	config.value.number_column_options[index][option] = value
 }
 
+// An emptied info leaves no key behind: an `undefined` one reads as an edit,
+// and saves a chart nobody changed.
+function setNumberInfo(index: number, info: string) {
+	if (info) setNumberOption(index, 'info', info)
+	else delete config.value.number_column_options[index]?.info
+}
+
 /**
  * The column and the period are one decision, so one handler answers both.
  *
@@ -122,6 +129,17 @@ function setDateColumn(dimension?: Dimension) {
 												setNumberOption(index, 'color', $event)
 											"
 											placement="left-start"
+										/>
+									</InlineFormControlLabel>
+
+									<InlineFormControlLabel :label="__('Info')">
+										<Textarea
+											:placeholder="__('Info')"
+											:rows="3"
+											:model-value="
+												(getNumberOption(index, 'info') as string) ?? ''
+											"
+											@update:model-value="setNumberInfo(index, $event)"
 										/>
 									</InlineFormControlLabel>
 

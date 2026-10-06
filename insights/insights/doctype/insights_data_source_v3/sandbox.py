@@ -16,7 +16,7 @@ from frappe.utils.safe_exec import NamespaceDict, get_python_builtins, get_safe_
 
 from insights.permission_user import script_session
 
-from .ibis.utils import BACKEND_ATTRIBUTE_NAMES, is_io_attribute
+from .ibis.utils import BACKEND_ATTRIBUTE_NAMES, is_column_attribute, is_io_attribute
 
 SCRIPT_NAMES = ("FrappeClient", "json", "orjson", "as_json", "_dict", "dict", "log", "_", "scrub")
 SCRIPT_FRAPPE = (
@@ -192,6 +192,8 @@ IN_MEMORY = frozenset(
 )
 ARRAY_WRITERS = frozenset({"tofile", "dump"})
 QUERY_READS = frozenset({"build", "execute"})
+# what an expression reads a missing attribute as: the `AttributeError`
+MISSING = object()
 
 
 def script_globals() -> dict:
@@ -227,10 +229,13 @@ def expression_globals() -> dict:
             "get_list": read_list,
         },
         db_names={"get_value": read_value},
+        missing=MISSING,
     )
 
 
-def sandbox_globals(safe_globals: dict, names: dict, frappe_names: dict, db_names: dict) -> dict:
+def sandbox_globals(
+    safe_globals: dict, names: dict, frappe_names: dict, db_names: dict, missing=None
+) -> dict:
     """The globals code runs with: `names`, and `frappe` holding `frappe_names`, `db_names` and `UTILS`.
 
     `safe_exec` merges these into frappe's Server Script globals, so every other
@@ -253,25 +258,36 @@ def sandbox_globals(safe_globals: dict, names: dict, frappe_names: dict, db_name
     utils = safe_globals["frappe"].utils
     namespace.utils = NamespaceDict({name: utils[name] for name in UTILS if name in utils})
     allowed["frappe"] = namespace
-    allowed["_getattr_"] = no_io(safe_globals["_getattr_"])
+    allowed["_getattr_"] = no_io(safe_globals["_getattr_"], missing)
 
     return {**{name: NotDefined(name) for name in safe_globals}, **allowed}
 
 
-def no_io(guard):
-    """`_getattr_` that refuses file access and the connection a relation runs on."""
+def no_io(guard, missing=None):
+    """`_getattr_` that refuses file access and the connection a relation runs on.
 
-    def getattr_(obj, name, default=None):
+    `missing` is what a missing attribute reads as. A script reads `None`, as a
+    Server Script does. An expression reads `MISSING` and so gets the
+    `AttributeError`, as from frappe's `safe_eval`: a `None` join condition
+    joins every row to every row.
+    """
+
+    def getattr_(obj, name, default=missing):
         owner = obj if isinstance(obj, type) else type(obj)
         if (getattr(owner, "__module__", None) or "").partition(".")[0] in ("pandas", "ibis", "numpy") and (
             name in ARRAY_WRITERS
             or name in BACKEND_ATTRIBUTE_NAMES
-            or (is_io_attribute(name) and name not in IN_MEMORY)
+            or (is_io_attribute(name) and name not in IN_MEMORY and not is_column_attribute(obj, name))
         ):
             raise frappe.PermissionError(
                 f"Code in a query cannot reach a file or a connection through {name}"
             )
-        return guard(obj, name, default)
+        value = guard(obj, name, default)
+        if value is MISSING:
+            raise AttributeError(
+                f"'{type(obj).__name__}' object has no attribute '{name}'", name=name, obj=obj
+            )
+        return value
 
     return getattr_
 

@@ -12,7 +12,7 @@ import type {
 } from '../../types/chart.types'
 import type { Dimension, Measure, QueryResultRow } from '../../types/query.types'
 import { numberFormatOf, printNumber } from '../number_format'
-import { LAST_YEAR, periodOf, previousWindowShift, windowShiftLabel } from '../window'
+import { LAST_YEAR, periodOf, previousWindowLabel, windowShiftLabel } from '../window'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 const NumberCards = defineAsyncComponent(() => import('../components/NumberCards.vue'))
@@ -35,6 +35,8 @@ export type NumberCardEntry = NumberCardProps & {
 	missing?: boolean
 	/** The card's height in px, as a cell of `numberCardRows` rows gives it. */
 	height: number
+	/** The reading's info, behind a mark beside its name. */
+	info?: string
 }
 
 export type NumberCardClickEvent = { column: string }
@@ -156,6 +158,7 @@ function readingOf(
 		value: scale(latest),
 	}
 	if (options.color) card.color = options.color
+	if (options.info) card.info = options.info
 	if (format.prefix) card.prefix = format.prefix
 	if (format.suffix) card.suffix = format.suffix
 	// The card prints the prefixes and suffixes around what `format` and
@@ -299,16 +302,15 @@ export function defaultComparisonLabel(
 
 	// Worded by the period the config holds, not by the row the server named: the
 	// form prints this as the caption's placeholder before a card has ever run.
-	// A shifted span is named by the shift, and a grain's previous period by
-	// the grain it was grouped by.
+	// A span is named by the stretch before it, and a grain's previous period
+	// by the grain it was grouped by.
 	const period = periodOf(config)
 	if (comparison.source === 'last year') {
 		return period?.span ? windowShiftLabel(LAST_YEAR) : undefined
 	}
 	if (comparison.source !== 'previous') return undefined
 
-	const shift = previousWindowShift(period?.span)
-	return shift ? windowShiftLabel(shift) : previousLabel(config)
+	return previousWindowLabel(period?.span) || previousLabel(config)
 }
 
 /**

@@ -175,7 +175,7 @@ def dashboard_view_counts(names: list[str], since: str | None = None) -> dict[st
     return {str(row.reference_name): row.views for row in rows}
 
 
-@insights_whitelist()
+@insights_whitelist(methods=["POST"])
 def update_dashboard_preview(dashboard_name: str):
     """Regenerate the preview image from the caller's rows.
 

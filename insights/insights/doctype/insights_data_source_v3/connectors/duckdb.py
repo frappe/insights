@@ -12,6 +12,9 @@ import ibis
 from duckdb import IOException
 from frappe.utils import get_files_path
 from ibis.backends.duckdb import Backend as DuckDBBackend
+from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
+
+from .compilers import StarExceptDropColumns
 
 # DuckDB hands a file to one writer or to many readers, never both, and a read
 # connection holds its shared lock until its request ends. A writer that arrives
@@ -24,6 +27,16 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 WRITE_LOCK_TIMEOUT = 30
 IMPORT_WRITE_LOCK_TIMEOUT = 5 * 60
 WRITE_LOCK_RETRY_INTERVAL = 1
+
+
+class InsightsDuckDBCompiler(StarExceptDropColumns, DuckDBCompiler):
+    pass
+
+
+def connect_duckdb(*args, **kwargs) -> DuckDBBackend:
+    db = ibis.duckdb.connect(*args, **kwargs)
+    db.compiler = InsightsDuckDBCompiler()
+    return db
 
 
 def get_duckdb_path(data_source) -> str:
@@ -41,7 +54,8 @@ def open_local_duckdb(
     """Open a DuckDB connection at the given filesystem path.
 
     This is the single place that knows how to configure a local DuckDB
-    connection. Do not call ibis.duckdb.connect() directly anywhere else.
+    connection. It opens through `connect_duckdb`, as every DuckDB connection
+    Insights makes must.
 
     Args:
         path: Absolute path to the .duckdb file.
@@ -50,10 +64,10 @@ def open_local_duckdb(
         lock_timeout: Seconds a write open waits for readers to release the file.
     """
     if not os.path.exists(path):
-        db = ibis.duckdb.connect(path)
+        db = connect_duckdb(path)
         db.disconnect()
 
-    db = ibis.duckdb.connect(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
+    db = connect_duckdb(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
 
     private_folder = os.path.realpath(get_files_path(is_private=1))
     private_folder = _escape_sql_path(private_folder)
@@ -64,10 +78,6 @@ def open_local_duckdb(
     if not read_only and allowed_dir:
         resolved_dir = os.path.realpath(allowed_dir)
         resolved_dir_escaped = _escape_sql_path(resolved_dir)
-
-        with suppress(Exception):
-            db.raw_sql("SET enable_external_access = true")
-
         db.raw_sql(f"SET allowed_directories = ['{resolved_dir_escaped}']")
     else:
         db.raw_sql("SET enable_external_access = false")
@@ -82,7 +92,7 @@ def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
 
     while True:
         try:
-            return ibis.duckdb.connect(path, read_only=False)
+            return connect_duckdb(path, read_only=False)
         except IOException as e:
             if "Could not set lock" not in str(e) or time.monotonic() >= deadline:
                 raise
@@ -122,7 +132,7 @@ def local_duckdb_write_lock(
     deadline = time.monotonic() + timeout
     lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
     with filelock(lock_name, timeout=timeout):
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - the write open waits for, or fails on, a connection left open
             cached = insights.db_connections.pop(cache_key, None)
             if cached:
                 cached.disconnect()
@@ -185,7 +195,7 @@ get_local_duckdb_connection = open_local_duckdb
 
 def get_http_duckdb_connection(data_source, name, db_name):
     """Connect to a remote DuckDB via HTTP or DuckLake."""
-    db = ibis.duckdb.connect()
+    db = connect_duckdb()
     sql = get_http_secret(data_source, name, db_name)
     sql and db.raw_sql(sql)
     attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name

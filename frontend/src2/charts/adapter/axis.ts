@@ -7,6 +7,7 @@ import type {
 	ChartTooltipColumn,
 	ChartValueAxisOptions,
 	ChartXAxisOptions,
+	ChartTokens,
 	ReferenceLine as PlotReferenceLine,
 	SeriesStyle,
 	TimeGrain,
@@ -85,13 +86,13 @@ function adaptAxisChart(
 		if (series) columnsOwned.set(series, (columnsOwned.get(series) || 0) + 1)
 	}
 
-	const seriesConfig: Record<string, SeriesStyle> = {}
-	for (const column of columns) {
-		const series = seriesByColumn.get(column)
-		const owns = series ? columnsOwned.get(series) === 1 : false
-		const style = styleFor(config, series, mark, owns, overlap)
-		if (Object.keys(style).length) seriesConfig[column] = style
-	}
+	const styles = new Map(
+		columns.map((column) => {
+			const series = seriesByColumn.get(column)
+			const owns = series ? columnsOwned.get(series) === 1 : false
+			return [column, styleFor(config, series, mark, owns, overlap, horizontal)]
+		}),
+	)
 
 	// A horizontal bar chart runs its value axis across the plot and plots only
 	// one, so v2 reads every series against the primary there. Nothing here asks
@@ -101,29 +102,63 @@ function adaptAxisChart(
 
 	const props: BarChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		data: input.result.rows,
 		x,
 		y: columns.filter((column) => !onRight(column)),
 		xAxis: xAxisFor(dimension),
 	}
 	if (right.length) props.y2 = right
-	if (Object.keys(seriesConfig).length) props.seriesConfig = seriesConfig
 	if (horizontal) props.horizontal = true
 
-	const stacked = stackingFor(y_axis, barsOnBothAxes)
-	if (stacked) props.stacked = stacked
+	const stacking = stackingFor(y_axis, barsOnBothAxes)
+	if (stacking) props.stacked = stacking
 
 	// One formatter per axis, not per series: v2 prints a value against the axis
 	// it is read on, and an axis has one scale. The first series plotted on it
 	// says how that scale reads.
 	const primary = numberFormatter(config, measureOn(config, 'Left'), input.result.rows)
-	props.yAxis = valueAxisFor(y_axis, Boolean(stacked === 'normalized'), primary)
+	props.yAxis = valueAxisFor(y_axis, stacking === 'normalized', primary)
 
 	const rightMeasure = measureOn(config, 'Right')
 	const secondary = rightMeasure
 		? numberFormatter(config, rightMeasure, input.result.rows)
 		: undefined
 	if (secondary) props.y2Axis = { format: secondary }
+
+	// The form asks the same question of each Series, so a line is drawn exactly
+	// where a toggle offers one.
+	const trends = trendLinesFor(
+		config,
+		columns.filter((column) => {
+			const series = seriesByColumn.get(column)
+			return series?.show_trend_line && takesTrendLine(config, series, mark, horizontal)
+		}),
+		input.result.rows,
+		horizontal,
+		{
+			columns,
+			// v2 reads a horizontal chart's every series on its one value axis
+			axisOf: (column) => (onRight(column) && !horizontal ? 'y2' : 'y'),
+			bounds: { y: props.yAxis, y2: props.y2Axis },
+			// the stack v2 puts a column in, when it puts it in one
+			stackOf: (column) => {
+				const drawn = styles.get(column)?.type || mark
+				return stacksWithAnother(Boolean(stacking), drawn, [drawn]) ? drawn : undefined
+			},
+			normalized: stacking === 'normalized',
+		},
+		input.tokens,
+	)
+
+	const seriesConfig: Record<string, SeriesStyle> = {}
+	for (const [column, style] of styles) {
+		const trend = trends.get(column)
+		if (trend) style.echartOptions = { ...style.echartOptions, markLine: trend }
+		if (Object.keys(style).length) seriesConfig[column] = style
+	}
+
+	if (Object.keys(seriesConfig).length) props.seriesConfig = seriesConfig
 
 	// A reference line reads any Measure the Chart includes, plotted or not: a rule
 	// often computes from a tooltip target.
@@ -234,18 +269,14 @@ function styleFor(
 	mark: ChartMark,
 	ownsOneColumn: boolean,
 	overlap: boolean,
+	horizontal: boolean,
 ): SeriesStyle {
 	// the slots the normalizer writes, read the way every other line here reads
 	// them: an entry point that bypasses it must not blank the card
 	const line = (config.y_axis || {}) as YAxisLine
 	const style: SeriesStyle = {}
 
-	// The form wrote 'Line' where the type declares 'line'.
-	// `insights.patches.normalize_chart_configs` folded the stored ones. A config
-	// an import delivers must still not silently plot the chart's own mark.
-	const asked = (series?.type?.toLowerCase() as ChartMark) || mark
-	const area = asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
-	const type = area ? 'area' : asked
+	const type = markOf(config, series, mark, horizontal)
 	if (type !== mark) style.type = type
 
 	if (ownsOneColumn && series?.color?.[0]) style.color = series.color[0]
@@ -440,4 +471,337 @@ function aggregateOf(aggregate: ReferenceAggregate, values: number[]): number {
 
 	const total = values.reduce((sum, value) => sum + value, 0)
 	return aggregate === 'sum' ? total : total / values.length
+}
+
+/**
+ * The straight line through `points` that misses them least, by least squares.
+ * A point with no value is skipped. Fewer than two points, or two at one x, fit
+ * no line.
+ */
+export function fitLine(
+	points: { x: number; y: number | null }[],
+): { slope: number; intercept: number } | undefined {
+	const fitted = points.filter((point): point is { x: number; y: number } => point.y !== null)
+	if (fitted.length < 2) return
+
+	const meanX = fitted.reduce((sum, p) => sum + p.x, 0) / fitted.length
+	const meanY = fitted.reduce((sum, p) => sum + p.y, 0) / fitted.length
+	let covariance = 0
+	let variance = 0
+	for (const { x, y } of fitted) {
+		covariance += (x - meanX) * (y - meanY)
+		variance += (x - meanX) ** 2
+	}
+	if (!variance) return
+	const slope = covariance / variance
+	return { slope, intercept: meanY - slope * meanX }
+}
+
+/**
+ * Each series' trend line, as its `markLine`, keyed by column.
+ *
+ * v2 draws a reference line as a rule at one value, and a trend line has two ends
+ * at different heights. So it rides the series it fits, through the series'
+ * `echartOptions`, and takes the series' own color: a split's lines each take
+ * their split's. Riding the series, it sits on that series' axis, and the legend
+ * hides it with the series. `silent` keeps it out of the tooltip and the click.
+ * The dash, weight and label plate are v2's for a reference line.
+ *
+ * It fits the points where the axis plots them: a date at its time, a number at
+ * its value, as v2's `plotRows` places them. So a skipped period is a gap and
+ * the author's sort does not move the line.
+ */
+function trendLinesFor(
+	config: MixedChartConfig,
+	columns: string[],
+	rows: QueryResultRow[],
+	horizontal: boolean,
+	plot: PlottedValues,
+	tokens?: ChartTokens,
+): Map<string, Record<string, any>> {
+	const dimension = config.x_axis?.dimension
+	const lines = new Map<string, Record<string, any>>()
+	// placing every row is the cost, so a chart with no trend line pays none of it
+	if (!dimension || !columns.length) return lines
+	const type = plottedXAxisType(dimension, horizontal)
+
+	const x = dimension.dimension_name
+	const place = type === 'value' ? toNumber : (value: any) => toDate(value)?.getTime() ?? null
+	const placed = rows.flatMap((row) => {
+		const at = place(row[x])
+		return at === null ? [] : [{ row, at }]
+	})
+
+	const ranges = new Map<'y' | 'y2', [number, number]>()
+	const rangeOf = (axis: 'y' | 'y2') => {
+		if (!ranges.has(axis))
+			ranges.set(
+				axis,
+				axisRange(
+					plot,
+					axis,
+					placed.map(({ row }) => row),
+				),
+			)
+		return ranges.get(axis)!
+	}
+
+	for (const column of columns) {
+		const points = placed.map(({ row, at }) => ({ x: at, y: toNumber(row[column]) }))
+		const fit = fitLine(points)
+		if (!fit) continue
+
+		// from the smallest x the series plots to the largest, cut to the value
+		// axis: echarts drops a line with an end off it, and does not widen the
+		// axis to take it
+		const plotted = points.filter(
+			(point): point is { x: number; y: number } => point.y !== null,
+		)
+		const xs = plotted.map((point) => point.x)
+		const ends = clipLine(
+			fit,
+			[
+				xs.reduce((low, at) => (at < low ? at : low)),
+				xs.reduce((high, at) => (at > high ? at : high)),
+			],
+			rangeOf(plot.axisOf(column)),
+		)
+		if (!ends) continue
+		const coord = ([at, value]: number[]) => (horizontal ? [value, at] : [at, value])
+		const label = __('{0} trend', seriesLabel(column))
+		const start = {
+			coord: coord(ends[0]),
+			lineStyle: dashedLine(REFERENCE_LINE_WIDTH),
+			label: {
+				show: true,
+				position: 'insideEndTop',
+				formatter: () => label,
+				fontSize: DATA_LABEL_FONT_SIZE,
+				backgroundColor: tokens
+					? `color-mix(in srgb, ${tokens.backdrop} ${LABEL_PLATE_OPACITY}%, transparent)`
+					: undefined,
+				padding: LABEL_PADDING,
+			},
+		}
+		const end = { coord: coord(ends[1]) }
+		lines.set(column, { silent: true, symbol: 'none', data: [[start, end]] })
+	}
+	return lines
+}
+
+/** What the chart plots on its value axes, for the range a trend line is cut to. */
+type PlottedValues = {
+	columns: string[]
+	axisOf: (column: string) => 'y' | 'y2'
+	bounds: Record<'y' | 'y2', ChartValueAxisOptions | undefined>
+	/** The stack a column joins, for one that stacks at all. */
+	stackOf: (column: string) => string | undefined
+	normalized: boolean
+}
+
+/**
+ * The values an axis always shows, from what v2 plots on it: every column's
+ * own value, and for columns stacked together, each row's stack. echarts stacks
+ * the positive values and the negative ones apart (`stackStrategy` 'samesign',
+ * its default, `echarts/lib/processor/dataStack.js`). A 100% stack's axis is
+ * pinned to 0 to 100 over any bound (`pinNormalizedAxes` in
+ * `frappe-ui/src/charts/axisChartOptions.ts`). A column alone in its stack plots
+ * its own values (`stackShares`).
+ */
+function axisRange(
+	plot: PlottedValues,
+	axis: 'y' | 'y2',
+	rows: QueryResultRow[],
+): [number, number] {
+	const onAxis = plot.columns.filter((column) => plot.axisOf(column) === axis)
+	const stacks = new Map<string, string[]>()
+	for (const column of onAxis) {
+		const stack = plot.stackOf(column)
+		if (stack) stacks.set(stack, [...(stacks.get(stack) || []), column])
+	}
+	const stacked = [...stacks.values()].filter((members) => members.length > 1)
+	if (plot.normalized && stacked.length) return [0, 100]
+
+	const inStack = new Set(stacked.flat())
+	const values = onAxis
+		.filter((column) => !inStack.has(column))
+		.flatMap((column) => rows.map((row) => toNumber(row[column])))
+		.filter((value): value is number => value !== null)
+	for (const members of stacked) {
+		for (const row of rows) {
+			const cells = members.map((column) => toNumber(row[column]) ?? 0)
+			values.push(
+				cells.reduce((sum, value) => (value > 0 ? sum + value : sum), 0),
+				cells.reduce((sum, value) => (value < 0 ? sum + value : sum), 0),
+			)
+		}
+	}
+	return valueRange(values, plot.bounds[axis])
+}
+
+/**
+ * The values an axis always shows: from the bound it was handed, else from zero
+ * or the lowest value it plots, to the bound it was handed, else to zero or the
+ * highest. It may reach further, never less far.
+ */
+function valueRange(values: number[], axis?: ChartValueAxisOptions): [number, number] {
+	const low = values.reduce((least, value) => (value < least ? value : least), 0)
+	const high = values.reduce((most, value) => (value > most ? value : most), 0)
+	return [
+		typeof axis?.min === 'number' ? axis.min : low,
+		typeof axis?.max === 'number' ? axis.max : high,
+	]
+}
+
+/**
+ * The part of the fitted line between `from` and `to` on x that stays inside
+ * `range` on y, as its two ends. Each end moves along the line, so the slope
+ * holds. None when the line never enters the range.
+ */
+function clipLine(
+	fit: { slope: number; intercept: number },
+	[from, to]: [number, number],
+	[low, high]: [number, number],
+): [number[], number[]] | undefined {
+	const y = (x: number) => fit.intercept + fit.slope * x
+	// The fit is float arithmetic, so a flat series fits a hair off its own
+	// value, which is a bound of the range. The range is tested a hair wider,
+	// and each end then set on the bound it passed.
+	const hair = 1e-9 * Math.max(1, Math.abs(low), Math.abs(high))
+	const [wideLow, wideHigh] = [low - hair, high + hair]
+	let start = from
+	let end = to
+	if (fit.slope) {
+		const atLow = (wideLow - fit.intercept) / fit.slope
+		const atHigh = (wideHigh - fit.intercept) / fit.slope
+		start = Math.max(start, Math.min(atLow, atHigh))
+		end = Math.min(end, Math.max(atLow, atHigh))
+	} else if (y(from) < wideLow || y(from) > wideHigh) {
+		return
+	}
+	if (start > end) return
+	const clamp = (value: number) => Math.min(high, Math.max(low, value))
+	return [
+		[start, clamp(y(start))],
+		[end, clamp(y(end))],
+	]
+}
+
+/**
+ * Whether `series` takes a trend line: the form offers the toggle, and the
+ * adapter draws one, on this answer alone.
+ *
+ * The x axis must be a scale. A category axis sits its rows in the order they
+ * arrive, which may be a ranking, so a line through them says nothing. And v2
+ * must not stack the series with another: it plots a stacked series at its stack
+ * height or its share, and the fit reads the series' own values.
+ */
+export function takesTrendLine(
+	config: MixedChartConfig,
+	series: Series,
+	mark: ChartMark,
+	horizontal: boolean,
+): boolean {
+	if (plottedXAxisType(config.x_axis?.dimension, horizontal) === 'category') return false
+	// the chart's own stack, which v2 is handed, reads every Series it holds
+	const stacked = Boolean(
+		stackingFor(config.y_axis, hasBarsOnBothAxes(config.y_axis?.series, mark, horizontal)),
+	)
+	const all = (config.y_axis?.series || []).filter((s) => s.measure?.measure_name)
+	const own = markOf(config, series, mark, horizontal)
+	const others = all
+		.filter((other) => other !== series)
+		.map((s) => markOf(config, s, mark, horizontal))
+	// A split plots the series once per value, and those stack with each other.
+	// A config does not say how many values a result will hold, and a filter
+	// changes it, so a split always counts as stacked.
+	if (config.split_by?.dimension?.column_name) others.push(own)
+	return !stacksWithAnother(stacked, own, others)
+}
+
+/**
+ * Whether v2 stacks a series of `mark` with another: `stackKey` in
+ * `frappe-ui/src/charts/axisChartOptions.ts`, restated because the package does
+ * not export it. Marks stack among their own and a line never does, and a series
+ * alone in its stack keeps its own values (`stackShares`).
+ */
+function stacksWithAnother(stacked: boolean, mark: ChartMark, others: ChartMark[]): boolean {
+	return stacked && mark !== 'line' && others.includes(mark)
+}
+
+/**
+ * What a Series plots as: its own mark, else the chart's, and a line with its
+ * area filled is an area. A horizontal chart draws every series as a bar, as
+ * v2's `resolveMark` in `frappe-ui/src/charts/axisChartCommon.ts` does: its
+ * value axis runs across the plot, and only bars are drawn against it.
+ */
+function markOf(
+	config: MixedChartConfig,
+	series: Series | undefined,
+	mark: ChartMark,
+	horizontal: boolean,
+): ChartMark {
+	if (horizontal) return 'bar'
+	const line = (config.y_axis || {}) as YAxisLine
+	// The form wrote 'Line' where the type declares 'line'.
+	// `insights.patches.normalize_chart_configs` folded the stored ones. A config
+	// an import delivers must still not silently plot the chart's own mark.
+	const asked = (series?.type?.toLowerCase() as ChartMark) || mark
+	// a mark v2 cannot draw, which only the API or an import can store, is
+	// drawn as the chart's own
+	if (!MARKS.includes(asked)) return mark
+	const area = asked === 'line' && ((series as SeriesLine)?.show_area ?? line.show_area)
+	return area ? 'area' : asked
+}
+
+const MARKS: ChartMark[] = ['bar', 'line', 'area']
+
+/**
+ * The axis the x column is plotted on, as v2 resolves it (`resolveXAxis` in
+ * `frappe-ui/src/charts/axisChartCommon.ts`): a horizontal bar chart has no
+ * scale to put a number on, so it draws one as categories.
+ */
+function plottedXAxisType(
+	dimension: Dimension | undefined,
+	horizontal: boolean,
+): 'category' | 'time' | 'value' {
+	const type = dimension ? xAxisFor(dimension).type || 'category' : 'category'
+	return type === 'value' && horizontal ? 'category' : type
+}
+
+/**
+ * Where a scaled axis puts a date: v2's `toDate` in
+ * `frappe-ui/src/charts/format.ts`, restated because the package does not
+ * export it. `plotRows` places a row at this time, and drops one without it.
+ */
+function toDate(value: any): Date | null {
+	if (value instanceof Date) return isNaN(value.getTime()) ? null : value
+	if (typeof value !== 'string' || !ISO_DATE.test(value)) return null
+	const parsed = new Date(value)
+	return isNaN(parsed.getTime()) ? null : parsed
+}
+const ISO_DATE = /^\d{4}-\d{2}(-\d{2})?([T ]\d{2}:\d{2}(:\d{2})?)?/
+
+/**
+ * What the legend calls a series: v2's `seriesLabel` over a column with no label
+ * of its own, which is `formatLabel` in `frappe-ui/src/charts/format.ts`. The
+ * package exports neither, so the rule is restated here.
+ */
+function seriesLabel(column: string) {
+	return column
+		.split('_')
+		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+		.join(' ')
+}
+
+// v2's reference-line style, in `frappe-ui/src/charts/referenceLines.ts`. The
+// package exports none of it, so the values are restated here.
+const REFERENCE_LINE_WIDTH = 1
+const DATA_LABEL_FONT_SIZE = 11
+const LABEL_PADDING = [2, 4]
+const LABEL_PLATE_OPACITY = 80
+
+/** v2's `dashedLine`: dash and gap in multiples of the width. */
+function dashedLine(width: number) {
+	return { type: [width * 3.5, width * 3], width }
 }

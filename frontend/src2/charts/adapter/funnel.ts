@@ -90,6 +90,7 @@ function funnelProps(
 ): FunnelChartProps {
 	const props: FunnelChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		data,
 		category,
 		value,

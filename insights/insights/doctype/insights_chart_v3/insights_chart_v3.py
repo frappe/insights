@@ -14,6 +14,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     comparison_sources,
     comparison_timespans,
     config_errors,
+    dashboard_period,
     derive_operations,
     grain_step,
     normalize_chart_config,
@@ -50,7 +51,9 @@ class InsightsChartv3(Document):
 
         chart_type: DF.Data | None
         config: DF.JSON | None
+        description: DF.Data | None
         folder: DF.Data | None
+        info: DF.SmallText | None
         is_standard: DF.Check
         kept_for_desk: DF.Check
         old_name: DF.Data | None
@@ -180,11 +183,12 @@ class InsightsChartv3(Document):
         adhoc_filters: dict | None = None,
         card_filters: list | None = None,
         page: int = 1,
+        order_by: list | None = None,
     ):
         """Fetch this chart's rows under the permissions declared on this document.
 
-        The chart is re-read from its row, so the request cannot change whose
-        permissions apply or which query runs. A page holds the `limit` the
+        It uses this document as given: a View loads it from the stored row,
+        with the Period a dashboard lent it. A page holds the `limit` the
         author saved. Only a caller that `can_read_rows` allows gets a later
         page. Anyone else gets the first page.
 
@@ -194,22 +198,26 @@ class InsightsChartv3(Document):
         column the card shows, and it lands on the card's own derived query, so
         it is taken from the request on every surface.
 
+        `order_by` is the reader's own sort, in place of the chart's. Like a later
+        page it brings rows past the chart's `limit` into view, so only a caller
+        that `can_read_rows` allows gets it.
+
         A span card's sparkline comes back under `sparkline`. It runs here
         and not through a call of its own so that a client never has to know
         which cards need a second fetch, and so that a filter cannot reach one
         execution and miss the other.
         """
-        chart = frappe.get_doc(self.doctype, self.name)
-        if not can_read_rows(chart):
+        if not can_read_rows(self):
             page = 1
-        page_size = frappe.parse_json(chart.config or "{}").get("limit") or 100
+            order_by = None
+        page_size = frappe.parse_json(self.config or "{}").get("limit") or 100
         # every span in this fetch resolves against this day. A drill sends it
         # back, so the drill cuts rows for the same day
         read_on = str(getdate(reading_day()))
         adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
 
-        query = chart.get_query()
-        with runs_as(chart):
+        query = self.get_query(self.get_operations(order_by))
+        with runs_as(self):
             result = query.execute(
                 force=force,
                 page=page,
@@ -221,16 +229,16 @@ class InsightsChartv3(Document):
             # owner chart is narrowed by the owner's user permissions, and those
             # name documents this reader may not see
             scope = user_permissions.scope(frappe.session.user)
-            sparkline = chart.get_sparkline_data(force=force, adhoc_filters=adhoc_filters)
+            sparkline = self.get_sparkline_data(force=force, adhoc_filters=adhoc_filters)
         # The SQL names tables, joins and columns the reader may not see, and
         # `insights.api.view` serves this to a Guest.
         result.pop("sql", None)
 
-        result["rows"] = chart.periods_oldest_last(result["rows"])
+        result["rows"] = self.periods_oldest_last(result["rows"])
 
         # the client formats and links by these, and a reading surface is the
         # only place it can learn them
-        operations = chart.get_operations()
+        operations = self.get_operations()
         result["granularity"] = column_granularity(operations)
         if links := record_links(operations, result["columns"]):
             result["record_links"] = links
@@ -241,10 +249,25 @@ class InsightsChartv3(Document):
 
         if sparkline:
             result["sparkline"] = sparkline
-        if rows := chart.comparison_rows(result["rows"]):
+        if rows := self.comparison_rows(result["rows"]):
             result["comparison_rows"] = rows
         result["read_on"] = read_on
         return result
+
+    def take_dashboard_period(self, adhoc_filters: dict | None) -> dict | None:
+        """Read the dashboard's span as this card's Period when it states none,
+        and return the routed filters left to apply.
+
+        Every reader of the config follows (derivation, the comparison rows,
+        the sparkline, a drill), so this runs once, where routed filters meet
+        the chart. See `dashboard_period`.
+        """
+        config = frappe.parse_json(self.config or "{}")
+        window, adhoc_filters = dashboard_period(self.chart_type, self.query, config, adhoc_filters)
+        if window:
+            self.config = frappe.as_json({**config, "window": window})
+            self.flags.dashboard_period = window
+        return adhoc_filters
 
     def count_rows(
         self,
@@ -268,6 +291,7 @@ class InsightsChartv3(Document):
         format: str = "csv",
         adhoc_filters: dict | None = None,
         card_filters: list | None = None,
+        order_by: list | None = None,
     ) -> str:
         """Every row behind the pages of `fetch`, as a file, under the same filters.
 
@@ -279,7 +303,8 @@ class InsightsChartv3(Document):
             frappe.throw(_("You are not allowed to download data"), exc=frappe.PermissionError)
         adhoc_filters = route_card_filters(self.name, card_filters, adhoc_filters)
         with runs_as(self):
-            return self.get_query().export_rows(format, adhoc_filters=adhoc_filters)
+            query = self.get_query(self.get_operations(order_by))
+            return query.export_rows(format, adhoc_filters=adhoc_filters)
 
     def periods_oldest_last(self, rows: list[dict]) -> list[dict]:
         """The rows the card reads, in the order every reader expects them.
@@ -409,15 +434,20 @@ class InsightsChartv3(Document):
         query.flags.execution_reference = self.query
         return query
 
-    def get_operations(self):
+    def get_operations(self, order_by: list | None = None):
         """The operations that produce the chart's rows.
 
         The source query, the chart's own filters, its summarize or pivot, and its
         sort, derived here from the config every time the chart runs. A config
         that cannot be rendered raises an error. A fallback to the source query
         would show its raw rows under the chart's title.
+
+        `order_by` is a reader's sort, in the config's shape, replacing the
+        chart's own.
         """
         config = frappe.parse_json(self.config or "{}")
+        if order_by is not None:
+            config["order_by"] = reader_order(order_by)
         errors = config_errors(self.chart_type, self.query, config)
         if errors:
             frappe.throw(
@@ -448,6 +478,8 @@ class InsightsChartv3(Document):
             "doc": {
                 "name": self.name,
                 "title": self.title,
+                "description": self.description,
+                "info": self.info,
                 "workbook": self.workbook,
                 "query": self.query,
                 "chart_type": self.chart_type,
@@ -516,3 +548,17 @@ def import_chart(chart, workbook):
     new_chart.insert()
 
     return new_chart.name
+
+
+def reader_order(order_by: list) -> list[dict]:
+    """A reader's sort, rebuilt from the column names and directions alone.
+
+    It comes from the request, so nothing else it holds reaches derivation.
+    """
+    order = []
+    for sort in frappe.parse_json(order_by) or []:
+        column_name = ((sort or {}).get("column") or {}).get("column_name")
+        direction = (sort or {}).get("direction")
+        if isinstance(column_name, str) and column_name and direction in ("asc", "desc"):
+            order.append({"column": {"type": "column", "column_name": column_name}, "direction": direction})
+    return order

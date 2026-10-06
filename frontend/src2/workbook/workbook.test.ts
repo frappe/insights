@@ -33,6 +33,7 @@ vi.mock('frappe-ui', async () => ({
 
 // Confirms at once and catches a rejected promise, as `ConfirmDialog` does.
 vi.mock('../helpers/confirm_dialog', () => ({
+	// eslint-disable-next-line no-restricted-syntax -- stands in for `ConfirmDialog`, which shows the error it catches
 	confirmDialog: ({ onSuccess }: { onSuccess: () => any }) => onSuccess()?.catch?.(() => {}),
 }))
 

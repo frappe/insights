@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button, LoadingIndicator } from 'frappe-ui'
-import { ChartContainer } from 'frappe-ui/charts'
-import { RefreshCcw } from 'lucide-vue-next'
+import { ChartContainer, useChartTokens } from 'frappe-ui/charts'
+import { InfoIcon, RefreshCcw } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { refusalDetail, refusalHeadline } from '../../not_permitted'
 import { __ } from '../../translation'
@@ -18,6 +18,7 @@ import { segmentClickEvents, type ChartSegmentClick, type ClickPoint } from '../
 import { scopeText } from '../scoped_by'
 import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import ScopeMark from './ScopeMark.vue'
+import TitleMark from './TitleMark.vue'
 import ChartStateMessage from './ChartStateMessage.vue'
 
 // The chart itself: the type it is, the data it has, and every state in between.
@@ -43,16 +44,19 @@ import ChartStateMessage from './ChartStateMessage.vue'
 //
 // `readonly` is for a surface that cannot change the chart. A surface may say
 // so, and a chart the reader may not edit is read-only wherever it is rendered —
-// read off the document, so no host has to remember to pass it. It decides two
-// things, and they are the same thing: a table's sort rewrites the chart's config
-// and re-runs its query, which a reader holds neither half of, so the control is
-// not shown rather than shown and dead — and for the same reason a reader is
-// told about the data ("No data") where an author is told about the config.
+// read off the document, so no host has to remember to pass it. A reader owns no
+// config: a table's sort re-runs the chart in the reader's order without
+// writing it back, and a reader is told about the data ("No data") where an
+// author is told about the config.
 const props = defineProps<{
 	chart: ChartRead
 	// heads the chart. Left out, no title is shown anywhere in it — which is what
 	// a host that prints its own asks for.
 	title?: string
+	// the line under the title, and the text behind the mark beside it. Like the
+	// title, a host that prints its own header leaves them out.
+	description?: string | null
+	info?: string | null
 	// which reading to show, for a Number Chart. A host that shows one reading per
 	// cell says which. One that renders the chart says nothing and gets them all.
 	reading?: string
@@ -70,12 +74,26 @@ const emit = defineEmits<{
 const readonly = computed(() => props.readonly || props.chart.doc.can_write === false)
 
 const chart_type = computed(() => props.chart.doc.chart_type)
-const config = computed(() => props.chart.doc.config)
+// a reader's sort is held by the read, not written to the config
+const config = computed(() => {
+	const order = props.chart.readerOrder
+	return order ? { ...props.chart.doc.config, order_by: order } : props.chart.doc.config
+})
 const result = computed(() => props.chart.result || emptyResult())
+
+// read against the card, so a trend line's label sits on the plate v2 gives a
+// rule's label here, and again when the theme flips
+const root = ref<HTMLElement>()
+const { tokens } = useChartTokens(root)
 
 // Whether the filler renders the states itself. A property of the chart type, so
 // it is settled before there is a result to adapt.
 const ownsStates = computed(() => rendersOwnCards(chart_type.value))
+
+// A Number chart's readings each carry their own info, and a card has no line
+// for a description, so the chart's own are not shown on it.
+const description = computed(() => (ownsStates.value ? undefined : props.description || undefined))
+const info = computed(() => (ownsStates.value ? undefined : props.info || undefined))
 
 const filler = computed(() => {
 	// the result outlives a chart type switch, so without this the adapter would
@@ -92,8 +110,11 @@ const filler = computed(() => {
 		sparklineResult: props.chart.sparklineResult,
 		comparisonRows: props.chart.comparisonRows,
 		title: props.title,
+		description: description.value,
+		tokens: tokens.value,
 		reading: props.reading,
 		readonly: readonly.value,
+		sort: props.chart.sort,
 		drillable: props.chart.drillable,
 		executing: props.chart.executing,
 		page: props.chart.goToPage
@@ -267,18 +288,28 @@ function reportSegment(target: DrillDownTarget) {
 </script>
 
 <template>
-	<div class="relative h-full w-full" data-testid="chart" @click.capture="rememberPoint">
+	<div
+		ref="root"
+		class="relative h-full w-full"
+		data-testid="chart"
+		@click.capture="rememberPoint"
+	>
 		<component
 			v-if="filler && (state === 'chart' || ownsStates)"
 			:is="filler.component"
 			v-bind="{ ...filler.props, ...stateProps }"
 			v-on="fillerEvents"
 		>
-			<template v-if="scope" #title-suffix>
-				<ScopeMark
-					:applied="props.chart.scopedBy"
-					:narrowed="props.chart.narrowedByPermissions"
-				/>
+			<template v-if="info || scope" #title-suffix>
+				<span class="flex items-center gap-1.5">
+					<TitleMark v-if="info" :icon="InfoIcon" :label="__('Info')">
+						<div class="whitespace-pre-line">{{ info }}</div>
+					</TitleMark>
+					<ScopeMark
+						:applied="props.chart.scopedBy"
+						:narrowed="props.chart.narrowedByPermissions"
+					/>
+				</span>
 			</template>
 
 			<template v-if="$slots.actions" #actions>
@@ -292,15 +323,21 @@ function reportSegment(target: DrillDownTarget) {
 		<ChartContainer
 			v-else
 			:title="props.title"
+			:subtitle="description"
 			:loading="state === 'loading'"
 			:error="headline"
 			:empty="true"
 		>
-			<template v-if="scope" #title-suffix>
-				<ScopeMark
-					:applied="props.chart.scopedBy"
-					:narrowed="props.chart.narrowedByPermissions"
-				/>
+			<template v-if="info || scope" #title-suffix>
+				<span class="flex items-center gap-1.5">
+					<TitleMark v-if="info" :icon="InfoIcon" :label="__('Info')">
+						<div class="whitespace-pre-line">{{ info }}</div>
+					</TitleMark>
+					<ScopeMark
+						:applied="props.chart.scopedBy"
+						:narrowed="props.chart.narrowedByPermissions"
+					/>
+				</span>
 			</template>
 
 			<!-- The acts stay put through every state: a chart that failed is a

@@ -10,6 +10,7 @@ The rule is held here rather than a list of names, so an ibis upgrade that adds
 a reader does not quietly become reachable.
 """
 
+import datetime
 import os
 import tempfile
 
@@ -17,8 +18,20 @@ import frappe
 import ibis
 from frappe.tests import UnitTestCase
 
+from insights.exceptions import ExpressionSyntaxError
 from insights.insights.doctype.insights_data_source_v3.ibis.utils import get_functions
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
+
+
+def refused_ibis_names() -> list[str]:
+    from insights.insights.doctype.insights_data_source_v3.ibis.utils import (
+        ibis_attribute_names,
+        is_refused_in_expression,
+    )
+
+    names = sorted(name for name in ibis_attribute_names() if is_refused_in_expression(name))
+    assert names, "expected ibis to define I/O, backend and run names"
+    return names
 
 
 class TestExpressionIsolation(UnitTestCase):
@@ -62,6 +75,70 @@ class TestExpressionIsolation(UnitTestCase):
             for name in names:
                 self.assertFalse(is_io_attribute(name), f"{namespace}.{name} is exposed to expressions")
 
+    # @feature query.expression-cannot-reach-files
+    def test_no_pandas_numpy_or_module_value_is_reachable_from_the_context(self):
+        """The source check lets an I/O name through as a column of a table in
+        hand, which is safe only while no object other than ibis's is reachable:
+        a pandas `to_pickle` or a numpy `tofile` is not an ibis name."""
+        import types
+
+        from insights.insights.doctype.insights_data_source_v3.sandbox import expression_globals
+
+        def walk(value, path, depth=0):
+            modules = {getattr(value, "__module__", None) or "", type(value).__module__}
+            self.assertFalse(isinstance(value, types.ModuleType), f"{path} is a module")
+            self.assertFalse(
+                {module.partition(".")[0] for module in modules} & {"pandas", "numpy"},
+                f"{path} is a pandas or numpy object",
+            )
+            if isinstance(value, dict) and depth < 3:
+                for key, item in value.items():
+                    walk(item, f"{path}.{key}", depth + 1)
+
+        for name, value in {**get_functions(), **expression_globals()}.items():
+            walk(value, name)
+
+    # @feature query.expression-column-named-like-io
+    def test_the_refusal_names_the_table_that_holds_the_column(self):
+        q = ibis.memtable({"a": [1]})
+        other = ibis.memtable({"source": ["s"]})
+        for context, expression, hint in (
+            ({"q": q, "t1": q, "t2": other}, "t1.a == t2.source", "t2['source']"),
+            ({"table": other}, "table.source", "table['source']"),
+        ):
+            with self.subTest(expression=expression), self.assertRaises(frappe.PermissionError) as refusal:
+                exec_with_return(expression, {**get_functions(), **context})
+            self.assertIn(f"Read the column as {hint}", str(refusal.exception))
+
+    # @feature query.join-expression
+    def test_a_missing_attribute_is_an_error_on_every_line(self):
+        """A missing attribute once read as `None` on a line before the last, so a
+        join condition of two lines joined every row to every row."""
+        q = ibis.memtable({"a": [1]})
+        for expression in ("q.nope", "on = q.nope\non"):
+            with self.subTest(expression=expression), self.assertRaises(AttributeError) as error:
+                exec_with_return(expression, {**get_functions(), "q": q})
+            self.assertIs(error.exception.obj, q)
+
+    # @feature query.expression-cannot-reach-files
+    def test_every_io_backend_and_run_name_ibis_defines_is_refused(self):
+        """Enumerated from ibis, so a release that adds a name is tested with it."""
+        for name in refused_ibis_names():
+            for expression in (f"q.{name}", f"t = q.{name}\nt"):
+                with self.subTest(expression=expression):
+                    self.assert_refused(expression)
+
+    # @feature query.expression-cannot-reach-files
+    def test_no_name_ibis_defines_passes_as_a_column_of_that_name(self):
+        """The source check lets an I/O name through when it is a column of a
+        table in hand. That is safe only while no name ibis defines passes."""
+        names = refused_ibis_names()
+        q = ibis.memtable({name: [1] for name in names})
+        for name in names:
+            for expression in (f"q.{name}", f"t = q.{name}\nt"):
+                with self.subTest(expression=expression), self.assertRaises(frappe.PermissionError):
+                    exec_with_return(expression, {**get_functions(), "q": q})
+
     # --- the readers and writers themselves ---
 
     # @feature query.expression-cannot-reach-files
@@ -84,6 +161,41 @@ class TestExpressionIsolation(UnitTestCase):
             os.remove(target)
         self.assert_refused(f"q.to_csv({target!r})")
         self.assertFalse(os.path.exists(target))
+
+    # @feature query.expression-cannot-reach-files
+    def test_a_column_named_like_a_table_method_is_a_column(self):
+        """A table's method outranks its column on attribute access, so a bare
+        column read by attribute would be the bound method."""
+        from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
+
+        target = os.path.join(tempfile.gettempdir(), "insights_expression_column_test.csv")
+        for name in ("to_csv", "sql", "execute"):
+            with self.subTest(name=name):
+                if os.path.exists(target):
+                    os.remove(target)
+                builder = IbisQueryBuilder(frappe._dict(name="t", operations="[]", use_live_connection=0))
+                builder.query = ibis.memtable({name: ["x"]})
+
+                self.assertEqual(
+                    builder.evaluate_expression(f"{name}.length()").get_name(), f"StringLength({name})"
+                )
+                with self.assertRaises(ExpressionSyntaxError):
+                    builder.evaluate_expression(f"{name}({target!r})")
+                self.assertFalse(os.path.exists(target))
+
+    # @feature query.expression-cannot-reach-files
+    def test_functions_read_a_column_named_like_a_table_method_as_a_column(self):
+        from insights.insights.doctype.insights_data_source_v3.ibis.functions import count, get_retention_data
+
+        previous = frappe.flags.current_ibis_query
+        self.addCleanup(setattr, frappe.flags, "current_ibis_query", previous)
+        frappe.flags.current_ibis_query = ibis.memtable(
+            {"execute": [datetime.date(2026, 1, 1), datetime.date(2026, 1, 2)], "sql": ["u1", "u1"]}
+        )
+
+        self.assertEqual(count().op().arg.name, "execute")
+        retention = get_retention_data("execute", "sql", "day")
+        self.assertIn("retention", retention.columns)
 
     # @feature query.expression-cannot-reach-files
     def test_the_rule_holds_for_a_multi_statement_script(self):
@@ -123,6 +235,23 @@ class TestExpressionIsolation(UnitTestCase):
         for expression in ("sql('select 1')", "query = 'select 1'\nsql(query)"):
             with self.subTest(expression=expression), self.assertRaises(NameError):
                 self.evaluate(expression)
+
+    # @feature query.expression-column-named-like-io
+    def test_a_column_named_like_io_passes_only_on_its_table(self):
+        """The rule was once on the name alone, so `t2.from_plan` was refused."""
+        q = ibis.memtable({"a": [1], "from_plan": ["x"], "to_parquet": ["y"]})
+
+        def evaluate(expression):
+            return exec_with_return(expression, {**get_functions(), "q": q})
+
+        self.assertEqual(evaluate("q.from_plan").get_name(), "from_plan")
+        self.assertEqual(evaluate("plan = q.from_plan\nplan").get_name(), "from_plan")
+        for expression in (
+            "q.to_parquet('/tmp/does-not-matter.parquet')",
+            "written = q.to_parquet('/tmp/does-not-matter.parquet')\nwritten",
+        ):
+            with self.subTest(expression=expression), self.assertRaises(frappe.PermissionError):
+                evaluate(expression)
 
     # --- the legitimate path still works ---
 

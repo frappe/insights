@@ -59,7 +59,7 @@ export type {
 	DrillDownTarget,
 } from './types'
 
-const ADAPTERS: Partial<Record<ChartType, ChartAdapter>> = {
+export const ADAPTERS: Partial<Record<ChartType, ChartAdapter>> = {
 	Bar: adaptBarChart,
 	Line: adaptLineChart,
 	Row: adaptRowChart,

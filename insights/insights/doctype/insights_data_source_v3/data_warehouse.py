@@ -10,7 +10,7 @@ import frappe
 import frappe.utils
 import ibis
 import pandas as pd
-from duckdb import CatalogException
+from duckdb import CatalogException, DependencyException
 from frappe.query_builder.functions import IfNull, Max, Min
 from frappe.utils import add_days, get_datetime, get_files_path, now, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
@@ -21,6 +21,7 @@ from ibis.common.exceptions import TableNotFound
 from ibis.expr.types import Expr, Table
 
 import insights
+from insights.exceptions import TableNotStored
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     IMPORT_WRITE_LOCK_TIMEOUT,
     WRITE_LOCK_TIMEOUT,
@@ -252,10 +253,7 @@ class WarehouseTableWriter:
         return total_rows
 
     def _table_exists(self, db: DuckDBBackend) -> bool:
-        try:
-            return db.list_tables(like=f"^{self.table_name}$")
-        except Exception:
-            return False
+        return self.table_name in db.list_tables()
 
     def _add_missing_columns(self, db: DuckDBBackend, incoming: Table) -> None:
         """Add columns the source has gained since the last import.
@@ -312,7 +310,7 @@ class WarehouseTableWriter:
     def _cleanup_temp_dir(self) -> None:
         """Remove the temporary directory and all parquet files."""
         if self._temp_dir and self._temp_dir.exists():
-            with suppress(Exception):
+            with suppress(OSError):
                 shutil.rmtree(self._temp_dir)
         self._temp_dir = None
         self._parquet_files = []
@@ -358,7 +356,10 @@ class WarehouseTable:
                 )
             else:
                 frappe.throw(
-                    f"{self.table_name} of {self.data_source} is not imported to the data warehouse."
+                    frappe._("{0} of {1} is not stored in the Data Store").format(
+                        self.table_name, self.data_source
+                    ),
+                    TableNotStored,
                 )
         except Exception as e:
             frappe.log_error(e)
@@ -422,9 +423,8 @@ class WarehouseTable:
 
     def drop(self) -> None:
         """Drop this table from the warehouse. No-op if it does not exist."""
-        with insights.warehouse.get_write_connection(self.schema) as db:
-            with suppress(Exception):
-                db.drop_table(self.warehouse_table_name, force=True)
+        with insights.warehouse.get_write_connection() as db:
+            db.drop_table(self.warehouse_table_name, database=self.schema, force=True)
 
 
 class WarehouseTableImporter:
@@ -577,7 +577,7 @@ class WarehouseTableImporter:
         backend = insights.db_connections.get(self.table.data_source)
         if backend is None:
             return
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - only MariaDB knows the variable, and only MariaDB set a limit
             backend.raw_sql("SET MAX_STATEMENT_TIME=0")
 
     def prepare_remote_table(self) -> Expr:
@@ -1050,7 +1050,7 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
             if schema == "main" or schema in occupied:
                 continue
             # Anything else still in the schema (a view, a sequence) keeps it.
-            with suppress(Exception):
+            with suppress(DependencyException):
                 db.raw_sql(f"DROP SCHEMA IF EXISTS {quote_identifier(schema)}")
                 logger.info(f"Data store cleanup: dropped empty schema '{schema}'")
 

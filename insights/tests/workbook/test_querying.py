@@ -4,6 +4,7 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import add_days, nowdate
 
+from insights.exceptions import ExpressionSyntaxError, UnknownColumn
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import CircularQueryReferenceError
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import InsightsIntegrationTestCase
@@ -16,6 +17,19 @@ from insights.tests.factories import (
     create_test_user,
     create_test_workbook,
     execute_test_query,
+)
+from insights.tests.test_ibis_utils import (
+    DATE_DIFF_CASES,
+    DATE_DIFF_UNITS,
+    FIRST_ROW_CASES,
+    PERIOD_VALUE_CASES,
+    PERIOD_VALUE_ROWS,
+    RAW_DATE_CASES,
+    RAW_DATE_EXPRESSION,
+    RAW_DATE_ROWS,
+    period_value_operations,
+    read_period_values,
+    read_raw_date_values,
 )
 
 TODO_PREFIX = "Insights Querying Test"
@@ -239,6 +253,156 @@ class TestQuerying(InsightsIntegrationTestCase):
         self.assertEqual(len(result["rows"]), 3)
         self.assertEqual({row["full_name"] for row in result["rows"]}, {"Workbook Flow User"})
 
+    # @feature query.remove-column query.join
+    def test_a_remove_after_a_join_takes_the_column_off(self):
+        # a code operation's rows live in the data store, so this runs on DuckDB;
+        # only an admin may write one
+        workbook = create_test_workbook("Administrator")
+        orders = [{"id": 1, "note": "a", "amount": 10}, {"id": 2, "note": "b", "amount": 20}]
+        customers = create_test_query(
+            "Administrator",
+            workbook.name,
+            title="Workbook Flow Test Query Customers",
+            operations=[{"type": "code", "code": f"results = {[{'order_id': 1, 'customer': 'x'}]}"}],
+        )
+        query = create_test_query(
+            "Administrator",
+            workbook.name,
+            title="Workbook Flow Test Query Join Remove",
+            operations=[
+                {"type": "code", "code": f"results = {orders}"},
+                {
+                    "type": "join",
+                    "join_type": "left",
+                    "table": {"type": "query", "query_name": customers.name},
+                    "select_columns": [column("customer")],
+                    "join_condition": {"left_column": column("id"), "right_column": column("order_id")},
+                },
+                {"type": "remove", "column_names": ["note"]},
+                {"type": "order_by", "column": column("id"), "direction": "asc"},
+            ],
+        )
+
+        result = execute_test_query(query.name)
+
+        self.assertEqual([col["name"] for col in result["columns"]], ["id", "amount", "customer", "order_id"])
+        self.assertEqual(len(result["rows"]), 2)
+
+    # @feature query.expression-date-diff
+    def test_date_diff_counts_whole_units_between_two_datetimes(self):
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        for start, end, expected in DATE_DIFF_CASES:
+            query = create_test_query(
+                USER_1,
+                workbook.name,
+                title=f"Workbook Flow Test Query Date Diff {start}",
+                operations=[
+                    table_source(),
+                    self.prefix_filter(),
+                    {"type": "limit", "limit": 1},
+                    *(
+                        {
+                            "type": "mutate",
+                            "new_name": unit,
+                            "data_type": "Integer",
+                            "expression": {
+                                "type": "expression",
+                                "expression": f"date_diff(literal('{end}'), literal('{start}'), '{unit}')",
+                            },
+                        }
+                        for unit in DATE_DIFF_UNITS
+                    ),
+                ],
+            )
+
+            row = execute_test_query(query.name)["rows"][0]
+
+            with self.subTest(start=start, end=end):
+                self.assertEqual({unit: row[unit] for unit in DATE_DIFF_UNITS}, expected)
+
+    # @feature query.expression-first-last-row
+    def test_first_and_last_row_follow_the_direction_of_a_sorted_key(self):
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        for expression, expected in FIRST_ROW_CASES:
+            query = create_test_query(
+                USER_1,
+                workbook.name,
+                title=f"Workbook Flow Test Query First Row {expression}",
+                operations=[
+                    table_source(),
+                    self.prefix_filter(),
+                    {"type": "filter", "expression": {"type": "expression", "expression": expression}},
+                ],
+            )
+
+            rows = execute_test_query(query.name)["rows"]
+
+            with self.subTest(expression=expression):
+                self.assertEqual(sorted(row["description"].split()[-1] for row in rows), expected)
+
+    # @feature query.expression-period-value
+    def test_period_values_read_the_period_n_grains_away(self):
+        for status, date in PERIOD_VALUE_ROWS:
+            todo = frappe.get_doc(
+                {
+                    "doctype": "ToDo",
+                    "description": f"{TODO_PREFIX} {status}",
+                    "status": status,
+                    "date": date,
+                    "allocated_to": USER_1,
+                }
+            ).insert(ignore_permissions=True)
+            # a ToDo saved with no date takes today's
+            todo.db_set("date", date)
+        frappe.db.commit()  # nosemgrep
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Period Value",
+            operations=period_value_operations([table_source(), self.prefix_filter()]),
+        )
+
+        rows = execute_test_query(query.name)["rows"]
+
+        self.assertEqual(read_period_values(rows), PERIOD_VALUE_CASES)
+
+    # @feature query.expression-period-value
+    def test_a_date_nothing_grouped_reads_the_day_before_at_the_day_grain(self):
+        for date in RAW_DATE_ROWS:
+            frappe.get_doc(
+                {
+                    "doctype": "ToDo",
+                    "description": f"{TODO_PREFIX} {date}",
+                    "date": date,
+                    "allocated_to": USER_1,
+                }
+            ).insert(ignore_permissions=True)
+        frappe.db.commit()  # nosemgrep
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Raw Date Period Value",
+            operations=[
+                table_source(),
+                self.prefix_filter(),
+                {"type": "select", "column_names": ["date"]},
+                {
+                    "type": "mutate",
+                    "new_name": "previous",
+                    "data_type": "Date",
+                    "expression": {"type": "expression", "expression": RAW_DATE_EXPRESSION},
+                },
+            ],
+        )
+
+        rows = execute_test_query(query.name)["rows"]
+
+        self.assertEqual(read_raw_date_values(rows), RAW_DATE_CASES)
+
     # @feature query.summarize
     def test_query_summary_groups_filtered_rows_by_status(self):
         self.seed_todos()
@@ -344,6 +508,26 @@ class TestQuerying(InsightsIntegrationTestCase):
         self.assertEqual(first, [])
         self.assertEqual(second, [])
 
+    # @feature query.filter-values
+    def test_distinct_values_of_a_column_named_like_a_table_method(self):
+        self.seed_todos()
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Method Named Column",
+            operations=[
+                table_source(),
+                self.prefix_filter(),
+                {"type": "rename", "column": column("status"), "new_name": "execute"},
+            ],
+        )
+
+        with db_connections():
+            values = self.get_query(query.name).get_distinct_column_values("execute")
+
+        self.assertEqual(sorted(values), ["Closed", "Open"])
+
     # @feature query.source-query
     def test_query_can_use_another_query_as_its_source(self):
         self.seed_todos()
@@ -419,6 +603,66 @@ class TestQuerying(InsightsIntegrationTestCase):
 
         with self.assertRaises(CircularQueryReferenceError):
             first_query_doc.save()
+
+    # @feature query.error-names-operation
+    def test_a_failure_in_a_query_read_by_another_names_both_operations_and_the_query(self):
+        workbook = create_test_workbook(USER_1)
+        broken = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Broken",
+            operations=[
+                table_source(),
+                {
+                    "type": "mutate",
+                    "new_name": "doubled",
+                    "data_type": "Auto",
+                    "expression": {"type": "expression", "expression": "foo * 2"},
+                },
+            ],
+        )
+        reader = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Reads Broken",
+            operations=[query_source(broken.name)],
+        )
+
+        frappe.clear_messages()
+        with as_user(USER_1), self.assertRaises(UnknownColumn) as refusal:
+            execute_test_query(reader.name)
+        message = (
+            "Operation 1 (source): Operation 2 (mutate 'doubled') in query "
+            "'Workbook Flow Test Query Broken': UnknownColumn: NameError: name 'foo' is not defined. Expression: foo * 2"
+        )
+        self.assertEqual(str(refusal.exception), message)
+        self.assertEqual([m["message"] for m in frappe.local.message_log], [message])
+
+    # @feature query.error-names-operation
+    def test_a_python_error_in_a_query_read_by_another_is_named_and_escaped_once(self):
+        workbook = create_test_workbook(USER_1)
+        broken = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query P&L",
+            operations=[table_source(), {"type": "cast", "column": column("status"), "data_type": "Money"}],
+        )
+        reader = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Reads P&L",
+            operations=[query_source(broken.name)],
+        )
+
+        frappe.clear_messages()
+        with as_user(USER_1), self.assertRaises(KeyError):
+            execute_test_query(reader.name)
+        self.assertEqual(
+            [m["message"] for m in frappe.local.message_log],
+            [
+                "Operation 1 (source): Operation 2 (cast) in query 'Workbook Flow Test Query P&amp;L': KeyError: 'Money'"
+            ],
+        )
 
     def seed_todo_without_a_date(self):
         todo = frappe.get_doc(
@@ -914,9 +1158,13 @@ class TestQuerying(InsightsIntegrationTestCase):
             "another user's email": "frappe.utils.get_user_info_for_avatar('Administrator')['email']",
             "a field through a currency": "frappe.format_value(1, _dict(fieldtype='Currency', options='User:x:email'), _dict(doctype='P', x='Administrator'))",
         }
-        not_in_sandbox = (AttributeError, "module has no attribute")
-        # frappe's read check puts its message in the message log, so the error text is empty
-        not_readable = (frappe.PermissionError, "^$")
+        not_in_sandbox = (ExpressionSyntaxError, "module has no attribute")
+        # frappe's read check raises a bare error and leaves its message in
+        # `frappe.flags`, and the build puts it behind the operation
+        not_readable = (
+            frappe.PermissionError,
+            r"^Operation 2 \(mutate 'read'\): PermissionError: You need the 'read' permission",
+        )
         refusal = {
             "set_value": not_in_sandbox,
             "save": not_readable,
@@ -930,7 +1178,7 @@ class TestQuerying(InsightsIntegrationTestCase):
             "http": not_in_sandbox,
             # `frappe.db` returns a no-op for a name it does not have
             "after_commit": (
-                (AttributeError, TypeError),
+                ExpressionSyntaxError,
                 "has no attribute 'add'|'NoneType' object is not callable",
             ),
             "commit": not_in_sandbox,
@@ -1050,7 +1298,7 @@ class TestQuerying(InsightsIntegrationTestCase):
                 ],
             )
             with self.subTest(name=name), as_user(USER_1):
-                with self.assertRaises(AttributeError):
+                with self.assertRaisesRegex(ExpressionSyntaxError, "AttributeError"):
                     execute_test_query(query.name)
                 self.assertFalse(
                     validate_expression(relation, '[{"value": "name", "description": "String"}]')["is_valid"]

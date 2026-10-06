@@ -41,12 +41,13 @@ export type TableCellEvent = { column: QueryResultColumn; row: QueryResultRow }
 
 export type TableChartProps = {
 	title?: string
+	subtitle?: string
 	columns: QueryResultColumn[]
 	/** Formatted for reading: a date prints at the grain it was grouped by. */
 	rows: QueryResultRow[]
 	/** Which way each column is sorted, as the Chart itself is ordered. */
 	sortOrder: SortOrder
-	/** Absent where the Chart cannot be rewritten, so no arrow is shown. */
+	/** Absent where the rows cannot be sorted, so no arrow is shown. */
 	// eslint-disable-next-line no-unused-vars
 	onSortChange?: (column_name: string, direction: SortDirection) => void
 	/** Whether a cell may be pointed at for the rows behind it. */
@@ -78,18 +79,17 @@ export function adaptTableChart(input: ChartAdapterInput): ChartFiller | undefin
 
 	const props: TableChartProps = {
 		title: input.title,
+		subtitle: input.description,
 		columns: result.columns,
 		rows: result.formattedRows,
 		sortOrder: sortOrderOf(config),
 	}
 
-	// The sort is a config edit the server re-derives the query from, so it is
-	// allowed only where both halves are held. Drilling is not: a reader inspects
-	// a cell without changing anything, so it is allowed wherever the source
-	// supports a drill.
-	if (!input.readonly) {
-		props.onSortChange = (column_name, direction) => sortBy(config, column_name, direction)
-	}
+	// An author's sort is a config edit. A reader's is the surface's own, so it
+	// arrives as `sort`, and a surface that has none shows no arrow.
+	props.onSortChange = input.readonly
+		? input.sort
+		: (column_name, direction) => sortBy(config, column_name, direction)
 	if (input.drillable ?? true) props.drillable = true
 	if (input.page) props.page = input.page
 	if (input.download) props.download = input.download
@@ -156,7 +156,11 @@ function sortOrderOf(config: StoredTableConfig): SortOrder {
  * The builder's result pane sorts the same config from its own header, so it
  * calls this rather than saying the three branches a second time.
  */
-export function sortBy(config: StoredTableConfig, column_name: string, direction: SortDirection) {
+export function sortBy(
+	config: { order_by?: OrderByArgs[] },
+	column_name: string,
+	direction: SortDirection,
+) {
 	if (!direction) {
 		config.order_by = (config.order_by || []).filter(
 			(entry) => entry?.column?.column_name !== column_name,

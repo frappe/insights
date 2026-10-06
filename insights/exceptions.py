@@ -12,6 +12,10 @@ class QueryRefused(frappe.ValidationError):
     """The engine will not run this query."""
 
 
+class TableNotStored(QueryRefused):
+    """A run that may not import reads a table the Data Store does not hold."""
+
+
 class UnknownColumn(frappe.ValidationError):
     """A column, table or query the pipeline names is not there."""
 

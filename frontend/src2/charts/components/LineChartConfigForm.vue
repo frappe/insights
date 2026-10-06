@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { LineChartConfig, SeriesLine, YAxisLine } from '../../types/chart.types'
+import { LineChartConfig, Series, SeriesLine, YAxisLine } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
+import { takesTrendLine } from '../adapter/axis'
 import ReferenceLinesConfig from './ReferenceLinesConfig.vue'
 import SplitByConfig from './SplitByConfig.vue'
 import TooltipConfig from './TooltipConfig.vue'
@@ -20,12 +21,21 @@ const config = defineModel<LineChartConfig>({
 		split_by: {},
 	}),
 })
+
+function offersTrendLine(series: Series) {
+	return takesTrendLine(config.value, series, 'line', false)
+}
 </script>
 
 <template>
 	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
 
-	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions" :config="config">
+	<YAxisConfig
+		v-model="config.y_axis"
+		:column-options="props.columnOptions"
+		:config="config"
+		:takes-trend-line="offersTrendLine"
+	>
 		<template #y-axis-settings="{ y_axis }">
 			<Toggle :label="__('Curved lines')" v-model="(y_axis as YAxisLine).smooth" />
 			<Toggle :label="__('Area')" v-model="(y_axis as YAxisLine).show_area" />

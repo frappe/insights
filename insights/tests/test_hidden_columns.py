@@ -151,3 +151,43 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         header = csv.splitlines()[0].split(",")
         self.assertIn("todos", header)
         self.assertNotIn("todos__currency", header)
+
+    # @feature query.summarize-currency-carried
+    def test_a_carried_column_does_not_leave_in_an_export_from_the_data_store(self):
+        rows = [
+            {"status": "Open", "kind": "Bug", "amount": 5, "currency": "INR"},
+            {"status": "Closed", "kind": "Task", "amount": 7, "currency": "USD"},
+        ]
+        operations = [
+            {"type": "code", "code": f"results = {rows}"},
+            {
+                "type": "summarize",
+                "measures": [
+                    {
+                        "measure_name": "total",
+                        "column_name": "amount",
+                        "data_type": "Integer",
+                        "aggregation": "sum",
+                        "format": "currency",
+                        "currency_column": "currency",
+                    },
+                    {
+                        "measure_name": "todos",
+                        "column_name": "amount",
+                        "data_type": "Integer",
+                        "aggregation": "count",
+                    },
+                ],
+                "dimensions": [
+                    {"dimension_name": "status", "column_name": "status", "data_type": "String"},
+                    {"dimension_name": "kind", "column_name": "kind", "data_type": "String"},
+                ],
+            },
+        ]
+        query = create_test_query(ADMIN, self.workbook, title="Stored Hidden Columns", operations=operations)
+        query.db_set("use_live_connection", 0)
+        frappe.db.set_single_value("Insights Settings", "allow_download", 1)
+        with as_user(ADMIN):
+            csv = frappe.get_doc(DT.QUERY, query.name).download_results(format="csv")
+        header = csv.splitlines()[0].split(",")
+        self.assertEqual(sorted(header), ["kind", "status", "todos", "total"])

@@ -97,6 +97,8 @@ export type InsightsChartv3 = {
 	name: string
 	owner: string
 	title: string
+	description: string | null
+	info: string | null
 	workbook: string
 	query: string
 	chart_type: ChartType

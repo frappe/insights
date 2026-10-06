@@ -17,6 +17,7 @@ import re
 import frappe
 from frappe.utils import add_days, now_datetime
 
+from insights.api.ai.lineage import charts_reading, dashboards_showing
 from insights.api.dashboards import dashboard_view_counts
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_stored_columns
@@ -263,24 +264,9 @@ def _add_usage(hits: list[frappe._dict]) -> None:
 
 def _charts_reading(queries: list[str], workbooks: list[str]) -> tuple[dict, dict]:
     """The charts that read each query, and the charts each workbook holds."""
-    or_filters = {}
-    if queries:
-        or_filters["query"] = ["in", queries]
-    if workbooks:
-        or_filters["workbook"] = ["in", workbooks]
-    if not or_filters:
-        return {}, {}
-
-    charts = frappe.get_list(
-        CHART,
-        or_filters=or_filters,
-        fields=["name", "query", "workbook"],
-        limit=0,
-    )
-
     of_query = {}
     of_workbook = {}
-    for chart in charts:
+    for chart in charts_reading(queries, workbooks):
         if chart.query in queries:
             of_query.setdefault(chart.query, set()).add(chart.name)
         if chart.workbook in workbooks:
@@ -289,35 +275,11 @@ def _charts_reading(queries: list[str], workbooks: list[str]) -> tuple[dict, dic
 
 
 def _dashboards_showing(charts: set[str]) -> dict[str, set[str]]:
-    """The dashboards each chart sits on, of those the caller may read.
-
-    `linked_charts` is an edge table, readable by anyone who may read the child
-    doctype, so the parents it names are asked for by name before they count.
-    """
-    if not charts:
-        return {}
-
-    links = frappe.get_all(
-        "Insights Dashboard Chart v3",
-        filters={"chart": ["in", list(charts)], "parenttype": DASHBOARD},
-        fields=["parent", "chart"],
-    )
-    if not links:
-        return {}
-
-    permitted = set(
-        frappe.get_list(
-            DASHBOARD,
-            filters={"name": ["in", list({link.parent for link in links})]},
-            pluck="name",
-            limit=0,
-        )
-    )
-
+    """The dashboards each chart sits on, of those the caller may read."""
     showing = {}
-    for link in links:
-        if link.parent in permitted:
-            showing.setdefault(link.chart, set()).add(link.parent)
+    for dashboard in dashboards_showing(charts):
+        for chart in dashboard.charts:
+            showing.setdefault(chart, set()).add(dashboard.name)
     return showing
 
 

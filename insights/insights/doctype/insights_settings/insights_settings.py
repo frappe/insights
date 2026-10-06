@@ -58,10 +58,3 @@ class InsightsSettings(Document):
         if hasattr(settings, "telegram_api_token"):
             self.telegram_api_token = settings.telegram_api_token
         self.save()
-
-    @property
-    def is_subscribed(self):
-        try:
-            return 1 if frappe.conf.sk_insights else 0
-        except Exception:
-            return None

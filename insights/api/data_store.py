@@ -53,7 +53,7 @@ def get_data_store_tables(data_source: str | None = None, search_term: str | Non
     return ret
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def import_table(data_source: str, table_name: str):
     name = get_table_name(data_source, table_name)
     table_doc = frappe.get_doc("Insights Table v3", name)

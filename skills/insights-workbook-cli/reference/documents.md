@@ -1,11 +1,8 @@
 # The documents
 
-A workbook is four doctypes. You create, read and patch them as plain documents. Each of the
-three content doctypes requires exactly one field, `workbook`. Each takes its permission from that
-workbook. Write on the workbook is write on its contents.
+A workbook is four doctypes. You create, read and patch them as plain documents. Each of the three content doctypes requires exactly one field, `workbook`. Each takes its permission from that workbook. Write on the workbook is write on its contents.
 
-The site assigns names. Create in dependency order. Queries first, then charts, then dashboards.
-Keep what each call returns.
+The site assigns names. Create in dependency order. Queries first, then charts, then dashboards. Keep what each call returns.
 
 ## Insights Workbook
 
@@ -33,15 +30,10 @@ If you delete a workbook, you delete its queries, charts, dashboards and folders
 ```
 
 - `operations` is the pipeline. See `operations.md`.
-- The four flags are the builder-query set from `rules.md`. Only a `sql` query flips
-  `is_native_query` to 1 and `is_builder_query` to 0.
-- `use_live_connection` picks the source: 0 reads the data store, 1 reads the source database.
-  It is per query, and every table in the query follows it.
+- The four flags are the builder-query set from `rules.md`. Only a `sql` query flips `is_native_query` to 1 and `is_builder_query` to 0.
+- `use_live_connection` picks the source: 0 reads the data store, 1 reads the source database. It is per query, and every table in the query follows it.
 - `folder` is optional and names an `Insights Folder` in the same workbook.
-- A query may source from another query **in the same workbook** through
-  `{ "type": "query", "query_name": "<query doc name>" }`. A reference to a query in another
-  workbook builds and runs. But the workbook's source selector cannot show it, so the user cannot
-  edit it. Copy the calculation instead.
+- A query may source from another query **in the same workbook** through `{ "type": "query", "query_name": "<query doc name>" }`. A reference to a query in another workbook builds and runs. But the workbook's source selector cannot show it, so the user cannot edit it. Copy the calculation instead.
 
 ## Insights Chart v3
 
@@ -49,6 +41,8 @@ If you delete a workbook, you delete its queries, charts, dashboards and folders
 {
   "workbook": "42",
   "title": "Revenue Trend",
+  "description": "",
+  "info": "",
   "query": "a1b2c3d4e5",
   "chart_type": "Line",
   "config": { },
@@ -58,6 +52,7 @@ If you delete a workbook, you delete its queries, charts, dashboards and folders
 
 - `query` is the base query's real document name.
 - `chart_type` and `config` shapes are in `charts.md`.
+- `description` and `info` are optional text the reader sees with the title. When to write each is in `charts.md`. A Number chart uses neither: its info goes on each reading, in `number_column_options`.
 - A chart holds no query of its own. Its aggregation is built at render time. Run it with `insights.api.view.get_chart_data` to check it. Saving does not validate the config.
 - Every save normalizes the config: it rewrites older shapes, names each dimension and gives each reading an `id`. So the config you read back differs from the one you wrote. Do not compare them field by field.
 
@@ -71,12 +66,9 @@ If you delete a workbook, you delete its queries, charts, dashboards and folders
 }
 ```
 
-- `items` holds chart and filter items. The model has a third type, `text`. Never author it.
-  See `dashboards.md` for the layout grid, the merge rule and the
-  filter link syntax.
-- A chart item names the chart's real document name. A filter link names the real query name in
-  its `` `query`.`column` `` value.
-- Every item needs a unique `layout.i`.
+- `items` holds chart and filter items. The model has a third type, `text`. Never author it. See `dashboards.md` for the layout grid, the merge rule and the filter link syntax.
+- A chart item names the chart's real document name. A filter link names the real query name in its `` `query`.`column` `` value.
+- Save never refuses a layout. It gives an item that lacks part of its cell the rest, below the others, and an item whose `layout.i` an earlier item holds a new one.
 
 ## Insights Folder
 

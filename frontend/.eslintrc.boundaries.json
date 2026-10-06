@@ -8,6 +8,28 @@
 			"jsx": true
 		}
 	},
+	"rules": {
+		"no-empty": "error",
+		"no-restricted-syntax": [
+			"error",
+			{
+				"selector": "CallExpression[callee.property.name='catch'] > :matches(ArrowFunctionExpression, FunctionExpression)[body.type='BlockStatement'][body.body.length=0]",
+				"message": "A swallowed failure reaches the user as a normal value. Handle the error, let it propagate, or disable this line with the reason it is safe to ignore."
+			},
+			{
+				"selector": "CallExpression[callee.property.name='catch'] > ArrowFunctionExpression > :matches(Literal, Identifier[name='undefined'], ArrayExpression[elements.length=0], ObjectExpression[properties.length=0]).body",
+				"message": "A swallowed failure reaches the user as a normal value. Handle the error, let it propagate, or disable this line with the reason it is safe to ignore."
+			},
+			{
+				"selector": "CallExpression[callee.property.name='catch'] > :matches(ArrowFunctionExpression, FunctionExpression) > BlockStatement[body.length=1] > ReturnStatement:matches([argument=null], :has(> :matches(Literal, Identifier[name='undefined'], ArrayExpression[elements.length=0], ObjectExpression[properties.length=0]).argument))",
+				"message": "A swallowed failure reaches the user as a normal value. Handle the error, let it propagate, or disable this line with the reason it is safe to ignore."
+			},
+			{
+				"selector": "TryStatement:has(AwaitExpression) > CatchClause > BlockStatement[body.length=1] > ReturnStatement:matches([argument=null], :has(> :matches(Literal, Identifier[name='undefined'], ArrayExpression[elements.length=0], ObjectExpression[properties.length=0]).argument))",
+				"message": "A swallowed failure reaches the user as a normal value. Handle the error, let it propagate, or disable this line with the reason it is safe to ignore."
+			}
+		]
+	},
 	"overrides": [
 		{
 			"files": ["src2/islands/**"],

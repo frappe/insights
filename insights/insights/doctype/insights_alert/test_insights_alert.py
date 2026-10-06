@@ -235,13 +235,15 @@ class ATickRunsEveryAlert(InsightsIntegrationTestCase):
 
     # @feature alerts.failed-run-recorded
     def test_a_failed_record_of_a_failed_run_does_not_stop_the_tick(self):
-        self.assertEqual(self.tried(requests.ConnectionError("down"), "record_execution"), self.alerts)
+        self.assertEqual(
+            self.tried(requests.ConnectionError("down"), "record_execution"), sorted(self.alerts)
+        )
 
     # @feature alerts.failed-run-recorded
     def test_a_failed_stop_of_a_refused_alert_does_not_stop_the_tick(self):
         from insights.insights.doctype.insights_alert.insights_alert import SendRefused
 
-        self.assertEqual(self.tried(SendRefused("disabled"), "stop"), self.alerts)
+        self.assertEqual(self.tried(SendRefused("disabled"), "stop"), sorted(self.alerts))
 
 
 class TestEmailRecipients(InsightsIntegrationTestCase):
@@ -466,12 +468,34 @@ class TestCondition(AlertOverSeededTodos):
             unmet.send_alert()
         self.assertEqual(sendmail.call_count, 0)
 
+    def assert_refused_with_one_message(self, condition, message):
+        frappe.clear_messages()
+        with self.assertRaises(frappe.ValidationError) as refusal:
+            self.make_alert(condition=condition)
+
+        self.assertEqual(str(refusal.exception), message)
+        self.assertEqual([frappe.parse_json(m)["message"] for m in frappe.local.message_log], [message])
+
     # @feature alerts.condition
     def test_a_condition_that_does_not_parse_refuses_the_save(self):
-        with self.assertRaises(frappe.ValidationError) as refusal:
-            self.make_alert(condition="status ==")
+        self.assert_refused_with_one_message(
+            "status ==", "SyntaxError: invalid syntax at line 1, column 10. Expression: status =="
+        )
 
-        self.assertIn("Invalid condition", str(refusal.exception))
+    # @feature alerts.condition
+    def test_a_condition_reading_a_missing_column_refuses_the_save_once(self):
+        self.assert_refused_with_one_message(
+            "state == 'Open'", "NameError: name 'state' is not defined. Expression: state == 'Open'"
+        )
+
+    # @feature alerts.condition
+    def test_a_condition_that_is_not_true_or_false_refuses_the_save_once(self):
+        frappe.clear_messages()
+        with self.assertRaises(frappe.ValidationError) as refusal:
+            self.make_alert(condition="status")
+
+        self.assertTrue(str(refusal.exception).endswith(". Expression: status"))
+        self.assertEqual(len(frappe.local.message_log), 1)
 
     # @feature alerts.test-send
     def test_a_test_send_delivers_even_when_the_condition_is_not_met_and_when_the_alert_is_not_due(

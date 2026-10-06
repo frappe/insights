@@ -149,6 +149,16 @@ class TestWarehouse(InsightsIntegrationTestCase):
             )
 
     # @feature data-store.import-table
+    def test_writer_append_mode_keeps_rows_of_a_table_named_with_regex_characters(self):
+        with self.patched_warehouse() as db:
+            table = "orders_(eu)"
+            self.write_to_table(db, table, [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
+            self.write_to_table(
+                db, table, [{"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"}], mode="append"
+            )
+            self.assertEqual([row["id"] for row in self.read_rows(db, table)], [1, 2])
+
+    # @feature data-store.import-table
     def test_writer_upsert_mode_updates_matching_primary_keys(self):
         with self.patched_warehouse() as db:
             self.write_to_table(db, "t", [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
@@ -172,6 +182,17 @@ class TestWarehouse(InsightsIntegrationTestCase):
                     {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
                 ],
             )
+
+    # @feature data-store.run-without-import
+    def test_dropping_a_table_whose_schema_was_never_created_does_nothing(self):
+        # a fresh site's store has no schema until its first import
+        with self.patched_warehouse() as db:
+            WarehouseTable("Site DB", "tabToDo").drop()
+
+            db.raw_sql("CREATE SCHEMA site_db")
+            db.raw_sql("CREATE TABLE site_db.tabtodo AS SELECT 1 AS id")
+            WarehouseTable("Site DB", "tabToDo").drop()
+            self.assertNotIn("tabtodo", db.list_tables(database="site_db"))
 
     # @feature data-store.division-by-zero
     def test_a_division_by_zero_returns_null_as_on_the_live_connection(self):

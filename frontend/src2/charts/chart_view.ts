@@ -8,7 +8,7 @@
 // did not produce.
 
 import { call } from 'frappe-ui'
-import { computed, reactive, ref, shallowRef, unref, type ComputedRef } from 'vue'
+import { computed, reactive, ref, shallowRef, unref, type ComputedRef, type Ref } from 'vue'
 import { copy, getErrorMessage } from '../helpers'
 import { useResultExport } from '../helpers/result_export'
 import { stableStringify } from '../helpers/stable_stringify'
@@ -21,8 +21,10 @@ import type {
 	FilterOperator,
 	FilterValue,
 	Operation,
+	OrderByArgs,
 	QueryResult,
 	QueryResultColumn,
+	SortDirection,
 } from '../types/query.types'
 import type { ChartType } from '../types/chart.types'
 import type { InsightsChartv3, FilterValues, WorkbookDashboardItem } from '../types/workbook.types'
@@ -40,8 +42,9 @@ import {
 	fetchViewDrillRowsRange,
 	fetchViewDrillRowsValues,
 } from './drill/drill_api'
+import { sortBy } from './adapter/table'
 import { normalizeChartConfig } from './helpers'
-import { labelWindowRows } from './window'
+import { labelWindowRows, withLentPeriod, type NumberPeriod } from './window'
 
 /**
  * The server reads the dashboard's filter links to decide which query each
@@ -70,6 +73,8 @@ export type CardFilter = {
 export type ChartViewDoc = {
 	name: string
 	title: string
+	description?: string | null
+	info?: string | null
 	chart_type: string
 	config: InsightsChartv3['config']
 	can_write?: boolean
@@ -109,6 +114,10 @@ type ChartDataResponse = {
 	// comparison. `null` means the server asked and got no row. A missing key
 	// means the card's period does not allow that comparison
 	comparison_rows?: Record<string, number | null>
+	// the Period a dashboard lent a Number card that states none. Only the
+	// builder gets it: it renders the config it is editing, and a View's chart
+	// already holds it
+	period?: NumberPeriod
 	record_links?: RecordLinks
 	// an answer, not a failure: there is nothing to retry
 	not_permitted?: NotPermitted
@@ -175,6 +184,9 @@ export type ChartSource = {
 		rendered: ChartViewDoc,
 	) => DrillRowsSource
 	drillable?: boolean
+	// the reader's own sort, for a source whose endpoint takes one. Unset, the
+	// Chart runs in its own order
+	readerOrder?: Ref<OrderByArgs[] | undefined>
 }
 
 export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
@@ -189,10 +201,11 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	// its request, and the chart the rows came from when they do not. A display
 	// option does not change the request, so it shows at once. An edit that
 	// changes the rows waits for them.
+	const lentPeriod = shallowRef<NumberPeriod>()
 	const doc = computed(() => {
 		const shown = answered.value
-		if (!shown || source.requestKey?.(filterContext()) === shown.key) return current.value
-		return shown.doc
+		const answers = !shown || source.requestKey?.(filterContext()) === shown.key
+		return withLentPeriod(answers ? current.value : shown.doc, lentPeriod.value)
 	})
 	const result = ref<QueryResult>(emptyResult())
 	const sparklineResult = ref<QueryResult>()
@@ -253,6 +266,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		result.value = emptyResult()
 		sparklineResult.value = undefined
 		comparisonRows.value = undefined
+		lentPeriod.value = undefined
 	}
 
 	async function load(force = false) {
@@ -352,7 +366,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 				formattedRows: labelWindowRows(
 					formatResultRows(rows, response.granularity || {}),
 					chartDoc.chart_type,
-					chartDoc.config,
+					withLentPeriod(chartDoc, response.period).config,
 				),
 				columnOptions: rows.columns.map((column) => ({
 					label: column.name,
@@ -382,6 +396,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 			canExport.value = Boolean(response.can_export)
 			recordLinks.value = response.record_links
 			comparisonRows.value = response.comparison_rows
+			lentPeriod.value = response.period
 			scopedBy.value = response.user_permissions
 			narrowedByPermissions.value = Boolean(response.narrowed_by_permissions)
 			readOn.value = response.read_on
@@ -448,6 +463,17 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 
 	const drillable = source.drillable ?? true
 
+	// A reader's sort starts from the order on screen. It brings rows past the
+	// Chart's limit into view, as a later page does, so it needs the same
+	// allowance.
+	function sort(column_name: string, direction: SortDirection) {
+		const order = source.readerOrder!
+		const next = { order_by: copy(order.value ?? doc.value.config.order_by ?? []) }
+		sortBy(next, column_name, direction)
+		order.value = next.order_by
+		return load()
+	}
+
 	return reactive({
 		doc,
 		drillable,
@@ -478,6 +504,8 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		currentPage,
 		pageSize,
 		goToPage: computed(() => (paged.value ? goToPage : undefined)),
+		readerOrder: computed(() => source.readerOrder?.value),
+		sort: computed(() => (source.readerOrder && canReadRows.value ? sort : undefined)),
 		fetchResultCount: computed(() =>
 			paged.value && source.fetchCount ? fetchResultCount : undefined,
 		),
@@ -593,14 +621,17 @@ function makeSavedChartView(
 
 	if (chartDoc) assignChartDoc(doc, chartDoc)
 
+	const readerOrder = ref<OrderByArgs[]>()
+
 	// A reader changes none of the config, so the request holds only the chart
-	// name and the caller's filters. Filters go by name: the server reads the
-	// filter links of the dashboard named here.
+	// name, the caller's filters and the reader's sort. Filters go by name: the
+	// server reads the filter links of the dashboard named here.
 	const request = (filterContext?: DashboardFilterContext) => ({
 		chart: chart_name,
 		dashboard: filterContext?.dashboard,
 		filters: filterContext?.filters,
 		card_filters: filterContext?.cardFilters,
+		order_by: readerOrder.value,
 	})
 
 	return makeChartRead(
@@ -629,6 +660,7 @@ function makeSavedChartView(
 					...request(filterContext),
 					format,
 				}),
+			readerOrder,
 			// A drill reads rows, so a guest is not allowed it. The endpoint also
 			// refuses Guest.
 			drillable: session.isLoggedIn,

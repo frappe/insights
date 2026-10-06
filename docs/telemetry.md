@@ -54,7 +54,7 @@ Shipping events exist to answer these. An event that answers none of them is pla
 |---|---|---|---|
 | `workbook_created` | a workbook document is inserted, backend | | workbook.create |
 | `query_created` | a query is added | `interface: builder, sql, script` | query.interface-picker |
-| `query_failed` | a run is refused or fails, backend | `interface`, `error_kind: syntax, unknown_column, permission, connection, timeout, refused, other`, `data_store: bool`, `source_type: as data_source_created.type, unknown when the query reads more than one source` | query.expression-validation, query.unknown-operation-refused, query.source-cycle-refused, query.native-sql-one-statement |
+| `query_failed` | a run is refused or fails, backend | `interface`, `error_kind: syntax, unknown_column, permission, connection, timeout, refused, other`, `data_store: bool`, `source_type: as data_source_created.type, unknown when the query reads more than one source`, `caller: session for a login cookie, token for an API key or OAuth bearer, guest for a request that signed in neither way, job for a run no request made` | query.expression-validation, query.unknown-operation-refused, query.source-cycle-refused, query.native-sql-one-statement |
 | `chart_created` | a chart is added | | charts.type-* |
 | `dashboard_created` | a dashboard is added | | dashboard.create-add-chart |
 | `dashboard_chart_added` | a chart lands on a dashboard | `via: selector, drag`, `count: int` | dashboard.create-add-chart, dashboard.chart-selector, dashboard.drag-chart-from-sidebar |

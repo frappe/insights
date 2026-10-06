@@ -204,7 +204,11 @@ describe('a chart whose author took the options back', () => {
 describe("a reading's options follow the reading", () => {
 	const card = () => ({
 		number_columns: [measure('a'), measure('b'), measure('c')],
-		number_column_options: [{ target: 'ta' }, { target: 'tb' }, { target: 'tc' }],
+		number_column_options: [
+			{ target: 'ta' },
+			{ target: 'tb', info: 'b counts paid plans' },
+			{ target: 'tc' },
+		],
 	})
 
 	// @feature charts.number-readings
@@ -225,7 +229,7 @@ describe("a reading's options follow the reading", () => {
 		expect(config.number_column_options).toEqual([
 			{ target: 'tc' },
 			{ target: 'ta' },
-			{ target: 'tb' },
+			{ target: 'tb', info: 'b counts paid plans' },
 		])
 	})
 

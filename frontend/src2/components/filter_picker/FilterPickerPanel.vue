@@ -8,6 +8,7 @@ import { watchDebounced } from '@vueuse/core'
 import { ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 import { isMac } from '../../composables/useShortcut'
+import { showErrorToast } from '../../helpers'
 import { columnIcon } from '../../query/column_icon'
 import { __ } from '../../translation'
 import type { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
@@ -225,7 +226,10 @@ watch(
 		if (!props.rangeProvider || !column.value) return
 
 		const id = ++rangeRequest
-		const fetched = await props.rangeProvider(column.value).catch(() => undefined)
+		const fetched = await props.rangeProvider(column.value).catch((error) => {
+			if (id === rangeRequest) showErrorToast(error, false)
+			return undefined
+		})
 		if (id === rangeRequest) range.value = fetched
 	},
 	{ immediate: true },
@@ -549,6 +553,8 @@ const cancelled = ref(false)
 // a pick left open commits when the popover closes: a tick on the multi stage,
 // or the days the calendar wrote into the input
 onBeforeUnmount(() => {
+	// a range still on its way belongs to a picker the reader has closed
+	rangeRequest++
 	if (cancelled.value) return
 	if (!draft.value) {
 		// A list the reader emptied is the filter taken off, not a pick half made.

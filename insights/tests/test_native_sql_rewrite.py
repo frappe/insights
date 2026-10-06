@@ -5,6 +5,7 @@ import sqlglot as sg
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
+from insights.insights.query_utils import extract_sql_table_refs
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import as_user, create_user, delete_users
 
@@ -151,6 +152,18 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         # inside its own block, the CTE does hide the table
         hidden = "with `tabUser` as (select 1 as n) select n from `tabUser`"
         self.assertEqual(self.builder._get_sql_table_names(hidden, dialect=self.dialect), set())
+
+    # @feature query.native-sql
+    def test_a_commented_query_names_the_tables_it_runs_on(self):
+        """The run strips comments before it binds tables, so the tables read
+        for permission checks must come from the same text. PostgreSQL and
+        DuckDB do not read `#` as a comment."""
+        raw_sql = "# users by role\n-- active only\nSELECT name FROM tabUser"
+
+        for dialect in ("postgres", "duckdb", "mysql"):
+            with self.subTest(dialect=dialect):
+                refs = extract_sql_table_refs(raw_sql, dialect=dialect)
+                self.assertEqual([ref.name for ref in refs], ["tabUser"])
 
     # @feature query.native-sql
     def test_a_derived_table_aliased_after_a_table_does_not_hide_it(self):

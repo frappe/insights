@@ -76,8 +76,7 @@ def get_sitedb_connection():
             replica = get_replica_data_source()
             return get_frappedb_connection(replica)
         except Exception:
-            # If replica fails, fall back to primary
-            pass
+            pass  # nosemgrep - the primary holds the same data as the replica
 
     primary = get_primary_data_source()
     return get_frappedb_connection(primary)
@@ -92,7 +91,7 @@ def is_frappe_db(data_source):
         db.con.close()
         return len(res) > 0
     except Exception:
-        return False
+        return False  # nosemgrep - what the probe cannot read is not Frappe; it never passes on PostgreSQL
 
 
 def get_frappedb_table_links(data_source):

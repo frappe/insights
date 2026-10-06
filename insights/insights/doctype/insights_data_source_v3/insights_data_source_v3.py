@@ -91,6 +91,9 @@ class InsightsDataSourceDocument:
             capture("data_source_created", type=self.source_type, ssl=bool(self.use_ssl))
 
     def on_update(self):
+        # db_set loads the saved row as the doc before save, which hides a change
+        credentials_changed = self.has_credentials_changed()
+
         if self.type == "REST API":
             self.db_set(
                 {
@@ -111,14 +114,18 @@ class InsightsDataSourceDocument:
 
             return
 
-        credentials_changed = self.has_credentials_changed()
-        if not self.is_site_db and credentials_changed and self.database_type in ["MariaDB", "PostgreSQL"]:
-            self.db_set("is_frappe_db", is_frappe_db(self))
-
         self.status = "Active" if self.test_connection() else "Inactive"
         self.db_set("status", self.status)
 
-        if self.status == "Active" and credentials_changed:
+        if (
+            self.status == "Active"
+            and credentials_changed
+            and self.database_type in ["MariaDB", "PostgreSQL"]
+        ):
+            self.db_set("is_frappe_db", is_frappe_db(self))
+
+        # a REST API source's tables come from its imports, which Update Tables lists
+        if self.status == "Active" and credentials_changed and self.type != "REST API":
             self.update_table_list()
 
     def has_credentials_changed(self):
@@ -296,7 +303,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             try:
                 db.raw_sql(f"SET MAX_STATEMENT_TIME={get_max_execution_time()}")
             except Exception:
-                pass
+                pass  # nosemgrep - MySQL has no such variable, so its queries run without a time limit
 
         insights.db_connections[self.name] = db
         return db

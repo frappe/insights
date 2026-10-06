@@ -16,6 +16,7 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
 from insights import not_permitted, user_permissions
+from insights.exceptions import TableNotStored
 from insights.permission_user import get_permission_user
 from insights.utils import InsightsDataSourcev3
 
@@ -74,8 +75,7 @@ class InsightsTablev3(Document):
         try:
             remote = InsightsDataSourcev3.get_doc(self.data_source).get_ibis_table(self.table)
         except Exception:
-            # Can't connect right now — skip validation rather than blocking save.
-            return
+            return  # nosemgrep - a source that is down must not block the save, and the import reports the failure
 
         self.sync_strategy = self.sync_strategy or "Append Only"
 
@@ -146,7 +146,7 @@ class InsightsTablev3(Document):
         )
 
     @staticmethod
-    def get_ibis_table(data_source, table_name, use_live_connection=False):
+    def get_ibis_table(data_source, table_name, use_live_connection=False, import_if_not_exists=True):
         from insights.insights.doctype.insights_team.insights_team import (
             apply_table_restrictions,
             check_table_permission,
@@ -162,19 +162,30 @@ class InsightsTablev3(Document):
         if not site_db:
             check_table_permission(data_source, table_name, user=user)
 
+        def readable(t):
+            if site_db:
+                granted = team_grant(data_source, table_name, user=user)
+                return apply_user_permissions(t, data_source, table_name, user=user, granted=granted)
+            return apply_table_restrictions(t, data_source, table_name, user=user)
+
         ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
         if not use_live_connection and ds_type != "REST API":
             wt = insights.warehouse.get_table(data_source, table_name)
-            t = wt.get_ibis_table(import_if_not_exists=True)
-        else:
-            ds = InsightsDataSourcev3.get_doc(data_source)
-            t = ds.get_ibis_table(table_name)
+            try:
+                t = wt.get_ibis_table(import_if_not_exists=import_if_not_exists)
+            except TableNotStored as not_stored:
+                # a reader the live read refuses is told only that, not that the table is not
+                # stored. Only the site database refuses there; other sources were decided above
+                if site_db:
+                    try:
+                        readable(InsightsDataSourcev3.get_doc(data_source).get_ibis_table(table_name))
+                    except not_permitted.NotPermitted:
+                        not_permitted.forget_refusal(not_stored)
+                        raise
+                raise
+            return readable(t)
 
-        if site_db:
-            granted = team_grant(data_source, table_name, user=user)
-            return apply_user_permissions(t, data_source, table_name, user=user, granted=granted)
-
-        return apply_table_restrictions(t, data_source, table_name, user=user)
+        return readable(InsightsDataSourcev3.get_doc(data_source).get_ibis_table(table_name))
 
     def check_identity(self):
         """`autoname` builds the name out of the data source and the table, so the
@@ -183,14 +194,14 @@ class InsightsTablev3(Document):
         if get_table_name(self.data_source or "", self.table or "") != self.name:
             frappe.throw(frappe._("Table {0} is not {1}.{2}").format(self.name, self.data_source, self.table))
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def import_to_warehouse(self):
         frappe.only_for("Insights Admin")
         self.check_identity()
         wt = insights.warehouse.get_table(self.data_source, self.table)
         wt.enqueue_import()
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def clear_warehouse_data(self):
         frappe.only_for("Insights Admin")
         self.check_identity()
@@ -315,8 +326,7 @@ def filter_permitted_columns(
     try:
         allowed = get_permitted_columns_for_table(strip_schema_prefix(table_name), user=user)
     except Exception:
-        # a table the meta cannot explain cannot be checked, so report nothing
-        return []
+        return []  # nosemgrep - a table the meta cannot check reports no column, so it fails closed
 
     return [column for column in columns if column.get("name") in allowed]
 
@@ -561,7 +571,7 @@ def desk_reads_table(table: str, user: str | None = None) -> bool:
     try:
         return not not_permitted.unreadable_doctypes(table, user)
     except frappe.DoesNotExistError:
-        return False
+        return False  # nosemgrep - a table without a doctype allows nobody
 
 
 def desk_readable_tables(user: str) -> set[str]:

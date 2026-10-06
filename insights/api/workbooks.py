@@ -365,7 +365,7 @@ def move_item_to_folder(item_type: str, item_name: str, folder_name: str | None 
     item.db_set("folder", folder_name, update_modified=False)
 
 
-@insights_whitelist()
+@insights_whitelist(methods=["POST"])
 def update_sort_orders(workbook: str, items: list):
     """Order a workbook's own queries, charts and folders"""
     if not frappe.has_permission("Insights Workbook", ptype="write", doc=workbook):

@@ -28,7 +28,7 @@ def get_or_set_cache(key, func, force=False, expiry=EXPIRY):
     return value
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def reset_insights_cache():
     frappe.only_for("System Manager")
     frappe.cache().delete_keys("insights*")
