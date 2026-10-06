@@ -166,6 +166,9 @@ doc_events = {
     "Dashboard Chart": {
         "onload": "insights.desk.claim",
     },
+    "Number Card": {
+        "onload": "insights.desk.claim",
+    },
     "DocShare": {
         "validate": "insights.permissions.validate_member_share",
     },

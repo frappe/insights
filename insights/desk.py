@@ -1,7 +1,7 @@
 # Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-"""How Insights renders a desk `Dashboard` and a desk `Dashboard Chart`.
+"""How Insights renders a desk `Dashboard`, `Dashboard Chart` and `Number Card`.
 
 The framework renders a desk document with an island when its `__onload.island`
 names one. Without the key, desk renders the document itself. Insights sets the
@@ -57,6 +57,15 @@ DESK_ISLANDS = {
         "island": "insights.chart",
         "prop": "chart",
     },
+    "Number Card": {
+        "fieldname": "insights_chart",
+        "label": "Insights Chart",
+        "options": "Insights Chart v3",
+        "insert_after": "label",
+        "folder": "number_card",
+        "island": "insights.chart",
+        "prop": "chart",
+    },
 }
 
 
@@ -75,7 +84,7 @@ def boot_app_path(bootinfo) -> None:
 def claim(doc, method=None) -> None:
     """Set the island that renders `doc`, if Insights renders it.
 
-    Both `doc_events` handlers call this one method. The document includes its
+    Every `doc_events` handler calls this one method. The document includes its
     doctype, so a per-doctype entry point would only add a second name.
     """
     island = island_for(doc)

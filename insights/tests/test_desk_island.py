@@ -31,6 +31,7 @@ from insights.tests.factories import (
 OWNER = "Administrator"
 DESK_DASHBOARD = "Desk Island Test Dashboard"
 DESK_CHART = "Desk Island Test Chart"
+DESK_CARD = "Desk Island Test Card"
 DASHBOARD_PAGE = "insights-dashboard"
 
 
@@ -48,7 +49,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     @classmethod
     def after_class(cls):
-        for doctype in ("Dashboard", "Dashboard Chart"):
+        for doctype in DESK_ISLANDS:
             for name in frappe.get_all(
                 doctype, filters={"name": ["like", "Desk Island Test%"]}, pluck="name"
             ):
@@ -78,6 +79,18 @@ class TestDeskIsland(InsightsIntegrationTestCase):
             }
         ).insert()
 
+    def desk_card(self, insights_chart=None):
+        return frappe.get_doc(
+            {
+                "doctype": "Number Card",
+                "label": DESK_CARD,
+                "type": "Document Type",
+                "document_type": "ToDo",
+                "function": "Count",
+                "insights_chart": insights_chart,
+            }
+        ).insert()
+
     def onload_of(self, doctype, name):
         frappe.local.response = frappe._dict({"docs": []})
         getdoc(doctype, name)
@@ -98,13 +111,20 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         page = frappe.get_doc("Page", DASHBOARD_PAGE)
         self.assertEqual([role.role for role in page.roles], ["Desk User"])
 
-    # @feature desk.dashboard-island desk.chart-island
+    # @feature desk.dashboard-island desk.chart-island desk.number-card-island
     def test_island_names_are_registered(self):
         islands = get_ui_islands()
         for field in DESK_ISLANDS.values():
             self.assertIn(field["island"], islands)
 
-    # @feature desk.dashboard-island desk.chart-island
+    # @feature desk.dashboard-island desk.chart-island desk.number-card-island
+    def test_every_claimed_doctype_runs_the_claim_on_load(self):
+        """`hooks.py` names the doctypes again and cannot import `DESK_ISLANDS`.
+        A doctype with a field and no hook keeps its own rendering."""
+        for doctype in DESK_ISLANDS:
+            self.assertIn("insights.desk.claim", frappe.get_doc_hooks().get(doctype, {}).get("onload", []))
+
+    # @feature desk.dashboard-island desk.chart-island desk.number-card-island
     def test_custom_fields_are_installed(self):
         for doctype, field in DESK_ISLANDS.items():
             custom_field = frappe.get_doc("Custom Field", {"dt": doctype, "fieldname": field["fieldname"]})
@@ -134,6 +154,30 @@ class TestDeskIsland(InsightsIntegrationTestCase):
     # @feature desk.chart-island
     def test_chart_without_a_link_is_not_ours(self):
         self.assertIsNone(island_for(self.desk_chart()))
+
+    # @feature desk.number-card-island
+    def test_a_number_card_we_render_includes_the_claim_through_getdoc(self):
+        name = self.desk_card(self.chart.name).name
+        self.assertEqual(
+            self.onload_of("Number Card", name)["island"],
+            {"name": "insights.chart", "props": {"chart": self.chart.name}},
+        )
+
+    # @feature desk.number-card-island
+    def test_a_number_card_we_do_not_render_gets_no_island_key(self):
+        name = self.desk_card().name
+        self.assertNotIn("island", self.onload_of("Number Card", name))
+
+    # @feature desk.number-card-island
+    def test_deleting_the_chart_a_number_card_shows_is_refused_naming_that_card(self):
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Card Chart")
+        card = self.desk_card(chart.name)
+
+        with self.assertRaises(frappe.LinkExistsError) as refusal:
+            frappe.client.delete(DT.CHART, chart.name)
+
+        self.assertIn(card.name, str(refusal.exception))
+        self.assertTrue(frappe.db.exists(DT.CHART, chart.name))
 
     # @feature desk.dashboard-island
     def test_the_claim_rides_onload_through_getdoc(self):
@@ -305,6 +349,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         chart = create_test_chart(OWNER, workbook, title="Desk Island Gone Chart")
         dashboard = create_test_dashboard(OWNER, workbook, title="Desk Island Gone Dashboard")
         desk_chart = self.desk_chart(chart.name)
+        desk_card = self.desk_card(chart.name)
         desk_dashboard = self.desk_dashboard(dashboard.name)
         kept = frappe.get_doc(
             {
@@ -320,6 +365,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
             report_dangling_claims()
 
         self.assertIn(f"Dashboard Chart {desk_chart.name} links {chart.name}", printed.getvalue())
+        self.assertIn(f"Number Card {desk_card.name} links {chart.name}", printed.getvalue())
         self.assertIn(f"Dashboard {desk_dashboard.name} links {dashboard.name}", printed.getvalue())
         self.assertNotIn(kept.name, printed.getvalue())
 

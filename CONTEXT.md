@@ -179,7 +179,7 @@ The page an island mounts into. The host owns everything around the island: the 
 _Avoid_: container, parent app, shell
 
 **Claim**:
-The link that makes Insights render a desk document. Insights adds one Custom Field to each desk doctype it renders (`Dashboard`, `Dashboard Chart`). When the field is set, an `onload` handler puts the island's name in `__onload.island`. Without that key, desk renders the document itself (`insights/desk.py`). A claim decides who renders the document, never who may read it.
+The link that makes Insights render a desk document. Insights adds one Custom Field to each desk doctype it renders (`Dashboard`, `Dashboard Chart`, `Number Card`). When the field is set, an `onload` handler puts the island's name in `__onload.island`. Without that key, desk renders the document itself (`insights/desk.py`). A claim decides who renders the document, never who may read it.
 _Avoid_: renderer, override, takeover
 
 **Action**:
