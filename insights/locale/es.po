@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-09-07 08:43\n"
+"PO-Revision-Date: 2026-10-05 11:28\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Spanish\n"
 "MIME-Version: 1.0\n"
@@ -256,7 +256,7 @@ msgstr ""
 
 #: frontend/src2/components/UserDropdown.vue:81
 msgid "Are you sure you want to login to your Frappe Cloud dashboard?"
-msgstr "¿Estás seguro de que deseas iniciar sesión en el panel de Frappe Cloud?"
+msgstr "¿Seguro que quieres iniciar sesión en tu panel de Frappe Cloud?"
 
 #. Label of the api_authentication_type (Select) field in DocType 'Insights
 #. Data Source v3'
