@@ -25,7 +25,7 @@ jobs:
       SITE_NAME: test_site
       DB_ROOT_PASSWORD: root
       ADMIN_PASSWORD: admin
-      FRAPPE_BRANCH: develop
+      FRAPPE_BRANCH: version-16
 
     services:
       mariadb:
