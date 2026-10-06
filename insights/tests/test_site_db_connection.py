@@ -10,6 +10,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors.frappe_db impo
 from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import (
     get_mariadb_connection,
 )
+from insights.tests.base import InsightsIntegrationTestCase
 
 SOCKET = "/run/mysqld/mysqld.sock"
 
@@ -45,3 +46,13 @@ class TestSiteDBSocket(UnitTestCase):
                 replica = get_replica_data_source()
 
             self.assertIsNone(replica.unix_socket)
+
+
+class TestSiteDBUser(InsightsIntegrationTestCase):
+    # @feature data-source.connect-mariadb
+    def test_the_site_database_is_read_as_the_user_the_framework_connected_as(self):
+        with patch.object(frappe.local.db, "user", "site_reader"):
+            site = get_primary_data_source()
+
+        self.assertEqual(site.username, "site_reader")
+        self.assertEqual(site.database_name, frappe.local.db.cur_db_name)
