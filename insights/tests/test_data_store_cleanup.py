@@ -117,7 +117,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         ref.insert(ignore_permissions=True)
 
     def set_retention(self, days):
-        """Set the execution log's row in Log Settings; `None` removes the row."""
+        """Set the execution log's row in Log Settings; `None` deletes the row, as before Log Settings is first saved after migrate."""
         doctype = "Insights Query Execution Log"
         log_settings = frappe.get_doc("Log Settings")
         original = next((row.days for row in log_settings.logs_to_clear if row.ref_doctype == doctype), None)
@@ -126,10 +126,12 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
 
     def write_retention(self, days):
         doctype = "Insights Query Execution Log"
+        if days is None:
+            frappe.db.delete("Logs To Clear", {"parent": "Log Settings", "ref_doctype": doctype})
+            return
         log_settings = frappe.get_doc("Log Settings")
         log_settings.logs_to_clear = [row for row in log_settings.logs_to_clear if row.ref_doctype != doctype]
-        if days is not None:
-            log_settings.register_doctype(doctype, days)
+        log_settings.register_doctype(doctype, days)
         log_settings.save(ignore_permissions=True)
 
     def is_stored(self, table_name):
