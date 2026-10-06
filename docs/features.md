@@ -416,6 +416,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.cleanup-prunes-stale | The weekly cleanup drops a table no query has used, and keeps one used recently, nested, freshly imported or incremental. |
 | data-store.cleanup-keeps-unexplained | The cleanup deletes only what it can rebuild and keeps an unexplained orphan. |
 | data-store.compaction | The store file is compacted without losing data, and small files are left alone. |
+| data-store.execution-log-retention | Log Settings clears query execution logs past the retention an admin sets; the 90-day default outlasts the cleanup's unused-table window. |
 
 ## alerts
 

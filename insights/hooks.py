@@ -196,6 +196,10 @@ scheduler_events = {
     ],
 }
 
+default_log_clearing_doctypes = {
+    "Insights Query Execution Log": 90,
+}
+
 # Testing
 # -------
 
