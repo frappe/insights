@@ -6,6 +6,7 @@ from frappe.tests import UnitTestCase
 from insights.insights.doctype.insights_data_source_v3.connectors.frappe_db import (
     get_primary_data_source,
     get_replica_data_source,
+    get_sitedb_connection,
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import (
     get_mariadb_connection,
@@ -48,7 +49,22 @@ class TestSiteDBSocket(UnitTestCase):
             self.assertIsNone(replica.unix_socket)
 
 
-class TestSiteDBUser(InsightsIntegrationTestCase):
+def sitedb_connect_kwargs():
+    captured = {}
+
+    def record(**kwargs):
+        captured.update(kwargs)
+        return Mock()
+
+    with (
+        patch.dict(frappe.local.conf, {"db_socket": None}),
+        patch("ibis.mysql.connect", side_effect=record),
+    ):
+        get_sitedb_connection()
+    return captured
+
+
+class TestSiteDBAsTheFramework(InsightsIntegrationTestCase):
     # @feature data-source.connect-mariadb
     def test_the_site_database_is_read_as_the_user_the_framework_connected_as(self):
         with patch.object(frappe.local.db, "user", "site_reader"):
@@ -56,3 +72,26 @@ class TestSiteDBUser(InsightsIntegrationTestCase):
 
         self.assertEqual(site.username, "site_reader")
         self.assertEqual(site.database_name, frappe.local.db.cur_db_name)
+
+    # @feature data-source.ssl
+    def test_a_site_database_behind_ssl_is_read_with_the_frameworks_certificate(self):
+        conf = {
+            "db_ssl_ca": "/etc/ssl/db-ca.pem",
+            "db_ssl_cert": "/etc/ssl/c.pem",
+            "db_ssl_key": "/etc/ssl/k.pem",
+        }
+        with patch.dict(frappe.local.conf, conf):
+            kwargs = sitedb_connect_kwargs()
+
+        self.assertEqual(kwargs["ssl_mode"], "VERIFY_CA")
+        self.assertEqual(
+            kwargs["ssl"], {"ca": "/etc/ssl/db-ca.pem", "cert": "/etc/ssl/c.pem", "key": "/etc/ssl/k.pem"}
+        )
+
+    # @feature data-source.ssl
+    def test_a_site_database_checks_the_hostname_only_when_the_framework_does(self):
+        conf = {"db_ssl_ca": "/etc/ssl/db-ca.pem", "db_ssl_check_hostname": True}
+        with patch.dict(frappe.local.conf, conf):
+            kwargs = sitedb_connect_kwargs()
+
+        self.assertEqual(kwargs["ssl_mode"], "VERIFY_IDENTITY")

@@ -32,6 +32,7 @@ def get_primary_data_source():
         site_db.host = frappe.conf.db_host
         site_db.port = frappe.conf.db_port
         site_db.unix_socket = frappe.conf.db_socket
+        site_db.ssl_options = get_site_db_ssl_options()
 
     if not site_db.host:
         site_db.host = "localhost"
@@ -52,6 +53,19 @@ def get_primary_data_source():
         site_db.use_ssl = False
 
     return site_db
+
+
+def get_site_db_ssl_options():
+    """The SSL settings the framework connects to its own database with."""
+    conf = frappe.conf
+    if not conf.db_ssl_ca:
+        return None
+
+    ssl = {"ca": conf.db_ssl_ca}
+    if conf.db_ssl_cert and conf.db_ssl_key:
+        ssl |= {"cert": conf.db_ssl_cert, "key": conf.db_ssl_key}
+
+    return {"ssl_mode": "VERIFY_IDENTITY" if conf.db_ssl_check_hostname else "VERIFY_CA", "ssl": ssl}
 
 
 def get_replica_data_source():
