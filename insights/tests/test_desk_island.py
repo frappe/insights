@@ -85,6 +85,10 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dashboard-page
     def test_the_dashboard_page_is_rendered_by_an_island_the_build_ships(self):
+        if not frappe.get_meta("Page").has_field("type"):
+            self.skipTest(
+                "frappe v16 has no page islands; https://github.com/nextchamp-saqib/insights/pull/3, Saqib, 2026-12-31"
+            )
         page = frappe.get_doc("Page", DASHBOARD_PAGE)
         self.assertEqual(page.type, "Frappe UI")
         self.assertIn(page.island, get_ui_islands())
