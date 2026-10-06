@@ -27,7 +27,6 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         frappe.db.delete("Insights Query Reference")
         frappe.db.delete("Insights Table Import Log")
         self.set_retention(90)
-        self.cutoff = add_days(now_datetime(), -data_warehouse.UNUSED_TABLE_DAYS)
 
     # helpers
 
@@ -145,7 +144,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         self.reference_table("q_stale", "tabCleanupStale")
         self.log_execution("q_stale", days_ago=60)
 
-        pruned = prune_unused_tables(self.cutoff)
+        pruned = prune_unused_tables()
 
         self.assertIn(table.name, pruned)
         self.assertFalse(self.is_stored("tabCleanupStale"))
@@ -162,7 +161,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         self.log_execution("q_used", days_ago=60)
         self.log_execution("q_used", days_ago=2)
 
-        prune_unused_tables(self.cutoff)
+        prune_unused_tables()
 
         self.assertTrue(self.is_stored("tabCleanupUsed"))
 
@@ -175,7 +174,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         self.reference_query("q_parent", "q_child")
         self.log_execution("q_parent", days_ago=2)
 
-        prune_unused_tables(self.cutoff)
+        prune_unused_tables()
 
         self.assertTrue(self.is_stored("tabCleanupNested"))
 
@@ -184,7 +183,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         self.create_table("tabCleanupFresh")
         self.log_import("tabCleanupFresh", days_ago=3)
 
-        prune_unused_tables(self.cutoff)
+        prune_unused_tables()
 
         self.assertTrue(self.is_stored("tabCleanupFresh"))
 
@@ -193,7 +192,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         self.create_table("tabCleanupIncremental", sync_mode="Incremental")
         self.log_import("tabCleanupIncremental", days_ago=90)
 
-        prune_unused_tables(self.cutoff)
+        prune_unused_tables()
 
         self.assertTrue(self.is_stored("tabCleanupIncremental"))
 
@@ -205,7 +204,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
                 table = self.create_table("tabCleanupIdle")
                 self.log_import("tabCleanupIdle", days_ago=60)
 
-                self.assertIn(table.name, prune_unused_tables(self.cutoff))
+                self.assertIn(table.name, prune_unused_tables())
 
     # @feature data-store.cleanup-prunes-stale
     def test_skips_pruning_when_retention_is_shorter_than_the_unused_window(self):
@@ -214,7 +213,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
         self.log_import("tabCleanupUnknown", days_ago=90)
         self.log_execution("q_recent", days_ago=1)
 
-        pruned = prune_unused_tables(self.cutoff)
+        pruned = prune_unused_tables()
 
         self.assertEqual(pruned, [])
         self.assertTrue(self.is_stored("tabCleanupUnknown"))

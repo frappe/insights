@@ -860,9 +860,8 @@ def cleanup_data_store():
     re-imports a dropped table the next time a query needs it.
     """
     logger = frappe.logger()
-    cutoff = add_days(now_datetime(), -UNUSED_TABLE_DAYS)
 
-    pruned = prune_unused_tables(cutoff)
+    pruned = prune_unused_tables()
     # DuckDB work is not part of this transaction: commit the docs first so a
     # later failure leaves an orphan for next week, not a `stored` table whose
     # warehouse table has already been dropped.
@@ -882,13 +881,14 @@ def cleanup_data_store():
     return summary
 
 
-def prune_unused_tables(cutoff) -> list[str]:
-    """Flip `stored` off for tables no query has read since `cutoff`.
+def prune_unused_tables() -> list[str]:
+    """Flip `stored` off for tables no query has read in `UNUSED_TABLE_DAYS`.
 
     Incremental tables are never pruned: re-importing them restarts from
     `sync_from` and history the source has purged since is unrecoverable.
     """
     logger = frappe.logger()
+    cutoff = add_days(now_datetime(), -UNUSED_TABLE_DAYS)
 
     retention = frappe.db.get_value(
         "Logs To Clear",
