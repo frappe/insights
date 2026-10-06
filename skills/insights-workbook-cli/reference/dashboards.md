@@ -117,7 +117,7 @@ A filter item declares `links`: which charts it affects and, per chart, which **
 - A chart whose query chain lacks the column cannot be linked: add the column to the query first (usually a `join` to the parent document), then link it.
 - **Dashboard filters are rule-based only.** Insights drops expression filters inside a dashboard filter group before execution. A filter that must be an expression belongs in the query or in the chart's own `filters`.
 - Leave a chart **unlinked** when its window is fixed by design, such as a cohort or a fixed observation period. A date filter on it cuts days out of the window instead of filtering the view. A Number card with its own `window.span` is one of these: the span names its period, so leave it off the Date filter's links. Say in your reply which charts you left unlinked, and why.
-- A Number card with no `window`, linked to the Date filter on its `date_column`, reads a `within` value as its Period. Its `previous` and `last year` comparisons then step back from the filter's span. A `between` range only narrows its rows, so it prints one number and no comparison.
+- A Number card with no `window`, linked to the Date filter on its `date_column`, reads a `within` value as its Period. Its `previous` and `last year` comparisons then step back from the filter's span. A `between` range, or any second filter on that column, only narrows its rows, so it prints one number and no comparison.
 
 ### Run a chart under the dashboard filters
 

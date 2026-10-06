@@ -51,9 +51,9 @@ Date: 2026-10-06
 
 ### Decision
 
-A card that states no Period, on a dashboard whose `within` filter is routed to its date column on its own query, reads that filter's span as its Period. `take_dashboard_period` writes the span into the chart's config where routed filters meet the chart: `view.routed_chart` for a View, `authoring.drilled_shape` for the Builder. Derivation, the comparison rows, the sparkline, the drill and the card's labels all read that one config. The filter then no longer applies to that card as a row filter, because it would drop the comparison spans.
+A card that states no Period, on a dashboard whose `within` filter is the only filter routed to its date column on its own query, reads that filter's span as its Period. `take_dashboard_period` writes the span into the chart's config where routed filters meet the chart: `view.routed_chart` for a View, `authoring.drilled_shape` for the Builder. Derivation, the comparison rows, the sparkline, the drill and the card's labels all read that one config. The filter then no longer applies to that card as a row filter, because it would drop the comparison spans.
 
-A card that states its own Period keeps it, and the filter still narrows its rows. A `between` range, any other operator, a link to a query the chart's query reads, and two span filters on one column all stay row filters. A span is the only Period a dashboard lends.
+A card that states its own Period keeps it, and the filter still narrows its rows. A `between` range, any other operator, a link to a query the chart's query reads, and a span beside any other filter on the same column all stay row filters, because that filter would cut the comparison spans again. A span is the only Period a dashboard lends.
 
 ### Consequences
 

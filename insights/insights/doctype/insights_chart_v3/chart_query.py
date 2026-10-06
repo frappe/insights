@@ -283,7 +283,7 @@ def dashboard_period(
     A `within` filter on the card's date column names a span, which is what a
     Period is. Left as a row filter it would drop the comparison spans, so the
     card reads it as its Period instead, and the filter no longer applies to it.
-    One such filter, or none is lent: a second span on the same column would cut
+    Only a lone filter on that column is lent: any other filter there would cut
     the comparison spans again.
     """
     if chart_type != "Number" or not adhoc_filters or _malformed_slots(config, chart_type):
@@ -291,25 +291,24 @@ def dashboard_period(
 
     config = _config_for_derivation(config, chart_type)
     column_name = (config.get("date_column") or {}).get("column_name")
-    group = adhoc_filters.get(query) or {}
-    if _period(config) or not column_name or group.get("logical_operator") != "And":
+    if _period(config) or not column_name:
         return None, adhoc_filters
 
-    spans = [
+    group = adhoc_filters.get(query) or {}
+    on_column = [
         rule
         for rule in group.get("filters") or []
-        if rule.get("operator") == "within"
-        and (rule.get("column") or {}).get("column_name") == column_name
-        and _span_of(rule.get("value"))
+        if (rule.get("column") or {}).get("column_name") == column_name
     ]
-    if len(spans) != 1:
+    if len(on_column) != 1 or on_column[0].get("operator") != "within":
         return None, adhoc_filters
 
-    window = _span_of(spans[0]["value"])
-    if _window_errors({**config, "window": window}):
+    span = on_column[0]
+    window = _span_of(span.get("value"))
+    if not window or _window_errors({**config, "window": window}):
         return None, adhoc_filters
 
-    rest = [rule for rule in group["filters"] if rule is not spans[0]]
+    rest = [rule for rule in group["filters"] if rule is not span]
     adhoc_filters = {key: value for key, value in adhoc_filters.items() if key != query}
     if rest:
         adhoc_filters[query] = {**group, "filters": rest}

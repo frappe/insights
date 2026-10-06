@@ -150,15 +150,24 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
                         "links": {chart.name: f"`{query.name}`.`date`"},
                         "layout": {"i": "2", "x": 0, "y": 0, "w": 4, "h": 1},
                     },
+                    {
+                        "type": "filter",
+                        "filter_name": "Range",
+                        "filter_type": "Date",
+                        "links": {chart.name: f"`{query.name}`.`date`"},
+                        "layout": {"i": "3", "x": 4, "y": 0, "w": 4, "h": 1},
+                    },
                 ],
             }
         ).insert()
         return chart
 
-    def on_dashboard(self, comparisons, operator, value, window=None):
+    def on_dashboard(self, comparisons, operator, value, window=None, range=None):
         """The card as a dashboard filtered on its date column shows it, read on `ANCHOR`."""
         chart = self.make_chart(comparisons, window)
         filters = {"Date": {"operator": operator, "value": value}}
+        if range:
+            filters["Range"] = {"operator": "between", "value": range}
 
         with read_on(ANCHOR), db_connections():
             result = get_chart_data(chart.name, self.dashboard.name, filters=filters, force=True)
@@ -229,6 +238,18 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
 
         self.assertEqual([row["count_0"] for row in result["rows"]], [5])
         # asked, with no span to step back from
+        self.assertEqual(result["comparison_rows"], {"previous": None})
+        self.assertIsNone(result["chart"]["config"]["window"])
+
+    # @feature charts.number-period-from-dashboard
+    def test_a_second_filter_on_the_date_column_keeps_the_span_a_row_filter(self):
+        """Lent beside a range, the span's comparison stretch would be cut by
+        the range: half of July read as "previous month"."""
+        _, _, result = self.on_dashboard(
+            ["previous"], "within", "month to date", range=["2026-07-15", "2026-08-31"]
+        )
+
+        self.assertEqual([row["count_0"] for row in result["rows"]], [3])
         self.assertEqual(result["comparison_rows"], {"previous": None})
         self.assertIsNone(result["chart"]["config"]["window"])
 
