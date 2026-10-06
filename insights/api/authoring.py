@@ -149,6 +149,9 @@ def get_chart_data(
         # so the card reads the span it asked for rather than counting back from
         # the end
         **({"comparison_rows": rows} if (rows := chart.comparison_rows(result["rows"])) else {}),
+        # the Period the dashboard lent a card that states none. The builder
+        # renders the config it is editing, which must not keep it
+        **({"period": period} if (period := chart.flags.dashboard_period) else {}),
         # which permissions narrowed these rows, in the same shape as the
         # reader's card
         **scope,
@@ -451,6 +454,7 @@ def drilled_shape(query, chart_type, config, chart_name, dashboard_items, filter
 
     chart = chart_to_run(chart_type, query, config, chart_name)
     adhoc_filters = route_filters(dashboard_items, chart_name, filters) if chart_name else None
+    adhoc_filters = chart.take_dashboard_period(adhoc_filters)
     adhoc_filters = route_card_filters(chart.name, card_filters, adhoc_filters) if chart_name else None
     return chart, adhoc_filters
 

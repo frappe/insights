@@ -12,7 +12,9 @@ wherever the chart runs, from the config alone.
 The output is `source + config filters + the chart's own summarize/pivot +
 order-by`, in that order. Dashboard filter state is not part of it. It arrives
 as the `adhoc_filters` argument of execution and is applied to the query it
-names.
+names. A span a dashboard lends a Number card with no Period of its own
+(`dashboard_period`) is written into the config before derivation, so
+derivation still reads the config alone.
 
 A span number card also derives a second list, `sparkline_operations`. It
 answers how the number moved rather than what the number is, and the two
@@ -270,6 +272,61 @@ def _period(config: dict) -> dict:
 
     grain = (config.get("date_column") or {}).get("granularity")
     return {"grain": grain} if grain else {}
+
+
+def dashboard_period(
+    chart_type: str, query: str, config: dict | None, adhoc_filters: dict | None
+) -> tuple[dict | None, dict | None]:
+    """The Period a dashboard lends a card that states none, and the filters left
+    once the card has taken it.
+
+    A `within` filter on the card's date column names a span, which is what a
+    Period is. Left as a row filter it would drop the comparison spans, so the
+    card reads it as its Period instead, and the filter no longer applies to it.
+    One such filter, or none is lent: a second span on the same column would cut
+    the comparison spans again.
+    """
+    if chart_type != "Number" or not adhoc_filters or _malformed_slots(config, chart_type):
+        return None, adhoc_filters
+
+    config = _config_for_derivation(config, chart_type)
+    column_name = (config.get("date_column") or {}).get("column_name")
+    group = adhoc_filters.get(query) or {}
+    if _period(config) or not column_name or group.get("logical_operator") != "And":
+        return None, adhoc_filters
+
+    spans = [
+        rule
+        for rule in group.get("filters") or []
+        if rule.get("operator") == "within"
+        and (rule.get("column") or {}).get("column_name") == column_name
+        and _span_of(rule.get("value"))
+    ]
+    if len(spans) != 1:
+        return None, adhoc_filters
+
+    window = _span_of(spans[0]["value"])
+    if _window_errors({**config, "window": window}):
+        return None, adhoc_filters
+
+    rest = [rule for rule in group["filters"] if rule is not spans[0]]
+    adhoc_filters = {key: value for key, value in adhoc_filters.items() if key != query}
+    if rest:
+        adhoc_filters[query] = {**group, "filters": rest}
+
+    return window, adhoc_filters or None
+
+
+def _span_of(value) -> dict | None:
+    """The Period a `within` value names, in the shapes a dashboard filter writes it."""
+    if isinstance(value, list):
+        value = " ".join(str(word) for word in value)
+    if isinstance(value, str):
+        value = {"span": value}
+    if not isinstance(value, dict) or value.get("shift") or not _span_unit(value.get("span")):
+        return None
+
+    return {key: value[key] for key in ("span", "anchor") if value.get(key)}
 
 
 def _window_errors(config: dict) -> list[str]:

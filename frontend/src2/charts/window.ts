@@ -221,6 +221,18 @@ export function periodOf(config: NumberChartConfig): NumberPeriod | undefined {
 }
 
 /**
+ * The chart as the server read it: with the Period a dashboard lent it, when it
+ * is a Number chart that states none of its own.
+ */
+export function withLentPeriod<T extends { chart_type: string; config: any }>(
+	chart: T,
+	period?: NumberPeriod,
+): T {
+	if (!period || chart.chart_type !== 'Number' || periodOf(chart.config)) return chart
+	return { ...chart, config: { ...chart.config, window: period } }
+}
+
+/**
  * The choice a period was written by, or the period itself when nothing here
  * wrote it. Empty when the card reads no period, which the picker shows as its
  * placeholder — there is no "None" to pick, because a date column that groups
