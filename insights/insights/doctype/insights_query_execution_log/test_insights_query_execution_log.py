@@ -33,6 +33,5 @@ class TestInsightsQueryExecutionLog(FrappeTestCase):
 
     # @feature data-store.execution-log-retention
     def test_default_retention_covers_data_store_cleanup_window(self):
-        # prune_unused_tables skips pruning unless the log is older than UNUSED_TABLE_DAYS
         retention = frappe.get_hooks("default_log_clearing_doctypes")["Insights Query Execution Log"][-1]
         self.assertGreater(retention, UNUSED_TABLE_DAYS)
