@@ -181,7 +181,9 @@ def install_custom_fields() -> None:
     """Add the Custom Fields that link desk documents to Insights content.
 
     Idempotent, and run on every migrate. The fields are ours but the doctypes
-    are not, so nothing else restores them if a site loses them.
+    are not, so nothing else restores them if a site loses them. Their module is
+    Insights, so removing the app removes them. A field left behind links a
+    doctype that no longer exists, and the desk document it sits on fails to load.
     """
     new = [
         doctype
@@ -197,6 +199,7 @@ def install_custom_fields() -> None:
                     "fieldtype": "Link",
                     "options": field["options"],
                     "insert_after": field["insert_after"],
+                    "module": "Insights",
                 }
             ]
             for doctype, field in DESK_ISLANDS.items()

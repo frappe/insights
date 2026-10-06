@@ -397,6 +397,15 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertIn(str(folder / "selling" / "selling.json"), files)
         self.assertNotIn(str(folder / "selling" / "notes.json"), files)
 
+    # @feature desk.uninstall
+    def test_the_fields_belong_to_the_insights_module(self):
+        """`remove_app` deletes the Custom Fields of the module it removes, and no others."""
+        for doctype, field in DESK_ISLANDS.items():
+            module = frappe.db.get_value(
+                "Custom Field", {"dt": doctype, "fieldname": field["fieldname"]}, "module"
+            )
+            self.assertEqual(module, "Insights")
+
     # @feature desk.shipped-claim
     def test_an_existing_field_keeps_its_values(self):
         with patch("insights.desk.fill_shipped_claims") as fill:

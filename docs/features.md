@@ -335,6 +335,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | desk.number-card-island | A desk Number Card linked to an Insights chart shows the Insights chart instead of its own number. Desk renders an unlinked one itself. |
 | desk.dangling-claim | A migrate lists each desk Dashboard, Dashboard Chart and Number Card that links to an Insights dashboard or chart that no longer exists, and never fails because of one. |
 | desk.shipped-claim | A desk Dashboard, Dashboard Chart or Number Card an app ships links the Insights content its file names, even when the app was installed before Insights. |
+| desk.uninstall | Removing Insights removes the fields that link desk documents to Insights content, so every desk Dashboard, Dashboard Chart and Number Card still opens. |
 | desk.dashboard-page | `/app/insights-dashboard/<dashboard>` shows that dashboard to a desk user. The route, or a sidebar item's route options, names the dashboard. |
 
 ## data-source
