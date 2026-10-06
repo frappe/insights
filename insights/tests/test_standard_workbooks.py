@@ -104,8 +104,14 @@ def module_folder() -> str:
 
 
 def delete_standard_workbooks():
-    """Delete the rows and the files. A developer-mode save writes a file."""
-    standard_workbooks = frappe.get_all(DT.WORKBOOK, filters={"is_standard": 1}, pluck="name")
+    """Delete the rows and the files. A developer-mode save writes a file.
+
+    Only this module's: a developer-mode delete also deletes the files another
+    installed app ships.
+    """
+    standard_workbooks = frappe.get_all(
+        DT.WORKBOOK, filters={"is_standard": 1, "module": MODULE}, pluck="name"
+    )
     for name in {*standard_workbooks, *frappe.get_all(DT.WORKBOOK, {"name": WORKBOOK}, pluck="name")}:
         with developer_mode():
             frappe.delete_doc(DT.WORKBOOK, name, force=True, delete_permanently=True)
