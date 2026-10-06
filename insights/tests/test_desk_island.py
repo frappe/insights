@@ -8,8 +8,10 @@ from unittest.mock import patch
 import frappe
 import frappe.client
 from frappe.desk.form.load import getdoc
+from frappe.utils import get_url_to_form, set_request
 from frappe.utils.island import get_ui_islands
 
+from insights.api import get_doc, run_doc_method
 from insights.desk import (
     DESK_ISLANDS,
     boot_app_path,
@@ -22,10 +24,13 @@ from insights.desk import (
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
+    USER_1,
+    as_user,
     create_test_chart,
     create_test_dashboard,
     create_test_query,
     create_test_workbook,
+    create_user,
 )
 
 OWNER = "Administrator"
@@ -95,6 +100,21 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         frappe.local.response = frappe._dict({"docs": []})
         getdoc(doctype, name)
         return frappe.response.docs[0].get("__onload") or {}
+
+    def show_in_desk_as(self, user, docs):
+        """What the builder menu gets from Show in Desk through `run_doc_method`."""
+        set_request(method="POST", path="/api/method/insights.api.run_doc_method")
+        frappe.local.response = frappe._dict({"docs": []})
+        with as_user(user):
+            return run_doc_method("show_in_desk", frappe.as_json(docs))
+
+    def reads(self, user, doctype, name):
+        """Whether `user` may open a desk document, and finds it in its list."""
+        with as_user(user):
+            return (
+                frappe.has_permission(doctype, doc=frappe.get_doc(doctype, name)),
+                name in frappe.get_list(doctype, filters={"name": name}, pluck="name"),
+            )
 
     # @feature desk.dashboard-page
     def test_the_dashboard_page_is_rendered_by_an_island_the_build_ships(self):
@@ -411,3 +431,91 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         with patch("insights.desk.fill_shipped_claims") as fill:
             install_custom_fields()
         fill.assert_not_called()
+
+    # @feature desk.show-in-desk
+    def test_show_in_desk_makes_a_dashboard_chart_that_shows_the_chart(self):
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Shown")
+
+        shown = chart.show_in_desk()
+
+        self.assertEqual(shown["doctype"], "Dashboard Chart")
+        self.assertEqual(
+            self.onload_of("Dashboard Chart", shown["name"])["island"],
+            {"name": "insights.chart", "props": {"chart": chart.name}},
+        )
+        self.assertEqual(shown["url"], get_url_to_form("Dashboard Chart", shown["name"]))
+
+    # @feature desk.show-in-desk
+    def test_show_in_desk_makes_a_number_card_for_a_number_chart(self):
+        chart = create_test_chart(
+            OWNER, self.dashboard.workbook, title="Desk Island Test Shown Number", chart_type="Number"
+        )
+
+        shown = chart.show_in_desk()
+
+        self.assertEqual(shown["doctype"], "Number Card")
+        self.assertEqual(
+            self.onload_of("Number Card", shown["name"])["island"],
+            {"name": "insights.chart", "props": {"chart": chart.name}},
+        )
+
+    # @feature desk.show-in-desk
+    def test_show_in_desk_reads_the_saved_chart_not_the_request(self):
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Shown Saved")
+        sent = {**chart.as_dict(), "chart_type": "Number", "title": "Desk Island Test Shown Sent"}
+
+        shown = self.show_in_desk_as(OWNER, sent)
+
+        self.assertEqual(shown["doctype"], "Dashboard Chart")
+        self.assertEqual(shown["name"], "Desk Island Test Shown Saved")
+
+    # @feature desk.show-in-desk
+    def test_the_builder_offers_show_in_desk_to_whoever_may_create_desk_charts(self):
+        reader = create_user(USER_1, roles=["Insights User", "Desk User"]).name
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Shown Offered")
+        frappe.share.add(chart.doctype, chart.name, user=reader, read=1, notify=0)
+
+        with as_user(reader):
+            self.assertFalse(get_doc(chart.doctype, chart.name)["can_show_in_desk"])
+        frappe.get_doc("User", reader).add_roles("Dashboard Manager")
+        with as_user(reader):
+            self.assertTrue(get_doc(chart.doctype, chart.name)["can_show_in_desk"])
+
+    # @feature desk.show-in-desk
+    def test_show_in_desk_again_opens_what_it_made(self):
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Shown Twice")
+
+        self.assertEqual(chart.show_in_desk(), chart.show_in_desk())
+
+    # @feature desk.show-in-desk
+    def test_charts_with_one_title_each_get_their_own_dashboard_chart(self):
+        """A Dashboard Chart is named by its title, and two charts can share one."""
+        first = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Same Title")
+        second = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Same Title")
+
+        self.assertNotEqual(first.show_in_desk()["name"], second.show_in_desk()["name"])
+
+    # @feature desk.show-in-desk
+    def test_only_readers_of_the_chart_see_what_show_in_desk_made(self):
+        reader = create_user(USER_1, roles=["Insights User", "Desk User"]).name
+        for chart_type in ("Bar", "Number"):
+            chart = create_test_chart(
+                OWNER,
+                self.dashboard.workbook,
+                title=f"Desk Island Test Private {chart_type}",
+                chart_type=chart_type,
+            )
+            shown = chart.show_in_desk()
+            self.assertEqual(self.reads(reader, shown["doctype"], shown["name"]), (False, False), chart_type)
+
+            frappe.share.add(chart.doctype, chart.name, user=reader, read=1, notify=0)
+            self.assertEqual(self.reads(reader, shown["doctype"], shown["name"]), (True, True), chart_type)
+
+    # @feature desk.show-in-desk
+    def test_a_desk_chart_claimed_by_hand_keeps_the_readers_of_what_it_counts(self):
+        reader = create_user(USER_1, roles=["Insights User", "Desk User"]).name
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Private Claimed")
+
+        self.assertEqual(
+            self.reads(reader, "Dashboard Chart", self.desk_chart(chart.name).name), (True, True)
+        )

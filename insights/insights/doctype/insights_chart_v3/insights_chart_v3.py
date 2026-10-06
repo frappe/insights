@@ -7,7 +7,7 @@ from frappe.model.document import Document
 from frappe.utils import get_datetime, getdate
 
 from insights import standard, user_permissions
-from insights.desk import claims_on, refuse_delete_while_claimed
+from insights.desk import can_show_in_desk, claims_on, refuse_delete_while_claimed, show_in_desk
 from insights.insights.doctype.insights_chart_v3.chart_drill import check_rows
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     adjacent_bucket,
@@ -78,6 +78,7 @@ class InsightsChartv3(Document):
         d.read_only = not can_write(self)
         d.can_share = can_share(self)
         d.can_move_run_as_owner = may_move_run_as_owner(self)
+        d.can_show_in_desk = can_show_in_desk(self)
         return d
 
     def validate(self):
@@ -464,6 +465,10 @@ class InsightsChartv3(Document):
         from insights.permissions import published_reach
 
         return published_reach(self)
+
+    @frappe.whitelist(methods=["POST"])
+    def show_in_desk(self) -> dict:
+        return show_in_desk(self)
 
     @frappe.whitelist()
     def export(self):

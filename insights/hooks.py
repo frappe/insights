@@ -128,6 +128,8 @@ permission_query_conditions = {
     "Insights Dashboard v3": "insights.permissions.get_permission_query_conditions",
     "Insights Alert": "insights.permissions.get_permission_query_conditions",
     "Insights Folder": "insights.permissions.get_permission_query_conditions",
+    "Dashboard Chart": "insights.desk.get_permission_query_conditions",
+    "Number Card": "insights.desk.get_permission_query_conditions",
 }
 
 has_permission = {
@@ -140,6 +142,8 @@ has_permission = {
     "Insights Dashboard v3": "insights.permissions.has_doc_permission",
     "Insights Alert": "insights.permissions.has_doc_permission",
     "Insights Folder": "insights.permissions.has_doc_permission",
+    "Dashboard Chart": "insights.desk.has_permission",
+    "Number Card": "insights.desk.has_permission",
 }
 
 # DocType Class
