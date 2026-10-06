@@ -30,3 +30,8 @@ class InsightsQueryExecutionLog(Document):
         # data store cleanup skip pruning: the default stays well above it.
         table = frappe.qb.DocType("Insights Query Execution Log")
         frappe.db.delete(table, filters=(table.creation < (Now() - Interval(days=days))))
+
+
+def on_doctype_update():
+    # Tables created before frappe 16 have no creation index, and clear_old_logs deletes by creation.
+    frappe.db.add_index("Insights Query Execution Log", ["creation"], index_name="creation")
