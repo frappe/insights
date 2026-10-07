@@ -27,6 +27,19 @@ export function hasBarsOnBothAxes(
 	)
 }
 
+/**
+ * `normalize` stacks by itself and `overlap` unstacks, and a Line's form offers
+ * neither, so a flag the Bar form left would outrank the switch.
+ */
+export function setStack(
+	y_axis: { stack?: boolean; normalize?: boolean; overlap?: boolean },
+	on: boolean,
+) {
+	y_axis.stack = on
+	if (on) y_axis.overlap = false
+	else y_axis.normalize = false
+}
+
 // Every chart type reads a fixed set of slots off the config, and the validator and the
 // config forms reach into them without guarding. A type switch replaces the config
 // wholesale, so the incoming type's slots have to exist before anything reads them.

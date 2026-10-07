@@ -3,7 +3,7 @@ import { BarChart, LineChart, type ChartTokens } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
 import type { ReferenceLine } from '../../types/chart.types'
 import { fitLine, takesTrendLine } from './axis'
-import { normalizeChartConfig } from '../helpers'
+import { normalizeChartConfig, setStack } from '../helpers'
 import { adaptChart } from './index'
 import { axisChart, type AxisChartSpec } from './fixtures'
 import { buildAxisChartOption } from '../../../node_modules/frappe-ui/src/charts/axisChartOptions'
@@ -412,6 +412,32 @@ describe('the value axis', () => {
 				stacked: true,
 			}).stacked,
 		).toBe(true)
+	})
+
+	// A Bar switched to a Line keeps the Bar form's flags, and the Line form has no
+	// Normalize or Overlap to clear them with.
+	// @feature charts.line-stack
+	it("stacks a line chart's areas, or unstacks them, whatever the bar options left", () => {
+		const unstacked = axisChart({
+			type: 'Line',
+			dimension: 'region',
+			measures: ['revenue', 'refunds'],
+			area: true,
+			stacked: true,
+			normalized: true,
+		})
+		setStack((unstacked.config as any).y_axis, false)
+		expect(adaptChart(unstacked)?.props.stacked).toBeUndefined()
+
+		const stacked = axisChart({
+			type: 'Line',
+			dimension: 'region',
+			measures: ['revenue', 'refunds'],
+			area: true,
+			overlap: true,
+		})
+		setStack((stacked.config as any).y_axis, true)
+		expect(adaptChart(stacked)?.props.stacked).toBe(true)
 	})
 
 	// @feature charts.axis-min-max

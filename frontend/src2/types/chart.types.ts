@@ -141,6 +141,7 @@ export type YAxisLine = Series & {
 	smooth?: boolean
 	show_data_points?: boolean
 	show_area?: boolean
+	stack?: boolean
 }
 export type SeriesLine = Series & {
 	type: 'line'
