@@ -54,23 +54,27 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 	// back from here — see `comparisonNumber`.
 	const current = rows[rows.length - 1]
 
-	// A dashboard cell names the one reading it shows. A surface that names none
-	// — the workbook editor — previews them all.
-	const shown = input.reading ? [input.reading] : numberReadings(config)
-	const cards = shown.map((reading) =>
-		cardFor(config, rows, reading, input.comparisonRows, input.sparklineResult?.rows),
-	)
+	// A dashboard cell names the one reading it shows. A surface whose host draws
+	// the card shows one too, the first: a reading with no title of its own can
+	// only be the one shown. A surface that names none — the workbook editor —
+	// previews them all.
+	const one = input.reading ?? (input.card === false ? numberReadings(config)[0] : undefined)
+	const shown = one ? [one] : numberReadings(config)
+	const cards = shown.map((reading) => ({
+		...cardFor(config, rows, reading, input.comparisonRows, input.sparklineResult?.rows),
+		card: input.card,
+	}))
 
 	// Nothing to drill into until there is a row behind the reading, and the card
 	// reads as clickable on the same answer: a pointer over an empty or failed
 	// card promised a dialog no click could open.
 	const drillable = (input.drillable ?? true) && Boolean(current)
 
-	// A surface that names no reading gets the cards at the size a cell gives
+	// A surface that shows every reading gets the cards at the size a cell gives
 	// them, so the preview is what the dashboard shows and not a guess at it.
 	const filler: ChartFiller = {
 		component: NumberCards,
-		props: { cards, preview: !input.reading, drillable },
+		props: { cards, preview: !one, drillable },
 	}
 	if (drillable) {
 		filler.drillDown = {

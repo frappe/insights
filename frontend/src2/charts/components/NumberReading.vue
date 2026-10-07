@@ -62,6 +62,8 @@ const retryable = computed(
 // source behind it supports drills. A public link's source does not, so the
 // card there is not shown as something to click.
 const drillable = computed(() => props.drillable !== false && !props.card.missing)
+// The host draws the card and its label. See `ChartAdapterInput`.
+const cardless = computed(() => props.card.card === false)
 </script>
 
 <template>
@@ -77,9 +79,21 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 		:title="card.title"
 		@click="drillable && emit('cardClick', { column: card.column })"
 	>
+		<!-- Card-less, the card's title row stays as an empty row, and `-mt-1.5`
+		     takes back the gap under it so the number starts where the host's
+		     own number would. The number and its comparison take the size of the
+		     host's own: `text-3xl-semibold` is the class `NumberCard` prints its
+		     value and loading line in, `text-sm` its comparison row. The host
+		     sizes its body to the card, so the card takes no `h-full`: against
+		     that height it would cut the `-mt-1.5` off its last row. -->
 		<NumberCard
 			v-bind="reading"
-			class="h-full !py-2"
+			:class="
+				cardless
+					? '-mt-1.5 [&_.text-3xl-semibold]:text-xl-semibold [&_.text-sm]:text-p-base [&_.text-sm-medium]:text-p-base-medium'
+					: 'h-full !py-2'
+			"
+			:title="cardless ? '' : reading.title"
 			:loading="props.loading && !card.missing"
 			:error="failure?.headline"
 		>
@@ -93,14 +107,48 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 			<!-- No reason under it: the cell's height is the card's own and any
 			     taller block is a block the card cuts in half, so the whole of it
 			     waits on hover. -->
+			<!-- Card-less, the title row is empty and sits on the host card's top
+			     edge, which cuts what stands in it. There is no number beside a
+			     failure, so the retry stands beside the message. -->
 			<template v-if="failure" #error>
-				<ChartStateMessage :failure="failure" />
+				<div v-if="cardless" class="flex min-w-0 items-center gap-1.5">
+					<ChartStateMessage :failure="failure" />
+					<Button
+						v-if="retryable"
+						variant="ghost"
+						size="xs"
+						:title="__('Retry')"
+						@click.stop="emit('retry')"
+					>
+						<template #icon>
+							<RefreshCcw class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+						</template>
+					</Button>
+				</div>
+				<ChartStateMessage v-else :failure="failure" />
 			</template>
 
 			<!-- An empty `title` ends the card's: a mark's own tooltip is what shows
 			     when the reader points at it. -->
-			<template v-if="card.info || $slots['title-suffix']" #title-suffix>
+			<template v-if="!cardless && (card.info || $slots['title-suffix'])" #title-suffix>
 				<span class="flex items-center gap-1.5" title="">
+					<TitleMark v-if="card.info" :icon="InfoIcon" :label="__('Info')">
+						<div class="whitespace-pre-line">{{ card.info }}</div>
+					</TitleMark>
+					<slot name="title-suffix" />
+				</span>
+			</template>
+
+			<!-- Card-less, the marks follow the comparison instead, for the same
+			     reason as the retry. The caption is `NumberCard`'s own. -->
+			<template
+				v-if="cardless && (card.info || $slots['title-suffix'])"
+				#caption="{ caption }"
+			>
+				<span v-if="caption" :title="caption" class="truncate text-ink-gray-5">
+					{{ caption }}
+				</span>
+				<span class="flex shrink-0 items-center gap-1.5" title="">
 					<TitleMark v-if="card.info" :icon="InfoIcon" :label="__('Info')">
 						<div class="whitespace-pre-line">{{ card.info }}</div>
 					</TitleMark>
@@ -115,7 +163,7 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 			     padded less at the top. `-me-1.5` gives back the button's own
 			     inset, so it is the glyph and not its hit box that stands the
 			     card's own distance from the edge. -->
-			<template v-if="retryable || $slots.actions" #actions>
+			<template v-if="(retryable && !cardless) || $slots.actions" #actions>
 				<!-- The host's own acts, beside the card's. A click on one of them
 				     is not a click on the reading, so it stops here rather than
 				     opening a drill. See `NumberCards`. They come before the retry
@@ -126,7 +174,7 @@ const drillable = computed(() => props.drillable !== false && !props.card.missin
 				</span>
 
 				<Button
-					v-if="retryable"
+					v-if="retryable && !cardless"
 					class="-me-1.5"
 					variant="ghost"
 					size="xs"

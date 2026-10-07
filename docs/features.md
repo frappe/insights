@@ -332,7 +332,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 |---|---|
 | desk.dashboard-island | A desk Dashboard linked to an Insights dashboard shows the Insights dashboard instead of its own. Desk renders an unlinked one itself. |
 | desk.chart-island | A desk Dashboard Chart linked to an Insights chart shows the Insights chart instead of its own. Desk renders an unlinked one itself. |
-| desk.number-card-island | A desk Number Card linked to an Insights chart shows the Insights chart instead of its own number. Desk renders an unlinked one itself. |
+| desk.number-card-island | A desk Number Card linked to an Insights chart shows the Insights chart instead of its own number. A Number chart shows its first reading in the card's own number style, with no second title or border. Desk renders an unlinked one itself. |
 | desk.show-in-desk | "Show in Desk" on a saved chart opens a desk Number Card for a Number chart, or a Dashboard Chart for any other, that shows the chart. It opens the one already made if there is one. Only the chart's readers see it. |
 | desk.dangling-claim | A migrate lists each desk Dashboard, Dashboard Chart and Number Card that links to an Insights dashboard or chart that no longer exists, and never fails because of one. |
 | desk.shipped-claim | A desk Dashboard, Dashboard Chart or Number Card an app ships links the Insights content its file names, even when the app was installed before Insights. |

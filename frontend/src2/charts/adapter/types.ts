@@ -52,6 +52,11 @@ export type ChartAdapterInput = {
 	 */
 	reading?: string
 	/**
+	 * `false`: the host draws the card and its label, so the filler draws
+	 * neither.
+	 */
+	card?: boolean
+	/**
 	 * The surface cannot change the Chart. A control that rewrites the config —
 	 * a table's sort — is left out rather than rendered dead, unless `sort`
 	 * gives the reader one of their own.

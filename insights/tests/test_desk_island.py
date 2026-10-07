@@ -180,7 +180,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         name = self.desk_card(self.chart.name).name
         self.assertEqual(
             self.onload_of("Number Card", name)["island"],
-            {"name": "insights.chart", "props": {"chart": self.chart.name}},
+            {"name": "insights.chart", "props": {"chart": self.chart.name, "card": False}},
         )
 
     # @feature desk.number-card-island
@@ -456,7 +456,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertEqual(shown["doctype"], "Number Card")
         self.assertEqual(
             self.onload_of("Number Card", shown["name"])["island"],
-            {"name": "insights.chart", "props": {"chart": chart.name}},
+            {"name": "insights.chart", "props": {"chart": chart.name, "card": False}},
         )
 
     # @feature desk.show-in-desk

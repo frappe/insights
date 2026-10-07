@@ -58,6 +58,24 @@ describe('a Number Chart with several values', () => {
 		expect(cell.props.preview).toBe(false)
 	})
 
+	// @feature desk.number-card-island
+	it('shows only the first reading where the host draws the card', () => {
+		// What `ChartIsland` renders in a desk Number Card.
+		const spec = {
+			values: [
+				{ name: 'Revenue', readings: [100] },
+				{ name: 'Profit', readings: [40] },
+			],
+		}
+		const one = adaptChart({ ...numberChart(spec), card: false })!.props
+		expect(one.cards.map((card: any) => [card.title, card.card])).toEqual([['Revenue', false]])
+		expect(one.preview).toBe(false)
+
+		const all = adapt(spec).props
+		expect(all.cards.map((card: any) => card.title)).toEqual(['Revenue', 'Profit'])
+		expect(all.preview).toBe(true)
+	})
+
 	// @feature charts.number-readings
 	it('renders the cards itself, so the chrome renders none around them', () => {
 		expect(rendersOwnCards('Number')).toBe(true)

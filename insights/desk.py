@@ -38,9 +38,9 @@ from frappe.utils import get_url_to_form
 
 from insights.hooks import insights_path
 
-# desk doctype -> the Custom Field that links it to Insights content, and the
-# island that renders it. Another desk doctype needs one entry here and one
-# line in `hooks.py`.
+# desk doctype -> the Custom Field that links it to Insights content, the
+# island that renders it, and any props the island gets beside the link.
+# Another desk doctype needs one entry here and one line in `hooks.py`.
 DESK_ISLANDS = {
     "Dashboard": {
         "fieldname": "insights_dashboard",
@@ -68,6 +68,7 @@ DESK_ISLANDS = {
         "folder": "number_card",
         "island": "insights.chart",
         "prop": "chart",
+        "props": {"card": False},
     },
 }
 
@@ -269,7 +270,7 @@ def island_for(doc) -> dict | None:
     if not reference:
         return None
 
-    return {"name": field["island"], "props": {field["prop"]: reference}}
+    return {"name": field["island"], "props": {field["prop"]: reference, **field.get("props", {})}}
 
 
 def install_custom_fields() -> None:
