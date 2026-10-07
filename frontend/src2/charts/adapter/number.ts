@@ -210,7 +210,10 @@ function readingOf(
 				card.deltaSuffix = '%'
 			}
 			const label = comparison.label || defaultComparisonLabel(comparison, config)
-			if (label) card.deltaCaption = label
+			// The card prints no figure for a missing change, and a bare caption
+			// reads as though the change were the caption itself.
+			const caption = card.delta === null ? ['—', label].filter(Boolean).join(' ') : label
+			if (caption) card.deltaCaption = caption
 			if (negativeIsBetter) card.negativeIsBetter = true
 		}
 	}

@@ -316,7 +316,7 @@ describe('the comparison', () => {
 	// @feature charts.number-comparison
 	it('says what it would have compared against when that window came back empty', () => {
 		// The question stands — the card asked it and the server ran it — so the
-		// caption prints with no figure in front of it.
+		// caption prints with a dash where the figure would be.
 		const card = cardsOf({
 			values: [{ name: 'Revenue', readings: [300], comparison: previousPeriod }],
 			period: { name: 'created_at', type: 'Datetime' },
@@ -324,7 +324,7 @@ describe('the comparison', () => {
 			comparisonRows: { previous: null },
 		})[0]
 		expect(card.delta).toBeNull()
-		expect(card.deltaCaption).toBe('vs same period last month')
+		expect(card.deltaCaption).toBe('— vs same period last month')
 	})
 
 	// @feature charts.number-comparison
@@ -472,14 +472,18 @@ describe('the comparison', () => {
 			})[0].delta,
 		).toBeNull()
 		// A change from zero has no percentage.
-		expect(
-			cardsOf({
-				values: [
-					{ name: 'Revenue', readings: [0, 300], comparison: { source: 'previous' } },
-				],
-				period: monthly,
-			})[0].delta,
-		).toBeNull()
+		const fromZero = cardsOf({
+			values: [
+				{
+					name: 'Revenue',
+					readings: [0, 300],
+					comparison: { source: 'previous', label: 'vs last FY' },
+				},
+			],
+			period: monthly,
+		})[0]
+		expect(fromZero.delta).toBeNull()
+		expect(fromZero.deltaCaption).toBe('— vs last FY')
 	})
 
 	// @feature charts.number-comparison
