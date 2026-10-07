@@ -140,6 +140,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.bar-overlap | A user overlaps bars instead of grouping them. |
 | charts.line-smooth | A user plots a line series curved. |
 | charts.line-area | A user fills the area under a line. |
+| charts.line-stack | A user stacks or unstacks a line chart's areas and bars; a flag the bar options left cannot keep them stacked. |
 | charts.line-data-points | A user shows a marker on each point of a line. |
 | charts.reference-lines | A user plots a reference line at a constant or at the average, median, min, max or sum of a measure, with a label, color and dash. |
 | charts.trend-line | A user turns on a series' trend line on a date or number x axis, unless the series is stacked with another: the straight fit through its points where the axis plots them, drawn dashed in the series' color. |

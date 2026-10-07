@@ -704,9 +704,7 @@ export function takesTrendLine(
 ): boolean {
 	if (plottedXAxisType(config.x_axis?.dimension, horizontal) === 'category') return false
 	// the chart's own stack, which v2 is handed, reads every Series it holds
-	const stacked = Boolean(
-		stackingFor(config.y_axis, hasBarsOnBothAxes(config.y_axis?.series, mark, horizontal)),
-	)
+	const stacked = isStacked(config, mark, horizontal)
 	const all = (config.y_axis?.series || []).filter((s) => s.measure?.measure_name)
 	const own = markOf(config, series, mark, horizontal)
 	const others = all
@@ -717,6 +715,23 @@ export function takesTrendLine(
 	// changes it, so a split always counts as stacked.
 	if (config.split_by?.dimension?.column_name) others.push(own)
 	return !stacksWithAnother(stacked, own, others)
+}
+
+/** Whether the chart is handed to v2 stacked, whatever flags the config saved. */
+export function isStacked(config: MixedChartConfig, mark: ChartMark, horizontal: boolean): boolean {
+	const barsOnBothAxes = hasBarsOnBothAxes(config.y_axis?.series, mark, horizontal)
+	return Boolean(stackingFor(config.y_axis, barsOnBothAxes))
+}
+
+/** Whether a stack changes anything: v2 never stacks a line. */
+export function plotsStackable(
+	config: MixedChartConfig,
+	mark: ChartMark,
+	horizontal: boolean,
+): boolean {
+	return (config.y_axis?.series || []).some(
+		(series) => markOf(config, series, mark, horizontal) !== 'line',
+	)
 }
 
 /**
