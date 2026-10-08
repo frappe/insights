@@ -503,7 +503,7 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         rows = pd.DataFrame(
             {
                 "name": names,
-                "creation": pd.to_datetime([f"2026-02-0{i + 1} 10:00:00.123456" for i in range(len(names))]),
+                "creation": pd.to_datetime([f"2026-02-0{ord(name) - 96} 10:00:00.123456" for name in names]),
             }
         )
         with patch.object(WarehouseTable, "get_remote_table", return_value=ibis.memtable(rows)):
@@ -605,3 +605,15 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.run_import(["a", "b"])
 
         self.assertEqual(self.stored_names(), ["a", "b"])
+
+    # @feature data-store.import-cursor
+    def test_a_sync_from_change_on_an_incremental_table_keeps_its_rows(self):
+        self.run_import(["a", "b"])
+
+        doc = frappe.get_doc("Insights Table v3", self.table_doc)
+        doc.sync_from = "2025-01-01 00:00:00"
+        doc.save(ignore_permissions=True)
+        # the source has purged a since
+        self.run_import(["b", "c"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
