@@ -410,8 +410,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.list | An admin browses the stored tables and searches them by name. |
 | data-store.import-atomic | A failed import leaves the stored table as it was and no other table behind. |
 | data-store.skip-column | An import leaves out a table's skipped columns and removes them from the stored table. |
-| data-store.column-readers | A column counts as read when a query, chart, dashboard filter or alert on its table names it, through any number of queries; a query with no projection reads none. |
-| data-store.skip-unread-column | An admin skips only a column no reader names and the incremental sync does not need, and a skipped column leaves the table's column list. |
+| data-store.column-readers | A column counts as read when a query, chart, dashboard filter, alert or team restriction on its table names it, through any number of queries; a query with no projection reads none. |
+| data-store.skip-unread-column | An admin skips only a column no reader names and the import and desk permissions do not need, and a skipped column leaves the table's column list. |
 | data-store.import-cursor | An incremental import's cursor describes what is in the store, not what a run intended. |
 | data-store.import-script-sandbox | An import job's script reads Frappe data, calls its client and inserts into its table; it cannot write to the site, enqueue a job, call a method, send mail or register a commit hook. |
 | data-store.failed-import-notice | A reader is told when a table's newest import failed, and nothing while one runs or a retry is queued. |

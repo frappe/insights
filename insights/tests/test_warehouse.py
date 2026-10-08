@@ -20,6 +20,7 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WarehouseTable,
     WarehouseTableImporter,
     WarehouseTableWriter,
+    duckdb_transaction,
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
@@ -92,6 +93,13 @@ class TestWarehouse(InsightsIntegrationTestCase):
         rows = db.table(table_name).order_by("id").execute()
         rows["modified"] = rows["modified"].dt.strftime("%Y-%m-%d %H:%M:%S")
         return rows.to_dict("records")
+
+    # @feature data-store.import-atomic
+    def test_a_failed_write_reports_its_own_error_when_the_rollback_fails_too(self):
+        with self.warehouse_db() as db, self.assertRaisesRegex(ValueError, "the write failed"):
+            with duckdb_transaction(db):
+                db.raw_sql("COMMIT")
+                raise ValueError("the write failed")
 
     # @feature data-store.import-table
     def test_writer_replace_mode(self):

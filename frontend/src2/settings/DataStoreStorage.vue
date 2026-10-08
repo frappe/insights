@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useTimeAgo } from '@vueuse/core'
 import { Alert, call, LoadingIndicator, toast } from 'frappe-ui'
+import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import StackedBar from '../components/StackedBar.vue'
 import dayjs from '../helpers/dayjs'
 import { showErrorToast } from '../helpers'
 import { __ } from '../translation'
 import {
+	cleanupReason,
 	DataStoreStorage,
 	formatBytes,
 	giveBackItems,
@@ -24,6 +26,7 @@ const POLL_INTERVAL = 3000
 const storage = ref<DataStoreStorage | null>(null)
 const loading = ref(true)
 let pollTimer: ReturnType<typeof setTimeout> | undefined
+let unmounted = false
 
 function load() {
 	return call<DataStoreStorage>('insights.api.data_store.get_storage')
@@ -34,12 +37,15 @@ function load() {
 
 function pollWhileMeasuring(measuredOn: string | null) {
 	clearTimeout(pollTimer)
-	if (!storage.value?.measuring || storage.value.measured_on !== measuredOn) return
+	if (unmounted || !storage.value?.measuring || storage.value.measured_on !== measuredOn) return
 	pollTimer = setTimeout(() => load().then(() => pollWhileMeasuring(measuredOn)), POLL_INTERVAL)
 }
 
 load().then(() => pollWhileMeasuring(storage.value?.measured_on ?? null))
-onBeforeUnmount(() => clearTimeout(pollTimer))
+onBeforeUnmount(() => {
+	unmounted = true
+	clearTimeout(pollTimer)
+})
 
 const measuring = computed(() => Boolean(storage.value?.measuring))
 const measuredAgo = useTimeAgo(() => storage.value?.measured_on || '')
@@ -79,7 +85,7 @@ function removeTable(table: StoredTable) {
 		dt: 'Insights Table v3',
 		dn: table.name,
 		method: 'clear_warehouse_data',
-	}).then(() => toast.success(__('{0} removed from the data store', table.label)))
+	}).then(() => toast.success(__('{0} removed from the Data Store', table.label)))
 }
 
 function skipMessage(table: StoredTable, column: StoredColumn) {
@@ -92,7 +98,7 @@ function skipMessage(table: StoredTable, column: StoredColumn) {
 
 function removeMessage(table: StoredTable) {
 	return __(
-		'{0} is removed from the data store. It imports incrementally, so rows the source no longer holds cannot be imported again.',
+		'{0} is removed from the Data Store. It imports incrementally, so rows the source no longer holds cannot be imported again.',
 		table.label,
 	)
 }
@@ -113,17 +119,29 @@ const giveBackBytes = computed(() => giveBack.value.reduce((sum, item) => sum + 
 
 const largestTable = computed(() => {
 	const tables = storage.value?.tables || []
-	const leftover = leftoverBytes.value
-	return Math.max(leftover, ...tables.map((table) => table.bytes), 1)
+	return Math.max(cleanupBytes.value, ...tables.map((table) => table.bytes), 1)
 })
 
-const leftoverBytes = computed(() =>
-	(storage.value?.leftover_tables || []).reduce((sum, table) => sum + table.bytes, 0),
+const cleanupTables = computed(() =>
+	[...(storage.value?.cleanup_tables || [])].sort((a, b) => b.bytes - a.bytes),
 )
-
-const leftoverSegments = computed(() => [
-	groupSegment('leftover', leftoverBytes.value, storage.value?.unread_days ?? 0),
+const cleanupBytes = computed(() => cleanupTables.value.reduce((sum, t) => sum + t.bytes, 0))
+const cleanupSegments = computed(() => [
+	groupSegment('cleanup', cleanupBytes.value, storage.value?.unread_days ?? 0),
 ])
+const cleanupExpanded = ref(false)
+
+const cleanupTitle = computed(() => {
+	const count = cleanupTables.value.length
+	if (storage.value?.cleanup.stopped) {
+		return count === 1
+			? __('1 table the weekly cleanup would remove')
+			: __('{0} tables the weekly cleanup would remove', String(count))
+	}
+	return count === 1
+		? __('1 table the weekly cleanup removes')
+		: __('{0} tables the weekly cleanup removes', String(count))
+})
 </script>
 
 <template>
@@ -153,7 +171,7 @@ const leftoverSegments = computed(() => [
 		>
 			<div class="flex flex-col gap-1">
 				<span class="text-base-medium text-ink-gray-8">
-					{{ __('The data store has not been measured yet') }}
+					{{ __('The Data Store has not been measured yet') }}
 				</span>
 				<span class="text-p-sm text-ink-gray-5">
 					{{
@@ -264,7 +282,7 @@ const leftoverSegments = computed(() => [
 				</div>
 			</div>
 
-			<div v-if="storage.tables.length || leftoverBytes" class="flex flex-col gap-2">
+			<div v-if="storage.tables.length || cleanupTables.length" class="flex flex-col gap-2">
 				<h3 class="text-base-semibold text-ink-gray-8">{{ __('Tables') }}</h3>
 				<div class="flex flex-col divide-y divide-outline-gray-1">
 					<StorageTableRow
@@ -277,26 +295,59 @@ const leftoverSegments = computed(() => [
 						:skip-message="skipMessage"
 						@changed="load"
 					/>
-					<div v-if="leftoverBytes" class="flex items-center gap-3 py-2 pl-9">
-						<div class="flex min-w-0 flex-1 flex-col">
-							<span class="truncate text-base-medium text-ink-gray-8">
-								{{
-									__(
-										'{0} leftover import tables',
-										String(storage.leftover_tables.length),
-									)
-								}}
-							</span>
-							<span class="truncate text-p-sm text-ink-gray-5">
-								{{ __('The weekly cleanup removes these') }}
+					<div v-if="cleanupTables.length" class="flex flex-col">
+						<div
+							class="flex cursor-pointer items-center gap-3 py-2"
+							@click="cleanupExpanded = !cleanupExpanded"
+						>
+							<Button
+								variant="ghost"
+								:icon="cleanupExpanded ? ChevronDown : ChevronRight"
+								:aria-label="cleanupExpanded ? __('Collapse') : __('Expand')"
+								@click.stop="cleanupExpanded = !cleanupExpanded"
+							/>
+							<div class="flex min-w-0 flex-1 flex-col">
+								<span class="truncate text-base-medium text-ink-gray-8">
+									{{ cleanupTitle }}
+								</span>
+								<span
+									v-if="storage.cleanup.stopped"
+									class="truncate text-p-sm text-ink-gray-5"
+								>
+									{{ __('The weekly cleanup is paused, so these stay') }}
+								</span>
+							</div>
+							<div class="w-1/3">
+								<StackedBar :segments="cleanupSegments" :max="largestTable" />
+							</div>
+							<span class="w-16 text-right text-base tabular-nums text-ink-gray-7">
+								{{ formatBytes(cleanupBytes) }}
 							</span>
 						</div>
-						<div class="w-1/3">
-							<StackedBar :segments="leftoverSegments" :max="largestTable" />
+						<div
+							v-if="cleanupExpanded"
+							class="mb-2 ml-9 flex flex-col divide-y divide-outline-gray-1"
+						>
+							<div
+								v-for="t in cleanupTables"
+								:key="`${t.schema}.${t.table}`"
+								class="flex h-9 items-center gap-3"
+							>
+								<span
+									class="min-w-0 flex-1 truncate font-mono text-sm text-ink-gray-7"
+								>
+									{{ t.schema }}.{{ t.table }}
+								</span>
+								<span class="w-56 truncate text-p-sm text-ink-gray-5">
+									{{ cleanupReason(t.reason) }}
+								</span>
+								<span
+									class="w-16 text-right text-base tabular-nums text-ink-gray-7"
+								>
+									{{ formatBytes(t.bytes) }}
+								</span>
+							</div>
 						</div>
-						<span class="w-16 text-right text-base tabular-nums text-ink-gray-7">
-							{{ formatBytes(leftoverBytes) }}
-						</span>
 					</div>
 				</div>
 			</div>

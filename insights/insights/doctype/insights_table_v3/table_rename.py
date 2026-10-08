@@ -205,17 +205,18 @@ def move_grants(old_name: str, new_name: str) -> None:
 
 
 def rename_warehouse_table(data_source: str, old_table: str, new_table: str) -> bool:
+    from insights.insights.doctype.insights_data_source_v3.data_store_storage import rename_table_storage
     from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
         get_warehouse_schema_name,
         quote_identifier,
     )
 
-    old_name = quote_identifier(frappe.scrub(old_table))
-    new_name = quote_identifier(frappe.scrub(new_table))
+    old_name, new_name = frappe.scrub(old_table), frappe.scrub(new_table)
     schema = get_warehouse_schema_name(data_source)
     try:
         with insights.warehouse.get_write_connection(schema) as db:
-            db.raw_sql(f"ALTER TABLE {old_name} RENAME TO {new_name}")
+            db.raw_sql(f"ALTER TABLE {quote_identifier(old_name)} RENAME TO {quote_identifier(new_name)}")
+            rename_table_storage(schema, old_name, new_name)
         return True
     except Exception:
         return False  # nosemgrep - the caller marks the table for a fresh import

@@ -13,7 +13,7 @@ const MB = 1024 * 1024
 const GB = 1024 * MB
 
 function column(name: string, bytes: number, fields: Partial<StoredColumn> = {}): StoredColumn {
-	return { name, bytes, readers: [], skipped: false, skippable: true, ...fields }
+	return { name, bytes, readers: [], skipped: false, skippable: true, in_use: false, ...fields }
 }
 
 const reader = { doctype: 'Insights Query v3', name: 'q1', title: 'Jobs', workbook: '1' }
@@ -30,6 +30,8 @@ function table(
 		label: name,
 		sync_mode: 'Full',
 		bytes: columns.reduce((sum, c) => sum + c.bytes, 0),
+		read_bytes: 0,
+		unread_bytes: 0,
 		rows: 100,
 		measured_on: '2026-10-08 10:00:00',
 		last_read_on: '2026-10-01 10:00:00',
@@ -48,9 +50,9 @@ function storage(tables: StoredTable[], fields: Partial<DataStoreStorage> = {}):
 		unread_days: 30,
 		usage_known: true,
 		cleanup: { stopped: false, stopped_on: null, last_run: null },
-		groups: { read: 0, unread_columns: 0, unread_tables: 0, leftover: 0, other: 0, free: 0 },
+		groups: { read: 0, unread_columns: 0, unread_tables: 0, cleanup: 0, other: 0, free: 0 },
 		tables,
-		leftover_tables: [],
+		cleanup_tables: [],
 		...fields,
 	}
 }
@@ -80,14 +82,14 @@ describe('storageSegments', () => {
 			read: 4,
 			unread_columns: 0,
 			unread_tables: 3,
-			leftover: 2,
+			cleanup: 2,
 			other: 1,
 			free: 5,
 		}
 		expect(storageSegments(storage([], { groups })).map((s) => [s.key, s.value])).toEqual([
 			['read', 4],
 			['unread_tables', 3],
-			['leftover', 2],
+			['cleanup', 2],
 			['other', 1],
 			['free', 5],
 		])
@@ -96,14 +98,22 @@ describe('storageSegments', () => {
 
 describe('tableSegments', () => {
 	// @feature data-store.storage-breakdown
-	it('splits a read table into the columns queries read and the ones none reads', () => {
-		const jobs = table('Job', [
-			column('name', 1 * MB, { readers: [reader] }),
-			column('data', 9 * MB),
-		])
+	it('splits a read table into the bytes queries read and the bytes none reads', () => {
+		const jobs = table('Job', [column('name', 1 * MB), column('data', 9 * MB)], {
+			read_bytes: 1 * MB,
+			unread_bytes: 9 * MB,
+		})
 		expect(tableSegments(storage([jobs]), jobs).map((s) => [s.key, s.value])).toEqual([
 			['read', 1 * MB],
 			['unread_columns', 9 * MB],
+		])
+	})
+
+	// @feature data-store.storage-breakdown
+	it('shows a table no query read in the window as one unread segment', () => {
+		const old = table('Old', [column('a', 4 * MB)], { unread: true, unread_bytes: 4 * MB })
+		expect(tableSegments(storage([old]), old).map((s) => [s.key, s.value])).toEqual([
+			['unread_tables', 4 * MB],
 		])
 	})
 })
@@ -120,8 +130,11 @@ describe('giveBackItems', () => {
 	})
 
 	// @feature data-store.give-back
-	it('offers a column no query or chart names, and not one a reader names', () => {
-		const jobs = table('Job', [column('name', MB, { readers: [reader] }), column('data', MB)])
+	it('offers a column no query or chart names, and not one in use', () => {
+		const jobs = table('Job', [
+			column('name', MB, { readers: [reader], in_use: true }),
+			column('data', MB),
+		])
 		expect(described(giveBackItems(storage([jobs])))).toEqual(['Job.data'])
 	})
 

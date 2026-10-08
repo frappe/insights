@@ -2,7 +2,7 @@ import os
 import shutil
 import tempfile
 import time
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
@@ -34,7 +34,11 @@ from insights.insights.doctype.insights_data_source_v3.data_store_storage import
     measure_data_store,
     record_table_storage,
 )
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_skipped_columns, store_columns
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
+    get_batch_cursor,
+    get_skipped_columns,
+    store_columns,
+)
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -50,6 +54,8 @@ COMPACT_MIN_FREE_RATIO = 0.2
 # ibis's `create_table(overwrite=True)` fills a table of this name before
 # renaming it over the target; a process that died in between left it behind.
 LEFTOVER_TABLE_PREFIX = "ibis_duckdb_table_"
+# Why the cleanup drops a table: `get_drop_reason`.
+NOT_STORED, LEGACY, EMPTY, LEFTOVER = "not_stored", "legacy", "empty", "leftover"
 DEFAULT_ROW_LIMIT = 10_00_000
 
 
@@ -71,7 +77,9 @@ def duckdb_transaction(db: DuckDBBackend) -> Generator[None, None, None]:
     try:
         yield
     except BaseException:
-        db.raw_sql("ROLLBACK")
+        # a failed ROLLBACK must not hide the error that caused it
+        with suppress(Exception):  # nosemgrep - the original error is re-raised below
+            db.raw_sql("ROLLBACK")
         raise
     db.raw_sql("COMMIT")
 
@@ -669,12 +677,7 @@ class WarehouseTableImporter:
         self._drop_skipped_columns()
 
         # Read after the drop: batching orders and filters on the cursor.
-        if hasattr(self.remote_table, "creation"):
-            self.cursor_column = "creation"
-        elif hasattr(self.remote_table, "timestamp"):
-            self.cursor_column = "timestamp"
-        else:
-            self.cursor_column = ""
+        self.cursor_column = get_batch_cursor(self.remote_table.columns)
 
         self.dedupe_key_column = ""
 
@@ -1102,18 +1105,13 @@ def get_first_import_per_table() -> dict[tuple[str, str], object]:
 def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
     """Drop warehouse tables that no longer have a `stored` doc behind them.
 
-    A table is dropped only if the drop is reversible: a doc says a source sync
-    can re-import it, a live table replaced it, a live table holds what a
-    Leftover Table held, or it holds no rows. The sweep keeps and reports
-    anything else, because its rows may be the only copy.
+    `get_drop_reason` decides each table. The sweep keeps and reports anything
+    it does not drop, because its rows may be the only copy.
 
     Returns (dropped, kept).
     """
     logger = frappe.logger()
-
-    expected = get_stored_warehouse_tables() | get_import_job_warehouse_tables()
-    replaceable = expected | get_reimportable_warehouse_tables()
-    flat_prefixes = get_legacy_flat_prefixes()
+    expected, replaceable, flat_prefixes = get_sweep_sets()
 
     dropped, kept, occupied = [], [], set()
     with insights.warehouse.get_write_connection(timeout=CLEANUP_LOCK_TIMEOUT) as db:
@@ -1121,27 +1119,31 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
             "select schema_name, table_name from duckdb_tables() where database_name = current_database()"
         ).fetchall()
 
+        rows = {}
+
+        def rows_of(schema: str, table: str) -> int | None:
+            if (schema, table) not in rows:
+                rows[(schema, table)] = count_table_rows(db, schema, table)
+            return rows[(schema, table)]
+
+        def columns_of(schema: str, table: str) -> set[str]:
+            return get_column_names(db, schema, table)
+
         for schema, table in tables:
             if (schema, table) in expected:
                 occupied.add(schema)
                 continue
 
-            successor = resolve_legacy_flat_table(schema, table, flat_prefixes)
-            if (schema, table) not in replaceable and successor not in replaceable:
-                # A count that fails reads as "not empty". The sweep deletes
-                # nothing it could not look inside first.
-                rows = count_table_rows(db, schema, table)
-                if rows and is_superseded_leftover(db, schema, table, rows, expected):
-                    rows = 0
-                if rows != 0:
-                    kept.append(f"{schema}.{table}")
-                    occupied.add(schema)
-                    report_unexplained_orphan(schema, table, rows)
-                    continue
+            reason = get_drop_reason(schema, table, expected, replaceable, flat_prefixes, rows_of, columns_of)
+            if not reason:
+                kept.append(f"{schema}.{table}")
+                occupied.add(schema)
+                report_unexplained_orphan(schema, table, rows_of(schema, table))
+                continue
 
             db.raw_sql(f"DROP TABLE IF EXISTS {quote_identifier(schema)}.{quote_identifier(table)}")
             dropped.append(f"{schema}.{table}")
-            logger.info(f"Data store cleanup: dropped '{schema}.{table}' (orphan: no matching doc)")
+            logger.info(f"Data store cleanup: dropped '{schema}.{table}' ({reason})")
 
         schemas = db.raw_sql(
             "select schema_name from duckdb_schemas() "
@@ -1158,8 +1160,58 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
     return dropped, kept
 
 
+def get_sweep_sets() -> tuple[set[tuple[str, str]], set[tuple[str, str]], list[tuple[str, str]]]:
+    """(expected, replaceable, legacy flat prefixes) for `get_drop_reason`.
+
+    Expected tables are live. Replaceable ones are live or rebuilt by a re-import.
+    """
+    expected = get_stored_warehouse_tables() | get_import_job_warehouse_tables()
+    replaceable = expected | get_reimportable_warehouse_tables()
+    return expected, replaceable, get_legacy_flat_prefixes()
+
+
+def get_drop_reason(
+    schema: str,
+    table: str,
+    expected: set[tuple[str, str]],
+    replaceable: set[tuple[str, str]],
+    flat_prefixes: list[tuple[str, str]],
+    rows_of: Callable[[str, str], int | None],
+    columns_of: Callable[[str, str], set[str]],
+) -> str | None:
+    """Why the cleanup drops a warehouse table, or None if it keeps it.
+
+    A table is dropped only if the drop is reversible: a doc says a source sync
+    can re-import it (`not_stored`), a live table replaced its flat pre-schema
+    copy (`legacy`), it holds no rows (`empty`), or a live table holds what a
+    Leftover Table held (`leftover`). A row count of None means the count
+    failed, and reads as "not empty": nothing is dropped unseen.
+
+    `rows_of` and `columns_of` describe any table by schema and name, so the
+    sweep reads them from DuckDB and the storage overview from `storage.json`.
+    """
+    if (schema, table) in expected:
+        return None
+    if (schema, table) in replaceable:
+        return NOT_STORED
+    if resolve_legacy_flat_table(schema, table, flat_prefixes) in replaceable:
+        return LEGACY
+
+    rows = rows_of(schema, table)
+    if rows == 0:
+        return EMPTY
+    if rows and is_superseded_leftover(schema, table, rows, expected, rows_of, columns_of):
+        return LEFTOVER
+    return None
+
+
 def is_superseded_leftover(
-    db: DuckDBBackend, schema: str, table: str, rows: int, expected: set[tuple[str, str]]
+    schema: str,
+    table: str,
+    rows: int,
+    expected: set[tuple[str, str]],
+    rows_of: Callable[[str, str], int | None],
+    columns_of: Callable[[str, str], set[str]],
 ) -> bool:
     """Whether a live table holds at least what this Leftover Table holds.
 
@@ -1170,15 +1222,12 @@ def is_superseded_leftover(
     if not table.startswith(LEFTOVER_TABLE_PREFIX):
         return False
 
-    columns = get_column_names(db, schema, table)
+    columns = columns_of(schema, table)
     for live_schema, live_table in expected:
-        if live_schema != schema or get_column_names(db, schema, live_table) != columns:
+        if live_schema != schema or columns_of(schema, live_table) != columns:
             continue
-        live_rows = count_table_rows(db, schema, live_table)
+        live_rows = rows_of(schema, live_table)
         if live_rows is not None and live_rows >= rows:
-            frappe.logger().info(
-                f"Data store cleanup: '{schema}.{table}' is a leftover of '{schema}.{live_table}'"
-            )
             return True
 
     return False

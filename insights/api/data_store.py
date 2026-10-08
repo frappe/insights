@@ -10,17 +10,18 @@ import insights
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3 import data_store_storage
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
-    LEFTOVER_TABLE_PREFIX,
     UNUSED_TABLE_DAYS,
     execution_log_covers_unused_window,
+    get_drop_reason,
     get_last_execution_per_table,
+    get_sweep_sets,
     get_unused_tables,
     get_warehouse_schema_name,
 )
 from insights.insights.doctype.insights_table_v3.column_usage import get_column_readers_by_table
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
+    get_required_columns,
     get_skipped_columns,
-    get_sync_columns,
     get_table_name,
 )
 
@@ -150,7 +151,6 @@ def get_storage():
             "table",
             "label",
             "sync_mode",
-            "sync_strategy",
             "sync_cursor_column",
             "sync_primary_key_column",
             "skipped_columns",
@@ -171,34 +171,31 @@ def get_storage():
         get_unused_tables({(doc.data_source, doc.table) for doc in docs}, last_read) if usage_known else set()
     )
 
-    groups = dict.fromkeys(("read", "unread_columns", "unread_tables", "leftover", "other", "free"), 0)
+    groups = dict.fromkeys(("read", "unread_columns", "unread_tables", "cleanup", "other", "free"), 0)
     tables = []
     for doc in docs:
         entry = entries[doc.name]
         key = (doc.data_source, doc.table)
-        last_read_on = last_read.get(key)
         skipped = set(get_skipped_columns(doc))
-        sync_columns = get_sync_columns(doc)
+        required = get_required_columns(doc, entry["columns"])
 
         columns = [
             {
                 "name": name,
                 "bytes": size,
                 "readers": readers[key][name],
+                "in_use": bool(readers[key][name]) or name in required,
                 "skipped": name in skipped,
-                "skippable": name not in sync_columns,
+                "skippable": name not in required,
             }
             for name, size in sorted(entry["columns"].items(), key=lambda column: -column[1])
         ]
 
         unread = key in unused
-        if unread:
-            groups["unread_tables"] += entry["bytes"]
-        else:
-            for column in columns:
-                # the sync reads its cursor and key, so they are in use without a reader
-                in_use = column["readers"] or not column["skippable"]
-                groups["read" if in_use else "unread_columns"] += column["bytes"]
+        read_bytes = 0 if unread else sum(column["bytes"] for column in columns if column["in_use"])
+        unread_bytes = entry["bytes"] - read_bytes
+        groups["read"] += read_bytes
+        groups["unread_tables" if unread else "unread_columns"] += unread_bytes
 
         tables.append(
             {
@@ -208,20 +205,18 @@ def get_storage():
                 "label": doc.label,
                 "sync_mode": doc.sync_mode,
                 "bytes": entry["bytes"],
+                "read_bytes": read_bytes,
+                "unread_bytes": unread_bytes,
                 "rows": entry["rows"],
                 "measured_on": entry["measured_on"],
-                "last_read_on": last_read_on,
+                "last_read_on": last_read.get(key),
                 "unread": unread,
                 "columns": columns,
             }
         )
 
-    leftover_tables = []
-    for qualified, entry in measured.items():
-        schema, _, table = qualified.partition(".")
-        if table.startswith(LEFTOVER_TABLE_PREFIX):
-            leftover_tables.append({"schema": schema, "table": table, "bytes": entry["bytes"]})
-            groups["leftover"] += entry["bytes"]
+    cleanup_tables = get_cleanup_tables(measured)
+    groups["cleanup"] = sum(table["bytes"] for table in cleanup_tables)
 
     used = sum(groups.values())
     groups["free"] = min(storage.get("free_bytes") or 0, max(file_bytes - used, 0))
@@ -237,8 +232,33 @@ def get_storage():
         "cleanup": get_cleanup_state(),
         "groups": groups,
         "tables": sorted(tables, key=lambda table: -table["bytes"]),
-        "leftover_tables": sorted(leftover_tables, key=lambda table: -table["bytes"]),
+        "cleanup_tables": cleanup_tables,
     }
+
+
+def get_cleanup_tables(measured: dict) -> list[dict]:
+    """The measured tables the next cleanup drops, and why, largest first.
+
+    Decided by the sweep's own rule, `get_drop_reason`, over the rows and
+    columns `storage.json` recorded rather than over the file itself.
+    """
+    expected, replaceable, flat_prefixes = get_sweep_sets()
+
+    def rows_of(schema: str, table: str) -> int | None:
+        entry = measured.get(f"{schema}.{table}")
+        return entry["rows"] if entry else None
+
+    def columns_of(schema: str, table: str) -> set[str]:
+        entry = measured.get(f"{schema}.{table}")
+        return set(entry["columns"]) if entry else set()
+
+    cleanup = []
+    for qualified, entry in measured.items():
+        schema, _, table = qualified.partition(".")
+        reason = get_drop_reason(schema, table, expected, replaceable, flat_prefixes, rows_of, columns_of)
+        if reason:
+            cleanup.append({"schema": schema, "table": table, "bytes": entry["bytes"], "reason": reason})
+    return sorted(cleanup, key=lambda table: -table["bytes"])
 
 
 @insights_whitelist(role="Insights Admin", methods=["POST"])

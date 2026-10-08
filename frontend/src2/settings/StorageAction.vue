@@ -42,7 +42,7 @@ function run() {
 	<div class="flex shrink-0 items-center gap-1.5">
 		<template v-if="confirming && !needsTypedName">
 			<Button :label="__('Cancel')" variant="ghost" @click="confirming = false" />
-			<Button :label="label" theme="red" variant="solid" :loading="running" @click="run" />
+			<Button :label="label" variant="solid" :loading="running" @click="run" />
 		</template>
 		<Button v-else :label="label" variant="outline" @click="start" />
 	</div>

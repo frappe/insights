@@ -1,7 +1,8 @@
 # Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-"""Which columns of a table the queries, charts, dashboards and alerts built on it name.
+"""Which columns of a table the queries, charts, dashboards, alerts and team
+restrictions built on it name.
 
 A column is read when its name appears in a reader's stored definition, as a
 whole value or bounded by non-identifier characters inside a longer one: an
@@ -26,10 +27,18 @@ from contextlib import suppress
 
 import frappe
 
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+from insights.insights.query_utils import (
+    referenced_queries,
+    table_references,
+    unparsed_sql_data_sources,
+)
+
 QUERY = "Insights Query v3"
 CHART = "Insights Chart v3"
 DASHBOARD = "Insights Dashboard v3"
 ALERT = "Insights Alert"
+TEAM = "Insights Team"
 
 IDENTIFIER = re.compile(r"\w+")
 
@@ -107,22 +116,16 @@ def string_values(value):
 
 def get_readers_by_table(tables: list[TableKey]) -> dict[TableKey, list[Reader]]:
     """Every reader of each table: the queries that reach it through any number of
-    query hops, the charts on those, the dashboards showing the charts, and the
-    alerts on the queries.
+    query hops, the charts on those, the dashboards showing the charts, the
+    alerts on the queries, and the teams whose Table Restrictions filter it.
 
     Read with `get_all`: a reader the caller may not see still breaks when its
     column goes.
     """
-    queries_by_table = get_queries_by_table(tables)
-    query_names = set().union(*queries_by_table.values()) if queries_by_table else set()
-    if not query_names:
-        return {key: [] for key in tables}
+    queries = {q.name: q for q in frappe.get_all(QUERY, fields=["name", "title", "workbook", "operations"])}
+    queries_by_table = get_queries_by_table(tables, {name: q.operations for name, q in queries.items()})
+    query_names = set().union(*queries_by_table.values())
 
-    queries = frappe.get_all(
-        QUERY,
-        filters={"name": ["in", list(query_names)]},
-        fields=["name", "title", "workbook", "operations"],
-    )
     charts = frappe.get_all(
         CHART,
         filters={"query": ["in", list(query_names)]},
@@ -135,66 +138,103 @@ def get_readers_by_table(tables: list[TableKey]) -> dict[TableKey, list[Reader]]
     )
     dashboards, charts_by_dashboard = get_dashboards_showing({chart.name for chart in charts})
 
-    workbook_of_query = {q.name: q.workbook for q in queries}
     query_of_chart = {c.name: c.query for c in charts}
 
     by_query = defaultdict(list)
-    for q in queries:
-        by_query[q.name].append(Reader(QUERY, q.name, q.title, q.workbook, q.operations))
+    for name in query_names:
+        q = queries[name]
+        by_query[name].append(Reader(QUERY, q.name, q.title, q.workbook, q.operations))
     for c in charts:
         by_query[c.query].append(Reader(CHART, c.name, c.title, c.workbook, c.config))
     for a in alerts:
         by_query[a.query].append(
-            Reader(ALERT, a.name, a.title, workbook_of_query.get(a.query), [a.condition, a.message])
+            Reader(ALERT, a.name, a.title, queries[a.query].workbook, [a.condition, a.message])
         )
     for d in dashboards:
         reader = Reader(DASHBOARD, d.name, d.title, d.workbook, filter_links(d["items"]))
         for query in {query_of_chart[chart] for chart in charts_by_dashboard[d.name]}:
             by_query[query].append(reader)
 
+    teams = get_restricting_teams(tables)
+
     readers = {}
     for key in tables:
         seen = set()
         readers[key] = []
-        for query in sorted(queries_by_table.get(key, ())):
+        for query in sorted(queries_by_table[key]):
             for reader in by_query[query]:
                 if id(reader) not in seen:
                     seen.add(id(reader))
                     readers[key].append(reader)
+        readers[key].extend(teams.get(key, ()))
     return readers
 
 
-def get_queries_by_table(tables: list[TableKey]) -> dict[TableKey, set[str]]:
+def get_queries_by_table(
+    tables: list[TableKey], operations_by_query: dict[str, object]
+) -> dict[TableKey, set[str]]:
     """The queries that read each table directly or through other queries.
 
-    One read of the edge table serves every table, as in
-    `get_last_execution_per_table`, but walked the other way: from a table to
-    the queries that read it, then to the queries that read those.
+    Read from each query's own operations, not from `Insights Query Reference`.
+    The edge table holds only queries saved since it shipped and keeps rows of
+    deleted ones, and a reader it misses would let a skip break a query. For
+    the same reason, native SQL sqlglot cannot parse reads every table of its
+    data source; the name search still decides which columns it reads.
     """
-    references = frappe.get_all(
-        "Insights Query Reference",
-        fields=["query", "ref_type", "data_source", "table_name", "ref_query"],
-    )
+    wanted = set(tables)
     direct: dict[TableKey, set[str]] = defaultdict(set)
     read_by: dict[str, set[str]] = defaultdict(set)
-    for ref in references:
-        if ref.ref_type == "Table" and ref.table_name:
-            direct[(ref.data_source, ref.table_name)].add(ref.query)
-        elif ref.ref_type == "Query" and ref.ref_query:
-            read_by[ref.ref_query].add(ref.query)
+    for query, operations in operations_by_query.items():
+        operations = frappe.parse_json(operations) or []
+        for ref in table_references(operations):
+            key = (ref["data_source"], ref["table_name"])
+            if key in wanted:
+                direct[key].add(query)
+        for data_source in unparsed_sql_data_sources(operations):
+            for key in wanted:
+                if key[0] == data_source:
+                    direct[key].add(query)
+        for source in referenced_queries(operations):
+            read_by[source].add(query)
 
     queries_by_table = {}
     for key in tables:
         reached = set()
-        stack = list(direct.get(key, ()))
+        stack = list(direct[key])
         while stack:
             query = stack.pop()
-            if query in reached:
+            if query in reached or query not in operations_by_query:
                 continue
             reached.add(query)
-            stack.extend(read_by.get(query, ()))
+            stack.extend(read_by[query])
         queries_by_table[key] = reached
     return queries_by_table
+
+
+def get_restricting_teams(tables: list[TableKey]) -> dict[TableKey, list[Reader]]:
+    """The teams whose Table Restrictions filter each table.
+
+    `restriction_predicate` evaluates a restriction over the table's columns,
+    so a column it names is read on every query of the team's members.
+    """
+    names = {get_table_name(*key): key for key in tables}
+    rows = frappe.get_all(
+        "Insights Resource Permission",
+        filters={
+            "parenttype": TEAM,
+            "resource_type": "Insights Table v3",
+            "resource_name": ["in", list(names)],
+            "table_restrictions": ["is", "set"],
+        },
+        fields=["parent", "resource_name", "table_restrictions"],
+        order_by="parent asc",
+    )
+    teams = defaultdict(list)
+    for row in rows:
+        teams[names[row.resource_name]].append(
+            Reader(TEAM, row.parent, row.parent, None, [row.table_restrictions])
+        )
+    return teams
 
 
 def get_dashboards_showing(charts: set[str]) -> tuple[list, dict[str, set[str]]]:

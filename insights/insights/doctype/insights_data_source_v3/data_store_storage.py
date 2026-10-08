@@ -94,6 +94,22 @@ def forget_table_storage(schema: str, table: str) -> None:
         frappe.log_error(title=f"Data store: could not forget '{schema}.{table}'")
 
 
+def rename_table_storage(schema: str, old_table: str, new_table: str) -> None:
+    """Move a renamed table's entry in `storage.json` to its new name.
+
+    The caller holds the warehouse write lock. Never raises: the rename already
+    happened, and the next full measure corrects the file.
+    """
+    try:
+        storage = get_storage()
+        tables = storage.get("tables", {})
+        if (entry := tables.pop(f"{schema}.{old_table}", None)) is not None:
+            tables[f"{schema}.{new_table}"] = entry
+            write_storage(storage)
+    except Exception:
+        frappe.log_error(title=f"Data store: could not rename '{schema}.{old_table}'")
+
+
 def measure_data_store() -> dict:
     """Measure every table in the warehouse and rewrite `storage.json`.
 

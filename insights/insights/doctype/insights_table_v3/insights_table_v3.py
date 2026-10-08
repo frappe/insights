@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+from collections.abc import Iterable
 from hashlib import md5
 
 import frappe
@@ -122,13 +123,15 @@ class InsightsTablev3(Document):
         skipped = get_skipped_columns(self)
         self.skipped_columns = frappe.as_json(skipped) if skipped else None
 
-        needed = [column for column in skipped if column in get_sync_columns(self)]
+        source_columns = [c.get("name") for c in frappe.parse_json(self.columns or "[]") or []]
+        required = get_required_columns(self, source_columns)
+        needed = [column for column in skipped if column in required]
         if needed:
             frappe.throw(
-                frappe._("{0} is needed by the incremental sync and cannot be skipped.").format(
+                frappe._("{0} is needed to import or permit the table and cannot be skipped.").format(
                     ", ".join(frappe.bold(column) for column in needed)
                 ),
-                title=frappe._("Column Needed By Sync"),
+                title=frappe._("Column Needed By The Data Store"),
             )
 
         before = self.get_doc_before_save()
@@ -292,15 +295,29 @@ def get_skipped_columns(table) -> list[str]:
     return list(dict.fromkeys(column for column in skipped if isinstance(column, str) and column))
 
 
-def get_sync_columns(table) -> set[str]:
-    """The columns an incremental import reads to know what changed, so the
-    import cannot leave them out."""
-    if table.get("sync_mode") != "Incremental":
-        return set()
-    columns = {table.get("sync_cursor_column")}
-    if table.get("sync_strategy") == "Update or Insert":
-        columns.add(table.get("sync_primary_key_column"))
-    return {column for column in columns if column}
+def get_batch_cursor(columns: Iterable[str]) -> str:
+    """The column a full import orders and filters its batches on, or "" for none."""
+    columns = set(columns)
+    return next((column for column in ("creation", "timestamp") if column in columns), "")
+
+
+def get_required_columns(table, columns: Iterable[str]) -> set[str]:
+    """The columns the store cannot do without, so none of them may be skipped.
+
+    An incremental import finds what changed by its cursor and merges on its
+    primary key. A full import batches on `get_batch_cursor` of `columns`. On
+    the site database, `desk_predicate` filters rows by `name`, and
+    `tabSingles` rows by `doctype`.
+    """
+    if table.get("sync_mode") == "Incremental":
+        required = {table.get("sync_cursor_column"), table.get("sync_primary_key_column")}
+    else:
+        required = {get_batch_cursor(columns)}
+    if is_site_db(table.get("data_source")):
+        required.add("name")
+        if strip_schema_prefix(table.get("table") or "") == "tabSingles":
+            required.add("doctype")
+    return {column for column in required if column}
 
 
 def store_columns(data_source: str, table_name: str, schema: ibis.Schema) -> None:

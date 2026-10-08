@@ -6,6 +6,7 @@ import { formatNumber } from '../helpers'
 import { __ } from '../translation'
 import {
 	BarSegment,
+	columnClass,
 	columnsBySize,
 	formatBytes,
 	StoredColumn,
@@ -59,6 +60,10 @@ function readersLabel(column: StoredColumn) {
 
 		<div v-if="expanded" class="mb-2 ml-9 flex flex-col divide-y divide-outline-gray-1">
 			<div v-for="column in columns" :key="column.name" class="flex h-9 items-center gap-3">
+				<span
+					class="h-2 w-2 shrink-0 rounded-full"
+					:class="columnClass(table, column)"
+				></span>
 				<span class="min-w-0 flex-1 truncate font-mono text-sm text-ink-gray-7">
 					{{ column.name }}
 				</span>
@@ -83,10 +88,10 @@ function readersLabel(column: StoredColumn) {
 						{{ __('Removed at next import') }}
 					</span>
 					<span v-else-if="!column.skippable" class="text-p-sm text-ink-gray-5">
-						{{ __('Used by the import') }}
+						{{ __('Needed by the store') }}
 					</span>
 					<StorageAction
-						v-else-if="!column.readers.length"
+						v-else-if="!column.in_use"
 						:label="__('Skip')"
 						:title="__('Skip {0}', column.name)"
 						:table="table"

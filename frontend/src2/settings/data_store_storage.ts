@@ -4,7 +4,7 @@ export type ColumnReader = {
 	doctype: string
 	name: string
 	title: string
-	workbook: string
+	workbook: string | null
 }
 
 export type StoredColumn = {
@@ -13,6 +13,7 @@ export type StoredColumn = {
 	readers: ColumnReader[]
 	skipped: boolean
 	skippable: boolean
+	in_use: boolean
 }
 
 export type StoredTable = {
@@ -22,6 +23,8 @@ export type StoredTable = {
 	label: string
 	sync_mode: 'Full' | 'Incremental'
 	bytes: number
+	read_bytes: number
+	unread_bytes: number
 	rows: number
 	measured_on: string
 	last_read_on: string | null
@@ -33,7 +36,7 @@ export type StorageGroupKey =
 	| 'read'
 	| 'unread_columns'
 	| 'unread_tables'
-	| 'leftover'
+	| 'cleanup'
 	| 'other'
 	| 'free'
 
@@ -47,7 +50,16 @@ export type DataStoreStorage = {
 	cleanup: { stopped: boolean; stopped_on: string | null; last_run: string | null }
 	groups: Record<StorageGroupKey, number>
 	tables: StoredTable[]
-	leftover_tables: Array<{ schema: string; table: string; bytes: number }>
+	cleanup_tables: CleanupTable[]
+}
+
+export type CleanupReason = 'not_stored' | 'leftover' | 'empty' | 'legacy'
+
+export type CleanupTable = {
+	schema: string
+	table: string
+	bytes: number
+	reason: CleanupReason
 }
 
 export type BarSegment = {
@@ -77,7 +89,7 @@ const GROUP_CLASS: Record<StorageGroupKey, string> = {
 	read: 'bg-surface-blue-6',
 	unread_columns: 'bg-surface-amber-5',
 	unread_tables: 'bg-surface-red-5',
-	leftover: 'bg-surface-violet-5',
+	cleanup: 'bg-surface-violet-5',
 	other: 'bg-surface-gray-5',
 	free: 'bg-surface-gray-3',
 }
@@ -87,7 +99,7 @@ function groupLabel(key: StorageGroupKey, unreadDays: number): string {
 		read: __('Read by queries'),
 		unread_columns: __('Columns no query reads'),
 		unread_tables: __('Tables not read in {0} days', String(unreadDays)),
-		leftover: __('Leftover import tables'),
+		cleanup: __('Cleanup removes'),
 		other: __('Other'),
 		free: __('Free'),
 	}[key]
@@ -110,21 +122,26 @@ export function storageSegments(storage: DataStoreStorage): BarSegment[] {
 		.filter((segment) => segment.value > 0)
 }
 
-function isUnreadColumn(column: StoredColumn): boolean {
-	return !column.readers.length
+export function tableSegments(storage: DataStoreStorage, table: StoredTable): BarSegment[] {
+	const unreadKey = table.unread ? 'unread_tables' : 'unread_columns'
+	return [
+		groupSegment('read', table.read_bytes, storage.unread_days),
+		groupSegment(unreadKey, table.unread_bytes, storage.unread_days),
+	].filter((s) => s.value > 0)
 }
 
-export function tableSegments(storage: DataStoreStorage, table: StoredTable): BarSegment[] {
-	if (table.unread) {
-		return [groupSegment('unread_tables', table.bytes, storage.unread_days)]
-	}
-	const unread = table.columns
-		.filter(isUnreadColumn)
-		.reduce((total, column) => total + column.bytes, 0)
-	return [
-		groupSegment('read', Math.max(table.bytes - unread, 0), storage.unread_days),
-		groupSegment('unread_columns', unread, storage.unread_days),
-	].filter((s) => s.value > 0)
+export function columnClass(table: StoredTable, column: StoredColumn): string {
+	if (table.unread) return GROUP_CLASS.unread_tables
+	return column.in_use ? GROUP_CLASS.read : GROUP_CLASS.unread_columns
+}
+
+export function cleanupReason(reason: CleanupReason): string {
+	return {
+		not_stored: __('No longer stored'),
+		leftover: __('Left by an interrupted import'),
+		empty: __('Empty'),
+		legacy: __('Copy from before the schema move'),
+	}[reason]
 }
 
 export function giveBackItems(storage: DataStoreStorage): GiveBackItem[] {
@@ -135,7 +152,7 @@ export function giveBackItems(storage: DataStoreStorage): GiveBackItem[] {
 			continue
 		}
 		for (const column of table.columns) {
-			if (isUnreadColumn(column) && column.skippable && !column.skipped && column.bytes) {
+			if (!column.in_use && column.skippable && !column.skipped && column.bytes) {
 				items.push({ kind: 'column', table, column, bytes: column.bytes })
 			}
 		}
