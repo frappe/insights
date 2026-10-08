@@ -29,7 +29,12 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
     local_duckdb_write_lock,
     open_local_duckdb,
 )
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
+from insights.insights.doctype.insights_data_source_v3.data_store_storage import (
+    forget_table_storage,
+    measure_data_store,
+    record_table_storage,
+)
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_skipped_columns, store_columns
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -42,6 +47,9 @@ CLEANUP_LOCK_TIMEOUT = 15 * 60
 # Rebuilding the file is only worth the disk and time above these thresholds.
 COMPACT_MIN_FILE_SIZE = 100 * 1024 * 1024
 COMPACT_MIN_FREE_RATIO = 0.2
+# ibis's `create_table(overwrite=True)` fills a table of this name before
+# renaming it over the target; a process that died in between left it behind.
+LEFTOVER_TABLE_PREFIX = "ibis_duckdb_table_"
 DEFAULT_ROW_LIMIT = 10_00_000
 
 
@@ -55,6 +63,17 @@ def row_limit(table_row_limit: int | None = None) -> int:
 
 def quote_ident(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
+
+
+@contextmanager
+def duckdb_transaction(db: DuckDBBackend) -> Generator[None, None, None]:
+    db.raw_sql("BEGIN TRANSACTION")
+    try:
+        yield
+    except BaseException:
+        db.raw_sql("ROLLBACK")
+        raise
+    db.raw_sql("COMMIT")
 
 
 class Warehouse:
@@ -120,6 +139,7 @@ class Warehouse:
         mode: str = "replace",
         primary_key_column: str = "",
         cursor_column: str = "",
+        skipped_columns: Sequence[str] = (),
         log_fn=None,
     ) -> "WarehouseTableWriter":
         """Create a table writer for batch inserts with automatic cleanup.
@@ -138,6 +158,7 @@ class Warehouse:
             mode=mode,
             primary_key_column=primary_key_column,
             cursor_column=cursor_column,
+            skipped_columns=skipped_columns,
             log_fn=log_fn,
         )
 
@@ -162,6 +183,7 @@ class WarehouseTableWriter:
         mode: str = "replace",
         primary_key_column: str = "",
         cursor_column: str = "",
+        skipped_columns: Sequence[str] = (),
         log_fn=None,
     ):
         self.database = database
@@ -170,6 +192,7 @@ class WarehouseTableWriter:
         self.mode = mode
         self.primary_key_column = primary_key_column
         self.cursor_column = cursor_column
+        self.skipped_columns = skipped_columns
         self._log = log_fn or (lambda *args, **kwargs: None)
 
         self._temp_dir: Path | None = None
@@ -232,19 +255,15 @@ class WarehouseTableWriter:
                 parquet_glob = str(self._temp_dir / "*.parquet")
                 merged = db.read_parquet(parquet_glob)
 
-                if self._table_exists(db) and self.mode in ("append", "upsert"):
-                    self._add_missing_columns(db, merged)
-                    if self.mode == "append":
-                        db.insert(self.table_name, merged)
-                    elif self.mode == "upsert":
-                        self._upsert(db, merged)
-                else:
-                    db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
+                with duckdb_transaction(db):
+                    self._write(db, merged)
 
                 self._log("Commit completed.")
 
                 total_rows = merged.count().execute()
                 total_rows = int(total_rows)
+
+                record_table_storage(db, self.database, self.table_name)
 
             self._committed = True
         finally:
@@ -252,8 +271,43 @@ class WarehouseTableWriter:
 
         return total_rows
 
+    def _write(self, db: DuckDBBackend, merged: Table) -> None:
+        if self._table_exists(db) and self.mode in ("append", "upsert"):
+            self._drop_skipped_columns(db)
+            self._add_missing_columns(db, merged)
+            if self.mode == "append":
+                db.insert(self.table_name, merged)
+            elif self.mode == "upsert":
+                self._upsert(db, merged)
+        else:
+            self._replace(db, merged)
+
+    def _replace(self, db: DuckDBBackend, merged: Table) -> None:
+        """Replace the table in place, inside the caller's transaction.
+
+        ibis's `create_table(overwrite=True)` fills a second table and renames it
+        over the target, so a process that dies in between leaves that copy behind.
+        """
+        columns = ", ".join(
+            column.sql(dialect="duckdb") for column in self.table_schema.to_sqlglot_column_defs("duckdb")
+        )
+        table = quote_ident(self.table_name)
+        db.raw_sql(f"CREATE OR REPLACE TABLE {table} ({columns})")
+
+        insert_columns = ", ".join(quote_ident(name) for name in merged.columns)
+        source_query = ibis.to_sql(merged, dialect="duckdb", pretty=False)
+        db.raw_sql(f"INSERT INTO {table} ({insert_columns}) {source_query}")
+
     def _table_exists(self, db: DuckDBBackend) -> bool:
         return self.table_name in db.list_tables()
+
+    def _drop_skipped_columns(self, db: DuckDBBackend) -> None:
+        existing = db.table(self.table_name).columns
+        for name in self.skipped_columns:
+            if name not in existing:
+                continue
+            self._log(f"Column '{name}' is skipped, dropping it from '{self.table_name}'")
+            db.raw_sql(f"ALTER TABLE {quote_ident(self.table_name)} DROP COLUMN {quote_ident(name)}")
 
     def _add_missing_columns(self, db: DuckDBBackend, incoming: Table) -> None:
         """Add columns the source has gained since the last import.
@@ -425,6 +479,7 @@ class WarehouseTable:
         """Drop this table from the warehouse. No-op if it does not exist."""
         with insights.warehouse.get_write_connection() as db:
             db.drop_table(self.warehouse_table_name, database=self.schema, force=True)
+            forget_table_storage(self.schema, self.warehouse_table_name)
 
 
 class WarehouseTableImporter:
@@ -535,6 +590,7 @@ class WarehouseTableImporter:
                 "sync_strategy",
                 "sync_cursor_column",
                 "sync_primary_key_column",
+                "skipped_columns",
                 "sync_from",
                 "last_sync_bookmark",
             ],
@@ -549,6 +605,7 @@ class WarehouseTableImporter:
         self.settings.sync_strategy = table_doc.sync_strategy or "Append Only"
         self.settings.sync_cursor_column = table_doc.sync_cursor_column or ""
         self.settings.sync_primary_key_column = table_doc.sync_primary_key_column or ""
+        self.settings.skipped_columns = get_skipped_columns(table_doc)
         self.settings.sync_from = table_doc.sync_from  # Datetime or None
         self.settings.last_sync_bookmark = table_doc.last_sync_bookmark or ""
         self.log.db_set(
@@ -563,6 +620,7 @@ class WarehouseTableImporter:
             f", strategy={self.settings.sync_strategy}"
             f", cursor={self.settings.sync_cursor_column or 'N/A'}"
             f", key={self.settings.sync_primary_key_column or 'N/A'}"
+            f", skipped={', '.join(self.settings.skipped_columns) or 'N/A'}"
             f", sync_from={self.settings.sync_from or 'N/A'}"
             f", bookmark={self.settings.last_sync_bookmark or 'N/A'}"
             f", row_limit={self.settings.row_limit}"
@@ -600,7 +658,17 @@ class WarehouseTableImporter:
                 self.settings.before_import_script, {"table": self.remote_table}
             )
 
+    def _drop_skipped_columns(self) -> None:
+        skipped = [name for name in self.settings.skipped_columns if name in self.remote_table.columns]
+        if skipped:
+            self._log(f"Skipping columns: {', '.join(skipped)}")
+            self.remote_table = self.remote_table.drop(*skipped)
+
     def _prepare_full_table(self) -> None:
+        self._apply_before_import_script()
+        self._drop_skipped_columns()
+
+        # Read after the drop: batching orders and filters on the cursor.
         if hasattr(self.remote_table, "creation"):
             self.cursor_column = "creation"
         elif hasattr(self.remote_table, "timestamp"):
@@ -610,7 +678,6 @@ class WarehouseTableImporter:
 
         self.dedupe_key_column = ""
 
-        self._apply_before_import_script()
         self.remote_table = self.apply_limit(self.remote_table)
         self.writer_mode = "replace"
 
@@ -620,6 +687,7 @@ class WarehouseTableImporter:
         self.sync_strategy = self.settings.sync_strategy or "Append Only"
 
         self._apply_before_import_script()
+        self._drop_skipped_columns()
 
         bookmark = self._resolve_incremental_bookmark()
         self._log(f"Incremental sync: {self.cursor_column} > {bookmark}")
@@ -690,6 +758,7 @@ class WarehouseTableImporter:
                 mode=self.writer_mode,
                 primary_key_column=self.dedupe_key_column,
                 cursor_column=self.cursor_column,
+                skipped_columns=self.settings.skipped_columns,
                 log_fn=self._log,
             ) as writer:
                 total_rows = self.process_batches(batch_size, writer)
@@ -868,14 +937,18 @@ def cleanup_data_store():
     frappe.db.commit()  # nosemgrep
 
     dropped, kept = drop_orphan_warehouse_tables()
+    parquet_files = delete_legacy_parquet_files()
     compacted = compact_warehouse()
+    storage = measure_data_store()
 
     summary = {
         "tables_pruned": len(pruned),
         "orphans_dropped": len(dropped),
         "orphans_kept": len(kept),
+        "parquet_files_deleted": len(parquet_files),
         "size_before": compacted[0] if compacted else None,
         "size_after": compacted[1] if compacted else None,
+        "free_bytes": storage.get("free_bytes"),
     }
     logger.info(f"Data store cleanup: {summary}")
     return summary
@@ -888,14 +961,8 @@ def prune_unused_tables() -> list[str]:
     `sync_from` and history the source has purged since is unrecoverable.
     """
     logger = frappe.logger()
-    cutoff = add_days(now_datetime(), -UNUSED_TABLE_DAYS)
 
-    retention = frappe.db.get_value(
-        "Logs To Clear",
-        {"parent": "Log Settings", "ref_doctype": "Insights Query Execution Log"},
-        "days",
-    )
-    if retention is not None and retention < UNUSED_TABLE_DAYS:
+    if not execution_log_covers_unused_window():
         logger.info(
             "Data store cleanup: execution log retention is shorter than the unused window, skipping prune"
         )
@@ -911,19 +978,12 @@ def prune_unused_tables() -> list[str]:
         return []
 
     last_used = get_last_execution_per_table()
-    first_imported = get_first_import_per_table()
+    unused = get_unused_tables({(t.data_source, t.table) for t in candidates}, last_used)
 
     pruned = []
     for table in candidates:
         key = (table.data_source, table.table)
-
-        used_on = last_used.get(key)
-        if used_on and used_on > cutoff:
-            continue
-
-        imported_on = first_imported.get(key)
-        if imported_on and imported_on > cutoff:
-            # Stored recently but not queried yet — give it time to be used.
+        if key not in unused:
             continue
 
         frappe.db.set_value(
@@ -934,10 +994,46 @@ def prune_unused_tables() -> list[str]:
         )
         pruned.append(table.name)
 
+        used_on = last_used.get(key)
         reason = f"last execution {(now_datetime() - used_on).days}d ago" if used_on else "never executed"
         logger.info(f"Data store cleanup: pruned '{table.name}' ({reason})")
 
     return pruned
+
+
+def execution_log_covers_unused_window() -> bool:
+    """Whether the query execution log still holds `UNUSED_TABLE_DAYS` of history.
+
+    A shorter retention deletes the executions that show a table is read, so
+    every table would look unused. No row means Log Settings has not been saved
+    since migrate, so the 90-day default in `hooks.py` applies.
+    """
+    retention = frappe.db.get_value(
+        "Logs To Clear",
+        {"parent": "Log Settings", "ref_doctype": "Insights Query Execution Log"},
+        "days",
+    )
+    return retention is None or retention >= UNUSED_TABLE_DAYS
+
+
+def get_unused_tables(
+    keys: set[tuple[str, str]], last_used: dict[tuple[str, str], object]
+) -> set[tuple[str, str]]:
+    """Of `keys`, the (data_source, table) pairs no query read in `UNUSED_TABLE_DAYS`.
+
+    A table first imported inside the window is not unused yet: it has not had
+    the window to be read in. `last_used` is `get_last_execution_per_table()`,
+    passed in because every caller also reports it.
+    """
+    cutoff = add_days(now_datetime(), -UNUSED_TABLE_DAYS)
+    first_imported = get_first_import_per_table()
+
+    def in_window(on) -> bool:
+        return bool(on) and on > cutoff
+
+    return {
+        key for key in keys if not in_window(last_used.get(key)) and not in_window(first_imported.get(key))
+    }
 
 
 def get_last_execution_per_table() -> dict[tuple[str, str], object]:
@@ -1007,8 +1103,9 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
     """Drop warehouse tables that no longer have a `stored` doc behind them.
 
     A table is dropped only if the drop is reversible: a doc says a source sync
-    can re-import it, a live table replaced it, or it holds no rows. The sweep
-    keeps and reports anything else, because its rows may be the only copy.
+    can re-import it, a live table replaced it, a live table holds what a
+    Leftover Table held, or it holds no rows. The sweep keeps and reports
+    anything else, because its rows may be the only copy.
 
     Returns (dropped, kept).
     """
@@ -1034,6 +1131,8 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
                 # A count that fails reads as "not empty". The sweep deletes
                 # nothing it could not look inside first.
                 rows = count_table_rows(db, schema, table)
+                if rows and is_superseded_leftover(db, schema, table, rows, expected):
+                    rows = 0
                 if rows != 0:
                     kept.append(f"{schema}.{table}")
                     occupied.add(schema)
@@ -1057,6 +1156,40 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
                 logger.info(f"Data store cleanup: dropped empty schema '{schema}'")
 
     return dropped, kept
+
+
+def is_superseded_leftover(
+    db: DuckDBBackend, schema: str, table: str, rows: int, expected: set[tuple[str, str]]
+) -> bool:
+    """Whether a live table holds at least what this Leftover Table holds.
+
+    A leftover is a copy of the table its import was replacing. A live table in
+    the same schema with the same column names and as many rows or more is
+    that table, re-imported since, so the leftover adds nothing.
+    """
+    if not table.startswith(LEFTOVER_TABLE_PREFIX):
+        return False
+
+    columns = get_column_names(db, schema, table)
+    for live_schema, live_table in expected:
+        if live_schema != schema or get_column_names(db, schema, live_table) != columns:
+            continue
+        live_rows = count_table_rows(db, schema, live_table)
+        if live_rows is not None and live_rows >= rows:
+            frappe.logger().info(
+                f"Data store cleanup: '{schema}.{table}' is a leftover of '{schema}.{live_table}'"
+            )
+            return True
+
+    return False
+
+
+def get_column_names(db: DuckDBBackend, schema: str, table: str) -> set[str]:
+    query = (
+        "select column_name from duckdb_columns() "
+        "where database_name = current_database() and schema_name = ? and table_name = ?"
+    )
+    return {name for (name,) in db.raw_sql(query, parameters=[schema, table]).fetchall()}
 
 
 def get_stored_warehouse_tables() -> set[tuple[str, str]]:
@@ -1161,6 +1294,23 @@ def report_unexplained_orphan(schema: str, table: str, rows: int | None) -> None
             "or drop it by hand once you know what it holds."
         ),
     )
+
+
+def delete_legacy_parquet_files() -> list[str]:
+    """Delete the `<source>.<table>.parquet` copies the store kept before DuckDB.
+
+    Nothing has read them since the store moved into DuckDB: a table missing
+    from DuckDB is re-imported from its source, never read back from its old
+    file. Imports write their batches to the system temp folder.
+    """
+    folder = os.path.dirname(insights.warehouse.get_db_path())
+    deleted = []
+    for path in Path(folder).glob("*.parquet"):
+        with suppress(OSError):
+            path.unlink()
+            deleted.append(path.name)
+            frappe.logger().info(f"Data store cleanup: deleted legacy parquet file '{path.name}'")
+    return deleted
 
 
 def compact_warehouse() -> tuple[int, int] | None:

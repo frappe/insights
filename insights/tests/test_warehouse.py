@@ -24,6 +24,8 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
 
+DATA_SOURCE = "Site DB"
+
 # A reader in this process shares the DuckDB instance, so it never conflicts.
 # Only a second process reproduces the lock the web workers take in production.
 HOLD_READ_LOCK = """
@@ -47,13 +49,11 @@ class TestWarehouse(InsightsIntegrationTestCase):
     @contextmanager
     def warehouse_db(self):
         with tempfile.TemporaryDirectory(prefix="insights_warehouse_test_") as tmpdir:
-            db = open_local_duckdb(
-                str(Path(tmpdir) / "warehouse.duckdb"),
-                read_only=False,
-                allowed_dir=str(Path(tempfile.gettempdir())),
-            )
+            path = str(Path(tmpdir) / "warehouse.duckdb")
+            db = open_local_duckdb(path, read_only=False, allowed_dir=str(Path(tempfile.gettempdir())))
             try:
-                yield db
+                with patch.object(insights.warehouse, "get_db_path", lambda: path):
+                    yield db
             finally:
                 with suppress(Exception):
                     db.disconnect()
@@ -183,6 +183,64 @@ class TestWarehouse(InsightsIntegrationTestCase):
                 ],
             )
 
+    def schema_tables(self, db, schema="main"):
+        query = "select table_name from duckdb_tables() where database_name = current_database() and schema_name = ?"
+        return {name for (name,) in db.raw_sql(query, parameters=[schema]).fetchall()}
+
+    # @feature data-store.import-atomic
+    def test_a_replace_that_fails_mid_insert_keeps_the_old_rows_and_no_other_table(self):
+        with self.patched_warehouse() as db:
+            self.write_to_table(db, "t", [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
+
+            # `id` is a BIGINT column, so the cast fails once the insert reaches "three"
+            frame = pd.DataFrame(
+                {"id": ["2", "three"], "value": ["beta", "gamma"], "modified": ["2024-01-02"] * 2}
+            )
+            frame["modified"] = pd.to_datetime(frame["modified"])
+            with self.assertRaises(Exception):
+                with WarehouseTableWriter("t", table_schema=self.make_schema(), database="main") as writer:
+                    writer.insert(frame)
+                    writer.commit()
+
+            self.assertEqual(self.schema_tables(db), {"t"})
+            self.assertEqual(
+                self.read_rows(db, "t"), [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}]
+            )
+
+    # @feature data-store.storage-measure
+    def test_a_write_records_the_size_of_the_table_it_wrote(self):
+        from insights.insights.doctype.insights_data_source_v3.data_store_storage import get_storage
+
+        with self.patched_warehouse() as db:
+            self.write_to_table(
+                db,
+                "t",
+                [
+                    {"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"},
+                    {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
+                ],
+            )
+            entry = get_storage()["tables"]["main.t"]
+
+        self.assertEqual(entry["rows"], 2)
+        self.assertEqual(set(entry["columns"]), {"id", "value", "modified"})
+
+    # @feature data-store.storage-measure
+    def test_dropping_a_table_removes_its_size_and_keeps_the_others(self):
+        from insights.insights.doctype.insights_data_source_v3.data_store_storage import get_storage
+
+        rows = [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}]
+        with self.patched_warehouse() as db:
+            self.write_to_table(db, "t", rows)
+            with WarehouseTableWriter(
+                "tabtodo", table_schema=self.make_schema(), database="site_db"
+            ) as writer:
+                writer.insert(self.make_frame(rows))
+
+            WarehouseTable(DATA_SOURCE, "tabToDo").drop()
+
+            self.assertEqual(set(get_storage()["tables"]), {"main.t"})
+
     # @feature data-store.run-without-import
     def test_dropping_a_table_whose_schema_was_never_created_does_nothing(self):
         # a fresh site's store has no schema until its first import
@@ -201,6 +259,97 @@ class TestWarehouse(InsightsIntegrationTestCase):
             self.assertEqual(
                 row.isna().to_dict("records"), [{"positive": True, "negative": True, "undefined": True}]
             )
+
+    # skipped columns
+
+    def create_table_doc(self, table_name, **fields):
+        name = get_table_name(DATA_SOURCE, table_name)
+        if frappe.db.exists("Insights Table v3", name):
+            frappe.delete_doc("Insights Table v3", name, force=True, ignore_permissions=True)
+        doc = frappe.get_doc(
+            {
+                "doctype": "Insights Table v3",
+                "data_source": DATA_SOURCE,
+                "table": table_name,
+                "label": table_name,
+                **fields,
+            }
+        )
+        doc.flags.ignore_links = True
+        doc.insert(ignore_permissions=True)
+        self.addCleanup(frappe.delete_doc, "Insights Table v3", name, force=True, ignore_permissions=True)
+        return doc
+
+    def skip(self, doc, columns):
+        frappe.db.set_value("Insights Table v3", doc.name, "skipped_columns", frappe.as_json(columns))
+
+    def source_rows(self, ids):
+        frame = pd.DataFrame(
+            {
+                "id": ids,
+                "creation": [datetime(2024, 1, i) for i in ids],
+                "payload": [f"payload {i}" for i in ids],
+            }
+        )
+        return ibis.memtable(frame)
+
+    def run_import(self, db, table_name, source):
+        table = WarehouseTable(DATA_SOURCE, table_name)
+        importer = WarehouseTableImporter(table)
+        importer.prepare_log()
+        self.addCleanup(
+            frappe.delete_doc,
+            "Insights Table Import Log",
+            importer.log.name,
+            force=True,
+            ignore_permissions=True,
+        )
+        insights.db_connections["insights"] = db
+        try:
+            with patch.object(table, "get_remote_table", lambda: source):
+                importer.prepare_settings()
+                importer.prepare_remote_table()
+                importer.start_batch_import()
+        finally:
+            insights.db_connections.pop("insights", None)
+        return table
+
+    def stored(self, db, table):
+        rows = db.table(table.warehouse_table_name, database=table.schema).order_by("id").execute()
+        return list(rows.columns), rows["id"].tolist()
+
+    # @feature data-store.skip-column
+    def test_a_full_table_loses_a_skipped_column_on_its_next_import(self):
+        doc = self.create_table_doc("tabSkipFull", sync_mode="Full")
+
+        with self.patched_warehouse() as db:
+            table = self.run_import(db, "tabSkipFull", self.source_rows([1, 2]))
+            self.assertEqual(self.stored(db, table), (["id", "creation", "payload"], [1, 2]))
+
+            self.skip(doc, ["payload"])
+            self.run_import(db, "tabSkipFull", self.source_rows([1, 2, 3]))
+            self.assertEqual(self.stored(db, table), (["id", "creation"], [1, 2, 3]))
+
+    # @feature data-store.skip-column
+    def test_an_incremental_table_loses_a_skipped_column_and_keeps_appending(self):
+        doc = self.create_table_doc(
+            "tabSkipIncremental",
+            sync_mode="Incremental",
+            sync_strategy="Append Only",
+            sync_cursor_column="creation",
+            sync_from="2023-12-31 00:00:00",
+        )
+
+        with self.patched_warehouse() as db:
+            table = self.run_import(db, "tabSkipIncremental", self.source_rows([1, 2]))
+            self.assertEqual(self.stored(db, table), (["id", "creation", "payload"], [1, 2]))
+
+            self.skip(doc, ["payload"])
+            self.run_import(db, "tabSkipIncremental", self.source_rows([1, 2, 3]))
+            self.assertEqual(self.stored(db, table), (["id", "creation"], [1, 2, 3]))
+
+            self.run_import(db, "tabSkipIncremental", self.source_rows([1, 2, 3, 4]))
+            self.assertEqual(self.stored(db, table), (["id", "creation"], [1, 2, 3, 4]))
 
 
 class TestWarehouseWriteLock(InsightsIntegrationTestCase):

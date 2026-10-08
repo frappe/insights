@@ -23,6 +23,7 @@
   "sync_strategy",
   "sync_cursor_column",
   "sync_primary_key_column",
+  "skipped_columns",
   "last_sync_bookmark",
   "section_break_mdzv",
   "before_import_script"
@@ -139,6 +140,12 @@
    "mandatory_depends_on": "eval:doc.sync_mode == 'Incremental' && doc.sync_strategy == 'Update or Insert'"
   },
   {
+   "description": "Columns the import leaves out and removes from the stored table.",
+   "fieldname": "skipped_columns",
+   "fieldtype": "JSON",
+   "label": "Skipped Columns"
+  },
+  {
    "depends_on": "eval:doc.sync_mode == 'Incremental'",
    "description": "Start importing rows from this datetime onward (used on first sync only)",
    "fieldname": "sync_from",
@@ -170,7 +177,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-27 14:00:00.000000",
+ "modified": "2026-10-08 13:32:02.620468",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",

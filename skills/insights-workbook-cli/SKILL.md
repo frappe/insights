@@ -136,7 +136,7 @@ A newer site searches columns directly, across every table the caller may read:
 frappectl -s $SITE method call insights.api.ai.search.search_columns -F term=partner
 ```
 
-It answers from stored column lists. A table nobody has synced or opened is not in it, so an empty answer is not proof. Fall back to `get_schema` when the answer matters.
+It answers from stored column lists. A table nobody has synced or opened is not in it, so an empty answer is not proof. Fall back to `get_schema` when the answer matters. Neither lists a column an admin skipped: the data store no longer holds it.
 
 **Pick tables the dashboard's reader can read.** A chart runs with its reader's permissions unless its `run_as_owner` is set. A reader who cannot read a table sees the card refused: on one site a Sales Manager could not read Item, and an Expense Approver could not read Employee. Ask who reads the dashboard. If it needs a table that reader cannot read, say so in the scope block.
 

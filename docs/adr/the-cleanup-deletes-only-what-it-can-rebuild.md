@@ -30,6 +30,15 @@ rebuildable.** A table is dropped when one of these holds:
 - A live or re-importable table replaced it. This covers the flat
   `main."<source>.<table>"` copies left by the move to one schema per source.
 - It holds no rows.
+- It is a Leftover Table, and a table the sweep expects in the same schema
+  has the same column names and at least as many rows. That table is the one
+  the dead import was replacing, re-imported since. Imports commit in one
+  transaction now, so this only clears the leftovers already on disk.
+
+The legacy `<source>.<table>.parquet` files in the warehouse folder go too.
+They are the store from before it moved into DuckDB (c8e18d27, 2026-01-25).
+Nothing has read them since: a table missing from DuckDB is re-imported from
+its source.
 
 The sweep keeps everything else and reports it through `Error Log`. A row count
 that fails reads as "not empty".
