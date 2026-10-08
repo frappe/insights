@@ -73,6 +73,7 @@ class InsightsTablev3(Document):
 
     def before_save(self):
         self.drop_full_copy_on_switch_to_incremental()
+        self.check_cursor_is_stored()
 
     def drop_full_copy_on_switch_to_incremental(self):
         """An incremental import resumes from the newest stored cursor, so a Full copy
@@ -99,6 +100,26 @@ class InsightsTablev3(Document):
 
         table.drop()
         self.last_sync_bookmark = None
+
+    def check_cursor_is_stored(self):
+        """An incremental import resumes from the newest stored cursor, so a new cursor
+        must be a column of the stored rows."""
+        if not self.get_doc_before_save() or not self.has_value_changed("sync_cursor_column"):
+            return
+        if self.sync_mode != "Incremental":
+            return
+
+        table = insights.warehouse.get_table(self.data_source, self.table)
+        db = insights.warehouse.db
+        if table.warehouse_table_name not in db.list_tables(database=table.schema):
+            return
+
+        if self.sync_cursor_column not in db.table(table.warehouse_table_name, database=table.schema).columns:
+            frappe.throw(
+                frappe._(
+                    "The stored rows of {0} have no column {1}. Clear its stored data to use it as the cursor."
+                ).format(frappe.bold(self.table), frappe.bold(self.sync_cursor_column))
+            )
 
     def _validate_incremental_sync_config(self):
         try:

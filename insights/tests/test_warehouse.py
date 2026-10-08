@@ -617,3 +617,14 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.run_import(["b", "c"])
 
         self.assertEqual(self.stored_names(), ["a", "b", "c"])
+
+    # @feature data-store.import-cursor
+    def test_the_cursor_cannot_change_to_a_column_the_stored_rows_lack(self):
+        self.run_import(["a", "b"])
+
+        doc = frappe.get_doc("Insights Table v3", self.table_doc)
+        doc.sync_cursor_column = "modified"
+        with self.assertRaises(frappe.ValidationError):
+            doc.save(ignore_permissions=True)
+
+        self.assertEqual(self.stored_names(), ["a", "b"])
