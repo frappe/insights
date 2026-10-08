@@ -633,12 +633,16 @@ class WarehouseTableImporter:
         `last_sync_bookmark` is saved after the store's commit, in another database.
         A run that commits and then fails to save it would read its rows again and
         append them twice.
+
+        A read-only open fails at once while another import commits, so the read
+        waits on the write connection as the commit does.
         """
-        try:
-            stored = insights.warehouse.db.table(self.table.warehouse_table_name, database=self.table.schema)
-            bookmark = stored[self.cursor_column].max().execute()
-        except TableNotFound:
-            bookmark = None
+        with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
+            try:
+                stored = db.table(self.table.warehouse_table_name, database=self.table.schema)
+                bookmark = stored[self.cursor_column].max().execute()
+            except TableNotFound:
+                bookmark = None
 
         if pd.notna(bookmark):
             self.resumed = True

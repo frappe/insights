@@ -442,7 +442,8 @@ HOLD_WRITE_LOCK = """
 import sys, time, duckdb
 con = duckdb.connect(sys.argv[1])
 print("held", flush=True)
-time.sleep(30)
+time.sleep(float(sys.argv[2]))
+con.close()
 """
 
 
@@ -524,7 +525,7 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         def commit_then_hand_over(writer):
             rows = commit(writer)
             holder = subprocess.Popen(
-                [sys.executable, "-c", HOLD_WRITE_LOCK, self.path], stdout=subprocess.PIPE, text=True
+                [sys.executable, "-c", HOLD_WRITE_LOCK, self.path, "30"], stdout=subprocess.PIPE, text=True
             )
             self.assertEqual(holder.stdout.readline().strip(), "held")
             holders.append(holder)
@@ -589,5 +590,18 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         doc.sync_mode = "Incremental"
         with self.assertRaises(frappe.ValidationError):
             doc.save(ignore_permissions=True)
+
+        self.assertEqual(self.stored_names(), ["a", "b"])
+
+    # @feature data-store.import-cursor
+    def test_a_first_incremental_import_waits_for_another_writer(self):
+        open_local_duckdb(self.path, read_only=False).disconnect()
+        holder = subprocess.Popen(
+            [sys.executable, "-c", HOLD_WRITE_LOCK, self.path, "2"], stdout=subprocess.PIPE, text=True
+        )
+        self.addCleanup(holder.wait)
+        self.assertEqual(holder.stdout.readline().strip(), "held")
+
+        self.run_import(["a", "b"])
 
         self.assertEqual(self.stored_names(), ["a", "b"])
