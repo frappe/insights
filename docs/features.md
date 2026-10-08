@@ -274,7 +274,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | workbook.delete | A user deletes a workbook and its queries, charts and dashboards go with it. |
 | workbook.add-items | A user adds a query, a chart on the active query, or a dashboard from the sidebar. |
 | workbook.remove-item | A user removes a query, chart or dashboard from the sidebar. |
-| workbook.folders | A user creates, renames and removes folders and moves items into them. |
+| workbook.folders | A user creates, renames and removes folders and moves items into them. Opening an item opens its folder. |
 | workbook.reorder | A user reorders items and folders by dragging, and a stale item in the order is skipped. |
 | workbook.duplicate | A user duplicates a workbook into an independent copy with the same folders. |
 | workbook.copy-paste | A user copies a workbook as JSON and pastes it as a new workbook, every reference pointing at the new copies. |

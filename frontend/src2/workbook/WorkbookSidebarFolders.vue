@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Folder, FolderOpen, FolderPlus, PenLine, Plus, X } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
 import type { WorkbookChart, WorkbookFolder, WorkbookQuery } from '../types/workbook.types'
 import { setDraggedItem } from './workbook_drag'
@@ -70,6 +70,15 @@ function toggleFolder(folder: WorkbookFolder) {
 		expandedFolders.value.add(folder.name)
 	}
 }
+
+// Keyed on the item, not its folder, so dropping the open item into a
+// collapsed folder leaves the folder collapsed.
+const activeItem = computed(() => section.items.find((item) => section.isActive(item)))
+watch(
+	() => activeItem.value?.name,
+	() => activeItem.value?.folder && expandedFolders.value.add(activeItem.value.folder),
+	{ immediate: true },
+)
 
 function isFolderExpanded(folderName: string) {
 	return expandedFolders.value.has(folderName)
