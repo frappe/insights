@@ -10,6 +10,12 @@ from frappe.utils import add_days, now_datetime
 import insights
 from insights.insights.doctype.insights_data_source_v3 import data_warehouse
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import open_local_duckdb
+from insights.insights.doctype.insights_data_source_v3.data_store_storage import (
+    get_storage,
+    measure_data_store,
+    measure_table,
+    record_table_storage,
+)
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     compact_warehouse,
     drop_orphan_warehouse_tables,
@@ -392,6 +398,65 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
             self.assertEqual(kept, [], "a known import job table is explained, so it raises no alarm")
             self.assertIn(("job_schema", "cleanup_job_table"), self.warehouse_tables(db))
 
+    # @feature data-store.cleanup-keeps-unexplained
+    def test_orphan_sweep_drops_a_leftover_table_a_live_table_holds(self):
+        """A dead import left `ibis_duckdb_table_*`; the live table has been re-imported since."""
+        self.create_table("tabCleanupLive")
+        schema = data_warehouse.get_warehouse_schema_name(DATA_SOURCE)
+        leftover = "ibis_duckdb_table_cleanuplive"
+
+        with self.warehouse_file() as (db, _):
+            db.raw_sql(f'create schema "{schema}"')
+            db.raw_sql(f'create table "{schema}".tabcleanuplive as select i as a, i as b from range(3) t(i)')
+            db.raw_sql(f'create table "{schema}".{leftover} as select i as b, i as a from range(3) t(i)')
+
+            with self.patched_write_connection(db):
+                dropped, kept = drop_orphan_warehouse_tables()
+
+            self.assertEqual(dropped, [f"{schema}.{leftover}"])
+            self.assertEqual(kept, [])
+            self.assertEqual(self.warehouse_tables(db), {(schema, "tabcleanuplive")})
+
+    # @feature data-store.cleanup-keeps-unexplained
+    def test_orphan_sweep_keeps_a_leftover_table_no_live_table_holds(self):
+        """More rows than the live table, or other columns: the leftover may hold rows nothing else does."""
+        self.create_table("tabCleanupLive")
+        schema = data_warehouse.get_warehouse_schema_name(DATA_SOURCE)
+
+        with self.warehouse_file() as (db, _):
+            db.raw_sql(f'create schema "{schema}"')
+            db.raw_sql(f'create table "{schema}".tabcleanuplive as select i as a, i as b from range(3) t(i)')
+            db.raw_sql(
+                f'create table "{schema}".ibis_duckdb_table_more as select i as a, i as b from range(4) t(i)'
+            )
+            db.raw_sql(
+                f'create table "{schema}".ibis_duckdb_table_other as select i as a, i as c from range(2) t(i)'
+            )
+
+            with self.patched_write_connection(db):
+                dropped, kept = drop_orphan_warehouse_tables()
+
+            self.assertEqual(dropped, [])
+            self.assertEqual(
+                sorted(kept), [f"{schema}.ibis_duckdb_table_more", f"{schema}.ibis_duckdb_table_other"]
+            )
+
+    # @feature data-store.cleanup-legacy-parquet
+    def test_cleanup_deletes_the_parquet_files_the_store_kept_before_duckdb(self):
+        with self.warehouse_file() as (db, path):
+            folder = Path(path).parent
+            db.raw_sql(f"copy (select 1 as a) to '{folder / 'site_db.tabtodo.parquet'}' (format parquet)")
+            (folder / "storage.json").write_text("{}")
+
+            with patch.object(insights.warehouse, "get_db_path", lambda: path):
+                deleted = data_warehouse.delete_legacy_parquet_files()
+
+            self.assertEqual(deleted, ["site_db.tabtodo.parquet"])
+            self.assertEqual(
+                sorted(p.name for p in folder.iterdir() if not p.name.startswith("insights.duckdb")),
+                ["storage.json"],
+            )
+
     # compaction
 
     # @feature data-store.compaction
@@ -427,3 +492,90 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
                 self.assertEqual(int(rebuilt.table("keep", database="s").count().execute()), 1000)
             finally:
                 rebuilt.disconnect()
+
+    # measurement
+
+    @contextmanager
+    def measured_warehouse(self):
+        with self.warehouse_file() as (db, path):
+            with (
+                patch.object(insights.warehouse, "get_db_path", lambda: path),
+                self.patched_write_connection(db),
+            ):
+                yield db
+
+    def create_wide_table(self, db, schema, table, rows=2000):
+        db.raw_sql(f'create schema if not exists "{schema}"')
+        # 5 KB strings overflow into blocks of their own; the two integer
+        # columns are small enough to share a block with the string column.
+        db.raw_sql(
+            f'create or replace table "{schema}"."{table}" as '
+            "select i, repeat('x', 5000) || i::varchar as body, i % 3 as bucket "
+            f"from range({rows}) t(i)"
+        )
+
+    def used_bytes(self, db):
+        db.raw_sql("CHECKPOINT")
+        block_size, used_blocks = db.raw_sql(
+            "select block_size, used_blocks from pragma_database_size() "
+            "where database_name = current_database()"
+        ).fetchone()
+        return block_size * used_blocks
+
+    # @feature data-store.storage-measure
+    def test_column_bytes_sum_to_what_dropping_the_table_frees(self):
+        with self.warehouse_file() as (db, _):
+            self.create_wide_table(db, "s", "wide")
+            db.raw_sql('create table "s".other as select i from range(10) t(i)')
+            db.raw_sql("CHECKPOINT")
+
+            measured = measure_table(db, "s", "wide")
+            used_before = self.used_bytes(db)
+            db.raw_sql('drop table "s".wide')
+            freed = used_before - self.used_bytes(db)
+
+        self.assertEqual(measured["rows"], 2000)
+        self.assertEqual(sum(measured["columns"].values()), measured["bytes"])
+        self.assertEqual(measured["bytes"], freed)
+        self.assertEqual(set(measured["columns"]), {"i", "body", "bucket"})
+        self.assertGreater(measured["columns"]["i"], 0, "a column sharing a block gets a share of it")
+        self.assertGreater(measured["columns"]["body"], 10 * measured["columns"]["i"])
+
+    # @feature data-store.storage-measure
+    def test_measure_lists_every_table_and_counts_space_a_dropped_column_frees(self):
+        with self.measured_warehouse() as db:
+            self.create_wide_table(db, "a", "wide")
+            db.raw_sql('create schema "b"')
+            db.raw_sql('create table "b".small as select i from range(10) t(i)')
+
+            first = measure_data_store()
+            db.raw_sql('alter table "a".wide drop column body')
+            second = measure_data_store()
+
+            self.assertEqual(get_storage(), second)
+
+        self.assertEqual(set(first["tables"]), {"a.wide", "b.small"})
+        self.assertEqual(first["tables"]["b.small"]["rows"], 10)
+        self.assertNotIn("body", second["tables"]["a.wide"]["columns"])
+        # The column's share of the block it shares with others stays used.
+        self.assertGreaterEqual(
+            second["free_bytes"] - first["free_bytes"],
+            first["tables"]["a.wide"]["columns"]["body"] - first["block_size"],
+        )
+
+    # @feature data-store.storage-measure
+    def test_recording_one_table_keeps_the_other_entries(self):
+        with self.measured_warehouse() as db:
+            self.create_wide_table(db, "a", "wide")
+            db.raw_sql('create schema "b"')
+            db.raw_sql('create table "b".small as select i from range(10) t(i)')
+            before = measure_data_store()
+
+            db.raw_sql('insert into "b".small select i from range(10, 25) t(i)')
+            record_table_storage(db, "b", "small")
+            after = get_storage()
+
+        self.assertEqual(after["tables"]["b.small"]["rows"], 25)
+        self.assertEqual(after["tables"]["a.wide"], before["tables"]["a.wide"])
+        self.assertEqual(after["measured_on"], before["measured_on"])
+        self.assertEqual(after["free_bytes"], before["free_bytes"])

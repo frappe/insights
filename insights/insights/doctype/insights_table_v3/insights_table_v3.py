@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 
+from collections.abc import Iterable
 from hashlib import md5
 
 import frappe
@@ -39,6 +40,7 @@ class InsightsTablev3(Document):
         last_sync_bookmark: DF.Data | None
         last_synced_on: DF.Datetime | None
         row_limit: DF.Int
+        skipped_columns: DF.JSON | None
         stored: DF.Check
         sync_cursor_column: DF.Data | None
         sync_from: DF.Datetime | None
@@ -61,6 +63,8 @@ class InsightsTablev3(Document):
 
         if self.sync_mode == "Incremental":
             self._validate_incremental_sync_config()
+
+        self._validate_skipped_columns()
 
         if self.before_import_script:
             from insights.insights.doctype.insights_data_source_v3.ibis_utils import exec_with_return
@@ -114,6 +118,45 @@ class InsightsTablev3(Document):
                 frappe.throw(
                     f"Primary Key Column <b>{self.sync_primary_key_column}</b> does not exist in <b>{self.table}</b>."
                 )
+
+    def _validate_skipped_columns(self):
+        skipped = get_skipped_columns(self)
+        self.skipped_columns = frappe.as_json(skipped) if skipped else None
+
+        source_columns = [c.get("name") for c in frappe.parse_json(self.columns or "[]") or []]
+        required = get_required_columns(self, source_columns)
+        needed = [column for column in skipped if column in required]
+        if needed:
+            frappe.throw(
+                frappe._("{0} is needed to import or permit the table and cannot be skipped.").format(
+                    ", ".join(frappe.bold(column) for column in needed)
+                ),
+                title=frappe._("Column Needed By The Data Store"),
+            )
+
+        before = self.get_doc_before_save()
+        newly_skipped = [c for c in skipped if c not in (get_skipped_columns(before) if before else [])]
+        if not newly_skipped:
+            return
+
+        from insights.insights.doctype.insights_table_v3.column_usage import get_column_readers
+
+        read = {
+            column: readers
+            for column, readers in get_column_readers(self.data_source, self.table, newly_skipped).items()
+            if readers
+        }
+        if read:
+            frappe.throw(
+                "<br>".join(
+                    frappe._("{0} is read by {1}").format(
+                        frappe.bold(column),
+                        ", ".join(f"{reader_label(r['doctype'])} {frappe.bold(r['title'])}" for r in readers),
+                    )
+                    for column, readers in read.items()
+                ),
+                title=frappe._("Columns In Use"),
+            )
 
     @staticmethod
     def bulk_create(data_source: str, tables: list[str]):
@@ -215,6 +258,17 @@ class InsightsTablev3(Document):
             commit=True,
         )
 
+    @frappe.whitelist(methods=["POST"])
+    def skip_columns(self, columns: list[str]):
+        frappe.only_for("Insights Admin")
+        self.check_identity()
+        # the document came from the request body; only the skip may change
+        self.load_from_db()
+        self.skipped_columns = [*get_skipped_columns(self), *columns]
+        self.save()
+        if self.stored:
+            insights.warehouse.get_table(self.data_source, self.table).enqueue_import()
+
     @frappe.whitelist()
     def get_stats(self):
         """Return usage and sync statistics for this table."""
@@ -224,6 +278,46 @@ class InsightsTablev3(Document):
 
 def get_table_name(data_source, table):
     return md5((data_source + table).encode()).hexdigest()[:10]
+
+
+def reader_label(doctype: str) -> str:
+    return {
+        "Insights Query v3": frappe._("Query"),
+        "Insights Chart v3": frappe._("Chart"),
+        "Insights Dashboard v3": frappe._("Dashboard"),
+        "Insights Alert": frappe._("Alert"),
+    }[doctype]
+
+
+def get_skipped_columns(table) -> list[str]:
+    """`skipped_columns` of a table document or row, deduplicated, in order."""
+    skipped = frappe.parse_json(table.get("skipped_columns") or "[]") or []
+    return list(dict.fromkeys(column for column in skipped if isinstance(column, str) and column))
+
+
+def get_batch_cursor(columns: Iterable[str]) -> str:
+    """The column a full import orders and filters its batches on, or "" for none."""
+    columns = set(columns)
+    return next((column for column in ("creation", "timestamp") if column in columns), "")
+
+
+def get_required_columns(table, columns: Iterable[str]) -> set[str]:
+    """The columns the store cannot do without, so none of them may be skipped.
+
+    An incremental import finds what changed by its cursor and merges on its
+    primary key. A full import batches on `get_batch_cursor` of `columns`. On
+    the site database, `desk_predicate` filters rows by `name`, and
+    `tabSingles` rows by `doctype`.
+    """
+    if table.get("sync_mode") == "Incremental":
+        required = {table.get("sync_cursor_column"), table.get("sync_primary_key_column")}
+    else:
+        required = {get_batch_cursor(columns)}
+    if is_site_db(table.get("data_source")):
+        required.add("name")
+        if strip_schema_prefix(table.get("table") or "") == "tabSingles":
+            required.add("doctype")
+    return {column for column in required if column}
 
 
 def store_columns(data_source: str, table_name: str, schema: ibis.Schema) -> None:
@@ -267,6 +361,8 @@ def get_stored_columns(
     is narrowed to what the caller may read. A table synced before the columns were
     stored is left out - it has nothing to report.
 
+    A skipped column is left out: the stored table no longer holds it.
+
     `contains` drops a table whose stored list does not hold the string at all, before
     the permission checks run. The read itself is still every table's stored list. It
     is the permission check, the expensive half, that a search pays only for what it
@@ -276,7 +372,7 @@ def get_stored_columns(
     tables = frappe.get_list(
         "Insights Table v3",
         filters={"data_source": data_source} if data_source else None,
-        fields=["name", "table", "label", "data_source", "columns"],
+        fields=["name", "table", "label", "data_source", "columns", "skipped_columns"],
         limit=0,
     )
 
@@ -293,13 +389,13 @@ def get_stored_columns(
             continue
         if not check_table_permission(table.data_source, table.table, user=user, raise_error=False):
             continue
+        skipped = set(get_skipped_columns(table))
+        columns = [c for c in frappe.parse_json(table.columns) if c.get("name") not in skipped]
         permitted[table.name] = frappe._dict(
             data_source=table.data_source,
             table=table.table,
             label=table.label,
-            columns=filter_permitted_columns(
-                table.data_source, table.table, frappe.parse_json(table.columns), user=user
-            ),
+            columns=filter_permitted_columns(table.data_source, table.table, columns, user=user),
         )
     return permitted
 

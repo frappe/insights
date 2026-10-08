@@ -14,11 +14,18 @@ def runs_stored_procedure(raw_sql: str) -> bool:
     return sqlparse.format(raw_sql, strip_comments=True).strip().lower().startswith("exec")
 
 
-def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> list[frappe._dict]:
+def parse_sql(raw_sql: str, dialect: sg.Dialect | None = None) -> sg.Expression | None:
+    """`raw_sql` parsed, or None if sqlglot cannot parse it."""
     try:
-        parsed = sg.parse_one(sqlparse.format(raw_sql, strip_comments=True), dialect=dialect)
+        return sg.parse_one(sqlparse.format(raw_sql, strip_comments=True), dialect=dialect)
     except Exception:
-        return []  # nosemgrep - an unparseable query runs nothing, so it reads no table
+        return None  # nosemgrep - the caller decides what an unparseable query means
+
+
+def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> list[frappe._dict]:
+    parsed = parse_sql(raw_sql, dialect)
+    if parsed is None:
+        return []
 
     table_refs = []
     seen_refs = set()
@@ -142,6 +149,28 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
             seen.add(key)
             result.append({"data_source": ds, "table_name": ref.name})
     return result
+
+
+def unparsed_sql_data_sources(operations) -> set[str]:
+    """The data sources of the native SQL operations sqlglot cannot parse.
+
+    `table_references` finds no table in such SQL, though the source may still
+    run it, so a caller that must not under-count treats it as reading any table.
+    """
+    from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+        db_type_to_sqlglot_dialect,
+    )
+
+    sources = set()
+    for op in frappe.parse_json(operations) or []:
+        if op.get("type") != "sql" or not op.get("raw_sql") or not op.get("data_source"):
+            continue
+        db_type = frappe.db.get_value(
+            "Insights Data Source v3", op["data_source"], "database_type", cache=True
+        )
+        if parse_sql(op["raw_sql"], db_type_to_sqlglot_dialect(db_type)) is None:
+            sources.add(op["data_source"])
+    return sources
 
 
 def table_references(operations) -> list[dict]:

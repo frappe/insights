@@ -154,11 +154,23 @@ _Avoid_: warehouse (implementation file name only)
 **Table Import**:
 The sync job that copies a source table into the Data Store.
 
+**Skipped Column**:
+A source column a Table Import leaves out, and removes from the stored table, so
+its space comes back. Only a column no query, chart, dashboard filter or alert
+names may be skipped, and never the incremental sync's cursor or key.
+_Avoid_: excluded column, dropped column
+
 **Unexplained Orphan**:
 A Data Store table the weekly cleanup cannot show to be rebuildable. The cleanup
 keeps it and raises an `Error Log`. See the cleanup ADR,
 `docs/adr/the-cleanup-deletes-only-what-it-can-rebuild.md`.
 _Avoid_: unknown table, stray table
+
+**Leftover Table**:
+An `ibis_duckdb_table_*` table in the Data Store, left by an import that died
+mid-write. The weekly cleanup drops it once a live table holds the same columns
+and at least as many rows; otherwise it stays an Unexplained Orphan.
+_Avoid_: temp table, ibis table
 
 ### Framework integration
 

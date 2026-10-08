@@ -43,6 +43,7 @@ ENDPOINTS_ACCEPTING_GET = [
     "insights.api.data_sources.test_connection",
     "insights.api.data_sources.update_table_links",
     "insights.api.data_store.get_data_store_tables",
+    "insights.api.data_store.get_storage",
     "insights.api.get_app_version",
     "insights.api.get_doc",
     "insights.api.get_file_data",
