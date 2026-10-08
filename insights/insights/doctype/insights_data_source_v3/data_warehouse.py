@@ -10,6 +10,8 @@ import frappe
 import frappe.utils
 import ibis
 import pandas as pd
+import pyarrow as pa
+import pyarrow.compute as pc
 from duckdb import CatalogException, DependencyException
 from frappe.query_builder.functions import IfNull, Max, Min
 from frappe.utils import add_days, get_datetime, get_files_path, now, now_datetime
@@ -196,7 +198,7 @@ class WarehouseTableWriter:
         self._cleanup_temp_dir()
         return False
 
-    def insert(self, data: pd.DataFrame | Expr) -> Expr:
+    def insert(self, data: pd.DataFrame | pa.Table | Expr) -> Expr:
         if self._temp_dir is None:
             raise RuntimeError("WarehouseTableWriter must be used as a context manager")
 
@@ -236,15 +238,16 @@ class WarehouseTableWriter:
                 parquet_glob = str(self._temp_dir / "*.parquet")
                 merged = db.read_parquet(parquet_glob)
 
-                if self._table_exists(db) and self.mode in ("append", "upsert"):
-                    self._add_missing_columns(db, merged)
-                    self._delete_from_bookmark(db)
-                    if self.mode == "append":
-                        db.insert(self.table_name, merged)
-                    elif self.mode == "upsert":
-                        self._upsert(db, merged)
-                else:
-                    db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
+                with transaction(db):
+                    if self._table_exists(db) and self.mode in ("append", "upsert"):
+                        self._add_missing_columns(db, merged)
+                        self._delete_from_bookmark(db)
+                        if self.mode == "append":
+                            db.insert(self.table_name, merged)
+                        elif self.mode == "upsert":
+                            self._upsert(db, merged)
+                    else:
+                        db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
 
                 self._log("Commit completed.")
 
@@ -335,6 +338,17 @@ class WarehouseTableWriter:
     def batch_count(self) -> int:
         """Number of batches inserted so far."""
         return self._batch_count
+
+
+@contextmanager
+def transaction(db: DuckDBBackend):
+    db.con.begin()
+    try:
+        yield
+    except BaseException:
+        db.con.rollback()
+        raise
+    db.con.commit()
 
 
 class WarehouseTable:
@@ -754,33 +768,44 @@ class WarehouseTableImporter:
 
         while True:
             batch = self.read_batch(writer, remaining.order_by(ordered).head(batch_size))
-            if len(batch) < batch_size:
+            if batch.num_rows < batch_size:
                 break
 
-            last = batch[self.cursor_column].max()
-            before_last = batch[batch[self.cursor_column].isna() | (batch[self.cursor_column] < last)]
-            if before_last.empty:
-                # one cursor value holds more rows than a batch
-                group = self.read_batch(writer, self.remote_table.filter(cursor == last))
-                total_rows += self.write_batch(writer, group)
-                remaining = self.remote_table.filter(cursor > last)
-            else:
+            values = batch[self.cursor_column]
+            last = pc.max(values)
+            # NULL sorts first: before any value, but not before NULL
+            before_last = batch.filter(pc.fill_null(pc.less(values, last), last.is_valid))
+            if before_last.num_rows:
                 total_rows += self.write_batch(writer, before_last)
-                remaining = self.remote_table.filter(cursor >= last)
+                remaining = self.remote_table.filter(cursor >= last.as_py())
+            else:
+                # one cursor value, or NULL, holds more rows than a batch
+                at_last, after_last = self.get_group_filters(last.as_py())
+                total_rows += self.write_batch(
+                    writer, self.read_batch(writer, self.remote_table.filter(at_last))
+                )
+                remaining = self.remote_table.filter(after_last)
 
         total_rows += self.write_batch(writer, batch)
         self._log(f"Total Batches: {writer.batch_count} Total Rows: {total_rows}")
         return total_rows
 
-    def read_batch(self, writer: WarehouseTableWriter, query: Expr) -> pd.DataFrame:
+    def get_group_filters(self, value) -> tuple[Expr, Expr]:
+        """Filters for the rows at a cursor value and the rows after it."""
+        cursor = _[self.cursor_column]
+        if value is None:
+            return cursor.isnull(), cursor.notnull()
+        return cursor == value, cursor > value
+
+    def read_batch(self, writer: WarehouseTableWriter, query: Expr) -> pa.Table:
         self._log(f"Processing batch: {writer.batch_count + 1}")
         self._log(f"Batch Query: \n{ibis.to_sql(query)}")
-        return query.execute()
+        return query.to_pyarrow()
 
-    def write_batch(self, writer: WarehouseTableWriter, rows: pd.DataFrame) -> int:
+    def write_batch(self, writer: WarehouseTableWriter, rows: pa.Table) -> int:
         writer.insert(rows)
-        self._log(f"Rows: {len(rows)}")
-        return len(rows)
+        self._log(f"Rows: {rows.num_rows}")
+        return rows.num_rows
 
     def capture_outcome(self):
         """Report how the import ended, and nothing about what it read.
