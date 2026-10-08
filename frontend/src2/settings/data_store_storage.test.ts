@@ -5,6 +5,8 @@ import {
 	formatBytes,
 	readersLabel,
 	storageSegments,
+	StorageNode,
+	storageTree,
 	StoredColumn,
 	StoredTable,
 	tableSegments,
@@ -159,5 +161,29 @@ describe('readersLabel', () => {
 			'2 queries',
 			'2 readers',
 		])
+	})
+})
+
+describe('storageTree', () => {
+	// @feature data-store.storage-breakdown
+	it('nests each table its columns largest first, then the cleanup tables under one last node', () => {
+		const jobs = table('Job', [column('name', 1 * MB), column('data', 9 * MB)])
+		const cleanup_tables = [
+			{ schema: 'main', table: 'small', bytes: 1 * MB, reason: 'empty' as const },
+			{ schema: 'main', table: 'big', bytes: 5 * MB, reason: 'leftover' as const },
+		]
+		const tree = storageTree(storage([jobs], { cleanup_tables }))
+		const labels = (node: StorageNode) =>
+			'children' in node ? node.children.map((child) => child.label) : []
+		expect(tree.map((node) => [node.key, node.bytes, labels(node)])).toEqual([
+			['table:Job', 10 * MB, ['data', 'name']],
+			['cleanup', 6 * MB, ['main.big', 'main.small']],
+		])
+	})
+
+	// @feature data-store.storage-breakdown
+	it('leaves out the cleanup node when cleanup removes nothing', () => {
+		const tree = storageTree(storage([table('Job', [column('name', MB)])]))
+		expect(tree.map((node) => node.kind)).toEqual(['table'])
 	})
 })

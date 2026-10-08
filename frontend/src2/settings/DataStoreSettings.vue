@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import NumberInput from '../components/NumberInput.vue'
 import session from '../session'
+import { __ } from '../translation'
 import DataStoreStorage from './DataStoreStorage.vue'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
@@ -13,10 +14,9 @@ settings.load()
 	<div class="flex w-full flex-col gap-6 overflow-y-scroll p-8 px-10">
 		<h1 class="text-2xl-semibold">Data Store</h1>
 
-		<template v-if="session.user.is_admin">
-			<DataStoreStorage />
-			<hr class="border-outline-gray-1" />
-		</template>
+		<DataStoreStorage v-if="session.user.is_admin" />
+
+		<h2 class="text-lg-semibold text-ink-gray-8">{{ __('Import') }}</h2>
 
 		<SettingItem
 			label="Enable"

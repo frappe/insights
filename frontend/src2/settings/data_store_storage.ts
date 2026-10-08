@@ -161,6 +161,55 @@ export function readersLabel(readers: ColumnReader[]): string {
 	return count === 1 ? __('1 reader') : __('{0} readers', String(count))
 }
 
-export function columnsBySize(table: StoredTable): StoredColumn[] {
-	return [...table.columns].sort((a, b) => b.bytes - a.bytes)
+type NodeBase = { key: string; label: string; bytes: number; segments: BarSegment[] }
+
+export type StorageNode = NodeBase &
+	(
+		| { kind: 'table'; table: StoredTable; children: StorageNode[] }
+		| { kind: 'column'; table: StoredTable; column: StoredColumn }
+		| { kind: 'cleanup'; children: StorageNode[] }
+		| { kind: 'cleanup_table'; cleanupTable: CleanupTable }
+	)
+
+function bySize<T extends { bytes: number }>(items: T[]): T[] {
+	return [...items].sort((a, b) => b.bytes - a.bytes)
+}
+
+export function storageTree(storage: DataStoreStorage): StorageNode[] {
+	const tables: StorageNode[] = storage.tables.map((table) => ({
+		kind: 'table',
+		key: `table:${table.name}`,
+		label: table.label,
+		bytes: table.bytes,
+		segments: tableSegments(storage, table),
+		table,
+		children: bySize(table.columns).map((column) => ({
+			kind: 'column',
+			key: `column:${table.name}:${column.name}`,
+			label: column.name,
+			bytes: column.bytes,
+			segments: [],
+			table,
+			column,
+		})),
+	}))
+	if (!storage.cleanup_tables.length) return tables
+
+	const cleanupBytes = storage.cleanup_tables.reduce((sum, t) => sum + t.bytes, 0)
+	const cleanup: StorageNode = {
+		kind: 'cleanup',
+		key: 'cleanup',
+		label: __('Cleanup removes'),
+		bytes: cleanupBytes,
+		segments: [groupSegment('cleanup', cleanupBytes, storage.unread_days)],
+		children: bySize(storage.cleanup_tables).map((cleanupTable) => ({
+			kind: 'cleanup_table',
+			key: `cleanup:${cleanupTable.schema}.${cleanupTable.table}`,
+			label: `${cleanupTable.schema}.${cleanupTable.table}`,
+			bytes: cleanupTable.bytes,
+			segments: [],
+			cleanupTable,
+		})),
+	}
+	return [...tables, cleanup]
 }

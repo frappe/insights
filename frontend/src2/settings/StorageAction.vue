@@ -11,7 +11,6 @@ const props = defineProps<{
 	tooltip?: string
 	table: StoredTable
 	action: () => Promise<unknown>
-	revealClass: string
 }>()
 
 const emit = defineEmits<{ done: [] }>()
@@ -42,7 +41,11 @@ function run() {
 <template>
 	<div
 		class="flex shrink-0 items-center gap-1.5"
-		:class="confirming ? '' : revealClass"
+		:class="
+			confirming
+				? ''
+				: 'opacity-0 group-hover/row:opacity-100 group-focus-within/row:opacity-100'
+		"
 		@click.stop
 		@keydown.stop
 	>
