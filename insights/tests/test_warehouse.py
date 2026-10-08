@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -435,3 +436,172 @@ class TestImportRowLimit(InsightsIntegrationTestCase):
         capped = self.importer_for(self.CAPPED)
         self.assertEqual(capped.settings.row_limit, 2)
         self.assertEqual(self.rows_kept_by(capped), 2)
+
+
+HOLD_WRITE_LOCK = """
+import sys, time, duckdb
+con = duckdb.connect(sys.argv[1])
+print("held", flush=True)
+time.sleep(float(sys.argv[2]))
+con.close()
+"""
+
+
+class TestIncrementalImport(InsightsIntegrationTestCase):
+    """An incremental import copies each source row once, from Sync From on."""
+
+    DATA_SOURCE = "Site DB"
+    TABLE = "incremental_import_table"
+
+    @classmethod
+    def before_class(cls):
+        doc = frappe.get_doc(
+            {
+                "doctype": "Insights Table v3",
+                "table": cls.TABLE,
+                "label": cls.TABLE,
+                "data_source": cls.DATA_SOURCE,
+                "sync_mode": "Incremental",
+                "sync_strategy": "Append Only",
+                "sync_cursor_column": "creation",
+                "sync_from": "2026-01-01 00:00:00",
+            }
+        )
+        doc.flags.ignore_links = True
+        doc.insert(ignore_permissions=True)
+        cls.table_doc = doc.name
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc("Insights Table v3", cls.table_doc, force=True, ignore_permissions=True)
+        frappe.db.delete("Insights Table Import Log", {"table_name": cls.TABLE})
+
+    def before_test(self):
+        tmpdir = tempfile.mkdtemp(prefix="insights_incremental_test_")
+        self.addCleanup(shutil.rmtree, tmpdir, ignore_errors=True)
+        self.path = str(Path(tmpdir) / "incremental.duckdb")
+        self.enterContext(patch.object(insights.warehouse, "get_db_path", return_value=self.path))
+        self.enterContext(patch.object(insights, "create_toast"))
+        self.enterContext(patch("frappe.utils.telemetry.capture"))
+        insights.db_connections.pop("insights", None)
+        frappe.db.set_value(
+            "Insights Table v3",
+            self.table_doc,
+            {
+                "stored": 0,
+                "row_limit": 0,
+                "sync_mode": "Incremental",
+                "sync_strategy": "Append Only",
+                "sync_cursor_column": "creation",
+                "sync_primary_key_column": None,
+                "sync_from": "2026-01-01 00:00:00",
+                "last_sync_bookmark": None,
+            },
+        )
+
+    def run_import(self, names):
+        rows = pd.DataFrame(
+            {
+                "name": names,
+                "creation": pd.to_datetime([f"2026-02-0{i + 1} 10:00:00.123456" for i in range(len(names))]),
+            }
+        )
+        with patch.object(WarehouseTable, "get_remote_table", return_value=ibis.memtable(rows)):
+            WarehouseTableImporter(WarehouseTable(self.DATA_SOURCE, self.TABLE)).start_import()
+
+    def stored_names(self):
+        db = open_local_duckdb(self.path)
+        try:
+            return sorted(db.table("incremental_import_table", database="site_db").execute()["name"])
+        finally:
+            db.disconnect()
+
+    @contextmanager
+    def another_writer_after_each_commit(self):
+        """Another import takes the file the moment this one releases it, as on a busy queue."""
+        holders = []
+        commit = WarehouseTableWriter.commit
+
+        def commit_then_hand_over(writer):
+            rows = commit(writer)
+            holder = subprocess.Popen(
+                [sys.executable, "-c", HOLD_WRITE_LOCK, self.path, "30"], stdout=subprocess.PIPE, text=True
+            )
+            self.assertEqual(holder.stdout.readline().strip(), "held")
+            holders.append(holder)
+            return rows
+
+        try:
+            with patch.object(WarehouseTableWriter, "commit", commit_then_hand_over):
+                yield
+        finally:
+            for holder in holders:
+                holder.kill()
+                holder.wait()
+
+    # @feature data-store.import-cursor
+    def test_a_row_is_copied_once_when_another_writer_holds_the_store_after_the_commit(self):
+        with self.another_writer_after_each_commit():
+            self.run_import(["a", "b"])
+        self.run_import(["a", "b", "c"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
+
+    # @feature data-store.import-cursor
+    def test_a_capped_full_table_switched_to_incremental_imports_from_sync_from(self):
+        frappe.db.set_value("Insights Table v3", self.table_doc, {"sync_mode": "Full", "row_limit": 2})
+        self.run_import(["a", "b", "c", "d"])
+        self.assertEqual(self.stored_names(), ["c", "d"])
+
+        doc = frappe.get_doc("Insights Table v3", self.table_doc)
+        doc.update(
+            {
+                "sync_mode": "Incremental",
+                "sync_strategy": "Update or Insert",
+                "sync_primary_key_column": "name",
+            }
+        )
+        doc.save(ignore_permissions=True)
+        self.run_import(["a", "b", "c", "d"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c", "d"])
+
+    # @feature data-store.import-cursor
+    def test_sync_settings_cannot_change_while_the_table_is_imported(self):
+        frappe.db.set_value("Insights Table v3", self.table_doc, "sync_mode", "Full")
+        log = frappe.get_doc(
+            {
+                "doctype": "Insights Table Import Log",
+                "data_source": self.DATA_SOURCE,
+                "table_name": self.TABLE,
+                "status": "In Progress",
+            }
+        ).insert(ignore_permissions=True)
+        self.addCleanup(frappe.delete_doc, "Insights Table Import Log", log.name, force=True)
+
+        # the first import stores nothing until it commits
+        doc = frappe.get_doc("Insights Table v3", self.table_doc)
+        doc.sync_mode = "Incremental"
+        with self.assertRaises(frappe.ValidationError):
+            doc.save(ignore_permissions=True)
+
+        self.run_import(["a", "b"])
+        doc.reload()
+        doc.sync_mode = "Incremental"
+        with self.assertRaises(frappe.ValidationError):
+            doc.save(ignore_permissions=True)
+
+        self.assertEqual(self.stored_names(), ["a", "b"])
+
+    # @feature data-store.import-cursor
+    def test_a_first_incremental_import_waits_for_another_writer(self):
+        open_local_duckdb(self.path, read_only=False).disconnect()
+        holder = subprocess.Popen(
+            [sys.executable, "-c", HOLD_WRITE_LOCK, self.path, "2"], stdout=subprocess.PIPE, text=True
+        )
+        self.addCleanup(holder.wait)
+        self.assertEqual(holder.stdout.readline().strip(), "held")
+
+        self.run_import(["a", "b"])
+
+        self.assertEqual(self.stored_names(), ["a", "b"])

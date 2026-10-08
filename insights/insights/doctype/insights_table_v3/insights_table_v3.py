@@ -71,6 +71,32 @@ class InsightsTablev3(Document):
             except Exception as e:
                 frappe.throw(f"Error executing before import script: {e}")
 
+    def before_save(self):
+        self.drop_rows_of_other_sync_settings()
+
+    def drop_rows_of_other_sync_settings(self):
+        """An incremental import resumes from the newest stored cursor, so rows stored
+        under other sync settings must go, and the next import starts from Sync From."""
+        sync_settings = ("sync_mode", "sync_cursor_column", "sync_from")
+        if not self.get_doc_before_save() or not any(self.has_value_changed(f) for f in sync_settings):
+            return
+
+        from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+            WarehouseTableImporter,
+        )
+
+        table = insights.warehouse.get_table(self.data_source, self.table)
+        # a running import commits rows read under the old settings after this drop
+        if WarehouseTableImporter(table).import_in_progress():
+            frappe.throw(
+                frappe._("{0} is being imported. Change its sync settings once the import finishes.").format(
+                    frappe.bold(self.table)
+                )
+            )
+
+        table.drop()
+        self.last_sync_bookmark = None
+
     def _validate_incremental_sync_config(self):
         try:
             remote = InsightsDataSourcev3.get_doc(self.data_source).get_ibis_table(self.table)
