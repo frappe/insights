@@ -447,7 +447,7 @@ time.sleep(30)
 
 
 class TestIncrementalImport(InsightsIntegrationTestCase):
-    """An append-only incremental import copies each source row once."""
+    """An incremental import copies each source row once, from Sync From on."""
 
     DATA_SOURCE = "Site DB"
     TABLE = "incremental_import_table"
@@ -462,7 +462,7 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
                 "data_source": cls.DATA_SOURCE,
                 "sync_mode": "Incremental",
                 "sync_strategy": "Append Only",
-                "sync_cursor_column": "modified",
+                "sync_cursor_column": "creation",
                 "sync_from": "2026-01-01 00:00:00",
             }
         )
@@ -483,13 +483,26 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.enterContext(patch.object(insights, "create_toast"))
         self.enterContext(patch("frappe.utils.telemetry.capture"))
         insights.db_connections.pop("insights", None)
-        frappe.db.set_value("Insights Table v3", self.table_doc, "last_sync_bookmark", None)
+        frappe.db.set_value(
+            "Insights Table v3",
+            self.table_doc,
+            {
+                "stored": 0,
+                "row_limit": 0,
+                "sync_mode": "Incremental",
+                "sync_strategy": "Append Only",
+                "sync_cursor_column": "creation",
+                "sync_primary_key_column": None,
+                "sync_from": "2026-01-01 00:00:00",
+                "last_sync_bookmark": None,
+            },
+        )
 
     def run_import(self, names):
         rows = pd.DataFrame(
             {
                 "name": names,
-                "modified": pd.to_datetime([f"2026-02-0{i + 1} 10:00:00.123456" for i in range(len(names))]),
+                "creation": pd.to_datetime([f"2026-02-0{i + 1} 10:00:00.123456" for i in range(len(names))]),
             }
         )
         with patch.object(WarehouseTable, "get_remote_table", return_value=ibis.memtable(rows)):
@@ -513,7 +526,7 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
             holder = subprocess.Popen(
                 [sys.executable, "-c", HOLD_WRITE_LOCK, self.path], stdout=subprocess.PIPE, text=True
             )
-            holder.stdout.readline()
+            self.assertEqual(holder.stdout.readline().strip(), "held")
             holders.append(holder)
             return rows
 
@@ -532,3 +545,22 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.run_import(["a", "b", "c"])
 
         self.assertEqual(self.stored_names(), ["a", "b", "c"])
+
+    # @feature data-store.import-cursor
+    def test_a_capped_full_table_switched_to_incremental_imports_from_sync_from(self):
+        frappe.db.set_value("Insights Table v3", self.table_doc, {"sync_mode": "Full", "row_limit": 2})
+        self.run_import(["a", "b", "c", "d"])
+        self.assertEqual(self.stored_names(), ["c", "d"])
+
+        doc = frappe.get_doc("Insights Table v3", self.table_doc)
+        doc.update(
+            {
+                "sync_mode": "Incremental",
+                "sync_strategy": "Update or Insert",
+                "sync_primary_key_column": "name",
+            }
+        )
+        doc.save(ignore_permissions=True)
+        self.run_import(["a", "b", "c", "d"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c", "d"])
