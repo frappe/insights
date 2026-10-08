@@ -54,10 +54,11 @@ vi.mock('../helpers/confirm_dialog', () => ({
 
 // the reader's filter choices persist here between visits
 vi.stubGlobal('document', { cookie: '' })
+const stored = vi.hoisted(() => new Map<string, string>())
 vi.stubGlobal('localStorage', {
-	getItem: () => null,
-	setItem: () => {},
-	removeItem: () => {},
+	getItem: (key: string) => stored.get(key) ?? null,
+	setItem: (key: string, value: string) => stored.set(key, value),
+	removeItem: (key: string) => stored.delete(key),
 })
 
 import useChart from '../charts/chart'
@@ -106,6 +107,7 @@ const dataCalls = () => calls.filter((call) => call.method === 'insights.api.vie
 
 beforeEach(() => {
 	calls.length = 0
+	stored.clear()
 	answer.dashboard = dashboardAnswer('Bar')
 	answer.refuseSave = false
 })
@@ -193,6 +195,52 @@ describe('a dashboard refreshed', () => {
 		expect(asked[1].args.force).toBe(true)
 		expect(view.chartView('chart-1')?.doc.chart_type).toBe('Line')
 		expect(dashboardCalls()).toHaveLength(2)
+	})
+})
+
+describe('a filter with a default that the reader cleared', () => {
+	// @feature dashboard.filter-clear dashboard.filter-default
+	it('stays cleared when the dashboard is read again', async () => {
+		const withDefault = dashboardAnswer('Bar')
+		Object.assign(withDefault.items[1], { default_operator: '=', default_value: 'north' })
+		answer.dashboard = withDefault
+		const view = await opened('cleared')
+		expect(view.filters).toEqual({ region: { operator: '=', value: 'north' } })
+
+		view.setFilter('region')
+		view.refresh()
+		await settled()
+
+		expect(view.filters).toEqual({})
+	})
+})
+
+describe('a filter whose default arrives after the reader moved another filter', () => {
+	// The default may be one the owner adds, or the reader's user default once
+	// it is set. Both reach the View as the item's default.
+	// @feature dashboard.filter-default
+	it('opens with that default', async () => {
+		const twoFilters = dashboardAnswer('Bar')
+		const region = twoFilters.items[1]
+		twoFilters.items.push({
+			type: 'filter',
+			filter_name: 'city',
+			filter_type: 'String',
+			charts: ['chart-1'],
+			layout: { ...layout, i: '3' },
+		})
+		answer.dashboard = twoFilters
+		const view = await opened('default-later')
+		view.setFilter('city', { operator: '=', value: 'pune' })
+
+		Object.assign(region, { default_operator: '=', default_value: 'north' })
+		view.refresh()
+		await settled()
+
+		expect(view.filters).toEqual({
+			region: { operator: '=', value: 'north' },
+			city: { operator: '=', value: 'pune' },
+		})
 	})
 })
 
