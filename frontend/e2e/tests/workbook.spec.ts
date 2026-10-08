@@ -197,7 +197,7 @@ test.describe('workbook', () => {
 	})
 
 	// @feature workbook.folders
-	test('a user creates a folder and moves a query into it', async ({
+	test('a user moves a query into a folder, and the folder opens when the query is opened', async ({
 		page,
 		demoDataSource,
 		workbookWithQuery,
@@ -220,8 +220,10 @@ test.describe('workbook', () => {
 		await folder.click()
 		await expect(item).toBeVisible()
 
+		// The query is open, so its folder opens with the page.
 		await page.reload()
-		await expect(folder).toBeVisible()
+		await expect(item).toBeVisible()
+		await folder.click()
 		await expect(item).toBeHidden()
 	})
 
