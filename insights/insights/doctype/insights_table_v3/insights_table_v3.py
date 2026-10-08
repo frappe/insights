@@ -72,13 +72,17 @@ class InsightsTablev3(Document):
                 frappe.throw(f"Error executing before import script: {e}")
 
     def before_save(self):
-        self.drop_rows_of_other_sync_settings()
+        self.drop_full_copy_on_switch_to_incremental()
+        self.check_cursor_is_stored()
 
-    def drop_rows_of_other_sync_settings(self):
-        """An incremental import resumes from the newest stored cursor, so rows stored
-        under other sync settings must go, and the next import starts from Sync From."""
-        sync_settings = ("sync_mode", "sync_cursor_column", "sync_from")
-        if not self.get_doc_before_save() or not any(self.has_value_changed(f) for f in sync_settings):
+    def drop_full_copy_on_switch_to_incremental(self):
+        """An incremental import resumes from the newest stored cursor, so a Full copy
+        capped by the row limit must go, and the first import starts from Sync From.
+
+        Rows an incremental import stored stay: the source may have purged them."""
+        if not self.get_doc_before_save() or not self.has_value_changed("sync_mode"):
+            return
+        if self.sync_mode != "Incremental":
             return
 
         from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
@@ -96,6 +100,26 @@ class InsightsTablev3(Document):
 
         table.drop()
         self.last_sync_bookmark = None
+
+    def check_cursor_is_stored(self):
+        """An incremental import resumes from the newest stored cursor, so a new cursor
+        must be a column of the stored rows."""
+        if not self.get_doc_before_save() or not self.has_value_changed("sync_cursor_column"):
+            return
+        if self.sync_mode != "Incremental":
+            return
+
+        table = insights.warehouse.get_table(self.data_source, self.table)
+        db = insights.warehouse.db
+        if table.warehouse_table_name not in db.list_tables(database=table.schema):
+            return
+
+        if self.sync_cursor_column not in db.table(table.warehouse_table_name, database=table.schema).columns:
+            frappe.throw(
+                frappe._(
+                    "The stored rows of {0} have no column {1}. Clear its stored data to use it as the cursor."
+                ).format(frappe.bold(self.table), frappe.bold(self.sync_cursor_column))
+            )
 
     def _validate_incremental_sync_config(self):
         try:

@@ -503,7 +503,7 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         )
 
     def run_import(self, names, creations=None):
-        creations = creations or [f"2026-02-0{i + 1} 10:00:00.123456" for i in range(len(names))]
+        creations = creations or [f"2026-02-0{ord(name) - 96} 10:00:00.123456" for name in names]
         self.import_source(pd.DataFrame({"name": names, "creation": pd.to_datetime(creations)}))
 
     def import_source(self, rows):
@@ -607,6 +607,29 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.assertEqual(holder.stdout.readline().strip(), "held")
 
         self.run_import(["a", "b"])
+
+        self.assertEqual(self.stored_names(), ["a", "b"])
+
+    # @feature data-store.import-cursor
+    def test_a_sync_from_change_on_an_incremental_table_keeps_its_rows(self):
+        self.run_import(["a", "b"])
+
+        doc = frappe.get_doc("Insights Table v3", self.table_doc)
+        doc.sync_from = "2025-01-01 00:00:00"
+        doc.save(ignore_permissions=True)
+        # the source has purged a since
+        self.run_import(["b", "c"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
+
+    # @feature data-store.import-cursor
+    def test_the_cursor_cannot_change_to_a_column_the_stored_rows_lack(self):
+        self.run_import(["a", "b"])
+
+        doc = frappe.get_doc("Insights Table v3", self.table_doc)
+        doc.sync_cursor_column = "modified"
+        with self.assertRaises(frappe.ValidationError):
+            doc.save(ignore_permissions=True)
 
         self.assertEqual(self.stored_names(), ["a", "b"])
 
