@@ -83,7 +83,20 @@ class InsightsTablev3(Document):
         if not self.stored or not changed:
             return
 
-        insights.warehouse.get_table(self.data_source, self.table).drop()
+        from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+            WarehouseTableImporter,
+        )
+
+        table = insights.warehouse.get_table(self.data_source, self.table)
+        # a running import commits rows read under the old settings after this drop
+        if WarehouseTableImporter(table).import_in_progress():
+            frappe.throw(
+                frappe._("{0} is being imported. Change its sync settings once the import finishes.").format(
+                    frappe.bold(self.table)
+                )
+            )
+
+        table.drop()
         self.db_set("last_sync_bookmark", None)
 
     def _validate_incremental_sync_config(self):
