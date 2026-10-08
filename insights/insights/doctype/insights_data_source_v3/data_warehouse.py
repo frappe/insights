@@ -11,7 +11,7 @@ import frappe.utils
 import ibis
 import pandas as pd
 from duckdb import CatalogException, DependencyException
-from frappe.query_builder.functions import IfNull, Max, Min
+from frappe.query_builder.functions import Max, Min
 from frappe.utils import add_days, get_datetime, get_files_path, now, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
@@ -452,7 +452,7 @@ class WarehouseTableImporter:
                 (log.data_source == self.table.data_source)
                 & (log.table_name == self.table.table_name)
                 & (log.status == "In Progress")
-                & (IfNull(log.ended_at, "") == "")
+                & log.ended_at.isnull()
             ),
         )
 
