@@ -5,14 +5,17 @@ import tempfile
 import time
 from contextlib import contextmanager, suppress
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
 import frappe
 import ibis
 import pandas as pd
+import pyarrow as pa
 from duckdb import IOException
 from frappe.utils import add_to_date
+from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
 from insights.api.data_store import sync_tables
@@ -499,20 +502,21 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
             },
         )
 
-    def run_import(self, names):
-        rows = pd.DataFrame(
-            {
-                "name": names,
-                "creation": pd.to_datetime([f"2026-02-0{ord(name) - 96} 10:00:00.123456" for name in names]),
-            }
-        )
+    def run_import(self, names, creations=None):
+        creations = creations or [f"2026-02-0{ord(name) - 96} 10:00:00.123456" for name in names]
+        self.import_source(pd.DataFrame({"name": names, "creation": pd.to_datetime(creations)}))
+
+    def import_source(self, rows):
         with patch.object(WarehouseTable, "get_remote_table", return_value=ibis.memtable(rows)):
             WarehouseTableImporter(WarehouseTable(self.DATA_SOURCE, self.TABLE)).start_import()
 
     def stored_names(self):
+        return self.stored_rows()["name"].to_pylist()
+
+    def stored_rows(self):
         db = open_local_duckdb(self.path)
         try:
-            return sorted(db.table("incremental_import_table", database="site_db").execute()["name"])
+            return db.table("incremental_import_table", database="site_db").to_pyarrow().sort_by("name")
         finally:
             db.disconnect()
 
@@ -628,3 +632,93 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
             doc.save(ignore_permissions=True)
 
         self.assertEqual(self.stored_names(), ["a", "b"])
+
+    # @feature data-store.import-cursor
+    def test_rows_sharing_the_cursor_at_a_batch_boundary_are_copied_once(self):
+        with patch.object(WarehouseTableImporter, "calculate_batch_size", return_value=2):
+            self.run_import(
+                ["a", "b", "c", "d", "e"],
+                ["2026-02-01", "2026-02-02", "2026-02-02", "2026-02-02", "2026-02-03"],
+            )
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c", "d", "e"])
+
+    # @feature data-store.import-cursor
+    def test_a_row_committed_later_at_the_stored_cursor_is_copied_once(self):
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+        self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
+
+    # @feature data-store.import-cursor
+    def test_a_row_committed_later_at_the_stored_cursor_is_merged_once(self):
+        frappe.db.set_value(
+            "Insights Table v3",
+            self.table_doc,
+            {"sync_strategy": "Update or Insert", "sync_primary_key_column": "name"},
+        )
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+        self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
+
+    # @feature data-store.import-cursor
+    def test_a_merged_row_keeps_a_column_the_source_no_longer_reads(self):
+        frappe.db.set_value(
+            "Insights Table v3",
+            self.table_doc,
+            {"sync_strategy": "Update or Insert", "sync_primary_key_column": "name"},
+        )
+        creations = pd.to_datetime(["2026-02-01", "2026-02-02"])
+        self.import_source(pd.DataFrame({"name": ["a", "b"], "creation": creations, "remarks": ["x", "y"]}))
+        self.import_source(pd.DataFrame({"name": ["a", "b"], "creation": creations}))
+
+        self.assertEqual(self.stored_rows()["remarks"].to_pylist(), ["x", "y"])
+
+    # @feature data-store.import-cursor
+    def test_a_row_without_a_key_at_the_stored_cursor_is_merged_once(self):
+        frappe.db.set_value(
+            "Insights Table v3",
+            self.table_doc,
+            {"sync_strategy": "Update or Insert", "sync_primary_key_column": "name"},
+        )
+        for _run in range(3):
+            self.run_import(["a", None], ["2026-02-01", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", None])
+
+    # @feature data-store.import-cursor
+    def test_a_failed_commit_keeps_the_stored_rows(self):
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+
+        with patch.object(DuckDBBackend, "insert", side_effect=RuntimeError("disk full")):
+            with self.assertRaises(RuntimeError):
+                self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b"])
+
+    # @feature data-store.import-cursor
+    def test_rows_without_a_cursor_value_are_copied_with_the_rest(self):
+        frappe.db.set_value("Insights Table v3", self.table_doc, "sync_mode", "Full")
+        with patch.object(WarehouseTableImporter, "calculate_batch_size", return_value=2):
+            self.run_import(["a", "b", "c", "d", "e"], [None, None, None, "2026-02-01", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c", "d", "e"])
+
+    # @feature data-store.import-table
+    def test_a_column_empty_in_one_batch_keeps_its_source_type(self):
+        frappe.db.set_value("Insights Table v3", self.table_doc, "sync_mode", "Full")
+        rows = pa.table(
+            {
+                "name": ["a", "b", "c", "d"],
+                "creation": pa.array([datetime(2026, 2, i) for i in range(1, 5)], pa.timestamp("us")),
+                "remarks": pa.array([None, None, "late", "later"], pa.string()),
+                "amount": pa.array([None, Decimal("1.50"), None, Decimal("2.25")], pa.decimal128(18, 2)),
+            }
+        )
+        with patch.object(WarehouseTableImporter, "calculate_batch_size", return_value=2):
+            self.import_source(rows)
+
+        stored = self.stored_rows()
+        self.assertEqual(stored["remarks"].to_pylist(), [None, None, "late", "later"])
+        self.assertEqual(stored["amount"].type, pa.decimal128(18, 2))

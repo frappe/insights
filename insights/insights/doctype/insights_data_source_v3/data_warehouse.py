@@ -10,6 +10,8 @@ import frappe
 import frappe.utils
 import ibis
 import pandas as pd
+import pyarrow as pa
+import pyarrow.compute as pc
 from duckdb import CatalogException, DependencyException
 from frappe.query_builder.functions import IfNull, Max, Min
 from frappe.utils import add_days, get_datetime, get_files_path, now, now_datetime
@@ -120,6 +122,7 @@ class Warehouse:
         mode: str = "replace",
         primary_key_column: str = "",
         cursor_column: str = "",
+        bookmark: str | None = None,
         log_fn=None,
     ) -> "WarehouseTableWriter":
         """Create a table writer for batch inserts with automatic cleanup.
@@ -138,6 +141,7 @@ class Warehouse:
             mode=mode,
             primary_key_column=primary_key_column,
             cursor_column=cursor_column,
+            bookmark=bookmark,
             log_fn=log_fn,
         )
 
@@ -162,6 +166,7 @@ class WarehouseTableWriter:
         mode: str = "replace",
         primary_key_column: str = "",
         cursor_column: str = "",
+        bookmark: str | None = None,
         log_fn=None,
     ):
         self.database = database
@@ -170,6 +175,7 @@ class WarehouseTableWriter:
         self.mode = mode
         self.primary_key_column = primary_key_column
         self.cursor_column = cursor_column
+        self.bookmark = bookmark
         self._log = log_fn or (lambda *args, **kwargs: None)
 
         self._temp_dir: Path | None = None
@@ -192,7 +198,7 @@ class WarehouseTableWriter:
         self._cleanup_temp_dir()
         return False
 
-    def insert(self, data: pd.DataFrame | Expr) -> Expr:
+    def insert(self, data: pd.DataFrame | pa.Table | Expr) -> Expr:
         if self._temp_dir is None:
             raise RuntimeError("WarehouseTableWriter must be used as a context manager")
 
@@ -232,14 +238,16 @@ class WarehouseTableWriter:
                 parquet_glob = str(self._temp_dir / "*.parquet")
                 merged = db.read_parquet(parquet_glob)
 
-                if self._table_exists(db) and self.mode in ("append", "upsert"):
-                    self._add_missing_columns(db, merged)
-                    if self.mode == "append":
-                        db.insert(self.table_name, merged)
-                    elif self.mode == "upsert":
-                        self._upsert(db, merged)
-                else:
-                    db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
+                with transaction(db):
+                    if self._table_exists(db) and self.mode in ("append", "upsert"):
+                        self._add_missing_columns(db, merged)
+                        self._delete_from_bookmark(db)
+                        if self.mode == "append":
+                            db.insert(self.table_name, merged)
+                        elif self.mode == "upsert":
+                            self._upsert(db, merged)
+                    else:
+                        db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
 
                 self._log("Commit completed.")
 
@@ -270,6 +278,21 @@ class WarehouseTableWriter:
             self._log(f"New column '{name}' ({column_type}), adding it to '{self.table_name}'")
             table = quote_ident(self.table_name)
             db.raw_sql(f"ALTER TABLE {table} ADD COLUMN {quote_ident(name)} {column_type}")
+
+    def _delete_from_bookmark(self, db: DuckDBBackend) -> None:
+        """Drop the stored rows the run read again and no key matches, so they are copied once.
+
+        An upsert matches the others by key and keeps the columns it does not read.
+        """
+        if self.bookmark is None:
+            return
+        condition = f"{quote_ident(self.cursor_column)} >= ?"
+        if self.mode == "upsert":
+            condition += f" AND {quote_ident(self.primary_key_column)} IS NULL"
+        self._log(f"Deleting stored rows where {condition}, with {self.bookmark}")
+        db.raw_sql(
+            f"DELETE FROM {quote_ident(self.table_name)} WHERE {condition}", parameters=[self.bookmark]
+        )
 
     def _upsert(self, db: DuckDBBackend, incoming: Table) -> None:
         if not self.primary_key_column or not self.cursor_column:
@@ -320,6 +343,17 @@ class WarehouseTableWriter:
     def batch_count(self) -> int:
         """Number of batches inserted so far."""
         return self._batch_count
+
+
+@contextmanager
+def transaction(db: DuckDBBackend):
+    db.con.begin()
+    try:
+        yield
+    except BaseException:
+        db.con.rollback()
+        raise
+    db.con.commit()
 
 
 class WarehouseTable:
@@ -437,6 +471,7 @@ class WarehouseTableImporter:
         self.warehouse_table_name = ""
         self.sync_strategy = "Append Only"
         self.writer_mode = "replace"  # overridden to "append" for incremental syncs
+        self.bookmark = None
 
         self.resumed = False
 
@@ -621,9 +656,10 @@ class WarehouseTableImporter:
 
         self._apply_before_import_script()
 
-        bookmark = self._resolve_incremental_bookmark()
-        self._log(f"Incremental sync: {self.cursor_column} > {bookmark}")
-        self.remote_table = self.remote_table.filter(_[self.cursor_column] > bookmark)
+        # Rows at the bookmark may still arrive after a run, so each run reads them again
+        self.bookmark = self._resolve_incremental_bookmark()
+        self._log(f"Incremental sync: {self.cursor_column} >= {self.bookmark}")
+        self.remote_table = self.remote_table.filter(_[self.cursor_column] >= self.bookmark)
 
         self.writer_mode = "upsert" if self.sync_strategy == "Update or Insert" else "append"
 
@@ -691,6 +727,7 @@ class WarehouseTableImporter:
                 mode=self.writer_mode,
                 primary_key_column=self.dedupe_key_column,
                 cursor_column=self.cursor_column,
+                bookmark=self.bookmark,
                 log_fn=self._log,
             ) as writer:
                 total_rows = self.process_batches(batch_size, writer)
@@ -719,37 +756,61 @@ class WarehouseTableImporter:
         return batch_size
 
     def process_batches(self, batch_size: int, writer: WarehouseTableWriter) -> int:
-        remote_table = self.remote_table
-        if self.cursor_column:
-            remote_table = remote_table.order_by(
-                ibis.asc(self.cursor_column, nulls_first=True),
-            )
+        """Read the source in batches that never split the rows sharing a cursor value.
 
-        batch_number = 0
+        A full batch keeps the rows before its last cursor value, and the next batch
+        starts at that value. One query per batch: a second one would scan a source
+        whose cursor has no index twice.
+        """
+        if not self.cursor_column:
+            batch = self.read_batch(writer, self.remote_table.head(batch_size))
+            return self.write_batch(writer, batch)
+
+        cursor = _[self.cursor_column]
+        ordered = ibis.asc(self.cursor_column, nulls_first=True)
+        remaining = self.remote_table
         total_rows = 0
 
         while True:
-            self._log(f"Processing batch: {batch_number + 1}")
-            batch = remote_table.head(batch_size)
-            self._log(f"Batch Query: \n{ibis.to_sql(batch)}")
-
-            batch = writer.insert(batch)
-
-            batch_count = int(batch.count().execute())
-            total_rows += batch_count
-
-            self._log(f"Rows: {batch_count} Total Rows: {total_rows}")
-
-            if batch_count < batch_size or not self.cursor_column:
+            batch = self.read_batch(writer, remaining.order_by(ordered).head(batch_size))
+            if batch.num_rows < batch_size:
                 break
 
-            last_cursor = batch[self.cursor_column].max().execute()
-            self._log(f"Bookmark: {last_cursor}")
-            remote_table = remote_table.filter(_[self.cursor_column] > last_cursor)
-            batch_number += 1
+            values = batch[self.cursor_column]
+            last = pc.max(values)
+            # NULL sorts first: before any value, but not before NULL
+            before_last = batch.filter(pc.fill_null(pc.less(values, last), last.is_valid))
+            if before_last.num_rows:
+                total_rows += self.write_batch(writer, before_last)
+                remaining = self.remote_table.filter(cursor >= last.as_py())
+            else:
+                # one cursor value, or NULL, holds more rows than a batch
+                at_last, after_last = self.get_group_filters(last.as_py())
+                total_rows += self.write_batch(
+                    writer, self.read_batch(writer, self.remote_table.filter(at_last))
+                )
+                remaining = self.remote_table.filter(after_last)
 
-        self._log(f"Total Batches: {batch_number + 1} Total Rows: {total_rows}")
+        total_rows += self.write_batch(writer, batch)
+        self._log(f"Total Batches: {writer.batch_count} Total Rows: {total_rows}")
         return total_rows
+
+    def get_group_filters(self, value) -> tuple[Expr, Expr]:
+        """Filters for the rows at a cursor value and the rows after it."""
+        cursor = _[self.cursor_column]
+        if value is None:
+            return cursor.isnull(), cursor.notnull()
+        return cursor == value, cursor > value
+
+    def read_batch(self, writer: WarehouseTableWriter, query: Expr) -> pa.Table:
+        self._log(f"Processing batch: {writer.batch_count + 1}")
+        self._log(f"Batch Query: \n{ibis.to_sql(query)}")
+        return query.to_pyarrow()
+
+    def write_batch(self, writer: WarehouseTableWriter, rows: pa.Table) -> int:
+        writer.insert(rows)
+        self._log(f"Rows: {rows.num_rows}")
+        return rows.num_rows
 
     def capture_outcome(self):
         """Report how the import ended, and nothing about what it read.
