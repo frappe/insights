@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '../fixtures'
 import { INSIGHTS_PATH, VIEWER_EMAIL } from '../helpers/auth'
-import { deleteWorkbook } from '../helpers/insights'
+import { createQuery, deleteWorkbook } from '../helpers/insights'
 
 /**
  * locator: the workbook navbar has no landmark role, and its title is a
@@ -199,6 +199,7 @@ test.describe('workbook', () => {
 	// @feature workbook.folders
 	test('a user moves a query into a folder, and the folder opens when the query is opened', async ({
 		page,
+		adminApi,
 		demoDataSource,
 		workbookWithQuery,
 	}) => {
@@ -220,11 +221,22 @@ test.describe('workbook', () => {
 		await folder.click()
 		await expect(item).toBeVisible()
 
+		const other = await createQuery(adminApi, {
+			workbook: workbook.name,
+			dataSource: demoDataSource,
+		})
+
 		// The query is open, so its folder opens with the page.
 		await page.reload()
 		await expect(item).toBeVisible()
 		await folder.click()
 		await expect(item).toBeHidden()
+
+		// Returning to the query without a reload opens its folder too.
+		await page.getByRole('link', { name: other.title }).click()
+		await expect(item).toBeHidden()
+		await page.goBack()
+		await expect(item).toBeVisible()
 	})
 
 	// @feature permissions.share-workbook-user
