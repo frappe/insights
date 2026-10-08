@@ -54,10 +54,11 @@ vi.mock('../helpers/confirm_dialog', () => ({
 
 // the reader's filter choices persist here between visits
 vi.stubGlobal('document', { cookie: '' })
+const stored = vi.hoisted(() => new Map<string, string>())
 vi.stubGlobal('localStorage', {
-	getItem: () => null,
-	setItem: () => {},
-	removeItem: () => {},
+	getItem: (key: string) => stored.get(key) ?? null,
+	setItem: (key: string, value: string) => stored.set(key, value),
+	removeItem: (key: string) => stored.delete(key),
 })
 
 import useChart from '../charts/chart'
@@ -106,6 +107,7 @@ const dataCalls = () => calls.filter((call) => call.method === 'insights.api.vie
 
 beforeEach(() => {
 	calls.length = 0
+	stored.clear()
 	answer.dashboard = dashboardAnswer('Bar')
 	answer.refuseSave = false
 })
@@ -193,6 +195,23 @@ describe('a dashboard refreshed', () => {
 		expect(asked[1].args.force).toBe(true)
 		expect(view.chartView('chart-1')?.doc.chart_type).toBe('Line')
 		expect(dashboardCalls()).toHaveLength(2)
+	})
+})
+
+describe('a filter with a default that the reader cleared', () => {
+	// @feature dashboard.filter-clear dashboard.filter-default
+	it('stays cleared when the dashboard is read again', async () => {
+		const withDefault = dashboardAnswer('Bar')
+		Object.assign(withDefault.items[1], { default_operator: '=', default_value: 'north' })
+		answer.dashboard = withDefault
+		const view = await opened('cleared')
+		expect(view.filters).toEqual({ region: { operator: '=', value: 'north' } })
+
+		view.setFilter('region')
+		view.refresh()
+		await settled()
+
+		expect(view.filters).toEqual({})
 	})
 })
 

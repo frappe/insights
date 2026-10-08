@@ -5,11 +5,16 @@
 import session from '../session'
 import type { FilterValues } from '../types/workbook.types'
 
+// A filter the reader cleared is stored as null, so its default does not come
+// back. A filter missing from storage, such as one added later, opens with its
+// default.
+type StoredFilters = Record<string, FilterValues[string] | null>
+
 function key(dashboard: string) {
 	return `insights:dashboard-filters:${session.user.email || 'Guest'}:${dashboard}`
 }
 
-export function readFilters(dashboard: string): FilterValues {
+function storedFilters(dashboard: string): StoredFilters {
 	try {
 		return JSON.parse(localStorage.getItem(key(dashboard)) || '{}')
 	} catch {
@@ -18,10 +23,16 @@ export function readFilters(dashboard: string): FilterValues {
 	}
 }
 
-export function writeFilters(dashboard: string, filters: FilterValues) {
-	if (Object.keys(filters).length) {
-		localStorage.setItem(key(dashboard), JSON.stringify(filters))
-	} else {
-		localStorage.removeItem(key(dashboard))
-	}
+export function readFilters(dashboard: string, defaults: FilterValues): FilterValues {
+	const filters: FilterValues = {}
+	Object.entries({ ...defaults, ...storedFilters(dashboard) }).forEach(([name, filter]) => {
+		if (filter) filters[name] = filter
+	})
+	return filters
+}
+
+export function writeFilters(dashboard: string, filters: FilterValues, filterNames: string[]) {
+	const stored: StoredFilters = {}
+	filterNames.forEach((name) => (stored[name] = filters[name] ?? null))
+	localStorage.setItem(key(dashboard), JSON.stringify(stored))
 }

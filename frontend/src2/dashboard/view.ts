@@ -477,6 +477,10 @@ function makeDashboardPage(
 		reads.forEach((read) => read.load())
 	}
 
+	function filterNames() {
+		return state.items.flatMap((item) => (item.type == 'filter' ? item.filter_name ?? [] : []))
+	}
+
 	function setFilter(filter_name: string, filter?: FilterState) {
 		const moved = { ...state.filters }
 		if (filter) moved[filter_name] = filter
@@ -484,7 +488,7 @@ function makeDashboardPage(
 		state.filters = moved
 		// the reader gets back the filters they left. The server stores no
 		// per-user view state
-		writeFilters(state.name, moved)
+		writeFilters(state.name, moved, filterNames())
 		rerun()
 	}
 
@@ -504,7 +508,7 @@ function makeDashboardPage(
 		const { [chart]: _, ...cardFilters } = state.cardFilters
 		state.filters = kept
 		state.cardFilters = cardFilters
-		writeFilters(state.name, kept)
+		writeFilters(state.name, kept, filterNames())
 		// a dashboard filter applies to other cards too. Each one skips its load if
 		// its request is unchanged
 		rerun()
@@ -534,7 +538,7 @@ function makeDashboardPage(
 				state.items = doc.items
 				state.verticalCompact = doc.vertical_compact_layout
 				// the reader's last choice overrides the owner's defaults
-				state.filters = { ...defaultFilterStates(doc.items), ...readFilters(doc.name) }
+				state.filters = readFilters(doc.name, defaultFilterStates(doc.items))
 				const editable = doc.can_write && doc.workbook
 				state.builderRoute = editable
 					? `/workbook/${doc.workbook}/dashboard/${doc.name}`
