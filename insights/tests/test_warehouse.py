@@ -653,6 +653,18 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.assertEqual(self.stored_rows()["remarks"].to_pylist(), ["x", "y"])
 
     # @feature data-store.import-cursor
+    def test_a_row_without_a_key_at_the_stored_cursor_is_merged_once(self):
+        frappe.db.set_value(
+            "Insights Table v3",
+            self.table_doc,
+            {"sync_strategy": "Update or Insert", "sync_primary_key_column": "name"},
+        )
+        for _run in range(3):
+            self.run_import(["a", None], ["2026-02-01", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", None])
+
+    # @feature data-store.import-cursor
     def test_a_failed_commit_keeps_the_stored_rows(self):
         self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
 

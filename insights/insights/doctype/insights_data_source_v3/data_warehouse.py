@@ -241,8 +241,8 @@ class WarehouseTableWriter:
                 with transaction(db):
                     if self._table_exists(db) and self.mode in ("append", "upsert"):
                         self._add_missing_columns(db, merged)
+                        self._delete_from_bookmark(db)
                         if self.mode == "append":
-                            self._delete_from_bookmark(db)
                             db.insert(self.table_name, merged)
                         elif self.mode == "upsert":
                             self._upsert(db, merged)
@@ -280,16 +280,18 @@ class WarehouseTableWriter:
             db.raw_sql(f"ALTER TABLE {table} ADD COLUMN {quote_ident(name)} {column_type}")
 
     def _delete_from_bookmark(self, db: DuckDBBackend) -> None:
-        """Drop the stored rows the run read again from the source, so they are copied once.
+        """Drop the stored rows the run read again and no key matches, so they are copied once.
 
-        An upsert needs no delete: it matches them by key and keeps the columns it does not read.
+        An upsert matches the others by key and keeps the columns it does not read.
         """
         if self.bookmark is None:
             return
-        self._log(f"Deleting stored rows with {self.cursor_column} >= {self.bookmark}")
+        condition = f"{quote_ident(self.cursor_column)} >= ?"
+        if self.mode == "upsert":
+            condition += f" AND {quote_ident(self.primary_key_column)} IS NULL"
+        self._log(f"Deleting stored rows where {condition}, with {self.bookmark}")
         db.raw_sql(
-            f"DELETE FROM {quote_ident(self.table_name)} WHERE {quote_ident(self.cursor_column)} >= ?",
-            parameters=[self.bookmark],
+            f"DELETE FROM {quote_ident(self.table_name)} WHERE {condition}", parameters=[self.bookmark]
         )
 
     def _upsert(self, db: DuckDBBackend, incoming: Table) -> None:
