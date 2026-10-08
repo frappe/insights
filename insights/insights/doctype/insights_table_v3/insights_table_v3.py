@@ -71,16 +71,14 @@ class InsightsTablev3(Document):
             except Exception as e:
                 frappe.throw(f"Error executing before import script: {e}")
 
-    def on_update(self):
+    def before_save(self):
         self.drop_rows_of_other_sync_settings()
 
     def drop_rows_of_other_sync_settings(self):
         """An incremental import resumes from the newest stored cursor, so rows stored
         under other sync settings must go, and the next import starts from Sync From."""
-        changed = any(
-            self.has_value_changed(field) for field in ("sync_mode", "sync_cursor_column", "sync_from")
-        )
-        if not self.stored or not changed:
+        sync_settings = ("sync_mode", "sync_cursor_column", "sync_from")
+        if not self.get_doc_before_save() or not any(self.has_value_changed(f) for f in sync_settings):
             return
 
         from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
@@ -97,7 +95,7 @@ class InsightsTablev3(Document):
             )
 
         table.drop()
-        self.db_set("last_sync_bookmark", None)
+        self.last_sync_bookmark = None
 
     def _validate_incremental_sync_config(self):
         try:

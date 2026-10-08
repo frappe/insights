@@ -568,8 +568,6 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
     # @feature data-store.import-cursor
     def test_sync_settings_cannot_change_while_the_table_is_imported(self):
         frappe.db.set_value("Insights Table v3", self.table_doc, "sync_mode", "Full")
-        self.run_import(["a", "b"])
-
         log = frappe.get_doc(
             {
                 "doctype": "Insights Table Import Log",
@@ -580,7 +578,14 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         ).insert(ignore_permissions=True)
         self.addCleanup(frappe.delete_doc, "Insights Table Import Log", log.name, force=True)
 
+        # the first import stores nothing until it commits
         doc = frappe.get_doc("Insights Table v3", self.table_doc)
+        doc.sync_mode = "Incremental"
+        with self.assertRaises(frappe.ValidationError):
+            doc.save(ignore_permissions=True)
+
+        self.run_import(["a", "b"])
+        doc.reload()
         doc.sync_mode = "Incremental"
         with self.assertRaises(frappe.ValidationError):
             doc.save(ignore_permissions=True)
