@@ -31,8 +31,8 @@ export function readFilters(dashboard: string, defaults: FilterValues): FilterVa
 	return filters
 }
 
-export function writeFilters(dashboard: string, filters: FilterValues, filterNames: string[]) {
-	const stored: StoredFilters = {}
-	filterNames.forEach((name) => (stored[name] = filters[name] ?? null))
+/** Stores the filters the reader changed, `null` for each one they cleared. */
+export function writeFilters(dashboard: string, changed: StoredFilters) {
+	const stored = { ...storedFilters(dashboard), ...changed }
 	localStorage.setItem(key(dashboard), JSON.stringify(stored))
 }

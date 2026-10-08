@@ -477,10 +477,6 @@ function makeDashboardPage(
 		reads.forEach((read) => read.load())
 	}
 
-	function filterNames() {
-		return state.items.flatMap((item) => (item.type == 'filter' ? item.filter_name ?? [] : []))
-	}
-
 	function setFilter(filter_name: string, filter?: FilterState) {
 		const moved = { ...state.filters }
 		if (filter) moved[filter_name] = filter
@@ -488,7 +484,7 @@ function makeDashboardPage(
 		state.filters = moved
 		// the reader gets back the filters they left. The server stores no
 		// per-user view state
-		writeFilters(state.name, moved, filterNames())
+		writeFilters(state.name, { [filter_name]: filter ?? null })
 		rerun()
 	}
 
@@ -508,7 +504,10 @@ function makeDashboardPage(
 		const { [chart]: _, ...cardFilters } = state.cardFilters
 		state.filters = kept
 		state.cardFilters = cardFilters
-		writeFilters(state.name, kept, filterNames())
+		writeFilters(
+			state.name,
+			Object.fromEntries(reaching.map((filter_name) => [filter_name, null])),
+		)
 		// a dashboard filter applies to other cards too. Each one skips its load if
 		// its request is unchanged
 		rerun()

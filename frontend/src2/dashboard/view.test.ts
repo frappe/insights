@@ -215,6 +215,35 @@ describe('a filter with a default that the reader cleared', () => {
 	})
 })
 
+describe('a filter whose default arrives after the reader moved another filter', () => {
+	// The default may be one the owner adds, or the reader's user default once
+	// it is set. Both reach the View as the item's default.
+	// @feature dashboard.filter-default
+	it('opens with that default', async () => {
+		const twoFilters = dashboardAnswer('Bar')
+		const region = twoFilters.items[1]
+		twoFilters.items.push({
+			type: 'filter',
+			filter_name: 'city',
+			filter_type: 'String',
+			charts: ['chart-1'],
+			layout: { ...layout, i: '3' },
+		})
+		answer.dashboard = twoFilters
+		const view = await opened('default-later')
+		view.setFilter('city', { operator: '=', value: 'pune' })
+
+		Object.assign(region, { default_operator: '=', default_value: 'north' })
+		view.refresh()
+		await settled()
+
+		expect(view.filters).toEqual({
+			region: { operator: '=', value: 'north' },
+			city: { operator: '=', value: 'pune' },
+		})
+	})
+})
+
 describe('a chart its author saved in this tab', () => {
 	// @feature charts.one-snapshot
 	it('is asked again when a card that renders it mounts', async () => {
