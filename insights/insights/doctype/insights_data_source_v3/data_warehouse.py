@@ -628,24 +628,21 @@ class WarehouseTableImporter:
         self.writer_mode = "upsert" if self.sync_strategy == "Update or Insert" else "append"
 
     def _resolve_incremental_bookmark(self):
-        """Return the cursor value to filter from for incremental sync, following this precedence:
-        1. Last sync bookmark (if exists and valid)
-        2. Sync From date (if set)
-        3. Throw error if neither is available
+        """Return the newest cursor value in the store, or Sync From for a table not stored yet.
+
+        `last_sync_bookmark` is saved after the store's commit, in another database.
+        A run that commits and then fails to save it would read its rows again and
+        append them twice.
         """
-        bookmark = self.settings.last_sync_bookmark
+        try:
+            stored = insights.warehouse.db.table(self.table.warehouse_table_name, database=self.table.schema)
+            bookmark = stored[self.cursor_column].max().execute()
+        except TableNotFound:
+            bookmark = None
 
-        if bookmark:
-            # Verify the warehouse table still exists; if not, treat as first sync
-            try:
-                insights.warehouse.db.table(self.table.warehouse_table_name, database=self.table.schema)
-            except TableNotFound:
-                self._log("Warehouse table not found despite existing bookmark — falling back to sync_from.")
-                bookmark = ""
-
-        if bookmark:
+        if pd.notna(bookmark):
             self.resumed = True
-            return bookmark
+            return str(bookmark)
 
         if self.settings.sync_from:
             return str(self.settings.sync_from)

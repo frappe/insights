@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -435,3 +436,99 @@ class TestImportRowLimit(InsightsIntegrationTestCase):
         capped = self.importer_for(self.CAPPED)
         self.assertEqual(capped.settings.row_limit, 2)
         self.assertEqual(self.rows_kept_by(capped), 2)
+
+
+HOLD_WRITE_LOCK = """
+import sys, time, duckdb
+con = duckdb.connect(sys.argv[1])
+print("held", flush=True)
+time.sleep(30)
+"""
+
+
+class TestIncrementalImport(InsightsIntegrationTestCase):
+    """An append-only incremental import copies each source row once."""
+
+    DATA_SOURCE = "Site DB"
+    TABLE = "incremental_import_table"
+
+    @classmethod
+    def before_class(cls):
+        doc = frappe.get_doc(
+            {
+                "doctype": "Insights Table v3",
+                "table": cls.TABLE,
+                "label": cls.TABLE,
+                "data_source": cls.DATA_SOURCE,
+                "sync_mode": "Incremental",
+                "sync_strategy": "Append Only",
+                "sync_cursor_column": "modified",
+                "sync_from": "2026-01-01 00:00:00",
+            }
+        )
+        doc.flags.ignore_links = True
+        doc.insert(ignore_permissions=True)
+        cls.table_doc = doc.name
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc("Insights Table v3", cls.table_doc, force=True, ignore_permissions=True)
+        frappe.db.delete("Insights Table Import Log", {"table_name": cls.TABLE})
+
+    def before_test(self):
+        tmpdir = tempfile.mkdtemp(prefix="insights_incremental_test_")
+        self.addCleanup(shutil.rmtree, tmpdir, ignore_errors=True)
+        self.path = str(Path(tmpdir) / "incremental.duckdb")
+        self.enterContext(patch.object(insights.warehouse, "get_db_path", return_value=self.path))
+        self.enterContext(patch.object(insights, "create_toast"))
+        self.enterContext(patch("frappe.utils.telemetry.capture"))
+        insights.db_connections.pop("insights", None)
+        frappe.db.set_value("Insights Table v3", self.table_doc, "last_sync_bookmark", None)
+
+    def run_import(self, names):
+        rows = pd.DataFrame(
+            {
+                "name": names,
+                "modified": pd.to_datetime([f"2026-02-0{i + 1} 10:00:00.123456" for i in range(len(names))]),
+            }
+        )
+        with patch.object(WarehouseTable, "get_remote_table", return_value=ibis.memtable(rows)):
+            WarehouseTableImporter(WarehouseTable(self.DATA_SOURCE, self.TABLE)).start_import()
+
+    def stored_names(self):
+        db = open_local_duckdb(self.path)
+        try:
+            return sorted(db.table("incremental_import_table", database="site_db").execute()["name"])
+        finally:
+            db.disconnect()
+
+    @contextmanager
+    def another_writer_after_each_commit(self):
+        """Another import takes the file the moment this one releases it, as on a busy queue."""
+        holders = []
+        commit = WarehouseTableWriter.commit
+
+        def commit_then_hand_over(writer):
+            rows = commit(writer)
+            holder = subprocess.Popen(
+                [sys.executable, "-c", HOLD_WRITE_LOCK, self.path], stdout=subprocess.PIPE, text=True
+            )
+            holder.stdout.readline()
+            holders.append(holder)
+            return rows
+
+        try:
+            with patch.object(WarehouseTableWriter, "commit", commit_then_hand_over):
+                yield
+        finally:
+            for holder in holders:
+                holder.kill()
+                holder.wait()
+
+    # @feature data-store.import-cursor
+    def test_a_row_is_copied_once_when_another_writer_holds_the_store_after_the_commit(self):
+        with self.another_writer_after_each_commit():
+            self.run_import(["a", "b"])
+        self.run_import(["a", "b", "c"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
