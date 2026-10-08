@@ -424,7 +424,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.compaction | The store file is compacted without losing data, and small files are left alone. |
 | data-store.storage-measure | The space each stored table and column takes is measured into a file beside the store, so the UI reads sizes without opening it. |
 | data-store.storage-breakdown | An admin sees how much of the store file queries read, and where the rest goes. |
-| data-store.give-back | An admin sees the tables no query read in the unused window and the columns no query names, largest first, and gives them back. |
+| data-store.give-back | An admin sees how much of each stored table is unused, removes a table no query read in the unused window, and skips a column no query names. |
 | data-store.execution-log-retention | Log Settings clears query execution logs past the retention an admin sets; the 90-day default outlasts the cleanup's unused-table window. |
 
 ## alerts

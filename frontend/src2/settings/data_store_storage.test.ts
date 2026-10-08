@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+	columnState,
 	DataStoreStorage,
 	formatBytes,
-	giveBackItems,
+	readersLabel,
 	storageSegments,
 	StoredColumn,
 	StoredTable,
 	tableSegments,
+	unusedBytes,
 } from './data_store_storage'
 
 const MB = 1024 * 1024
@@ -55,12 +57,6 @@ function storage(tables: StoredTable[], fields: Partial<DataStoreStorage> = {}):
 		cleanup_tables: [],
 		...fields,
 	}
-}
-
-function described(items: ReturnType<typeof giveBackItems>) {
-	return items.map((item) =>
-		item.kind === 'column' ? `${item.table.name}.${item.column.name}` : item.table.name,
-	)
 }
 
 describe('formatBytes', () => {
@@ -118,43 +114,50 @@ describe('tableSegments', () => {
 	})
 })
 
-describe('giveBackItems', () => {
+describe('unusedBytes', () => {
 	// @feature data-store.give-back
-	it('offers a table no query read in the window whole, not column by column', () => {
-		const stale = table('Old', [column('a', MB), column('b', MB)], {
-			last_read_on: '2026-06-01 10:00:00',
-			unread: true,
-		})
-		const never = table('Never', [column('a', MB)], { last_read_on: null, unread: true })
-		expect(described(giveBackItems(storage([stale, never])))).toEqual(['Old', 'Never'])
+	it('counts the unread columns and the unread tables as unused', () => {
+		const groups = {
+			read: 4,
+			unread_columns: 3,
+			unread_tables: 2,
+			cleanup: 1,
+			other: 1,
+			free: 5,
+		}
+		expect(unusedBytes(storage([], { groups }))).toBe(5)
 	})
+})
 
+describe('columnState', () => {
 	// @feature data-store.give-back
-	it('offers a column no query or chart names, and not one in use', () => {
-		const jobs = table('Job', [
-			column('name', MB, { readers: [reader], in_use: true }),
+	it('offers to skip a column no query or chart names, and not one in use', () => {
+		const states = [
 			column('data', MB),
-		])
-		expect(described(giveBackItems(storage([jobs])))).toEqual(['Job.data'])
+			column('name', MB, { readers: [reader], in_use: true }),
+		].map(columnState)
+		expect(states).toEqual(['unread', 'read'])
 	})
 
 	// @feature data-store.give-back
 	it('leaves out a column the import needs and one already skipped', () => {
-		const jobs = table('Job', [
-			column('modified', MB, { skippable: false }),
+		const states = [
+			column('modified', MB, { skippable: false, in_use: true }),
 			column('data', MB, { skipped: true }),
-		])
-		expect(giveBackItems(storage([jobs]))).toEqual([])
+		].map(columnState)
+		expect(states).toEqual(['needed', 'skipped'])
 	})
+})
 
-	// @feature data-store.give-back
-	it('ranks tables and columns together, largest first', () => {
-		const jobs = table('Job', [column('small', MB), column('large', 30 * MB)])
-		const old = table('Old', [column('a', 10 * MB)], { last_read_on: null, unread: true })
-		expect(described(giveBackItems(storage([jobs, old])))).toEqual([
-			'Job.large',
-			'Old',
-			'Job.small',
+describe('readersLabel', () => {
+	// @feature data-store.storage-breakdown
+	it('counts queries, and says readers once another kind reads the column', () => {
+		const team = { doctype: 'Insights Team', name: 't1', title: 'Sales', workbook: null }
+		expect([[], [reader], [reader, reader], [reader, team]].map(readersLabel)).toEqual([
+			'',
+			'1 query',
+			'2 queries',
+			'2 readers',
 		])
 	})
 })

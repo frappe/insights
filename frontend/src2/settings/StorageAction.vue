@@ -8,9 +8,10 @@ import type { StoredTable } from './data_store_storage'
 const props = defineProps<{
 	label: string
 	title: string
+	tooltip?: string
 	table: StoredTable
-	message: string
 	action: () => Promise<unknown>
+	revealClass: string
 }>()
 
 const emit = defineEmits<{ done: [] }>()
@@ -39,12 +40,19 @@ function run() {
 </script>
 
 <template>
-	<div class="flex shrink-0 items-center gap-1.5">
+	<div
+		class="flex shrink-0 items-center gap-1.5"
+		:class="confirming ? '' : revealClass"
+		@click.stop
+		@keydown.stop
+	>
 		<template v-if="confirming && !needsTypedName">
 			<Button :label="__('Cancel')" variant="ghost" @click="confirming = false" />
 			<Button :label="label" variant="solid" :loading="running" @click="run" />
 		</template>
-		<Button v-else :label="label" variant="outline" @click="start" />
+		<Tooltip v-else :text="tooltip" :disabled="!tooltip">
+			<Button :label="label" variant="outline" @click="start" />
+		</Tooltip>
 	</div>
 
 	<Dialog
@@ -64,7 +72,14 @@ function run() {
 	>
 		<template #default>
 			<div class="flex flex-col gap-4">
-				<p class="text-p-base text-ink-gray-6">{{ message }}</p>
+				<p class="text-p-base text-ink-gray-6">
+					{{
+						__(
+							"{0} imports incrementally, so rows the source no longer has can't be imported again.",
+							table.label,
+						)
+					}}
+				</p>
 				<FormControl
 					v-model="typedName"
 					:label="__('Type {0} to confirm', table.table)"

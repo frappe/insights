@@ -70,9 +70,7 @@ export type BarSegment = {
 	tooltip: string
 }
 
-export type GiveBackItem =
-	| { kind: 'table'; table: StoredTable; bytes: number }
-	| { kind: 'column'; table: StoredTable; column: StoredColumn; bytes: number }
+export type ColumnState = 'skipped' | 'needed' | 'read' | 'unread'
 
 const KB = 1024
 const MB = KB * 1024
@@ -97,8 +95,8 @@ const GROUP_CLASS: Record<StorageGroupKey, string> = {
 function groupLabel(key: StorageGroupKey, unreadDays: number): string {
 	return {
 		read: __('Read by queries'),
-		unread_columns: __('Columns no query reads'),
-		unread_tables: __('Tables not read in {0} days', String(unreadDays)),
+		unread_columns: __('Unused columns'),
+		unread_tables: __('Tables unused for {0} days', String(unreadDays)),
 		cleanup: __('Cleanup removes'),
 		other: __('Other'),
 		free: __('Free'),
@@ -138,26 +136,29 @@ export function columnClass(table: StoredTable, column: StoredColumn): string {
 export function cleanupReason(reason: CleanupReason): string {
 	return {
 		not_stored: __('No longer stored'),
-		leftover: __('Left by an interrupted import'),
+		leftover: __('Left by a failed import'),
 		empty: __('Empty'),
-		legacy: __('Copy from before the schema move'),
+		legacy: __('Old copy'),
 	}[reason]
 }
 
-export function giveBackItems(storage: DataStoreStorage): GiveBackItem[] {
-	const items: GiveBackItem[] = []
-	for (const table of storage.tables) {
-		if (table.unread) {
-			items.push({ kind: 'table', table, bytes: table.bytes })
-			continue
-		}
-		for (const column of table.columns) {
-			if (!column.in_use && column.skippable && !column.skipped && column.bytes) {
-				items.push({ kind: 'column', table, column, bytes: column.bytes })
-			}
-		}
+export function unusedBytes(storage: DataStoreStorage): number {
+	return storage.groups.unread_columns + storage.groups.unread_tables
+}
+
+export function columnState(column: StoredColumn): ColumnState {
+	if (column.skipped) return 'skipped'
+	if (!column.skippable) return 'needed'
+	return column.in_use ? 'read' : 'unread'
+}
+
+export function readersLabel(readers: ColumnReader[]): string {
+	const count = readers.length
+	if (!count) return ''
+	if (readers.every((reader) => reader.doctype === 'Insights Query v3')) {
+		return count === 1 ? __('1 query') : __('{0} queries', String(count))
 	}
-	return items.sort((a, b) => b.bytes - a.bytes)
+	return count === 1 ? __('1 reader') : __('{0} readers', String(count))
 }
 
 export function columnsBySize(table: StoredTable): StoredColumn[] {
