@@ -120,6 +120,7 @@ class Warehouse:
         mode: str = "replace",
         primary_key_column: str = "",
         cursor_column: str = "",
+        bookmark: str | None = None,
         log_fn=None,
     ) -> "WarehouseTableWriter":
         """Create a table writer for batch inserts with automatic cleanup.
@@ -138,6 +139,7 @@ class Warehouse:
             mode=mode,
             primary_key_column=primary_key_column,
             cursor_column=cursor_column,
+            bookmark=bookmark,
             log_fn=log_fn,
         )
 
@@ -162,6 +164,7 @@ class WarehouseTableWriter:
         mode: str = "replace",
         primary_key_column: str = "",
         cursor_column: str = "",
+        bookmark: str | None = None,
         log_fn=None,
     ):
         self.database = database
@@ -170,6 +173,7 @@ class WarehouseTableWriter:
         self.mode = mode
         self.primary_key_column = primary_key_column
         self.cursor_column = cursor_column
+        self.bookmark = bookmark
         self._log = log_fn or (lambda *args, **kwargs: None)
 
         self._temp_dir: Path | None = None
@@ -234,6 +238,7 @@ class WarehouseTableWriter:
 
                 if self._table_exists(db) and self.mode in ("append", "upsert"):
                     self._add_missing_columns(db, merged)
+                    self._delete_from_bookmark(db)
                     if self.mode == "append":
                         db.insert(self.table_name, merged)
                     elif self.mode == "upsert":
@@ -270,6 +275,16 @@ class WarehouseTableWriter:
             self._log(f"New column '{name}' ({column_type}), adding it to '{self.table_name}'")
             table = quote_ident(self.table_name)
             db.raw_sql(f"ALTER TABLE {table} ADD COLUMN {quote_ident(name)} {column_type}")
+
+    def _delete_from_bookmark(self, db: DuckDBBackend) -> None:
+        """Drop the stored rows the run read again from the source, so they are copied once."""
+        if self.bookmark is None:
+            return
+        self._log(f"Deleting stored rows with {self.cursor_column} >= {self.bookmark}")
+        db.raw_sql(
+            f"DELETE FROM {quote_ident(self.table_name)} WHERE {quote_ident(self.cursor_column)} >= ?",
+            parameters=[self.bookmark],
+        )
 
     def _upsert(self, db: DuckDBBackend, incoming: Table) -> None:
         if not self.primary_key_column or not self.cursor_column:
@@ -437,6 +452,7 @@ class WarehouseTableImporter:
         self.warehouse_table_name = ""
         self.sync_strategy = "Append Only"
         self.writer_mode = "replace"  # overridden to "append" for incremental syncs
+        self.bookmark = None
 
         self.resumed = False
 
@@ -621,9 +637,10 @@ class WarehouseTableImporter:
 
         self._apply_before_import_script()
 
-        bookmark = self._resolve_incremental_bookmark()
-        self._log(f"Incremental sync: {self.cursor_column} > {bookmark}")
-        self.remote_table = self.remote_table.filter(_[self.cursor_column] > bookmark)
+        # Rows at the bookmark may still arrive after a run, so each run reads them again
+        self.bookmark = self._resolve_incremental_bookmark()
+        self._log(f"Incremental sync: {self.cursor_column} >= {self.bookmark}")
+        self.remote_table = self.remote_table.filter(_[self.cursor_column] >= self.bookmark)
 
         self.writer_mode = "upsert" if self.sync_strategy == "Update or Insert" else "append"
 
@@ -691,6 +708,7 @@ class WarehouseTableImporter:
                 mode=self.writer_mode,
                 primary_key_column=self.dedupe_key_column,
                 cursor_column=self.cursor_column,
+                bookmark=self.bookmark,
                 log_fn=self._log,
             ) as writer:
                 total_rows = self.process_batches(batch_size, writer)
@@ -719,37 +737,50 @@ class WarehouseTableImporter:
         return batch_size
 
     def process_batches(self, batch_size: int, writer: WarehouseTableWriter) -> int:
-        remote_table = self.remote_table
-        if self.cursor_column:
-            remote_table = remote_table.order_by(
-                ibis.asc(self.cursor_column, nulls_first=True),
-            )
+        """Read the source in batches that never split the rows sharing a cursor value.
 
-        batch_number = 0
+        A full batch keeps the rows before its last cursor value, and the next batch
+        starts at that value. One query per batch: a second one would scan a source
+        whose cursor has no index twice.
+        """
+        if not self.cursor_column:
+            batch = self.read_batch(writer, self.remote_table.head(batch_size))
+            return self.write_batch(writer, batch)
+
+        cursor = _[self.cursor_column]
+        ordered = ibis.asc(self.cursor_column, nulls_first=True)
+        remaining = self.remote_table
         total_rows = 0
 
         while True:
-            self._log(f"Processing batch: {batch_number + 1}")
-            batch = remote_table.head(batch_size)
-            self._log(f"Batch Query: \n{ibis.to_sql(batch)}")
-
-            batch = writer.insert(batch)
-
-            batch_count = int(batch.count().execute())
-            total_rows += batch_count
-
-            self._log(f"Rows: {batch_count} Total Rows: {total_rows}")
-
-            if batch_count < batch_size or not self.cursor_column:
+            batch = self.read_batch(writer, remaining.order_by(ordered).head(batch_size))
+            if len(batch) < batch_size:
                 break
 
-            last_cursor = batch[self.cursor_column].max().execute()
-            self._log(f"Bookmark: {last_cursor}")
-            remote_table = remote_table.filter(_[self.cursor_column] > last_cursor)
-            batch_number += 1
+            last = batch[self.cursor_column].max()
+            before_last = batch[batch[self.cursor_column].isna() | (batch[self.cursor_column] < last)]
+            if before_last.empty:
+                # one cursor value holds more rows than a batch
+                group = self.read_batch(writer, self.remote_table.filter(cursor == last))
+                total_rows += self.write_batch(writer, group)
+                remaining = self.remote_table.filter(cursor > last)
+            else:
+                total_rows += self.write_batch(writer, before_last)
+                remaining = self.remote_table.filter(cursor >= last)
 
-        self._log(f"Total Batches: {batch_number + 1} Total Rows: {total_rows}")
+        total_rows += self.write_batch(writer, batch)
+        self._log(f"Total Batches: {writer.batch_count} Total Rows: {total_rows}")
         return total_rows
+
+    def read_batch(self, writer: WarehouseTableWriter, query: Expr) -> pd.DataFrame:
+        self._log(f"Processing batch: {writer.batch_count + 1}")
+        self._log(f"Batch Query: \n{ibis.to_sql(query)}")
+        return query.execute()
+
+    def write_batch(self, writer: WarehouseTableWriter, rows: pd.DataFrame) -> int:
+        writer.insert(rows)
+        self._log(f"Rows: {len(rows)}")
+        return len(rows)
 
     def capture_outcome(self):
         """Report how the import ended, and nothing about what it read.

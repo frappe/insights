@@ -499,13 +499,9 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
             },
         )
 
-    def run_import(self, names):
-        rows = pd.DataFrame(
-            {
-                "name": names,
-                "creation": pd.to_datetime([f"2026-02-0{i + 1} 10:00:00.123456" for i in range(len(names))]),
-            }
-        )
+    def run_import(self, names, creations=None):
+        creations = creations or [f"2026-02-0{i + 1} 10:00:00.123456" for i in range(len(names))]
+        rows = pd.DataFrame({"name": names, "creation": pd.to_datetime(creations)})
         with patch.object(WarehouseTable, "get_remote_table", return_value=ibis.memtable(rows)):
             WarehouseTableImporter(WarehouseTable(self.DATA_SOURCE, self.TABLE)).start_import()
 
@@ -605,3 +601,20 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.run_import(["a", "b"])
 
         self.assertEqual(self.stored_names(), ["a", "b"])
+
+    # @feature data-store.import-cursor
+    def test_rows_sharing_the_cursor_at_a_batch_boundary_are_copied_once(self):
+        with patch.object(WarehouseTableImporter, "calculate_batch_size", return_value=2):
+            self.run_import(
+                ["a", "b", "c", "d", "e"],
+                ["2026-02-01", "2026-02-02", "2026-02-02", "2026-02-02", "2026-02-03"],
+            )
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c", "d", "e"])
+
+    # @feature data-store.import-cursor
+    def test_a_row_committed_later_at_the_stored_cursor_is_copied_once(self):
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+        self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
