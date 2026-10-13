@@ -249,6 +249,31 @@ class TestWarehouseWriteLock(InsightsIntegrationTestCase):
             self.assertIn("Could not set lock", str(caught.exception))
 
 
+class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
+    """DuckDB's own default of 80% of host RAM got a compaction OOM-killed."""
+
+    def memory_limits(self, path):
+        limits = []
+        for read_only in (False, True):
+            db = open_local_duckdb(path, read_only=read_only)
+            try:
+                limits.append(db.raw_sql("SELECT current_setting('memory_limit')").fetchone()[0])
+            finally:
+                db.disconnect()
+        return limits
+
+    # @feature data-store.memory-limit
+    def test_every_connection_to_a_store_file_is_held_to_the_memory_limit(self):
+        with tempfile.TemporaryDirectory(prefix="insights_memory_test_") as tmpdir:
+            path = str(Path(tmpdir) / "warehouse.duckdb")
+
+            with patch.dict(frappe.conf, {"insights_duckdb_memory_limit": None}):
+                self.assertEqual(self.memory_limits(path), ["3.7 GiB", "3.7 GiB"])
+
+            with patch.dict(frappe.conf, {"insights_duckdb_memory_limit": "300MB"}):
+                self.assertEqual(self.memory_limits(path), ["286.1 MiB", "286.1 MiB"])
+
+
 class TestMissingTableNotice(InsightsIntegrationTestCase):
     """A miss serves an empty table, so a failed import must not read as zero rows."""
 

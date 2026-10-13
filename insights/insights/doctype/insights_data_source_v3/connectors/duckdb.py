@@ -28,6 +28,12 @@ WRITE_LOCK_TIMEOUT = 30
 IMPORT_WRITE_LOCK_TIMEOUT = 5 * 60
 WRITE_LOCK_RETRY_INTERVAL = 1
 
+# DuckDB defaults to 80% of host RAM, which on a shared host is more than is
+# free: a warehouse compaction got OOM-killed. Under a cap it spills to
+# `<db file>.tmp` instead. Sites can raise it with this site config key.
+MEMORY_LIMIT_CONFIG_KEY = "insights_duckdb_memory_limit"
+DEFAULT_MEMORY_LIMIT = "4GB"
+
 
 class InsightsDuckDBCompiler(StarExceptDropColumns, DuckDBCompiler):
     pass
@@ -63,11 +69,16 @@ def open_local_duckdb(
         allowed_dir: Directory to allow external file access from (write mode only).
         lock_timeout: Seconds a write open waits for readers to release the file.
     """
+    config = {"memory_limit": get_memory_limit()}
+
     if not os.path.exists(path):
-        db = connect_duckdb(path)
+        db = connect_duckdb(path, **config)
         db.disconnect()
 
-    db = connect_duckdb(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
+    if read_only:
+        db = connect_duckdb(path, read_only=True, **config)
+    else:
+        db = _connect_for_write(path, lock_timeout, config)
 
     private_folder = os.path.realpath(get_files_path(is_private=1))
     private_folder = _escape_sql_path(private_folder)
@@ -85,14 +96,18 @@ def open_local_duckdb(
     return db
 
 
-def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
+def get_memory_limit() -> str:
+    return frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY) or DEFAULT_MEMORY_LIMIT
+
+
+def _connect_for_write(path: str, lock_timeout: float, config: dict) -> DuckDBBackend:
     """Open path for writing, waiting out the readers that still hold it."""
     deadline = time.monotonic() + lock_timeout
     waited = False
 
     while True:
         try:
-            return connect_duckdb(path, read_only=False)
+            return connect_duckdb(path, read_only=False, **config)
         except IOException as e:
             if "Could not set lock" not in str(e) or time.monotonic() >= deadline:
                 raise
