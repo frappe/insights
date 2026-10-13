@@ -3,10 +3,10 @@
 // one date formatter every stage prints through, and the parts of the line an
 // overview row prints.
 
+import type { Dayjs } from 'dayjs'
 import type { Component } from 'vue'
 import { FIELDTYPES, type FilterType } from '../../helpers/constants'
 import dayjs from '../../helpers/dayjs'
-import { endOfPeriod, shiftPeriods, startOfPeriod } from '../../helpers/calendar'
 import {
 	buildSpan,
 	parseSpan,
@@ -336,45 +336,6 @@ export function spanOf(form: RelativeForm): string {
 	return buildSpan({ ...form, shape: form.direction })
 }
 
-/**
- * `get_window` in dayjs, for the range the calendar and the notes print.
- *
- * The periods are the site's own, its week start and its fiscal year, because
- * this range is a preview of the rows the server will return, and the server
- * counts by those.
- */
-export function resolveSpan(span: string, anchor?: string): [string, string] {
-	const today = anchor ? dayjs(anchor) : dayjs()
-
-	const form = parseSpan(span)
-	if (!form) return [span, span]
-
-	const currentStart = startOfPeriod(today, form.unit)
-
-	if (form.shape === 'to date') {
-		return [currentStart.format(DATE_FORMAT), today.format(DATE_FORMAT)]
-	}
-
-	if (form.shape === 'current') {
-		return [currentStart.format(DATE_FORMAT), endOfPeriod(today, form.unit).format(DATE_FORMAT)]
-	}
-
-	if (form.shape === 'last') {
-		// N whole periods, the last of them ending the day before the current
-		// one starts, unless the current one is asked for too.
-		const from = shiftPeriods(currentStart, form.unit, -form.count)
-		const to = form.includeCurrent
-			? endOfPeriod(today, form.unit)
-			: currentStart.subtract(1, 'day')
-		return [from.format(DATE_FORMAT), to.format(DATE_FORMAT)]
-	}
-
-	const nextStart = shiftPeriods(currentStart, form.unit, 1)
-	const from = form.includeCurrent ? currentStart : nextStart
-	const to = shiftPeriods(nextStart, form.unit, form.count).subtract(1, 'day')
-	return [from.format(DATE_FORMAT), to.format(DATE_FORMAT)]
-}
-
 /** A span in the picker's words: `Today`, `Last 7 days`, `Next 2 weeks`. */
 export function spanLabel(span: string): string {
 	const preset = datePresets().find((p) => p.span === span)
@@ -388,14 +349,6 @@ export function spanLabel(span: string): string {
 	const phrase = unitWords(form.unit, form.count)
 	const label = form.shape === 'last' ? __('Last {0}', phrase) : __('Next {0}', phrase)
 	return form.includeCurrent ? `${label} ${__('(include current)')}` : label
-}
-
-/** A span as the days it covers, through the one date formatter. */
-export function spanDates(value: FilterValue, anchor?: string): string {
-	const timespan = timespanOf(value)
-	if (!timespan) return ''
-	const [from, to] = resolveSpan(timespan.span, anchor || timespan.anchor)
-	return formatDate(from, to)
 }
 
 /** The directions the `Relative…` row opens onto. */
@@ -473,6 +426,14 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/
 
 function isDay(text: string): boolean {
 	return DAY.test(text) && dayjs(text).isValid()
+}
+
+/** `date` moved `count` periods of `unit`. */
+function shiftPeriods(date: Dayjs, unit: SpanUnit, count: number): Dayjs {
+	if (unit === 'quarter') return date.add(count * 3, 'month')
+	// a fiscal year is twelve months long wherever it starts, so it moves by the year
+	if (unit === 'fiscal year') return date.add(count, 'year')
+	return date.add(count, unit as any)
 }
 
 /** What a typed date phrase means, where the value stage takes one. */
