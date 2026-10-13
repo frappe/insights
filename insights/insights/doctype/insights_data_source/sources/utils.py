@@ -137,7 +137,7 @@ def parse_sql_tables(sql: str):
     return [strip_quotes(table) for table in tables]
 
 
-def replace_query_tags(sql: str, data_source: str) -> str:
+def replace_query_tags(sql: str | None, data_source: str) -> str | None:
     """{{ QRY_1203 }} -> the SQL QRY-1203 builds.
 
     Only for SQL a query's author wrote. Compiled SQL also holds the values of filters and
@@ -151,7 +151,7 @@ def replace_query_tags(sql: str, data_source: str) -> str:
         query = frappe.get_doc("Insights Query", query_name)
         return frappe.get_doc("Insights Data Source", data_source).build_query(query)
 
-    return re.sub(r"{{(.*?)}}", query_sql, sql)
+    return re.sub(r"{{(.*?)}}", query_sql, sql) if sql else sql
 
 
 def get_stored_query_sql(sql: str, data_source: str | None = None, dialect: Optional["Dialect"] = None):
@@ -211,12 +211,11 @@ def get_stored_query_sql(sql: str, data_source: str | None = None, dialect: Opti
         if data_source and sql.data_source != data_source:
             frappe.throw("Cannot use queries from different data sources in a single query")
 
-        stored_query_sql[sql.name] = sql.sql
+        stored_sql = replace_query_tags(sql.sql, sql.data_source)
+        stored_query_sql[sql.name] = stored_sql
         if not sql.is_native_query:
             # non native queries are already processed and stored in the db
             continue
-        native_sql = replace_query_tags(sql.sql, sql.data_source)
-        stored_query_sql[sql.name] = native_sql
         sub_stored_query_sql = get_stored_query_sql(sql.sql, data_source, dialect=dialect)
         # sub_stored_query_sql = { 'QRY-004': 'SELECT name FROM `Item`' }
         if not sub_stored_query_sql:
@@ -226,7 +225,7 @@ def get_stored_query_sql(sql: str, data_source: str | None = None, dialect: Opti
         for table, sub_query in sub_stored_query_sql.items():
             cte += f" {quoted(table)} AS ({sub_query}),"
         cte = cte[:-1]
-        stored_query_sql[sql.name] = f"{cte} {native_sql}"
+        stored_query_sql[sql.name] = f"{cte} {stored_sql}"
 
     return stored_query_sql
 
