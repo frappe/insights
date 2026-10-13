@@ -171,7 +171,6 @@ class TableImportJobRun:
             }
         )
         self.log.insert(ignore_permissions=True)
-        frappe.db.commit()  # nosemgrep - the log must stay when the run fails
 
         # Create the table writer for writing data
         self._table_writer = TableWriter(self)
