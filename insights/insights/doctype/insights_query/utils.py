@@ -365,6 +365,8 @@ class Query(frappe._dict):
             operator = {"value": operator}
         if not column or not isinstance(column, dict):
             frappe.throw("Invalid Column")
+        # dashboards, public ones included, send these filters: a filter names a column, nothing more
+        column = {key: column.get(key) for key in ("table", "column", "type")}
 
         is_filter_applied_to_column = any(
             f.column.column == column.get("column") and f.column.table == column.get("table")
