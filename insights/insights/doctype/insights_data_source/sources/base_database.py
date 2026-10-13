@@ -18,6 +18,7 @@ from .utils import (
     execute_and_log,
     get_cached_results,
     replace_query_tables_with_cte,
+    replace_query_tags,
 )
 
 
@@ -105,6 +106,8 @@ class BaseDatabase(Database):
 
     def run_query(self, query):
         sql = self.query_builder.build(query)
+        if query.is_native_query:
+            sql = replace_query_tags(sql, self.data_source)
         return self.execute_query(sql, return_columns=True, query_name=query.name)
 
     def execute_query(
@@ -124,7 +127,6 @@ class BaseDatabase(Database):
         sql = self.compile_query(sql)
         sql = self.process_subquery(sql)
         sql = self.set_row_limit(sql)
-        sql = self.replace_template_tags(sql)
         sql = self.escape_special_characters(sql)
 
         self.validate_native_sql(sql)
@@ -159,30 +161,6 @@ class BaseDatabase(Database):
         # to fix special characters in query like %
         if self.engine.dialect.name in ("mysql", "postgresql"):
             sql = re.sub(r"(%{1,})", r"%%", sql)
-        return sql
-
-    def replace_template_tags(self, sql):
-        # replace template tags with actual values
-        # {{ QRY_1203 }} -> SELECT * FROM `tabSales Invoice`
-        # find all the template tags in the query
-        # match all character between {{ and }}
-        matches = re.findall(r"{{(.*?)}}", sql)
-        if not matches:
-            return sql
-        context = {}
-        for match in matches:
-            query_name = match.strip().replace("_", "-")
-            if (
-                not query_name
-                or not query_name.startswith("QRY")
-                or not frappe.db.exists("Insights Query", query_name)
-            ):
-                continue
-            query = frappe.get_doc("Insights Query", query_name)
-            key = query_name.replace("-", "_")
-            context[key] = self.build_query(query)
-        # nosemgrep - Frappe's sandboxed Jinja, on SQL its author can already run
-        sql = frappe.render_template(sql, context)
         return sql
 
     def set_row_limit(self, sql):

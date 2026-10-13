@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import re
 import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Optional
@@ -136,6 +137,23 @@ def parse_sql_tables(sql: str):
     return [strip_quotes(table) for table in tables]
 
 
+def replace_query_tags(sql: str, data_source: str) -> str:
+    """{{ QRY_1203 }} -> the SQL QRY-1203 builds.
+
+    Only for SQL a query's author wrote. Compiled SQL also holds the values of filters and
+    searches, and a tag typed into one of those must stay text.
+    """
+
+    def query_sql(match):
+        query_name = match.group(1).strip().replace("_", "-")
+        if not query_name.startswith("QRY") or not frappe.db.exists("Insights Query", query_name):
+            return match.group(0)
+        query = frappe.get_doc("Insights Query", query_name)
+        return frappe.get_doc("Insights Data Source", data_source).build_query(query)
+
+    return re.sub(r"{{(.*?)}}", query_sql, sql)
+
+
 def get_stored_query_sql(sql: str, data_source: str | None = None, dialect: Optional["Dialect"] = None):
     """
     Takes a native sql query and returns a map of table name to the query along with the subqueries
@@ -197,6 +215,8 @@ def get_stored_query_sql(sql: str, data_source: str | None = None, dialect: Opti
         if not sql.is_native_query:
             # non native queries are already processed and stored in the db
             continue
+        native_sql = replace_query_tags(sql.sql, sql.data_source)
+        stored_query_sql[sql.name] = native_sql
         sub_stored_query_sql = get_stored_query_sql(sql.sql, data_source, dialect=dialect)
         # sub_stored_query_sql = { 'QRY-004': 'SELECT name FROM `Item`' }
         if not sub_stored_query_sql:
@@ -206,7 +226,7 @@ def get_stored_query_sql(sql: str, data_source: str | None = None, dialect: Opti
         for table, sub_query in sub_stored_query_sql.items():
             cte += f" {quoted(table)} AS ({sub_query}),"
         cte = cte[:-1]
-        stored_query_sql[sql.name] = f"{cte} {sql.sql}"
+        stored_query_sql[sql.name] = f"{cte} {native_sql}"
 
     return stored_query_sql
 
