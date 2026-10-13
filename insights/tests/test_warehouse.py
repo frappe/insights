@@ -187,6 +187,30 @@ class TestWarehouse(InsightsIntegrationTestCase):
                 ],
             )
 
+    def schema_tables(self, db, schema="main"):
+        query = "select table_name from duckdb_tables() where database_name = current_database() and schema_name = ?"
+        return {name for (name,) in db.raw_sql(query, parameters=[schema]).fetchall()}
+
+    # @feature data-store.import-atomic
+    def test_a_replace_that_fails_mid_insert_keeps_the_old_rows_and_no_other_table(self):
+        with self.patched_warehouse() as db:
+            self.write_to_table(db, "t", [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
+
+            # `id` is a BIGINT column, so the cast fails once the insert reaches "three"
+            frame = pd.DataFrame(
+                {"id": ["2", "three"], "value": ["beta", "gamma"], "modified": ["2024-01-02"] * 2}
+            )
+            frame["modified"] = pd.to_datetime(frame["modified"])
+            with self.assertRaises(Exception):
+                with WarehouseTableWriter("t", table_schema=self.make_schema(), database="main") as writer:
+                    writer.insert(frame)
+                    writer.commit()
+
+            self.assertEqual(self.schema_tables(db), {"t"})
+            self.assertEqual(
+                self.read_rows(db, "t"), [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}]
+            )
+
     # @feature data-store.run-without-import
     def test_dropping_a_table_whose_schema_was_never_created_does_nothing(self):
         # a fresh site's store has no schema until its first import
