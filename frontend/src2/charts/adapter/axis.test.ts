@@ -1368,3 +1368,60 @@ describe('the option frappe-ui builds', () => {
 		},
 	)
 })
+
+describe('a timeline', () => {
+	// @feature charts.x-axis
+	it('ticks a day timeline only on the days it steps to', () => {
+		// echarts 6.1.0 also ticks one step past each month's last day, a day or
+		// two after the next month starts, and that tick's label hides the
+		// month's. `patches/echarts+6.1.0.patch` drops it.
+		const day = { name: 'day', type: 'Date' as const, granularity: 'day' as const }
+		const end = Date.UTC(2026, 9, 6)
+		const categories = Array.from({ length: 120 }, (_, index) =>
+			new Date(end - (119 - index) * 86_400_000).toISOString().slice(0, 10),
+		)
+		const input = axisChart({
+			type: 'Line',
+			dimension: day,
+			categories,
+			measures: ['revenue'],
+			readings: { revenue: categories.map((_, index) => index) },
+		})
+		const tokens = resolveChartTokens()
+		const props = adaptChart({ ...input, tokens })!.props as any
+		const normalized = normalizeAxisChartProps(props)
+		const option = buildAxisChartOption(
+			{ ...normalized.config, type: 'line' },
+			{ tokens, hiddenSeries: [], width: 600, format: normalized.format },
+		)
+		const chart = echarts.init(null as any, null as any, {
+			renderer: 'svg',
+			ssr: true,
+			width: 600,
+			height: 400,
+		})
+		chart.setOption({ ...option, animation: false })
+
+		const ticks = (chart as any)
+			.getModel()
+			.getComponent('xAxis')
+			.axis.scale.getTicks()
+			.map((tick: any) => {
+				const date = new Date(tick.value)
+				return `${date.getMonth() + 1}-${date.getDate()}`
+			})
+		chart.dispose()
+		expect(ticks).toEqual([
+			'6-9',
+			'6-17',
+			'7-1',
+			'7-17',
+			'8-1',
+			'8-17',
+			'9-1',
+			'9-17',
+			'10-1',
+			'10-6',
+		])
+	})
+})
