@@ -49,7 +49,7 @@ class InsightsScriptQueryController:
             variables = {var.variable_name: get_value(var) for var in variables}
             _locals = {"results": results, **variables}
             with _ensure_rollback():
-                safe_exec(
+                safe_exec(  # nosemgrep - runs in Frappe's sandbox
                     script,
                     _globals=get_globals(),
                     _locals=_locals,

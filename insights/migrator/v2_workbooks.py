@@ -474,13 +474,14 @@ def load_v2_queries(roots) -> dict:
 
 
 def _select(doctype: str, clause: str, values: dict) -> list[dict]:
+    # nosemgrep - the table is a doctype constant, and values are parameters
     return frappe.db.sql(f"select * from `tab{doctype}` {clause}", values, as_dict=True)
 
 
 def _existing_queries(names) -> set[str]:
     if not names:
         return set()
-    rows = frappe.db.sql(
+    rows = frappe.db.sql(  # nosemgrep - the table is a doctype constant, and values are parameters
         f"select name from `tab{V2_QUERY}` where name in %(names)s",
         {"names": tuple(names)},
     )

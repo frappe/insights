@@ -8,7 +8,7 @@ import frappe
 from sqlalchemy import column as Column
 from sqlalchemy import inspect
 from sqlalchemy import select as Select
-from sqlalchemy import table as Table
+from sqlalchemy import table as Table  # nosemgrep - the "table" assigned to below is a local, not this import
 from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.postgresql.builder import PostgresQueryBuilder

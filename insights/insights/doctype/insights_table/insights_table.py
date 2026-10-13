@@ -6,7 +6,7 @@ from frappe.model.document import Document
 
 
 class InsightsTable(Document):
-    def on_update(self):
+    def before_save(self):
         if not self.columns:
             self.update_columns()
 

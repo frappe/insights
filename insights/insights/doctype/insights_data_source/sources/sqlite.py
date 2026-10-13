@@ -5,7 +5,7 @@ import frappe
 import pandas as pd
 from sqlalchemy import column as Column
 from sqlalchemy import create_engine, text
-from sqlalchemy import table as Table
+from sqlalchemy import table as Table  # nosemgrep - the "table" assigned to below is a local, not this import
 from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sqlite.sqlite_query_builder import (

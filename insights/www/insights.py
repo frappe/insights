@@ -63,7 +63,6 @@ def continue_to_v3(context):
             return False
 
     csrf_token = frappe.sessions.get_csrf_token()
-    frappe.db.commit()
     context.boot = {
         "csrf_token": csrf_token,
         "site_name": frappe.local.site,

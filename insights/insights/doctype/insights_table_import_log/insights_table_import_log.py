@@ -37,7 +37,7 @@ class InsightsTableImportLog(Document):
             self.output = ""
         self.output += message + "\n"
         self.db_update()
-        commit and frappe.db.commit()
+        commit and frappe.db.commit()  # nosemgrep - other sessions read the log while the import runs
 
     @frappe.whitelist()
     def mark_as_failed(self):

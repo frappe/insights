@@ -181,6 +181,7 @@ class BaseDatabase(Database):
             query = frappe.get_doc("Insights Query", query_name)
             key = query_name.replace("-", "_")
             context[key] = self.build_query(query)
+        # nosemgrep - Frappe's sandboxed Jinja, on SQL its author can already run
         sql = frappe.render_template(sql, context)
         return sql
 
