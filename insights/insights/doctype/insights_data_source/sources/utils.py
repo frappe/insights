@@ -144,12 +144,23 @@ def replace_query_tags(sql: str | None, data_source: str) -> str | None:
     searches, and a tag typed into one of those must stay text.
     """
 
+    # a query whose SQL leads back to itself keeps the tag as text instead of recursing
+    expanding = frappe.flags.setdefault("insights_expanding_queries", set())
+
     def query_sql(match):
         query_name = match.group(1).strip().replace("_", "-")
-        if not query_name.startswith("QRY") or not frappe.db.exists("Insights Query", query_name):
+        if (
+            query_name in expanding
+            or not query_name.startswith("QRY")
+            or not frappe.db.exists("Insights Query", query_name)
+        ):
             return match.group(0)
-        query = frappe.get_doc("Insights Query", query_name)
-        return frappe.get_doc("Insights Data Source", data_source).build_query(query)
+        expanding.add(query_name)
+        try:
+            query = frappe.get_doc("Insights Query", query_name)
+            return frappe.get_doc("Insights Data Source", data_source).build_query(query)
+        finally:
+            expanding.discard(query_name)
 
     return re.sub(r"{{(.*?)}}", query_sql, sql) if sql else sql
 
