@@ -13,7 +13,7 @@ import frappe
 import ibis
 import pandas as pd
 import pyarrow as pa
-from duckdb import IOException
+from duckdb import ConversionException, IOException
 from frappe.utils import add_to_date
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
@@ -201,9 +201,9 @@ class TestWarehouse(InsightsIntegrationTestCase):
                 {"id": ["2", "three"], "value": ["beta", "gamma"], "modified": ["2024-01-02"] * 2}
             )
             frame["modified"] = pd.to_datetime(frame["modified"])
-            with self.assertRaises(Exception):
-                with WarehouseTableWriter("t", table_schema=self.make_schema(), database="main") as writer:
-                    writer.insert(frame)
+            with WarehouseTableWriter("t", table_schema=self.make_schema(), database="main") as writer:
+                writer.insert(frame)
+                with self.assertRaises(ConversionException):
                     writer.commit()
 
             self.assertEqual(self.schema_tables(db), {"t"})

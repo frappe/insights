@@ -1133,9 +1133,9 @@ def is_superseded_leftover(
 ) -> bool:
     """Whether a live table holds at least what this Leftover Table holds.
 
-    A leftover is a copy of the table its import was replacing. A live table in
-    the same schema with the same column names and as many rows or more is
-    that table, re-imported since, so the leftover adds nothing.
+    A leftover holds the rows a dead import was writing. A live table in the
+    same schema with the same column names and as many rows or more is that
+    import's table, re-imported since, so the leftover adds nothing.
     """
     if not table.startswith(LEFTOVER_TABLE_PREFIX):
         return False
