@@ -5,8 +5,10 @@ import os
 import time
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
+from functools import cache
 from urllib.parse import urlparse
 
+import duckdb
 import frappe
 import ibis
 from duckdb import IOException
@@ -32,7 +34,8 @@ WRITE_LOCK_RETRY_INTERVAL = 1
 # free: a warehouse compaction got OOM-killed. Under a cap it spills to
 # `<db file>.tmp` instead. Sites can raise it with this site config key.
 MEMORY_LIMIT_CONFIG_KEY = "insights_duckdb_memory_limit"
-DEFAULT_MEMORY_LIMIT = "4GB"
+MAX_DEFAULT_MEMORY_LIMIT = 4 * 1000**3
+DUCKDB_SIZE_UNITS = {"bytes": 1, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4, "PiB": 1024**5}
 
 
 class InsightsDuckDBCompiler(StarExceptDropColumns, DuckDBCompiler):
@@ -40,6 +43,7 @@ class InsightsDuckDBCompiler(StarExceptDropColumns, DuckDBCompiler):
 
 
 def connect_duckdb(*args, **kwargs) -> DuckDBBackend:
+    kwargs.setdefault("memory_limit", get_memory_limit())
     db = ibis.duckdb.connect(*args, **kwargs)
     db.compiler = InsightsDuckDBCompiler()
     return db
@@ -69,16 +73,11 @@ def open_local_duckdb(
         allowed_dir: Directory to allow external file access from (write mode only).
         lock_timeout: Seconds a write open waits for readers to release the file.
     """
-    config = {"memory_limit": get_memory_limit()}
-
     if not os.path.exists(path):
-        db = connect_duckdb(path, **config)
+        db = connect_duckdb(path)
         db.disconnect()
 
-    if read_only:
-        db = connect_duckdb(path, read_only=True, **config)
-    else:
-        db = _connect_for_write(path, lock_timeout, config)
+    db = connect_duckdb(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
 
     private_folder = os.path.realpath(get_files_path(is_private=1))
     private_folder = _escape_sql_path(private_folder)
@@ -97,17 +96,25 @@ def open_local_duckdb(
 
 
 def get_memory_limit() -> str:
-    return frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY) or DEFAULT_MEMORY_LIMIT
+    return frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY) or f"{get_default_memory_limit()}B"
 
 
-def _connect_for_write(path: str, lock_timeout: float, config: dict) -> DuckDBBackend:
+@cache
+def get_default_memory_limit() -> int:
+    # A host with under 5 GB of RAM gets DuckDB's own, lower default.
+    with duckdb.connect() as con:
+        size, unit = con.sql("SELECT current_setting('memory_limit')").fetchone()[0].split()
+    return min(int(float(size) * DUCKDB_SIZE_UNITS[unit]), MAX_DEFAULT_MEMORY_LIMIT)
+
+
+def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
     """Open path for writing, waiting out the readers that still hold it."""
     deadline = time.monotonic() + lock_timeout
     waited = False
 
     while True:
         try:
-            return connect_duckdb(path, read_only=False, **config)
+            return connect_duckdb(path, read_only=False)
         except IOException as e:
             if "Could not set lock" not in str(e) or time.monotonic() >= deadline:
                 raise
