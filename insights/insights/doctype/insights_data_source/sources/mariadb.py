@@ -76,9 +76,7 @@ class MariaDBTableFactory:
 
         schema = {}
         for [table_name, column_name, data_type, _] in columns:
-            schema.setdefault(table_name, []).append(
-                self.get_column(column_name, data_type)
-            )
+            schema.setdefault(table_name, []).append(self.get_column(column_name, data_type))
         return schema
 
     def get_column(self, column_name, column_type):
@@ -92,9 +90,7 @@ class MariaDBTableFactory:
 
 
 class MariaDB(BaseDatabase):
-    def __init__(
-        self, data_source, host, port, username, password, database_name, use_ssl, **_
-    ):
+    def __init__(self, data_source, host, port, username, password, database_name, use_ssl, **_):
         self.data_source = data_source
         self.engine = get_sqlalchemy_engine(
             dialect="mysql",
@@ -134,12 +130,8 @@ class MariaDB(BaseDatabase):
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(
-            f"""select * from `{table}` limit {limit}""", cached=True
-        )
-        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[
-            0
-        ][0]
+        data = self.execute_query(f"""select * from `{table}` limit {limit}""", cached=True)
+        length = self.execute_query(f"""select count(*) from `{table}`""", cached=True)[0][0]
         return {
             "data": data or [],
             "length": length or 0,
