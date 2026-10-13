@@ -9,6 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
+import duckdb
 import frappe
 import ibis
 import pandas as pd
@@ -19,7 +20,13 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
 from insights.api.data_store import sync_tables
-from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import open_local_duckdb
+from insights.insights.doctype.insights_data_source_v3.connectors import duckdb as duckdb_connector
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+    connect_duckdb,
+    get_default_memory_limit,
+    get_memory_limit,
+    open_local_duckdb,
+)
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WarehouseTable,
     WarehouseTableImporter,
@@ -271,6 +278,44 @@ class TestWarehouseWriteLock(InsightsIntegrationTestCase):
                 open_local_duckdb(path, read_only=False, allowed_dir=tmpdir, lock_timeout=1)
 
             self.assertIn("Could not set lock", str(caught.exception))
+
+
+class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
+    def memory_limits(self, path):
+        connections = [
+            lambda: open_local_duckdb(path, read_only=False),
+            lambda: open_local_duckdb(path, read_only=True),
+            connect_duckdb,
+        ]
+        limits = []
+        for connect in connections:
+            db = connect()
+            try:
+                limits.append(db.raw_sql("SELECT current_setting('memory_limit')").fetchone()[0])
+            finally:
+                db.disconnect()
+        return limits
+
+    # @feature data-store.memory-limit
+    def test_every_duckdb_connection_is_held_to_the_memory_limit(self):
+        with tempfile.TemporaryDirectory(prefix="insights_memory_test_") as tmpdir:
+            path = str(Path(tmpdir) / "warehouse.duckdb")
+
+            with patch.dict(frappe.conf, {"insights_duckdb_memory_limit": None}):
+                with duckdb.connect(config={"memory_limit": get_memory_limit()}) as plain:
+                    expected = plain.sql("SELECT current_setting('memory_limit')").fetchone()[0]
+                self.assertEqual(self.memory_limits(path), [expected] * 3)
+
+            with patch.dict(frappe.conf, {"insights_duckdb_memory_limit": "300MB"}):
+                self.assertEqual(self.memory_limits(path), ["286.1 MiB"] * 3)
+
+    # @feature data-store.memory-limit
+    def test_a_host_with_little_ram_keeps_duckdbs_lower_default(self):
+        for duckdb_default, expected in ((3 * 1024**3, 3 * 1024**3), (48 * 1024**3, 4 * 1000**3)):
+            with patch.object(
+                duckdb_connector, "get_duckdb_default_memory_limit", return_value=duckdb_default
+            ):
+                self.assertEqual(get_default_memory_limit(), expected)
 
 
 class TestMissingTableNotice(InsightsIntegrationTestCase):

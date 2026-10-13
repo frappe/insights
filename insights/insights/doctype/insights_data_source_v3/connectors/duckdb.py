@@ -5,8 +5,10 @@ import os
 import time
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
+from functools import cache
 from urllib.parse import urlparse
 
+import duckdb
 import frappe
 import ibis
 from duckdb import IOException
@@ -28,12 +30,20 @@ WRITE_LOCK_TIMEOUT = 30
 IMPORT_WRITE_LOCK_TIMEOUT = 5 * 60
 WRITE_LOCK_RETRY_INTERVAL = 1
 
+# DuckDB defaults to 80% of host RAM, which on a shared host is more than is
+# free: a warehouse compaction got OOM-killed. Under a cap it spills to
+# `<db file>.tmp` instead. Sites can raise it with this site config key.
+MEMORY_LIMIT_CONFIG_KEY = "insights_duckdb_memory_limit"
+MAX_DEFAULT_MEMORY_LIMIT = 4 * 1000**3
+DUCKDB_SIZE_UNITS = {"bytes": 1, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4, "PiB": 1024**5}
+
 
 class InsightsDuckDBCompiler(StarExceptDropColumns, DuckDBCompiler):
     pass
 
 
 def connect_duckdb(*args, **kwargs) -> DuckDBBackend:
+    kwargs.setdefault("memory_limit", get_memory_limit())
     db = ibis.duckdb.connect(*args, **kwargs)
     db.compiler = InsightsDuckDBCompiler()
     return db
@@ -83,6 +93,22 @@ def open_local_duckdb(
         db.raw_sql("SET enable_external_access = false")
 
     return db
+
+
+def get_memory_limit() -> str:
+    return frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY) or f"{get_default_memory_limit()}B"
+
+
+def get_default_memory_limit() -> int:
+    # A host with under 5 GB of RAM gets DuckDB's own, lower default.
+    return min(get_duckdb_default_memory_limit(), MAX_DEFAULT_MEMORY_LIMIT)
+
+
+@cache
+def get_duckdb_default_memory_limit() -> int:
+    with duckdb.connect() as con:
+        size, unit = con.sql("SELECT current_setting('memory_limit')").fetchone()[0].split()
+    return int(float(size) * DUCKDB_SIZE_UNITS[unit])
 
 
 def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
