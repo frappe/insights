@@ -99,12 +99,16 @@ def get_memory_limit() -> str:
     return frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY) or f"{get_default_memory_limit()}B"
 
 
-@cache
 def get_default_memory_limit() -> int:
     # A host with under 5 GB of RAM gets DuckDB's own, lower default.
+    return min(get_duckdb_default_memory_limit(), MAX_DEFAULT_MEMORY_LIMIT)
+
+
+@cache
+def get_duckdb_default_memory_limit() -> int:
     with duckdb.connect() as con:
         size, unit = con.sql("SELECT current_setting('memory_limit')").fetchone()[0].split()
-    return min(int(float(size) * DUCKDB_SIZE_UNITS[unit]), MAX_DEFAULT_MEMORY_LIMIT)
+    return int(float(size) * DUCKDB_SIZE_UNITS[unit])
 
 
 def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:

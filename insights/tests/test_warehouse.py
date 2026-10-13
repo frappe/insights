@@ -9,6 +9,7 @@ from decimal import Decimal
 from pathlib import Path
 from unittest.mock import patch
 
+import duckdb
 import frappe
 import ibis
 import pandas as pd
@@ -23,6 +24,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors import duckdb 
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     connect_duckdb,
     get_default_memory_limit,
+    get_memory_limit,
     open_local_duckdb,
 )
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
@@ -276,22 +278,20 @@ class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
             path = str(Path(tmpdir) / "warehouse.duckdb")
 
             with patch.dict(frappe.conf, {"insights_duckdb_memory_limit": None}):
-                self.assertEqual(self.memory_limits(path), ["3.7 GiB"] * 3)
+                with duckdb.connect(config={"memory_limit": get_memory_limit()}) as plain:
+                    expected = plain.sql("SELECT current_setting('memory_limit')").fetchone()[0]
+                self.assertEqual(self.memory_limits(path), [expected] * 3)
 
             with patch.dict(frappe.conf, {"insights_duckdb_memory_limit": "300MB"}):
                 self.assertEqual(self.memory_limits(path), ["286.1 MiB"] * 3)
 
     # @feature data-store.memory-limit
     def test_a_host_with_little_ram_keeps_duckdbs_lower_default(self):
-        get_default_memory_limit.cache_clear()
-        try:
-            with patch.object(duckdb_connector, "duckdb") as fake_duckdb:
-                fake_duckdb.connect.return_value.__enter__.return_value.sql.return_value.fetchone.return_value = (
-                    "3.0 GiB",
-                )
-                self.assertEqual(get_default_memory_limit(), 3 * 1024**3)
-        finally:
-            get_default_memory_limit.cache_clear()
+        for duckdb_default, expected in ((3 * 1024**3, 3 * 1024**3), (48 * 1024**3, 4 * 1000**3)):
+            with patch.object(
+                duckdb_connector, "get_duckdb_default_memory_limit", return_value=duckdb_default
+            ):
+                self.assertEqual(get_default_memory_limit(), expected)
 
 
 class TestMissingTableNotice(InsightsIntegrationTestCase):
