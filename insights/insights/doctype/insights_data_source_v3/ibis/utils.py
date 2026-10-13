@@ -410,6 +410,7 @@ def validate_types(expression: str, columns: list[dict]):
     try:
         validation_table = ibis.table(schema, name="validation_table")
         eval_context = eval_script(validation_table, schema)
+        # nosemgrep - runs in Frappe's sandbox
         safe_exec(expression, eval_context, restrict_commit_rollback=True)
         return {"is_valid": True, "errors": []}
 

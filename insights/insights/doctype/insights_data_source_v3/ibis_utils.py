@@ -1293,10 +1293,11 @@ def exec_with_return(
     _script = ast.unparse(tree)
     if _script.strip():
         with ensure_rollback():
+            # nosemgrep - runs in Frappe's sandbox
             safe_exec(_script, _globals, _locals, restrict_commit_rollback=True)
-        return safe_eval(output_expression, _globals, _locals)
+        return safe_eval(output_expression, _globals, _locals)  # nosemgrep - runs in Frappe's sandbox
     else:
-        return safe_eval(output_expression, _globals, _locals)
+        return safe_eval(output_expression, _globals, _locals)  # nosemgrep - runs in Frappe's sandbox
 
 
 def get_ibis_table_name(table: IbisQuery):
@@ -1352,7 +1353,7 @@ def get_code_results(code: str, variables=None):
 
     _locals = {"results": results, **variable_context}
     with ensure_rollback():
-        _, _locals = safe_exec(
+        _, _locals = safe_exec(  # nosemgrep - runs in Frappe's sandbox
             code,
             _globals={"pandas": pandas},
             _locals=_locals,

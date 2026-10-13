@@ -4,9 +4,8 @@
 import frappe
 import pandas as pd
 from sqlalchemy import column as Column
-from sqlalchemy import create_engine
-from sqlalchemy import table as Table
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
+from sqlalchemy import table as Table  # nosemgrep - the "table" assigned to below is a local, not this import
 from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.sqlite.sqlite_query_builder import (
@@ -60,9 +59,7 @@ class SQLiteTableFactory:
         )
 
     def get_table_columns(self, table_name):
-        columns = self.db_conn.execute(
-            text(f"PRAGMA table_info({table_name})")
-        ).fetchall()
+        columns = self.db_conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()
         return [
             frappe._dict(
                 {
@@ -87,9 +84,7 @@ class SQLiteTableFactory:
 
 class SQLiteDB(BaseDatabase):
     def __init__(self, data_source, database_name) -> None:
-        database_path = frappe.get_site_path(
-            "private", "files", f"{database_name}.sqlite"
-        )
+        database_path = frappe.get_site_path("private", "files", f"{database_name}.sqlite")
         self.engine = create_engine(f"sqlite:///{database_path}")
         self.data_source = data_source
         self.table_factory = SQLiteTableFactory(data_source)
