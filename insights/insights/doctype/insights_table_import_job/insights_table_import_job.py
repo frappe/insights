@@ -49,6 +49,7 @@ class InsightsTableImportJob(Document):
 
     def validate(self):
         """Validate the job document."""
+        self.table_name = frappe.scrub(self.table_name)
         self.validate_cron_expression()
 
     def validate_cron_expression(self):
@@ -58,9 +59,6 @@ class InsightsTableImportJob(Document):
                 parse_cron(self.schedule)
             except Exception as e:
                 frappe.throw(f"Invalid cron expression: {e!s}")
-
-    def on_update(self):
-        self.table_name = frappe.scrub(self.table_name)
 
     def is_event_due(self, current_time=None):
         if not self.schedule:
@@ -126,6 +124,8 @@ def bulk_execute_runs(import_job_name: str, run_count: int):
         frappe.publish_realtime(
             "bulk_enqueue_progress",
             {"job": import_job_name, "current": i + 1, "total": run_count},
+            doctype="Insights Table Import Job",
+            docname=import_job_name,
         )
         execute_table_import_job(import_job_name)
 
@@ -171,7 +171,7 @@ class TableImportJobRun:
             }
         )
         self.log.insert(ignore_permissions=True)
-        frappe.db.commit()
+        frappe.db.commit()  # nosemgrep - the log must stay when the run fails
 
         # Create the table writer for writing data
         self._table_writer = TableWriter(self)
