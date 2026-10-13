@@ -85,6 +85,7 @@ def call(*args, stdin=None, allow_empty=False):
     """
     if not SITE:
         raise CallFailed("no site: call configure() first")
+    # nosemgrep - an example that runs frappectl on the author's machine
     p = subprocess.run(["frappectl", "-s", SITE, *args], input=stdin, capture_output=True, text=True)
     command = f"frappectl {' '.join(args)}"
     stderr = clean_stderr(p.stderr)

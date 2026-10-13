@@ -153,3 +153,30 @@ class TestImportJobScript(InsightsIntegrationTestCase):
 
         self.assertEqual(frappe.db.get_value("ToDo", todo, "description"), "import job")
         self.assertNotIn(len, frappe.db.after_commit._functions)
+
+
+class TestImportJobTableName(InsightsIntegrationTestCase):
+    """A job writes to the table its stored name points at, and its cursor describes that table."""
+
+    def stored_table_name(self, job):
+        return frappe.db.get_value("Insights Table Import Job", job.name, "table_name")
+
+    # @feature data-store.import-cursor
+    def test_a_new_job_stores_a_scrubbed_table_name(self):
+        job = create_job("Scrub Test Table")
+        self.assertEqual(self.stored_table_name(job), "scrub_test_table")
+
+    # @feature data-store.import-cursor
+    def test_saving_a_job_keeps_its_stored_table(self):
+        job = create_job("keep_test_table")
+        # a job saved before names were scrubbed on save
+        frappe.db.set_value("Insights Table Import Job", job.name, "table_name", "Keep Test Table")
+        job.reload()
+        job.schedule = "0 * * * *"
+        job.flags.ignore_links = True
+        job.save(ignore_permissions=True)
+        self.assertEqual(
+            self.stored_table_name(job),
+            "Keep Test Table",
+            "the job's cursor describes the rows in that table",
+        )
