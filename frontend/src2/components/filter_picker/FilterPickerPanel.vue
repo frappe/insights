@@ -30,7 +30,6 @@ import {
 	relativeDirections,
 	relativeRow,
 	selectedRowKey,
-	spanDates,
 	spanOf,
 	splitPair,
 	summaryParts,
@@ -236,7 +235,7 @@ watch(
 )
 
 /** The rule the typed text spells, where the stage has a place for one. */
-const typed = computed<(Draft & { label: string; note?: string }) | undefined>(() => {
+const typed = computed<(Draft & { label: string }) | undefined>(() => {
 	const text = search.value.trim()
 	if (stage.value !== 'value' || !text || !op.value) return undefined
 
@@ -269,7 +268,6 @@ const typed = computed<(Draft & { label: string; note?: string }) | undefined>((
 			operator: 'within',
 			value: { span },
 			label: __('Use “{0}”', text),
-			note: spanDates(span),
 		}
 	}
 
@@ -354,7 +352,6 @@ const rows = computed<ListItem[]>(() => {
 			.map((row) => ({
 				key: `span:${row.span}`,
 				label: row.label,
-				note: spanDates(row.span),
 			}))
 		if (form.direction === 'current') return units
 		return [
@@ -378,9 +375,7 @@ const rows = computed<ListItem[]>(() => {
 		}))
 	}
 
-	const use: ListItem[] = typed.value
-		? [{ key: 'use', label: typed.value.label, note: typed.value.note }]
-		: []
+	const use: ListItem[] = typed.value ? [{ key: 'use', label: typed.value.label }] : []
 
 	if (kind.value === 'text') return use
 
@@ -407,7 +402,6 @@ const rows = computed<ListItem[]>(() => {
 		.map((p) => ({
 			key: `span:${p.span}`,
 			label: p.label,
-			note: spanDates(p.span),
 		}))
 	const row = relativeRow()
 	const relativeRows: ListItem[] = matches(row.label) ? [{ key: row.key, label: row.label }] : []
