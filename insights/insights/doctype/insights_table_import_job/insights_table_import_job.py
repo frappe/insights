@@ -49,7 +49,9 @@ class InsightsTableImportJob(Document):
 
     def validate(self):
         """Validate the job document."""
-        self.table_name = frappe.scrub(self.table_name)
+        # a stored name stays: the job's rows and cursor live in the table it names
+        if self.has_value_changed("table_name"):
+            self.table_name = frappe.scrub(self.table_name)
         self.validate_cron_expression()
 
     def validate_cron_expression(self):
