@@ -44,6 +44,10 @@ CLEANUP_LOCK_TIMEOUT = 15 * 60
 # Rebuilding the file is only worth the disk and time above these thresholds.
 COMPACT_MIN_FILE_SIZE = 100 * 1024 * 1024
 COMPACT_MIN_FREE_RATIO = 0.2
+# ibis's `create_table(overwrite=True)` fills a table of this name before
+# renaming it over the target. An import that died in between, before imports
+# committed in one transaction, left it behind.
+LEFTOVER_TABLE_PREFIX = "ibis_duckdb_table_"
 DEFAULT_ROW_LIMIT = 10_00_000
 
 
@@ -1069,8 +1073,9 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
     """Drop warehouse tables that no longer have a `stored` doc behind them.
 
     A table is dropped only if the drop is reversible: a doc says a source sync
-    can re-import it, a live table replaced it, or it holds no rows. The sweep
-    keeps and reports anything else, because its rows may be the only copy.
+    can re-import it, a live table replaced it, a live table holds what a
+    Leftover Table held, or it holds no rows. The sweep keeps and reports
+    anything else, because its rows may be the only copy.
 
     Returns (dropped, kept).
     """
@@ -1096,6 +1101,8 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
                 # A count that fails reads as "not empty". The sweep deletes
                 # nothing it could not look inside first.
                 rows = count_table_rows(db, schema, table)
+                if rows and is_superseded_leftover(db, schema, table, rows, expected):
+                    rows = 0
                 if rows != 0:
                     kept.append(f"{schema}.{table}")
                     occupied.add(schema)
@@ -1119,6 +1126,40 @@ def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
                 logger.info(f"Data store cleanup: dropped empty schema '{schema}'")
 
     return dropped, kept
+
+
+def is_superseded_leftover(
+    db: DuckDBBackend, schema: str, table: str, rows: int, expected: set[tuple[str, str]]
+) -> bool:
+    """Whether a live table holds at least what this Leftover Table holds.
+
+    A leftover holds the rows a dead import was writing. A live table in the
+    same schema with the same column names and as many rows or more is that
+    import's table, re-imported since, so the leftover adds nothing.
+    """
+    if not table.startswith(LEFTOVER_TABLE_PREFIX):
+        return False
+
+    columns = get_column_names(db, schema, table)
+    for live_schema, live_table in expected:
+        if live_schema != schema or get_column_names(db, schema, live_table) != columns:
+            continue
+        live_rows = count_table_rows(db, schema, live_table)
+        if live_rows is not None and live_rows >= rows:
+            frappe.logger().info(
+                f"Data store cleanup: '{schema}.{table}' is a leftover of '{schema}.{live_table}'"
+            )
+            return True
+
+    return False
+
+
+def get_column_names(db: DuckDBBackend, schema: str, table: str) -> set[str]:
+    query = (
+        "select column_name from duckdb_columns() "
+        "where database_name = current_database() and schema_name = ? and table_name = ?"
+    )
+    return {name for (name,) in db.raw_sql(query, parameters=[schema, table]).fetchall()}
 
 
 def get_stored_warehouse_tables() -> set[tuple[str, str]]:

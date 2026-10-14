@@ -392,6 +392,49 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
             self.assertEqual(kept, [], "a known import job table is explained, so it raises no alarm")
             self.assertIn(("job_schema", "cleanup_job_table"), self.warehouse_tables(db))
 
+    # @feature data-store.cleanup-keeps-unexplained
+    def test_orphan_sweep_drops_a_leftover_table_a_live_table_holds(self):
+        """A dead import left `ibis_duckdb_table_*`; the live table has been re-imported since."""
+        self.create_table("tabCleanupLive")
+        schema = data_warehouse.get_warehouse_schema_name(DATA_SOURCE)
+        leftover = "ibis_duckdb_table_cleanuplive"
+
+        with self.warehouse_file() as (db, _):
+            db.raw_sql(f'create schema "{schema}"')
+            db.raw_sql(f'create table "{schema}".tabcleanuplive as select i as a, i as b from range(3) t(i)')
+            db.raw_sql(f'create table "{schema}".{leftover} as select i as b, i as a from range(3) t(i)')
+
+            with self.patched_write_connection(db):
+                dropped, kept = drop_orphan_warehouse_tables()
+
+            self.assertEqual(dropped, [f"{schema}.{leftover}"])
+            self.assertEqual(kept, [])
+            self.assertEqual(self.warehouse_tables(db), {(schema, "tabcleanuplive")})
+
+    # @feature data-store.cleanup-keeps-unexplained
+    def test_orphan_sweep_keeps_a_leftover_table_no_live_table_holds(self):
+        """More rows than the live table, or other columns: the leftover may hold rows nothing else does."""
+        self.create_table("tabCleanupLive")
+        schema = data_warehouse.get_warehouse_schema_name(DATA_SOURCE)
+
+        with self.warehouse_file() as (db, _):
+            db.raw_sql(f'create schema "{schema}"')
+            db.raw_sql(f'create table "{schema}".tabcleanuplive as select i as a, i as b from range(3) t(i)')
+            db.raw_sql(
+                f'create table "{schema}".ibis_duckdb_table_more as select i as a, i as b from range(4) t(i)'
+            )
+            db.raw_sql(
+                f'create table "{schema}".ibis_duckdb_table_other as select i as a, i as c from range(2) t(i)'
+            )
+
+            with self.patched_write_connection(db):
+                dropped, kept = drop_orphan_warehouse_tables()
+
+            self.assertEqual(dropped, [])
+            self.assertEqual(
+                sorted(kept), [f"{schema}.ibis_duckdb_table_more", f"{schema}.ibis_duckdb_table_other"]
+            )
+
     # compaction
 
     # @feature data-store.compaction

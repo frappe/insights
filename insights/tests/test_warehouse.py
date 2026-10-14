@@ -14,7 +14,7 @@ import frappe
 import ibis
 import pandas as pd
 import pyarrow as pa
-from duckdb import IOException
+from duckdb import ConversionException, IOException
 from frappe.utils import add_to_date
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
@@ -192,6 +192,30 @@ class TestWarehouse(InsightsIntegrationTestCase):
                     {"id": 1, "value": "updated", "modified": "2024-01-02 00:00:00"},
                     {"id": 2, "value": "beta", "modified": "2024-01-02 00:00:00"},
                 ],
+            )
+
+    def schema_tables(self, db, schema="main"):
+        query = "select table_name from duckdb_tables() where database_name = current_database() and schema_name = ?"
+        return {name for (name,) in db.raw_sql(query, parameters=[schema]).fetchall()}
+
+    # @feature data-store.import-atomic
+    def test_a_replace_that_fails_mid_insert_keeps_the_old_rows_and_no_other_table(self):
+        with self.patched_warehouse() as db:
+            self.write_to_table(db, "t", [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}])
+
+            # `id` is a BIGINT column, so the cast fails once the insert reaches "three"
+            frame = pd.DataFrame(
+                {"id": ["2", "three"], "value": ["beta", "gamma"], "modified": ["2024-01-02"] * 2}
+            )
+            frame["modified"] = pd.to_datetime(frame["modified"])
+            with WarehouseTableWriter("t", table_schema=self.make_schema(), database="main") as writer:
+                writer.insert(frame)
+                with self.assertRaises(ConversionException):
+                    writer.commit()
+
+            self.assertEqual(self.schema_tables(db), {"t"})
+            self.assertEqual(
+                self.read_rows(db, "t"), [{"id": 1, "value": "alpha", "modified": "2024-01-01 00:00:00"}]
             )
 
     # @feature data-store.run-without-import

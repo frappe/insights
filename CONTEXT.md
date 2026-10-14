@@ -160,6 +160,10 @@ keeps it and raises an `Error Log`. See the cleanup ADR,
 `docs/adr/the-cleanup-deletes-only-what-it-can-rebuild.md`.
 _Avoid_: unknown table, stray table
 
+**Leftover Table**:
+An `ibis_duckdb_table_*` table in the Data Store, left by an import that died mid-write. The weekly cleanup drops it once a live table holds the same columns and at least as many rows; otherwise it stays an Unexplained Orphan.
+_Avoid_: temp table, ibis table
+
 ### Framework integration
 
 **Island**:
