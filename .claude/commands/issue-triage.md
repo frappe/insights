@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git log:*),Bash(git show:*),Bash(git grep:*),Read,Write,Glob,Grep
+allowed-tools: Bash(git log:*),Bash(git show:*),Read(//tmp/issue.json),Read(//tmp/issues.tsv),Read(//tmp/pulls.tsv),Edit(//tmp/triage.json)
 description: Classify one frappe/insights GitHub issue and write the result as JSON.
 ---
 
@@ -14,7 +14,7 @@ You triage one new issue on `frappe/insights`, a Frappe BI app. The maintainer r
 - The checkout is `develop`. `CONTEXT.md` is the glossary. `docs/features.md` lists features by area. `docs/agents/product-context.md` holds the product direction.
 - Backend in `insights/`: API in `insights/api/`, doctypes in `insights/insights/doctype/`, query engine in `insights/insights/doctype/insights_data_source_v3/` with ibis. Frontend in `frontend/src2/`.
 - v2 is retired and its code is gone from `develop`. An issue only about v2 is `close`.
-- Find fixes with `git log --oneline -S <string>` or `git log --oneline --grep <word>`. Find duplicates by grepping `/tmp/issues.tsv` for a few distinct words.
+- Read code with the Read, Grep and Glob tools; Bash runs only `git log` and `git show`. Find fixes with `git log --oneline -S <string>` or `git log --oneline --grep <word>`. Find duplicates by grepping `/tmp/issues.tsv` for a few distinct words.
 - Budget about 15 reads and searches. Spend them where a code check changes the verdict, such as a bug that may already be fixed.
 
 ## Decide
@@ -34,4 +34,4 @@ You triage one new issue on `frappe/insights`, a Frappe BI app. The maintainer r
 
 ## Output
 
-Write `/tmp/triage.json`, one object with keys `type`, `area`, `suggestion`, `duplicate_of`, `related`, `summary`, `reason`. Always write the file, even when the issue is empty or unclear. Then stop.
+With the Write tool, write `/tmp/triage.json`, one object with keys `type`, `area`, `suggestion`, `duplicate_of`, `related`, `summary`, `reason`. Always write the file, even when the issue is empty or unclear. Then stop.
