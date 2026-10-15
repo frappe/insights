@@ -6,7 +6,6 @@ import ibis.expr.types as ir
 import ibis.selectors as s
 from frappe.utils import now_datetime
 from ibis import _
-from ibis.common.exceptions import IbisError
 
 from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.query_builders.sql_functions import (
@@ -619,7 +618,7 @@ def _json_text(column: ir.StringColumn, path: str):
 def _backend_name(column: ir.Column) -> str | None:
     try:
         return column.get_backend().name
-    except IbisError:
+    except ibis.common.exceptions.IbisError:
         # expression validation builds on an unbound table
         return None
 
