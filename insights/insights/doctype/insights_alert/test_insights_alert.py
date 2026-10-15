@@ -178,7 +178,9 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
         message = sendmail.call_args.kwargs["message"]
         self.assertIn(self.alert.title, message)
         self.assertNotIn("10.0.4.12", message)
-        self.assertTrue(frappe.db.exists("Error Log", {"method": f"Failed to send alert: {self.alert.name}"}))
+        self.assertTrue(
+            frappe.get_all("Error Log", filters={"method": f"Failed to send alert: {self.alert.name}"})
+        )
 
 
 class ATickRunsEveryAlert(InsightsIntegrationTestCase):

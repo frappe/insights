@@ -5,6 +5,7 @@ import warnings
 from functools import wraps
 
 import ibis
+import MySQLdb
 
 from .ssl import ca_certificate_file
 
@@ -38,14 +39,18 @@ def get_mariadb_connection(data_source):
             # CA to check against. Same connection, under a name that says so.
             ssl_options = {"ssl_mode": "REQUIRED"}
 
-        return ibis.mysql.connect(
-            host=data_source.host,
-            port=data_source.port,
-            user=data_source.username,
-            password=password,
-            database=data_source.database_name,
-            charset="utf8mb4",
-            use_unicode=True,
-            connect_timeout=5,
+        connect_args = {
+            "user": data_source.username,
+            "password": password,
+            "database": data_source.database_name,
+            "charset": "utf8mb4",
+            "use_unicode": True,
+            "connect_timeout": 5,
             **ssl_options,
-        )
+        }
+        if data_source.get("unix_socket"):
+            # ibis turns host "localhost" into 127.0.0.1, which forces TCP past the socket
+            return ibis.mysql.from_connection(
+                MySQLdb.connect(unix_socket=data_source.unix_socket, autocommit=True, **connect_args)
+            )
+        return ibis.mysql.connect(host=data_source.host, port=data_source.port, **connect_args)

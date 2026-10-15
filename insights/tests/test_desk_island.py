@@ -243,9 +243,9 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         other_dashboard = create_test_dashboard(OWNER, workbook.name, title="Desk Island Resync Other")
         self.desk_chart(chart.name)
         self.desk_dashboard(dashboard.name)
-        # Error Log is MyISAM, so a background job's log counts at once
+        # an Error Log commits on its own, so a background job's log counts at once
         keep_log = {"method": f"Kept what a desk document uses in {workbook.name}"}
-        logged = frappe.db.count("Error Log", keep_log)
+        logged = len(frappe.get_all("Error Log", filters=keep_log, pluck="name"))
 
         frappe.get_doc(DT.WORKBOOK, workbook.name).restore_workbook_contents(
             {"name": workbook.name}, workbook.name, ignore_permissions=True, keep_names=True
@@ -265,7 +265,7 @@ class TestDeskIsland(InsightsIntegrationTestCase):
             (DT.DASHBOARD, other_dashboard.name),
         ):
             self.assertFalse(frappe.db.exists(doctype, name), (doctype, name))
-        self.assertEqual(frappe.db.count("Error Log", keep_log), logged + 1)
+        self.assertEqual(len(frappe.get_all("Error Log", filters=keep_log, pluck="name")), logged + 1)
 
     # @feature desk.dashboard-island standard.resync
     def test_a_resync_keeps_what_a_kept_dashboard_shows(self):

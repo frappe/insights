@@ -220,11 +220,11 @@ class TestAgentQuery(InsightsIntegrationTestCase):
     # @feature permissions.agent-profile-respects-access
     def test_a_table_the_reader_may_not_read_is_refused(self):
         with self.assertRaises(NotPermitted):
-            self.profile_as(OWNER, "name", operations=table_operations("tabError Log"))
+            self.profile_as(OWNER, "name", operations=table_operations("tabDeleted Document"))
 
     # @feature permissions.agent-profile-respects-access data-store.run-without-import
     def test_a_table_the_reader_may_not_read_is_refused_before_it_is_named_not_stored(self):
-        WarehouseTable("Site DB", "tabError Log").drop()
+        WarehouseTable("Site DB", "tabDeleted Document").drop()
         for method, args in (
             ("execute", {"import_if_not_exists": False}),
             ("profile_column", {"column_name": "name"}),
@@ -235,13 +235,13 @@ class TestAgentQuery(InsightsIntegrationTestCase):
                     self.call_as(
                         OWNER,
                         method,
-                        operations=table_operations("tabError Log"),
+                        operations=table_operations("tabDeleted Document"),
                         use_live_connection=0,
                         **args,
                     )
                 self.assertEqual(
                     [message.get("message") for message in frappe.local.message_log],
-                    ["Needs read access to <strong>Error Log</strong>"],
+                    ["Needs read access to <strong>Deleted Document</strong>"],
                 )
 
     # @feature tooling.agent-profile-column
