@@ -73,12 +73,12 @@ class TestPreviewKeyNamesItsUser(InsightsIntegrationTestCase):
         self.assertEqual(stored, {"dashboard": "some-dashboard", "user": PUBLISHER})
 
 
-def error_log_operations():
-    """A query over `tabError Log`, which an Insights User may not read at all."""
+def deleted_document_operations():
+    """A query over `tabDeleted Document`, which an Insights User may not read at all."""
     return [
         {
             "type": "source",
-            "table": {"type": "table", "data_source": "Site DB", "table_name": "tabError Log"},
+            "table": {"type": "table", "data_source": "Site DB", "table_name": "tabDeleted Document"},
         }
     ]
 
@@ -151,7 +151,7 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
         from insights.insights.doctype.insights_alert.insights_alert import send_alerts
 
         alert = self.create_alert()
-        self.repoint_query(error_log_operations())
+        self.repoint_query(deleted_document_operations())
 
         # `send_alerts` rolls back on error. Commit the alert and its query so
         # they still exist after the failure.

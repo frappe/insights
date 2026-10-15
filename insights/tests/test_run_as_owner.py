@@ -687,7 +687,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
         self.set_team_permissions(1)
-        for table in ("tabToDo", "tabError Log"):
+        for table in ("tabToDo", "tabDeleted Document"):
             if not frappe.db.exists(DT.TABLE, get_table_name("Site DB", table)):
                 frappe.get_doc(
                     {"doctype": DT.TABLE, "table": table, "label": table, "data_source": "Site DB"}
@@ -700,7 +700,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
         self.assertIn("tabToDo", listed("tabToDo"))
         # Desk denies this table and no team grants it.
-        self.assertNotIn("tabError Log", listed("tabError Log"))
+        self.assertNotIn("tabDeleted Document", listed("tabDeleted Document"))
 
     # @feature permissions.card-says-it-is-scoped
     def test_a_child_table_names_the_grants_frappe_cut_its_parent_by(self):

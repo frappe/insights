@@ -23,7 +23,7 @@ READER = "not-permitted-reader@test.com"
 
 # an Insights User cannot read these on a stock site: a doctype, and a child
 # table whose only parent is also unreadable
-UNREADABLE_TABLE = "tabError Log"
+UNREADABLE_TABLE = "tabDeleted Document"
 UNREADABLE_CHILD_TABLE = "tabWorkflow Document State"
 
 # a dashboard filter linked to the chart the reader cannot read
@@ -74,7 +74,7 @@ class ContentOverATableTheReaderCannotRead(InsightsIntegrationTestCase):
 
         workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": WORKBOOK_TITLE}).insert()
         cls.workbook = workbook.name
-        cls.unreadable_chart = cls.create_chart("Error Logs", source(UNREADABLE_TABLE), "name")
+        cls.unreadable_chart = cls.create_chart("Deleted Documents", source(UNREADABLE_TABLE), "name")
         cls.unreadable_query = frappe.db.get_value(DT.CHART, cls.unreadable_chart, "query")
         cls.permlevel_chart = cls.create_chart("Todo Statuses", source("tabToDo"), "status")
         cls.plain_chart = cls.create_chart("Todo Names", source("tabToDo"), "name")
@@ -172,7 +172,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         with self.assertRaises(NotPermitted) as refusal:
             self.read_table(UNREADABLE_TABLE)
 
-        self.assertEqual(refusal.exception.doctypes, ["Error Log"])
+        self.assertEqual(refusal.exception.doctypes, ["Deleted Document"])
 
     # @feature permissions.not-permitted-chart
     def test_a_child_table_names_the_parent_it_needs(self):
@@ -868,7 +868,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         with as_user(READER), db_connections():
             answer = get_chart_data(self.unreadable_chart)
 
-        self.assertEqual(answer["not_permitted"], {"doctypes": ["Error Log"]})
+        self.assertEqual(answer["not_permitted"], {"doctypes": ["Deleted Document"]})
         self.assertEqual(answer["rows"], [])
         self.assertEqual(answer["columns"], [])
 
@@ -985,7 +985,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             )
 
         for answer in (viewed, built):
-            self.assertEqual(answer["not_permitted"], {"doctypes": ["Error Log"]})
+            self.assertEqual(answer["not_permitted"], {"doctypes": ["Deleted Document"]})
             self.assertEqual(answer["rows"], [])
             self.assertEqual(answer["columns"], [])
 
@@ -1023,7 +1023,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             get_data_source_table_row_count(SITE_DB, UNREADABLE_TABLE)
 
         messages = [message.message for message in frappe.get_message_log()]
-        self.assertEqual(messages, ["Needs read access to <strong>Error Log</strong>"])
+        self.assertEqual(messages, ["Needs read access to <strong>Deleted Document</strong>"])
 
     # @feature permissions.not-permitted-chart
     def test_a_refusal_the_card_shows_leaves_no_message_beside_it(self):
@@ -1046,7 +1046,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         with as_user(READER), db_connections():
             answer = get_data_source_table(SITE_DB, UNREADABLE_TABLE)
 
-        self.assertEqual(answer["not_permitted"], {"doctypes": ["Error Log"]})
+        self.assertEqual(answer["not_permitted"], {"doctypes": ["Deleted Document"]})
         self.assertEqual(answer["rows"], [])
 
 
@@ -1135,12 +1135,19 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
         """A share also counts as desk read permission, because the engine reads
         shared rows through `frappe.get_list`. A reader with no role on the
         doctype but one shared document gets a card."""
-        log = frappe.get_doc({"doctype": "Error Log", "method": f"{PREFIX} shared"}).insert(
+        deleted = frappe.get_doc({"doctype": "Deleted Document", "deleted_name": f"{PREFIX} shared"}).insert(
             ignore_permissions=True
         )
-        self.addCleanup(frappe.delete_doc, "Error Log", log.name, force=True, ignore_permissions=True)
+        self.addCleanup(
+            frappe.delete_doc, "Deleted Document", deleted.name, force=True, ignore_permissions=True
+        )
         frappe.share.add(
-            "Error Log", log.name, user=READER, read=1, notify=0, flags={"ignore_share_permission": True}
+            "Deleted Document",
+            deleted.name,
+            user=READER,
+            read=1,
+            notify=0,
+            flags={"ignore_share_permission": True},
         )
 
         with as_user(READER):
