@@ -43,18 +43,18 @@
 							{
 								"column": {
 									"type": "column",
-									"column_name": "party_type"
+									"column_name": "account_type"
 								},
 								"operator": "=",
-								"value": "Customer"
+								"value": "Receivable"
 							},
 							{
 								"column": {
 									"type": "column",
-									"column_name": "against_voucher_type"
+									"column_name": "party_type"
 								},
-								"operator": "=",
-								"value": "Sales Invoice"
+								"operator": "!=",
+								"value": "Employee"
 							}
 						]
 					},
@@ -68,12 +68,35 @@
 									"expression": "sum(amount)"
 								},
 								"data_type": "Decimal"
+							},
+							{
+								"measure_name": "due_date",
+								"expression": {
+									"type": "expression",
+									"expression": "coalesce(min(due_date), min(posting_date))"
+								},
+								"data_type": "Date"
 							}
 						],
 						"dimensions": [
 							{
+								"dimension_name": "voucher_type",
+								"column_name": "against_voucher_type",
+								"data_type": "String"
+							},
+							{
 								"dimension_name": "against_voucher",
 								"column_name": "against_voucher_no",
+								"data_type": "String"
+							},
+							{
+								"dimension_name": "company",
+								"column_name": "company",
+								"data_type": "String"
+							},
+							{
+								"dimension_name": "customer",
+								"column_name": "party",
 								"data_type": "String"
 							}
 						]
@@ -83,47 +106,12 @@
 						"logical_operator": "And",
 						"filters": [
 							{
-								"column": {
-									"type": "column",
-									"column_name": "outstanding"
-								},
-								"operator": ">",
-								"value": 0.5
+								"expression": {
+									"type": "expression",
+									"expression": "abs(outstanding) > 0.5"
+								}
 							}
 						]
-					},
-					{
-						"type": "join",
-						"join_type": "inner",
-						"table": {
-							"type": "table",
-							"data_source": "Site DB",
-							"table_name": "tabSales Invoice"
-						},
-						"select_columns": [
-							{
-								"type": "column",
-								"column_name": "company"
-							},
-							{
-								"type": "column",
-								"column_name": "customer"
-							},
-							{
-								"type": "column",
-								"column_name": "due_date"
-							}
-						],
-						"join_condition": {
-							"left_column": {
-								"type": "column",
-								"column_name": "against_voucher"
-							},
-							"right_column": {
-								"type": "column",
-								"column_name": "name"
-							}
-						}
 					},
 					{
 						"type": "join",
@@ -222,18 +210,10 @@
 							{
 								"column": {
 									"type": "column",
-									"column_name": "party_type"
+									"column_name": "account_type"
 								},
 								"operator": "=",
-								"value": "Supplier"
-							},
-							{
-								"column": {
-									"type": "column",
-									"column_name": "against_voucher_type"
-								},
-								"operator": "=",
-								"value": "Purchase Invoice"
+								"value": "Payable"
 							}
 						]
 					},
@@ -247,12 +227,35 @@
 									"expression": "sum(amount)"
 								},
 								"data_type": "Decimal"
+							},
+							{
+								"measure_name": "due_date",
+								"expression": {
+									"type": "expression",
+									"expression": "coalesce(min(due_date), min(posting_date))"
+								},
+								"data_type": "Date"
 							}
 						],
 						"dimensions": [
 							{
-								"dimension_name": "against_voucher",
+								"dimension_name": "voucher_type",
+								"column_name": "against_voucher_type",
+								"data_type": "String"
+							},
+							{
+								"dimension_name": "invoice",
 								"column_name": "against_voucher_no",
+								"data_type": "String"
+							},
+							{
+								"dimension_name": "company",
+								"column_name": "company",
+								"data_type": "String"
+							},
+							{
+								"dimension_name": "supplier",
+								"column_name": "party",
 								"data_type": "String"
 							}
 						]
@@ -262,55 +265,12 @@
 						"logical_operator": "And",
 						"filters": [
 							{
-								"column": {
-									"type": "column",
-									"column_name": "outstanding"
-								},
-								"operator": ">",
-								"value": 0.5
+								"expression": {
+									"type": "expression",
+									"expression": "abs(outstanding) > 0.5"
+								}
 							}
 						]
-					},
-					{
-						"type": "rename",
-						"column": {
-							"type": "column",
-							"column_name": "against_voucher"
-						},
-						"new_name": "invoice"
-					},
-					{
-						"type": "join",
-						"join_type": "inner",
-						"table": {
-							"type": "table",
-							"data_source": "Site DB",
-							"table_name": "tabPurchase Invoice"
-						},
-						"select_columns": [
-							{
-								"type": "column",
-								"column_name": "company"
-							},
-							{
-								"type": "column",
-								"column_name": "supplier"
-							},
-							{
-								"type": "column",
-								"column_name": "due_date"
-							}
-						],
-						"join_condition": {
-							"left_column": {
-								"type": "column",
-								"column_name": "invoice"
-							},
-							"right_column": {
-								"type": "column",
-								"column_name": "name"
-							}
-						}
 					},
 					{
 						"type": "join",
@@ -368,7 +328,7 @@
 			},
 			"template-acc-cashflow": {
 				"name": "template-acc-cashflow",
-				"title": "Payments Cash Flow",
+				"title": "Cash Flow",
 				"workbook": "template-erpnext-accounting",
 				"folder": null,
 				"sort_order": 2,
@@ -382,7 +342,7 @@
 						"table": {
 							"type": "table",
 							"data_source": "Site DB",
-							"table_name": "tabPayment Entry"
+							"table_name": "tabGL Entry"
 						}
 					},
 					{
@@ -392,20 +352,65 @@
 							{
 								"column": {
 									"type": "column",
-									"column_name": "docstatus"
+									"column_name": "is_cancelled"
 								},
 								"operator": "=",
-								"value": 1
+								"value": 0
 							},
 							{
 								"column": {
 									"type": "column",
-									"column_name": "payment_type"
+									"column_name": "is_opening"
+								},
+								"operator": "=",
+								"value": "No"
+							},
+							{
+								"expression": {
+									"type": "expression",
+									"expression": "is_not_in(coalesce(voucher_subtype, ''), 'Internal Transfer', 'Contra Entry')"
+								}
+							}
+						]
+					},
+					{
+						"type": "join",
+						"join_type": "inner",
+						"table": {
+							"type": "table",
+							"data_source": "Site DB",
+							"table_name": "tabAccount"
+						},
+						"select_columns": [
+							{
+								"type": "column",
+								"column_name": "account_type"
+							}
+						],
+						"join_condition": {
+							"left_column": {
+								"type": "column",
+								"column_name": "account"
+							},
+							"right_column": {
+								"type": "column",
+								"column_name": "name"
+							}
+						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "account_type"
 								},
 								"operator": "in",
 								"value": [
-									"Receive",
-									"Pay"
+									"Bank",
+									"Cash"
 								]
 							}
 						]
@@ -437,11 +442,20 @@
 					},
 					{
 						"type": "mutate",
+						"new_name": "net_amount",
+						"data_type": "Decimal",
+						"expression": {
+							"type": "expression",
+							"expression": "debit - credit"
+						}
+					},
+					{
+						"type": "mutate",
 						"new_name": "flow",
 						"data_type": "String",
 						"expression": {
 							"type": "expression",
-							"expression": "if_else(payment_type == 'Receive', 'Cash In', 'Cash Out')"
+							"expression": "if_else(net_amount >= 0, 'Cash In', 'Cash Out')"
 						}
 					},
 					{
@@ -450,16 +464,7 @@
 						"data_type": "Decimal",
 						"expression": {
 							"type": "expression",
-							"expression": "if_else(payment_type == 'Receive', base_received_amount, base_paid_amount)"
-						}
-					},
-					{
-						"type": "mutate",
-						"new_name": "net_amount",
-						"data_type": "Decimal",
-						"expression": {
-							"type": "expression",
-							"expression": "if_else(payment_type == 'Receive', base_received_amount, - base_paid_amount)"
+							"expression": "abs(net_amount)"
 						}
 					}
 				]
@@ -502,6 +507,14 @@
 								},
 								"operator": "=",
 								"value": "Receive"
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "party_type"
+								},
+								"operator": "=",
+								"value": "Customer"
 							}
 						]
 					},
@@ -564,6 +577,14 @@
 								},
 								"operator": "=",
 								"value": 1
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "is_opening"
+								},
+								"operator": "=",
+								"value": "No"
 							}
 						]
 					},
@@ -911,6 +932,14 @@
 								},
 								"operator": "<=",
 								"value": 30
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "outstanding"
+								},
+								"operator": ">",
+								"value": 0
 							}
 						]
 					},

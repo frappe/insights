@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Badge, Button, Dialog, call } from 'frappe-ui'
-import { CheckCircle2, LayoutTemplate } from 'lucide-vue-next'
+import { CheckCircle2, CircleArrowUp, LayoutTemplate } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createToast } from '../helpers/toasts'
@@ -37,7 +37,11 @@ const sections = computed(() => {
 		byApp.set(template.app_title, group)
 	}
 	return [...byApp.entries()]
-		.map(([app, items]) => ({ app, items }))
+		.map(([app, items]) => ({
+			app,
+			// the list page's dot leads here, so put what it points at first
+			items: items.sort((a, b) => Number(b.update_available) - Number(a.update_available)),
+		}))
 		.sort((a, b) => a.app.localeCompare(b.app))
 })
 
@@ -174,16 +178,17 @@ function runUpdate(template: WorkbookTemplate) {
 									}}
 								</div>
 
-								<div
-									v-if="template.update_available"
-									class="mt-2 text-p-sm text-ink-blue-3"
-								>
-									{{ __('A newer version is available.') }}
-								</div>
-
 								<div class="mt-4 flex items-center gap-2">
 									<template v-if="template.imported_workbook">
 										<div
+											v-if="template.update_available"
+											class="flex items-center gap-1 text-p-sm text-ink-gray-7"
+										>
+											<CircleArrowUp class="h-4 w-4" />
+											{{ __('Update available') }}
+										</div>
+										<div
+											v-else
 											class="flex items-center gap-1 text-p-sm text-ink-green-3"
 										>
 											<CheckCircle2 class="h-4 w-4" />
@@ -192,6 +197,7 @@ function runUpdate(template: WorkbookTemplate) {
 										<div class="ml-auto flex items-center gap-2">
 											<Button
 												v-if="template.update_available"
+												variant="solid"
 												:loading="updating === template.name"
 												:disabled="!!updating"
 												@click="updateTemplate(template)"
