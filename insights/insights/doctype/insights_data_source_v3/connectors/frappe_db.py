@@ -28,6 +28,7 @@ def get_primary_data_source():
     if not site_db.host or not site_db.port:
         site_db.host = frappe.conf.db_host
         site_db.port = frappe.conf.db_port
+        site_db.unix_socket = frappe.conf.db_socket
 
     if not site_db.host:
         site_db.host = "localhost"
@@ -55,6 +56,7 @@ def get_replica_data_source():
 
     if frappe.conf.replica_host:
         data_source.host = frappe.conf.replica_host
+        data_source.unix_socket = None
     if frappe.conf.replica_db_port:
         data_source.port = frappe.conf.replica_db_port
     if frappe.conf.replica_db_name:
