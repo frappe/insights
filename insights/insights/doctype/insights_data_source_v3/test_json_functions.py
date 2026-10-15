@@ -2,15 +2,18 @@
 # See license.txt
 
 import unittest
+from unittest.mock import patch
 
 import frappe
 import ibis
+from frappe.utils.safe_exec import is_safe_exec_enabled
 
 from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
     json_extract,
     json_value,
     null_if,
 )
+from insights.insights.doctype.insights_data_source_v3.ibis.utils import validate_types
 
 ROWS = [
     # pretty-printed, the shape Pulse writes
@@ -77,6 +80,14 @@ class TestJsonFunctions(unittest.TestCase):
         self.assertEqual(self._values(json_value(self.table.p, "address.city"))[1], "Pune")
         self.assertEqual(self._values(json_value(self.table.p, "items.0.n"))[1], "first")
 
+    @unittest.skipUnless(is_safe_exec_enabled(), "expression execution requires server scripts enabled")
+    # @feature query.expression-json
+    def test_validates_inside_a_summary(self):
+        # the measure dialog validates on a table with no backend
+        columns = [{"value": "p", "description": "String"}]
+        result = validate_types("sum(json_value(p, 'amount', 'float'))", columns)
+        self.assertTrue(result["is_valid"], result)
+
     # @feature query.expression-json
     def test_returns_a_typed_value(self):
         self.assertEqual(self._values(json_value(self.table.p, "amount", "float"))[1], 12.5)
@@ -112,3 +123,27 @@ class TestJsonFunctions(unittest.TestCase):
         self.assertTrue(schema["n"].is_integer())
         # every sampled value is empty, so there is no type to infer
         self.assertTrue(schema["k"].is_string())
+
+
+@patch("insights.insights.doctype.insights_data_source_v3.ibis.functions._backend_name", return_value=None)
+class TestJsonFunctionsOutsideDuckDB(unittest.TestCase):
+    # databases other than DuckDB walk the path with JSON getitem; DuckDB runs that path too
+    @classmethod
+    def setUpClass(cls):
+        rows = [
+            '{"product": null}',
+            '{"product": "null"}',
+            '{"items": [{"n": "first"}]}',
+        ]
+        cls.table = ibis.duckdb.connect().create_table("json_fixture", ibis.memtable({"p": rows}))
+
+    def _values(self, expr):
+        return self.table.select(v=expr).to_pandas()["v"].tolist()
+
+    # @feature query.expression-json
+    def test_explicit_json_null_is_empty_and_the_string_null_stays_text(self, _):
+        self.assertEqual(self._values(json_value(self.table.p, "product"))[:2], [None, "null"])
+
+    # @feature query.expression-json
+    def test_numeric_segments_read_list_positions(self, _):
+        self.assertEqual(self._values(json_value(self.table.p, "items.0.n"))[2], "first")

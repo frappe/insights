@@ -594,7 +594,7 @@ def _json_text(column: ir.StringColumn, path: str):
     JSON to string otherwise yields the literal text ``'null'``, which silently
     poisons comparisons and type inference. Numeric path segments index arrays.
     """
-    if column.get_backend().name == "duckdb":
+    if _backend_name(column) == "duckdb":
         return _duckdb_json_text(column, path)
 
     value = normalize_json(column).cast("json")
@@ -603,18 +603,25 @@ def _json_text(column: ir.StringColumn, path: str):
             continue
         value = value[int(segment)] if segment.lstrip("-").isdigit() else value[segment]
 
-    text = value.cast("string")
+    raw = value.cast("string")
     # strip the quotes JSON puts around string values
     text = ibis.cases(
         (
-            text.startswith('"') & text.endswith('"'),
-            text.substr(1, text.length() - 2),
+            raw.startswith('"') & raw.endswith('"'),
+            raw.substr(1, raw.length() - 2),
         ),
-        (text.startswith('"'), text.substr(1)),
-        (text.endswith('"'), text.substr(0, text.length() - 1)),
-        else_=text,
+        (raw.startswith('"'), raw.substr(1)),
+        (raw.endswith('"'), raw.substr(0, raw.length() - 1)),
+        else_=raw,
     )
-    return (text == "null").ifelse(ibis.null(), text)
+    return (raw == "null").ifelse(ibis.null(), text)
+
+
+def _backend_name(column: ir.Column) -> str | None:
+    try:
+        return column.get_backend().name
+    except ibis.common.exceptions.IbisError:
+        return None  # nosemgrep - expression validation builds on an unbound table, which has no backend
 
 
 @ibis.udf.scalar.builtin(name="json_valid")
