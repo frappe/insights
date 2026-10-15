@@ -937,6 +937,14 @@
 								},
 								"operator": "<=",
 								"value": 30
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "outstanding"
+								},
+								"operator": ">",
+								"value": 0
 							}
 						]
 					},
