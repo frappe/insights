@@ -1,4 +1,3 @@
-import itertools
 import math
 
 import frappe
@@ -592,8 +591,7 @@ def _json_text(column: ir.StringColumn, path: str):
 
     Returns SQL NULL for both a missing key and an explicit JSON ``null`` — casting
     JSON to string otherwise yields the literal text ``'null'``, which silently
-    poisons comparisons and type inference. A numeric path segment reads the key of
-    that name, else that position in a list.
+    poisons comparisons and type inference. Numeric path segments index arrays.
     """
     if _backend_name(column) == "duckdb":
         return _duckdb_json_text(column, path)
@@ -602,12 +600,7 @@ def _json_text(column: ir.StringColumn, path: str):
     for segment in str(path).split("."):
         if not segment:
             continue
-        if segment.isdigit():
-            value = ibis.coalesce(value[segment], value[int(segment)])
-        elif segment.startswith("-") and segment[1:].isdigit():
-            value = value[int(segment)]
-        else:
-            value = value[segment]
+        value = value[int(segment)] if segment.lstrip("-").isdigit() else value[segment]
 
     raw = value.cast("string")
     # strip the quotes JSON puts around string values
@@ -647,23 +640,21 @@ def _duckdb_json_text(column: ir.StringColumn, path: str):
         (_json_valid(column), column),
         (_json_valid(normalized), normalized),
     )
-    return ibis.coalesce(*(_json_extract_string(document, p) for p in _duckdb_json_paths(path)))
+    return _json_extract_string(document, _duckdb_json_path(path))
 
 
-def _duckdb_json_paths(path: str) -> list[str]:
-    # a JSON path cannot say "key or index", so each numeric segment yields both, key first
-    choices = []
+def _duckdb_json_path(path: str) -> str:
+    json_path = "$"
     for segment in str(path).split("."):
         if not segment:
             continue
-        key = segment.replace("\\", "\\\\").replace('"', '\\"')
-        if segment.isdigit():
-            choices.append((f'."{key}"', f"[{int(segment)}]"))
-        elif segment.startswith("-") and segment[1:].isdigit():
-            choices.append((f"[#{segment}]",))
+        if segment.lstrip("-").isdigit():
+            index = int(segment)
+            json_path += f"[{index}]" if index >= 0 else f"[#{index}]"
         else:
-            choices.append((f'."{key}"',))
-    return ["$" + "".join(steps) for steps in itertools.product(*choices)]
+            key = segment.replace("\\", "\\\\").replace('"', '\\"')
+            json_path += f'."{key}"'
+    return json_path
 
 
 def json_value(column: ir.StringColumn, path: str, type: str = "string"):

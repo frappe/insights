@@ -26,8 +26,6 @@ ROWS = [
     '{"product": "rock \'n\', roll"}',
     "not json",
     '{"product": "null"}',
-    # keys that are numbers
-    '{"years": {"2024": 7}, "0": "zero"}',
 ]
 
 
@@ -72,10 +70,6 @@ class TestJsonFunctions(unittest.TestCase):
     def test_reads_nested_keys_and_list_positions(self):
         self.assertEqual(self._values(json_value(self.table.p, "address.city"))[1], "Pune")
         self.assertEqual(self._values(json_value(self.table.p, "items.0.n"))[1], "first")
-
-    def test_a_numeric_segment_reads_a_key_of_that_name(self):
-        self.assertEqual(self._values(json_value(self.table.p, "years.2024", "int"))[6], 7)
-        self.assertEqual(self._values(json_value(self.table.p, "0"))[6], "zero")
 
     @unittest.skipUnless(is_safe_exec_enabled(), "expression execution requires server scripts enabled")
     def test_validates_inside_a_summary(self):
@@ -124,7 +118,7 @@ class TestJsonFunctionsOutsideDuckDB(unittest.TestCase):
         rows = [
             '{"product": null}',
             '{"product": "null"}',
-            '{"items": [{"n": "first"}], "years": {"2024": 7}}',
+            '{"items": [{"n": "first"}]}',
         ]
         cls.table = ibis.duckdb.connect().create_table("json_fixture", ibis.memtable({"p": rows}))
 
@@ -134,6 +128,5 @@ class TestJsonFunctionsOutsideDuckDB(unittest.TestCase):
     def test_explicit_json_null_is_empty_and_the_string_null_stays_text(self, _):
         self.assertEqual(self._values(json_value(self.table.p, "product"))[:2], [None, "null"])
 
-    def test_numeric_segments_read_list_positions_and_keys(self, _):
+    def test_numeric_segments_read_list_positions(self, _):
         self.assertEqual(self._values(json_value(self.table.p, "items.0.n"))[2], "first")
-        self.assertEqual(self._values(json_value(self.table.p, "years.2024", "int"))[2], 7)
