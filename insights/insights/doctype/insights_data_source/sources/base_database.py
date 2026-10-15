@@ -18,6 +18,7 @@ from .utils import (
     execute_and_log,
     get_cached_results,
     replace_query_tables_with_cte,
+    replace_query_tags,
 )
 
 
@@ -100,13 +101,13 @@ class BaseDatabase(Database):
     def build_query(self, query):
         """Used to update the sql in insights query"""
         query_str = self.query_builder.build(query)
-        query_str = (
-            self.process_subquery(query_str) if not query.is_native_query else query_str
-        )
+        query_str = self.process_subquery(query_str) if not query.is_native_query else query_str
         return query_str
 
     def run_query(self, query):
         sql = self.query_builder.build(query)
+        if query.is_native_query:
+            sql = replace_query_tags(sql, self.data_source)
         return self.execute_query(sql, return_columns=True, query_name=query.name)
 
     def execute_query(
@@ -126,7 +127,6 @@ class BaseDatabase(Database):
         sql = self.compile_query(sql)
         sql = self.process_subquery(sql)
         sql = self.set_row_limit(sql)
-        sql = self.replace_template_tags(sql)
         sql = self.escape_special_characters(sql)
 
         self.validate_native_sql(sql)
@@ -141,7 +141,7 @@ class BaseDatabase(Database):
             cols = [ResultColumn.from_args(d[0]) for d in res.cursor.description]
             rows = [list(r) for r in res.fetchall()]
             rows = [r[0] for r in rows] if pluck else rows
-            ret = [cols] + rows if return_columns else rows
+            ret = [cols, *rows] if return_columns else rows
             cached and cache_results(sql, self.data_source, ret)
             return ret
 
@@ -152,13 +152,9 @@ class BaseDatabase(Database):
         return query
 
     def process_subquery(self, sql):
-        allow_subquery = frappe.db.get_single_value(
-            "Insights Settings", "allow_subquery"
-        )
+        allow_subquery = frappe.db.get_single_value("Insights Settings", "allow_subquery")
         if allow_subquery:
-            sql = replace_query_tables_with_cte(
-                sql, self.data_source, self.engine.dialect
-            )
+            sql = replace_query_tables_with_cte(sql, self.data_source, self.engine.dialect)
         return sql
 
     def escape_special_characters(self, sql):
@@ -167,36 +163,11 @@ class BaseDatabase(Database):
             sql = re.sub(r"(%{1,})", r"%%", sql)
         return sql
 
-    def replace_template_tags(self, sql):
-        # replace template tags with actual values
-        # {{ QRY_1203 }} -> SELECT * FROM `tabSales Invoice`
-        # find all the template tags in the query
-        # match all character between {{ and }}
-        matches = re.findall(r"{{(.*?)}}", sql)
-        if not matches:
-            return sql
-        context = {}
-        for match in matches:
-            query_name = match.strip().replace("_", "-")
-            if (
-                not query_name
-                or not query_name.startswith("QRY")
-                or not frappe.db.exists("Insights Query", query_name)
-            ):
-                continue
-            query = frappe.get_doc("Insights Query", query_name)
-            key = query_name.replace("-", "_")
-            context[key] = self.build_query(query)
-        sql = frappe.render_template(sql, context)
-        return sql
-
     def set_row_limit(self, sql):
         # set a hard max limit to prevent long running queries
         # there's no use case to view more than 500 rows in the UI
         # TODO: while exporting as csv, we can remove this limit
-        max_rows = (
-            frappe.db.get_single_value("Insights Settings", "query_result_limit") or 500
-        )
+        max_rows = frappe.db.get_single_value("Insights Settings", "query_result_limit") or 500
         return add_limit_to_sql(sql, max_rows)
 
     def validate_native_sql(self, query):

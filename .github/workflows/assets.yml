@@ -1,0 +1,15 @@
+name: Pre-build assets
+
+on:
+  push:
+    branches: [version-3]
+
+jobs:
+  assets:
+    name: Pre-build assets
+    uses: frappe/pilot/.github/workflows/app-assets.yml@develop
+    with:
+      # Pilot maps version-3 to a Frappe branch of the same name, which does not exist.
+      frappe-branch: version-16
+    permissions:
+      contents: write

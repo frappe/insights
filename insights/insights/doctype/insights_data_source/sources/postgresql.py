@@ -8,8 +8,7 @@ import frappe
 from sqlalchemy import column as Column
 from sqlalchemy import inspect
 from sqlalchemy import select as Select
-from sqlalchemy import table as Table
-from sqlalchemy import text
+from sqlalchemy import table as Table  # nosemgrep - the "table" assigned to below is a local, not this import
 from sqlalchemy.engine.base import Connection
 
 from insights.insights.query_builders.postgresql.builder import PostgresQueryBuilder
@@ -56,14 +55,10 @@ class PostgresTableFactory:
 
     def get_db_tables(self, table_names=None):
         inspector = inspect(self.db_conn)
-        tables = set(inspector.get_table_names()) | set(
-            inspector.get_foreign_table_names()
-        )
+        tables = set(inspector.get_table_names()) | set(inspector.get_foreign_table_names())
         if table_names:
             tables = [table for table in tables if table in table_names]
-        return [
-            self.get_table(table) for table in tables if not self.should_ignore(table)
-        ]
+        return [self.get_table(table) for table in tables if not self.should_ignore(table)]
 
     def should_ignore(self, table_name):
         return any(re.match(pattern, table_name) for pattern in IGNORED_TABLES)
@@ -84,9 +79,7 @@ class PostgresTableFactory:
         for table in tables:
             columns = inspector.get_columns(table)
             for col in columns:
-                columns_by_table.setdefault(table, []).append(
-                    self.get_column(col["name"], col["type"])
-                )
+                columns_by_table.setdefault(table, []).append(self.get_column(col["name"], col["type"]))
         return columns_by_table
 
     def get_table_columns(self, table):
@@ -126,21 +119,15 @@ class PostgresDatabase(BaseDatabase):
                 connect_args=connect_args,
             )
         self.query_builder: PostgresQueryBuilder = PostgresQueryBuilder(self.engine)
-        self.table_factory: PostgresTableFactory = PostgresTableFactory(
-            self.data_source
-        )
+        self.table_factory: PostgresTableFactory = PostgresTableFactory(self.data_source)
 
     def sync_tables(self, tables=None, force=False):
         with self.engine.begin() as connection:
             self.table_factory.sync_tables(connection, tables, force)
 
     def get_table_preview(self, table, limit=100):
-        data = self.execute_query(
-            f"""select * from "{table}" limit {limit}""", cached=True
-        )
-        length = self.execute_query(f'''select count(*) from "{table}"''', cached=True)[
-            0
-        ][0]
+        data = self.execute_query(f"""select * from "{table}" limit {limit}""", cached=True)
+        length = self.execute_query(f'''select count(*) from "{table}"''', cached=True)[0][0]
         return {
             "data": data or [],
             "length": length or 0,

@@ -90,7 +90,7 @@ def _existing_v2_dashboards(names) -> set[str]:
     """
     if not names:
         return set()
-    rows = frappe.db.sql(
+    rows = frappe.db.sql(  # nosemgrep - the table is a doctype constant, and values are parameters
         f"select name from `tab{V2_DASHBOARD}` where name in %(names)s",
         {"names": tuple(names)},
     )
@@ -449,7 +449,7 @@ def run_v2_dashboard_scan() -> dict:
 
 
 def _build_scan() -> dict:
-    rows = frappe.db.sql(
+    rows = frappe.db.sql(  # nosemgrep - the table is a doctype constant, and values are parameters
         f"select name from `tab{V2_DASHBOARD}` order by modified desc limit %(limit)s",
         {"limit": MAX_LIST_LIMIT},
         as_dict=True,
@@ -502,13 +502,14 @@ def _queries_with_sql_column() -> int:
     when the operation type can be dropped: it falls as users rewrite those
     queries as formulas, and a zero across the fleet is the go-ahead.
     """
-    return frappe.db.sql(
+    return frappe.db.sql(  # nosemgrep - the table is a doctype constant, and values are parameters
         f"select count(*) from `tab{V3_QUERY}` where operations like %s",
         ('%"sql_column"%',),
     )[0][0]
 
 
 def _unreadable(name: str, landed: dict) -> dict:
+    # nosemgrep - the table is a doctype constant, and values are parameters
     title = frappe.db.sql(f"select title from `tab{V2_DASHBOARD}` where name = %s", (name,))
     return {
         "dashboard": name,
@@ -564,7 +565,7 @@ def _v2_dashboards_waiting() -> int:
     """
     if not _v2_installed():
         return 0
-    return frappe.db.sql(
+    return frappe.db.sql(  # nosemgrep - the table is a doctype constant, and values are parameters
         f"""
         select count(*) from `tab{V2_DASHBOARD}` d
         where exists (

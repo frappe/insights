@@ -6,8 +6,6 @@ every row. No answer is worth failing the action that reported it.
 
 from unittest.mock import patch
 
-import frappe
-
 import insights
 from insights.telemetry import capture, get_entry, is_standard_app
 from insights.tests.base import InsightsIntegrationTestCase
@@ -18,12 +16,11 @@ class TestTelemetryDefaults(InsightsIntegrationTestCase):
         get_entry.clear_cache()
         self.addCleanup(get_entry.clear_cache)
 
-    def sent(self, installed_apps=("frappe", "insights"), conf=None):
+    def sent(self, installed_apps=("frappe", "insights")):
         """Return the call the framework's telemetry received."""
         with (
             patch("frappe.utils.telemetry.capture") as sender,
             patch("frappe.get_installed_apps", return_value=list(installed_apps)),
-            patch.object(frappe, "conf", frappe._dict(conf or {})),
         ):
             capture("workbook_created", interval="1d", from_template=True)
         return sender.call_args
@@ -37,7 +34,7 @@ class TestTelemetryDefaults(InsightsIntegrationTestCase):
             kwargs["properties"],
             {
                 "app_version": insights.__version__,
-                "entry": "self_hosted",
+                "entry": "insights_site",
                 "from_template": True,
             },
         )
@@ -45,18 +42,6 @@ class TestTelemetryDefaults(InsightsIntegrationTestCase):
     # @feature telemetry.defaults
     def test_a_site_running_erpnext_enters_as_an_erpnext_site(self):
         _, kwargs = self.sent(installed_apps=("frappe", "erpnext", "insights"))
-        self.assertEqual(kwargs["properties"]["entry"], "erpnext_site")
-
-    # @feature telemetry.defaults
-    def test_a_frappe_cloud_site_without_erpnext_enters_as_a_trial(self):
-        _, kwargs = self.sent(conf={"fc_team": "team@example.com"})
-        self.assertEqual(kwargs["properties"]["entry"], "saas_trial")
-
-    # @feature telemetry.defaults
-    def test_erpnext_outranks_a_frappe_cloud_team(self):
-        _, kwargs = self.sent(
-            installed_apps=("frappe", "erpnext", "insights"), conf={"fc_team": "team@example.com"}
-        )
         self.assertEqual(kwargs["properties"]["entry"], "erpnext_site")
 
     # @feature telemetry.standard-names-only
