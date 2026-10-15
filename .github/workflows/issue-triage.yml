@@ -1,0 +1,101 @@
+name: Issue triage
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to (re)triage
+        required: true
+        type: number
+
+permissions: {}
+
+jobs:
+  classify:
+    # Kill switch: set repo variable TRIAGE_ENABLED=true to enable.
+    if: >-
+      vars.TRIAGE_ENABLED == 'true' && (
+        (
+          github.event_name == 'issues' &&
+          github.event.issue.user.type != 'Bot'
+        ) ||
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'issue_comment' &&
+          github.event.issue.pull_request == null &&
+          github.event.comment.body == '/triage' &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association)
+        )
+      )
+    concurrency:
+      group: triage-${{ github.event.issue.number || inputs.issue_number }}
+      cancel-in-progress: true
+    # Anyone can open an issue, so the agent reads untrusted text. This job's
+    # token can only read; labels are applied by the next job, without a model.
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      number: ${{ steps.issue.outputs.number }}
+      triage: ${{ steps.result.outputs.triage }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # For git log -S and --grep when checking whether a bug is fixed.
+          fetch-depth: 500
+
+      - name: Fetch issue
+        # The action scrubs GitHub tokens from the agent's shell, so it reads
+        # GitHub through these files.
+        id: issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+        run: |
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+          gh issue view "$NUMBER" -R "$GITHUB_REPOSITORY" --json number,title,body,author,labels,comments,createdAt > /tmp/issue.json
+          gh issue list -R "$GITHUB_REPOSITORY" --state all --limit 5000 --json number,state,title -q '.[] | [.number, .state, .title] | @tsv' > /tmp/issues.tsv
+          gh pr list -R "$GITHUB_REPOSITORY" --state all --limit 5000 --json number,state,title -q '.[] | [.number, .state, .title] | @tsv' > /tmp/pulls.tsv
+
+      - name: Run triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_non_write_users: '*'
+          prompt: "/issue-triage ${{ steps.issue.outputs.number }}"
+          claude_args: >-
+            ${{ vars.TRIAGE_MODEL != '' && format('--model {0}', vars.TRIAGE_MODEL) || '' }}
+            ${{ vars.TRIAGE_EFFORT != '' && format('--effort {0}', vars.TRIAGE_EFFORT) || '' }}
+
+      - name: Read result
+        id: result
+        run: echo "triage=$(jq -c . /tmp/triage.json)" >> "$GITHUB_OUTPUT"
+
+  apply:
+    needs: classify
+    permissions:
+      contents: read
+      issues: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/helpers
+
+      - name: Apply labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUMBER: ${{ needs.classify.outputs.number }}
+          TRIAGE: ${{ needs.classify.outputs.triage }}
+        run: |
+          printf '%s' "$TRIAGE" > /tmp/triage.json
+          python3 .github/helpers/apply_triage_labels.py "$NUMBER" /tmp/triage.json
