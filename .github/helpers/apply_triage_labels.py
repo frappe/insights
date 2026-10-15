@@ -1,4 +1,4 @@
-"""Turn an issue-triage result into labels and a job summary."""
+"""Apply the issue-triage result in $TRIAGE as labels, and print a summary."""
 
 import json
 import os
@@ -74,9 +74,9 @@ def one_line(text, limit=600):
 
 
 def main():
-    number, path = sys.argv[1], sys.argv[2]
+    number = sys.argv[1]
     repo = os.environ["GITHUB_REPOSITORY"]
-    result = json.load(open(path))
+    result = json.loads(os.environ["TRIAGE"])
     validate(result)
 
     current = {
@@ -93,16 +93,15 @@ def main():
 
     duplicate = result.get("duplicate_of")
     related = ", ".join(f"#{n}" for n in result.get("related") or []) or "none"
-    with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
-        f.write(
-            f"## Triage of #{number}\n\n"
-            f"{one_line(result['summary'])}\n\n"
-            f"**Suggestion:** {result['suggestion']}"
-            + (f", duplicate of #{duplicate}" if duplicate else "")
-            + f"\n\n{one_line(result['reason'])}\n\n"
-            f"**Related:** {related}\n\n"
-            f"**Labels:** added {', '.join(add) or 'none'}, removed {', '.join(remove) or 'none'}\n"
-        )
+    print(
+        f"## Triage of #{number}\n\n"
+        f"{one_line(result['summary'])}\n\n"
+        f"**Suggestion:** {result['suggestion']}"
+        + (f", duplicate of #{duplicate}" if duplicate else "")
+        + f"\n\n{one_line(result['reason'])}\n\n"
+        f"**Related:** {related}\n\n"
+        f"**Labels:** added {', '.join(add) or 'none'}, removed {', '.join(remove) or 'none'}"
+    )
 
 
 main()
