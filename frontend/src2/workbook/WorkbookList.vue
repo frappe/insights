@@ -94,6 +94,8 @@ function fetchTemplates() {
 	)
 }
 wheneverChanges(() => session.user.is_admin, fetchTemplates, { immediate: true })
+// migrate applies updates to untouched copies, so what's left needs an admin's call
+const hasPendingUpdate = computed(() => templates.value.some((t) => t.update_available))
 
 function openLibrary() {
 	showTemplates.value = true
@@ -153,6 +155,9 @@ watchEffect(() => {
 			>
 				<template #prefix>
 					<LayoutTemplateIcon class="w-4" />
+				</template>
+				<template v-if="hasPendingUpdate" #suffix>
+					<span class="size-1.5 rounded-full bg-surface-gray-7" />
 				</template>
 			</Button>
 			<Button
