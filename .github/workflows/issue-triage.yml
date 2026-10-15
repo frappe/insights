@@ -91,13 +91,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Bot token
+        # Labels as iris when its GitHub App is set up; see iris-review.yml.
+        id: bot
+        if: vars.IRIS_APP_ID != ''
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.IRIS_APP_ID }}
+          private-key: ${{ secrets.IRIS_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
         with:
           sparse-checkout: .github/helpers
 
       - name: Apply labels
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.bot.outputs.token || secrets.GITHUB_TOKEN }}
           NUMBER: ${{ needs.classify.outputs.number }}
           TRIAGE: ${{ needs.classify.outputs.triage }}
         run: |
