@@ -296,7 +296,7 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
             self.assertIn((schema, "tabcleanuporphan"), self.warehouse_tables(db))
 
         self.assertTrue(
-            frappe.db.exists("Error Log", {"method": "Data store cleanup kept an unexplained table"}),
+            frappe.get_all("Error Log", filters={"method": "Data store cleanup kept an unexplained table"}),
             "a table the sweep refuses to drop must leave a record that outlives the file log",
         )
 
