@@ -42,7 +42,7 @@ def gh_json(path: str, method: str = "GET", **fields):
         args += ["-X", method]
     for key, value in fields.items():
         args += ["-f", f"{key}={value}"]
-    result = subprocess.run(args, capture_output=True, text=True)
+    result = subprocess.run(args, capture_output=True, text=True)  # nosemgrep - runs gh in CI, not on a site
     if result.returncode != 0:
         print(result.stderr.strip(), file=sys.stderr)
         return None
@@ -243,7 +243,7 @@ def main() -> int:
         return 0
 
     if args.publish:
-        subprocess.run(
+        subprocess.run(  # nosemgrep - runs gh in CI, not on a site
             ["gh", "release", "edit", args.tag, "--notes-file", "-"],
             input=body,
             text=True,

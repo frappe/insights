@@ -62,3 +62,24 @@ class TestJobState(InsightsIntegrationTestCase):
 
         state.save()
         self.assertEqual(self.stored_state(), {})
+
+    def stored_table_name(self, job):
+        return frappe.db.get_value("Insights Table Import Job", job.name, "table_name")
+
+    def test_a_new_job_stores_a_scrubbed_table_name(self):
+        job = self.create_job("Scrub Test Table")
+        self.assertEqual(self.stored_table_name(job), "scrub_test_table")
+
+    def test_saving_a_job_keeps_its_stored_table(self):
+        job = self.create_job("keep_test_table")
+        # a job saved before names were scrubbed on save
+        frappe.db.set_value("Insights Table Import Job", job.name, "table_name", "Keep Test Table")
+        job.reload()
+        job.schedule = "0 * * * *"
+        job.flags.ignore_links = True
+        job.save(ignore_permissions=True)
+        self.assertEqual(
+            self.stored_table_name(job),
+            "Keep Test Table",
+            "the job's cursor describes the rows in that table",
+        )

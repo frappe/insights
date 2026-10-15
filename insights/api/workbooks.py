@@ -409,5 +409,3 @@ def update_sort_orders(workbook: str, items: list):
             values["folder"] = folder
 
         frappe.db.set_value(doctype, item["name"], values, update_modified=False)
-
-    frappe.db.commit()

@@ -192,7 +192,7 @@ class InsightsTeamClient:
 
     @frappe.whitelist()
     def remove_team_member(self, user: str):
-        for member in self.team_members:
+        for member in self.team_members:  # nosemgrep - stops right after the remove
             if member.user == user:
                 self.remove(member)
                 break
@@ -220,7 +220,7 @@ class InsightsTeamClient:
     @frappe.whitelist()
     def remove_team_resource(self, resource: dict):
         resource = frappe._dict(resource)
-        for permission in self.team_permissions:
+        for permission in self.team_permissions:  # nosemgrep - stops right after the remove
             if permission.resource_type == resource.type and permission.resource_name == resource.name:
                 self.remove(permission)
                 break

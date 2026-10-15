@@ -40,7 +40,8 @@ jobs:
           echo "tag=${PREV}" >> $GITHUB_OUTPUT
       - name: Create Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A push with GITHUB_TOKEN triggers no workflows, so the release commit would get no prebuilt assets.
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: npx --no semantic-release
       - name: Write release notes
         env:

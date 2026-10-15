@@ -64,7 +64,7 @@ class InsightsLegacyQueryClient:
 
     @frappe.whitelist()
     def remove_table(self, table: dict):
-        for row in self.tables:
+        for row in self.tables:  # nosemgrep - stops right after the remove
             if row.get("name") == table.get("name"):
                 self.remove(row)
                 break
@@ -124,7 +124,7 @@ class InsightsLegacyQueryClient:
 
     @frappe.whitelist()
     def remove_column(self, column: dict):
-        for row in self.columns:
+        for row in self.columns:  # nosemgrep - stops right after the remove
             if row.get("name") == column.get("name"):
                 self.remove(row)
                 break
