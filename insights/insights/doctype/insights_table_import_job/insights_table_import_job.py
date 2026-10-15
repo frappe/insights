@@ -77,12 +77,12 @@ class InsightsTableImportJob(Document):
         next_execution = parse_cron(self.schedule).get_next(datetime, start_time=last_run)
         return next_execution
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def enqueue(self):
         enqueue_table_import_job(self.name)
         frappe.msgprint(f"Job '{self.title}' has been queued for execution.")
 
-    @frappe.whitelist()
+    @frappe.whitelist(methods=["POST"])
     def bulk_enqueue(self, run_count: int):
         """Queue the job to run multiple times sequentially."""
         run_count = int(run_count)

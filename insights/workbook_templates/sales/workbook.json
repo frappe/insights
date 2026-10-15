@@ -39,6 +39,14 @@
 								},
 								"operator": "=",
 								"value": 1
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "is_opening"
+								},
+								"operator": "=",
+								"value": "No"
 							}
 						]
 					},
@@ -118,6 +126,10 @@
 							{
 								"type": "column",
 								"column_name": "company"
+							},
+							{
+								"type": "column",
+								"column_name": "is_opening"
 							}
 						],
 						"join_condition": {
@@ -130,6 +142,20 @@
 								"column_name": "name"
 							}
 						}
+					},
+					{
+						"type": "filter_group",
+						"logical_operator": "And",
+						"filters": [
+							{
+								"column": {
+									"type": "column",
+									"column_name": "is_opening"
+								},
+								"operator": "=",
+								"value": "No"
+							}
+						]
 					}
 				]
 			},
@@ -327,6 +353,17 @@
 								},
 								"operator": "=",
 								"value": 1
+							},
+							{
+								"column": {
+									"type": "column",
+									"column_name": "status"
+								},
+								"operator": "not_in",
+								"value": [
+									"Closed",
+									"On Hold"
+								]
 							}
 						]
 					},

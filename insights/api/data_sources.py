@@ -377,7 +377,7 @@ def get_data_source_table_columns(data_source: str, table_name: str):
     ]
 
 
-@insights_whitelist()
+@insights_whitelist(methods=["POST"])
 def update_data_source_tables(data_source: str):
     check_data_source_permission(data_source)
     ds = frappe.get_doc("Insights Data Source v3", data_source)

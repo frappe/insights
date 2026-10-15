@@ -18,6 +18,7 @@ from insights.migrator.v2_expressions import (
     GRANULARITY_PARTS,
     GRANULARITY_STARTS,
     RENAMED_FUNCTIONS,
+    V3_FUNCTION_NAMES,
     Outcome,
     TranslationError,
     split_trailing_alias,
@@ -69,6 +70,11 @@ class TestLeavesAndOperators(UnitTestCase):
     def test_a_column_a_v3_function_would_shadow_is_reached_through_the_query(self):
         # v3 binds its functions after the columns, so a bare `count` is the function
         self.assertEqual(translate(column("count")).expression, 'q["count"]')
+
+    def test_every_name_v3_binds_over_the_columns_is_reached_through_the_query(self):
+        from insights.insights.doctype.insights_data_source_v3.ibis.utils import get_functions
+
+        self.assertEqual(set(get_functions()) - V3_FUNCTION_NAMES, set())
 
     def test_equality_becomes_python_equality(self):
         translated = translate(binary("=", column("status"), string("Resolved")))
