@@ -366,15 +366,10 @@
 								"value": "No"
 							},
 							{
-								"column": {
-									"type": "column",
-									"column_name": "voucher_subtype"
-								},
-								"operator": "not_in",
-								"value": [
-									"Internal Transfer",
-									"Contra Entry"
-								]
+								"expression": {
+									"type": "expression",
+									"expression": "is_not_in(coalesce(voucher_subtype, ''), 'Internal Transfer', 'Contra Entry')"
+								}
 							}
 						]
 					},
