@@ -1,3 +1,4 @@
+import itertools
 import math
 
 import frappe
@@ -6,6 +7,7 @@ import ibis.expr.types as ir
 import ibis.selectors as s
 from frappe.utils import now_datetime
 from ibis import _
+from ibis.common.exceptions import IbisError
 
 from insights.insights.doctype.insights_query.utils import infer_type_from_list
 from insights.insights.query_builders.sql_functions import (
@@ -590,29 +592,43 @@ def _json_text(column: ir.StringColumn, path: str):
 
     Returns SQL NULL for both a missing key and an explicit JSON ``null`` — casting
     JSON to string otherwise yields the literal text ``'null'``, which silently
-    poisons comparisons and type inference. Numeric path segments index arrays.
+    poisons comparisons and type inference. A numeric path segment reads the key of
+    that name, else that position in a list.
     """
-    if column.get_backend().name == "duckdb":
+    if _backend_name(column) == "duckdb":
         return _duckdb_json_text(column, path)
 
     value = normalize_json(column).cast("json")
     for segment in str(path).split("."):
         if not segment:
             continue
-        value = value[int(segment)] if segment.lstrip("-").isdigit() else value[segment]
+        if segment.isdigit():
+            value = ibis.coalesce(value[segment], value[int(segment)])
+        elif segment.startswith("-") and segment[1:].isdigit():
+            value = value[int(segment)]
+        else:
+            value = value[segment]
 
-    text = value.cast("string")
+    raw = value.cast("string")
     # strip the quotes JSON puts around string values
     text = ibis.cases(
         (
-            text.startswith('"') & text.endswith('"'),
-            text.substr(1, text.length() - 2),
+            raw.startswith('"') & raw.endswith('"'),
+            raw.substr(1, raw.length() - 2),
         ),
-        (text.startswith('"'), text.substr(1)),
-        (text.endswith('"'), text.substr(0, text.length() - 1)),
-        else_=text,
+        (raw.startswith('"'), raw.substr(1)),
+        (raw.endswith('"'), raw.substr(0, raw.length() - 1)),
+        else_=raw,
     )
-    return (text == "null").ifelse(ibis.null(), text)
+    return (raw == "null").ifelse(ibis.null(), text)
+
+
+def _backend_name(column: ir.Column) -> str | None:
+    try:
+        return column.get_backend().name
+    except IbisError:
+        # expression validation builds on an unbound table
+        return None
 
 
 @ibis.udf.scalar.builtin(name="json_valid")
@@ -631,21 +647,23 @@ def _duckdb_json_text(column: ir.StringColumn, path: str):
         (_json_valid(column), column),
         (_json_valid(normalized), normalized),
     )
-    return _json_extract_string(document, _duckdb_json_path(path))
+    return ibis.coalesce(*(_json_extract_string(document, p) for p in _duckdb_json_paths(path)))
 
 
-def _duckdb_json_path(path: str) -> str:
-    json_path = "$"
+def _duckdb_json_paths(path: str) -> list[str]:
+    # a JSON path cannot say "key or index", so each numeric segment yields both, key first
+    choices = []
     for segment in str(path).split("."):
         if not segment:
             continue
-        if segment.lstrip("-").isdigit():
-            index = int(segment)
-            json_path += f"[{index}]" if index >= 0 else f"[#{index}]"
+        key = segment.replace("\\", "\\\\").replace('"', '\\"')
+        if segment.isdigit():
+            choices.append((f'."{key}"', f"[{int(segment)}]"))
+        elif segment.startswith("-") and segment[1:].isdigit():
+            choices.append((f"[#{segment}]",))
         else:
-            key = segment.replace("\\", "\\\\").replace('"', '\\"')
-            json_path += f'."{key}"'
-    return json_path
+            choices.append((f'."{key}"',))
+    return ["$" + "".join(steps) for steps in itertools.product(*choices)]
 
 
 def json_value(column: ir.StringColumn, path: str, type: str = "string"):
