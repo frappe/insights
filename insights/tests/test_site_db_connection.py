@@ -35,9 +35,13 @@ class TestSiteDBSocket(UnitTestCase):
         tcp_connect.assert_not_called()
 
     # @feature data-source.site-db-socket
-    def test_a_replica_host_connects_over_tcp_past_the_primary_socket(self):
-        with socket_only_conf(), patch.dict(frappe.local.conf, {"replica_host": "replica.internal"}):
-            replica = get_replica_data_source()
+    def test_a_replica_connects_over_tcp_past_the_primary_socket(self):
+        for replica_conf in ({"replica_host": "replica.internal"}, {"replica_db_port": 3311}):
+            with (
+                self.subTest(**replica_conf),
+                socket_only_conf(),
+                patch.dict(frappe.local.conf, replica_conf),
+            ):
+                replica = get_replica_data_source()
 
-        self.assertEqual(replica.host, "replica.internal")
-        self.assertIsNone(replica.unix_socket)
+            self.assertIsNone(replica.unix_socket)

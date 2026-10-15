@@ -53,10 +53,10 @@ def get_primary_data_source():
 
 def get_replica_data_source():
     data_source = get_primary_data_source()
+    data_source.unix_socket = None
 
     if frappe.conf.replica_host:
         data_source.host = frappe.conf.replica_host
-        data_source.unix_socket = None
     if frappe.conf.replica_db_port:
         data_source.port = frappe.conf.replica_db_port
     if frappe.conf.replica_db_name:
