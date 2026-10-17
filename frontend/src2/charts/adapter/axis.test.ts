@@ -1402,16 +1402,19 @@ describe('a timeline', () => {
 		})
 		chart.setOption({ ...option, animation: false })
 
-		const ticks = (chart as any)
+		const values: number[] = (chart as any)
 			.getModel()
 			.getComponent('xAxis')
 			.axis.scale.getTicks()
-			.map((tick: any) => {
-				const date = new Date(tick.value)
-				return `${date.getMonth() + 1}-${date.getDate()}`
-			})
+			.map((tick: any) => tick.value)
+		const ticks = values.map((value) => {
+			const date = new Date(value)
+			return `${date.getMonth() + 1}-${date.getDate()}`
+		})
 		chart.dispose()
 		// The first and last tick are the axis ends, which frappe-ui pads past a line's data.
+		expect(values[0]).toBeLessThan(Date.parse(categories[0]))
+		expect(values[values.length - 1]).toBeGreaterThan(end)
 		expect(ticks.slice(1, -1)).toEqual([
 			'6-17',
 			'7-1',
