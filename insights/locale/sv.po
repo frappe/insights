@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-10-05 11:28\n"
+"PO-Revision-Date: 2026-10-12 13:04\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -321,7 +321,7 @@ msgstr "BigQuery Inställningar"
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Dataset ID"
-msgstr "BigQuery Datauppsättning ID"
+msgstr "BigQuery Datautformning ID"
 
 #. Label of the bigquery_project_id (Data) field in DocType 'Insights Data
 #. Source v3'
@@ -518,7 +518,7 @@ msgstr "Kommaseparerade URL: er till vitlistan för att bädda in diagram & öve
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:163
 msgid "Compact Layout"
-msgstr "Kompakt Uppsättning"
+msgstr "Kompakt Utformning"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import
 #. Log'
@@ -1019,7 +1019,7 @@ msgstr "Excel"
 
 #: frontend/src2/query/components/QueryToolbar.vue:69
 msgid "Execute"
-msgstr "Kör"
+msgstr "Exekvera"
 
 #: frontend/src2/query/components/QueryToolbar.vue:68
 msgid "Execute ({0})"
@@ -1774,7 +1774,7 @@ msgstr "Senaste Logg"
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Last Run"
-msgstr "Sista Körning"
+msgstr "Sista Exekvering"
 
 #. Label of the last_status (Data) field in DocType 'Insights Table Import Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
@@ -2445,7 +2445,7 @@ msgstr "Ta bort Sortering"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:170
 msgid "Reset Layout"
-msgstr "Återställ Uppsättning"
+msgstr "Återställ Utformning"
 
 #: frontend/src2/charts/components/ChartBuilderToolbar.vue:49
 msgid "Reset Options"
@@ -2535,11 +2535,11 @@ msgstr "Regel Typ"
 #: frontend/src2/query/components/ScriptQueryEditor.vue:94
 #: insights/insights/doctype/insights_query/insights_query.js:7
 msgid "Run"
-msgstr "Kör"
+msgstr "Exekvera"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
-msgstr "Kör {0} av {1}"
+msgstr "Exekvera {0} av {1}"
 
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
@@ -3341,7 +3341,7 @@ msgstr "Vertikal"
 #. Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Vertical Compact Layout"
-msgstr "Vertikal Kompakt Uppsättning"
+msgstr "Vertikal Kompakt Utformning"
 
 #: frontend/src2/workbook/WorkbookNavbarActions.vue:54
 msgid "View Lineage"
@@ -3397,7 +3397,7 @@ msgstr "Världskarta"
 #. Job'
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.json
 msgid "Write Python code to fetch and transform data. Available globals:<br>• client: API client for the selected data source<br>• table: Write data to warehouse. Methods: insert(data, overwrite=False)<br>• state: Persist data between runs. Methods: get(key, default=None), set(key, value), delete(key), clear()<br>• secrets: Access secret keys. Methods: get(key)<br>• log(message): Log execution messages"
-msgstr "Skriv Python kod för att hämta och omvandla data. Tillgängliga globaler:<br>• klient: API klient för vald datakälla<br>• tabell: Skriv data till lager. Metoder: insert(data, overwrite=False)<br>• state: Fortsätta data mellan körningar. Metoder: get(key, default=Inone), set(key, value), delete(key), clear()<br>• hemligheter: Access hemliga nycklar. Metoder: get(key)<br>• log(message): Log exekvering meddelanden"
+msgstr "Skriv Python kod för att hämta och omvandla data. Tillgängliga globaler:<br>• klient: API klient för vald datakälla<br>• tabell: Skriv data till lager. Metoder: insert(data, overwrite=False)<br>• state: Fortsätta data mellan exekveringar. Metoder: get(key, default=Inone), set(key, value), delete(key), clear()<br>• hemligheter: Access hemliga nycklar. Metoder: get(key)<br>• log(message): Log exekvering meddelanden"
 
 #: frontend/src2/query/components/UnionSelectorDialog.vue:143
 msgid "Yes"
