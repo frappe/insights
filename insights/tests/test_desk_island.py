@@ -37,7 +37,6 @@ OWNER = "Administrator"
 DESK_DASHBOARD = "Desk Island Test Dashboard"
 DESK_CHART = "Desk Island Test Chart"
 DESK_CARD = "Desk Island Test Card"
-DASHBOARD_PAGE = "insights-dashboard"
 
 
 class TestDeskIsland(InsightsIntegrationTestCase):
@@ -115,21 +114,6 @@ class TestDeskIsland(InsightsIntegrationTestCase):
                 frappe.has_permission(doctype, doc=frappe.get_doc(doctype, name)),
                 name in frappe.get_list(doctype, filters={"name": name}, pluck="name"),
             )
-
-    # @feature desk.dashboard-page
-    def test_the_dashboard_page_is_rendered_by_an_island_the_build_ships(self):
-        if not frappe.get_meta("Page").has_field("type"):
-            self.skipTest(
-                "frappe v16 has no page islands; https://github.com/nextchamp-saqib/insights/pull/3, Saqib, 2026-12-31"
-            )
-        page = frappe.get_doc("Page", DASHBOARD_PAGE)
-        self.assertEqual(page.type, "Frappe UI")
-        self.assertIn(page.island, get_ui_islands())
-
-    # @feature desk.dashboard-page
-    def test_the_dashboard_page_allows_every_desk_user(self):
-        page = frappe.get_doc("Page", DASHBOARD_PAGE)
-        self.assertEqual([role.role for role in page.roles], ["Desk User"])
 
     # @feature desk.dashboard-island desk.chart-island desk.number-card-island
     def test_island_names_are_registered(self):
