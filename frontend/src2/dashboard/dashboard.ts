@@ -567,7 +567,13 @@ function makeDashboard(name: string) {
 	// belongs to the document, and the owner is here to check it. A default fills
 	// only a filter that has no state yet.
 	waitUntil(() => dashboard.isloaded).then(() => {
-		const defaults = defaultFilterStates(dashboard.doc.items)
+		const userDefaults = dashboard.doc.user_defaults || {}
+		const items = dashboard.doc.items.map((item) =>
+			item.type == 'filter' && item.filter_name in userDefaults
+				? { ...item, default_value: userDefaults[item.filter_name] }
+				: item,
+		)
+		const defaults = defaultFilterStates(items)
 		Object.entries(defaults).forEach(([filter_name, state]) => {
 			if (filter_name in filterStates.value) return
 			filterStates.value[filter_name] = state

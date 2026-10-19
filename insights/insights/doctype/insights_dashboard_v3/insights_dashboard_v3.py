@@ -270,6 +270,12 @@ class InsightsDashboardv3(Document):
         if d.can_share:
             d.people_with_access = self.get_people_with_access()
         d.has_workbook_access = frappe.has_permission("Insights Workbook", ptype="read", doc=self.workbook)
+        # the stored items keep the key, not a value: the builder saves them back
+        d.user_defaults = {
+            item.get("filter_name"): filter_default_value(item)
+            for item in frappe.parse_json(self.items or "[]")
+            if item.get("type") == "filter" and item.get("default_user_key")
+        }
         return d
 
     def after_insert(self):

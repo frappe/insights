@@ -148,6 +148,8 @@ export type InsightsDashboardv3 = {
 	can_share?: boolean
 	vertical_compact_layout: boolean
 	has_workbook_access: boolean
+	/** The reader's value for each filter's `default_user_key`, by filter name. */
+	user_defaults?: Record<string, FilterValue>
 }
 
 export type WorkbookDashboardItem =
@@ -216,7 +218,7 @@ export type WorkbookDashboardFilter = WorkbookDashboardItemLayout & {
 	default_operator?: FilterOperator
 	default_value?: FilterValue
 	// a user default key, such as `Company`. The server sends the reader's value
-	// for it as `default_value`
+	// for it as `default_value` to a view, and in `user_defaults` to the builder
 	default_user_key?: string
 	icon?: string
 }

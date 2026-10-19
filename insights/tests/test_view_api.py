@@ -738,6 +738,22 @@ class TestViewAPI(InsightsIntegrationTestCase):
         filter_item = next(item for item in response["items"] if item["type"] == "filter")
         self.assertEqual(filter_item["default_value"], "USD")
 
+    # @feature dashboard.filter-user-default
+    def test_the_builder_gets_the_readers_user_default_beside_the_stored_key(self):
+        _, _, dashboard = self.make_content(visibility="Everyone")
+        items = frappe.parse_json(dashboard.items)
+        items[1].update(default_operator="=", default_user_key="Company")
+        dashboard.db_set("items", frappe.as_json(items), update_modified=False)
+        frappe.defaults.set_user_default("company", "Owner Co", OWNER)
+
+        with as_user(OWNER):
+            doc = frappe.get_doc(DT.DASHBOARD, dashboard.name).as_dict()
+
+        self.assertEqual(doc.user_defaults, {items[1]["filter_name"]: "Owner Co"})
+        # saved back unchanged, so each reader keeps resolving their own
+        stored = next(item for item in frappe.parse_json(doc["items"]) if item["type"] == "filter")
+        self.assertNotIn("default_value", stored)
+
     # @feature dashboard.filter-values
     def test_filter_values_come_from_the_linked_column(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")
