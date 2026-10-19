@@ -399,7 +399,7 @@ function handleRemove() {
 			</template>
 			<template #default="{ close: closeSettings }">
 				<div
-					class="flex flex-col gap-2 p-2"
+					class="flex max-h-[var(--reka-popover-content-available-height)] flex-col gap-2 overflow-y-auto p-2"
 					:style="{ width: props.configWidth || CONFIG_WIDTH }"
 				>
 					<InlineFormControlLabel :label="__('Label')">

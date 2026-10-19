@@ -179,7 +179,9 @@ function readingOf(
 		const value = progressOf(latest, targetNumber(target, rows), measure)
 		if (value !== undefined) {
 			const progress: NumberCardProgress = { value }
-			if (options.progress_color) progress.color = options.progress_color
+			// A reading colored to stand for a series is read against that color.
+			const color = options.progress_color || options.color
+			if (color) progress.color = color
 			card.progress = progress
 		}
 	}

@@ -153,7 +153,7 @@ function blankMeasure(): Measure {
 		<template v-if="canDrawProgress(target, measure)">
 			<Toggle :label="__('Progress bar')" v-model="progress" />
 
-			<InlineFormControlLabel v-if="progress" :label="__('Color')">
+			<InlineFormControlLabel v-if="progress" :label="__('Bar color')">
 				<ColorInput
 					:model-value="progressColor"
 					@update:model-value="updateProgressColor($event)"

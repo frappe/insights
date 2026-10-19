@@ -584,6 +584,13 @@ describe('the progress bar', () => {
 	})
 
 	// @feature charts.number-progress
+	it('fills in the reading’s own color when the bar names none', () => {
+		const reading = { name: 'Revenue', readings: [300], targetValue: 400, color: '#E86C13' }
+		expect(progressOf(reading)?.color).toBe('#E86C13')
+		expect(progressOf({ ...reading, progressColor: '#2490EF' })?.color).toBe('#2490EF')
+	})
+
+	// @feature charts.number-progress
 	it('fills a percent reading out of 100% when it aims at nothing', () => {
 		// The Measure holds the fraction, so 0.42 is 42 of the 100 it is out of.
 		expect(progressOf({ name: 'CPU', readings: [0.42], percent: true })?.value).toBeCloseTo(42)

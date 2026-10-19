@@ -76,7 +76,7 @@ One measure a Number chart states, shown as a card of its own — its value, its
 _Avoid_: KPI, metric, data point ("card" is the thing shown, "reading" is what it states)
 
 **Progress**:
-How far a reading has come, drawn as a bar under its card: towards its target, or out of 100% for a percent Measure with no target. A reading with neither gets no bar. Stored as `progress` on each reading's options, with `progress_color`.
+How far a reading has come, drawn as a bar under its card: towards its target, or out of 100% for a percent Measure with no target. A reading with neither gets no bar. Stored as `progress` on each reading's options. The bar takes `progress_color`, else the reading's `color`.
 _Avoid_: gauge, attainment
 
 **Period**:
