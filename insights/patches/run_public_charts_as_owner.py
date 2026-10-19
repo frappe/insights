@@ -1,5 +1,7 @@
 import frappe
 
+from insights.upgrade import add_item
+
 CHART = "Insights Chart v3"
 DASHBOARD = "Insights Dashboard v3"
 
@@ -19,37 +21,43 @@ def execute():
     through a Public dashboard that shows it. This patch handles both. From now
     on, the dashboard's save handles the second.
 
-    Run as owner is checked only where the owner's rows are the rows the base
-    already served. The base filtered a public read by the user the
-    *publishing* document recorded. For most content that is the chart's own
-    owner. For a chart that another person's dashboard published, it is someone
-    else. Where the two differ, neither answer can be kept: the column is
-    going, and `validate_run_as_owner` lets only the owner share the owner's
-    rows. So the box stays unchecked there, unless both users read the same
-    rows. The card then refuses, rather than serving a third person's rows to
-    the open internet. Its owner can check it in the chart's share dialog,
-    which is the one place that decision belongs.
+    The base filtered a public read by the user the *publishing* document
+    recorded. For most content that is the chart's own owner, and Run as owner
+    is checked. For a chart that another person's dashboard published, it is
+    someone else, and the column that named them is going. Where the owner
+    reads other rows than the publisher, the publisher becomes the owner, so
+    the link keeps serving the rows it served. The publisher chose to publish
+    those rows, and `validate_run_as_owner` lets only the owner share them.
+    The previous owner is told. A disabled publisher can run nothing, so that
+    chart is left running as its reader, and its owner is told.
     """
-    left = []
     for chart, publisher in publicly_reachable_charts().items():
         if not publisher:
             continue
         owner = frappe.db.get_value(CHART, chart, "owner")
-        reason = None if publisher == owner else why_rows_differ(chart, publisher, owner)
-        if reason:
-            left.append((chart, owner, publisher, reason))
-        else:
+        if publisher == owner or not why_rows_differ(chart, publisher, owner):
             frappe.db.set_value(CHART, chart, "run_as_owner", 1, update_modified=False)
+        elif frappe.db.get_value("User", publisher, "enabled"):
+            frappe.db.set_value(CHART, chart, {"owner": publisher, "run_as_owner": 1}, update_modified=False)
+            report(chart, owner, publisher, moved=True)
+        else:
+            report(chart, owner, publisher, moved=False)
 
-    if not left:
-        return
-    print(
-        f"Insights: {len(left)} public chart(s) left running as their reader; "
-        "their owner can turn on Run as owner in the chart's share dialog"
-    )
-    for chart, owner, publisher, reason in left:
-        title = frappe.db.get_value(CHART, chart, "title")
-        print(f'  {chart} "{title}": owner {owner}, published by {publisher}: {reason}')
+
+def report(chart: str, owner: str, publisher: str, moved: bool) -> None:
+    title = frappe.db.get_value(CHART, chart, "title") or chart
+    if moved:
+        message = (
+            f'Public chart "{title}" now belongs to {publisher}, who published it, and runs as its owner. '
+            f"Its public link keeps showing the rows {publisher} can see, as before. It belonged to {owner}."
+        )
+    else:
+        message = (
+            f'Public chart "{title}" was published by {publisher}, whose account is disabled, so it now runs '
+            f"as each reader and guests see nothing. To show {owner}'s rows to guests, turn on Run as owner "
+            "in its share dialog."
+        )
+    add_item("P11", message, reference=(CHART, chart), user=None if owner == "Administrator" else owner)
 
 
 def why_rows_differ(chart: str, publisher: str, owner: str) -> str | None:

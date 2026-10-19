@@ -768,8 +768,8 @@ class TestVisibility(InsightsIntegrationTestCase):
     # @feature shared.chart-on-public-dashboard
     def test_a_chart_left_unchecked_under_a_public_dashboard_stays_saveable(self):
         """The `run_public_charts_as_owner` patch leaves Run as owner off when the
-        dashboard's publisher did not own the chart. The chart then refuses to
-        run instead of showing another user's rows. The save checks only what
+        dashboard's publisher is disabled. The chart then refuses to run instead
+        of showing another user's rows. The save checks only what
         changed. Otherwise every later save of the chart would fail: a retitle,
         a folder move, or an edit by its owner."""
         chart, dashboard = self.make_content(link_chart_to_dashboard=True)
