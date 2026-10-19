@@ -21,3 +21,16 @@ class TestDemoSetup(unittest.TestCase):
 
         workbook = setup_demo_data()
         self.assertEqual(frappe.db.get_value("Insights Workbook", workbook, "title"), SAMPLE_WORKBOOK_TITLE)
+
+    # @feature settings.demo-data
+    def test_demo_data_is_offered_until_the_site_has_a_workbook_of_its_own(self):
+        """A workbook an app ships is not the site's own."""
+        from insights.api import get_user_info
+
+        frappe.db.savepoint("own_workbooks")
+        self.addCleanup(frappe.db.rollback, save_point="own_workbooks")
+        frappe.db.delete("Insights Workbook", {"is_standard": 0})
+        self.assertFalse(get_user_info()["has_workbooks"])
+
+        frappe.get_doc({"doctype": "Insights Workbook", "title": "Own Workbook"}).insert()
+        self.assertTrue(get_user_info()["has_workbooks"])
