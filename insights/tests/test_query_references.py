@@ -688,6 +688,22 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
         execute()
         self.assertEqual(frappe.db.count(DT.QUERY), count)
 
+    # @feature upgrade.copied-sources-reported
+    def test_a_query_left_in_a_deleted_workbook_is_not_copied_into_it(self):
+        """The copy's workbook link would refuse the insert, and stop the migrate."""
+        from insights.patches.copy_cross_workbook_query_sources import execute
+
+        far = self.make_workbook("Copy Orphan Far Workbook")
+        source = create_source_query(OWNER, far, "Copy Orphan Source").name
+        gone = self.make_workbook("Copy Orphan Deleted Workbook")
+        reader = create_source_query(OWNER, gone, "Copy Orphan Reader").name
+        source_from(reader, source)
+        frappe.db.delete(DT.WORKBOOK, gone)
+
+        execute()
+
+        self.assertEqual(self.sources_of(reader), [source])
+
     # @feature query.source-query dashboard.filter-links
     def test_a_filter_linked_to_the_source_is_linked_to_the_copy(self):
         """`route_filters` follows a link only to a query the card reads. After
@@ -767,15 +783,13 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
                 self.assertTrue(chart_reads(chart, source_copy))
                 frappe.db.rollback(save_point="copy_hop")
 
-    # @feature query.source-query
+    # @feature query.source-query upgrade.copied-sources-reported
     def test_a_copy_keeps_a_sources_variables_without_their_values(self):
         """A variable holds a script's credential, and editors of the reading
-        workbook can edit the copy. So the copy gets no values, and the patch
-        lists the copies that need a value entered."""
-        import contextlib
-        import io
-
+        workbook can edit the copy. So the copy gets no values, and the reading
+        workbook's owner is told which copies need a value entered."""
         from insights.patches.copy_cross_workbook_query_sources import execute
+        from insights.upgrade import ITEM
 
         far = self.make_workbook("Copy Secret Far Workbook")
         source = frappe.get_doc(DT.QUERY, create_source_query(OWNER, far, "Copy Secret Source").name)
@@ -786,15 +800,17 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
         reader = create_source_query(OWNER, near, "Copy Secret Reader").name
         source_from(reader, source.name)
 
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output):
-            execute()
+        execute()
 
         (copy,) = self.sources_of(reader)
         (variable,) = frappe.get_doc(DT.QUERY, copy).variables
         self.assertEqual(variable.variable_name, "LOG_PASSWORD")
         self.assertIsNone(variable.get_password("variable_value", raise_exception=False))
-        self.assertIn(copy, output.getvalue())
+        (item,) = frappe.get_all(
+            ITEM, filters={"code": "P21", "reference_name": copy}, fields=["user", "message"]
+        )
+        self.assertEqual(item.user, OWNER)
+        self.assertIn("LOG_PASSWORD", item.message)
         self.assertEqual(
             frappe.get_doc(DT.QUERY, source.name).variables[0].get_password("variable_value"), "hunter2"
         )

@@ -2,9 +2,11 @@ import frappe
 
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import LINK_COLUMN
 from insights.insights.query_utils import referenced_queries, sync_query_references
+from insights.upgrade import add_item
 from insights.utils import deep_convert_dict_to_dict
 
 QUERY = "Insights Query v3"
+WORKBOOK = "Insights Workbook"
 DASHBOARD = "Insights Dashboard v3"
 
 
@@ -20,10 +22,14 @@ def execute():
     A variable is copied by name, not by value. Its value may be a script's
     credential, and the copy belongs to another workbook. Copying without the
     value keeps every reference inside its own workbook, where it can run.
-    Refusing the copy would leave the reference refused on every run. So the
-    patch prints the copies that need a value entered.
+    Refusing the copy would leave the reference refused on every run. So each
+    copy that needs a value entered is an upgrade item for the workbook's owner.
+
+    A query whose workbook was deleted is left as it is: nobody can open it,
+    and a copy cannot be made into a workbook that is not there.
     """
     workbook_of = dict(frappe.get_all(QUERY, fields=["name", "workbook"], as_list=True))
+    workbooks = set(frappe.get_all(WORKBOOK, pluck="name"))
     # Copy and rewrite from the operations as they were before the patch. A
     # query the loop has already rewritten names a copy. Copying from it again
     # would key the next copy by that copy, not by the original a filter links.
@@ -38,6 +44,8 @@ def execute():
 
     by_reader = {}
     for reader, workbook, source in foreign_sources(workbook_of):
+        if workbook not in workbooks:
+            continue
         by_reader.setdefault((reader, workbook), set()).add(source)
 
     copies = {}
@@ -144,10 +152,26 @@ def copy_into(original: str, workbook: str, copies: dict, workbook_of: dict, sto
     copy.flags.ignore_mandatory = True
     copy.insert(ignore_permissions=True)
     if source.variables:
-        print(
-            f"Query {copy.name} in workbook {workbook} is a copy of {original} without its variable"
-            f" values: {', '.join(variable.variable_name for variable in source.variables)}"
-        )
+        report_missing_values(copy, source)
     copies[(original, workbook)] = copy.name
     workbook_of[copy.name] = workbook
     return copy.name
+
+
+def report_missing_values(copy, source) -> None:
+    workbook_title, owner = frappe.db.get_value(WORKBOOK, copy.workbook, ["title", "owner"])
+    source_workbook = (
+        f'workbook "{frappe.db.get_value(WORKBOOK, source.workbook, "title") or source.workbook}"'
+        if source.workbook
+        else "no workbook"
+    )
+    variables = ", ".join(variable.variable_name for variable in source.variables)
+    add_item(
+        "P21",
+        f'Query "{copy.title or copy.name}" in workbook "{workbook_title or copy.workbook}" is a copy of the '
+        f"query of the same name in {source_workbook}, because a query here reads it and a query "
+        f"may now read only its own workbook. The values of its variables ({variables}) were not copied, "
+        "because they may be passwords. Enter them in the copy, or it will not run.",
+        reference=(QUERY, copy.name),
+        user=None if owner == "Administrator" else owner,
+    )
