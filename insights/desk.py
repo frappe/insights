@@ -273,9 +273,9 @@ def refuse_delete_while_claimed(title: str, claims: list[tuple[str, str, str]]) 
 
     frappe.throw(
         frappe._("Cannot delete {0} because {1} use it.").format(
-            frappe.bold(title),
+            frappe.bold(frappe.utils.escape_html(title)),
             ", ".join(
-                f"{frappe._(doctype)} {frappe.utils.get_link_to_form(doctype, name)}"
+                f"{frappe._(doctype)} {frappe.utils.get_link_to_form(doctype, name, frappe.utils.escape_html(name))}"
                 for doctype, name, _ in claims
             ),
         ),
