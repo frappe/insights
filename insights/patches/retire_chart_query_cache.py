@@ -97,6 +97,7 @@ def execute():
     )
     cached = [name for name in cached if name not in sourced]
 
+    repoint_charts_reading_their_own_cache()
     charted = (
         set(frappe.get_all(CHART, filters={"query": ("in", cached)}, pluck="query")) if cached else set()
     )
@@ -134,6 +135,22 @@ def execute():
         print(f"  kept {name}: a chart reads it")
     for name in sorted(alerted):
         print(f"  kept {name}: an alert watches it")
+
+
+def repoint_charts_reading_their_own_cache() -> None:
+    """Point a chart whose query is its own cache at the query the cache reads.
+
+    Such a chart showed the cache's rows. Derived from the cache, it would
+    apply its config a second time, to columns the first pass already
+    summarized. The cache is its source query with the chart's config applied,
+    so the chart derives the same rows from that source.
+    """
+    for chart, cache in frappe.db.sql(f"select name, query from `tab{CHART}` where query = `{FIELD}`"):
+        operations = frappe.parse_json(frappe.db.get_value(QUERY, cache, "operations")) or []
+        table = (operations[0].get("table") or {}) if operations else {}
+        source = table.get("query_name") if table.get("type") == "query" else None
+        if source and source != cache and frappe.db.exists(QUERY, source):
+            frappe.db.set_value(CHART, chart, "query", source, update_modified=False)
 
 
 def log_runs_under_chart_queries(cached: list[str]) -> None:

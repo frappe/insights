@@ -185,6 +185,26 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.get_value(DT.CHART, reader.name, "query"), cache)
 
     # @feature upgrade.cached-queries-removed
+    def test_a_chart_reading_its_own_cache_reads_the_query_the_cache_read(self):
+        """Its rows were the cache's: the source with the chart's config applied.
+        Read from the cache, the config would summarize what is already summarized."""
+        chart, cache = self.cached_query()
+        source = create_test_query(OWNER, self.workbook, title="Chart Query Cache Test Source")
+        operations = [
+            {
+                "type": "source",
+                "table": {"type": "query", "workbook": self.workbook, "query_name": source.name},
+            }
+        ]
+        frappe.db.set_value(QUERY, cache, "operations", frappe.as_json(operations))
+        frappe.db.set_value(CHART, chart, "query", cache)
+
+        retire()
+
+        self.assertEqual(frappe.db.get_value(CHART, chart, "query"), source.name)
+        self.assertFalse(frappe.db.exists(QUERY, cache))
+
+    # @feature upgrade.cached-queries-removed
     def test_a_cache_another_query_sources_is_kept(self):
         """A cache a query reads is not a cache any more, and the delete is
         forced: it would take the reader's source with it."""
