@@ -181,6 +181,12 @@ function parts(point: string) {
 									@click="openReference(item)"
 								/>
 								<Button
+									v-else-if="item.form_url"
+									variant="ghost"
+									:label="__('Open')"
+									:href="item.form_url"
+								/>
+								<Button
 									v-if="item.action && item.can_fix"
 									:label="FIX_LABELS[item.action]"
 									:loading="pending === item.name"

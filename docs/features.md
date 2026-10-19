@@ -479,6 +479,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.v3-users-welcomed | A user of Insights 3 sees the upgrade dialog once after the upgrade, and a user new to Insights 4 never does. |
 | upgrade.attention-items | What the upgrade could not carry over waits as an item: an admin sees every open item, anyone else only their own, and either dismisses it. |
 | upgrade.attention-fix | An item's Fix applies its fix with the user's own permission on what the item names: it shares a workbook back, or deletes a template copy. |
+| upgrade.site-data-follows-desk | After the upgrade, an admin sees each user who lost site rows a team gave them, and each Table Restriction on a site table that stopped applying, with the desk fix for each. |
 
 ## tooling
 

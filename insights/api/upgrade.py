@@ -23,8 +23,20 @@ def get_upgrade_items():
     items = [item for item in items if item.reference_doctype not in gone]
     for item in items:
         item.workbook = reference_workbook(item)
+        item.form_url = form_url(item)
         item.can_fix = can_fix(item)
     return items
+
+
+def form_url(item) -> str | None:
+    """The desk form of a reference the app has no page for, such as a user."""
+    if (
+        item.workbook
+        or not item.reference_name
+        or not frappe.db.exists(item.reference_doctype, item.reference_name)
+    ):
+        return None
+    return frappe.utils.get_url_to_form(item.reference_doctype, item.reference_name)
 
 
 def can_fix(item) -> bool:

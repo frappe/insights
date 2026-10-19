@@ -29,6 +29,8 @@ insights.patches.close_dashboard_layout_gaps
 # after the number card patches: this one mints a reading's id, which those patches read
 insights.patches.normalize_chart_configs
 insights.patches.set_visibility_from_org_shares
+# before the setting it reads is deleted
+insights.patches.report_site_data_follows_desk
 insights.patches.retire_site_apply_user_permissions
 insights.patches.retire_content_permission_user
 insights.patches.copy_cross_workbook_query_sources
