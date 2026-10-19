@@ -20,6 +20,7 @@ SITE_DB = "Site DB"
 PREFIX = "Not Permitted Test"
 WORKBOOK_TITLE = f"{PREFIX} Workbook"
 READER = "not-permitted-reader@test.com"
+SHARED_READER = "not-permitted-shared-reader@test.com"
 
 # an Insights User cannot read these on a stock site: a doctype, and a child
 # table whose only parent is also unreadable
@@ -1063,20 +1064,42 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         self.assertEqual(answer["rows"], [])
 
 
-class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCannotRead):
-    """A dashboard with nothing the reader may see gets the same answer as
-    content that does not exist. A partly permitted dashboard opens with its
-    Not Permitted cards in place, so the layout never shifts."""
+class ADashboardWithNothingPermittedSaysNoAccess(ContentOverATableTheReaderCannotRead):
+    """A dashboard with nothing the reader may see is refused, and names the
+    doctypes its charts need. A partly permitted dashboard opens with its Not
+    Permitted cards in place, so the layout never shifts."""
 
-    # @feature permissions.not-found-when-nothing-is-permitted
-    def test_a_dashboard_every_chart_of_which_is_not_permitted_is_not_found(self):
+    # @feature permissions.no-access-when-nothing-is-permitted
+    def test_a_dashboard_every_chart_of_which_is_not_permitted_names_what_they_need(self):
         with as_user(READER):
-            with self.assertRaisesRegex(frappe.DoesNotExistError, "Not Found"):
-                get_dashboard(self.refused_board)
+            answer = get_dashboard(self.refused_board)
 
-    # @feature permissions.not-found-when-nothing-is-permitted
+        self.assertEqual(answer, {"not_permitted": {"doctypes": ["Deleted Document"]}})
+
+    # @feature permissions.share-dashboard permissions.no-access-when-nothing-is-permitted
+    def test_a_dashboard_shared_with_a_user_shows_its_charts_under_their_own_permissions(self):
+        """A share on a dashboard reaches its charts. Their data stays the
+        recipient's own: a board over a table they may not read names it."""
+        from insights.tests.permissions_utils import update_dashboard_access
+
+        create_user(SHARED_READER, roles="Insights User")
+        self.addCleanup(delete_users, SHARED_READER)
+        plain_board = self.create_dashboard("Shared Plain", [self.plain_chart])
+        for board in (plain_board, self.refused_board):
+            update_dashboard_access(board, [SHARED_READER])
+
+        with as_user(SHARED_READER), db_connections():
+            board = get_dashboard(plain_board)
+            data = get_chart_data(self.plain_chart, plain_board)
+            refused = get_dashboard(self.refused_board)
+
+        self.assertEqual([chart["name"] for chart in board["charts"]], [self.plain_chart])
+        self.assertNotIn("not_permitted", data)
+        self.assertEqual(refused, {"not_permitted": {"doctypes": ["Deleted Document"]}})
+
+    # @feature permissions.no-access-when-nothing-is-permitted
     def test_a_dashboard_every_chart_of_which_is_not_permitted_opens_for_its_writer(self):
-        """Not Found is only for readers. A writer opens the dashboard to fix
+        """The refusal is only for readers. A writer opens the dashboard to fix
         it."""
         frappe.share.add(DT.WORKBOOK, self.workbook, user=READER, read=1, write=1, notify=0)
         self.addCleanup(frappe.share.add, DT.WORKBOOK, self.workbook, user=READER, read=1, write=0, notify=0)
@@ -1086,12 +1109,12 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
 
         self.assertEqual(board["items"][0]["chart"], self.unreadable_chart)
 
-    # @feature permissions.not-found-when-nothing-is-permitted
+    # @feature permissions.no-access-when-nothing-is-permitted
     def test_a_dashboard_whose_every_chart_a_user_permission_refuses_opens_for_its_writer(self):
         """A User Permission on `Insights Query v3` refuses every chart, because a
         chart links its query. It does not refuse the dashboard, which links
-        only its workbook. The reader gets Not Found. A writer opens the
-        dashboard, whatever refused its charts."""
+        only its workbook. The reader is refused, with no doctype to name. A
+        writer opens the dashboard, whatever refused its charts."""
         other_query = frappe.db.get_value(DT.CHART, self.permlevel_chart, "query")
         permission = frappe.get_doc(
             {"doctype": "User Permission", "user": READER, "allow": DT.QUERY, "for_value": other_query}
@@ -1100,8 +1123,8 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
             frappe.delete_doc, "User Permission", permission.name, force=True, ignore_permissions=True
         )
 
-        with as_user(READER), self.assertRaisesRegex(frappe.DoesNotExistError, "Not Found"):
-            get_dashboard(self.partly_board)
+        with as_user(READER):
+            self.assertEqual(get_dashboard(self.partly_board), {"not_permitted": {"doctypes": []}})
 
         frappe.share.add(DT.WORKBOOK, self.workbook, user=READER, read=1, write=1, notify=0)
         self.addCleanup(frappe.share.add, DT.WORKBOOK, self.workbook, user=READER, read=1, write=0, notify=0)
@@ -1142,10 +1165,10 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
             answer = get_chart_data(self.unreadable_chart)
         self.assertEqual(answer["not_permitted"], {"doctypes": ["Deleted Document"]})
 
-        with as_user(READER), self.assertRaisesRegex(frappe.DoesNotExistError, "Not Found"):
-            get_dashboard(self.refused_board)
+        with as_user(READER):
+            self.assertIn("not_permitted", get_dashboard(self.refused_board))
 
-    # @feature permissions.not-found-when-nothing-is-permitted
+    # @feature permissions.no-access-when-nothing-is-permitted
     def test_a_dashboard_whose_table_desk_shares_one_document_of_opens(self):
         """A share also counts as desk read permission, because the engine reads
         shared rows through `frappe.get_list`. A reader with no role on the
@@ -1170,7 +1193,7 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
 
         self.assertEqual(board["items"][0]["chart"], self.unreadable_chart)
 
-    # @feature permissions.not-found-when-nothing-is-permitted
+    # @feature permissions.no-access-when-nothing-is-permitted
     def test_a_dashboard_with_one_permitted_chart_opens_whole(self):
         with as_user(READER):
             board = get_dashboard(self.partly_board)
@@ -1180,10 +1203,10 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
             [self.unreadable_chart, self.plain_chart],
         )
 
-    # @feature permissions.not-found-when-nothing-is-permitted
+    # @feature permissions.no-access-when-nothing-is-permitted
     def test_a_dashboard_whose_charts_are_not_configured_yet_opens(self):
         """A chart with no query refuses nobody, so it cannot make the dashboard
-        Not Found, for its owner or for a reader."""
+        refused, for its owner or for a reader."""
         unconfigured = frappe.get_doc(
             {
                 "doctype": DT.CHART,
@@ -1199,7 +1222,7 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
         with as_user(READER):
             self.assertEqual(get_dashboard(board)["items"][0]["chart"], unconfigured.name)
 
-    # @feature permissions.not-found-when-nothing-is-permitted
+    # @feature permissions.no-access-when-nothing-is-permitted
     def test_a_dashboard_with_no_charts_at_all_opens(self):
         empty = self.create_dashboard("Empty", [])
 

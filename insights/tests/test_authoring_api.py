@@ -677,10 +677,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         # the name a preview runs under tells the engine which queries the
         # execution is already authorized for, so a name someone else's
-        # document holds is refused, whatever that document is. A chart the
-        # caller may not write gets Not Found, as in the view
-        for name, refusal in ((chart.name, frappe.DoesNotExistError), (query.name, frappe.PermissionError)):
-            with self.assertRaises(refusal):
+        # document holds is refused, whatever that document is
+        for name in (chart.name, query.name):
+            with self.assertRaises(frappe.PermissionError):
                 self.preview(
                     OUTSIDER,
                     chart_type="Table",

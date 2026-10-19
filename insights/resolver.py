@@ -20,7 +20,7 @@ import frappe
 from frappe import _
 from frappe.permissions import has_user_permission
 
-from insights.not_permitted import has_permitted_chart
+from insights.not_permitted import refuse, refused_doctypes
 from insights.permissions import has_doc_permission
 
 DASHBOARD = "Insights Dashboard v3"
@@ -57,33 +57,45 @@ def resolve(doctype: str, reference: str) -> str | None:
 def resolve_for_read(doctype: str, reference: str) -> str:
     """Return the document name a reference points at, for a user who may read it.
 
-    Raises `frappe.DoesNotExistError` when the reference resolves to nothing or
-    to a document the current user cannot read. Both cases raise the same error
-    on purpose, so a read endpoint built on this cannot probe what exists on the
-    site.
+    Raises `frappe.DoesNotExistError` when the reference resolves to nothing,
+    and `frappe.PermissionError` when it names a document the current user may
+    not read. The reader learns that the content exists and nothing else about
+    it: not its title, its workbook or what it shows.
 
-    A dashboard is also Not Found when every chart on it is Not Permitted or
-    unreadable. `has_permitted_chart` checks that without running any chart. It
-    is part of the read check, so it belongs here. A user who may write the
-    dashboard opens it whatever its charts return, because they can fix it.
+    A dashboard on which no chart would run for this reader is refused too:
+    every chart on it is Not Permitted or unreadable. It raises `NotPermitted`
+    with the doctypes its charts need, which the reader may learn because they
+    may read the dashboard. `refused_doctypes` checks that without running any
+    chart. A user who may write the dashboard opens it whatever its charts
+    return, because they can fix it.
     """
     name = resolve(doctype, reference)
-    if not name or not may_read(frappe.get_doc(doctype, name)):
+    if not name:
         not_found()
+    if not may_read(frappe.get_doc(doctype, name)):
+        no_access(doctype)
 
-    if (
-        doctype == DASHBOARD
-        and not frappe.has_permission(DASHBOARD, ptype="write", doc=name)
-        and not has_permitted_chart(name, frappe.session.user)
-    ):
-        not_found()
+    if doctype == DASHBOARD and not frappe.has_permission(DASHBOARD, ptype="write", doc=name):
+        doctypes = refused_doctypes(name, frappe.session.user)
+        if doctypes is not None:
+            refuse(doctypes, None if doctypes else _("You don't have access to the data on this dashboard"))
 
     return name
 
 
 def not_found():
-    """The one answer for content that does not exist and content the caller may not read."""
+    """The answer for a reference that names nothing."""
     frappe.throw(_("Not Found"), exc=frappe.DoesNotExistError)
+
+
+def no_access(doctype: str):
+    """The answer for content the caller may not read."""
+    message = (
+        _("You don't have access to this dashboard")
+        if doctype == DASHBOARD
+        else _("You don't have access to this chart")
+    )
+    frappe.throw(message, exc=frappe.PermissionError)
 
 
 def may_read(doc, user: str | None = None) -> bool:

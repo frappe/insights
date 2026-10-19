@@ -34,3 +34,15 @@ export function refusalHeadline() {
 export function refusalDetail(doctypes: string[] | undefined, fallback: string) {
 	return doctypes?.length ? __('Needs read access to {0}', doctypes.join(', ')) : fallback
 }
+
+/**
+ * Why the server refused to hand over a dashboard or chart, if it did. A
+ * reference that names nothing is Not Found. Content the reader may not read is
+ * No Access, and the reader learns nothing else about it.
+ */
+export type Refusal = 'notFound' | 'noAccess'
+
+export function refusalOf(error: any): Refusal | undefined {
+	if (error?.exc_type === 'DoesNotExistError') return 'notFound'
+	if (error?.exc_type === 'PermissionError') return 'noAccess'
+}

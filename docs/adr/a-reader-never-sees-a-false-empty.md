@@ -4,7 +4,7 @@ Date: 2026-09-19
 
 ## Status
 
-Accepted. Built in `desk-dashboards` tickets 13 to 17.
+Accepted. Built in `desk-dashboards` tickets 13 to 17. Its Not Found answer for a dashboard with nothing permitted is replaced by `a-refused-reader-is-told-so.md`.
 
 ## Context
 

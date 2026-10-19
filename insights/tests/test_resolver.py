@@ -77,40 +77,30 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
         with self.assertRaises(ValueError):
             resolve(DT.QUERY, "anything")
 
-    # @feature permissions.denied-is-not-found
-    def test_unknown_reference_and_denied_read_give_the_same_answer(self):
+    # @feature permissions.denied-says-no-access
+    def test_a_denied_read_says_no_access_and_an_unknown_reference_says_not_found(self):
         dashboard = self.make_dashboard(title="Resolver Test Denied Dashboard")
 
         with self.as_user(USER_2):
             self.assertFalse(frappe.has_permission(DT.DASHBOARD, ptype="read", doc=dashboard.name))
 
-            errors = []
-            for reference in (
-                dashboard.name,  # exists, not readable by USER_2
-                "resolver-test-denied-dashboard",  # same document, by its route
-                "no-such-route",
-                frappe.generate_hash(length=10),  # no such docname
-            ):
-                with self.assertRaises(frappe.DoesNotExistError) as raised:
+            # the same document, by its docname and by its route
+            for reference in (dashboard.name, "resolver-test-denied-dashboard"):
+                with self.assertRaisesRegex(
+                    frappe.PermissionError, "You don't have access to this dashboard"
+                ):
                     resolve_for_read(DASHBOARD, reference)
-                errors.append(raised.exception)
 
-            self.assertEqual({type(error) for error in errors}, {frappe.DoesNotExistError})
-            self.assertEqual(len({str(error) for error in errors}), 1)
+            for reference in ("no-such-route", frappe.generate_hash(length=10)):
+                with self.assertRaisesRegex(frappe.DoesNotExistError, "Not Found"):
+                    resolve_for_read(DASHBOARD, reference)
 
-        # Only resolve_for_read hides a denied document. Plain resolve still
+        # Only resolve_for_read refuses a denied document. Plain resolve still
         # returns the name, for server code that has already checked access.
         with self.as_user(USER_2):
             self.assertEqual(resolve(DASHBOARD, dashboard.name), dashboard.name)
 
-    # @feature permissions.denied-is-not-found
-    def test_denied_read_answers_not_found(self):
-        dashboard = self.make_dashboard(title="Resolver Test Error Shape")
-
-        with self.as_user(USER_2), self.assertRaises(frappe.DoesNotExistError):
-            resolve_for_read(DASHBOARD, dashboard.name)
-
-    # @feature permissions.denied-is-not-found
+    # @feature permissions.denied-says-no-access
     def test_a_user_permission_narrows_the_view_too(self):
         """`get_doc`, `can_write` and the list query all apply User Permissions.
         The view must apply them too, or it shows what the rest of the site
@@ -137,7 +127,7 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
 
         with self.as_user(USER_2):
             self.assertFalse(frappe.has_permission(DT.DASHBOARD, ptype="read", doc=dashboard.name))
-            with self.assertRaises(frappe.DoesNotExistError):
+            with self.assertRaises(frappe.PermissionError):
                 resolve_for_read(DASHBOARD, dashboard.name)
             self.assertEqual(resolve_for_read(DASHBOARD, other.name), other.name)
 

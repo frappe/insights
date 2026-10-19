@@ -173,7 +173,9 @@ onBeforeUnmount(() => clearTimeout(veilTimer))
 // server refused puts it back in — nothing is rendered, and the space the chart
 // would take is where the reason is printed.
 const state = computed(() => {
-	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
+	if (props.chart.failed) {
+		return props.chart.refusal || (props.chart.serverBusy ? 'serverBusy' : 'failed')
+	}
 	if (props.chart.executing && !hasRows.value) return 'loading'
 	// nothing ran, so config errors and an empty result do not apply
 	if (props.chart.notPermitted) return 'notPermitted'
@@ -211,6 +213,8 @@ const unconfigured = computed(() => {
 const headline = computed(() => {
 	if (state.value === 'serverBusy') return __('The server is busy')
 	if (state.value === 'failed') return __('Could not load')
+	if (state.value === 'notFound') return __('Chart not found')
+	if (state.value === 'noAccess') return __("You don't have access to this chart")
 	// Frappe's term. It is a card state like No data and Could not load, not a
 	// layout of its own, so every state reads the same way.
 	if (state.value === 'notPermitted') return refusalHeadline()
@@ -237,7 +241,9 @@ const detail = computed(() => {
 const failure = computed<ChartFailure | null>(() =>
 	headline.value
 		? {
-				...(state.value === 'notPermitted' ? { kind: 'notPermitted' as const } : {}),
+				...(state.value === 'notPermitted' || state.value === 'noAccess'
+					? { kind: 'notPermitted' as const }
+					: {}),
 				headline: headline.value,
 				detailText: detail.value || undefined,
 		  }
@@ -368,7 +374,7 @@ function reportSegment(target: DrillDownTarget) {
 					     gets no retry: the reader cannot change their own
 					     permissions. -->
 					<Button
-						v-if="state !== 'notPermitted'"
+						v-if="state === 'failed' || state === 'serverBusy'"
 						class="shrink-0"
 						variant="outline"
 						:label="state === 'serverBusy' ? __('Try again') : __('Retry')"

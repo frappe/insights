@@ -202,7 +202,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(response["items"][0]["chart"], chart.name)
         self.assertEqual(response["items"][0]["layout"]["w"], 10)
 
-    # @feature permissions.denied-is-not-found
+    # @feature permissions.denied-says-no-access
     def test_a_dashboard_hands_over_only_the_charts_this_reader_may_read(self):
         """A dashboard's visibility level reaches every chart on it, but a User
         Permission still limits the reader. One on the first chart's query
@@ -215,7 +215,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(DESK_USER):
             response = get_dashboard(dashboard=dashboard.name)
             # `get_chart` refuses the same chart
-            with self.assertRaises(frappe.DoesNotExistError):
+            with self.assertRaises(frappe.PermissionError):
                 get_chart(chart=elsewhere.name, dashboard=dashboard.name)
 
         self.assertEqual([shown["name"] for shown in response["charts"]], [chart.name])
@@ -226,10 +226,11 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(named, [chart.name])
         self.assertNotIn(elsewhere.name, frappe.as_json(response))
 
-    # @feature permissions.denied-is-not-found
-    def test_a_dashboard_with_no_chart_this_reader_may_read_is_not_found(self):
-        """Not Found is the only answer for content a reader may not read. A grid
-        of "Chart not found" cards is not an answer."""
+    # @feature permissions.denied-says-no-access
+    def test_a_dashboard_with_no_chart_this_reader_may_read_says_no_access(self):
+        """A grid of "Chart not found" cards is not an answer. The reader may
+        read the dashboard, so the refusal is an answer and names no doctype:
+        the chart is refused, not its data."""
         _, chart, dashboard = self.make_content(visibility="Everyone")
         elsewhere = self.make_second_chart(dashboard)
 
@@ -249,10 +250,9 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(DESK_USER):
             self.assertTrue(may_read(frappe.get_doc(DT.DASHBOARD, dashboard.name)))
             self.assertFalse(may_read(frappe.get_doc(DT.CHART, elsewhere.name)))
-            with self.assertRaises(frappe.DoesNotExistError):
-                get_dashboard(dashboard=dashboard.name)
+            self.assertEqual(get_dashboard(dashboard=dashboard.name), {"not_permitted": {"doctypes": []}})
 
-    # @feature permissions.denied-is-not-found
+    # @feature permissions.denied-says-no-access
     def test_a_dashboard_whose_charts_are_gone_opens_for_its_author(self):
         """A chart that no longer exists was not refused to the reader. Before a
         chart's delete removed its cells, the delete left a cell that named
@@ -453,10 +453,10 @@ class TestViewAPI(InsightsIntegrationTestCase):
                 }
             ).insert()
 
-        with as_user(DESK_USER), self.assertRaises(frappe.DoesNotExistError):
+        with as_user(DESK_USER), self.assertRaises(frappe.PermissionError):
             get_chart(chart=orphan.name)
 
-    # @feature permissions.denied-is-not-found
+    # @feature permissions.denied-says-no-access
     def test_a_chart_that_is_not_on_the_dashboard_is_not_found(self):
         _, _, dashboard = self.make_content(visibility="Everyone")
         _, other_chart, _ = self.make_content(visibility="Everyone", title="View API Other Dashboard")
@@ -466,34 +466,30 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
     # denial leaks nothing
 
-    # @feature permissions.denied-is-not-found
-    def test_an_outsider_gets_the_same_answer_as_a_missing_reference(self):
+    # @feature permissions.denied-says-no-access
+    def test_an_outsider_is_told_only_that_they_have_no_access(self):
         _, chart, dashboard = self.make_content(visibility="Private")
 
-        errors = []
         with as_user(OUTSIDER):
-            for reference in [dashboard.name, dashboard.route, *MISSING_REFERENCES]:
-                with self.assertRaises(frappe.DoesNotExistError) as raised:
+            for reference in [dashboard.name, dashboard.route]:
+                with self.assertRaises(frappe.PermissionError) as raised:
                     get_dashboard(dashboard=reference)
-                errors.append(raised.exception)
+                self.assertNotIn(dashboard.title, str(raised.exception))
+            for read in (get_chart, get_chart_data):
+                with self.assertRaises(frappe.PermissionError) as raised:
+                    read(chart=chart.name)
+                self.assertNotIn(chart.title, str(raised.exception))
 
-            for reference in [chart.name, *MISSING_REFERENCES]:
-                with self.assertRaises(frappe.DoesNotExistError) as raised:
-                    get_chart(chart=reference)
-                errors.append(raised.exception)
-
-                with self.assertRaises(frappe.DoesNotExistError) as raised:
-                    get_chart_data(chart=reference)
-                errors.append(raised.exception)
-
-        self.assertEqual({type(error) for error in errors}, {frappe.DoesNotExistError})
-        self.assertEqual(len({str(error) for error in errors}), 1)
+            for reference in MISSING_REFERENCES:
+                for read in (get_dashboard, get_chart, get_chart_data):
+                    with self.assertRaises(frappe.DoesNotExistError):
+                        read(**{"dashboard" if read is get_dashboard else "chart": reference})
 
     # @feature shared.dashboard-link shared.chart-on-public-dashboard
     def test_a_guest_reads_public_content_only(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")
 
-        with as_user(GUEST), self.assertRaises(frappe.DoesNotExistError):
+        with as_user(GUEST), self.assertRaises(frappe.PermissionError):
             get_dashboard(dashboard=dashboard.name)
 
         # saved, not db_set: the save refuses a Public dashboard with a chart that
@@ -814,7 +810,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
                 values = forged.get_distinct_column_values("Description", filter_context=context)
                 self.assertEqual(sorted(values), sorted(OWNER_TODOS), claim)
 
-    # @feature permissions.chart-cannot-link-unreadable-query permissions.denied-is-not-found
+    # @feature permissions.chart-cannot-link-unreadable-query permissions.denied-says-no-access
     def test_a_filter_cannot_read_a_query_the_dashboard_does_not_reach(self):
         """A filter link names a query, and anyone who may save the dashboard can
         write it. A link applies only if the card already reads the query it
@@ -952,7 +948,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
             with self.assertRaises(frappe.PermissionError):
                 query_doc.get_distinct_column_values("description")
 
-    # @feature permissions.denied-is-not-found
+    # @feature permissions.denied-says-no-access
     def test_filter_values_answer_like_any_other_reference(self):
         _, _, dashboard = self.make_content(visibility="Everyone")
 
@@ -961,7 +957,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
 
         _, _, private = self.make_content(visibility="Private", title="View API Private Dashboard")
 
-        with as_user(OUTSIDER), self.assertRaises(frappe.DoesNotExistError):
+        with as_user(OUTSIDER), self.assertRaises(frappe.PermissionError):
             get_filter_values(dashboard=private.name, filter_name="Description")
 
     # what an editor is told
@@ -1069,8 +1065,8 @@ class TestViewAPI(InsightsIntegrationTestCase):
         from insights.permissions import can_read_rows
 
         chart, _ = self.paged_content(visibility="Public")
-        # the dashboard is Not Found for a guest with no permitted chart
-        # (`has_permitted_chart`), but the chart's own link still reaches it
+        # the dashboard is refused to a guest with no permitted chart
+        # (`refused_doctypes`), but the chart's own link still reaches it
         chart.db_set("visibility", "Public", update_modified=False)
 
         def as_its_reader(box_off):

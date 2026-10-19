@@ -241,7 +241,7 @@ class TestAgentLineage(InsightsIntegrationTestCase):
         with self.assertRaises(TypeError):
             downstream_queries(self.base)
 
-    # @feature permissions.lineage-respects-access permissions.denied-is-not-found
+    # @feature permissions.lineage-respects-access
     def test_a_query_the_caller_may_not_read_is_not_found(self):
         with self.assertRaises(frappe.DoesNotExistError):
             self.describe(READER, self.hidden)

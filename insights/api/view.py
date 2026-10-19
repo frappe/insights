@@ -8,9 +8,9 @@ endpoints are `frappe.whitelist(allow_guest=True)`. The permission controller
 decides who reads what through `visibility`; there is no role check here. A
 guest reads only `Public` content, through the same code path as everyone else.
 
-Every reference goes through `resolve_for_read`, which answers Not Found for a
-missing reference and a refused one alike. Nothing below checks the read again
-or catches its error, because either would reveal which case it was.
+Every reference goes through `resolve_for_read`. It answers Not Found for a
+reference that names nothing, and no access for one the reader may not read.
+Nothing below checks the read again.
 
 Responses include only what rendering needs. Operations, SQL and the queries
 behind a chart never leave the server: the client names the chart, and the
@@ -43,10 +43,14 @@ QUERY = "Insights Query v3"
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
+@answers_refusal(dict)
 def get_dashboard(dashboard: str, surface: str | None = None):
     """A dashboard with what a View needs: its layout, and what the reader may do with it.
 
     `surface` names the page the View is on, for the `dashboard_viewed` event.
+
+    A dashboard the reader may read, but on which no chart would run for them,
+    answers only `not_permitted`, with the doctypes its charts need.
     """
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
     doc.track_view(surface)
@@ -59,7 +63,7 @@ def get_dashboard(dashboard: str, surface: str | None = None):
     # found", which is not a card state. Its docname would also reveal the
     # refused chart: in a standard workbook, a docname is a readable title.
     # `resolve_for_read` alone decides whether a dashboard with no readable
-    # chart is Not Found. It exempts writers.
+    # chart is refused. It exempts writers.
     charts = charts_on(items)
     readable = {chart.name for chart in charts}
 
@@ -517,7 +521,7 @@ def card_source(chart: str, dashboard: str | None, column: str):
     """The chart of a card filter, and the query and column the filter applies to.
 
     None when the column has no values to list. A column the card does not
-    show is Not Found, like any other reference the caller may not read.
+    show is Not Found.
     """
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
     query, column_name, card_filters = card_filter_source(doc.name, column)
@@ -534,8 +538,7 @@ def resolve_chart(chart: str, dashboard: str | None) -> str:
     A chart on a dashboard is read through the dashboard's visibility: the
     controller grants the dashboard's level to its charts, so the read check
     below is enough. The dashboard must resolve first, and the chart must be on
-    it. Otherwise the answer is Not Found, as for any other reference the
-    caller may not read.
+    it. A chart that is not on it is Not Found there.
     """
     if not dashboard:
         return resolve_for_read(CHART, chart)

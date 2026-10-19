@@ -10,7 +10,9 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 	call: (method: string, args: any) => {
 		calls.push({ method, args })
 		if (method === 'insights.api.view.get_dashboard') {
-			return Promise.resolve(answer.dashboard)
+			return answer.dashboard instanceof Error
+				? Promise.reject(answer.dashboard)
+				: Promise.resolve(answer.dashboard)
 		}
 		if (answer.refuseSave && method === 'frappe.client.set_value') {
 			return Promise.reject(Object.assign(new Error('refused'), { status: 417 }))
@@ -142,6 +144,43 @@ describe('a dashboard opened a second time', () => {
 		expect(calls).toHaveLength(asked)
 		expect(second.chartView('chart-1')).toBe(first.chartView('chart-1'))
 		expect(second.chartView('chart-1')?.doc.chart_type).toBe('Bar')
+	})
+})
+
+// The server tells a missing dashboard from one the reader may not read, and
+// says nothing else about the second.
+describe('a dashboard the reader may not open', () => {
+	const refused = (exc_type: string) => Object.assign(new Error(exc_type), { exc_type })
+
+	// @feature permissions.denied-says-no-access
+	it('says Not Found for a reference that names nothing, and No Access for a refusal', async () => {
+		answer.dashboard = refused('DoesNotExistError')
+		const missing = await opened('missing')
+		answer.dashboard = refused('PermissionError')
+		const denied = await opened('denied')
+
+		expect([missing.notFound, missing.noAccess, missing.failed]).toEqual([
+			true,
+			undefined,
+			false,
+		])
+		expect([denied.notFound, denied.noAccess, denied.failed]).toEqual([
+			false,
+			{ doctypes: [] },
+			false,
+		])
+		expect(denied.title).toBe('')
+		expect(dataCalls()).toHaveLength(0)
+	})
+
+	// @feature permissions.no-access-when-nothing-is-permitted
+	it('names the doctypes its charts need when the reader may read none of their data', async () => {
+		answer.dashboard = { not_permitted: { doctypes: ['Sales Invoice'] } }
+		const view = await opened('refused-data')
+
+		expect(view.noAccess).toEqual({ doctypes: ['Sales Invoice'] })
+		expect([view.notFound, view.failed, view.items]).toEqual([false, false, []])
+		expect(dataCalls()).toHaveLength(0)
 	})
 })
 

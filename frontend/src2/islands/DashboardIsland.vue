@@ -23,17 +23,17 @@ const shown = useDashboardView(() => placedDashboard(props), 'desk')
 
 const body = ref<InstanceType<typeof DashboardBody>>()
 
-// There is no title while the dashboard loads or when it is Not Found. The host
-// then keeps its current page title.
+// There is no title while the dashboard loads, or when it is Not Found or No
+// Access. The host then keeps its current page title.
 watchEffect(() => emit('title', shown.title || null))
 
-// No actions while the dashboard loads or when it is Not Found. Emit a new array
+// No actions while the dashboard loads, or when it is Not Found or No Access. Emit a new array
 // each time: the host runs its own copy of Vue and cannot track our reactive
 // objects. An action with an `href` already holds the absolute Insights URL
 // that the island's router resolved.
 watchEffect(() => {
 	const instance = body.value
-	if (!instance || shown.loading || shown.notFound) return emit('actions', [])
+	if (!instance || shown.loading || shown.notFound || shown.noAccess) return emit('actions', [])
 	emit(
 		'actions',
 		instance.actions.map((action: DashboardAction) => ({ ...action })),

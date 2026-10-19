@@ -2,13 +2,14 @@
 import { computed, ref, type Component } from 'vue'
 import { downloadImage } from '../helpers'
 import { resolveHref } from '../helpers/navigation'
+import { refusalDetail } from '../not_permitted'
 import { __ } from '../translation'
 import type { BreakpointKey, Layout } from '../types/workbook.types'
 import { BASE_BREAKPOINT, BREAKPOINTS } from './grid_placement'
 import type { DashboardAction, DashboardView } from './view'
 
 // A dashboard's content on every page that shows one: the grid, with its filter
-// cells, and the loading, Not Found and error states.
+// cells, and the loading, Not Found, No Access and error states.
 //
 // It renders no header. Each page renders its own header above this. The SPA
 // page and the builder read the actions through a template ref, and the island
@@ -87,6 +88,18 @@ function exportImage() {
 			class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
 		>
 			{{ __('Dashboard not found') }}
+		</div>
+
+		<div
+			v-else-if="dashboard.noAccess"
+			class="flex w-full flex-1 flex-col items-center justify-center gap-1 p-4 text-center"
+		>
+			<p class="text-base-medium text-ink-gray-8">
+				{{ __("You don't have access to this dashboard") }}
+			</p>
+			<p v-if="dashboard.noAccess.doctypes.length" class="text-p-sm text-ink-gray-5">
+				{{ refusalDetail(dashboard.noAccess.doctypes, '') }}
+			</p>
 		</div>
 
 		<div
