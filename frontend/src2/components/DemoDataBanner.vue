@@ -13,7 +13,8 @@ const show = computed(
 		session.initialized &&
 		!dismissed.value &&
 		session.user.is_admin &&
-		!session.user.has_demo_data,
+		!session.user.has_demo_data &&
+		!session.user.has_workbooks,
 )
 
 async function setupDemoData() {

@@ -120,10 +120,13 @@ def get_user_info():
     locale = user.get("language") or frappe.db.get_single_value("System Settings", "language") or "en"
 
     has_demo_data = False
+    has_workbooks = False
     if is_admin:
         from insights.setup.setup_wizard import check_demo_data_exists
 
         has_demo_data = check_demo_data_exists()
+        # the workbooks an app ships are not the site's own
+        has_workbooks = bool(frappe.db.exists("Insights Workbook", {"is_standard": 0}))
 
     return {
         "email": frappe.session.user,
@@ -137,6 +140,7 @@ def get_user_info():
         "locale": locale,
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
+        "has_workbooks": has_workbooks,
         "upgraded_from_v3": upgraded_from_v3(),
         "upgrade_item_count": frappe.db.count(UPGRADE_ITEM, open_item_filters()),
     }
