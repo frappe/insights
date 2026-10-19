@@ -6,9 +6,11 @@ opens must be this site's, not one a request header named. And the key must open
 the documents that image already shows, not every document a public link could.
 """
 
+import io
 from unittest.mock import patch
 
 import frappe
+from PIL import Image
 from werkzeug.test import EnvironBuilder
 
 from insights.api.view import get_dashboard
@@ -170,6 +172,25 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
         frappe.db.set_value(DT.WORKBOOK, self.other_workbook, "is_standard", 1)
         self.addCleanup(frappe.db.set_value, DT.WORKBOOK, self.other_workbook, "is_standard", 0)
         self.assertEqual(self.render(self.other_dashboard), {})
+
+    # @feature dashboard.preview-image
+    def test_the_patch_deletes_the_preview_file_of_an_apps_dashboard(self):
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
+            create_preview_file,
+        )
+        from insights.patches import clear_standard_dashboard_previews
+
+        image = io.BytesIO()
+        Image.new("RGB", (2, 2)).save(image, "JPEG")
+        file_url = create_preview_file(image.getvalue(), self.other_dashboard)
+        frappe.db.set_value(DT.DASHBOARD, self.other_dashboard, "preview_image", f"{file_url}?ab12")
+        frappe.db.set_value(DT.WORKBOOK, self.other_workbook, "is_standard", 1)
+        self.addCleanup(frappe.db.set_value, DT.WORKBOOK, self.other_workbook, "is_standard", 0)
+
+        clear_standard_dashboard_previews.execute()
+
+        self.assertIsNone(frappe.db.get_value(DT.DASHBOARD, self.other_dashboard, "preview_image"))
+        self.assertFalse(frappe.db.exists("File", {"file_url": file_url}))
 
     # @feature dashboard.preview-image
     def test_a_page_that_does_not_answer_is_not_captured(self):
