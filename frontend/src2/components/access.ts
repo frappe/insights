@@ -7,12 +7,10 @@ import { __ } from '../translation'
 /** Where a listed document comes from, relative to the current user. */
 export type AccessSource = 'created' | 'shared' | 'others'
 
-const DEFAULT_SOURCES: AccessSource[] = ['created', 'shared']
-
 /**
- * The Access quick filter. Nothing chosen means the default, created and
- * shared, like any other quick filter left empty; only admins get "others".
- * The choice is kept in the browser under `storageKey`.
+ * The Access quick filter. Nothing chosen means every source the user has:
+ * created and shared, and for an admin "others" too, so colleagues' work does
+ * not look lost. The choice is kept in the browser under `storageKey`.
  */
 export function useAccessSources(storageKey: string) {
 	const options = computed(() => {
@@ -27,7 +25,9 @@ export function useAccessSources(storageKey: string) {
 	const shown = computed(() =>
 		selected.value.filter((source) => options.value.some((option) => option.value === source)),
 	)
-	const sources = computed(() => (shown.value.length ? shown.value : DEFAULT_SOURCES))
+	const sources = computed(() =>
+		shown.value.length ? shown.value : options.value.map((option) => option.value),
+	)
 	return { options, selected, shown, sources }
 }
 

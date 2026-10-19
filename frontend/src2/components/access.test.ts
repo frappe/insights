@@ -1,8 +1,9 @@
 import { Building2, Lock, ShieldCheck, Users } from 'lucide-vue-next'
 import { describe, expect, it, vi } from 'vitest'
-import { access } from './access'
+import { access, useAccessSources } from './access'
 
-vi.mock('../session', () => ({ default: { user: {} } }))
+const session = vi.hoisted(() => ({ user: { is_admin: false } }))
+vi.mock('../session', () => ({ default: session }))
 
 const name = (email: string) => email.split('@')[0]
 
@@ -32,5 +33,19 @@ describe('who a workbook is shared with', () => {
 			label: 'Everyone',
 		})
 		expect(access({}, name)).toEqual({ icon: Lock, label: 'Private' })
+	})
+})
+
+describe('the Access filter left empty', () => {
+	// @feature workbook.list
+	it("lists an admin's colleagues' work too", () => {
+		session.user.is_admin = true
+		expect(useAccessSources('test:admin-access').sources.value).toEqual([
+			'created',
+			'shared',
+			'others',
+		])
+		session.user.is_admin = false
+		expect(useAccessSources('test:user-access').sources.value).toEqual(['created', 'shared'])
 	})
 })
