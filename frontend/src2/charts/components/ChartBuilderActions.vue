@@ -4,7 +4,6 @@ import {
 	Copy,
 	CopyPlus,
 	LayoutDashboard,
-	ExternalLink,
 	ImageDown,
 	MoreHorizontal,
 	RefreshCcw,
@@ -88,12 +87,6 @@ const moreActions = computed(() =>
 					session.user.has_desk_access &&
 					!props.chart.islocal &&
 					Boolean(props.chart.doc.can_show_in_desk),
-			},
-			{
-				label: __('Open in Desk'),
-				icon: h(ExternalLink, { class: 'h-3 w-3 text-ink-gray-6', strokeWidth: 1.5 }),
-				onClick: () => props.chart.openInDesk(),
-				condition: () => session.user.has_desk_access,
 			},
 		] as MoreAction[]
 	)

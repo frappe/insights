@@ -288,7 +288,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | workbook.list-everyone | An admin also lists the workbooks nobody gave them. |
 | workbook.list-filter | A user filters workbooks by title, or by a query, chart, dashboard, data source or table they contain. |
 | workbook.home-recent | The workbook list puts the workbook modified last first. |
-| workbook.open-in-desk | An admin opens a workbook, chart or query in Desk. |
+| workbook.open-in-desk | An admin opens a workbook in Desk. A chart goes to desk through Show in Desk. |
 | workbook.read-only-shield | A viewer sees the workbook marked read-only. |
 
 ## standard

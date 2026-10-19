@@ -139,7 +139,6 @@ function makeChart(name: string) {
 		getDependentQueryColumns,
 
 		copy: copyChart,
-		openInDesk: () => window.open(`/app/insights-chart-v3/${chart.doc.name}`, '_blank'),
 		showInDesk,
 
 		history,
