@@ -211,6 +211,8 @@ class InsightsWorkbook(Document):
         and rewrites the references to them.
         """
         contents = workbook_contents(workbook_data)
+        if contents.get("wrapped"):
+            upgrade_v3_contents(contents)
         queries = contents["queries"]
         charts = contents["charts"]
         dashboards = contents["dashboards"]
@@ -809,6 +811,46 @@ def workbook_contents(workbook_data) -> "frappe._dict":
         data.setdefault(key, {})
 
     return data
+
+
+def upgrade_v3_contents(contents) -> None:
+    """Upgrade an Insights 3 file's members in place, as the patches upgraded
+    the ones a site already held, so an imported workbook draws as the same
+    workbook upgraded on its site. An import reports nothing: whoever imports it
+    sees the result.
+
+    The dashboard cells move to the new grid after the charts are restored,
+    because a Number card's cell grows with its readings.
+    """
+    from insights.insights.doctype.insights_chart_v3.chart_query import normalize_chart_config
+    from insights.patches.drop_unapplied_date_range_defaults import drop_unapplied_ranges
+    from insights.patches.normalize_chart_configs import draw_as_insights_3
+    from insights.patches.repair_sankey_value_aggregation import repair_value_aggregation
+    from insights.patches.rewrite_backend_attribute_names import rewrite_expressions
+
+    for query in contents["queries"].values():
+        operations = frappe.parse_json(query.get("operations"))
+        if isinstance(operations, list):
+            rewrite_expressions(operations)
+            query["operations"] = operations
+
+    for name, chart in contents["charts"].items():
+        config = frappe.parse_json(chart.get("config"))
+        if not isinstance(config, dict):
+            continue
+        chart_type = chart.get("chart_type")
+        if chart_type == "Sankey":
+            repair_value_aggregation(config)
+        config = normalize_chart_config(config, chart_type)
+        draw_as_insights_3(config, chart_type, chart.get("title") or name)
+        rewrite_expressions(config)
+        chart["config"] = config
+
+    for dashboard in contents["dashboards"].values():
+        items = frappe.parse_json(dashboard.get("items"))
+        if isinstance(items, list):
+            drop_unapplied_ranges(items)
+            dashboard["items"] = items
 
 
 def _restore_folders(folders, workbook: str, keep_names: bool, ignore_permissions: bool) -> dict:

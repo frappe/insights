@@ -597,6 +597,62 @@ class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
         self.assertEqual(self.imported_cells(wrap=True), {"text": (5, 8), "first": (0, 4), "second": (0, 4)})
         self.assertEqual(self.imported_cells(wrap=False), {"text": (2, 3), "chart": (0, 2)})
 
+    # @feature upgrade.older-export-imports
+    def test_a_file_insights_3_exported_draws_as_the_same_workbook_upgraded_in_place(self):
+        """The patches change what Insights 3 assumed on load into what Insights 4
+        reads. A file Insights 3 exported gets the same changes on import."""
+        (chart_name,) = self.file["charts"]
+        bar = {**self.file["charts"][chart_name], "chart_type": "Bar", "config": {"y_axis": {"series": []}}}
+        (dashboard_name,) = self.file["dashboards"]
+        items = [
+            {
+                "id": "range",
+                "type": "filter",
+                "filter_name": "Created",
+                "filter_type": "Date",
+                "default_operator": "between",
+                "default_value": "2021-01-01,2021-12-31",
+            }
+        ]
+        (query_name,) = self.file["queries"]
+        expression = {"type": "expression", "expression": "t2.source"}
+        query = {**self.file["queries"][query_name]}
+        query["operations"] = [
+            *frappe.parse_json(query["operations"]),
+            {"type": "mutate", "expression": expression},
+        ]
+        wrapped = {
+            "type": "Workbook",
+            "name": self.file["name"],
+            "doc": {"title": "insights 3 copy"},
+            "dependencies": {
+                "folders": [],
+                "queries": {query_name: query},
+                "charts": {chart_name: bar},
+                "dashboards": {
+                    dashboard_name: {
+                        **self.file["dashboards"][dashboard_name],
+                        "items": frappe.as_json(items),
+                    }
+                },
+            },
+        }
+
+        with as_user(IMPORTER):
+            imported = import_workbook(wrapped)
+        self.made_workbooks.append(imported["workbook"])
+
+        config = frappe.parse_json(frappe.db.get_value(DT.CHART, imported["names"][chart_name], "config"))
+        self.assertTrue(config["y_axis"]["stack"])
+        (cell,) = frappe.parse_json(
+            frappe.db.get_value(DT.DASHBOARD, imported["names"][dashboard_name], "items")
+        )
+        self.assertNotIn("default_value", cell)
+        operations = frappe.parse_json(
+            frappe.db.get_value(DT.QUERY, imported["names"][query_name], "operations")
+        )
+        self.assertEqual(operations[-1]["expression"]["expression"], "t2['source']")
+
     # @feature standard.file-format
     def test_a_file_in_the_wrapped_shape_still_imports(self):
         """Every file a site exported until now, and every file an app ships."""

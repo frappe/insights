@@ -21,13 +21,23 @@ def execute():
         if not isinstance(items, list):
             continue
 
-        dropped = [item for item in items if is_unapplied_range(item)]
+        dropped = drop_unapplied_ranges(items)
         if not dropped:
             continue
         for item in dropped:
             report(dashboard, item)
-            del item["default_value"]
         frappe.db.set_value(DASHBOARD, dashboard.name, "items", frappe.as_json(items), update_modified=False)
+
+
+def drop_unapplied_ranges(items: list) -> list[dict]:
+    """Remove each unapplied range default from `items`, in place. Answers each
+    filter it removed one from, with the range it held."""
+    dropped = []
+    for item in items:
+        if is_unapplied_range(item):
+            dropped.append({**item})
+            del item["default_value"]
+    return dropped
 
 
 def is_unapplied_range(item) -> bool:

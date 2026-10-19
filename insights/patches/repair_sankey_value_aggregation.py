@@ -58,29 +58,14 @@ def execute():
 
     for chart in frappe.get_all(DOCTYPE, filters={"chart_type": "Sankey"}, fields=["name", "config"]):
         config = frappe.parse_json(chart.config)
-        if not isinstance(config, dict):
+        aggregation = repair_value_aggregation(config)
+        if not aggregation:
             continue
-
-        value_column = config.get("value_column")
-        if not isinstance(value_column, dict):
-            continue
-
-        aggregation = value_column.get("aggregation")
-        if aggregation not in COLLAPSING:
-            continue
-
-        if value_column.get("data_type") and value_column["data_type"] not in NUMERIC:
-            continue
-
-        column_name = value_column.get("column_name")
-        value_column["aggregation"] = REPAIRED
-        if value_column.get("measure_name") == f"{aggregation}_of_{column_name}":
-            value_column["measure_name"] = f"{REPAIRED}_of_{column_name}"
 
         # written past the document so the standard-content guard, which reads a
         # save, has nothing to block — a shipped Sankey is repaired like any other
         frappe.db.set_value(DOCTYPE, chart.name, "config", frappe.as_json(config), update_modified=False)
-        repaired.append((chart.name, aggregation, value_column["measure_name"]))
+        repaired.append((chart.name, aggregation, config["value_column"]["measure_name"]))
 
     if not repaired:
         return
@@ -88,3 +73,26 @@ def execute():
     print(f"Insights: repaired the value aggregation of {len(repaired)} Sankey chart(s)")
     for name, aggregation, measure_name in repaired:
         print(f"  {name}: {aggregation} -> {REPAIRED}, measure {measure_name}")
+
+
+def repair_value_aggregation(config) -> str | None:
+    """Repair a Sankey config in place. Answers the function it replaced, or None."""
+    if not isinstance(config, dict):
+        return None
+
+    value_column = config.get("value_column")
+    if not isinstance(value_column, dict):
+        return None
+
+    aggregation = value_column.get("aggregation")
+    if aggregation not in COLLAPSING:
+        return None
+
+    if value_column.get("data_type") and value_column["data_type"] not in NUMERIC:
+        return None
+
+    column_name = value_column.get("column_name")
+    value_column["aggregation"] = REPAIRED
+    if value_column.get("measure_name") == f"{aggregation}_of_{column_name}":
+        value_column["measure_name"] = f"{REPAIRED}_of_{column_name}"
+    return aggregation
