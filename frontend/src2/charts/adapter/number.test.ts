@@ -568,13 +568,18 @@ describe('the sparkline', () => {
 })
 
 describe('the progress bar', () => {
-	const progressOf = (value: NumberChartSpec['values'][number], progressColor?: string) =>
-		cardsOf({ values: [value], progress: true, progressColor })[0].progress
+	const progressOf = (value: NumberChartSpec['values'][number]) =>
+		cardsOf({ values: [{ progress: true, ...value }] })[0].progress
 
 	// @feature charts.number-progress
-	it('fills to how far the reading has come towards its target, in the color the Chart chose', () => {
+	it('fills to how far the reading has come towards its target, in the color the reading chose', () => {
 		expect(
-			progressOf({ name: 'Revenue', readings: [300], targetValue: 400 }, '#2490EF'),
+			progressOf({
+				name: 'Revenue',
+				readings: [300],
+				targetValue: 400,
+				progressColor: '#2490EF',
+			}),
 		).toEqual({ value: 75, color: '#2490EF' })
 	})
 
@@ -597,10 +602,18 @@ describe('the progress bar', () => {
 		expect(
 			progressOf({ name: 'Revenue', readings: [300], target: [null], targetColumn: true }),
 		).toBeUndefined()
-		expect(
-			cardsOf({ values: [{ name: 'Revenue', readings: [300], targetValue: 400 }] })[0]
-				.progress,
-		).toBeUndefined()
+	})
+
+	// @feature charts.number-progress
+	it('is drawn only for the readings that turn it on', () => {
+		const cards = cardsOf({
+			values: [
+				{ name: 'Revenue', readings: [300], targetValue: 400, progress: true },
+				{ name: 'CPU', readings: [0.42], percent: true },
+			],
+		})
+		expect(cards[0].progress).toEqual({ value: 75 })
+		expect(cards[1].progress).toBeUndefined()
 	})
 })
 
@@ -658,9 +671,32 @@ describe('the rows a Number cell takes', () => {
 
 	// @feature dashboard.cell-height-rule
 	it('adds the progress bar for a reading with a target or a percent, and none without', () => {
-		expect(rowsFor({ values: [{ ...revenue, targetValue: 400 }], progress: true })).toBe(5)
-		expect(rowsFor({ values: [{ ...revenue, percent: true }], progress: true })).toBe(5)
-		expect(rowsFor({ values: [revenue], progress: true })).toBe(4)
+		expect(rowsFor({ values: [{ ...revenue, targetValue: 400, progress: true }] })).toBe(5)
+		expect(rowsFor({ values: [{ ...revenue, percent: true, progress: true }] })).toBe(5)
+		expect(rowsFor({ values: [{ ...revenue, progress: true }] })).toBe(4)
+		expect(rowsFor({ values: [{ ...revenue, targetValue: 400 }] })).toBe(4)
+	})
+
+	// @feature dashboard.cell-height-rule
+	it('adds no progress bar for a target that names no number yet', () => {
+		// Picking "Measure" as the target writes one with no column until the
+		// author picks it, and the card draws no bar for it.
+		for (const target of [
+			{
+				measure: {
+					column_name: '',
+					data_type: 'Decimal',
+					measure_name: '',
+					aggregation: '',
+				},
+			},
+			{ value: null },
+		]) {
+			const spec: NumberChartSpec = { values: [{ ...revenue, progress: true }] }
+			const config = numberChart(spec).config as NumberChartConfig
+			config.number_column_options[0].target = target as any
+			expect(numberCardRows(config)).toBe(4)
+		}
 	})
 
 	// @feature dashboard.cell-height-rule

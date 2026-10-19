@@ -164,7 +164,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.number-comparison | A user compares a reading with the previous period, the same period last year, a constant or a measure, and the card states the change. |
 | charts.number-comparison-show | A user prints a comparison as a percent change or as a difference in the value's own units. |
 | charts.number-comparison-caption | A user writes a caption for the comparison row. |
-| charts.number-progress | A user draws a bar under each card for how far its reading has come: towards its target, or out of 100% for a percent. |
+| charts.number-progress | A user draws a bar under a card for how far its reading has come: towards its target, or out of 100% for a percent. |
 | charts.number-sparkline | A user plots a trend under a card, split one grain finer than its period and filtered the same way. |
 | charts.donut-max-slices | A user caps the slices plotted; the rest collapse into a tail. |
 | charts.donut-inline-labels | A user prints the shares on the slices instead of a legend. |

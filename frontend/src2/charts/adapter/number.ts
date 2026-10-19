@@ -175,11 +175,11 @@ function readingOf(
 	const aim = scale(targetNumber(target, rows) ?? null)
 	if (aim !== null) card.target = aim
 
-	if (config.progress) {
+	if (options.progress) {
 		const value = progressOf(latest, targetNumber(target, rows), measure)
 		if (value !== undefined) {
 			const progress: NumberCardProgress = { value }
-			if (config.progress_color) progress.color = config.progress_color
+			if (options.progress_color) progress.color = options.progress_color
 			card.progress = progress
 		}
 	}
@@ -250,15 +250,31 @@ function progressOf(
 	return undefined
 }
 
+/**
+ * Whether the target names a number: a constant, or a Measure with its column
+ * picked. Picking "Measure" as the source stores one with no column until the
+ * author picks it.
+ */
+export function namesTarget(target: NumberTarget | undefined): target is NumberTarget {
+	return typeof target?.value === 'number' || Boolean(target?.measure?.measure_name)
+}
+
+/** Whether the reading has something for a progress bar to fill towards. */
+export function canDrawProgress(
+	target: NumberTarget | undefined,
+	measure: Measure | undefined,
+): boolean {
+	return namesTarget(target) || measure?.format === 'percent'
+}
+
 /** The number the reading is aimed at, or `undefined` when nothing names one. */
 function targetNumber(
 	target: NumberTarget | undefined,
 	rows: QueryResultRow[],
 ): number | null | undefined {
-	if (!target) return undefined
+	if (!namesTarget(target)) return undefined
 	if (typeof target.value === 'number') return target.value
-	const column = target.measure?.measure_name
-	if (!column) return undefined
+	const column = target.measure!.measure_name
 	// Read off the same row the reading came from: a target is the target for the
 	// period on the card, not for the whole series.
 	return toNumber(rows[rows.length - 1]?.[column])
@@ -394,9 +410,8 @@ export function numberCardRows(config: NumberChartConfig, reading?: string): num
 	const options = config.number_column_options?.[index] || {}
 	const comparison = options.comparison
 	const sparkline = Boolean(config.sparkline && config.date_column?.column_name)
-	const target = options.target?.value !== undefined || options.target?.measure
-	const percent = config.number_columns?.[index]?.format === 'percent'
-	const progress = Boolean(config.progress && (target || percent))
+	const progress =
+		options.progress && canDrawProgress(options.target, config.number_columns?.[index])
 
 	let height = CARD.cellPadding + CARD.chrome + CARD.title + CARD.gap + CARD.value
 	if (comparison || sparkline) height += CARD.gap + CARD.delta

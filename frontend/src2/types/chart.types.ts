@@ -236,12 +236,6 @@ export type NumberChartConfig = NumberFormatConfig & {
 	number_column_options: NumberColumnOptions[]
 	sparkline: boolean
 	sparkline_color?: string
-	/**
-	 * A bar under each card for how far its reading has come: towards its target,
-	 * or towards 100% for a percent Measure. A reading with neither gets none.
-	 */
-	progress?: boolean
-	progress_color?: string
 	date_column?: Dimension
 	/**
 	 * The period the card reads, and the only thing that groups it by date.
@@ -287,6 +281,12 @@ export type NumberColumnOptions = {
 	target?: NumberTarget
 	/** The one number the reading is compared with. Naming none compares nothing. */
 	comparison?: NumberComparison
+	/**
+	 * A bar under the card for how far the reading has come: towards its target,
+	 * or towards 100% for a percent Measure. A reading with neither gets none.
+	 */
+	progress?: boolean
+	progress_color?: string
 	/** Definitions and caveats, behind a mark beside the reading's name. */
 	info?: string
 }

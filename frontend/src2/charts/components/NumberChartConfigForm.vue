@@ -46,10 +46,6 @@ const updateColor = debounce((color: string) => {
 	config.value.sparkline_color = color
 }, 500)
 
-const updateProgressColor = debounce((color: string) => {
-	config.value.progress_color = color
-}, 500)
-
 // The readings' order is written here and nowhere else, so a reading that is
 // removed or dragged takes its options with it. Left behind, every reading
 // after it reads the target, the comparison and the color of the reading that
@@ -160,6 +156,7 @@ function setDateColumn(dimension?: Dimension) {
 											:column-options="props.columnOptions"
 											:period="period"
 											:date-column="config.date_column as Dimension"
+											:measure="item"
 											:target="getNumberOption(index, 'target') as any"
 											:comparison="
 												getNumberOption(index, 'comparison') as any
@@ -167,8 +164,18 @@ function setDateColumn(dimension?: Dimension) {
 											@update:target="
 												setNumberOption(index, 'target', $event)
 											"
+											:progress="getNumberOption(index, 'progress') as any"
+											:progress-color="
+												getNumberOption(index, 'progress_color') as any
+											"
 											@update:comparison="
 												setNumberOption(index, 'comparison', $event)
+											"
+											@update:progress="
+												setNumberOption(index, 'progress', $event)
+											"
+											@update:progress-color="
+												setNumberOption(index, 'progress_color', $event)
 											"
 											@dialog-open="closeSettings"
 										/>
@@ -183,16 +190,6 @@ function setDateColumn(dimension?: Dimension) {
 					/>
 				</div>
 			</div>
-
-			<Toggle :label="__('Progress bar')" v-model="config.progress" />
-
-			<InlineFormControlLabel v-if="config.progress" :label="__('Color')">
-				<ColorInput
-					:model-value="config.progress_color"
-					@update:model-value="updateProgressColor($event)"
-					placement="left-start"
-				/>
-			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
 

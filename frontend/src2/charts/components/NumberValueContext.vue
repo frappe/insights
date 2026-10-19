@@ -1,18 +1,21 @@
 <script setup lang="ts">
+import { debounce } from 'frappe-ui'
 import { computed } from 'vue'
+import ColorInput from '../../components/ColorInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import NumberInput from '../../components/NumberInput.vue'
 import { __ } from '../../translation'
 import type { NumberChartConfig, NumberComparison, NumberTarget } from '../../types/chart.types'
 import type { ColumnOption, Dimension, Measure } from '../../types/query.types'
 import type { NumberPeriod } from '../window'
-import { defaultComparisonLabel } from '../adapter/number'
+import { canDrawProgress, defaultComparisonLabel } from '../adapter/number'
 import MeasurePicker from './MeasurePicker.vue'
 
-// What a reading is read against: the target it aims at, and the one number it
-// is compared with. Two blocks because a card reads them in two places — the
-// target on the value line, the comparison in the delta row — and a reader who
-// wants a second comparison wants a second card.
+// What a reading is read against: the target it aims at, with the bar that
+// fills towards it, and the one number it is compared with. Two blocks because a
+// card reads them in two places — the target on the value line, the comparison
+// in the delta row — and a reader who wants a second comparison wants a second
+// card.
 
 const props = defineProps<{
 	columnOptions: ColumnOption[]
@@ -20,10 +23,18 @@ const props = defineProps<{
 	period?: NumberPeriod
 	/** The chart's date column, which words a `previous` comparison. */
 	dateColumn?: Dimension
+	/** The reading, whose format decides whether a bar has 100% to fill towards. */
+	measure?: Measure
 }>()
 const emit = defineEmits({ 'dialog-open': () => true })
 const target = defineModel<NumberTarget | undefined>('target')
 const comparison = defineModel<NumberComparison | undefined>('comparison')
+const progress = defineModel<boolean | undefined>('progress')
+const progressColor = defineModel<string | undefined>('progressColor')
+
+const updateProgressColor = debounce((color: string) => {
+	progressColor.value = color
+}, 500)
 
 const targetSourceOptions = [
 	{ label: __('None'), value: 'none' },
@@ -138,6 +149,18 @@ function blankMeasure(): Measure {
 				@dialog-open="emit('dialog-open')"
 			/>
 		</InlineFormControlLabel>
+
+		<template v-if="canDrawProgress(target, measure)">
+			<Toggle :label="__('Progress bar')" v-model="progress" />
+
+			<InlineFormControlLabel v-if="progress" :label="__('Color')">
+				<ColorInput
+					:model-value="progressColor"
+					@update:model-value="updateProgressColor($event)"
+					placement="left-start"
+				/>
+			</InlineFormControlLabel>
+		</template>
 
 		<InlineFormControlLabel :label="__('Compare with')">
 			<FormControl
