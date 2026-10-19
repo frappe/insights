@@ -81,6 +81,36 @@ describe('the three axis types', () => {
 	})
 })
 
+const fiscalYear = {
+	name: 'order_date',
+	type: 'Date' as const,
+	granularity: 'fiscal_year' as const,
+}
+
+/** The x axis labels echarts draws from the option frappe-ui builds of `props`. */
+function drawnLabels(props: any): string[] {
+	const tokens = resolveChartTokens()
+	const normalized = normalizeAxisChartProps(props)
+	const option = buildAxisChartOption(
+		{ ...normalized.config, type: 'line' },
+		{ tokens, hiddenSeries: [], width: 600, format: normalized.format },
+	)
+	const chart = echarts.init(null as any, null as any, {
+		renderer: 'svg',
+		ssr: true,
+		width: 600,
+		height: 400,
+	})
+	chart.setOption({ ...option, animation: false })
+	const labels = (chart as any)
+		.getModel()
+		.getComponent('xAxis')
+		.axis.getViewLabels()
+		.map((label: any) => label.formattedLabel)
+	chart.dispose()
+	return labels
+}
+
 describe('the category axis', () => {
 	// @feature charts.x-axis
 	it('reads a text Dimension as categories', () => {
@@ -101,14 +131,47 @@ describe('the category axis', () => {
 	})
 
 	// @feature charts.x-axis
-	it('prints a fiscal year itself, which a plain calendar has no grain for', () => {
+	it('reads a fiscal year as a timeline, printed with its own label', () => {
 		const xAxis = propsOf({
 			type: 'Line',
-			dimension: { name: 'order_date', type: 'Date', granularity: 'fiscal_year' },
+			dimension: fiscalYear,
 			measures: ['revenue'],
 		}).xAxis
-		expect(xAxis.timeGrain).toBeUndefined()
+		expect(xAxis.type).toBe('time')
 		expect(xAxis.format('2026-06-01')).toMatch(/^FY /)
+	})
+
+	// @feature charts.x-axis
+	it('ticks each fiscal year once, at its own row', () => {
+		const years = ['2024-04-01', '2025-04-01', '2026-04-01']
+		const props = propsOf({
+			type: 'Line',
+			dimension: fiscalYear,
+			measures: ['revenue'],
+			categories: years,
+			readings: { revenue: [1, 2, 3] },
+		})
+		const { axisLabel, axisTick } = props.xAxis.echartOptions
+		expect(axisLabel.customValues).toEqual(years)
+		expect(axisTick.customValues).toEqual(years)
+		expect(drawnLabels(props)).toEqual(years.map((year) => props.xAxis.format(year)))
+		expect(new Set(drawnLabels(props)).size).toBe(3)
+	})
+
+	// @feature charts.x-axis
+	it('leaves a missing fiscal year a gap, not a tick', () => {
+		const props = propsOf({
+			type: 'Line',
+			dimension: fiscalYear,
+			measures: ['revenue'],
+			categories: ['2023-04-01', '2025-04-01'],
+			readings: { revenue: [1, 3] },
+		})
+		expect(props.xAxis.echartOptions.axisTick.customValues).toEqual([
+			'2023-04-01',
+			'2025-04-01',
+		])
+		expect(drawnLabels(props)).toHaveLength(2)
 	})
 
 	// @feature charts.x-axis
@@ -1200,6 +1263,16 @@ describe('whether a series is offered a trend line', () => {
 		config.y_axis.series.map((series: any) =>
 			takesTrendLine(config, series, chartMark, horizontal),
 		)
+
+	// @feature charts.trend-line
+	it('offers a fiscal-year line a trend line, as a timeline', () => {
+		const config = configOf({
+			type: 'Line',
+			dimension: fiscalYear,
+			measures: [{ name: 'revenue', trendLine: true }],
+		})
+		expect(offered(config, 'line')).toEqual([true])
+	})
 
 	// @feature charts.trend-line
 	it('answers per series, as the adapter draws', () => {

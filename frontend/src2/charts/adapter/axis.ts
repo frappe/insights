@@ -106,7 +106,7 @@ function adaptAxisChart(
 		data: input.result.rows,
 		x,
 		y: columns.filter((column) => !onRight(column)),
-		xAxis: xAxisFor(dimension),
+		xAxis: xAxisFor(dimension, x, input.result.rows),
 	}
 	if (right.length) props.y2 = right
 	if (horizontal) props.horizontal = true
@@ -316,19 +316,35 @@ function stackingFor(
 	return undefined
 }
 
-function xAxisFor(dimension: Dimension): ChartXAxisOptions {
-	if (FIELDTYPES.NUMBER.includes(dimension.data_type)) return { type: 'value' }
-	if (!isCalendarDateType(dimension.data_type)) return { type: 'category' }
+function xAxisTypeFor(dimension: Dimension): 'category' | 'time' | 'value' {
+	if (FIELDTYPES.NUMBER.includes(dimension.data_type)) return 'value'
+	if (!isCalendarDateType(dimension.data_type)) return 'category'
+	return 'time'
+}
 
-	const axis: ChartXAxisOptions = { type: 'time' }
+function xAxisFor(dimension: Dimension, x: string, rows: QueryResultRow[]): ChartXAxisOptions {
+	const type = xAxisTypeFor(dimension)
+	if (type !== 'time') return { type }
+
 	// The one grain a fiscal calendar adds and a plain one has no name for. It is
-	// the reader's own year boundary, so Insights prints it.
+	// the reader's own year boundary, so Insights prints it. echarts ticks a year
+	// at calendar boundaries, months from a fiscal year's start, so the ticks sit
+	// on the rows instead.
 	if (dimension.granularity === 'fiscal_year') {
-		axis.format = (value: any) => getFormattedDate(value, 'fiscal_year')
-	} else if (dimension.granularity) {
-		axis.timeGrain = dimension.granularity as TimeGrain
+		const format = (value: any) => getFormattedDate(value, 'fiscal_year')
+		const years = rows.map((row) => row[x])
+		return {
+			type,
+			timeGrain: 'year',
+			format,
+			echartOptions: {
+				axisLabel: { customValues: years, formatter: format },
+				axisTick: { customValues: years },
+			},
+		}
 	}
-	return axis
+	if (dimension.granularity) return { type, timeGrain: dimension.granularity as TimeGrain }
+	return { type }
 }
 
 /**
@@ -780,7 +796,7 @@ function plottedXAxisType(
 	dimension: Dimension | undefined,
 	horizontal: boolean,
 ): 'category' | 'time' | 'value' {
-	const type = dimension ? xAxisFor(dimension).type || 'category' : 'category'
+	const type = dimension ? xAxisTypeFor(dimension) : 'category'
 	return type === 'value' && horizontal ? 'category' : type
 }
 
