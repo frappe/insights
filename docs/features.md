@@ -486,6 +486,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.site-data-follows-desk | After the upgrade, an admin sees each user who lost site rows a team gave them, and each Table Restriction on a site table that stopped applying, with the desk fix for each. |
 | upgrade.charts-draw-as-before | A chart saved on Insights 3 draws as it did: a Bar stacks, a Line does not, a Donut shows as many slices before Others, and a Number card keeps its unit and the date it grouped by. What cannot be kept is listed for the chart's owner. |
 | upgrade.dashboard-filters-apply-as-before | A date range default Insights 3 stored as text and never applied is removed, so the dashboard opens on the rows it showed, and its owner is told the range. |
+| upgrade.expression-column-reads | An expression from Insights 3 that read a column named like a backend attribute, such as `t2.source`, reads it as `t2['source']` after the upgrade. One that calls a table method an expression may no longer call is listed for its owner. |
 
 ## tooling
 

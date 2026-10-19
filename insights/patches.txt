@@ -31,6 +31,8 @@ insights.patches.drop_unapplied_date_range_defaults
 insights.patches.normalize_chart_configs
 insights.patches.set_visibility_from_org_shares
 insights.patches.drop_underscore_from_table_restrictions
+# before queries are copied across workbooks, so a copy reads the rewritten expression
+insights.patches.rewrite_backend_attribute_names
 # before the setting it reads is deleted
 insights.patches.report_site_data_follows_desk
 insights.patches.retire_site_apply_user_permissions
