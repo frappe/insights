@@ -709,6 +709,35 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertEqual(default_value(DESK_USER), "Desk Co")
         self.assertEqual(default_value(ADMIN), "Admin Co")
 
+    # @feature dashboard.filter-user-default
+    def test_a_filter_default_is_the_readers_default_user_permission(self):
+        """A reader limited to one value opens on it, though another default is set,
+        as an ERPNext report opens on the company a User Permission limits to."""
+        _, _, dashboard = self.make_content(visibility="Everyone")
+        items = frappe.parse_json(dashboard.items)
+        items[1].update(default_operator="=", default_user_key="Currency")
+        dashboard.db_set("items", frappe.as_json(items), update_modified=False)
+        frappe.defaults.set_user_default("currency", "INR", DESK_USER)
+        frappe.get_doc(
+            {
+                "doctype": "User Permission",
+                "user": DESK_USER,
+                "allow": "Currency",
+                "for_value": "USD",
+                "is_default": 1,
+                "apply_to_all_doctypes": 1,
+            }
+        ).insert(ignore_permissions=True)
+        # the rollback after the test leaves both caches holding the rows
+        self.addCleanup(frappe.cache.hdel, "user_permissions", DESK_USER)
+        self.addCleanup(frappe.defaults.clear_defaults_cache, DESK_USER)
+
+        with as_user(DESK_USER):
+            response = get_dashboard(dashboard=dashboard.name)
+
+        filter_item = next(item for item in response["items"] if item["type"] == "filter")
+        self.assertEqual(filter_item["default_value"], "USD")
+
     # @feature dashboard.filter-values
     def test_filter_values_come_from_the_linked_column(self):
         _, chart, dashboard = self.make_content(visibility="Everyone")

@@ -32,6 +32,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import config_error
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
     can_filter_card,
     card_filter_source,
+    filter_default_value,
     route_filters,
 )
 from insights.not_permitted import answers_refusal
@@ -641,14 +642,6 @@ def present_item(item: dict, readable: set[str]) -> dict:
         )
 
     return presented
-
-
-def filter_default_value(item: dict):
-    """A filter's default. `default_user_key` makes it the reader's own user
-    default, so a shipped dashboard opens on each reader's company."""
-    if key := item.get("default_user_key"):
-        return frappe.defaults.get_user_default(key)
-    return item.get("default_value")
 
 
 def charts_on(items: list[dict]) -> list:

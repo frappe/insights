@@ -38,6 +38,33 @@ NUMBER_CELL = (4, 4)
 VIEW_SURFACES = {"workbook", "shared", "dashboards", "desk"}
 
 
+def filter_default_value(item: dict):
+    """A filter's default. `default_user_key` makes it the reader's own user
+    default, so a shipped dashboard opens on each reader's company."""
+    if key := item.get("default_user_key"):
+        return user_default(key)
+    return item.get("default_value")
+
+
+def user_default(key: str):
+    """The session user's default for `key`, as desk's `frappe.defaults.get_user_default`
+    reads it, so a dashboard opens on the company an ERPNext report opens on.
+
+    The Python `frappe.defaults.get_user_default` takes the global default before
+    the user's default User Permission, then refuses it as not permitted: a user
+    limited to one company gets no default at all.
+    """
+    defaults = frappe.defaults.get_defaults()
+    value = defaults.get(key)
+    if not value and frappe.defaults.is_a_user_permission_key(key):
+        value = frappe.defaults.get_user_permission_default(key, defaults) or defaults.get(frappe.scrub(key))
+    if isinstance(value, list | tuple):
+        value = value[0] if value else None
+    if frappe.defaults.not_in_user_permission(key, value):
+        return None
+    return value
+
+
 class InsightsDashboardv3(Document):
     # begin: auto-generated types
     # This code is auto-generated. Do not modify anything in this block.
