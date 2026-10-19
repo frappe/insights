@@ -34,12 +34,13 @@ def execute():
     other four return the value itself. A chart that holds one of them shows
     what the author sees today, so the patch leaves it alone.
 
-    And only over a numeric value column. A count is listed over every column,
-    a `sum` only over `Integer` and `Decimal` — the engine has no `sum` for a
-    string or a date and would throw where the chart merely plots flat today. A
-    column whose type the config does not state is left alone for the same
-    reason: the premise above, a column that is already a `COUNT(*)`, is one
-    only a numeric column can meet.
+    And only over a value column that can be summed. A count is listed over
+    every column, a `sum` only over `Integer` and `Decimal` — the engine has no
+    `sum` for a string or a date and would throw where the chart merely plots
+    flat today. A column whose type the config does not state is summed: the
+    Sankey drew its values as ribbon widths, which only a number can be, and a
+    config written outside the picker, by the API or an import, often states no
+    type.
 
     `measure_name` moves with the aggregation, because it is the name of the
     column the summarize writes and the name the renderer looks the value up by.
@@ -68,7 +69,7 @@ def execute():
         if aggregation not in COLLAPSING:
             continue
 
-        if value_column.get("data_type") not in NUMERIC:
+        if value_column.get("data_type") and value_column["data_type"] not in NUMERIC:
             continue
 
         column_name = value_column.get("column_name")
