@@ -162,3 +162,11 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
         frappe.local.request = EnvironBuilder(headers={"X-Insights-Preview-Key": opened["key"]}).get_request()
         dashboard = frappe.get_doc(DT.DASHBOARD, self.dashboard)
         self.assertFalse(has_doc_permission(dashboard, "read", "Guest"))
+
+    # @feature dashboard.preview-image
+    def test_an_apps_dashboard_renders_no_preview(self):
+        """A preview shows its renderer's rows to every reader, and an app's
+        dashboard is read by roles whose members may see other rows."""
+        frappe.db.set_value(DT.WORKBOOK, self.other_workbook, "is_standard", 1)
+        self.addCleanup(frappe.db.set_value, DT.WORKBOOK, self.other_workbook, "is_standard", 0)
+        self.assertEqual(self.render(self.other_dashboard), {})

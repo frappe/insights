@@ -108,7 +108,7 @@ const builderOptions = (dashboard: DashboardListItem) => [
 		icon: 'lucide-external-link',
 		onClick: () => router.push(`/workbook/${dashboard.workbook}`),
 	},
-	...(dashboard.can_write
+	...(dashboard.can_write && !dashboard.shipped_by
 		? [
 				{
 					label: __('Refresh Preview'),

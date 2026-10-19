@@ -487,6 +487,11 @@ class InsightsDashboardv3(Document):
         self.generate_dashboard_preview()
 
     def generate_dashboard_preview(self):
+        # A preview shows the rows of whoever rendered it to every reader. An
+        # app's dashboard is read by roles, and each reader may see other rows.
+        if standard.is_standard_member(self):
+            return None
+
         with generate_preview_key(self.name) as key:
             preview = get_page_preview(
                 # The browser runs on the server and passes a preview key, so

@@ -47,3 +47,4 @@ insights.patches.move_alert_run_as
 insights.patches.delete_orphaned_variable_secrets
 insights.patches.set_max_export_rows
 insights.patches.mark_v3_users
+insights.patches.clear_standard_dashboard_previews

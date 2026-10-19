@@ -195,6 +195,62 @@ class TestDashboardList(InsightsIntegrationTestCase):
         delete_users(OWNER, OTHER)
 
     # @feature dashboard.list
+    def test_the_dashboard_list_places_each_card_and_names_its_kind(self):
+        """The list sketches a dashboard from this, with no data on it."""
+        chart = create_test_chart(
+            OWNER, self.own_workbook, title=f"{TITLE_PREFIX} Sketched", chart_type="Line"
+        )
+        title = "Sketched Dashboard"
+        sketched = create_test_dashboard(
+            OWNER,
+            self.own_workbook,
+            title=title,
+            items=[
+                {"id": "1", "type": "filter", "layout": {"x": 0, "y": 0, "w": 4, "h": 1}},
+                {
+                    "id": "2",
+                    "type": "chart",
+                    "chart": chart.name,
+                    "layout": {"x": 0, "y": 1, "w": 20, "h": 8},
+                },
+                {"id": "3", "type": "text", "layout": {"x": 0, "y": 9, "w": 10, "h": 5}},
+            ],
+        )
+        self.addCleanup(frappe.delete_doc, DT.DASHBOARD, sketched.name, force=True, ignore_permissions=True)
+        self.addCleanup(frappe.delete_doc, DT.CHART, chart.name, force=True, ignore_permissions=True)
+
+        with self.as_user(OWNER):
+            (dashboard,) = [d for d in get_dashboards() if d["title"] == title]
+
+        self.assertEqual(
+            dashboard["cells"],
+            [
+                {"x": 0, "y": 0, "w": 4, "h": 1, "kind": "filter"},
+                {"x": 0, "y": 1, "w": 20, "h": 8, "kind": "Line"},
+                {"x": 0, "y": 9, "w": 10, "h": 5, "kind": "text"},
+            ],
+        )
+        self.assertNotIn("items", dashboard)
+
+    # @feature dashboard.list
+    def test_a_card_with_no_place_is_left_out_of_the_sketch(self):
+        """A layout saved before cards were placed on save can miss a key."""
+        title = "Unplaced Dashboard"
+        unplaced = create_test_dashboard(OWNER, self.own_workbook, title=title)
+        self.addCleanup(frappe.delete_doc, DT.DASHBOARD, unplaced.name, force=True, ignore_permissions=True)
+        items = [
+            {"id": "1", "type": "text", "layout": {"x": 0, "y": 0, "w": 10, "h": 5}},
+            {"id": "2", "type": "text", "layout": {"x": 0, "y": 5, "w": 10}},
+            {"id": "3", "type": "text"},
+        ]
+        frappe.db.set_value(DT.DASHBOARD, unplaced.name, "items", frappe.as_json(items))
+
+        with self.as_user(OWNER):
+            (dashboard,) = [d for d in get_dashboards() if d["title"] == title]
+
+        self.assertEqual(dashboard["cells"], [{"x": 0, "y": 0, "w": 10, "h": 5, "kind": "text"}])
+
+    # @feature dashboard.list
     def test_the_dashboard_list_narrows_by_title_and_the_lenses_keep_their_own(self):
         with self.as_user(OWNER):
             everything = ours(get_dashboards())

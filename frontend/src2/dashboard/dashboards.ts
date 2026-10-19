@@ -7,6 +7,9 @@ import type { FilterCondition, WireFilters } from '@framework/ui/Filter'
 import type { AccessSource } from '../components/access'
 import { __ } from '../translation'
 
+/** Where a card sits on a dashboard, and what it shows: a chart type, a filter or text. */
+export type DashboardCell = { x: number; y: number; w: number; h: number; kind: string }
+
 export type DashboardListItem = {
 	name: string
 	title: string
@@ -25,6 +28,7 @@ export type DashboardListItem = {
 	is_favourite: boolean
 	/** The title of the app that ships its workbook, when one does. */
 	shipped_by: string | null
+	cells: DashboardCell[]
 	/** Whether the caller may write it, and so update its preview image. */
 	can_write: boolean
 }
