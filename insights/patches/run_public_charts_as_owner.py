@@ -39,6 +39,7 @@ def execute():
             continue  # a dashboard row naming a chart that was deleted
         if publisher == owner or not why_rows_differ(chart, publisher, owner):
             frappe.db.set_value(CHART, chart, "run_as_owner", 1, update_modified=False)
+            report_reader_rows(chart, owner)
         elif frappe.db.get_value("User", publisher, "enabled"):
             frappe.db.set_value(CHART, chart, {"owner": publisher, "run_as_owner": 1}, update_modified=False)
             keep_edit(chart, owner)
@@ -80,6 +81,54 @@ def report(chart: str, owner: str, publisher: str, moved: bool) -> None:
             "in its share dialog."
         )
     add_item("P11", message, reference=(CHART, chart), user=None if owner == "Administrator" else owner)
+
+
+def report_reader_rows(chart: str, owner: str) -> None:
+    """A signed-in reader saw their own rows of a public chart in Insights 3.
+    Run as owner shows every reader the owner's rows."""
+    query, config, title = frappe.db.get_value(CHART, chart, ["query", "config", "title"])
+    why = why_rows_follow_reader(query, config)
+    if not why:
+        return
+    add_item(
+        "P10",
+        f'Public chart "{title or chart}" now runs as its owner, {owner}, so every signed-in reader sees '
+        f"{owner}'s rows instead of their own, because {why}. To show each reader their own rows, stop "
+        "sharing the chart and its dashboards publicly, then turn off Run as owner.",
+        reference=(CHART, chart),
+        user=None if owner == "Administrator" else owner,
+    )
+
+
+def why_rows_follow_reader(query: str | None, content) -> str | None:
+    """Why `query`, and `content` that reads its rows, may give each reader
+    other rows, or None when every reader gets the same rows."""
+    from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name, is_site_db
+    from insights.insights.query_utils import source_tables, transitive_closure
+
+    if not query:
+        return None
+    operations = frappe.get_all(
+        "Insights Query v3", filters={"name": ("in", [query, *transitive_closure(query)])}, pluck="operations"
+    )
+    if any(runs_as_user(frappe.parse_json(node)) for node in [content, *operations]):
+        return "it runs a script or an expression that calls frappe"
+
+    restrictions_apply = frappe.db.get_single_value("Insights Settings", "enable_permissions")
+    for table in source_tables(query):
+        data_source, table_name = table["data_source"], table["table_name"]
+        if is_site_db(data_source):
+            return f"it reads {table_name.removeprefix('tab')}, which desk permissions filter"
+        if restrictions_apply and frappe.db.exists(
+            "Insights Resource Permission",
+            {
+                "resource_type": "Insights Table v3",
+                "resource_name": get_table_name(data_source, table_name),
+                "table_restrictions": ("is", "set"),
+            },
+        ):
+            return f"a Table Restriction filters {table_name}"
+    return None
 
 
 def why_rows_differ(chart: str, publisher: str, owner: str) -> str | None:

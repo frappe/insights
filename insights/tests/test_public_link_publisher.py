@@ -84,6 +84,23 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
         self.assertTrue(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
 
+    # @feature upgrade.public-links-keep-rows
+    def test_a_link_on_rows_desk_filters_per_reader_tells_its_owner_readers_see_the_owners_rows(self):
+        """A signed-in reader saw their own ToDo rows in Insights 3, and sees the
+        owner's once the chart runs as its owner."""
+        self.published()
+
+        self.run_patch_without_the_column()
+
+        message = frappe.db.get_value(ITEM, {"code": "P10", "reference_name": self.chart}, "message")
+        self.assertIn("because it reads ToDo, which desk permissions filter", message)
+
+    # @feature upgrade.public-links-keep-rows
+    def test_a_link_on_rows_every_reader_reads_alike_is_not_reported(self):
+        self.published_by_another_person_on(EXTERNAL_TABLE)
+
+        self.assertFalse(frappe.db.exists(ITEM, {"code": "P10"}))
+
     def assert_moved_to_the_publisher(self):
         self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), PUBLISHER)
         self.assertTrue(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
