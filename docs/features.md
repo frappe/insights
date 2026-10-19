@@ -488,6 +488,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.dashboard-filters-apply-as-before | A date range default Insights 3 stored as text and never applied is removed, so the dashboard opens on the rows it showed, and its owner is told the range. |
 | upgrade.expression-column-reads | An expression from Insights 3 that read a column named like a backend attribute, such as `t2.source`, reads it as `t2['source']` after the upgrade. One that calls a table method an expression may no longer call is listed for its owner. |
 | upgrade.public-links-keep-rows | After the upgrade, a public chart another user published keeps showing that user's rows: the publisher becomes its owner and it runs as its owner, and the previous owner is told. |
+| upgrade.alerts-keep-running | After the upgrade, an alert whose enabler may not edit its workbook runs as the workbook's owner instead of stopping, and an admin is told. One nobody may run is reported before it stops. |
 
 ## tooling
 

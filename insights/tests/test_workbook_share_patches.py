@@ -1,4 +1,4 @@
-"""The upgrade patches that move access onto the workbook.
+"""The upgrade patches that move access onto the workbook, and the alerts that follow it.
 
 Insights 3 let an owner edit what they made and let a share on a query, chart
 or dashboard grant edit. Insights 4 gives access through the workbook only. See
@@ -7,6 +7,7 @@ or dashboard grant edit. Insights 4 gives access through the workbook only. See
 
 import frappe
 
+from insights.patches.move_alert_run_as import execute as move_alert_run_as
 from insights.patches.reshape_member_shares import execute as reshape_member_shares
 from insights.patches.share_workbooks_with_member_owners import execute as share_with_owners
 from insights.tests.base import InsightsIntegrationTestCase
@@ -134,3 +135,67 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": self.workbook}, "message")
         self.assertIn(f'The chart "{PREFIX} Chart"', message)
         self.assertIn("shared with everyone to edit", message)
+
+    def alert_enabled_by(self, user, operations=None):
+        query = create_test_query(OWNER, self.workbook, operations=operations)
+        alert = frappe.get_doc(
+            {
+                "doctype": "Insights Alert",
+                "title": f"{PREFIX} Alert",
+                "channel": "Email",
+                "query": query.name,
+                "frequency": "Daily",
+                "custom_condition": 1,
+                "condition": "True",
+                "message": "hello",
+                "recipients": "someone@example.org",
+            }
+        )
+        alert.db_insert()
+        frappe.db.set_value("Insights Alert", alert.name, "permission_user", user, update_modified=False)
+        return alert.name
+
+    # @feature upgrade.alerts-keep-running
+    def test_an_alert_its_enabler_may_not_run_runs_as_the_workbook_owner(self):
+        # it reads no table, so the owner reads the rows the enabler did
+        alert = self.alert_enabled_by(
+            AUTHOR, operations=[{"type": "sql", "data_source": "Site DB", "raw_sql": "select 1 as one"}]
+        )
+
+        move_alert_run_as()
+
+        self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), OWNER)
+        message = frappe.db.get_value(ITEM, {"code": "P19", "reference_name": alert}, "message")
+        self.assertIn(f"now runs as {OWNER}", message)
+
+    # @feature upgrade.alerts-keep-running
+    def test_an_alert_is_not_moved_to_an_owner_who_may_read_other_rows(self):
+        # the enabler chose the recipients, so the owner's rows must not reach them
+        alert = self.alert_enabled_by(AUTHOR)
+
+        move_alert_run_as()
+
+        self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), AUTHOR)
+        message = frappe.db.get_value(ITEM, {"code": "P19", "reference_name": alert}, "message")
+        self.assertIn("will stop at its next run", message)
+        self.assertIn("reads the site table tabToDo", message)
+
+    # @feature upgrade.alerts-keep-running
+    def test_an_alert_its_enabler_may_run_is_left_alone(self):
+        alert = self.alert_enabled_by(OWNER)
+
+        move_alert_run_as()
+
+        self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), OWNER)
+        self.assertFalse(frappe.db.exists(ITEM, {"code": "P19"}))
+
+    # @feature upgrade.alerts-keep-running
+    def test_an_alert_nobody_may_run_is_reported_before_it_stops(self):
+        alert = self.alert_enabled_by(AUTHOR)
+        frappe.db.set_value(DT.USER, OWNER, "enabled", 0)
+
+        move_alert_run_as()
+
+        self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), AUTHOR)
+        message = frappe.db.get_value(ITEM, {"code": "P19", "reference_name": alert}, "message")
+        self.assertIn("will stop at its next run", message)

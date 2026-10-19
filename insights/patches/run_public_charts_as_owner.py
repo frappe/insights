@@ -62,18 +62,25 @@ def report(chart: str, owner: str, publisher: str, moved: bool) -> None:
 
 def why_rows_differ(chart: str, publisher: str, owner: str) -> str | None:
     """Why `chart` may show other rows to its owner than to its publisher, or
-    None when it shows both the same rows.
+    None when it shows both the same rows."""
+    query, config = frappe.db.get_value(CHART, chart, ["query", "config"])
+    return why_query_rows_differ(query, config, (publisher, owner))
+
+
+def why_query_rows_differ(query: str | None, content, users: tuple[str, str]) -> str | None:
+    """Why `query`, and `content` that reads its rows (a chart's config, an
+    alert's condition), may give the two `users` other rows, or None when it
+    gives both the same rows.
 
     Desk permissions filter site data, and a team's Table Restrictions filter
     external data, both per user. A script, or an expression that calls frappe,
-    can read anything the running user can. A chart that uses none of these, on
-    tables both users may read, shows both the same rows.
+    can read anything the running user can. A query that uses none of these, on
+    tables both users may read, gives both the same rows.
     """
     from insights.insights.doctype.insights_table_v3.insights_table_v3 import is_site_db
     from insights.insights.doctype.insights_team.insights_team import check_table_permission, team_grant
     from insights.insights.query_utils import source_tables, transitive_closure
 
-    query, config = frappe.db.get_value(CHART, chart, ["query", "config"])
     if not query:
         return "has no query"
 
@@ -81,14 +88,14 @@ def why_rows_differ(chart: str, publisher: str, owner: str) -> str | None:
     operations = frappe.get_all(
         "Insights Query v3", filters={"name": ("in", list(queries))}, pluck="operations"
     )
-    if any(runs_as_user(frappe.parse_json(content)) for content in [config, *operations]):
+    if any(runs_as_user(frappe.parse_json(node)) for node in [content, *operations]):
         return "runs a script or an expression that calls frappe"
 
     for table in source_tables(query):
         data_source, table_name = table["data_source"], table["table_name"]
         if is_site_db(data_source):
             return f"reads the site table {table_name}"
-        for user in (publisher, owner):
+        for user in users:
             if not check_table_permission(data_source, table_name, user=user, raise_error=False):
                 return f"{user} cannot read {data_source}.{table_name}"
             if team_grant(data_source, table_name, user=user):
