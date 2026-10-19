@@ -891,14 +891,30 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
         frappe.get_doc({"doctype": DT.WORKBOOK, "title": "The site's own"}).insert(set_name=WORKBOOK)
         frappe.db.set_value(DT.WORKBOOK, WORKBOOK, "modified", "2025-01-01", update_modified=False)
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, WORKBOOK, force=True)
-        # a refused import leaves `in_import` set. A real migrate stops at the
-        # error, but this test continues
-        self.addCleanup(lambda: frappe.flags.pop("in_import", None))
         self.ship()
 
-        self.assertRaisesRegex(frappe.ValidationError, "already has a document of that name", migrate)
+        migrate()
+
         self.assertEqual(frappe.db.get_value(DT.WORKBOOK, WORKBOOK, "title"), "The site's own")
         self.assertFalse(frappe.db.get_value(DT.WORKBOOK, WORKBOOK, "is_standard"))
+
+    # @feature standard.resync
+    def test_a_file_that_fails_to_import_stops_neither_the_others_nor_the_migrate(self):
+        self.ship()
+        failed = frappe.db.count("Error Log")
+        real_import = standard.import_file_by_path
+
+        def refuse_this_app(path, **kwargs):
+            if path.startswith(module_folder()):
+                raise frappe.ValidationError
+            return real_import(path, **kwargs)
+
+        with patch.object(standard, "import_file_by_path", refuse_this_app):
+            migrate()
+
+        self.assertFalse(frappe.db.exists(DT.WORKBOOK, WORKBOOK))
+        self.assertFalse(frappe.flags.in_import)
+        self.assertEqual(frappe.db.count("Error Log"), failed + 1)
 
 
 class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):

@@ -151,7 +151,20 @@ def import_shipped(apps: list[str] | None = None) -> None:
         for stem in sorted(os.listdir(folder)):
             path = os.path.join(folder, stem, f"{stem}.json")
             if os.path.exists(path):
-                import_file_by_path(path, ignore_version=True)
+                import_file(path)
+
+
+def import_file(path: str) -> None:
+    """Import one workbook file. A file that fails is logged and rolled back,
+    so the other files and the rest of the migrate still run."""
+    frappe.db.savepoint("insights_import_shipped")
+    try:
+        import_file_by_path(path, ignore_version=True)
+    except Exception:
+        frappe.db.rollback(save_point="insights_import_shipped")
+        # frappe sets it for the import and clears it only on success
+        frappe.flags.in_import = False
+        frappe.log_error(title=f"Failed to import the shipped workbook {os.path.basename(path)}")
 
 
 def delete_unshipped() -> None:
