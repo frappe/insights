@@ -7,6 +7,8 @@ from unittest.mock import patch
 
 import frappe
 import frappe.client
+from frappe.desk.desktop import get_desktop_page
+from frappe.desk.doctype.dashboard.dashboard import get_permitted_cards, get_permitted_charts
 from frappe.desk.form.load import getdoc
 from frappe.utils import get_url_to_form, set_request
 from frappe.utils.island import get_ui_islands
@@ -37,6 +39,9 @@ OWNER = "Administrator"
 DESK_DASHBOARD = "Desk Island Test Dashboard"
 DESK_CHART = "Desk Island Test Chart"
 DESK_CARD = "Desk Island Test Card"
+DESK_WORKSPACE = "Desk Island Test Workspace"
+# has no Insights role, and reads charts through a dashboard visible to its role
+DESK_READER = "desk_island_sales_user@test.com"
 
 
 class TestDeskIsland(InsightsIntegrationTestCase):
@@ -575,4 +580,67 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
         self.assertEqual(
             self.reads(reader, "Dashboard Chart", self.desk_chart(chart.name).name), (True, True)
+        )
+
+    # @feature desk.chart-island desk.number-card-island permissions.non-insights-user
+    def test_a_desk_user_without_an_insights_role_sees_the_desk_charts_of_charts_they_read(self):
+        reader = create_user(DESK_READER, roles=["Sales User", "Desk User"]).name
+        workbook = self.dashboard.workbook
+        shown = {}
+        for name in ("Readable", "Hidden"):
+            for chart_type in ("Bar", "Number"):
+                chart = create_test_chart(
+                    OWNER, workbook, title=f"Desk Island Test {name} {chart_type}", chart_type=chart_type
+                )
+                shown[name, chart_type] = chart.show_in_desk()["name"]
+                if name == "Readable":
+                    readable = create_test_dashboard(
+                        OWNER, workbook, chart=chart.name, title=f"Desk Island Test {chart_type} Board"
+                    )
+                    readable.visibility = "Roles"
+                    readable.append("visible_to_roles", {"role": "Sales User"})
+                    readable.save()
+
+        desk_dashboard = frappe.get_doc(
+            {
+                "doctype": "Dashboard",
+                "dashboard_name": DESK_DASHBOARD,
+                "charts": [{"chart": shown[name, "Bar"]} for name in ("Readable", "Hidden")],
+                "cards": [{"card": shown[name, "Number"]} for name in ("Readable", "Hidden")],
+            }
+        ).insert()
+        workspace = frappe.get_doc(
+            {
+                "doctype": "Workspace",
+                "label": DESK_WORKSPACE,
+                "title": DESK_WORKSPACE,
+                "module": "Insights",
+                "public": 1,
+                "content": "[]",
+                "charts": [{"chart_name": shown[name, "Bar"]} for name in ("Readable", "Hidden")],
+                "number_cards": [
+                    {"number_card_name": shown[name, "Number"]} for name in ("Readable", "Hidden")
+                ],
+            }
+        ).insert()
+        self.addCleanup(frappe.delete_doc, "Workspace", workspace.name, force=True)
+
+        with as_user(reader):
+            page = get_desktop_page(frappe.as_json({"name": workspace.name}))
+            seen = {
+                "dashboard charts": [row.chart for row in get_permitted_charts(desk_dashboard.name)],
+                "dashboard cards": [row.card for row in get_permitted_cards(desk_dashboard.name)],
+                "workspace charts": [row.chart_name for row in page["charts"]["items"]],
+                "workspace cards": [row.number_card_name for row in page["number_cards"]["items"]],
+            }
+
+        self.assertNotIn("Insights User", frappe.get_roles(reader))
+        self.assertEqual(
+            seen,
+            {
+                "dashboard charts": [shown["Readable", "Bar"]],
+                "dashboard cards": [shown["Readable", "Number"]],
+                "workspace charts": [shown["Readable", "Bar"]],
+                "workspace cards": [shown["Readable", "Number"]],
+            },
         )

@@ -183,10 +183,26 @@ def has_permission(doc, ptype, user) -> bool:
     Only a document that counts Insights charts is narrowed. One claimed by
     hand counts what its author chose, and is read by the readers of that.
     """
-    from insights.permissions import has_doc_permission
+    return not shown_chart(doc) or may_read_shown_chart(doc, user)
+
+
+def may_read_shown_chart(doc, user) -> bool:
+    """Whether `user` may read a desk document that counts Insights charts.
+
+    Frappe asks this in place of read on the doctype
+    (`chart_document_type_permission`), so a desk user with no Insights role
+    sees the documents of the charts they may read.
+    """
+    from frappe.permissions import get_doctypes_with_read
+
+    from insights.resolver import may_read
 
     chart = shown_chart(doc)
-    return not chart or bool(has_doc_permission(chart, "read", user))
+    if not chart:
+        return DESK_ISLANDS[doc.doctype]["options"] in get_doctypes_with_read(user)
+    if not frappe.db.exists(chart.doctype, chart.name):
+        return False
+    return may_read(frappe.get_doc(chart.doctype, chart.name), user)
 
 
 def get_permission_query_conditions(user, doctype) -> str:
