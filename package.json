@@ -6,7 +6,7 @@
         "frappe-ui"
     ],
     "scripts": {
-        "postinstall": "cd frontend && yarn install --check-files",
+        "postinstall": "cd frontend && yarn install --check-files --frozen-lockfile",
         "dev": "cd frontend && yarn dev",
         "build": "cd frontend && yarn build && yarn build:islands",
         "test": "cd frontend && yarn test"
