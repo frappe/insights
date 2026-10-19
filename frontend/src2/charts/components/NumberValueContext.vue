@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { debounce } from 'frappe-ui'
 import { computed } from 'vue'
 import ColorInput from '../../components/ColorInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
@@ -33,10 +32,6 @@ const progress = defineModel<boolean | undefined>('progress')
 const progressColor = defineModel<string | undefined>('progressColor')
 /** Flips the comparison's colors, so it sits with the comparison. */
 const negativeIsBetter = defineModel<boolean | undefined>('negativeIsBetter')
-
-const updateProgressColor = debounce((color: string) => {
-	progressColor.value = color
-}, 500)
 
 const targetSourceOptions = [
 	{ label: __('None'), value: 'none' },
@@ -158,11 +153,7 @@ function blankMeasure(): Measure {
 			<Toggle :label="__('Progress bar')" v-model="progress" />
 
 			<InlineFormControlLabel v-if="progress" :label="__('Bar color')">
-				<ColorInput
-					:model-value="progressColor"
-					@update:model-value="updateProgressColor($event)"
-					placement="left-start"
-				/>
+				<ColorInput v-model="progressColor" placement="left-start" />
 			</InlineFormControlLabel>
 		</template>
 	</section>
