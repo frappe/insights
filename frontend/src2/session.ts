@@ -15,6 +15,10 @@ type SessionUser = {
 	locale: string
 	has_desk_access?: boolean
 	has_demo_data: boolean
+	/** Whether the user used Insights 3 and has not yet closed the upgrade dialog. */
+	upgraded_from_v3: boolean
+	/** Open upgrade items the user works through. */
+	upgrade_item_count: number
 }
 
 // Settings of the site, not of whoever is reading it. A guest opening a public
@@ -62,6 +66,8 @@ const emptyUser: SessionUser = {
 	can_write_trusted_code: false,
 	locale: 'en-US',
 	has_demo_data: false,
+	upgraded_from_v3: false,
+	upgrade_item_count: 0,
 }
 
 const session = reactive({
@@ -103,6 +109,7 @@ async function fetchSessionInfo() {
 		has_demo_data: Boolean(userInfo.has_demo_data),
 		can_download: Boolean(userInfo.can_download),
 		can_write_trusted_code: Boolean(userInfo.can_write_trusted_code),
+		upgraded_from_v3: Boolean(userInfo.upgraded_from_v3),
 	})
 }
 

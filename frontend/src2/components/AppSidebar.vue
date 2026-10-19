@@ -21,6 +21,7 @@
 		</div>
 		<div>
 			<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
+			<UpgradeCard v-if="!isSidebarCollapsed" class="m-2" />
 			<SecurityUpdateCard v-if="!isSidebarCollapsed" class="m-2" />
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
@@ -61,6 +62,7 @@ import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import DemoDataBanner from './DemoDataBanner.vue'
 import SecurityUpdateCard from './SecurityUpdateCard.vue'
+import UpgradeCard from '../upgrade/UpgradeCard.vue'
 import UserDropdown from './UserDropdown.vue'
 import { TrialBanner } from '@framework/ui/components/TrialBanner/index.ts'
 import { __ } from '../translation'
