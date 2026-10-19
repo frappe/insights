@@ -32,6 +32,7 @@ import {
 	derivedPlacement,
 	GRID_COLUMNS,
 	layoutRank,
+	placeNewFilter,
 	sameBox,
 	writePlacement,
 } from './grid_placement'
@@ -163,7 +164,8 @@ function makeDashboard(name: string) {
 				{
 					type: 'chart',
 					chart: chart.name,
-					layout: { i: getUniqueId(), x: 0, y, w: 10, h: 20 },
+					// a row of its own: a chart dropped beside another is read squeezed
+					layout: { i: getUniqueId(), x: 0, y, w: GRID_COLUMNS, h: 20 },
 				},
 			]
 		}
@@ -267,49 +269,15 @@ function makeDashboard(name: string) {
 				h: FILTER_ROWS,
 			},
 		}
-		dashboard.doc.items.push(newFilter)
-		positionNewFilter(newFilter)
-		editingItemIndex.value = dashboard.doc.items.length - 1
-	}
-
-	function positionNewFilter(newFilter: WorkbookDashboardItem) {
 		const items = dashboard.doc.items
-		const existingFilters = items.filter((item) => item.type === 'filter' && item !== newFilter)
-
-		if (existingFilters.length === 0) {
-			newFilter.layout.x = 0
-			newFilter.layout.y = 0
-			return
-		}
-
-		const topRowY = Math.min(...existingFilters.map((item) => item.layout.y))
-		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
-		const rightmostX = Math.max(
-			...topRowFilters.map((item) => item.layout.x + (item.layout.w || FILTER_WIDTH)),
-			0,
+		placeNewFilter(
+			newFilter.layout,
+			items.filter((item) => item.type === 'filter').map((item) => item.layout),
+			items.filter((item) => item.type !== 'filter').map((item) => item.layout),
+			FILTER_ROWS,
 		)
-
-		if (rightmostX + newFilter.layout.w <= GRID_COLUMNS) {
-			newFilter.layout.x = rightmostX
-			newFilter.layout.y = topRowY
-		} else {
-			newFilter.layout.x = 0
-			newFilter.layout.y = 0
-
-			existingFilters.forEach((item) => {
-				item.layout.y += FILTER_ROWS
-			})
-
-			const otherItems = items.filter((item) => item.type !== 'filter')
-			if (otherItems.length > 0) {
-				const minOtherY = Math.min(...otherItems.map((item) => item.layout.y))
-				if (minOtherY <= FILTER_ROWS) {
-					otherItems.forEach((item) => {
-						item.layout.y = Math.max(0, item.layout.y + FILTER_ROWS)
-					})
-				}
-			}
-		}
+		items.push(newFilter)
+		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
 	function removeItem(index: number) {

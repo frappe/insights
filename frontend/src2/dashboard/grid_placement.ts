@@ -25,6 +25,27 @@ export const ROW_HEIGHT = 22
 export const GRID_COLUMNS = 20
 
 /**
+ * Where a new filter cell goes. Filters sit in the top row, so it follows them
+ * while the row has room. Otherwise it starts a new top row, and every other
+ * cell moves down a filter's height to make it.
+ */
+export function placeNewFilter(filter: Layout, filters: Layout[], others: Layout[], rows: number) {
+	const topY = Math.min(...filters.map((layout) => layout.y))
+	const rowEnd = Math.max(
+		0,
+		...filters.filter((layout) => layout.y === topY).map((layout) => layout.x + layout.w),
+	)
+	if (filters.length && rowEnd + filter.w <= GRID_COLUMNS) {
+		filter.x = rowEnd
+		filter.y = topY
+		return
+	}
+	filter.x = 0
+	filter.y = 0
+	for (const layout of [...filters, ...others]) layout.y += rows
+}
+
+/**
  * Rank a cell by where it sits: top row first, left to right within a row.
  *
  * Charts reach the execution queue in whatever order their documents load, so

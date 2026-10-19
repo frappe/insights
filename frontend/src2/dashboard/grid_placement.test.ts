@@ -8,6 +8,7 @@ import {
 	compactLayouts,
 	derivedPlacement,
 	placeGrid,
+	placeNewFilter,
 	placementsFor,
 	resolveLayouts,
 	stackLayouts,
@@ -463,5 +464,20 @@ describe('derivedPlacement', () => {
 		expect(derivedPlacement(items, 'sm', 1, undefined, { verticalCompact: true })).toEqual(
 			cell('b', 0, 2, GRID_COLUMNS, 2),
 		)
+	})
+})
+
+describe('placeNewFilter', () => {
+	// @feature dashboard.filter-add
+	it('starts a filter row above the cards, and fills that row before starting another', () => {
+		const chart = cell('chart', 0, 0, 20, 20)
+		const first = cell('first', 0, 0, 4, 2)
+		placeNewFilter(first, [], [chart], 2)
+		expect([first, chart]).toEqual([cell('first', 0, 0, 4, 2), cell('chart', 0, 2, 20, 20)])
+
+		const second = cell('second', 0, 0, 4, 2)
+		placeNewFilter(second, [first], [chart], 2)
+		expect(second).toEqual(cell('second', 4, 0, 4, 2))
+		expect(chart.y).toBe(2)
 	})
 })
