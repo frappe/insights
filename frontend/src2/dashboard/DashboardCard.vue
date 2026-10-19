@@ -1,7 +1,7 @@
 <script setup lang="tsx">
 import { Avatar } from 'frappe-ui'
 import { Eye, MoreVertical, RefreshCw, Star } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { __ } from '../translation'
 import useUserStore from '../users/users'
 import { DashboardListItem } from './dashboards'
@@ -21,7 +21,15 @@ const emit = defineEmits<{
 	'update-preview': []
 }>()
 
-const userStore = useUserStore()
+// a reader without an Insights role cannot list users, and gets the owner's name
+const userStore = props.dashboard.owner_name === undefined ? useUserStore() : null
+const ownerName = computed(
+	() =>
+		props.dashboard.owner_name ||
+		(props.dashboard.owner && userStore?.getName(props.dashboard.owner)) ||
+		props.dashboard.owner ||
+		'',
+)
 const previewFailed = ref(false)
 watch(
 	() => props.dashboard.preview_image,
@@ -61,6 +69,7 @@ watch(
 			</div>
 		</router-link>
 		<Button
+			v-if="dropdownOptions.length"
 			class="absolute right-2 top-2"
 			:class="
 				dashboard.is_favourite
@@ -93,11 +102,11 @@ watch(
 						<Avatar
 							class="shrink-0"
 							size="xs"
-							:label="userStore.getName(dashboard.owner) || dashboard.owner"
-							:image="userStore.getImage(dashboard.owner)"
+							:label="ownerName"
+							:image="dashboard.owner && userStore?.getImage(dashboard.owner)"
 						/>
 						<span class="truncate text-xs text-ink-gray-5">
-							{{ userStore.getName(dashboard.owner) || dashboard.owner }}
+							{{ ownerName }}
 						</span>
 					</div>
 					<div class="flex shrink-0 items-center gap-1">
@@ -109,7 +118,7 @@ watch(
 					</span>
 				</div>
 			</div>
-			<div class="flex flex-shrink-0 items-center">
+			<div v-if="dropdownOptions.length" class="flex flex-shrink-0 items-center">
 				<Dropdown :options="dropdownOptions">
 					<Button variant="ghost">
 						<template #icon>

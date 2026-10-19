@@ -388,6 +388,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.table-row-restriction | An admin uses an expression to restrict which rows of a table a team's grant gives. It never removes rows that another team grants, and it does not apply on the site database. |
 | permissions.admin-bypass | An admin sees every data source and table whatever the grants say. |
 | permissions.non-insights-user | A user without an Insights role reads only the charts and dashboards whose visibility allows them, and calls no other endpoint. |
+| permissions.reader-app | A user without an Insights role who opens the app gets only the dashboards they may open, with no workbooks, data sources or settings, or one line saying they may open none. |
 | permissions.download-gated | A download needs the role's export permission, access to the query, and the site-wide download toggle. |
 | permissions.chart-cannot-link-unreadable-query | A chart cannot name, or be repointed to, a query its author cannot read. |
 | permissions.dashboard-cannot-hold-unreadable-chart | A dashboard cannot hold a chart of another workbook, or one its author cannot read. |

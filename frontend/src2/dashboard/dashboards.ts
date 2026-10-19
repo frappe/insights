@@ -2,6 +2,7 @@ import { useTimeAgo } from '@vueuse/core'
 import { call, toast } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { showErrorToast } from '../helpers'
+import session from '../session'
 import type { FilterCondition, WireFilters } from '@framework/ui/Filter'
 import type { AccessSource } from '../components/access'
 import { __ } from '../translation'
@@ -9,8 +10,11 @@ import { __ } from '../translation'
 export type DashboardListItem = {
 	name: string
 	title: string
-	workbook: string
-	owner: string
+	/** Not sent to a reader without an Insights role, who cannot open the workbook. */
+	workbook?: string
+	/** A reader without an Insights role gets `owner_name` instead. */
+	owner?: string
+	owner_name?: string
 	folder?: string | null
 	creation: string
 	modified: string
@@ -36,7 +40,10 @@ const mapTimeAgo = (dashboard: any) => ({
 
 async function fetchDashboards(limit: number, sources: AccessSource[], filters: WireFilters) {
 	loading.value = true
-	const result = await call('insights.api.dashboards.get_dashboards', { limit, sources, filters })
+	// a reader without an Insights role gets every dashboard they may open, in one list
+	const result = session.isAuthorized
+		? await call('insights.api.dashboards.get_dashboards', { limit, sources, filters })
+		: await call('insights.api.view.get_dashboards')
 	dashboards.value = result.map(mapTimeAgo)
 	loading.value = false
 }

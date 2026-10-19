@@ -9,6 +9,7 @@ from insights.api.view import (
     get_chart_count,
     get_chart_data,
     get_dashboard,
+    get_dashboards,
     get_filter_values,
 )
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
@@ -947,6 +948,50 @@ class TestViewAPI(InsightsIntegrationTestCase):
                 query_doc.get_count()
             with self.assertRaises(frappe.PermissionError):
                 query_doc.get_distinct_column_values("description")
+
+    # @feature permissions.reader-app
+    def test_a_reader_without_a_role_lists_the_dashboards_they_may_open_and_no_others(self):
+        _, _, listed = self.make_content(visibility="Everyone", title="View API Listed Dashboard")
+        _, _, private = self.make_content(visibility="Private", title="View API Unlisted Dashboard")
+
+        with as_user(DESK_USER):
+            dashboards = {dashboard.name: dashboard for dashboard in get_dashboards()}
+
+        self.assertEqual(dashboards[listed.name].title, listed.title)
+        self.assertEqual(dashboards[listed.name].route, listed.route)
+        self.assertNotIn(private.name, dashboards)
+
+    # @feature permissions.reader-app
+    def test_a_reader_does_not_list_a_dashboard_on_which_no_chart_would_run(self):
+        """Opening it would only say No Access."""
+        _, _, listed = self.make_content(visibility="Everyone", title="View API Listed Dashboard")
+        query, _, refused = self.make_content(visibility="Everyone", title="View API Refused Dashboard")
+        operations = todo_operations()
+        operations[0]["table"]["table_name"] = "tabError Log"
+        query.db_set("operations", frappe.as_json(operations), update_modified=False)
+
+        with as_user(DESK_USER):
+            names = [dashboard.name for dashboard in get_dashboards()]
+
+        self.assertIn(listed.name, names)
+        self.assertNotIn(refused.name, names)
+
+    # @feature permissions.reader-app
+    def test_a_reader_lists_cards_with_a_sketch_and_no_workbook_preview_or_email(self):
+        """The Dashboards list draws them as it draws everyone's. A preview shows
+        the rows of whoever rendered it."""
+        _, _, listed = self.make_content(visibility="Everyone", title="View API Card Dashboard")
+        frappe.db.set_value(DT.DASHBOARD, listed.name, "preview_image", "/files/preview.jpeg")
+
+        with as_user(DESK_USER):
+            (card,) = [dashboard for dashboard in get_dashboards() if dashboard.name == listed.name]
+
+        self.assertIn("cells", card)
+        self.assertFalse(card.can_write)
+        self.assertFalse(card.is_favourite)
+        self.assertEqual(card.owner_name, frappe.utils.get_fullname(OWNER))
+        for field in ("owner", "workbook", "preview_image", "_liked_by"):
+            self.assertNotIn(field, card)
 
     # @feature permissions.denied-says-no-access
     def test_filter_values_answer_like_any_other_reference(self):

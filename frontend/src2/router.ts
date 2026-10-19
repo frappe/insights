@@ -107,6 +107,8 @@ const routes = [
 	},
 ]
 
+const READER_ROUTES = ['DashboardList', 'Dashboard', 'SharedChart', 'SharedDashboard']
+
 let router = createRouter({
 	history: createWebHistory(APP_PATH),
 	// @ts-ignore
@@ -132,7 +134,14 @@ router.beforeEach(async (to, _, next) => {
 		return next(false)
 	}
 
-	to.path === '/login' ? next('/') : next()
+	if (to.path === '/login') return next('/')
+
+	// A user without an Insights role reads the dashboards they may open, and
+	// nothing else. Every other page would call endpoints that refuse them
+	if (!session.isAuthorized && !READER_ROUTES.includes(to.name as string)) {
+		return next({ name: 'DashboardList' })
+	}
+	next()
 })
 
 const _fetch = window.fetch

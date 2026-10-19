@@ -2,10 +2,12 @@
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
 import { QuickFilter } from '@framework/ui/QuickFilter'
 import { Breadcrumbs, MultiSelect } from 'frappe-ui'
+import { SearchIcon } from 'lucide-vue-next'
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { AccessSource, useAccessSources } from '../components/access'
 import { showErrorToast, wheneverChanges } from '../helpers'
+import session from '../session'
 import { __ } from '../translation'
 import DashboardCard from './DashboardCard.vue'
 import useDashboardStore, { DashboardListItem } from './dashboards'
@@ -39,15 +41,26 @@ const filterFields = [
 	'modified',
 ]
 
+// A reader without an Insights role gets every dashboard they may open at
+// once, and none of the controls that call the builder's endpoints: filters,
+// access sources, favorites and the card menu. They search by title here.
+const isReader = !session.isAuthorized
+const titleSearch = ref('')
+const listed = computed(() => {
+	if (!isReader) return store.dashboards
+	const term = titleSearch.value.toLowerCase()
+	return store.dashboards.filter((d) => d.title.toLowerCase().includes(term))
+})
+
 // "Load more" grows the page size and refetches
 const PAGE_SIZE = 20
 const limit = ref(PAGE_SIZE)
 // favourites always come back whole, so only the rest count against the page
-const otherDashboards = computed(() => store.dashboards.filter((d) => !d.is_favourite))
-const hasMore = computed(() => otherDashboards.value.length >= limit.value)
+const otherDashboards = computed(() => listed.value.filter((d) => !d.is_favourite))
+const hasMore = computed(() => !isReader && otherDashboards.value.length >= limit.value)
 const groups = computed(() =>
 	[
-		{ label: __('Favorites'), dashboards: store.dashboards.filter((d) => d.is_favourite) },
+		{ label: __('Favorites'), dashboards: listed.value.filter((d) => d.is_favourite) },
 		{ label: __('Recent'), dashboards: otherDashboards.value },
 	].filter((group) => group.dashboards.length),
 )
@@ -67,7 +80,7 @@ function loadMore() {
 	refresh()
 }
 
-const isNarrowed = computed(() => wireFilters.value.length > 0)
+const isNarrowed = computed(() => wireFilters.value.length > 0 || Boolean(titleSearch.value))
 
 // reset on a source change so a slow fetch can't keep showing the previous
 // sources' dashboards; a filter change keeps previous data (no flicker)
@@ -79,9 +92,12 @@ wheneverChanges(
 	},
 	{ immediate: true },
 )
-wheneverChanges(wireFilters, reload, { debounce: 300 })
+if (!isReader) wheneverChanges(wireFilters, reload, { debounce: 300 })
 
-const dropdownOptions = (dashboard: DashboardListItem) => [
+const dropdownOptions = (dashboard: DashboardListItem) =>
+	isReader ? [] : builderOptions(dashboard)
+
+const builderOptions = (dashboard: DashboardListItem) => [
 	{
 		label: dashboard.is_favourite ? __('Remove from favorites') : __('Add to favorites'),
 		icon: 'lucide-star',
@@ -129,7 +145,17 @@ watchEffect(() => {
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
-			<div class="flex min-w-0 flex-1 items-center gap-2">
+			<FormControl
+				v-if="isReader"
+				:placeholder="__('Search by Title')"
+				v-model="titleSearch"
+				:debounce="300"
+			>
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
+				</template>
+			</FormControl>
+			<div v-else class="flex min-w-0 flex-1 items-center gap-2">
 				<QuickFilter
 					class="min-w-0"
 					doctype="Insights Dashboard v3"
@@ -154,7 +180,7 @@ watchEffect(() => {
 		</div>
 
 		<div class="h-full w-full">
-			<div v-if="store.dashboards.length" class="flex flex-col gap-12">
+			<div v-if="listed.length" class="flex flex-col gap-12">
 				<section v-for="group in groups" :key="group.label" class="flex flex-col gap-4">
 					<div v-if="groups.length > 1" class="text-base-medium text-ink-gray-6">
 						{{ group.label }}
@@ -182,19 +208,33 @@ watchEffect(() => {
 
 			<!-- empty (hidden while a fetch is in flight so it doesn't flash on tab switch) -->
 			<div
-				v-if="!store.dashboards.length && !store.loading"
+				v-if="!listed.length && !store.loading"
 				class="flex h-full w-full flex-col items-center justify-center text-base"
 			>
 				<div class="text-2xl-medium">
-					{{ isNarrowed ? __('No dashboards found') : __('No dashboards') }}
+					{{
+						isNarrowed
+							? __('No dashboards found')
+							: isReader
+							  ? __("You don't have access to any dashboards")
+							  : __('No dashboards')
+					}}
 				</div>
 				<div class="mt-1 text-base text-ink-gray-5">
 					{{
 						isNarrowed
 							? __('Try a different filter.')
-							: __('Dashboards you create or are shared with you show up here.')
+							: isReader
+							  ? __('Ask an administrator to share a dashboard with you.')
+							  : __('Dashboards you create or are shared with you show up here.')
 					}}
 				</div>
+				<Button
+					v-if="isReader && !isNarrowed && session.user.has_desk_access"
+					class="mt-3"
+					:label="__('Open Desk')"
+					href="/desk"
+				/>
 			</div>
 		</div>
 	</div>

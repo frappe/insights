@@ -43,7 +43,7 @@
 		</div>
 	</div>
 
-	<Settings v-model="showSettingsDialog" />
+	<Settings v-if="session.isAuthorized" v-model="showSettingsDialog" />
 </template>
 
 <script setup lang="ts">
@@ -66,11 +66,15 @@ import UpgradeCard from '../upgrade/UpgradeCard.vue'
 import UserDropdown from './UserDropdown.vue'
 import { TrialBanner } from '@framework/ui/components/TrialBanner/index.ts'
 import { __ } from '../translation'
+import session from '../session'
 
 const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
 const showSettingsDialog = ref(false)
 
-const settings = useSettings()
+// A reader without an Insights role reads dashboards and nothing else, so the
+// rest is neither shown nor fetched
+const builder = session.isAuthorized
+const settings = builder ? useSettings() : undefined
 const is_fc_site = window.is_fc_site
 
 const links = ref([
@@ -83,22 +87,25 @@ const links = ref([
 		label: __('Workbooks'),
 		icon: Book,
 		to: 'WorkbookList',
+		hidden: !builder,
 	},
 	{
 		label: __('Data Sources'),
 		icon: Database,
 		to: 'DataSourceList',
+		hidden: !builder,
 	},
 	{
 		label: __('Data Store'),
 		icon: DatabaseZap,
 		to: 'DataStoreList',
-		hidden: computed(() => !settings.doc.enable_data_store),
+		hidden: computed(() => !settings?.doc.enable_data_store),
 	},
 	{
 		label: __('Settings'),
 		icon: SettingsIcon,
 		onClick: () => (showSettingsDialog.value = true),
+		hidden: !builder,
 	},
 ])
 </script>

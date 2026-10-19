@@ -75,12 +75,19 @@ def resolve_for_read(doctype: str, reference: str) -> str:
     if not may_read(frappe.get_doc(doctype, name)):
         no_access(doctype)
 
-    if doctype == DASHBOARD and not frappe.has_permission(DASHBOARD, ptype="write", doc=name):
-        doctypes = refused_doctypes(name, frappe.session.user)
-        if doctypes is not None:
-            refuse(doctypes, None if doctypes else _("You don't have access to the data on this dashboard"))
+    doctypes = dashboard_refusal(name) if doctype == DASHBOARD else None
+    if doctypes is not None:
+        refuse(doctypes, None if doctypes else _("You don't have access to the data on this dashboard"))
 
     return name
+
+
+def dashboard_refusal(name: str) -> list[str] | None:
+    """None when the reader may open a dashboard they may read. Otherwise the
+    doctypes its charts need (`refused_doctypes`). A writer always opens it."""
+    if frappe.has_permission(DASHBOARD, ptype="write", doc=name):
+        return None
+    return refused_doctypes(name, frappe.session.user)
 
 
 def not_found():

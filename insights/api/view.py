@@ -36,8 +36,16 @@ from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 impor
 )
 from insights.not_permitted import answers_refusal
 from insights.permission_user import runs_as
-from insights.permissions import can_copy, can_export, can_read_rows, can_write
-from insights.resolver import CHART, DASHBOARD, may_read, not_found, resolve, resolve_for_read
+from insights.permissions import InsightsPermissions, can_copy, can_export, can_read_rows, can_write
+from insights.resolver import (
+    CHART,
+    DASHBOARD,
+    dashboard_refusal,
+    may_read,
+    not_found,
+    resolve,
+    resolve_for_read,
+)
 
 QUERY = "Insights Query v3"
 
@@ -88,6 +96,41 @@ def get_dashboard(dashboard: str, surface: str | None = None):
         # of them gets it
         "workbook": doc.workbook if writable or copyable else None,
     }
+
+
+@frappe.whitelist(methods=["POST"])
+def get_dashboards() -> list[dict]:
+    """The dashboards this user may open, by title, as the Dashboards list
+    draws its cards: what the app lists for a reader with no Insights role.
+
+    The grants decide, as they do for every View, so an admin gets only what
+    was granted to them. A reader gets the layout sketch, never a preview,
+    because a preview shows the rows of whoever rendered it. They get no
+    workbook, which they cannot open, and the owner by name only.
+    """
+    from insights.api.dashboards import DASHBOARD_LIST_FIELDS, _enrich_dashboards
+
+    granted = InsightsPermissions().get_granted(DASHBOARD)
+    if not granted:
+        return []
+
+    dashboards = [
+        dashboard
+        for dashboard in frappe.get_all(
+            DASHBOARD,
+            filters={"name": ("in", granted)},
+            fields=[*DASHBOARD_LIST_FIELDS, "route"],
+            order_by="title asc",
+        )
+        if may_read(frappe.get_cached_doc(DASHBOARD, dashboard.name))
+        and dashboard_refusal(dashboard.name) is None
+    ]
+    _enrich_dashboards(dashboards)
+    for dashboard in dashboards:
+        dashboard.owner_name = frappe.utils.get_fullname(dashboard.pop("owner"))
+        for field in ("preview_image", "workbook", "_liked_by"):
+            dashboard.pop(field, None)
+    return dashboards
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
