@@ -31,6 +31,8 @@ const target = defineModel<NumberTarget | undefined>('target')
 const comparison = defineModel<NumberComparison | undefined>('comparison')
 const progress = defineModel<boolean | undefined>('progress')
 const progressColor = defineModel<string | undefined>('progressColor')
+/** Flips the comparison's colors, so it sits with the comparison. */
+const negativeIsBetter = defineModel<boolean | undefined>('negativeIsBetter')
 
 const updateProgressColor = debounce((color: string) => {
 	progressColor.value = color
@@ -124,7 +126,9 @@ function blankMeasure(): Measure {
 </script>
 
 <template>
-	<div class="flex flex-col gap-2">
+	<section class="mt-1 flex flex-col gap-2 border-t pt-3">
+		<p class="text-xs-medium text-ink-gray-8">{{ __('Target') }}</p>
+
 		<InlineFormControlLabel :label="__('Target')">
 			<FormControl
 				type="select"
@@ -134,14 +138,14 @@ function blankMeasure(): Measure {
 			/>
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="targetSource === 'constant'">
+		<InlineFormControlLabel v-if="targetSource === 'constant'" :label="__('Value')">
 			<NumberInput
 				:model-value="target?.value"
 				@update:model-value="target = { value: $event }"
 			/>
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="targetSource === 'measure'">
+		<InlineFormControlLabel v-if="targetSource === 'measure'" :label="__('Measure')">
 			<MeasurePicker
 				v-model="targetMeasure"
 				:column-options="columnOptions"
@@ -161,6 +165,10 @@ function blankMeasure(): Measure {
 				/>
 			</InlineFormControlLabel>
 		</template>
+	</section>
+
+	<section class="mt-1 flex flex-col gap-2 border-t pt-3">
+		<p class="text-xs-medium text-ink-gray-8">{{ __('Comparison') }}</p>
 
 		<InlineFormControlLabel :label="__('Compare with')">
 			<FormControl
@@ -171,11 +179,11 @@ function blankMeasure(): Measure {
 			/>
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="comparison?.source === 'constant'">
+		<InlineFormControlLabel v-if="comparison?.source === 'constant'" :label="__('Value')">
 			<NumberInput v-model="comparison.value" />
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="comparison?.source === 'measure'">
+		<InlineFormControlLabel v-if="comparison?.source === 'measure'" :label="__('Measure')">
 			<MeasurePicker
 				v-model="comparisonMeasure"
 				:column-options="columnOptions"
@@ -185,16 +193,15 @@ function blankMeasure(): Measure {
 		</InlineFormControlLabel>
 
 		<template v-if="comparison">
-			<InlineFormControlLabel>
-				<FormControl
-					type="select"
+			<InlineFormControlLabel :label="__('Show')">
+				<TabButtons
 					:options="showOptions"
 					:modelValue="comparison.show || 'change'"
 					@update:modelValue="comparison.show = $event"
 				/>
 			</InlineFormControlLabel>
 
-			<InlineFormControlLabel>
+			<InlineFormControlLabel :label="__('Caption')">
 				<FormControl
 					autocomplete="off"
 					:placeholder="captionPlaceholder"
@@ -203,5 +210,7 @@ function blankMeasure(): Measure {
 				/>
 			</InlineFormControlLabel>
 		</template>
-	</div>
+
+		<Toggle :label="__('Negative is better')" v-model="negativeIsBetter" />
+	</section>
 </template>

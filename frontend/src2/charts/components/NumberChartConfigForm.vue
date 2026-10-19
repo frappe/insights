@@ -133,9 +133,11 @@ function setDateColumn(dimension?: Dimension) {
 									</InlineFormControlLabel>
 
 									<InlineFormControlLabel :label="__('Info')">
+										<!-- A textarea of one row, so an info with line breaks
+										     keeps them. -->
 										<Textarea
-											:placeholder="__('Info')"
-											:rows="3"
+											:placeholder="__('Shown beside the title')"
+											:rows="1"
 											:model-value="
 												(getNumberOption(index, 'info') as string) ?? ''
 											"
@@ -143,43 +145,35 @@ function setDateColumn(dimension?: Dimension) {
 										/>
 									</InlineFormControlLabel>
 
-									<Toggle
-										:label="__('Negative is better')"
-										:modelValue="getNumberOption(index, 'negative_is_better')"
-										@update:modelValue="
+									<NumberValueContext
+										:column-options="props.columnOptions"
+										:period="period"
+										:date-column="config.date_column as Dimension"
+										:measure="item"
+										:target="getNumberOption(index, 'target') as any"
+										:comparison="getNumberOption(index, 'comparison') as any"
+										:progress="getNumberOption(index, 'progress') as any"
+										:progress-color="
+											getNumberOption(index, 'progress_color') as any
+										"
+										:negative-is-better="
+											getNumberOption(index, 'negative_is_better') as any
+										"
+										@update:target="setNumberOption(index, 'target', $event)"
+										@update:comparison="
+											setNumberOption(index, 'comparison', $event)
+										"
+										@update:progress="
+											setNumberOption(index, 'progress', $event)
+										"
+										@update:progress-color="
+											setNumberOption(index, 'progress_color', $event)
+										"
+										@update:negative-is-better="
 											setNumberOption(index, 'negative_is_better', $event)
 										"
+										@dialog-open="closeSettings"
 									/>
-
-									<div class="mt-1 border-t pt-2">
-										<NumberValueContext
-											:column-options="props.columnOptions"
-											:period="period"
-											:date-column="config.date_column as Dimension"
-											:measure="item"
-											:target="getNumberOption(index, 'target') as any"
-											:comparison="
-												getNumberOption(index, 'comparison') as any
-											"
-											@update:target="
-												setNumberOption(index, 'target', $event)
-											"
-											:progress="getNumberOption(index, 'progress') as any"
-											:progress-color="
-												getNumberOption(index, 'progress_color') as any
-											"
-											@update:comparison="
-												setNumberOption(index, 'comparison', $event)
-											"
-											@update:progress="
-												setNumberOption(index, 'progress', $event)
-											"
-											@update:progress-color="
-												setNumberOption(index, 'progress_color', $event)
-											"
-											@dialog-open="closeSettings"
-										/>
-									</div>
 								</template>
 							</MeasurePicker>
 						</template>

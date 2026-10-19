@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TextInput } from 'frappe-ui'
+import { TextInput, Tooltip } from 'frappe-ui'
 import { __ } from '../../translation'
 import { Check, ChevronLeft, Edit, Plus, Settings, XIcon } from 'lucide-vue-next'
 import { computed, h, ref } from 'vue'
@@ -408,13 +408,29 @@ function handleRemove() {
 					class="flex max-h-[var(--reka-popover-content-available-height)] flex-col gap-2 overflow-y-auto p-2"
 					:style="{ width: props.configWidth || CONFIG_WIDTH }"
 				>
-					<InlineFormControlLabel :label="__('Label')">
+					<div class="flex items-center gap-1">
 						<TextInput
+							class="flex-1"
 							autocomplete="off"
+							:aria-label="__('Label')"
 							:modelValue="measure.measure_name"
 							@change="rename"
 						/>
-					</InlineFormControlLabel>
+						<Tooltip :text="__('Remove')">
+							<Button
+								variant="ghost"
+								icon="lucide-trash-2"
+								:aria-label="__('Remove')"
+								@click="handleRemove"
+							/>
+						</Tooltip>
+					</div>
+
+					<!-- A chart that adds settings of its own adds sections, so this one
+					     is named too. -->
+					<p v-if="$slots['config-fields']" class="mt-1 text-xs-medium text-ink-gray-8">
+						{{ __('Value') }}
+					</p>
 
 					<InlineFormControlLabel v-if="props.enableFormat" :label="__('Unit')">
 						<FormControl
@@ -438,18 +454,6 @@ function handleRemove() {
 					</InlineFormControlLabel>
 
 					<slot name="config-fields" :close="closeSettings" />
-
-					<div class="flex gap-1">
-						<Button
-							class="w-full"
-							variant="outline"
-							theme="red"
-							iconLeft="lucide-x"
-							@click="handleRemove"
-						>
-							Remove
-						</Button>
-					</div>
 				</div>
 			</template>
 		</Popover>
