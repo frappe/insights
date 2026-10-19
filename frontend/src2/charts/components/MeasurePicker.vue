@@ -24,6 +24,11 @@ const props = defineProps<{
 	enableFormat?: boolean
 	/** Width of the settings popover, for a `config-fields` slot that needs more. */
 	configWidth?: string
+	/**
+	 * Heads the measure's own settings "Value", for a `config-fields` slot that
+	 * adds headed sections of its own.
+	 */
+	valueHeading?: boolean
 }>()
 
 /**
@@ -426,9 +431,7 @@ function handleRemove() {
 						</Tooltip>
 					</div>
 
-					<!-- A chart that adds settings of its own adds sections, so this one
-					     is named too. -->
-					<p v-if="$slots['config-fields']" class="mt-1 text-xs-medium text-ink-gray-8">
+					<p v-if="props.valueHeading" class="mt-1 text-xs-medium text-ink-gray-8">
 						{{ __('Value') }}
 					</p>
 

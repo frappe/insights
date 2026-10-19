@@ -114,6 +114,7 @@ function setDateColumn(dimension?: Dimension) {
 								:column-options="props.columnOptions"
 								:enable-format="true"
 								config-width="19rem"
+								value-heading
 								@update:model-value="Object.assign(item, $event || {})"
 								@remove="removeNumberColumn(index)"
 							>
