@@ -476,6 +476,9 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.older-grid-read | A dashboard arranged before the grid row changed keeps the pixels it covered. |
 | upgrade.older-export-imports | A workbook exported before names became strings still imports. |
 | upgrade.duplicate-folder-titles | Folders of one type that shared a title in a workbook before titles were unique are numbered apart, the way a new folder is. |
+| upgrade.v3-users-welcomed | A user of Insights 3 sees the upgrade dialog once after the upgrade, and a user new to Insights 4 never does. |
+| upgrade.attention-items | What the upgrade could not carry over waits as an item: an admin sees every open item, anyone else only their own, and either dismisses it. |
+| upgrade.attention-fix | An item's Fix applies its fix with the user's own permission on what the item names: it shares a workbook back, or deletes a template copy. |
 
 ## tooling
 

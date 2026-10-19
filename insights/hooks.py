@@ -158,6 +158,9 @@ has_permission = {
 # ---------------
 # Hook on document methods and events
 
+# an upgrade item names what it is about; deleting that must not wait on it
+ignore_links_on_delete = ["Insights Upgrade Item"]
+
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",

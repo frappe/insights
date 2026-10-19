@@ -36,3 +36,4 @@ insights.patches.number_duplicate_folder_titles
 insights.patches.reshape_member_shares
 insights.patches.delete_orphaned_variable_secrets
 insights.patches.set_max_export_rows
+insights.patches.mark_v3_users

@@ -23,6 +23,8 @@ from insights.insights.doctype.insights_team.insights_team import (
 from insights.insights.query_builders.sql_functions import get_fiscal_year_start_date
 from insights.permissions import can_download
 from insights.telemetry import get_entry
+from insights.upgrade import ITEM as UPGRADE_ITEM
+from insights.upgrade import open_item_filters, upgraded_from_v3
 from insights.utils import get_currencies, get_owned_file
 
 
@@ -135,6 +137,8 @@ def get_user_info():
         "locale": locale,
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
+        "upgraded_from_v3": upgraded_from_v3(),
+        "upgrade_item_count": frappe.db.count(UPGRADE_ITEM, open_item_filters()),
     }
 
 
