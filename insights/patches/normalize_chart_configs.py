@@ -6,6 +6,13 @@ from insights.upgrade import add_item
 CHART = "Insights Chart v3"
 # what Insights 3 showed with no `max_slices`
 DONUT_SLICES = 10
+STATISTIC_NAMES = {
+    "average": "average",
+    "median": "median",
+    "min": "minimum",
+    "max": "maximum",
+    "sum": "total",
+}
 
 
 def execute():
@@ -26,7 +33,11 @@ def execute():
             continue
 
         written = normalize_chart_config(config, chart.chart_type)
-        for code, message in draw_as_insights_3(written, chart.chart_type, chart.title or chart.name):
+        title = chart.title or chart.name
+        for code, message in [
+            *draw_as_insights_3(written, chart.chart_type, title),
+            *statistic_lines_moved(config, written, title),
+        ]:
             add_item(
                 code,
                 message,
@@ -61,6 +72,38 @@ def draw_as_insights_3(config: dict, chart_type: str, title: str) -> list[tuple[
     if chart_type == "Number":
         return [*number_units_as_insights_3(config, title), *number_period_as_insights_3(config, title)]
     return []
+
+
+def statistic_lines_moved(config: dict, written: dict, title: str) -> list[tuple[str, str]]:
+    """C4: a reference line at a statistic read every value Insights 3 plotted on
+    its axis, stack totals included. `normalize_chart_config` points it at the
+    first series on that axis, which differs once the axis plots more than one
+    series, and leaves no line on a chart that plots only the count."""
+    before, after = config.get("y_axis"), written.get("y_axis")
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        return []
+    series = [s for s in after.get("series") or [] if isinstance(s, dict)]
+    split_by = written.get("split_by")
+    split = isinstance(split_by, dict) and ((split_by.get("dimension") or {}).get("column_name"))
+    found = []
+    for old, new in zip(
+        before.get("reference_lines") or [], after.get("reference_lines") or [], strict=False
+    ):
+        if not isinstance(old, dict) or not old.get("statistic") or not isinstance(new, dict):
+            continue
+        name = STATISTIC_NAMES.get(old["statistic"], old["statistic"])
+        align = "Right" if new.get("align") == "Right" else "Left"
+        on_axis = [s for s in series if (s.get("align") or "Left") == align]
+        if not new.get("measure_name"):
+            found.append(
+                f'The {name} line on "{title}" is gone: it needs a measure, and the chart plots only the count.'
+            )
+        elif len(on_axis) > 1 or split:
+            found.append(
+                f'The {name} line on "{title}" now reads {new["measure_name"]} only. Insights 3 read every '
+                "value the chart plotted, so the line may move."
+            )
+    return [("C4", " ".join(found))] if found else []
 
 
 def is_count(value) -> bool:

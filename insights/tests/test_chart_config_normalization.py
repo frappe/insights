@@ -12,7 +12,7 @@ import frappe
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     normalize_chart_config as normalize,
 )
-from insights.patches.normalize_chart_configs import draw_as_insights_3
+from insights.patches.normalize_chart_configs import draw_as_insights_3, statistic_lines_moved
 from insights.patches.normalize_chart_configs import execute as run_patch
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, create_test_workbook
@@ -498,6 +498,25 @@ class TestDrawnAsInsights3(InsightsIntegrationTestCase):
 
         self.assertNotIn("window", config)
         self.assertEqual([code for code, _ in found], ["N6"])
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_statistic_line_over_more_than_one_series_or_none_is_reported(self):
+        def moved(series, split=None):
+            config = {"y_axis": {"series": series, "reference_lines": [{"statistic": "average"}]}}
+            if split:
+                config["split_by"] = {"dimension": {"column_name": split}}
+            return statistic_lines_moved(config, normalize(config), "Card")
+
+        one, two = (
+            [{"measure": measure("Revenue")}],
+            [{"measure": measure("Revenue")}, {"measure": measure("Cost")}],
+        )
+
+        self.assertEqual(moved(one), [])
+        self.assertEqual([code for code, _ in moved(two)], ["C4"])
+        self.assertIn("now reads Revenue only", moved(two)[0][1])
+        self.assertEqual([code for code, _ in moved(one, split="region")], ["C4"])
+        self.assertIn("is gone", moved([])[0][1])
 
     # @feature upgrade.charts-draw-as-before
     def test_the_patch_tells_the_owner_what_it_could_not_keep(self):
