@@ -5,7 +5,7 @@ import { computed, h, ref } from 'vue'
 import useTableStore from '../../../data_source/tables'
 import { wheneverChanges } from '../../../helpers'
 import { TableArgs } from '../../../types/query.types'
-import useDataSourceStore from '../../../data_source/data_source'
+import useDataSourceStore, { tableLabel } from '../../../data_source/data_source'
 import { __ } from '../../../translation'
 
 const props = defineProps<{ data_source: string }>()
@@ -28,6 +28,7 @@ const listColumns = [
 		label: __('Table'),
 		key: 'table_name',
 		width: 2,
+		getLabel: (props: any) => tableLabel(props.row),
 		prefix: () => h(Table2Icon, { class: 'h-4 w-4 text-ink-gray-5' }),
 	},
 	{

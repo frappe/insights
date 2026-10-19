@@ -12,6 +12,7 @@ import {
 	watchToggle,
 	wheneverChanges,
 } from '../helpers'
+import { tableLabel } from '../data_source/data_source'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
@@ -366,8 +367,8 @@ export function makeQuery(name: string) {
 				activeOperationIdx.value = 0
 			}
 
-			if (query.doc.title?.match(/Query \d+/) && 'table_name' in args.table) {
-				query.doc.title = args.table.table_name
+			if (query.doc.title?.match(/Query \d+/) && args.table.type == 'table') {
+				query.doc.title = tableLabel(args.table)
 			}
 
 			if (args.table.type == 'query') {

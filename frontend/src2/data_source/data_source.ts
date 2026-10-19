@@ -56,6 +56,15 @@ export function getDataSourceList() {
 	return sources
 }
 
+/**
+ * A table's name as its users know it. A Frappe database names a doctype's
+ * table `tab` and the doctype, so `tabSales Invoice` reads as Sales Invoice.
+ */
+export function tableLabel(table: { data_source: string; table_name: string }) {
+	const source = getDataSourceList().value.find((s) => s.name === table.data_source)
+	return source?.is_frappe_db ? table.table_name.replace(/^tab/, '') : table.table_name
+}
+
 export function getDataSourceOptions() {
 	const list = getDataSourceList()
 	return toOptions(list.value, {
