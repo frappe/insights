@@ -4,9 +4,7 @@ import type { SankeyChartConfig } from '../../types/chart.types'
 import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
-const SankeyChart = defineAsyncComponent(() =>
-	import('frappe-ui/charts').then((m) => m.SankeyChart),
-)
+const SankeyChart = defineAsyncComponent(() => import('./lazy_charts').then((m) => m.SankeyChart))
 
 // The server groups a sankey by its source and its target, so the result is
 // already one row per flow.

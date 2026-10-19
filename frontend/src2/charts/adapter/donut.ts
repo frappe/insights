@@ -4,7 +4,7 @@ import type { DonutChartConfig } from '../../types/chart.types'
 import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
-const DonutChart = defineAsyncComponent(() => import('frappe-ui/charts').then((m) => m.DonutChart))
+const DonutChart = defineAsyncComponent(() => import('./lazy_charts').then((m) => m.DonutChart))
 
 // The server groups a donut by its label column and orders the segments biggest
 // first, so the result is already one row per segment, in the order the ring is
