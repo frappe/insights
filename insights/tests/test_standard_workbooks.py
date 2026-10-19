@@ -569,7 +569,7 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
             dashboard=dashboard.name,
         )
 
-    def mark(self, workbook=None, name="selling", module=MODULE):
+    def mark(self, workbook=None, name="test-selling", module=MODULE):
         with developer_mode():
             return frappe.get_doc(DT.WORKBOOK, workbook or self.built.workbook).mark_as_standard(
                 name=name, module=module
@@ -579,15 +579,17 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
     def test_the_workbook_and_its_members_take_readable_names(self):
         name = self.mark()
 
-        self.assertEqual(name, "selling")
-        self.assertTrue(frappe.db.exists(DT.WORKBOOK, "selling"))
+        self.assertEqual(name, "test-selling")
+        self.assertTrue(frappe.db.exists(DT.WORKBOOK, "test-selling"))
         self.assertEqual(
-            sorted(frappe.get_all(DT.QUERY, {"workbook": "selling"}, pluck="name")),
-            ["selling-orders", "selling-revenue-by-month"],
+            sorted(frappe.get_all(DT.QUERY, {"workbook": "test-selling"}, pluck="name")),
+            ["test-selling-orders", "test-selling-revenue-by-month"],
         )
-        self.assertTrue(frappe.db.exists(DT.CHART, "selling-revenue-trend"))
-        self.assertTrue(frappe.db.exists(DT.DASHBOARD, "selling-overview"))
-        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, "selling", ["is_standard", "module"]), (1, MODULE))
+        self.assertTrue(frappe.db.exists(DT.CHART, "test-selling-revenue-trend"))
+        self.assertTrue(frappe.db.exists(DT.DASHBOARD, "test-selling-overview"))
+        self.assertEqual(
+            frappe.db.get_value(DT.WORKBOOK, "test-selling", ["is_standard", "module"]), (1, MODULE)
+        )
 
     # @feature standard.mark
     def test_a_name_the_workbook_already_uses_takes_a_number(self):
@@ -607,22 +609,25 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
         self.mark()
 
         operations = frappe.parse_json(
-            frappe.db.get_value(DT.QUERY, "selling-revenue-by-month", "operations")
+            frappe.db.get_value(DT.QUERY, "test-selling-revenue-by-month", "operations")
         )
-        self.assertEqual(operations[0]["table"]["query_name"], "selling-orders")
+        self.assertEqual(operations[0]["table"]["query_name"], "test-selling-orders")
         self.assertEqual(
             operations[0]["table"]["workbook"],
-            "selling",
+            "test-selling",
             "a reference names the workbook its query sits in, so both move together",
         )
 
         self.assertEqual(
-            frappe.db.get_value(DT.CHART, "selling-revenue-trend", "query"), "selling-revenue-by-month"
+            frappe.db.get_value(DT.CHART, "test-selling-revenue-trend", "query"),
+            "test-selling-revenue-by-month",
         )
 
-        items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, "selling-overview", "items"))
-        self.assertEqual(items[0]["chart"], "selling-revenue-trend")
-        self.assertEqual(items[1]["links"], {"selling-revenue-trend": "`selling-revenue-by-month`.`amount`"})
+        items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, "test-selling-overview", "items"))
+        self.assertEqual(items[0]["chart"], "test-selling-revenue-trend")
+        self.assertEqual(
+            items[1]["links"], {"test-selling-revenue-trend": "`test-selling-revenue-by-month`.`amount`"}
+        )
 
     # @feature standard.mark
     def test_a_marked_dashboard_is_read_by_every_desk_user(self):
@@ -630,7 +635,7 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
         dashboard has the same readers on every site."""
         self.mark()
 
-        dashboard = frappe.get_doc(DT.DASHBOARD, "selling-overview")
+        dashboard = frappe.get_doc(DT.DASHBOARD, "test-selling-overview")
         self.assertEqual(dashboard.visibility, "Roles")
         self.assertEqual([row.role for row in dashboard.visible_to_roles], ["Desk User"])
 
@@ -642,7 +647,7 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
         board.save()
         self.mark()
 
-        dashboard = frappe.get_doc(DT.DASHBOARD, "selling-overview")
+        dashboard = frappe.get_doc(DT.DASHBOARD, "test-selling-overview")
         self.assertEqual(dashboard.visibility, "Roles")
         self.assertEqual([row.role for row in dashboard.visible_to_roles], ["System Manager"])
 
@@ -673,36 +678,38 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
     # @feature standard.mark
     def test_a_workbook_is_marked_standard_in_developer_mode_only(self):
         with self.assertRaises(frappe.ValidationError):
-            frappe.get_doc(DT.WORKBOOK, self.built.workbook).mark_as_standard(name="selling", module=MODULE)
+            frappe.get_doc(DT.WORKBOOK, self.built.workbook).mark_as_standard(
+                name="test-selling", module=MODULE
+            )
 
     # @feature standard.mark
     def test_a_name_whose_file_another_workbook_already_holds_is_refused(self):
         """The file name is `scrub(name)`, and two names can scrub to the same value."""
-        self.mark(name="selling_report")
+        self.mark(name="test-selling_report")
 
         other = self.build("Selling Board, other")
         with self.assertRaises(frappe.ValidationError):
-            self.mark(workbook=other.workbook, name="selling-report")
+            self.mark(workbook=other.workbook, name="test-selling-report")
 
     # @feature standard.mark
     def test_a_rename_onto_a_name_another_workbook_files_under_is_refused(self):
         """A rename also sets a standard workbook's name, and `after_rename`
         writes the file. Without this check, it would overwrite the other
         workbook's file."""
-        self.mark(name="selling_report")
+        self.mark(name="test-selling_report")
 
         other = self.build("Selling Board, other")
         self.mark(workbook=other.workbook, name="buying-report")
 
         with developer_mode(), self.assertRaises(frappe.ValidationError):
-            frappe.rename_doc(DT.WORKBOOK, "buying-report", "selling-report", force=True)
+            frappe.rename_doc(DT.WORKBOOK, "buying-report", "test-selling-report", force=True)
 
     # @feature workbook.duplicate
     def test_a_duplicate_of_a_standard_workbook_belongs_to_the_site(self):
         self.mark()
 
         with developer_mode():
-            copy = frappe.get_doc(DT.WORKBOOK, "selling").duplicate()
+            copy = frappe.get_doc(DT.WORKBOOK, "test-selling").duplicate()
 
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, copy, True)
         self.assertEqual(frappe.db.get_value(DT.WORKBOOK, copy, ["is_standard", "module"]), (0, None))
@@ -872,8 +879,10 @@ class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
             }
         ).insert()
         self.addCleanup(
-            lambda: frappe.db.exists("Dashboard Chart", self.desk_chart.name)
-            and frappe.delete_doc("Dashboard Chart", self.desk_chart.name, force=True)
+            lambda: (
+                frappe.db.exists("Dashboard Chart", self.desk_chart.name)
+                and frappe.delete_doc("Dashboard Chart", self.desk_chart.name, force=True)
+            )
         )
 
         file = standard_file(modified="2026-02-01 00:00:00.000000")
