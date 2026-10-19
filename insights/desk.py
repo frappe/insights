@@ -141,7 +141,8 @@ def desk_definition(doctype: str) -> dict:
     Desk shows a Dashboard Chart or Number Card to whoever may read its
     `document_type`. Counting Insights charts marks the document as one that
     shows an Insights chart and nothing else, and `has_permission` narrows it to
-    the chart's readers.
+    the chart's readers. `timeseries` is what desk's form sets for a Count
+    chart, so the form opens saved.
     """
     if doctype == "Number Card":
         return {
@@ -154,6 +155,7 @@ def desk_definition(doctype: str) -> dict:
         "chart_type": "Count",
         "document_type": DESK_ISLANDS[doctype]["options"],
         "based_on": "creation",
+        "timeseries": 1,
         "filters_json": "[]",
     }
 

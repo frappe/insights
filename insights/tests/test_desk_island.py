@@ -459,8 +459,8 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         ).insert()
 
         self.assertEqual(
-            (desk_chart.chart_type, desk_chart.document_type, desk_chart.based_on),
-            ("Count", DT.CHART, "creation"),
+            (desk_chart.chart_type, desk_chart.document_type, desk_chart.based_on, desk_chart.timeseries),
+            ("Count", DT.CHART, "creation", 1),
         )
         self.assertEqual((desk_card.document_type, desk_card.function), (DT.CHART, "Count"))
         # like a document Show in Desk made, it is for the chart's readers only

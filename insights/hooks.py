@@ -54,7 +54,11 @@ extend_bootinfo = "insights.desk.boot_app_path"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+# a desk form that shows an Insights chart hides desk's own definition
+doctype_js = {
+    "Dashboard Chart": ["public/js/desk_chart_form.js", "public/js/dashboard_chart.js"],
+    "Number Card": ["public/js/desk_chart_form.js", "public/js/number_card.js"],
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
