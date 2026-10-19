@@ -35,6 +35,8 @@ def execute():
         if not publisher:
             continue
         owner = frappe.db.get_value(CHART, chart, "owner")
+        if not owner:
+            continue  # a dashboard row naming a chart that was deleted
         if publisher == owner or not why_rows_differ(chart, publisher, owner):
             frappe.db.set_value(CHART, chart, "run_as_owner", 1, update_modified=False)
         elif frappe.db.get_value("User", publisher, "enabled"):

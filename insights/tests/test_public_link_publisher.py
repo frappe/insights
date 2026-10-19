@@ -157,3 +157,22 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
             self.published_by_another_person_on(EXTERNAL_TABLE)
 
         self.assert_moved_to_the_publisher()
+
+    # @feature upgrade.public-links-keep-rows
+    def test_a_dashboard_row_naming_a_deleted_chart_is_skipped(self):
+        """Insights 3 left such a row after a forced delete. It reaches no chart."""
+        self.published()
+        frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
+        frappe.get_doc(
+            {
+                "doctype": "Insights Dashboard Chart v3",
+                "parenttype": DT.DASHBOARD,
+                "parent": self.dashboard,
+                "parentfield": "linked_charts",
+                "chart": "deleted-chart",
+            }
+        ).db_insert()
+
+        self.run_patch_without_the_column()
+
+        self.assert_moved_to_the_publisher()
