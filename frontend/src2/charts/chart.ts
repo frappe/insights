@@ -11,15 +11,14 @@ import useDocumentResource from '../helpers/resource'
 import useQuery from '../query/query'
 import router from '../router'
 import { __ } from '../translation'
-import { AXIS_CHARTS } from '../types/chart.types'
 import { InsightsChartv3 } from '../types/workbook.types'
 import { getLinkedQueries } from '../query/linked_queries'
 import { invalidateChart, renameChartViews } from './chart_view'
 import {
 	configDimensions,
-	ensureConfigSlots,
 	normalizeChartConfig,
 	resetChartConfig,
+	switchChartType,
 } from './helpers'
 
 const charts = new Map<string, Chart>()
@@ -80,17 +79,11 @@ function makeChart(name: string) {
 		chart.doc.config = resetChartConfig(chart.doc.config, chart.doc.chart_type)
 	}
 
-	// when chart type changes from axis to non-axis or vice versa reset the config
 	watch(
 		() => chart.doc.chart_type,
 		(newType: string, oldType: string) => {
 			if (!newType || newType === oldType) return
-			const crossesAxisBoundary =
-				oldType && AXIS_CHARTS.includes(newType) !== AXIS_CHARTS.includes(oldType)
-			if (crossesAxisBoundary) {
-				resetConfig()
-			}
-			ensureConfigSlots(chart.doc.config, newType)
+			switchChartType(chart.doc.config, oldType, newType)
 		},
 	)
 

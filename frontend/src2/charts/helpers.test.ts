@@ -8,6 +8,7 @@ import {
 	normalizeChartConfig,
 	removeNumberReading,
 	resetChartConfig,
+	switchChartType,
 } from './helpers'
 
 const measure = (name: string) => ({
@@ -376,5 +377,24 @@ describe('firstMeasure', () => {
 			measure_name: 'sum_of_total',
 		})
 		expect(firstMeasure(columns.slice(0, 1))).toBeUndefined()
+	})
+})
+
+describe('switchChartType', () => {
+	// @feature charts.type-number charts.type-bar
+	it('keeps the axes a bar chart had through a switch to a number card and back', () => {
+		const x_axis = { dimension: { column_name: 'customer', dimension_name: 'customer' } }
+		const bar = ensureConfigSlots(
+			{ x_axis, y_axis: { series: [{ measure: measure('total') }] }, order_by: [{}] },
+			'Bar',
+		)
+
+		const number = switchChartType(bar, 'Bar', 'Number')
+		expect(number.order_by).toEqual([])
+		expect(number.number_columns).toEqual([{}])
+
+		const back = switchChartType(number, 'Number', 'Bar')
+		expect(back.x_axis).toEqual(x_axis)
+		expect(back.y_axis.series).toEqual([{ measure: measure('total') }])
 	})
 })
