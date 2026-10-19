@@ -229,13 +229,22 @@ const filteredColumnOptions = computed(() => {
 	return columnOptions.value.filter((option) => option.label.toLowerCase().includes(query))
 })
 
-// a currency code is text, so only text columns are listed
-const currencyColumnOptions = computed(() => [
-	{ label: __('Site currency'), value: '' },
-	...props.columnOptions
-		.filter((column) => FIELDTYPES.TEXT.includes(column.data_type))
-		.map((column) => ({ label: column.label, value: column.value })),
-])
+// a currency code is text, so only text columns are listed. A shipped measure may
+// name a linked document's field instead, `Company:company:default_currency`,
+// which no column offers, so it is listed as it is written.
+const currencyColumnOptions = computed(() => {
+	const options = [
+		{ label: __('Site currency'), value: '' },
+		...props.columnOptions
+			.filter((column) => FIELDTYPES.TEXT.includes(column.data_type))
+			.map((column) => ({ label: column.label, value: column.value })),
+	]
+	const current = measure.value.currency_column
+	if (current && !options.some((option) => option.value === current)) {
+		options.push({ label: current, value: current })
+	}
+	return options
+})
 
 function getAggregationLabel(aggregation: AggregationType | '') {
 	if (!aggregation) return undefined

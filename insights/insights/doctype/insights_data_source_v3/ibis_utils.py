@@ -116,6 +116,23 @@ def is_hidden_column(name: str) -> bool:
     return is_carried_currency_column(name)
 
 
+def linked_currency_codes(doctype: str, fieldname: str) -> dict[str, str]:
+    """Each document's currency code, by name.
+
+    Read without a permission check, as desk prints any Currency field whose
+    options name a link: a reader of a company's amounts need not read Company.
+    Only a field that links to Currency is read, so a code is all this reveals.
+    """
+    if not frappe.db.exists("DocType", doctype):
+        return {}
+    field = frappe.get_meta(doctype).get_field(fieldname)
+    if not field or field.fieldtype != "Link" or field.options != "Currency":
+        return {}
+    return dict(
+        frappe.get_all(doctype, fields=["name", fieldname], filters={fieldname: ["is", "set"]}, as_list=True)
+    )
+
+
 def get_carried_currency_columns(measures) -> dict[str, str]:
     """Carried column name to the source column it is read from."""
     return {
@@ -938,9 +955,9 @@ class IbisQueryBuilder:
 
     def translate_carried_currencies(self, measures):
         carried = {}
-        for name, column_name in get_carried_currency_columns(measures).items():
+        for name, source in get_carried_currency_columns(measures).items():
             # a missing column must not fail the query; it carries null and the amount prints bare
-            col = self.get_column(column_name, throw=False)
+            col = self.get_currency_codes(source)
             if col is None:
                 carried[name] = ibis.null().cast("string")
                 continue
@@ -948,6 +965,21 @@ class IbisQueryBuilder:
             one_currency = (col.min() == col.max()) & ~col.isnull().any()
             carried[name] = ibis.ifelse(one_currency, col.min(), ibis.null()).cast("string")
         return carried
+
+    def get_currency_codes(self, source: str):
+        """The currency code of each row. `source` is a column of codes, or a
+        Currency field's options in frappe's form, `Company:company:default_currency`:
+        the `default_currency` of the Company the row's `company` names.
+        """
+        if source.count(":") != 2:
+            return self.get_column(source, throw=False)
+
+        doctype, link_column, fieldname = source.split(":")
+        link = self.get_column(link_column, throw=False)
+        codes = linked_currency_codes(doctype, fieldname)
+        if link is None or not codes:
+            return None
+        return link.cast("string").substitute(codes, else_=ibis.null().cast("string"))
 
     def aggregate_by_window(self, summarize_args):
         """One aggregate per span, unioned, each named by the date it starts on.
