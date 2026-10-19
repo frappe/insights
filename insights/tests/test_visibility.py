@@ -915,12 +915,19 @@ class TestOrgShareMigration(InsightsIntegrationTestCase):
                 frappe.db.exists("DocShare", {"share_doctype": doc.doctype, "share_name": doc.name})
             )
 
-    # @feature permissions.visibility
+    # @feature permissions.visibility upgrade.member-shares-kept
     def test_an_org_share_that_granted_write_still_becomes_the_everyone_level(self):
-        """A share with write also granted read, and a row left behind would grant nothing."""
+        """A share with write also granted read, and a row left behind would grant
+        nothing. Its write has no level to move to, so an admin is told."""
+        from insights.patches.reshape_member_shares import execute as reshape_member_shares
+        from insights.upgrade import ITEM
+
         for doc in self.shared_with_the_org(read=1, write=1):
             self.migrate()
+            reshape_member_shares()
             self.assertEqual(frappe.db.get_value(doc.doctype, doc.name, "visibility"), "Everyone")
             self.assertFalse(
                 frappe.db.exists("DocShare", {"share_doctype": doc.doctype, "share_name": doc.name})
             )
+            message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": doc.workbook}, "message")
+            self.assertIn(f'"{doc.title}" in workbook', message)
