@@ -12,9 +12,11 @@ import frappe
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     normalize_chart_config as normalize,
 )
+from insights.patches.normalize_chart_configs import draw_as_insights_3
 from insights.patches.normalize_chart_configs import execute as run_patch
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, create_test_workbook
+from insights.upgrade import ITEM
 
 OWNER = "Administrator"
 WORKBOOK_TITLE = "Chart Config Normalization Test Workbook"
@@ -401,3 +403,122 @@ class TestChartConfigNormalizationPatch(InsightsIntegrationTestCase):
         run_patch()
 
         self.assertEqual(frappe.db.get_value(DT.CHART, name, "config"), before)
+
+
+def drawn(chart_type, config):
+    """The config as Insights 4 draws what Insights 3 drew, and what could not be kept."""
+    config = copy.deepcopy(config)
+    found = draw_as_insights_3(config, chart_type, "Card")
+    return config, found
+
+
+def number_card(date_column=None, window=None, **options):
+    config = {
+        "number_columns": [{**measure("Revenue"), "format": options.pop("format", None)}],
+        "number_column_options": [options],
+    }
+    if date_column:
+        config["date_column"] = date_column
+    if window:
+        config["window"] = window
+    return config
+
+
+class TestDrawnAsInsights3(InsightsIntegrationTestCase):
+    """The one-time step that writes what Insights 3 assumed when it drew a chart."""
+
+    SAVEPOINT = "test_drawn_as_insights_3"
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_bar_that_stated_no_stack_stacks_and_one_that_did_keeps_it(self):
+        self.assertTrue(drawn("Bar", {"y_axis": {"series": []}})[0]["y_axis"]["stack"])
+        self.assertFalse(drawn("Bar", {"y_axis": {"stack": False}})[0]["y_axis"]["stack"])
+        self.assertNotIn("stack", drawn("Row", {"y_axis": {}})[0]["y_axis"])
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_line_drops_the_stack_it_never_drew(self):
+        config, _ = drawn(
+            "Line", {"y_axis": {"series": [], "stack": True, "normalize": True, "overlap": True}}
+        )
+
+        self.assertEqual(config["y_axis"], {"series": []})
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_donut_draws_as_many_slices_before_others(self):
+        self.assertEqual(drawn("Donut", {})[0]["max_slices"], 11)
+        self.assertEqual(drawn("Donut", {"max_slices": 6})[0]["max_slices"], 7)
+        self.assertEqual(drawn("Donut", {"max_slices": 0})[0]["max_slices"], 11)
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_number_suffix_prints_after_the_unit_and_a_blank_one_leaves_it(self):
+        percent, _ = drawn("Number", number_card(format="percent", suffix=" of target", prefix=""))
+        blank, _ = drawn("Number", number_card(format="percent", suffix=""))
+
+        self.assertEqual(percent["number_column_options"][0], {"suffix": "% of target"})
+        self.assertEqual(blank["number_column_options"][0], {})
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_reading_with_no_prefix_of_its_own_takes_the_cards(self):
+        config = {**number_card(), "prefix": "Rs ", "suffix": " inv"}
+
+        config, _ = drawn("Number", config)
+
+        self.assertEqual(config["number_column_options"][0], {"prefix": "Rs ", "suffix": " inv"})
+        self.assertNotIn("prefix", config)
+        self.assertNotIn("suffix", config)
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_currency_suffix_after_a_symbol_on_the_right_is_reported(self):
+        config = {**number_card(format="currency", suffix=" net"), "currency_column": "currency"}
+
+        config, found = drawn("Number", config)
+
+        self.assertEqual(config["number_column_options"][0], {"suffix": " net"})
+        self.assertEqual([code for code, _ in found], ["N4"])
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_card_on_a_date_reads_its_latest_day(self):
+        date = {"column_name": "posting_date", "data_type": "Date"}
+
+        config, found = drawn("Number", number_card(date))
+        monthly, _ = drawn("Number", number_card(date, window={"grain": "month"}))
+        timed, timed_found = drawn("Number", number_card({**date, "data_type": "Datetime"}))
+
+        self.assertEqual((config["window"], found), ({"grain": "day"}, []))
+        self.assertEqual(monthly["window"], {"grain": "month"})
+        self.assertEqual(timed["window"], {"grain": "day"})
+        self.assertEqual([code for code, _ in timed_found], ["N5"])
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_card_on_a_time_of_day_shows_the_total_and_is_reported(self):
+        config, found = drawn(
+            "Number",
+            number_card({"column_name": "at", "data_type": "Time"}, window={"grain": "hour"}),
+        )
+
+        self.assertNotIn("window", config)
+        self.assertEqual([code for code, _ in found], ["N6"])
+
+    # @feature upgrade.charts-draw-as-before
+    def test_the_patch_tells_the_owner_what_it_could_not_keep(self):
+        frappe.db.delete(ITEM)
+        workbook = create_test_workbook(OWNER, title=WORKBOOK_TITLE).name
+        chart = frappe.get_doc(
+            {
+                "doctype": DT.CHART,
+                "title": "Busy hour",
+                "workbook": workbook,
+                "chart_type": "Number",
+                "config": {},
+            }
+        ).insert()
+        config = number_card({"column_name": "at", "data_type": "Time", "granularity": "hour"})
+        frappe.db.set_value(DT.CHART, chart.name, "config", frappe.as_json(config), update_modified=False)
+
+        run_patch()
+
+        stored = frappe.parse_json(frappe.db.get_value(DT.CHART, chart.name, "config"))
+        self.assertNotIn("window", stored)
+        self.assertNotIn("granularity", stored["date_column"])
+        message = frappe.db.get_value(ITEM, {"code": "N6", "reference_name": chart.name}, "message")
+        self.assertIn('"Busy hour"', message)
