@@ -24,3 +24,4 @@ On the site database, desk permissions are the only authority. A reader reads a 
 - A user who reached a site table only through a team grant gets Not Permitted. Insights 3 gave them an empty chart, or every row where Apply User Permissions was off. The fix is a desk role that reads the doctype.
 - A Table Restriction on a site table stops applying. A User Permission is the desk way to keep the narrowing.
 - The upgrade lists both for the admins as `P17` upgrade items (`patches/report_site_data_follows_desk.py`), one per user and one per team, each with its fix.
+- Trusted code is the exception (`code-in-a-query-follows-the-server-script-model.md`): a script, an expression that calls `.sql` or a stored procedure call reads what its code reads, and every reader of its chart sees those rows. Only an Insights Admin can add or change it.
