@@ -429,7 +429,11 @@ export function attachRealtimeListener(event: string, callback: (...args: any[])
 	})
 }
 
-export function createHeaders(columns: QueryResultColumn[]) {
+/** `columnLabel` names a plain column's header. A pivoted column is named by its parts. */
+export function createHeaders(
+	columns: QueryResultColumn[],
+	columnLabel: (name: string) => string = (name) => name,
+) {
 	const nestedColumns = columns.filter((column) => column.name.includes('___'))
 	const levels = nestedColumns.length ? nestedColumns[0].name.split('___').length : 1
 
@@ -454,7 +458,7 @@ export function createHeaders(columns: QueryResultColumn[]) {
 			const isLast = level === levels - 1
 
 			headerRow.push({
-				label: isNested ? column.parts[level] : isLast ? column.name : '',
+				label: isNested ? column.parts[level] : isLast ? columnLabel(column.name) : '',
 				level,
 				isLast,
 				column: column,

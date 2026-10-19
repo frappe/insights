@@ -71,11 +71,13 @@ const props = defineProps<{
 	numberFormats?: Record<string, NumberFormat>
 	pageSize?: number
 	currentPage?: number
+	/** What a column's header reads, where it is not the column's name. */
+	columnLabel?: (name: string) => string
 }>()
 
 const headers = computed(() => {
 	if (!props.columns?.length) return []
-	return createHeaders(props.columns)
+	return createHeaders(props.columns, props.columnLabel)
 })
 
 const columnsMeta = computed(() => {
