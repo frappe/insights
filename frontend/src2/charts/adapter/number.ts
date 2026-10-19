@@ -1,5 +1,5 @@
 import { defineAsyncComponent } from 'vue'
-import type { NumberCardProps, NumberCardSparkline } from 'frappe-ui/charts'
+import type { NumberCardProgress, NumberCardProps, NumberCardSparkline } from 'frappe-ui/charts'
 import { ROW_HEIGHT } from '../../dashboard/grid_placement'
 import { toNumber } from '../../helpers'
 import { granularityOptions } from '../../helpers/constants'
@@ -175,6 +175,15 @@ function readingOf(
 	const aim = scale(targetNumber(target, rows) ?? null)
 	if (aim !== null) card.target = aim
 
+	if (config.progress) {
+		const value = progressOf(latest, targetNumber(target, rows), measure)
+		if (value !== undefined) {
+			const progress: NumberCardProgress = { value }
+			if (config.progress_color) progress.color = config.progress_color
+			card.progress = progress
+		}
+	}
+
 	if (comparison) {
 		const against = comparisonNumber(comparison, rows, readings, comparisonRows)
 		if (against !== undefined) {
@@ -224,6 +233,21 @@ function readingOf(
 	}
 
 	return card
+}
+
+/**
+ * How far the reading has come, in percent. Against its target when it names one,
+ * else against the 100% a percent Measure's fraction is out of.
+ */
+function progressOf(
+	latest: number | null,
+	aim: number | null | undefined,
+	measure: Measure,
+): number | undefined {
+	if (latest === null) return undefined
+	if (aim !== undefined) return aim ? (latest / aim) * 100 : undefined
+	if (measure.format === 'percent') return latest * 100
+	return undefined
 }
 
 /** The number the reading is aimed at, or `undefined` when nothing names one. */
@@ -349,27 +373,34 @@ const CARD = {
 	delta: 13 * 1.35,
 	/** `pb-10`, the band the sparkline is plotted into. */
 	sparkline: 40,
+	/** The progress bar: `h-1` under a `gap-1.5` and its own `mt-0.5`. */
+	progress: 6 + 2 + 4,
 }
 
 /**
  * The rows one reading of a Number Chart takes as a dashboard cell.
  *
  * A card's height is what its blocks add up to, so the author sets the width and
- * the height follows the config. There are three of them: a title and a reading,
- * a delta row under them when the reading is compared with something, and the
- * sparkline band under that.
+ * the height follows the config: a title and a reading, a delta row under them
+ * when the reading is compared with something, the progress bar under that, and
+ * the sparkline band last.
  *
  * A cell that names nothing shows the first reading. One naming a reading the
  * chart dropped keeps the height the chart's own settings give it, so the cell
  * does not move under the author while they decide what to do about it.
  */
 export function numberCardRows(config: NumberChartConfig, reading?: string): number {
-	const options = config.number_column_options?.[readingIndex(config, reading)] || {}
+	const index = readingIndex(config, reading)
+	const options = config.number_column_options?.[index] || {}
 	const comparison = options.comparison
 	const sparkline = Boolean(config.sparkline && config.date_column?.column_name)
+	const target = options.target?.value !== undefined || options.target?.measure
+	const percent = config.number_columns?.[index]?.format === 'percent'
+	const progress = Boolean(config.progress && (target || percent))
 
 	let height = CARD.cellPadding + CARD.chrome + CARD.title + CARD.gap + CARD.value
 	if (comparison || sparkline) height += CARD.gap + CARD.delta
+	if (progress) height += CARD.progress
 	if (sparkline) height += CARD.sparkline
 
 	return Math.ceil(height / ROW_HEIGHT)

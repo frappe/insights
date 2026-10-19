@@ -553,6 +553,9 @@ export type NumberChartSpec = {
 	period?: DimensionSpec
 	sparkline?: boolean
 	sparklineColor?: string
+	/** A bar under each card for how far its reading has come. */
+	progress?: boolean
+	progressColor?: string
 	/**
 	 * The second run a span card's sparkline is plotted from: one reading per
 	 * period inside the span, keyed by value name.
@@ -599,6 +602,8 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 		})),
 		sparkline: Boolean(spec.sparkline),
 		...(spec.sparklineColor ? { sparkline_color: spec.sparklineColor } : {}),
+		...(spec.progress ? { progress: true } : {}),
+		...(spec.progressColor ? { progress_color: spec.progressColor } : {}),
 		...(period ? { date_column: period } : {}),
 		...(spec.window ? { window: spec.window } : {}),
 		...(spec.prefix !== undefined ? { prefix: spec.prefix } : {}),

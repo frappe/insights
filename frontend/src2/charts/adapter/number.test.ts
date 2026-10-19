@@ -567,6 +567,43 @@ describe('the sparkline', () => {
 	})
 })
 
+describe('the progress bar', () => {
+	const progressOf = (value: NumberChartSpec['values'][number], progressColor?: string) =>
+		cardsOf({ values: [value], progress: true, progressColor })[0].progress
+
+	// @feature charts.number-progress
+	it('fills to how far the reading has come towards its target, in the color the Chart chose', () => {
+		expect(
+			progressOf({ name: 'Revenue', readings: [300], targetValue: 400 }, '#2490EF'),
+		).toEqual({ value: 75, color: '#2490EF' })
+	})
+
+	// @feature charts.number-progress
+	it('fills a percent reading out of 100% when it aims at nothing', () => {
+		// The Measure holds the fraction, so 0.42 is 42 of the 100 it is out of.
+		expect(progressOf({ name: 'CPU', readings: [0.42], percent: true })?.value).toBeCloseTo(42)
+	})
+
+	// @feature charts.number-progress
+	it('measures a percent reading against its target when it names one', () => {
+		expect(
+			progressOf({ name: 'SLA', readings: [0.42], percent: true, targetValue: 0.5 })?.value,
+		).toBeCloseTo(84)
+	})
+
+	// @feature charts.number-progress
+	it('draws none for a reading with nothing to come towards', () => {
+		expect(progressOf({ name: 'Orders', readings: [1284] })).toBeUndefined()
+		expect(
+			progressOf({ name: 'Revenue', readings: [300], target: [null], targetColumn: true }),
+		).toBeUndefined()
+		expect(
+			cardsOf({ values: [{ name: 'Revenue', readings: [300], targetValue: 400 }] })[0]
+				.progress,
+		).toBeUndefined()
+	})
+})
+
 describe('drilling into a reading', () => {
 	// @feature charts.drill-segment
 	it('names the value the reader pointed at, and the row it was read off', () => {
@@ -620,18 +657,28 @@ describe('the rows a Number cell takes', () => {
 	})
 
 	// @feature dashboard.cell-height-rule
+	it('adds the progress bar for a reading with a target or a percent, and none without', () => {
+		expect(rowsFor({ values: [{ ...revenue, targetValue: 400 }], progress: true })).toBe(5)
+		expect(rowsFor({ values: [{ ...revenue, percent: true }], progress: true })).toBe(5)
+		expect(rowsFor({ values: [revenue], progress: true })).toBe(4)
+	})
+
+	// @feature dashboard.cell-height-rule
 	it('plots no sparkline band without a Dimension to run the trend along', () => {
 		expect(rowsFor({ values: [revenue], sparkline: true })).toBe(4)
 	})
 
 	// @feature dashboard.cell-height-rule
 	it('leaves every card less than a row of slack', () => {
-		// What picks the row height: the three heights the card has, and how much
-		// of the last row each of them wastes.
+		// What picks the row height: the heights the card has, with and without a
+		// progress bar, and how much of the last row each of them wastes.
 		for (const [rows, height] of [
 			[4, 84.55],
 			[5, 108.1],
 			[7, 148.1],
+			[5, 96.55],
+			[6, 120.1],
+			[8, 160.1],
 		]) {
 			expect(rows * ROW_HEIGHT).toBeGreaterThanOrEqual(height)
 			expect(rows * ROW_HEIGHT - height).toBeLessThan(ROW_HEIGHT)
