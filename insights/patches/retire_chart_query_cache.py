@@ -113,6 +113,7 @@ def execute():
 
     for alert in alerts:
         report_alert(alert)
+    title_after_charts(sourced | charted | alerted)
     unlink_from_charts(sourced | charted | alerted)
     if not cached:
         return
@@ -175,6 +176,21 @@ def log_runs_under_chart_queries(cached: list[str]) -> None:
         for cache, query in query_of.items():
             case = case.when(Log.query == cache, query)
         frappe.qb.update(Log).set(Log.query, case).where(Log.query.isin(list(query_of))).run()
+
+
+def title_after_charts(kept: set[str]) -> None:
+    """Give each kept cache with no title its chart's, so it is not a blank row
+    in the workbook's query list."""
+    for cache in (
+        frappe.get_all(
+            QUERY, filters={"name": ("in", sorted(kept)), "title": ("is", "not set")}, pluck="name"
+        )
+        if kept
+        else []
+    ):
+        chart = frappe.db.sql(f"select title from `tab{CHART}` where `{FIELD}` = %s limit 1", cache)
+        title = (chart[0][0] if chart else None) or cache
+        frappe.db.set_value(QUERY, cache, "title", title, update_modified=False)
 
 
 def unlink_from_charts(kept: set[str]) -> None:

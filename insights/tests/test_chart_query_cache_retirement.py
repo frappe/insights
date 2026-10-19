@@ -224,6 +224,21 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         self.assertTrue(frappe.db.exists(QUERY, cache))
 
     # @feature upgrade.cached-queries-removed
+    def test_a_kept_cache_takes_its_charts_title(self):
+        """A cache had no title of its own, and a kept one is listed with the
+        workbook's queries."""
+        _chart, cache = self.cached_query()
+        frappe.db.set_value(QUERY, cache, "title", None)
+        reader = create_test_query(OWNER, self.workbook, title="Chart Query Cache Test Reader Query")
+        frappe.get_doc(
+            {"doctype": REFERENCE, "query": reader.name, "ref_type": "Query", "ref_query": cache}
+        ).insert()
+
+        retire()
+
+        self.assertEqual(frappe.db.get_value(QUERY, cache, "title"), "Chart Query Cache Test Chart")
+
+    # @feature upgrade.cached-queries-removed
     def test_a_query_no_chart_cached_is_left_alone(self):
         mine = create_test_query(OWNER, self.workbook, title="Chart Query Cache Test Own Query")
 
