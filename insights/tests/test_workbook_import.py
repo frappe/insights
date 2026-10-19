@@ -522,19 +522,23 @@ class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
     def test_a_pasted_file_is_a_workbook_in_either_shape(self):
         """`workbook_file.ts` `pastedWorkbook` asks this of every JSON object a
         user pastes on the workbook list, before it asks to import it. The
-        released version's Copy JSON writes the wrapped shape, as the sample file
-        this app ships does."""
+        released version's Copy JSON writes the wrapped shape."""
         from insights.api.workbooks import is_workbook_file
 
-        with open(frappe.get_app_path("insights", "setup", "sample_workbook.json")) as f:
-            shipped = f.read()
+        wrapped = {
+            "version": "1.0",
+            "type": "Workbook",
+            "name": "10",
+            "doc": {"name": "10"},
+            "dependencies": {},
+        }
 
         with as_user(OWNER):
             chart = frappe.get_doc(DT.CHART, self.chart).export()
 
         with as_user(IMPORTER):
             self.assertTrue(is_workbook_file(self.file))
-            self.assertTrue(is_workbook_file(shipped))
+            self.assertTrue(is_workbook_file(wrapped))
             self.assertFalse(is_workbook_file(chart))
             self.assertFalse(is_workbook_file({"type": "Query", "name": self.query}))
 
