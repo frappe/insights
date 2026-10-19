@@ -170,3 +170,19 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
         frappe.db.set_value(DT.WORKBOOK, self.other_workbook, "is_standard", 1)
         self.addCleanup(frappe.db.set_value, DT.WORKBOOK, self.other_workbook, "is_standard", 0)
         self.assertEqual(self.render(self.other_dashboard), {})
+
+    # @feature dashboard.preview-image
+    def test_a_page_that_does_not_answer_is_not_captured(self):
+        """Chromium captures its own error page, which was saved as the preview."""
+        import requests
+
+        from insights.insights.doctype.insights_dashboard_v3 import insights_dashboard_v3
+
+        with (
+            patch.object(requests, "get", side_effect=requests.ConnectionError("refused")),
+            patch("frappe.utils.preview.get_preview_from_url", return_value=b"error page") as capture,
+        ):
+            with self.assertRaises(frappe.ValidationError):
+                insights_dashboard_v3.get_page_preview("http://site.localhost:8000/insights/shared/x")
+
+        capture.assert_not_called()

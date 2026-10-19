@@ -805,6 +805,7 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:
+    check_page_answers(url, headers)
     # Newer Frappe renders previews in-process via headless Chromium — no
     # external service, and the site's own /assets and /files resolve locally.
     # Older versions fall back to the preview_generator HTTP service.
@@ -814,6 +815,22 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
         return get_page_preview_via_service(url, headers)
 
     return get_preview_from_url(url, wait_for=1000, headers=headers or {}, format="jpeg")
+
+
+def check_page_answers(url: str, headers: dict | None = None) -> None:
+    """Refuse to capture a page the site does not serve.
+
+    Chromium captures its own error page as readily as the dashboard, and the
+    capture would be saved as the preview.
+    """
+    try:
+        requests.get(url, headers=headers or {}, timeout=30).raise_for_status()
+    except requests.RequestException as e:
+        frappe.throw(
+            frappe._("The preview was not captured, because {0} did not answer: {1}").format(
+                frappe.utils.escape_html(url), frappe.utils.escape_html(str(e))
+            )
+        )
 
 
 def get_page_preview_via_service(url: str, headers: dict | None = None) -> bytes:
