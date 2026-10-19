@@ -489,6 +489,16 @@ class TestNativeSQL(InsightsIntegrationTestCase):
                 "select orders.id from sales.orders join finance.orders on true", "postgres"
             )
 
+    # @feature query.native-sql-one-statement
+    def test_a_table_function_is_refused(self):
+        # it names no table, so no binding replaces it: on the data store DuckDB
+        # reads the stored copy whole
+        for raw_sql in ("select * from query('select 1 as one')", "select * from query_table('tabUser')"):
+            with self.subTest(raw_sql=raw_sql), self.assertRaises(QueryRefused):
+                self.builder._validate_native_sql(
+                    raw_sql, use_live_connection=False, data_source=self.data_source, dialect=self.dialect
+                )
+
     # @feature query.native-sql-schema-qualified
     def test_an_alias_spelled_as_a_full_table_name_is_refused(self):
         # the rewrite would alias `sales.orders` as `"sales.orders"` too

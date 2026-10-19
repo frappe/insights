@@ -266,6 +266,19 @@ def real_table_refs(parsed: sg.Expression) -> list[sg.exp.Table]:
     return [table for table in parsed.find_all(sg.exp.Table) if not is_cte(table)]
 
 
+def unbound_reads(parsed: sg.Expression) -> list[str]:
+    """What `parsed` reads without naming a table, so no binding can replace it.
+
+    A FROM source such as DuckDB's `query_table('tabUser')` reads a table the
+    binding never sees.
+    """
+    return [
+        table.this.sql()
+        for table in parsed.find_all(sg.exp.Table)
+        if not isinstance(table.this, sg.exp.Identifier)
+    ]
+
+
 def extract_query_deps_from_operations(operations: list) -> list[str]:
     """Extract all referenced query names from a list of operations."""
     return [

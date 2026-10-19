@@ -55,6 +55,7 @@ from insights.insights.query_utils import (
     real_table_refs,
     runs_stored_procedure,
     table_reference,
+    unbound_reads,
 )
 from insights.permission_user import get_permission_user, script_session
 from insights.utils import create_execution_log
@@ -1218,6 +1219,27 @@ class IbisQueryBuilder:
                     QueryRefused,
                     title=frappe._("Unsupported SQL Query"),
                 )
+
+        if runs_stored_procedure(raw_sql):
+            return raw_sql
+
+        try:
+            parsed = sg.parse_one(raw_sql, dialect=dialect)
+        except Exception as e:
+            frappe.throw(
+                frappe._("Failed to parse the SQL query: {0}").format(e),
+                QueryRefused,
+                title=frappe._("Invalid SQL Query"),
+            )
+
+        if reads := unbound_reads(parsed):
+            frappe.throw(
+                frappe._("A native query can read only named tables, not {0}").format(
+                    frappe.utils.escape_html(", ".join(reads))
+                ),
+                QueryRefused,
+                title=frappe._("Unsupported SQL Query"),
+            )
 
         return raw_sql
 
