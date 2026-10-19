@@ -1,4 +1,5 @@
 import frappe
+from frappe.query_builder.functions import IfNull
 from frappe.share import add_docshare
 
 from insights.permissions import get_insights_users
@@ -53,12 +54,16 @@ def member_owners() -> list[tuple[str, str]]:
                 as_list=True,
             )
         )
+    Alert = frappe.qb.DocType(ALERT)
+    Query = frappe.qb.DocType(QUERY)
     pairs.update(
-        frappe.db.sql(
-            f"""select distinct query.workbook, alert.owner from `tab{ALERT}` alert
-            join `tab{QUERY}` query on query.name = alert.query
-            where ifnull(query.workbook, '') != ''"""
-        )
+        frappe.qb.from_(Alert)
+        .join(Query)
+        .on(Query.name == Alert.query)
+        .select(Query.workbook, Alert.owner)
+        .where(IfNull(Query.workbook, "") != "")
+        .distinct()
+        .run()
     )
     return sorted(pairs)
 

@@ -1,5 +1,6 @@
 import frappe
 from frappe.query_builder import Case
+from frappe.query_builder.functions import IfNull
 from frappe.utils import create_batch
 
 from insights.upgrade import add_item
@@ -146,7 +147,10 @@ def repoint_charts_reading_their_own_cache() -> None:
     summarized. The cache is its source query with the chart's config applied,
     so the chart derives the same rows from that source.
     """
-    for chart, cache in frappe.db.sql(f"select name, query from `tab{CHART}` where query = `{FIELD}`"):
+    Chart = frappe.qb.DocType(CHART)
+    for chart, cache in (
+        frappe.qb.from_(Chart).select(Chart.name, Chart.query).where(Chart.query == Chart[FIELD]).run()
+    ):
         operations = frappe.parse_json(frappe.db.get_value(QUERY, cache, "operations")) or []
         table = (operations[0].get("table") or {}) if operations else {}
         source = table.get("query_name") if table.get("type") == "query" else None
@@ -162,13 +166,14 @@ def log_runs_under_chart_queries(cached: list[str]) -> None:
     names a deleted query reads nothing. So without this, a stored table only
     dashboards read is dropped on the first cleanup after the upgrade.
     """
+    Chart = frappe.qb.DocType(CHART)
     Log = frappe.qb.DocType(EXECUTION_LOG)
     for batch in create_batch(cached, BATCH):
         query_of = dict(
-            frappe.db.sql(
-                f"select `{FIELD}`, query from `tab{CHART}` where `{FIELD}` in %(batch)s and ifnull(query, '') != ''",
-                {"batch": tuple(batch)},
-            )
+            frappe.qb.from_(Chart)
+            .select(Chart[FIELD], Chart.query)
+            .where(Chart[FIELD].isin(batch) & (IfNull(Chart.query, "") != ""))
+            .run()
         )
         if not query_of:
             continue
@@ -188,27 +193,28 @@ def title_after_charts(kept: set[str]) -> None:
         if kept
         else []
     ):
-        chart = frappe.db.sql(f"select title from `tab{CHART}` where `{FIELD}` = %s limit 1", cache)
-        title = (chart[0][0] if chart else None) or cache
-        frappe.db.set_value(QUERY, cache, "title", title, update_modified=False)
+        frappe.db.set_value(QUERY, cache, "title", chart_title(cache) or cache, update_modified=False)
 
 
 def unlink_from_charts(kept: set[str]) -> None:
     """Clear the column on the charts whose cache is kept, so the document is a
     query of its own and a later run never takes it for a cache."""
+    Chart = frappe.qb.DocType(CHART)
     for batch in create_batch(sorted(kept), BATCH):
-        frappe.db.sql(
-            f"update `tab{CHART}` set `{FIELD}` = null where `{FIELD}` in %(batch)s",
-            {"batch": tuple(batch)},
-        )
+        frappe.qb.update(Chart).set(Chart[FIELD], None).where(Chart[FIELD].isin(batch)).run()
+
+
+def chart_title(cache: str) -> str | None:
+    """The title of the chart that cached its query in `cache`."""
+    Chart = frappe.qb.DocType(CHART)
+    titles = frappe.qb.from_(Chart).select(Chart.title).where(Chart[FIELD] == cache).limit(1).run(pluck=True)
+    return titles[0] if titles else None
 
 
 def report_alert(alert) -> None:
-    chart = frappe.db.sql(f"select title from `tab{CHART}` where `{FIELD}` = %s limit 1", alert.query)
-    chart_title = chart[0][0] if chart else alert.query
     add_item(
         "J1",
-        f'Alert "{alert.title}" checked the data of chart "{chart_title}". It now checks a copy of that '
+        f'Alert "{alert.title}" checked the data of chart "{chart_title(alert.query) or alert.query}". It now checks a copy of that '
         "data, kept as a query, so changes to the chart no longer reach it. Open the query to change "
         "what the alert checks.",
         reference=(QUERY, alert.query),
