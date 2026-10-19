@@ -41,9 +41,29 @@ def execute():
             frappe.db.set_value(CHART, chart, "run_as_owner", 1, update_modified=False)
         elif frappe.db.get_value("User", publisher, "enabled"):
             frappe.db.set_value(CHART, chart, {"owner": publisher, "run_as_owner": 1}, update_modified=False)
+            keep_edit(chart, owner)
             report(chart, owner, publisher, moved=True)
         else:
             report(chart, owner, publisher, moved=False)
+
+
+def keep_edit(chart: str, previous_owner: str) -> None:
+    """Share the chart's workbook with its previous owner to edit.
+
+    The workbook share patch runs later and shares a workbook with the owners
+    of its members. The chart no longer names its previous owner, so it would
+    leave them out.
+    """
+    from insights.patches.share_workbooks_with_member_owners import WORKBOOK, share_workbook
+    from insights.permissions import get_insights_users
+
+    workbook = frappe.db.get_value(CHART, chart, "workbook")
+    if (
+        workbook
+        and previous_owner in get_insights_users()
+        and not frappe.has_permission(WORKBOOK, "write", doc=workbook, user=previous_owner)
+    ):
+        share_workbook(workbook, previous_owner, write=1)
 
 
 def report(chart: str, owner: str, publisher: str, moved: bool) -> None:

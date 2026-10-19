@@ -38,6 +38,7 @@ EXTERNAL_TABLE = [
 OWNER = "Administrator"
 PREFIX = "Public Link Test"
 PUBLISHER = "public_link_publisher@test.com"
+PREVIOUS_OWNER = "public_link_previous_owner@test.com"
 
 
 class TestPublicLinkPublisher(InsightsIntegrationTestCase):
@@ -57,11 +58,12 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
         ).name
         cls.workbook = workbook.name
         create_user(PUBLISHER, first_name="Public", last_name="Publisher", roles="Insights User")
+        create_user(PREVIOUS_OWNER, first_name="Previous", last_name="Owner", roles="Insights User")
 
     @classmethod
     def after_class(cls):
         frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
-        delete_users(PUBLISHER)
+        delete_users(PUBLISHER, PREVIOUS_OWNER)
 
     # the state earlier patches leave a published dashboard in
     def published(self):
@@ -176,3 +178,16 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
         self.run_patch_without_the_column()
 
         self.assert_moved_to_the_publisher()
+
+    # @feature upgrade.public-links-keep-rows upgrade.owners-keep-access
+    def test_the_previous_owner_of_a_moved_chart_can_still_edit_it(self):
+        """The workbook share patch shares a workbook with the owners of its
+        members, and the chart no longer names its previous owner."""
+        frappe.db.set_value(DT.CHART, self.chart, "owner", PREVIOUS_OWNER, update_modified=False)
+        self.published()
+        frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
+
+        self.run_patch_without_the_column()
+
+        self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), PUBLISHER)
+        self.assertTrue(frappe.has_permission(DT.WORKBOOK, "write", doc=self.workbook, user=PREVIOUS_OWNER))
