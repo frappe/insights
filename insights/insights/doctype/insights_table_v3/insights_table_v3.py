@@ -601,8 +601,9 @@ def desk_readable_tables(user: str) -> set[str]:
 
     A readable doctype's table, a child table of one, and `tabSingles` when any
     single doctype is readable. These are the tables `apply_user_permissions` allows.
+    A share lets its user read the doctype's table, as `desk_reads_table` says.
     """
-    readable = readable_doctypes(user)
+    readable = readable_doctypes(user) | set(frappe.share.get_shared_doctypes(user))
     children = {
         *frappe.get_all(
             "DocField",
