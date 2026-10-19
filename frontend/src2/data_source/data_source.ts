@@ -14,7 +14,6 @@ async function fetchSources() {
 		...source,
 		created_from_now: useTimeAgo(source.creation),
 		modified_from_now: useTimeAgo(source.modified),
-		title: source.is_site_db && source.title == 'Site DB' ? window.location.hostname : source.title,
 	}))
 	loading.value = false
 	return sources.value
@@ -114,7 +113,5 @@ export function getDatabaseLogo(database_type: DatabaseType, size: 'sm' | 'md' =
 	if (size == 'sm' && database_type === 'ClickHouse') {
 		sizeClass = 'size-4'
 	}
-	return comp
-		? h(comp, { class: sizeClass })
-		: null
+	return comp ? h(comp, { class: sizeClass }) : null
 }
