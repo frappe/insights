@@ -151,8 +151,6 @@ export type ChartFailure = {
 export type ChartStateProps = {
 	loading: boolean
 	failure: ChartFailure | null
-	/** The query returned no rows. Every other type renders this on the chrome. */
-	empty: boolean
 	/** Runs the chart again. The action beside the message. */
 	onRetry: () => void
 }

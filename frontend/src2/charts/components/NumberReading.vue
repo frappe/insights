@@ -26,8 +26,6 @@ const props = defineProps<{
 	preview?: boolean
 	loading?: boolean
 	failure?: ChartFailure | null
-	/** The query returned no rows. See `ChartBody`. */
-	empty?: boolean
 	drillable?: boolean
 }>()
 
@@ -99,8 +97,10 @@ const cardless = computed(() => props.card.card === false)
 		>
 			<!-- The state every other chart type is given by the chrome around its
 			     plot. A card is its own chrome, so it says it here, in the words
-			     the chrome says it in. -->
-			<template v-if="props.empty && !card.missing" #empty>
+			     the chrome says it in. One line, in place of the number: a card
+			     with no comparison is a line shorter than the card's own dash
+			     and caption under it. -->
+			<template v-if="!card.missing" #empty>
 				<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
 			</template>
 

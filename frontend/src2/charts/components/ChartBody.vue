@@ -257,7 +257,6 @@ const stateProps = computed(() => {
 	const owned: ChartStateProps = {
 		loading: state.value === 'loading',
 		failure: failure.value,
-		empty: state.value === 'empty',
 		onRetry: () => props.chart.load(true),
 	}
 	return owned

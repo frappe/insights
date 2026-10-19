@@ -57,3 +57,15 @@ describe('a Number reading in a card the host draws', () => {
 		)
 	})
 })
+
+describe('a Number reading with no value', () => {
+	// @feature charts.type-number
+	it('says No data on the one line its number takes', async () => {
+		// A card with no comparison is one line shorter than a dash and a caption.
+		const rendered = await cards({ cards: [{ ...revenue, value: null }] })
+		const html = rendered.replace(/<!--[\s\S]*?-->/g, '')
+		expect(html).toContain('No data')
+		// in place of the number line, not under it
+		expect(html).not.toContain('text-3xl-semibold')
+	})
+})
