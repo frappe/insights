@@ -2,7 +2,7 @@
 import { TextInput, Tooltip } from 'frappe-ui'
 import { __ } from '../../translation'
 import { Check, ChevronLeft, Edit, Plus, Settings, XIcon } from 'lucide-vue-next'
-import { computed, h, ref } from 'vue'
+import { computed, h, nextTick, ref } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { dialogs } from '../../helpers/confirm_dialog'
 import { FIELDTYPES } from '../../helpers/constants'
@@ -267,6 +267,11 @@ function rename(event: Event) {
 	else input.value = measure.value.measure_name
 }
 
+// The column list opens on its search, so the author can type a column's name.
+const vFocus = {
+	mounted: (el: HTMLElement) => nextTick(() => el.querySelector('input')?.focus()),
+}
+
 function handleRemove() {
 	measure.value = {
 		column_name: '',
@@ -343,7 +348,10 @@ function handleRemove() {
 								</template>
 
 								<template v-else>
-									<div class="sticky top-0 z-10 bg-surface-base space-y-1 p-1">
+									<div
+										v-focus
+										class="sticky top-0 z-10 bg-surface-base space-y-1 p-1"
+									>
 										<TextInput
 											v-model="searchQuery"
 											:placeholder="__('Search...')"
