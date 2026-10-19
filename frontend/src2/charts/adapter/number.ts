@@ -175,8 +175,8 @@ function readingOf(
 	const aim = scale(targetNumber(target, rows) ?? null)
 	if (aim !== null) card.target = aim
 
-	if (options.progress) {
-		const value = progressOf(latest, targetNumber(target, rows), measure)
+	if (options.progress && canDrawProgress(target, measure)) {
+		const value = progressOf(latest, targetNumber(target, rows))
 		if (value !== undefined) {
 			const progress: NumberCardProgress = { value }
 			// A reading colored to stand for a series is read against that color.
@@ -238,18 +238,13 @@ function readingOf(
 }
 
 /**
- * How far the reading has come, in percent. Against its target when it names one,
- * else against the 100% a percent Measure's fraction is out of.
+ * How far a reading that can draw a bar has come, in percent. Against its target
+ * when it names one, else it is a percent, whose fraction is out of 100%.
  */
-function progressOf(
-	latest: number | null,
-	aim: number | null | undefined,
-	measure: Measure,
-): number | undefined {
+function progressOf(latest: number | null, aim: number | null | undefined): number | undefined {
 	if (latest === null) return undefined
 	if (aim !== undefined) return aim ? (latest / aim) * 100 : undefined
-	if (measure.format === 'percent') return latest * 100
-	return undefined
+	return latest * 100
 }
 
 /**
