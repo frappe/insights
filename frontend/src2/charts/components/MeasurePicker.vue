@@ -254,7 +254,13 @@ function resetAggregation() {
 	resetMeasure()
 }
 
-const label = ref(measure.value.measure_name)
+// An empty name would unmount these settings, whose trigger shows only for a
+// named measure.
+function rename(event: Event) {
+	const input = event.target as HTMLInputElement
+	if (input.value.trim()) measure.value.measure_name = input.value
+	else input.value = measure.value.measure_name
+}
 
 function handleRemove() {
 	measure.value = {
@@ -406,9 +412,7 @@ function handleRemove() {
 						<TextInput
 							autocomplete="off"
 							:modelValue="measure.measure_name"
-							@update:modelValue="label = $event"
-							@blur="measure.measure_name = label"
-							@keydown.enter="measure.measure_name = label"
+							@change="rename"
 						/>
 					</InlineFormControlLabel>
 
