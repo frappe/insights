@@ -122,8 +122,8 @@ type ChartDataResponse = {
 	// an answer, not a failure: there is nothing to retry
 	not_permitted?: NotPermitted
 	user_permissions?: { doctype: string; documents: string[] }[]
-	// a team's Table Restriction, or a column blanked on the rows only desk
-	// allows, filtered these rows. Unlike `user_permissions`, it names nothing
+	// a team's Table Restriction filtered these rows. Unlike
+	// `user_permissions`, it names nothing
 	narrowed_by_permissions?: boolean
 	currency_symbols?: Session['site']['currency_symbols']
 	// the date this card's spans resolved against. A span is stored unresolved,

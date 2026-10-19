@@ -1127,18 +1127,6 @@ class IbisQueryBuilder:
         if raw_sql.lower().startswith(("select", "with")):
             parsed = sg.parse_one(raw_sql, dialect=source_dialect)
             self.refuse_held_back_in_sql(parsed, bindings)
-            # a binding reaches the database as SQL text, so the execution cannot
-            # tell which of its columns are read. Work that out here instead
-            named = {column.name.lower() for column in parsed.find_all(sg.exp.Column)}
-            reads_all = any(
-                isinstance(projection, sg.exp.Star) or isinstance(projection.this, sg.exp.Star)
-                for select in parsed.find_all(sg.exp.Select)
-                for projection in select.expressions
-            )
-            for table_expr in bindings.values():
-                read = [c for c in table_expr.columns if reads_all or c.lower() in named]
-                if read:
-                    user_permissions.record_blanked_reads(table_expr.select(*read))
         replace_map = {table_name: ibis.to_sql(table_expr) for table_name, table_expr in bindings.items()}
 
         if not self.use_live_connection:
@@ -1606,10 +1594,6 @@ def execute_ibis_query(
     except ibis.common.exceptions.OperationNotDefinedError:
         # TODO: throw better error message
         raise
-
-    # the columns the query reads are known only now. Record them before
-    # returning a cached answer, which read the same columns
-    user_permissions.record_blanked_reads(query)
 
     backend = query.get_backend()
     if cache:
