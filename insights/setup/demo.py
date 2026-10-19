@@ -37,6 +37,9 @@ def update_progress(message, progress):
     )
 
 
+SAMPLE_WORKBOOK_TITLE = "Order Analysis"
+
+
 class DemoDataFactory:
     @staticmethod
     def run(force=False):
@@ -177,7 +180,7 @@ class DemoDataFactory:
             )
 
     def create_sample_workbook(self):
-        if frappe.db.exists("Insights Workbook", {"title": "Order Analysis"}):
+        if frappe.db.exists("Insights Workbook", {"title": SAMPLE_WORKBOOK_TITLE}):
             return
 
         fixture_path = frappe.get_app_path("insights", "setup")
