@@ -815,6 +815,30 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
             frappe.get_doc(DT.QUERY, source.name).variables[0].get_password("variable_value"), "hunter2"
         )
 
+    # @feature query.source-query upgrade.copied-sources-reported
+    def test_a_cycle_of_sources_in_other_workbooks_ends_and_is_reported(self):
+        """Two queries of one workbook read each other, so the copy of one reaches
+        the other again. Recursing on stopped the migrate."""
+        from insights.patches.copy_cross_workbook_query_sources import execute
+        from insights.upgrade import ITEM
+
+        far = self.make_workbook("Copy Cycle Far Workbook")
+        one = create_source_query(OWNER, far, "Copy Cycle One").name
+        two = create_source_query(OWNER, far, "Copy Cycle Two").name
+        source_from(one, two)
+        source_from(two, one)
+        near = self.make_workbook("Copy Cycle Near Workbook")
+        reader = create_source_query(OWNER, near, "Copy Cycle Reader").name
+        source_from(reader, one)
+
+        execute()
+
+        (one_copy,) = self.sources_of(reader)
+        (two_copy,) = self.sources_of(one_copy)
+        self.assertEqual(self.sources_of(two_copy), [one])
+        message = frappe.db.get_value(ITEM, {"code": "P21", "reference_name": two_copy}, "message")
+        self.assertIn('reads query "Copy Cycle One", which reads it back', message)
+
 
 class TestASourceIsAQueryOfItsOwnWorkbook(InsightsIntegrationTestCase):
     """A query's sources are queries of its own workbook. Reuse across workbooks
