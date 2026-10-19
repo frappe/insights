@@ -479,6 +479,24 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertEqual(self.reads(reader, "Dashboard Chart", desk_chart.name), (False, False))
         self.assertEqual(self.reads(reader, "Number Card", desk_card.name), (False, False))
 
+    # @feature desk.pick-chart
+    def test_a_desk_chart_or_card_keeps_the_module_its_author_picked(self):
+        """A standard document is exported into its module's app."""
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Module Kept")
+        desk_chart = frappe.get_doc(
+            {
+                "doctype": "Dashboard Chart",
+                "chart_name": "Desk Island Test Module Kept",
+                "insights_chart": chart.name,
+                "module": "Contacts",
+            }
+        ).insert()
+        desk_card = frappe.get_doc(
+            {"doctype": "Number Card", "label": DESK_CARD, "insights_chart": chart.name, "module": "Contacts"}
+        ).insert()
+
+        self.assertEqual((desk_chart.module, desk_card.module), ("Contacts", "Contacts"))
+
     # @feature desk.show-in-desk
     def test_show_in_desk_makes_a_dashboard_chart_that_shows_the_chart(self):
         chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Shown")

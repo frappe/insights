@@ -141,8 +141,7 @@ def desk_definition(doctype: str) -> dict:
     Counting Insights charts marks the document as one that shows an Insights
     chart and nothing else, and frappe asks Insights who may read it
     (`may_read_shown_chart`). `timeseries` is what desk's form sets for a Count
-    chart, so the form opens saved. Removing the app deletes the documents of
-    its module, so none is left counting a doctype that is gone.
+    chart, so the form opens saved.
     """
     if doctype == "Number Card":
         return {
@@ -150,7 +149,6 @@ def desk_definition(doctype: str) -> dict:
             "document_type": DESK_ISLANDS[doctype]["options"],
             "function": "Count",
             "filters_json": "[]",
-            "module": "Insights",
         }
     return {
         "chart_type": "Count",
@@ -158,7 +156,6 @@ def desk_definition(doctype: str) -> dict:
         "based_on": "creation",
         "timeseries": 1,
         "filters_json": "[]",
-        "module": "Insights",
     }
 
 
@@ -169,10 +166,15 @@ def fill_desk_definition(doc, method=None) -> None:
 
     Only a document with no definition of its own gets one. A document claimed
     by hand keeps the one its author chose, and with it its readers.
+
+    A document with no module gets Insights, so removing the app deletes it
+    rather than leave it counting a doctype that is gone. A module the author
+    chose is kept, because a standard document is exported into its module.
     """
     field = DESK_ISLANDS[doc.doctype]
     if doc.get(field["fieldname"]) and not any(doc.get(fieldname) for fieldname in field["definition"]):
         doc.update(desk_definition(doc.doctype))
+        doc.module = doc.module or "Insights"
 
 
 def has_permission(doc, ptype, user) -> bool:
