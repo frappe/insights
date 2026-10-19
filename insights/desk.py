@@ -142,7 +142,8 @@ def desk_definition(doctype: str) -> dict:
     `document_type`. Counting Insights charts marks the document as one that
     shows an Insights chart and nothing else, and `has_permission` narrows it to
     the chart's readers. `timeseries` is what desk's form sets for a Count
-    chart, so the form opens saved.
+    chart, so the form opens saved. Removing the app deletes the documents of
+    its module, so none is left counting a doctype that is gone.
     """
     if doctype == "Number Card":
         return {
@@ -150,6 +151,7 @@ def desk_definition(doctype: str) -> dict:
             "document_type": DESK_ISLANDS[doctype]["options"],
             "function": "Count",
             "filters_json": "[]",
+            "module": "Insights",
         }
     return {
         "chart_type": "Count",
@@ -157,6 +159,7 @@ def desk_definition(doctype: str) -> dict:
         "based_on": "creation",
         "timeseries": 1,
         "filters_json": "[]",
+        "module": "Insights",
     }
 
 

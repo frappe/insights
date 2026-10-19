@@ -504,6 +504,21 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         self.assertEqual(shown["url"], get_url_to_form("Dashboard Chart", shown["name"]))
 
     # @feature desk.show-in-desk
+    def test_what_show_in_desk_makes_belongs_to_the_insights_module(self):
+        """Removing the app deletes a module's documents. Left behind, it would
+        count a doctype that is gone."""
+        for chart_type in ("Bar", "Number"):
+            with self.subTest(chart_type=chart_type):
+                chart = create_test_chart(
+                    OWNER,
+                    self.dashboard.workbook,
+                    title=f"Desk Island Test Module {chart_type}",
+                    chart_type=chart_type,
+                )
+                shown = chart.show_in_desk()
+                self.assertEqual(frappe.db.get_value(shown["doctype"], shown["name"], "module"), "Insights")
+
+    # @feature desk.show-in-desk
     def test_show_in_desk_makes_a_number_card_for_a_number_chart(self):
         chart = create_test_chart(
             OWNER, self.dashboard.workbook, title="Desk Island Test Shown Number", chart_type="Number"
