@@ -292,6 +292,10 @@ def island_for(doc) -> dict | None:
     reference = doc.get(field["fieldname"])
     if not reference:
         return None
+    # a document with a definition of its own shows it once the content is gone,
+    # as a shipped Dashboard's classic charts do after a failed import
+    if not shown_chart(doc) and not frappe.db.exists(field["options"], reference):
+        return None
 
     return {"name": field["island"], "props": {field["prop"]: reference, **field.get("props", {})}}
 

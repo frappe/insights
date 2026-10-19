@@ -171,6 +171,29 @@ class TestDeskIsland(InsightsIntegrationTestCase):
             {"name": "insights.chart", "props": {"chart": self.chart.name}},
         )
 
+    # @feature desk.dashboard-island desk.chart-island
+    def test_a_document_with_its_own_definition_shows_it_once_the_insights_content_is_gone(self):
+        """A shipped Dashboard keeps its classic charts. Show in Desk's own
+        document has only a placeholder, so it keeps the island's Not Found."""
+        workbook = self.dashboard.workbook
+        chart = create_test_chart(OWNER, workbook, title="Desk Island Deleted Chart")
+        dashboard = create_test_dashboard(OWNER, workbook, title="Desk Island Deleted Dashboard")
+        desk_dashboard = self.desk_dashboard(dashboard.name)
+        desk_chart = self.desk_chart(chart.name)
+        placeholder = frappe.get_doc(
+            {
+                "doctype": "Dashboard Chart",
+                "chart_name": f"{DESK_CHART} Placeholder",
+                "insights_chart": chart.name,
+            }
+        ).insert()
+        frappe.delete_doc(DT.CHART, chart.name, force=True)
+        frappe.delete_doc(DT.DASHBOARD, dashboard.name, force=True)
+
+        self.assertIsNone(island_for(desk_dashboard.reload()))
+        self.assertIsNone(island_for(desk_chart.reload()))
+        self.assertEqual(island_for(placeholder.reload())["props"], {"chart": chart.name})
+
     # @feature desk.chart-island
     def test_chart_without_a_link_is_not_ours(self):
         self.assertIsNone(island_for(self.desk_chart()))
