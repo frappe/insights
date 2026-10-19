@@ -105,3 +105,39 @@ class TestTeamManagement(InsightsIntegrationTestCase):
             delete_team("Admin")
 
         self.assertTrue(frappe.db.exists(DT.TEAM, "Admin"))
+
+
+class TestTableRestrictionValidation(InsightsIntegrationTestCase):
+    SAVEPOINT = "test_table_restriction_validation"
+
+    def team_restricting(self, restriction):
+        from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+
+        table = get_table_name("Site DB", "tabToDo")
+        if not frappe.db.exists(DT.TABLE, table):
+            frappe.get_doc(
+                {"doctype": DT.TABLE, "table": "tabToDo", "label": "ToDo", "data_source": "Site DB"}
+            ).insert(ignore_permissions=True)
+        columns = [{"name": "status", "type": "String"}, {"name": "priority", "type": "String"}]
+        frappe.db.set_value(DT.TABLE, table, "columns", frappe.as_json(columns), update_modified=False)
+        team = frappe.get_doc({"doctype": DT.TEAM, "team_name": TEAM_NAME})
+        team.append(
+            "team_permissions",
+            {"resource_type": DT.TABLE, "resource_name": table, "table_restrictions": restriction},
+        )
+        return team
+
+    # @feature settings.team-manage
+    def test_a_restriction_that_is_not_a_condition_on_the_tables_columns_is_refused(self):
+        for restriction in ('_.status == "Open"', 'state == "Open"', "status", "status =="):
+            with self.subTest(restriction=restriction):
+                with self.assertRaisesRegex(frappe.ValidationError, "is not a condition on its columns"):
+                    self.team_restricting(restriction).insert(ignore_permissions=True)
+
+    # @feature settings.team-manage
+    def test_a_condition_on_the_tables_columns_is_saved(self):
+        team = self.team_restricting('(status == "Open") | (priority == "High")').insert(
+            ignore_permissions=True
+        )
+
+        self.assertTrue(frappe.db.exists(DT.TEAM, team.name))

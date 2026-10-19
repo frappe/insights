@@ -65,6 +65,21 @@ class InsightsTeam(Document):
         for d in self.team_permissions:
             if d.resource_type not in SHARED_OBJECT:
                 frappe.throw(f"Invalid resource type: {d.resource_type}")
+        self.validate_table_restrictions()
+
+    def validate_table_restrictions(self):
+        """Refuse a new or changed Table Restriction that is not a condition on
+        its table's columns. Otherwise every query on the table fails later with
+        a raw error."""
+        before = self.get_doc_before_save()
+        held = {(d.resource_name, d.table_restrictions) for d in before.team_permissions} if before else set()
+        for d in self.team_permissions:
+            if (
+                d.resource_type == "Insights Table v3"
+                and (d.table_restrictions or "").strip()
+                and (d.resource_name, d.table_restrictions) not in held
+            ):
+                check_table_restriction(d.resource_name, d.table_restrictions)
 
     def on_trash(self):
         self.prevent_admin_team_deletion()
@@ -368,6 +383,43 @@ def restriction_predicate(table, restrictions: list[str]):
     columns = {column: table[column] for column in table.schema().names}
     predicates = [exec_with_return(expression.strip(), columns) for expression in restrictions]
     return functools.reduce(operator.or_, predicates)
+
+
+def check_table_restriction(table_name: str, restriction: str) -> None:
+    """Throw unless `restriction` is a condition on the columns of `table_name`,
+    checked by the code that applies it. A table whose columns were never
+    recorded is checked when it runs."""
+    import ibis
+    import ibis.expr.types as ir
+
+    from insights.insights.doctype.insights_data_source_v3.ibis.utils import get_ibis_dtype
+
+    table = frappe.db.get_value("Insights Table v3", table_name, ["table", "columns"], as_dict=True)
+    columns = frappe.parse_json(table.columns) if table and table.columns else None
+    if not columns:
+        return
+    schema = get_ibis_dtype([{"value": c.get("name"), "description": c.get("type")} for c in columns])
+    try:
+        predicate = restriction_predicate(
+            ibis.table({name: dtype or "string" for name, dtype in schema.items()}, name="restriction"),
+            [restriction],
+        )
+        valid = isinstance(predicate, ir.BooleanValue)
+    except Exception:
+        # the sandbox's own refusal would show beside this message
+        frappe.clear_last_message()
+        valid = False
+    if not valid:
+        frappe.throw(
+            frappe._(
+                "The Table Restriction on {0}, {1}, is not a condition on its columns. Name a column as it is, like {2}."
+            ).format(
+                frappe.bold(table.table),
+                frappe.bold(frappe.utils.escape_html(restriction.strip())),
+                frappe.bold('status == "Open"'),
+            ),
+            title=frappe._("Invalid Table Restriction"),
+        )
 
 
 def remove_admin_role(users):
