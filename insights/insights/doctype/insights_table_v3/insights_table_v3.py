@@ -542,9 +542,13 @@ def desk_predicate(t: Table, data_source, table_name, user):
         allowed_single_doctypes = set(single_doctypes) & readable_doctypes(user)
         if not allowed_single_doctypes:
             return None
-        if len(allowed_single_doctypes) == len(single_doctypes):
-            return True
-        return t.doctype.isin(allowed_single_doctypes)
+        # a single's fields are its rows here, so a field desk holds back is a row to drop
+        permitted_fields = [
+            f"{doctype}.{field}"
+            for doctype in allowed_single_doctypes
+            for field in get_permitted_columns_for_table(f"tab{doctype}", user)
+        ]
+        return t.doctype.concat(".", t.field).isin(permitted_fields)
 
     permission_query = get_permission_query_for_table(table_name, user)
     if not permission_query:

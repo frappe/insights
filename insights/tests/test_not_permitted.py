@@ -175,6 +175,31 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
         self.assertEqual(refusal.exception.doctypes, ["Deleted Document"])
 
+    # @feature permissions.site-user-permissions
+    def test_singles_holds_back_a_field_the_reader_may_not_read(self):
+        setter = frappe.get_doc(
+            {
+                "doctype": "Property Setter",
+                "doctype_or_field": "DocField",
+                "doc_type": "Insights Settings",
+                "field_name": "max_export_rows",
+                "property": "permlevel",
+                "value": 1,
+                "property_type": "Int",
+            }
+        ).insert(ignore_permissions=True)
+        frappe.clear_cache(doctype="Insights Settings")
+        self.addCleanup(frappe.clear_cache, doctype="Insights Settings")
+        self.addCleanup(frappe.delete_doc, "Property Setter", setter.name, force=True)
+        frappe.db.set_single_value("Insights Settings", {"max_export_rows": 1000, "week_starts_on": "Monday"})
+
+        with as_user(READER), db_connections():
+            table = InsightsTablev3.get_ibis_table(SITE_DB, "tabSingles", use_live_connection=True)
+            fields = set(table.filter(table.doctype == "Insights Settings").execute()["field"])
+
+        self.assertIn("week_starts_on", fields)
+        self.assertNotIn("max_export_rows", fields)
+
     # @feature permissions.not-permitted-chart
     def test_a_child_table_names_the_parent_it_needs(self):
         with self.assertRaises(NotPermitted) as refusal:
