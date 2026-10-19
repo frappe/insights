@@ -43,6 +43,17 @@ const workbook = inject(workbookKey)!
 						@returned="workbook.doc.title = $event"
 						@blur="workbook.doc.title = $event"
 					></ContentEditable>
+					<Tooltip
+						v-if="workbook.doc.shipped_by"
+						:text="
+							__(
+								'Ships with {0}. Duplicate it to make your own changes.',
+								workbook.doc.shipped_by,
+							)
+						"
+					>
+						<Badge theme="gray" :label="workbook.doc.shipped_by" />
+					</Tooltip>
 				</div>
 			</div>
 			<div class="absolute right-0">

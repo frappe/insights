@@ -292,7 +292,12 @@ function makeWorkbook(name: string) {
 	function deleteWorkbook() {
 		confirmDialog({
 			title: __('Delete Workbook'),
-			message: __('Are you sure you want to delete this workbook?'),
+			message: workbook.doc.shipped_by
+				? __(
+						'This workbook ships with {0}. Deleting it removes it from the app.',
+						workbook.doc.shipped_by,
+				  )
+				: __('Are you sure you want to delete this workbook?'),
 			theme: 'red',
 			onSuccess: () => workbook.delete().then(() => router.replace('/workbook')),
 		})

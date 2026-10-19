@@ -313,6 +313,8 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
         for field in (
             "timestamp",
             "read_only",
+            "can_copy",
+            "shipped_by",
             "data_backup",
         ):
             self.assertNotIn(field, file)
@@ -409,6 +411,13 @@ class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCas
 
         with developer_mode():
             self.assertFalse(frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict().read_only)
+
+    # @feature standard.read-only
+    def test_the_workbook_names_the_app_that_ships_it(self):
+        """The builder shows it, in developer mode too, where nothing is read-only."""
+        with developer_mode():
+            workbook = frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict()
+        self.assertEqual(workbook.shipped_by, frappe.get_hooks("app_title", app_name="insights")[0])
 
     # @feature standard.read-only
     def test_developer_mode_may_change_it(self):

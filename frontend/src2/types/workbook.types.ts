@@ -75,6 +75,7 @@ export type InsightsWorkbook = {
 	can_copy?: boolean
 	/** Set when an app ships the workbook. `module` is the module it ships in. */
 	is_standard?: boolean
+	shipped_by?: string | null
 	module?: string | null
 }
 
