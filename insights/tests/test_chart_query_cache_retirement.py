@@ -25,14 +25,19 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
     @classmethod
     def before_class(cls):
         cls.workbook = create_test_workbook(OWNER, title=WORKBOOK_TITLE).name
+        # a site installed on this release never had the field, so its column is
+        # put back for the patch to read
+        cls.added_column = FIELD not in frappe.db.get_table_columns(CHART)
+        if cls.added_column:
+            frappe.db.sql_ddl(f"alter table `tab{CHART}` add column `{FIELD}` varchar(140)")
+            frappe.client_cache.delete_value(f"table_columns::tab{CHART}")
 
     @classmethod
     def after_class(cls):
         frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True)
-
-    def before_test(self):
-        if FIELD not in frappe.db.get_table_columns(CHART):
-            self.skipTest(f"{CHART}.{FIELD} has been trimmed off this site, so there is nothing to read")
+        if cls.added_column:
+            frappe.db.sql_ddl(f"alter table `tab{CHART}` drop column `{FIELD}`")
+            frappe.client_cache.delete_value(f"table_columns::tab{CHART}")
 
     def cached_query(self):
         """A chart and the query document it used to cache its rows' query in.
