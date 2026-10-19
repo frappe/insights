@@ -94,11 +94,12 @@ function makeWorkbook(name: string) {
 
 	function addChart(query_name?: string) {
 		const chart = newChart()
-		chart.doc.title = 'Chart ' + (workbook.doc.charts.length + 1)
+		const query = query_name ? useQuery(query_name) : undefined
+		chart.doc.title = query?.doc.title || 'Chart ' + (workbook.doc.charts.length + 1)
 		chart.doc.workbook = workbook.doc.name
 		chart.doc.query = query_name || ''
 		chart.doc.chart_type = 'Bar'
-		const measure = query_name && firstMeasure(useQuery(query_name).result.columnOptions)
+		const measure = query && firstMeasure(query.result.columnOptions)
 		if (measure)
 			chart.doc.config = { y_axis: { series: [{ measure }] } } as Chart['doc']['config']
 		chart.doc.sort_order = workbook.doc.charts.length

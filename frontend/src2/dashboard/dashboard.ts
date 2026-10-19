@@ -88,6 +88,8 @@ function makeDashboard(name: string) {
 
 	const editing = ref(false)
 	const editingItemIndex = ref<number>()
+	// the chart picker is open. The edit actions and an empty grid both open it
+	const pickingCharts = ref(false)
 
 	// Which breakpoint's layout the author is arranging. Every edit session starts
 	// at the widest, because that is the layout every item has and the one the
@@ -609,6 +611,7 @@ function makeDashboard(name: string) {
 
 		editing,
 		editingItemIndex,
+		pickingCharts,
 		isEditingItem,
 		finishEditing,
 		discardEditing,

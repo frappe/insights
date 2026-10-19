@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Button } from 'frappe-ui'
 import { computed, ref, type Component } from 'vue'
 import { downloadImage } from '../helpers'
 import { resolveHref } from '../helpers/navigation'
@@ -123,7 +124,28 @@ function exportImage() {
 			@drop="dashboard.builder?.drop($event)"
 		>
 			<div
-				v-if="!dashboard.items.length"
+				v-if="!dashboard.items.length && dashboard.builder?.editing"
+				class="flex h-full w-full flex-col items-center justify-center gap-3 text-center"
+			>
+				<div class="flex flex-col gap-1">
+					<p class="text-base-medium text-ink-gray-8">{{ __('Add a chart') }}</p>
+					<p class="text-p-sm text-ink-gray-5">
+						{{
+							__(
+								"Pick one of the workbook's charts, or drag one in from the sidebar.",
+							)
+						}}
+					</p>
+				</div>
+				<Button
+					variant="solid"
+					icon-left="lucide-plus"
+					:label="__('Chart')"
+					@click="dashboard.builder.pickCharts()"
+				/>
+			</div>
+			<div
+				v-else-if="!dashboard.items.length"
 				class="flex h-full w-full items-center justify-center text-p-base text-ink-gray-5"
 			>
 				{{ __('This dashboard is empty') }}

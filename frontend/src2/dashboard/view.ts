@@ -224,6 +224,8 @@ export type DashboardBuilderActions = {
 	// a chart dragged in from the workbook's sidebar
 	dragOver: (event: DragEvent) => void
 	drop: (event: DragEvent) => void
+	// opens the picker of the workbook's charts
+	pickCharts: () => void
 }
 
 /**

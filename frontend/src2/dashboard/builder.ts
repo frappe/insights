@@ -139,6 +139,7 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 				event.dataTransfer.dropEffect = 'copy'
 			},
 			drop: dropChart,
+			pickCharts: () => (dashboard.pickingCharts = true),
 		}),
 	}) as DashboardInBuilder
 }
