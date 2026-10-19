@@ -672,6 +672,22 @@ class TestWhoMaySend(AlertOverSeededTodos):
                 update_share_permissions(self.workbook, [{"user": self.READER, "read": 1, "write": 1}])
                 self.assertEqual(send_unsaved(name), 1)
 
+    # @feature alerts.test-send
+    def test_a_writer_who_may_not_download_cannot_send_it(self):
+        """A send mails the rows, which `allow_download` keeps from them."""
+        from insights.api.workbooks import update_share_permissions
+
+        alert = self.make_alert(condition="status == 'Open'")
+        update_share_permissions(self.workbook, [{"user": self.READER, "read": 1, "write": 1}])
+        frappe.db.set_single_value("Insights Settings", "allow_download", 0)
+        self.addCleanup(frappe.db.set_single_value, "Insights Settings", "allow_download", 1)
+
+        with as_user(self.READER), patch("frappe.sendmail") as sendmail:
+            with self.assertRaises(frappe.PermissionError):
+                frappe.get_doc("Insights Alert", alert.name).test_alert()
+
+        self.assertEqual(sendmail.call_count, 0)
+
     # @feature alerts.enable
     def test_an_edit_by_another_writer_keeps_the_enabler_and_the_form_names_them(self):
         """`AlertSetupDialog` reads `permission_user` through `insights.api.get_doc`

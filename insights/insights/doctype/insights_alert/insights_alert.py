@@ -128,6 +128,15 @@ class InsightsAlert(Document):
         if not can_read_referenced_query(self.query):
             frappe.throw(_("You do not have permission to access this query"), frappe.PermissionError)
 
+    def check_sender_may_download(self):
+        """A send mails the query's rows, so whoever sends it by hand must be
+        allowed to download them. The scheduler's session is Administrator, so a
+        scheduled run is not checked here, and alerts already running keep running."""
+        from insights.permissions import can_export
+
+        if not can_export(frappe.get_doc("Insights Query v3", self.query)):
+            frappe.throw(_("You may not download this query's rows, so you may not send them."), SendRefused)
+
     @frappe.whitelist(methods=["POST"])
     def send_alert(self, force: bool = False):
         # Sending mails the author's recipients, so read access is not enough,
@@ -147,6 +156,7 @@ class InsightsAlert(Document):
                 SendRefused,
             )
         self.has_query_permission()
+        self.check_sender_may_download()
 
         results = self.evaluate_condition()
         if not results and not force:
