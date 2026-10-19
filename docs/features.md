@@ -480,6 +480,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.attention-items | What the upgrade could not carry over waits as an item: an admin sees every open item, anyone else only their own, and either dismisses it. |
 | upgrade.attention-fix | An item's Fix applies its fix with the user's own permission on what the item names: it shares a workbook back, or deletes a template copy. |
 | upgrade.owners-keep-access | After the upgrade, a user who made a query, chart, dashboard or alert in a workbook that does not name them can edit the workbook, and an admin is told who was added. |
+| upgrade.member-shares-kept | After the upgrade, a user a query, chart, dashboard, alert or folder was shared with keeps that access through a share of its workbook. A share with everyone is removed, not widened, and an admin is told about each. |
 | upgrade.site-data-follows-desk | After the upgrade, an admin sees each user who lost site rows a team gave them, and each Table Restriction on a site table that stopped applying, with the desk fix for each. |
 
 ## tooling

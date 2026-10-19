@@ -7,6 +7,7 @@ or dashboard grant edit. Insights 4 gives access through the workbook only. See
 
 import frappe
 
+from insights.patches.reshape_member_shares import execute as reshape_member_shares
 from insights.patches.share_workbooks_with_member_owners import execute as share_with_owners
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -99,3 +100,37 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
             frappe.db.exists("DocShare", {"share_doctype": DT.WORKBOOK, "share_name": self.workbook})
         )
         self.assertFalse(frappe.db.exists(ITEM, {"code": "P3", "reference_name": self.workbook}))
+
+    def old_share(self, doctype, name, **flags):
+        """A share as Insights 3 wrote it, which Insights 4 refuses to save."""
+        frappe.get_doc(
+            {"doctype": "DocShare", "share_doctype": doctype, "share_name": name, "read": 1, **flags}
+        ).db_insert()
+
+    # @feature upgrade.member-shares-kept
+    def test_a_user_a_query_was_shared_with_reads_its_workbook(self):
+        query = create_test_query(OWNER, self.workbook)
+        self.old_share(DT.QUERY, query.name, user=AUTHOR)
+
+        reshape_member_shares()
+
+        self.assertTrue(self.can(AUTHOR, "read"))
+        self.assertFalse(self.can(AUTHOR, "write"))
+        self.assertFalse(frappe.db.exists("DocShare", {"share_doctype": DT.QUERY, "share_name": query.name}))
+        message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": self.workbook}, "message")
+        self.assertIn(AUTHOR, message)
+
+    # @feature upgrade.member-shares-kept
+    def test_a_chart_shared_with_everyone_to_edit_is_reported_not_widened(self):
+        query = create_test_query(OWNER, self.workbook)
+        chart = create_test_chart(OWNER, self.workbook, query.name, title=f"{PREFIX} Chart")
+        self.old_share(DT.CHART, chart.name, everyone=1, write=1)
+
+        reshape_member_shares()
+
+        self.assertFalse(
+            frappe.db.exists("DocShare", {"share_doctype": DT.WORKBOOK, "share_name": self.workbook})
+        )
+        message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": self.workbook}, "message")
+        self.assertIn(f'The chart "{PREFIX} Chart"', message)
+        self.assertIn("shared with everyone to edit", message)

@@ -804,13 +804,22 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 for doctype in sorted(shareable)
             ],
         )
-        # USER_3 reads the query through the chart. Only the workbook gives read on an alert.
+        # USER_3 keeps every flag through a share of the workbook, the only way to them now
+        self.assertEqual(
+            frappe.get_all(
+                "DocShare",
+                filters={"share_doctype": DT.WORKBOOK, "share_name": workbook.name},
+                fields=["user", "read", "write", "share"],
+            ),
+            [{"user": USER_3, "read": 1, "write": 1, "share": 1}],
+        )
         for doctype, name in members:
-            expected = nothing if doctype in ("Insights Folder", "Insights Alert") else read_only
-            self.assertEqual(grants(USER_3, doctype, name), expected, doctype)
+            self.assertEqual(
+                grants(USER_3, doctype, name), {"read": True, "write": True, "share": True}, doctype
+            )
             self.assertEqual(grants(USER_2, doctype, name), nothing, doctype)
         with self.as_user(USER_3):
-            self.assertEqual(get_alerts(query.name), [])
+            self.assertEqual([row.name for row in get_alerts(query.name)], [alert.name])
 
         with self.as_user(USER_1):
             frappe.share.add(DT.WORKBOOK, workbook.name, user=USER_2, read=1, write=1, share=1, notify=0)
