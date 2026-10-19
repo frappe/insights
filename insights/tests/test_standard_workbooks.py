@@ -347,6 +347,23 @@ class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCas
         with self.assertRaises(frappe.ValidationError):
             act()
 
+    # @feature standard.duplicate
+    def test_an_insights_admin_without_system_manager_opens_and_duplicates_it(self):
+        """That is how an admin customizes what an app ships."""
+        from insights.api import get_doc
+        from insights.tests.factories import as_user, create_user, delete_users
+
+        admin = create_user("standard_admin@test.com", roles=["Insights Admin", "Desk User"]).name
+        self.addCleanup(delete_users, admin)
+        self.assertNotIn("System Manager", frappe.get_roles(admin))
+
+        with as_user(admin):
+            self.assertEqual(get_doc(DT.WORKBOOK, WORKBOOK).name, WORKBOOK)
+            copy = frappe.get_doc(DT.WORKBOOK, WORKBOOK).duplicate()
+
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, copy, True)
+        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, copy, ["owner", "is_standard"]), (admin, 0))
+
     # @feature standard.read-only
     def test_the_workbook_and_its_members_refuse_an_edit(self):
         for doctype, name in (
