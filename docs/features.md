@@ -395,7 +395,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.request-body-not-trusted | Access is decided against the stored document, never against claims in the request. |
 | permissions.authoring-needs-role | Only a user with an Insights role previews or drills an unsaved config, and only over queries they can read. |
 | permissions.denied-is-not-found | Content a reader may not read answers Not Found, the same as content that does not exist. |
-| permissions.not-permitted-chart | A chart whose reader may not read a table or a permlevel column it uses does not run, and its card names the doctypes it needs. |
+| permissions.not-permitted-chart | A chart whose reader may not read a table, a permlevel column or a masked field it uses does not run, and its card names the doctypes it needs. |
 | permissions.not-found-when-nothing-is-permitted | A dashboard on which every chart is Not Permitted reads as Not Found to a reader. A dashboard with some permitted charts, or one the caller may write, opens with all its charts. |
 | permissions.card-says-it-is-scoped | A card names the reader's User Permissions that narrowed its rows. It also says so when a team's Table Restriction cut its rows, so a narrowed number is not read as the total. |
 | permissions.view-sends-no-query | A reader of a chart or dashboard gets only what is needed to show it, never the operations, SQL or query behind it. |

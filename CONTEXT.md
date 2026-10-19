@@ -221,7 +221,7 @@ A chart the reader may open but whose data they may not read. It reads a site-DB
 _Avoid_: denied, no access, hidden, no data (no data is a true zero)
 
 **Held back**:
-A permlevel column the reader may not read, which a build removes from the table's columns. The chart keeps running while nothing in it names the column. An operation, an expression or SQL that names the column makes the chart **Not Permitted**. A held-back column still counts toward the shape of the result, so a join names its output columns as it would for the author (`not_permitted.hold_back`, `held_back_columns`, `held_back_key`). A column the author removed or renamed is dropped (`dropped_by_writer`), not held back.
+A permlevel column the reader may not read, or a field desk shows them masked, which a build removes from the table's columns. The chart keeps running while nothing in it names the column. An operation, an expression or SQL that names the column makes the chart **Not Permitted**. A held-back column still counts toward the shape of the result, so a join names its output columns as it would for the author (`not_permitted.hold_back`, `held_back_columns`, `held_back_key`). A column the author removed or renamed is dropped (`dropped_by_writer`), not held back.
 _Avoid_: lost, dropped (for permlevel)
 
 ### Sharing & governance

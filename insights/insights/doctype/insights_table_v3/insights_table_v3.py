@@ -680,7 +680,8 @@ def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
     def permitted(dt, parent=None) -> set[str]:
         # get_permitted_fields drops optional meta columns (`_assign`, `_comments`, ...)
         # because they aren't in valid_columns; add them back so they survive.
-        return {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *optional_fields}
+        readable = {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *optional_fields}
+        return readable - masked_fields(dt, parent, user)
 
     if not meta.istable:
         if not frappe.has_permission(doctype, "read", user=user):
@@ -697,6 +698,21 @@ def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
     for parent in permitted_parents:
         allowed |= permitted(doctype, parent)
     return allowed
+
+
+def masked_fields(doctype, parenttype=None, user=None) -> set[str]:
+    """The fields desk shows `user` masked.
+
+    Desk returns a masked value, and a query would return the raw one, so the
+    column is held back like a permlevel column. `Meta.get_masked_fields`
+    answers for the session user only, and a chart may run as its owner.
+    """
+    user = user or frappe.session.user
+    if user == "Administrator":
+        return set()
+    meta = frappe.get_meta(doctype)
+    unmasked = set(meta.get_permlevel_access("mask", parenttype, user=user))
+    return {df.fieldname for df in meta.fields if df.get("mask") and df.permlevel not in unmasked}
 
 
 def get_permission_query_for_table(table_name, user=None) -> str | None:

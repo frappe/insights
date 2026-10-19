@@ -194,6 +194,19 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         self.assertEqual([row["name"] for row in rows], [self.todo])
 
     # @feature permissions.not-permitted-chart
+    def test_a_masked_column_refuses_only_the_chart_that_names_it(self):
+        """Desk shows a masked field as `xxxx`, and a query would read its raw
+        value. So it is held back like a permlevel column."""
+        self.make_status_masked()
+
+        with self.assertRaises(NotPermitted) as refusal:
+            self.fetch(self.permlevel_chart)
+        self.assertEqual(refusal.exception.doctypes, ["ToDo"])
+
+        rows = self.fetch(self.plain_chart)["rows"]
+        self.assertEqual([row["name"] for row in rows], [self.todo])
+
+    # @feature permissions.not-permitted-chart
     def test_a_join_that_names_a_permlevel_column_is_not_permitted(self):
         """Other operations resolve a column through `get_column`, which refuses
         a held-back column. A join's selected columns used to go to ibis
