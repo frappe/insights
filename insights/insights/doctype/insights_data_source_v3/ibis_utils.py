@@ -917,6 +917,13 @@ class IbisQueryBuilder:
                 frappe._("A SQL column expression cannot read another table"),
                 QueryRefused,
             )
+        if reads := unbound_reads(select):
+            frappe.throw(
+                frappe._("A SQL column expression cannot read data through {0}").format(
+                    frappe.utils.escape_html(", ".join(reads))
+                ),
+                QueryRefused,
+            )
         return select
 
     def apply_summary(self, summarize_args):

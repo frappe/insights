@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import re
 from collections.abc import Callable
 
 import frappe
@@ -266,17 +267,60 @@ def real_table_refs(parsed: sg.Expression) -> list[sg.exp.Table]:
     return [table for table in parsed.find_all(sg.exp.Table) if not is_cte(table)]
 
 
+# functions that run a query given as a string, or read a file or another database
+UNBOUND_READ_FUNCTION = re.compile(
+    # DuckDB
+    r"query|query_table|(postgres|mysql|sqlite)_(query|execute)|\w+_attach"
+    r"|read_\w+|\w+_scan\w*|glob|sniff_csv|parquet_\w+|iceberg_\w+"
+    # Postgres, with the tablefunc, dblink, adminpack and pageinspect extensions
+    r"|(query|table|cursor|schema|database)_to_xml\w*|ts_stat|ts_rewrite|crosstab\d*|connectby"
+    r"|dblink\w*|pg_read_\w+|pg_ls_\w+|pg_stat_file|pg_file_\w+|pg_logdir_ls|lo_\w+|get_raw_page"
+    # MariaDB, SQLite, ClickHouse, MSSQL
+    r"|load_file|load_extension|readfile|file|joinget\w*|dictget\w*"
+    r"|openrowset|openquery|opendatasource",
+    re.IGNORECASE,
+)
+
+
+# table functions that make rows from their arguments alone, as sqlglot types
+# them, and by name where a dialect leaves them untyped
+ROW_FUNCTIONS = (sg.exp.GenerateSeries, sg.exp.ExplodingGenerateSeries, sg.exp.JSONTable, sg.exp.Unnest)
+ROW_FUNCTION_NAME = re.compile(
+    r"generate_series|range|unnest|json_table|json_tree"
+    r"|jsonb?_(each|each_text|array_elements|array_elements_text|to_recordset)",
+    re.IGNORECASE,
+)
+
+
 def unbound_reads(parsed: sg.Expression) -> list[str]:
     """What `parsed` reads without naming a table, so no binding can replace it.
 
-    A FROM source such as DuckDB's `query_table('tabUser')` reads a table the
-    binding never sees.
+    A FROM source such as DuckDB's `query_table('tabUser')`, or a function such
+    as Postgres' `query_to_xml('select ...')`, reads a table the binding never
+    sees. A FROM source that makes rows from its arguments, such as
+    `generate_series`, reads none.
     """
-    return [
+    sources = [
         table.this.sql()
         for table in parsed.find_all(sg.exp.Table)
-        if not isinstance(table.this, sg.exp.Identifier)
+        if not isinstance(table.this, sg.exp.Identifier) and not makes_rows(table.this)
     ]
+    functions = [
+        name
+        for func in parsed.find_all(sg.exp.Func)
+        if UNBOUND_READ_FUNCTION.fullmatch(name := function_name(func))
+    ]
+    return sources + functions
+
+
+def function_name(func: sg.exp.Func) -> str:
+    return func.name if isinstance(func, sg.exp.Anonymous) else func.sql_name()
+
+
+def makes_rows(source: sg.Expression) -> bool:
+    return isinstance(source, ROW_FUNCTIONS) or (
+        isinstance(source, sg.exp.Anonymous) and bool(ROW_FUNCTION_NAME.fullmatch(source.name))
+    )
 
 
 def extract_query_deps_from_operations(operations: list) -> list[str]:
