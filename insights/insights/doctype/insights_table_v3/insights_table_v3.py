@@ -265,9 +265,18 @@ class InsightsTablev3(Document):
 
     @frappe.whitelist()
     def get_stats(self):
-        """Return usage and sync statistics for this table."""
+        """Return usage and sync statistics for this table.
+
+        A site table's row count is for admins only: desk may narrow what a
+        reader sees of the table, or deny it.
+        """
+        from insights.insights.doctype.insights_team.insights_team import is_admin
+
         self.check_identity()
-        return get_table_stats(self.data_source, self.table)
+        stats = get_table_stats(self.data_source, self.table)
+        if is_site_db(self.data_source) and not is_admin(frappe.session.user):
+            stats["last_import_rows"] = None
+        return stats
 
 
 def get_table_name(data_source, table):
