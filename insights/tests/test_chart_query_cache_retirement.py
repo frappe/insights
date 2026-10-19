@@ -13,9 +13,17 @@ import frappe
 from insights.patches.retire_chart_query_cache import ALERT, CHART, FIELD, QUERY, REFERENCE
 from insights.patches.retire_chart_query_cache import execute as retire
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import DT, create_test_query, create_test_workbook
+from insights.tests.factories import (
+    DT,
+    create_test_query,
+    create_test_workbook,
+    create_user,
+    delete_users,
+)
+from insights.upgrade import ITEM
 
 OWNER = "Administrator"
+ALERT_OWNER = "chart_query_cache_alert_owner@test.com"
 WORKBOOK_TITLE = "Chart Query Cache Test Workbook"
 
 
@@ -25,6 +33,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
     @classmethod
     def before_class(cls):
         cls.workbook = create_test_workbook(OWNER, title=WORKBOOK_TITLE).name
+        create_user(ALERT_OWNER, roles="Insights User")
         # a site installed on this release never had the field, so its column is
         # put back for the patch to read
         cls.added_column = FIELD not in frappe.db.get_table_columns(CHART)
@@ -35,9 +44,13 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
     @classmethod
     def after_class(cls):
         frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True)
+        delete_users(ALERT_OWNER)
         if cls.added_column:
             frappe.db.sql_ddl(f"alter table `tab{CHART}` drop column `{FIELD}`")
             frappe.client_cache.delete_value(f"table_columns::tab{CHART}")
+
+    def before_test(self):
+        frappe.db.delete(ITEM)
 
     def cached_query(self):
         """A chart and the query document it used to cache its rows' query in.
@@ -79,8 +92,19 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         enqueue.assert_not_called()
 
     # @feature upgrade.cached-queries-removed
-    def test_an_alert_and_the_history_go_with_the_cache(self):
+    def test_the_history_goes_with_the_cache(self):
         _chart, cache = self.cached_query()
+        frappe.get_doc({"doctype": "Version", "ref_doctype": QUERY, "docname": cache, "data": "{}"}).insert(
+            ignore_permissions=True
+        )
+
+        retire()
+
+        self.assertFalse(frappe.db.exists("Version", {"ref_doctype": QUERY, "docname": cache}))
+
+    # @feature upgrade.cached-queries-removed
+    def test_a_cache_an_alert_watches_stays_as_a_query_and_its_owner_is_told(self):
+        chart, cache = self.cached_query()
         alert = frappe.get_doc(
             {
                 "doctype": ALERT,
@@ -90,14 +114,19 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
             }
         )
         alert.db_insert()
-        frappe.get_doc({"doctype": "Version", "ref_doctype": QUERY, "docname": cache, "data": "{}"}).insert(
-            ignore_permissions=True
-        )
+        frappe.db.set_value(ALERT, alert.name, "owner", ALERT_OWNER)
 
         retire()
 
-        self.assertFalse(frappe.db.exists(ALERT, alert.name))
-        self.assertFalse(frappe.db.exists("Version", {"ref_doctype": QUERY, "docname": cache}))
+        self.assertTrue(frappe.db.exists(ALERT, alert.name))
+        self.assertTrue(frappe.db.exists(QUERY, cache))
+        self.assertEqual(
+            frappe.db.sql_list(f"select `{FIELD}` from `tab{CHART}` where name = %s", chart), [None]
+        )
+        self.assertEqual(
+            frappe.get_all(ITEM, filters={"code": "J1"}, fields=["reference_name", "user"]),
+            [{"reference_name": cache, "user": ALERT_OWNER}],
+        )
 
     def queries_in_workbook(self):
         return frappe.get_all(QUERY, filters={"workbook": self.workbook}, pluck="name", order_by="name")
