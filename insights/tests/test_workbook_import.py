@@ -542,6 +542,61 @@ class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
             self.assertFalse(is_workbook_file(chart))
             self.assertFalse(is_workbook_file({"type": "Query", "name": self.query}))
 
+    def imported_cells(self, wrap: bool) -> dict:
+        """Import the file with a text cell and a two-reading Number chart, and
+        answer each cell's box by its reading or type."""
+        number = "number format chart"
+        charts = {
+            **self.file["charts"],
+            number: {
+                "name": number,
+                "title": number,
+                "chart_type": "Number",
+                "query": self.query,
+                "config": {
+                    "number_columns": [{"measure_name": "first"}, {"measure_name": "second"}],
+                    "number_column_options": [{}, {}],
+                },
+            },
+        }
+        items = [
+            {"type": "text", "text": "hi", "layout": {"i": "t", "x": 0, "y": 2, "w": 4, "h": 3}},
+            {"type": "chart", "chart": number, "layout": {"i": "n", "x": 4, "y": 0, "w": 8, "h": 2}},
+        ]
+        dashboards = {
+            name: {**dashboard, "items": frappe.as_json(items)}
+            for name, dashboard in self.file["dashboards"].items()
+        }
+        members = {"folders": [], "queries": self.file["queries"], "charts": charts, "dashboards": dashboards}
+        file = (
+            {
+                "type": "Workbook",
+                "name": self.workbook,
+                "doc": {"title": "grid copy"},
+                "dependencies": members,
+            }
+            if wrap
+            else {"doctype": DT.WORKBOOK, "name": self.workbook, "title": "grid copy", **members}
+        )
+
+        with as_user(IMPORTER):
+            imported = import_workbook(file)
+        self.made_workbooks.append(imported["workbook"])
+
+        (dashboard,) = [imported["names"][name] for name in dashboards]
+        cells = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard, "items"))
+        return {
+            cell.get("reading") or cell["type"]: (cell["layout"]["y"], cell["layout"]["h"]) for cell in cells
+        }
+
+    # @feature upgrade.older-export-imports
+    def test_a_file_insights_3_exported_lands_on_the_new_grid(self):
+        """Insights 3 exported the wrapped shape, with rows 52px tall and a Number
+        chart's readings in one cell. A dashboard the site already had was moved
+        by `resize_dashboard_cells` and `split_number_cells`; a file is moved on import."""
+        self.assertEqual(self.imported_cells(wrap=True), {"text": (5, 8), "first": (0, 4), "second": (0, 4)})
+        self.assertEqual(self.imported_cells(wrap=False), {"text": (2, 3), "chart": (0, 2)})
+
     # @feature standard.file-format
     def test_a_file_in_the_wrapped_shape_still_imports(self):
         """Every file a site exported until now, and every file an app ships."""

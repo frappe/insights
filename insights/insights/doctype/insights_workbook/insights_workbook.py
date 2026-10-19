@@ -14,6 +14,8 @@ from frappe.website.utils import cleanup_page_name
 from insights import standard
 from insights.desk import claims_on, refuse_delete_while_claimed
 from insights.insights.query_utils import referenced_queries
+from insights.patches.resize_dashboard_cells import number_chart_configs
+from insights.patches.split_number_cells import upgrade_cells
 from insights.permissions import ROLES, UNNAMEABLE_ROLES, can_copy, can_write, check_trusted_code_author
 from insights.telemetry import capture
 from insights.utils import deep_convert_dict_to_dict
@@ -279,9 +281,14 @@ class InsightsWorkbook(Document):
                 "Insights Chart v3", name, chart, target_workbook_name, keep_names, ignore_permissions
             )
 
+        # read after the charts are restored, under the names they took
+        configs = number_chart_configs(target_workbook_name) if contents.get("wrapped") else None
         for name, dashboard in dashboards.items():
             dashboard = deep_convert_dict_to_dict(dashboard)
-            dashboard["items"] = frappe.as_json(_rewrite_dashboard_items(dashboard.get("items"), id_map))
+            items = _rewrite_dashboard_items(dashboard.get("items"), id_map)
+            if configs is not None:
+                items = upgrade_cells(items, configs)
+            dashboard["items"] = frappe.as_json(items)
             if keep_names:
                 # A file names roles, never a level. So a hand-edited file cannot
                 # make a shipped dashboard Public.
@@ -784,13 +791,16 @@ def workbook_contents(workbook_data) -> "frappe._dict":
 
     The old format put the workbook in `doc` and its members in
     `dependencies`. This function flattens that format, so one reader works for
-    the files an app ships and for every file a site exported before.
+    the files an app ships and for every file a site exported before. It is
+    what Insights 3 exported, so its dashboard cells are on Insights 3's grid,
+    and `wrapped` stays set on the flattened file to say so.
     """
     data = deep_convert_dict_to_dict(frappe.parse_json(workbook_data) or {})
     if "doc" in data or "dependencies" in data:
         lifted = deep_convert_dict_to_dict(data.get("doc") or {})
         lifted.update(data.get("dependencies") or {})
         lifted.setdefault("name", data.get("name"))
+        lifted["wrapped"] = True
         data = lifted
 
     data.setdefault("folders", [])
