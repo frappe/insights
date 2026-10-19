@@ -1,4 +1,5 @@
 import frappe
+from frappe.query_builder import Case
 from frappe.utils import create_batch
 
 from insights.upgrade import add_item
@@ -8,6 +9,7 @@ QUERY = "Insights Query v3"
 ALERT = "Insights Alert"
 REFERENCE = "Insights Query Reference"
 FOLDER = "Insights Folder"
+EXECUTION_LOG = "Insights Query Execution Log"
 FIELD = "data_query"
 
 BATCH = 500
@@ -118,6 +120,7 @@ def execute():
         QUERY, filters={"name": ("in", cached), "folder": ("is", "set")}, pluck="folder", distinct=True
     )
 
+    log_runs_under_chart_queries(cached)
     for batch in create_batch(cached, BATCH):
         frappe.db.delete(REFERENCE, {"query": ("in", batch)})
         frappe.db.delete(REFERENCE, {"ref_query": ("in", batch)})
@@ -131,6 +134,30 @@ def execute():
         print(f"  kept {name}: a chart reads it")
     for name in sorted(alerted):
         print(f"  kept {name}: an alert watches it")
+
+
+def log_runs_under_chart_queries(cached: list[str]) -> None:
+    """Move each cache's execution logs to its chart's query.
+
+    A chart's runs were logged under its cache. The data store's weekly cleanup
+    reads the logs to find the tables no query has read lately, and a log that
+    names a deleted query reads nothing. So without this, a stored table only
+    dashboards read is dropped on the first cleanup after the upgrade.
+    """
+    Log = frappe.qb.DocType(EXECUTION_LOG)
+    for batch in create_batch(cached, BATCH):
+        query_of = dict(
+            frappe.db.sql(
+                f"select `{FIELD}`, query from `tab{CHART}` where `{FIELD}` in %(batch)s and ifnull(query, '') != ''",
+                {"batch": tuple(batch)},
+            )
+        )
+        if not query_of:
+            continue
+        case = Case()
+        for cache, query in query_of.items():
+            case = case.when(Log.query == cache, query)
+        frappe.qb.update(Log).set(Log.query, case).where(Log.query.isin(list(query_of))).run()
 
 
 def unlink_from_charts(kept: set[str]) -> None:

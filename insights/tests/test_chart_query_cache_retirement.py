@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import frappe
 
-from insights.patches.retire_chart_query_cache import ALERT, CHART, FIELD, QUERY, REFERENCE
+from insights.patches.retire_chart_query_cache import ALERT, CHART, EXECUTION_LOG, FIELD, QUERY, REFERENCE
 from insights.patches.retire_chart_query_cache import execute as retire
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -127,6 +127,19 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
             frappe.get_all(ITEM, filters={"code": "J1"}, fields=["reference_name", "user"]),
             [{"reference_name": cache, "user": ALERT_OWNER}],
         )
+
+    # @feature upgrade.cached-queries-removed
+    def test_a_charts_runs_are_logged_under_its_query_once_its_cache_is_gone(self):
+        """The data store cleanup reads the logs to find tables nobody reads, and
+        a log naming a deleted cache reads none."""
+        chart, cache = self.cached_query()
+        source = create_test_query(OWNER, self.workbook, title="Chart Query Cache Test Source")
+        frappe.db.set_value(CHART, chart, "query", source.name)
+        log = frappe.get_doc({"doctype": EXECUTION_LOG, "sql": "select 1", "query": cache}).insert()
+
+        retire()
+
+        self.assertEqual(frappe.db.get_value(EXECUTION_LOG, log.name, "query"), source.name)
 
     def queries_in_workbook(self):
         return frappe.get_all(QUERY, filters={"workbook": self.workbook}, pluck="name", order_by="name")
