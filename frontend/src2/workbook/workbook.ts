@@ -2,7 +2,8 @@ import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { useTelemetry } from '../telemetry'
 import { computed, reactive, toRefs } from 'vue'
-import useChart, { newChart } from '../charts/chart'
+import useChart, { newChart, type Chart } from '../charts/chart'
+import { firstMeasure } from '../charts/helpers'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
 import {
 	copyToClipboard,
@@ -97,6 +98,9 @@ function makeWorkbook(name: string) {
 		chart.doc.workbook = workbook.doc.name
 		chart.doc.query = query_name || ''
 		chart.doc.chart_type = 'Bar'
+		const measure = query_name && firstMeasure(useQuery(query_name).result.columnOptions)
+		if (measure)
+			chart.doc.config = { y_axis: { series: [{ measure }] } } as Chart['doc']['config']
 		chart.doc.sort_order = workbook.doc.charts.length
 		chart.doc.folder = null
 		chart.insert().then(() => {

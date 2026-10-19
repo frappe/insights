@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
 	dataSelection,
 	ensureConfigSlots,
+	firstMeasure,
 	getGranularity,
 	moveNumberReadingOptions,
 	normalizeChartConfig,
@@ -351,4 +352,29 @@ describe('a config saved in an older shape', () => {
 			expect(normalizeChartConfig(structuredClone(once), chart_type)).toEqual(once)
 		})
 	}
+})
+
+describe('firstMeasure', () => {
+	// @feature charts.type-bar
+	it('plots a grouped query by its first measure, not by counting its groups', () => {
+		const columns = [
+			{ label: 'customer', value: 'customer', query: 'q', data_type: 'String' },
+			{
+				label: 'sum_of_total',
+				value: 'sum_of_total',
+				query: 'q',
+				data_type: 'Decimal',
+				is_measure: true,
+			},
+			{ label: 'count', value: 'count', query: 'q', data_type: 'Integer', is_measure: true },
+		] as any[]
+
+		expect(firstMeasure(columns)).toEqual({
+			column_name: 'sum_of_total',
+			data_type: 'Decimal',
+			aggregation: 'sum',
+			measure_name: 'sum_of_total',
+		})
+		expect(firstMeasure(columns.slice(0, 1))).toBeUndefined()
+	})
 })
