@@ -520,7 +520,6 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         from insights.api.data_sources import get_data_source_tables
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
-        self.set_team_permissions(1)
         for table in ("tabToDo", "tabDeleted Document"):
             if not frappe.db.exists(DT.TABLE, get_table_name("Site DB", table)):
                 frappe.get_doc(
@@ -532,8 +531,11 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
                 tables = get_data_source_tables("Site DB", search_term=search_term)
             return [table.table_name for table in tables]
 
-        self.assertIn("tabToDo", listed("tabToDo"))
-        self.assertNotIn("tabDeleted Document", listed("tabDeleted Document"))
+        for team_permissions in (0, 1):
+            with self.subTest(team_permissions=team_permissions):
+                self.set_team_permissions(team_permissions)
+                self.assertIn("tabToDo", listed("tabToDo"))
+                self.assertNotIn("tabDeleted Document", listed("tabDeleted Document"))
 
         self.grant_todos(READER, table="tabDeleted Document")
         self.assertNotIn("tabDeleted Document", listed("tabDeleted Document"))

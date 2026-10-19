@@ -515,9 +515,27 @@ class InsightsPermissions:
     def _build_table_permission_query(self, ptype):
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import desk_readable_tables
 
-        # if team permissions are not enabled, all tables are accessible
+        Table = frappe.qb.DocType("Insights Table v3")
+        DataSource = frappe.qb.DocType("Insights Data Source v3")
+        # On a site DB source, desk read on a doctype lets the user read its
+        # table. `apply_user_permissions` filters rows by the same rule. It
+        # grants read only: desk read does not allow changing the Insights
+        # Table document.
+        desk_tables = desk_readable_tables(self.user) if ptype == "read" else set()
+        desk_reads = Table.table.isin(list(desk_tables)) if desk_tables else LiteralValue("1 = 0")
+
+        # if team permissions are not enabled, every table is accessible, and on
+        # the site DB every table desk lets the user read
         if not self.team_permissions_enabled:
-            return frappe.qb.from_(frappe.qb.DocType("Insights Table v3")).select("name")
+            if ptype != "read":
+                return frappe.qb.from_(Table).select("name")
+            return (
+                frappe.qb.from_(Table)
+                .select(Table.name)
+                .inner_join(DataSource)
+                .on(Table.data_source == DataSource.name)
+                .where((DataSource.is_site_db == 0) | desk_reads)
+            )
 
         # if team permissions are enabled,
         # tables linked to user's teams are accessible
@@ -525,7 +543,6 @@ class InsightsPermissions:
         # except on the site DB, where desk alone decides
         AllowedTables = self._build_resource_query("Insights Table v3")
 
-        Table = frappe.qb.DocType("Insights Table v3")
         AllowedSources = self._build_resource_query("Insights Data Source v3")
         TablesOfAllowedSources = (
             frappe.qb.from_(Table)
@@ -535,21 +552,12 @@ class InsightsPermissions:
             .where(AllowedSources.name.isnotnull())
         )
 
-        # On a site DB source, desk read on a doctype lets the user read its
-        # table. `apply_user_permissions` filters rows by the same rule. It
-        # grants read only: desk read does not allow changing the Insights
-        # Table document.
-        DataSource = frappe.qb.DocType("Insights Data Source v3")
-        desk_tables = desk_readable_tables(self.user) if ptype == "read" else set()
         TablesDeskReads = (
             frappe.qb.from_(Table)
             .select(Table.name.as_("name"))
             .inner_join(DataSource)
             .on(Table.data_source == DataSource.name)
-            .where(
-                (DataSource.is_site_db == 1)
-                & (Table.table.isin(list(desk_tables)) if desk_tables else LiteralValue("1 = 0"))
-            )
+            .where((DataSource.is_site_db == 1) & desk_reads)
         )
 
         return (
