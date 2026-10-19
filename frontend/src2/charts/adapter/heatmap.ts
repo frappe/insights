@@ -7,9 +7,7 @@ import type { HeatmapChartConfig } from '../../types/chart.types'
 import { numberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
-const HeatmapChart = defineAsyncComponent(() =>
-	import('frappe-ui/charts').then((m) => m.HeatmapChart),
-)
+const HeatmapChart = defineAsyncComponent(() => import('./lazy_charts').then((m) => m.HeatmapChart))
 
 // The server groups a heatmap by both of its dimensions, so the result is
 // already one row per cell. A pair with no rows returns no row, and the grid
