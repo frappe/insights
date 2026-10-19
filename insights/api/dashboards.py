@@ -1,6 +1,7 @@
 import frappe
 from frappe.query_builder.functions import Count
 
+from insights import standard
 from insights.api.list_filters import (
     get_content_filters,
     get_last_opened,
@@ -146,8 +147,12 @@ DASHBOARD_LIST_FIELDS = [
 
 def _enrich_dashboards(dashboards):
     view_counts = dashboard_view_counts([dashboard.name for dashboard in dashboards])
+    shipped_by = standard.shipped_by(
+        list({dashboard.workbook for dashboard in dashboards if dashboard.workbook})
+    )
     user = frappe.session.user
     for dashboard in dashboards:
+        dashboard["shipped_by"] = shipped_by.get(dashboard.workbook)
         dashboard["views"] = view_counts.get(str(dashboard.name), 0)
         dashboard["is_favourite"] = bool(dashboard._liked_by) and user in frappe.as_json(dashboard._liked_by)
         # the list shows the preview refresh only to editors

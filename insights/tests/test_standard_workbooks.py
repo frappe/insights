@@ -18,6 +18,7 @@ from frappe.modules.import_file import import_doc
 
 from insights import standard
 from insights.api import get_site_info
+from insights.api.workbooks import get_workbooks
 from insights.migrate import after_app_install, sync_standard_workbooks
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT
@@ -210,6 +211,23 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
         dashboard = frappe.get_doc(DT.DASHBOARD, DASHBOARD)
         self.assertEqual(dashboard.visibility, "Roles")
         self.assertEqual([row.role for row in dashboard.visible_to_roles], ["System Manager"])
+
+    # @feature standard.ship workbook.list
+    def test_an_app_with_no_title_is_named_by_its_name(self):
+        self.import_file()
+
+        with self.patch_hooks({"app_title": []}):
+            self.assertEqual(standard.shipped_by([WORKBOOK]), {WORKBOOK: "insights"})
+
+    # @feature standard.ship workbook.list
+    def test_the_workbook_list_names_the_app_and_the_roles_it_shows_it_to(self):
+        self.import_file()
+
+        (workbook,) = [
+            w for w in get_workbooks(sources=["created", "shared", "others"]) if w["name"] == WORKBOOK
+        ]
+        self.assertEqual(workbook["shipped_by"], frappe.get_hooks("app_title", app_name="insights")[0])
+        self.assertEqual(workbook["visible_to_roles"], ["Desk User"])
 
     # @feature standard.ship
     def test_an_imported_member_lands_in_the_folder_the_file_titles(self):

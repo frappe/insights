@@ -2,10 +2,10 @@
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
 import { QuickFilter } from '@framework/ui/QuickFilter'
 import { useMagicKeys, whenever } from '@vueuse/core'
-import { Avatar, Breadcrumbs, MultiSelect } from 'frappe-ui'
+import { Avatar, Badge, Breadcrumbs, MultiSelect } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
 import { PlusIcon } from 'lucide-vue-next'
-import { accessIcon, accessLabel, AccessSource, useAccessSources } from '../components/access'
+import { access, AccessSource, useAccessSources } from '../components/access'
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
@@ -187,6 +187,12 @@ watchEffect(() => {
 					<span class="ml-3 truncate text-base text-ink-gray-8">{{
 						workbook.title
 					}}</span>
+					<Badge
+						v-if="workbook.shipped_by"
+						class="ml-2 shrink-0"
+						size="sm"
+						:label="workbook.shipped_by"
+					/>
 				</ListCell>
 				<ListCell>
 					<span class="truncate text-base text-ink-gray-6">
@@ -200,10 +206,20 @@ watchEffect(() => {
 					</span>
 				</ListCell>
 				<ListCell>
-					<component :is="accessIcon(workbook)" class="size-4 shrink-0 text-ink-gray-5" />
-					<span class="ml-2 truncate text-base text-ink-gray-6">
-						{{ accessLabel(workbook, userStore.getName) }}
-					</span>
+					<Tooltip
+						:text="workbook.visible_to_roles.join(', ')"
+						:disabled="!workbook.visible_to_roles.length"
+					>
+						<div class="relative flex min-w-0 items-center">
+							<component
+								:is="access(workbook, userStore.getName).icon"
+								class="size-4 shrink-0 text-ink-gray-5"
+							/>
+							<span class="ml-2 truncate text-base text-ink-gray-6">
+								{{ access(workbook, userStore.getName).label }}
+							</span>
+						</div>
+					</Tooltip>
 				</ListCell>
 				<ListCell>
 					<span class="truncate text-base text-ink-gray-6">

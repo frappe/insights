@@ -24,6 +24,10 @@ export type WorkbookListItem = {
 	last_opened: string | null
 	last_opened_from_now: string
 	shared_with_organization?: boolean
+	/** The title of the app that ships the workbook, when one does. */
+	shipped_by: string | null
+	/** The roles its dashboards show to. An app shares its workbook this way. */
+	visible_to_roles: string[]
 }
 
 export type WorkbookFolder = {

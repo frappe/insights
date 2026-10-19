@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
+from insights import standard
 from insights.api.list_filters import (
     get_content_filters,
     get_last_opened,
@@ -66,11 +67,47 @@ def get_workbooks(
 
     data_sources = _workbook_data_sources(workbook_names)
     last_opened = get_last_opened("Insights Workbook", workbook_names)
+    shipped_by = standard.shipped_by(workbook_names)
+    roles = _dashboard_roles(workbook_names)
     for workbook in workbooks:
         workbook["data_sources"] = data_sources.get(workbook["name"], [])
         workbook["last_opened"] = last_opened.get(workbook["name"])
+        workbook["shipped_by"] = shipped_by.get(workbook["name"])
+        workbook["visible_to_roles"] = roles.get(workbook["name"], [])
 
     return workbooks
+
+
+def _dashboard_roles(workbooks: list[str]) -> dict[str, list[str]]:
+    """The roles the dashboards of each workbook show to.
+
+    An app shares its workbook through these, not through the workbook's shares.
+    A dashboard keeps its roles when its visibility moves off Roles, and they
+    then show it to nobody.
+    """
+    if not workbooks:
+        return {}
+    Dashboard = frappe.qb.DocType("Insights Dashboard v3")
+    HasRole = frappe.qb.DocType("Has Role")
+    rows = (
+        frappe.qb.from_(HasRole)
+        .join(Dashboard)
+        .on(HasRole.parent == Dashboard.name)
+        .select(Dashboard.workbook, HasRole.role)
+        .where(
+            (HasRole.parenttype == "Insights Dashboard v3")
+            & (HasRole.parentfield == "visible_to_roles")
+            & (Dashboard.visibility == "Roles")
+            & Dashboard.workbook.isin(workbooks)
+        )
+        .distinct()
+        .orderby(HasRole.role)
+        .run(as_dict=True)
+    )
+    roles: dict[str, list[str]] = {}
+    for row in rows:
+        roles.setdefault(row.workbook, []).append(row.role)
+    return roles
 
 
 def _workbook_data_sources(names: list[str]) -> dict[str, list[str]]:

@@ -87,6 +87,21 @@ class TestWorkbookList(InsightsIntegrationTestCase):
         self.assertEqual(shared, [self.OTHERS])
         self.assertEqual(len(capped), 1)
 
+    # @feature workbook.list
+    def test_the_list_names_the_roles_a_sites_own_workbook_shows_its_dashboards_to(self):
+        dashboard = frappe.get_doc(DT.DASHBOARD, self.dashboard)
+        dashboard.visibility = "Roles"
+        dashboard.append("visible_to_roles", {"role": "Desk User"})
+        dashboard.save(ignore_permissions=True)
+
+        def roles():
+            with self.as_user(OWNER):
+                return next(w for w in get_workbooks() if w["name"] == self.own)["visible_to_roles"]
+
+        self.assertEqual(roles(), ["Desk User"])
+        dashboard.db_set("visibility", "Private")
+        self.assertEqual(roles(), [])
+
     # @feature workbook.home-recent
     def test_the_list_puts_the_workbook_modified_last_first(self):
         frappe.get_doc(DT.WORKBOOK, self.others).save(ignore_permissions=True)

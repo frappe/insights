@@ -23,6 +23,8 @@ export type DashboardListItem = {
 	preview_image: string
 	views: number
 	is_favourite: boolean
+	/** The title of the app that ships its workbook, when one does. */
+	shipped_by: string | null
 	/** Whether the caller may write it, and so update its preview image. */
 	can_write: boolean
 }

@@ -1,5 +1,5 @@
 import { useStorage } from '@vueuse/core'
-import { Building2, Lock, Users } from 'lucide-vue-next'
+import { Building2, Lock, ShieldCheck, Users } from 'lucide-vue-next'
 import { computed } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
@@ -31,17 +31,28 @@ export function useAccessSources(storageKey: string) {
 	return { options, selected, shown, sources }
 }
 
-type Shared = { shared_with?: string[]; shared_with_organization?: boolean }
-
-export function accessIcon(item: Shared) {
-	if (item.shared_with_organization) return Building2
-	return item.shared_with?.length ? Users : Lock
+type Shared = {
+	shared_with?: string[]
+	shared_with_organization?: boolean
+	visible_to_roles?: string[]
 }
 
-export function accessLabel(item: Shared, getName: (email: string) => string) {
-	if (item.shared_with_organization) return __('Everyone')
-	if (!item.shared_with?.length) return __('Private')
-	return item.shared_with.length > 1
-		? __('{0} people', String(item.shared_with.length))
-		: getName(item.shared_with[0])
+/** The icon and label of who a listed document is shared with. */
+export function access(item: Shared, getName: (email: string) => string) {
+	if (item.shared_with_organization) return { icon: Building2, label: __('Everyone') }
+
+	const shared = item.shared_with || []
+	const people =
+		shared.length > 1
+			? __('{0} people', String(shared.length))
+			: shared.length
+			  ? getName(shared[0])
+			  : ''
+	const roles = item.visible_to_roles || []
+	if (roles.length) {
+		const label = roles.length > 1 ? __('{0} roles', String(roles.length)) : __(roles[0])
+		return { icon: ShieldCheck, label: people ? __('{0}, {1}', label, people) : label }
+	}
+	if (people) return { icon: Users, label: people }
+	return { icon: Lock, label: __('Private') }
 }

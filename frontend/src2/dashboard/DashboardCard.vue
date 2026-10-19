@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { Avatar } from 'frappe-ui'
+import { Avatar, Badge } from 'frappe-ui'
 import { Eye, MoreVertical, RefreshCw, Star } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { __ } from '../translation'
@@ -98,7 +98,8 @@ watch(
 					{{ dashboard.title }}
 				</p>
 				<div class="mt-1.5 flex items-center gap-3">
-					<div class="flex min-w-0 items-center gap-1.5">
+					<Badge v-if="dashboard.shipped_by" size="sm" :label="dashboard.shipped_by" />
+					<div v-else class="flex min-w-0 items-center gap-1.5">
 						<Avatar
 							class="shrink-0"
 							size="xs"
