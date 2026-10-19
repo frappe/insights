@@ -1217,6 +1217,24 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
         self.assertEqual(self.statuses_read_by(ADMIN), ["Closed", "Open", "Open"])
         self.assertEqual(user_permissions.scope(ADMIN), {})
 
+    # @feature permissions.table-row-restriction upgrade.older-restrictions-read
+    def test_a_restriction_written_with_ibis_underscore_reads_the_column(self):
+        """Insights 3 never ran `_.status`, and Insights 4 read `_` as the
+        translation function, so every query on the table failed."""
+        from insights.patches.drop_underscore_from_table_restrictions import execute
+
+        frappe.db.set_value(
+            "Insights Resource Permission",
+            {"parent": "team1", "resource_name": TEST_TABLE1},
+            "table_restrictions",
+            "_.status == 'Open'",
+        )
+
+        execute()
+        clear_team_cache()
+
+        self.assertEqual(self.statuses_read_by(USER_1), ["Open", "Open"])
+
     # @feature permissions.table-row-restriction
     def test_one_teams_grant_never_narrows_anothers(self):
         """The reader is in two teams that both grant the table. Each grant
