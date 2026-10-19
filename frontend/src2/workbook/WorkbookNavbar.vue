@@ -52,7 +52,12 @@ const workbook = inject(workbookKey)!
 							)
 						"
 					>
-						<Badge theme="gray" :label="workbook.doc.shipped_by" />
+						<Badge
+							theme="gray"
+							:label="workbook.doc.shipped_by"
+							tabindex="0"
+							class="focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+						/>
 					</Tooltip>
 				</div>
 			</div>

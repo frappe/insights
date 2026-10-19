@@ -210,7 +210,10 @@ watchEffect(() => {
 						:text="workbook.visible_to_roles.join(', ')"
 						:disabled="!workbook.visible_to_roles.length"
 					>
-						<div class="relative flex min-w-0 items-center">
+						<div
+							class="relative flex min-w-0 items-center rounded-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+							:tabindex="workbook.visible_to_roles.length ? 0 : undefined"
+						>
 							<component
 								:is="access(workbook, userStore.getName).icon"
 								class="size-4 shrink-0 text-ink-gray-5"
