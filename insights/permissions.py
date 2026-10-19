@@ -521,7 +521,8 @@ class InsightsPermissions:
 
         # if team permissions are enabled,
         # tables linked to user's teams are accessible
-        # & all tables of data sources linked to user's teams
+        # & all tables of data sources linked to user's teams,
+        # except on the site DB, where desk alone decides
         AllowedTables = self._build_resource_query("Insights Table v3")
 
         Table = frappe.qb.DocType("Insights Table v3")
@@ -535,9 +536,9 @@ class InsightsPermissions:
         )
 
         # On a site DB source, desk read on a doctype lets the user read its
-        # table, as a team grant does. `apply_user_permissions` filters rows by
-        # the same rule. It grants read only: desk read does not allow changing
-        # the Insights Table document.
+        # table. `apply_user_permissions` filters rows by the same rule. It
+        # grants read only: desk read does not allow changing the Insights
+        # Table document.
         DataSource = frappe.qb.DocType("Insights Data Source v3")
         desk_tables = desk_readable_tables(self.user) if ptype == "read" else set()
         TablesDeskReads = (
@@ -560,9 +561,13 @@ class InsightsPermissions:
             .on(Table.name == TablesOfAllowedSources.name)
             .left_join(TablesDeskReads)
             .on(Table.name == TablesDeskReads.name)
+            .inner_join(DataSource)
+            .on(Table.data_source == DataSource.name)
             .where(
-                AllowedTables.name.isnotnull()
-                | TablesOfAllowedSources.name.isnotnull()
+                (
+                    (AllowedTables.name.isnotnull() | TablesOfAllowedSources.name.isnotnull())
+                    & (DataSource.is_site_db == 0)
+                )
                 | TablesDeskReads.name.isnotnull()
             )
         )

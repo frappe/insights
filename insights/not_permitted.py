@@ -144,8 +144,8 @@ def has_permitted_chart(dashboard: str, user: str | None = None) -> bool:
     reader otherwise.
 
     A table is readable when `check_table_permission` says so, the same rule
-    the engine reads rows by: desk or a team grant on the site database, a team
-    grant elsewhere.
+    the engine reads rows by: desk on the site database, a team grant
+    elsewhere.
 
     A dashboard with no charts is permitted, because nothing on it was refused.
     So is one whose charts were all deleted, and one with a chart that names no

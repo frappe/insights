@@ -14,7 +14,7 @@ ERPNext's dashboards move into Insights, so every desk user becomes a reader of 
 
 A reader sees their own rows, or a message that they may not see them. An empty result never stands in for a missing permission.
 
-- A chart is **Not Permitted** when it reads a site-DB table or permlevel column that neither the reader's desk permissions nor a team grant allows. It does not run. Its card stays in place and names the doctypes the reader needs. This is Frappe's own query rule: one unreadable table fails the whole `get_list`.
+- A chart is **Not Permitted** when it reads a site-DB table or permlevel column that the reader's desk permissions do not allow (see `site-data-follows-desk-only.md`). It does not run. Its card stays in place and names the doctypes the reader needs. This is Frappe's own query rule: one unreadable table fails the whole `get_list`.
 - A dashboard on which every chart is Not Permitted answers Not Found. The exception is a user who may write the dashboard, because they can fix it. A dashboard with some permitted charts opens, so its layout never changes.
 - A card whose rows User Permissions narrowed says so, because a narrowed number looks like the total.
 

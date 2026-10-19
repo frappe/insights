@@ -1039,8 +1039,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
 
     # @feature permissions.not-permitted-chart
     def test_a_data_source_table_preview_answers_a_refusal(self):
-        """The explorer lists a table by team grant, not by frappe read
-        permission, so a reader can open a table they cannot read."""
+        """With team permissions off the explorer lists every table, so a
+        reader can open a table they cannot read."""
         from insights.api.data_sources import get_data_source_table
 
         with as_user(READER), db_connections():
@@ -1098,11 +1098,11 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
         self.assertTrue(board["can_write"])
         self.assertEqual([item["type"] for item in board["items"]], ["filter"])
 
-    # @feature permissions.not-found-when-nothing-is-permitted permissions.team-grant
-    def test_a_dashboard_whose_table_a_team_grants_opens(self):
-        """On site data, a team grant lets a reader read a table as desk
-        permission does. The card renders for them, so the dashboard is not
-        Not Found."""
+    # @feature permissions.not-permitted-chart permissions.team-grant
+    def test_a_team_grant_never_lets_a_reader_past_desk(self):
+        """On site data, desk is the only authority. A reader whose team grants
+        a table that desk denies them gets Not Permitted, as a reader in no
+        team does."""
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
         from insights.insights.doctype.insights_team.insights_team import clear_cache
 
@@ -1125,10 +1125,12 @@ class ADashboardWithNothingPermittedReadsAsNotFound(ContentOverATableTheReaderCa
         self.addCleanup(frappe.delete_doc, DT.TEAM, team.name, force=True, ignore_permissions=True)
         clear_cache()
 
-        with as_user(READER):
-            board = get_dashboard(self.refused_board)
+        with as_user(READER), db_connections():
+            answer = get_chart_data(self.unreadable_chart)
+        self.assertEqual(answer["not_permitted"], {"doctypes": ["Deleted Document"]})
 
-        self.assertEqual(board["items"][0]["chart"], self.unreadable_chart)
+        with as_user(READER), self.assertRaisesRegex(frappe.DoesNotExistError, "Not Found"):
+            get_dashboard(self.refused_board)
 
     # @feature permissions.not-found-when-nothing-is-permitted
     def test_a_dashboard_whose_table_desk_shares_one_document_of_opens(self):

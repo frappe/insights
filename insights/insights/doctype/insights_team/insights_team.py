@@ -288,10 +288,9 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 def check_table_permission(data_source, table, user=None, raise_error=True):
     """Whether this user may read this table.
 
-    On the site database, desk's own permissions or a team grant let a
-    reader in, and either one is enough. Being an admin is not a grant there. On
-    other data sources only a team grant lets a reader in, and an admin always
-    passes.
+    On the site database, only desk's own permissions let a reader in. A team
+    grant and being an admin count for nothing there. On other data sources
+    only a team grant lets a reader in, and an admin always passes.
 
     A refusal raises `NotPermitted`, which `answers_refusal` catches, as every
     other check here does: this reader may not read this data.
@@ -301,7 +300,7 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
 
     user = user or frappe.session.user
     if is_site_db(data_source):
-        permitted = desk_reads_table(table, user) or team_grant(data_source, table, user) is not None
+        permitted = desk_reads_table(table, user)
     elif is_admin(user):
         permitted = True
     elif not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
@@ -325,10 +324,10 @@ def team_grant(data_source, table, user=None) -> list[str] | None:
 
     An empty list means the whole table. None means no grant. Only a team that
     names the table or its data source grants it. An admin's pass through the
-    team check is not a grant, so on the site database an admin reads what
-    desk permissions allow. Each team grants the rows its own restrictions
+    team check is not a grant. Each team grants the rows its own restrictions
     allow, and one team's grant never narrows another's. So a team that grants
-    without a restriction grants the whole table.
+    without a restriction grants the whole table. The site database never asks:
+    desk decides there.
     """
     if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
         return None

@@ -304,7 +304,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | standard.mark | In developer mode, an author marks a workbook standard. The workbook takes the name the author gives, its members get readable names, and every reference is updated. |
 | standard.export-to-app | On a developer-mode bench, the workbook menu shows "Export to app…" for a workbook that no app ships yet. The dialog picks a module of an installed app, names the workbook and shows which file the export writes. |
 | standard.runs-as-the-reader | A standard chart cannot be saved to run as its owner, so it always runs as whoever reads it. |
-| standard.read-rules | A standard chart reads its tables under the same rule as every chart: on site data, desk permissions or a team grant, whichever allows more. |
+| standard.read-rules | A standard chart reads its tables under the same rule as every chart: on site data, desk permissions alone. |
 
 ## shared
 
@@ -382,10 +382,10 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.chart-run-as-owner | A chart filters its rows by each reader's permissions by default, and by its owner's while Run as owner is checked. |
 | permissions.run-as-owner-lapses | A chart set to run as its owner runs as each reader once its owner is disabled or may no longer edit its workbook, and any editor of the chart may turn the setting off. |
 | permissions.chart-access-follows | A chart is readable through its own share, its workbook, or a dashboard it sits on, which grants read and nothing more; its query is readable through the chart, never through the dashboard. |
-| permissions.team-grant | An admin creates a team, adds members and grants it data sources and tables; the grant reaches that team only. |
+| permissions.team-grant | An admin creates a team, adds members and grants it data sources and tables; the grant reaches that team only. On the site database a grant gives nothing: desk permissions alone decide. |
 | permissions.team-off-open | With team permissions off, every Insights user sees every data source and table, and grants are inert. |
 | permissions.no-source-access-no-query | A user without access to a data source cannot query it. |
-| permissions.table-row-restriction | An admin uses an expression to restrict which rows of a table a team's grant gives. It never removes rows that desk allows on site data, or rows that another team grants. |
+| permissions.table-row-restriction | An admin uses an expression to restrict which rows of a table a team's grant gives. It never removes rows that another team grants, and it does not apply on the site database. |
 | permissions.admin-bypass | An admin sees every data source and table whatever the grants say. |
 | permissions.non-insights-user | A user without an Insights role reads only the charts and dashboards whose visibility allows them, and calls no other endpoint. |
 | permissions.download-gated | A download needs the role's export permission, access to the query, and the site-wide download toggle. |
@@ -397,7 +397,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.denied-is-not-found | Content a reader may not read answers Not Found, the same as content that does not exist. |
 | permissions.not-permitted-chart | A chart whose reader may not read a table or a permlevel column it uses does not run, and its card names the doctypes it needs. |
 | permissions.not-found-when-nothing-is-permitted | A dashboard on which every chart is Not Permitted reads as Not Found to a reader. A dashboard with some permitted charts, or one the caller may write, opens with all its charts. |
-| permissions.card-says-it-is-scoped | A card names the reader's User Permissions that narrowed its rows. It also says so when a team's Table Restriction cut its rows or it reads a blanked column, so a narrowed number is not read as the total. A grant that only adds rows to what desk allows shows no notice. |
+| permissions.card-says-it-is-scoped | A card names the reader's User Permissions that narrowed its rows. It also says so when a team's Table Restriction cut its rows, so a narrowed number is not read as the total. |
 | permissions.view-sends-no-query | A reader of a chart or dashboard gets only what is needed to show it, never the operations, SQL or query behind it. |
 | permissions.error-is-text | For every user, an error from the server shows the sentence the server refused with, as text and never as markup. |
 | permissions.site-user-permissions | A site-database source applies the user's desk row and column permissions to what a query returns. |

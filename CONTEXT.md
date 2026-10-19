@@ -217,7 +217,7 @@ The one answer a View gives both for content that does not exist and for content
 _Avoid_: not available, unavailable, forbidden, a separate denied state
 
 **Not Permitted**:
-A chart the reader may open but whose data they may not read. It reads a site-DB table or permlevel column that neither their desk permissions nor a team grant allows. It does not run. Its card stays in place and names the doctypes the reader needs. The word is Frappe's, from the `PermissionError` a query raises for one unreadable table. The reader may already open the chart, so this message reveals nothing. **Not Found** is different: it hides whether the content exists. A dashboard on which every chart is Not Permitted answers Not Found, except to a user who may write it.
+A chart the reader may open but whose data they may not read. It reads a site-DB table or permlevel column that their desk permissions do not allow. A team grant does not change that. It does not run. Its card stays in place and names the doctypes the reader needs. The word is Frappe's, from the `PermissionError` a query raises for one unreadable table. The reader may already open the chart, so this message reveals nothing. **Not Found** is different: it hides whether the content exists. A dashboard on which every chart is Not Permitted answers Not Found, except to a user who may write it.
 _Avoid_: denied, no access, hidden, no data (no data is a true zero)
 
 **Held back**:
@@ -246,7 +246,7 @@ The user whose permissions filter the rows an execution returns, when the caller
 _Avoid_: data authority, permission mode, impersonation, viewer
 
 **Team**:
-A named group of users that grants access to resources (data sources, tables). On site data, a team grant adds to what desk permissions allow and never reduces it. On other data, it is the only access.
+A named group of users that grants access to resources (data sources, tables). On site data, a team grant and its Table Restrictions do nothing: desk permissions alone decide. On other data, it is the only access.
 
 **Resource Permission**:
 A grant tying a team to one specific resource.
