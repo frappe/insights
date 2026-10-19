@@ -55,6 +55,7 @@ ENDPOINTS_ACCEPTING_GET = [
     "insights.api.run_doc_method",
     "insights.api.search.search_workbook_items",
     "insights.api.translations.get_translations",
+    "insights.api.upgrade.get_template_workbook",
     "insights.api.upgrade.get_upgrade_items",
     "insights.api.user.accept_invitation",
     "insights.api.user.add_insights_user",

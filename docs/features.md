@@ -491,6 +491,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.expression-column-reads | An expression from Insights 3 that read a column named like a backend attribute, such as `t2.source`, reads it as `t2['source']` after the upgrade. One that calls a table method an expression may no longer call is listed for its owner. |
 | upgrade.public-links-keep-rows | After the upgrade, a public chart another user published keeps showing that user's rows: the publisher becomes its owner and it runs as its owner, and the previous owner is told. |
 | upgrade.alerts-keep-running | After the upgrade, an alert whose enabler may not edit its workbook runs as the workbook's owner instead of stopping, and an admin is told. One nobody may run is reported before it stops. |
+| upgrade.template-links-open | A link to an Insights 3 template opens the site's copy of it, else the standard workbook that replaced it, else the workbooks list. |
 | upgrade.left-to-do-reported | After the upgrade, an admin sees what Insights 4 cannot carry over for them: team grants that no longer let members edit, public charts whose owner can no longer run them, scripts that use names the sandbox refuses, code only admins may change, template copies a standard workbook replaces, and a blank Fiscal Year Start. An author sees the items about their own work. |
 
 ## tooling

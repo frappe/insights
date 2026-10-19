@@ -3,7 +3,15 @@ from frappe.share import add_docshare
 
 from insights.decorators import insights_whitelist
 from insights.permissions import validate_shareable_users
-from insights.upgrade import ITEM, get_item, mark_seen, open_item_filters
+from insights.upgrade import (
+    ITEM,
+    WORKBOOK,
+    get_item,
+    mark_seen,
+    open_item_filters,
+    standard_workbook_of,
+    template_copies,
+)
 
 
 @insights_whitelist()
@@ -83,3 +91,20 @@ def fix_upgrade_item(name: str):
         frappe.throw(frappe._("This item has no fix to apply."))
     # a save would check the reference, which the fix may have deleted
     item.db_set("status", "Done")
+
+
+@insights_whitelist()
+def get_template_workbook(template: str) -> str | None:
+    """The workbook an Insights 3 template link opens: the site's copy of
+    `template`, else the standard workbook that replaced it, if the user may
+    read it."""
+    names = [copy.name for copy in template_copies(template)]
+    names.append(standard_workbook_of(template))
+    return next(
+        (
+            name
+            for name in names
+            if name and frappe.db.exists(WORKBOOK, name) and frappe.has_permission(WORKBOOK, "read", doc=name)
+        ),
+        None,
+    )

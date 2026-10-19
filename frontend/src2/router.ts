@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { call } from 'frappe-ui'
+import { createRouter, createWebHistory, RouteLocationNormalized } from 'vue-router'
 import { APP_PATH } from './app_path.ts'
 import session from './session.ts'
 
@@ -59,6 +60,13 @@ const routes = [
 		],
 	},
 	{
+		// a link to an Insights 3 template, such as ERPNext's old workspace banner
+		path: '/template/:app/:folder',
+		name: 'Template',
+		component: () => import('./workbook/WorkbookList.vue'),
+		beforeEnter: openTemplateWorkbook,
+	},
+	{
 		path: '/data-source',
 		name: 'DataSourceList',
 		component: () => import('./data_source/DataSourceList.vue'),
@@ -106,6 +114,16 @@ const routes = [
 		meta: { hideSidebar: true },
 	},
 ]
+
+async function openTemplateWorkbook(to: RouteLocationNormalized) {
+	const workbook = await call('insights.api.upgrade.get_template_workbook', {
+		template: `${to.params.app}/${to.params.folder}`,
+		// eslint-disable-next-line no-restricted-syntax -- an old link that resolves to nothing opens the workbooks list, where the user would look next
+	}).catch(() => null)
+	return workbook
+		? { name: 'Workbook', params: { workbook_name: workbook } }
+		: { name: 'WorkbookList' }
+}
 
 const READER_ROUTES = ['DashboardList', 'Dashboard', 'SharedChart', 'SharedDashboard']
 
