@@ -124,6 +124,11 @@ def migrate():
     sync_standard_workbooks()
 
 
+def commit():
+    """Run what a commit runs, without committing the test's rows."""
+    frappe.db.after_commit.run()
+
+
 def is_imported() -> bool:
     return bool(frappe.db.get_value(DT.WORKBOOK, WORKBOOK, "is_standard"))
 
@@ -462,14 +467,33 @@ class DeveloperModeWritesTheFileBack(InsightsIntegrationTestCase):
         with developer_mode():
             frappe.get_doc(DT.WORKBOOK, WORKBOOK).save()
             frappe.delete_doc(DT.WORKBOOK, WORKBOOK, force=True)
+        commit()
 
         self.assertFalse(os.path.exists(os.path.dirname(self.file_path())))
+
+    # @feature standard.export-on-save
+    def test_a_delete_that_rolls_back_keeps_the_file_of_another_app(self):
+        shipped = frappe.get_all(
+            DT.WORKBOOK, {"is_standard": 1, "module": ("!=", MODULE)}, ["name", "module"], limit=1
+        )
+        if not shipped:
+            self.skipTest("no other installed app ships a workbook")
+        path = standard.file_path(DT.WORKBOOK, shipped[0].name, shipped[0].module)
+
+        frappe.db.savepoint("delete_another_app_s_workbook")
+        with developer_mode():
+            frappe.delete_doc(DT.WORKBOOK, shipped[0].name, force=True)
+        frappe.db.rollback(save_point="delete_another_app_s_workbook")
+        commit()
+
+        self.assertTrue(os.path.exists(path))
 
     # @feature standard.export-on-save
     def test_renaming_the_workbook_moves_its_file(self):
         with developer_mode():
             frappe.get_doc(DT.WORKBOOK, WORKBOOK).save()
             frappe.rename_doc(DT.WORKBOOK, WORKBOOK, "test-standard-renamed", force=True)
+        commit()
 
         self.assertFalse(os.path.exists(os.path.dirname(self.file_path())))
         self.assertEqual(self.written("test-standard-renamed")["name"], "test-standard-renamed")
@@ -481,6 +505,7 @@ class DeveloperModeWritesTheFileBack(InsightsIntegrationTestCase):
             workbook.save()
             workbook.is_standard = 0
             workbook.save()
+        commit()
 
         self.assertFalse(os.path.exists(os.path.dirname(self.file_path())))
         self.assertIsNone(frappe.db.get_value(DT.WORKBOOK, WORKBOOK, "module"))

@@ -108,11 +108,27 @@ def export(doc) -> None:
 
 
 def delete_folder(doc, name: str | None = None) -> None:
-    """`name` is the old name after a rename."""
+    """Remove the workbook's file after the commit, in developer mode.
+
+    `name` is the old name after a rename. Like frappe's standard Report, the
+    file goes only once the delete commits: a delete that rolls back, as every
+    test does, keeps the row and its file. A system write never removes one:
+    an import deletes the row before it writes it again from the file.
+    """
     if not frappe.conf.developer_mode or not doc.get("module"):
         return
+    if any(frappe.flags.get(flag) for flag in SYSTEM_WRITE_FLAGS):
+        return
 
-    delete_document_folder(doc.module, doc.doctype, name or doc.name)
+    module, doctype = doc.module, doc.doctype
+    name = name or doc.name
+
+    def delete():
+        # a rollback to a savepoint keeps this callback, and brings the row back
+        if frappe.db.get_value(doctype, name, ["is_standard", "module"]) != (1, module):
+            delete_document_folder(module, doctype, name)
+
+    frappe.db.after_commit.add(delete)
 
 
 def import_shipped(apps: list[str] | None = None) -> None:

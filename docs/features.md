@@ -300,7 +300,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | standard.resync | Importing a changed file updates the members the site has and deletes the members the file dropped. A dropped member that a desk document still renders is kept and logged. A kept member is not written to the file, and a migrate deletes it once no desk document renders it. |
 | standard.read-only | Outside developer mode, a standard workbook and its members refuse an edit, a delete, a rename and a new member added by the site. |
 | standard.duplicate | A user with an Insights role duplicates a standard workbook from its menu or from one of its dashboards, and the copy is the site's own to edit. |
-| standard.export-on-save | In developer mode, saving a standard workbook or any of its members writes its file, and deleting, renaming or unmarking it moves or removes the file. |
+| standard.export-on-save | In developer mode, saving a standard workbook or any of its members writes its file, and deleting, renaming or unmarking it moves or removes the file once the change commits. A change that rolls back leaves the file. |
 | standard.mark | In developer mode, an author marks a workbook standard. The workbook takes the name the author gives, its members get readable names, and every reference is updated. |
 | standard.export-to-app | On a developer-mode bench, the workbook menu shows "Export to app…" for a workbook that no app ships yet. The dialog picks a module of an installed app, names the workbook and shows which file the export writes. |
 | standard.runs-as-the-reader | A standard chart cannot be saved to run as its owner, so it always runs as whoever reads it. |
