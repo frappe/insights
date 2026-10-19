@@ -11,6 +11,9 @@ ITEM = "Insights Upgrade Item"
 # a user default, so it is per user and survives a cache clear
 SEEN_VERSION = "insights_seen_version"
 INSIGHTS_ROLES = ("Insights User", "Insights Admin")
+WORKBOOK = "Insights Workbook"
+# Insights 3's template folders, and the standard workbook that replaces each
+TEMPLATE_WORKBOOKS = {"accounting": "accounts", "purchasing": "buying", "sales": "selling", "stock": "stock"}
 
 
 def add_item(
@@ -96,3 +99,31 @@ def get_item(name: str):
     if not frappe.db.exists(ITEM, filters):
         frappe.throw(frappe._("This upgrade item is not open to you."), frappe.PermissionError)
     return frappe.get_doc(ITEM, name)
+
+
+def template_copies(template: str | None = None) -> list[frappe._dict]:
+    """The workbooks made from an Insights 3 template, or from `template`
+    (`app/folder`), oldest first.
+
+    Insights 3 recorded the template in `from_template`, and earlier releases
+    only its folder. The field is gone, and its column stays.
+    """
+    if not frappe.db.has_column(WORKBOOK, "from_template"):
+        return []
+    table = frappe.qb.DocType(WORKBOOK)
+    query = (
+        frappe.qb.from_(table)
+        .select(table.name, table.title, table.from_template)
+        .where(table.from_template.isnotnull() & (table.from_template != ""))
+        .orderby(table.creation)
+    )
+    if frappe.db.has_column(WORKBOOK, "imported_checksum"):
+        query = query.select(table.imported_checksum)
+    if template:
+        query = query.where(table.from_template.isin([template, template.rpartition("/")[2]]))
+    return query.run(as_dict=True)
+
+
+def standard_workbook_of(template: str) -> str | None:
+    """The standard workbook that replaces the Insights 3 template `template`."""
+    return TEMPLATE_WORKBOOKS.get(template.rpartition("/")[2])

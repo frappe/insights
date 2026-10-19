@@ -7,7 +7,9 @@ may read. Neither may write, queue a job, call a method, send mail or register
 a commit hook.
 """
 
+import ast
 import copy
+import functools
 
 import frappe
 import frappe.client
@@ -231,6 +233,73 @@ def expression_globals() -> dict:
         db_names={"get_value": read_value},
         missing=MISSING,
     )
+
+
+def refused_names(code: str, names=()) -> list[str]:
+    """The names in a script that the sandbox refuses, such as `frappe.qb`,
+    `pandas.read_csv` or `df.to_csv`. `names` are the other globals it runs with.
+
+    Read from the source, so it lists what the next run would refuse. An
+    attribute is listed only where the sandbox refuses it whatever it is read
+    on: a pandas method that reads or writes a file. `doc.from_date` and
+    `row.source` pass, though the sandbox refuses both on a data frame.
+    """
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return []  # nosemgrep - a script that does not parse failed on Insights 3 as well
+
+    allowed = script_globals()
+    assigned = {
+        *names,
+        *(
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
+        ),
+    }
+    assigned.update(node.arg for node in ast.walk(tree) if isinstance(node, ast.arg))
+
+    found = set()
+    for node in ast.walk(tree):
+        path = dotted_path(node)
+        if not path or path[0] in assigned or path[0] not in allowed:
+            # a sandbox global's own attributes are checked below
+            if isinstance(node, ast.Attribute) and refuses_attribute(node.attr):
+                found.add(f".{node.attr}")
+            continue
+        value = allowed.get(path[0])
+        if isinstance(value, NotDefined):
+            found.add(path[0])
+            continue
+        for depth, part in enumerate(path[1:], start=2):
+            if not isinstance(value, NamespaceDict):
+                break
+            if part not in value:
+                found.add(".".join(path[:depth]))
+                break
+            value = value[part]
+    return sorted(found)
+
+
+def dotted_path(node) -> list[str] | None:
+    """`frappe.db.set_value` as `["frappe", "db", "set_value"]`, or None for a chain on a call or a subscript."""
+    parts = []
+    while isinstance(node, ast.Attribute):
+        parts.insert(0, node.attr)
+        node = node.value
+    return [node.id, *parts] if isinstance(node, ast.Name) else None
+
+
+def refuses_attribute(name: str) -> bool:
+    return name in ARRAY_WRITERS or (
+        is_io_attribute(name) and name not in IN_MEMORY and name in pandas_methods()
+    )
+
+
+@functools.cache
+def pandas_methods() -> frozenset[str]:
+    return frozenset({*dir(pd.DataFrame), *dir(pd.Series), *dir(pd)})
 
 
 def sandbox_globals(

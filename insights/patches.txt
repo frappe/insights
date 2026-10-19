@@ -44,6 +44,8 @@ insights.patches.share_workbooks_with_member_owners
 insights.patches.reshape_member_shares
 # after the shares, which decide who may edit an alert's workbook
 insights.patches.move_alert_run_as
+# after the shares and the alerts' new owners, which decide who may edit what
+insights.patches.report_upgrade_items
 insights.patches.delete_orphaned_variable_secrets
 insights.patches.set_max_export_rows
 insights.patches.mark_v3_users
