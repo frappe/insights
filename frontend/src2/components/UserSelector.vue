@@ -53,10 +53,12 @@ const options = computed(() => {
 	return [{ label: address, value: address, description: __('Share with this address') }]
 })
 
+// the picker lists Insights users only, so a colleague missing from it is
+// usually one without an Insights role
 const emptyText = computed(() =>
 	props.allowCustomEmail
-		? __('No matches. Type a full email address to share.')
-		: __('No matches.'),
+		? __('No Insights user matches. Type a full email address to share.')
+		: __('No Insights user matches. Only users with an Insights role are listed.'),
 )
 </script>
 
