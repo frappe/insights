@@ -432,6 +432,41 @@ class TestDeskIsland(InsightsIntegrationTestCase):
             install_custom_fields()
         fill.assert_not_called()
 
+    # @feature desk.pick-chart
+    def test_a_desk_chart_or_card_saves_with_only_its_name_and_the_insights_chart(self):
+        """Desk's form requires a definition the island never reads. Picking an
+        Insights chart leaves it empty, and the save fills it in."""
+        reader = create_user(USER_1, roles=["Insights User", "Desk User"]).name
+        bar = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Picked")
+        number = create_test_chart(
+            OWNER, self.dashboard.workbook, title="Desk Island Test Picked Number", chart_type="Number"
+        )
+        desk_chart = frappe.get_doc(
+            {
+                "doctype": "Dashboard Chart",
+                "chart_name": "Desk Island Test Picked",
+                "insights_chart": bar.name,
+            }
+        ).insert()
+        # desk's form sets a new card's type before the user picks anything
+        desk_card = frappe.get_doc(
+            {
+                "doctype": "Number Card",
+                "label": DESK_CARD,
+                "type": "Document Type",
+                "insights_chart": number.name,
+            }
+        ).insert()
+
+        self.assertEqual(
+            (desk_chart.chart_type, desk_chart.document_type, desk_chart.based_on),
+            ("Count", DT.CHART, "creation"),
+        )
+        self.assertEqual((desk_card.document_type, desk_card.function), (DT.CHART, "Count"))
+        # like a document Show in Desk made, it is for the chart's readers only
+        self.assertEqual(self.reads(reader, "Dashboard Chart", desk_chart.name), (False, False))
+        self.assertEqual(self.reads(reader, "Number Card", desk_card.name), (False, False))
+
     # @feature desk.show-in-desk
     def test_show_in_desk_makes_a_dashboard_chart_that_shows_the_chart(self):
         chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Shown")

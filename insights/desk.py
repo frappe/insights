@@ -14,8 +14,8 @@ docname stays valid. `rename_doc` updates a Link when a workbook is made
 standard.
 
 A Link also blocks the delete of the content it names. Clearing the claim
-instead would make desk render the placeholder definition the author filled in
-to save the form. A re-sync that drops a claimed member keeps it until nothing
+instead would make desk render the placeholder definition that let it save
+(`desk_definition`). A re-sync that drops a claimed member keeps it until nothing
 claims it (`_delete_dropped_members`, `delete_unclaimed_kept_members`). A
 workbook that its app no longer ships is deleted whole, like any unshipped
 standard document, so a claim never blocks a migrate. The migrate lists each
@@ -24,8 +24,9 @@ claim it leaves dangling (`report_dangling_claims`).
 A claim decides who renders. Who may read is the desk document's own
 permission, which already checked the load, and the island shows its own Not
 Permitted state for the Insights content. A permission check in `claim` would
-make one desk page render differently for two readers. A document Show in Desk
-makes is the exception: only the chart's readers see it (`has_permission`).
+make one desk page render differently for two readers. A document with no
+definition of its own is the exception: only the chart's readers see it
+(`has_permission`).
 """
 
 import os
@@ -59,6 +60,8 @@ DESK_ISLANDS = {
         "folder": "dashboard_chart",
         "island": "insights.chart",
         "prop": "chart",
+        # the fields that hold desk's own definition, of each of its chart types
+        "definition": ("document_type", "report_name", "source"),
     },
     "Number Card": {
         "fieldname": "insights_chart",
@@ -69,6 +72,7 @@ DESK_ISLANDS = {
         "island": "insights.chart",
         "prop": "chart",
         "props": {"card": False},
+        "definition": ("document_type", "report_name", "method"),
     },
 }
 
@@ -109,7 +113,13 @@ def show_in_desk(chart) -> dict:
     fieldname = DESK_ISLANDS[doctype]["fieldname"]
     name = next(iter(frappe.get_list(doctype, filters={fieldname: chart.name}, pluck="name", limit=1)), None)
     if not name:
-        doc = frappe.get_doc({"doctype": doctype, fieldname: chart.name, **desk_definition(doctype, chart)})
+        title = chart.title or chart.name
+        label = (
+            {"label": title}
+            if doctype == "Number Card"
+            else {"chart_name": append_number_if_name_exists(doctype, title, "chart_name")}
+        )
+        doc = frappe.get_doc({"doctype": doctype, fieldname: chart.name, **label})
         name = doc.insert().name
     return {"doctype": doctype, "name": name, "url": get_url_to_form(doctype, name)}
 
@@ -124,35 +134,46 @@ def can_show_in_desk(chart) -> bool:
     return bool(frappe.has_permission(desk_doctype(chart), "create"))
 
 
-def desk_definition(doctype: str, chart) -> dict:
+def desk_definition(doctype: str) -> dict:
     """The fields desk requires before it saves a `doctype`, though the island
     renders it.
 
     Desk shows a Dashboard Chart or Number Card to whoever may read its
-    `document_type`. Counting Insights charts marks the document as one Show in
-    Desk made, and `has_permission` narrows it to the chart's readers.
+    `document_type`. Counting Insights charts marks the document as one that
+    shows an Insights chart and nothing else, and `has_permission` narrows it to
+    the chart's readers.
     """
-    title = chart.title or chart.name
     if doctype == "Number Card":
         return {
-            "label": title,
             "type": "Document Type",
-            "document_type": chart.doctype,
+            "document_type": DESK_ISLANDS[doctype]["options"],
             "function": "Count",
             "filters_json": "[]",
         }
     return {
-        "chart_name": append_number_if_name_exists(doctype, title, "chart_name"),
         "chart_type": "Count",
-        "document_type": chart.doctype,
+        "document_type": DESK_ISLANDS[doctype]["options"],
         "based_on": "creation",
         "filters_json": "[]",
     }
 
 
+def fill_desk_definition(doc, method=None) -> None:
+    """Give a Dashboard Chart or Number Card that shows an Insights chart the
+    definition desk requires, so it saves from desk's own form as from Show in
+    Desk.
+
+    Only a document with no definition of its own gets one. A document claimed
+    by hand keeps the one its author chose, and with it its readers.
+    """
+    field = DESK_ISLANDS[doc.doctype]
+    if doc.get(field["fieldname"]) and not any(doc.get(fieldname) for fieldname in field["definition"]):
+        doc.update(desk_definition(doc.doctype))
+
+
 def has_permission(doc, ptype, user) -> bool:
-    """Refuse a desk document that Show in Desk made to whoever may not read
-    its chart. Frappe's own rule for the doctype still applies.
+    """Refuse a desk document that shows only an Insights chart to whoever may
+    not read that chart. Frappe's own rule for the doctype still applies.
 
     Only a document that counts Insights charts is narrowed. One claimed by
     hand counts what its author chose, and is read by the readers of that.

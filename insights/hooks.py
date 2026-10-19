@@ -172,9 +172,11 @@ doc_events = {
     },
     "Dashboard Chart": {
         "onload": "insights.desk.claim",
+        "before_validate": "insights.desk.fill_desk_definition",
     },
     "Number Card": {
         "onload": "insights.desk.claim",
+        "before_validate": "insights.desk.fill_desk_definition",
     },
     "DocShare": {
         "validate": "insights.permissions.validate_member_share",
