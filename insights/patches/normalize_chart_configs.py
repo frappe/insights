@@ -140,8 +140,8 @@ def number_period_as_insights_3(config: dict, title: str) -> list[tuple[str, str
         else:
             config.pop("window", None)
         message = (
-            f'Number card "{title}" showed {column} grouped by time of day, which Insights 4 cannot do. '
-            "It now shows the total of every row."
+            f'Number card "{title}" grouped {column} by time of day, which Insights 4 can\'t do. It now shows '
+            "the total of all rows. Pick a Date or Datetime column to show a period."
         )
         return [("N6", message)]
 

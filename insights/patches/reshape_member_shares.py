@@ -62,7 +62,7 @@ def execute():
 
 def move_to_workbooks(shares: list) -> None:
     users = get_insights_users()
-    granted, everyone = {}, {}
+    granted, kinds, everyone = {}, {}, {}
     for share in shares:
         if not frappe.db.exists(share.share_doctype, share.share_name):
             continue
@@ -78,23 +78,25 @@ def move_to_workbooks(shares: list) -> None:
             continue
         share_workbook(workbook, share.user, write=share.write, share=share.share)
         granted.setdefault(workbook, set()).add(share.user)
+        kinds.setdefault(workbook, set()).add(share.share_doctype)
 
     for workbook in sorted({*granted, *everyone}):
         add_item(
             "P7",
-            message(workbook, granted.get(workbook), everyone.get(workbook)),
+            message(workbook, granted.get(workbook), kinds.get(workbook), everyone.get(workbook)),
             reference=(WORKBOOK, workbook),
         )
 
 
-def message(workbook: str, users: set | None, everyone: list | None) -> str:
+def message(workbook: str, users: set | None, doctypes: set | None, everyone: list | None) -> str:
     title = workbook_title(workbook)
     parts = []
     if users:
+        shared = " and ".join(sorted(f"{MEMBER_LABELS.get(doctype, doctype)}s" for doctype in doctypes or ()))
         parts.append(
-            f'Workbook "{title}" is now shared with {", ".join(sorted(users))}, because its queries, charts, '
-            "dashboards, alerts or folders were shared with them. Insights 4 shares workbooks, not what is "
-            "in them. Unshare anyone who should not see the whole workbook."
+            f'Workbook "{title}" is now shared with {", ".join(sorted(users))}, because its {shared} were '
+            "shared with them. Insights 4 shares workbooks, not what is in them. Unshare anyone who should "
+            "not see the whole workbook."
         )
     for share in everyone or []:
         label = MEMBER_LABELS.get(share.share_doctype, share.share_doctype)

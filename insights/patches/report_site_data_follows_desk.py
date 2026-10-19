@@ -201,7 +201,8 @@ def user_message(user: frappe._dict, desk_filtered: bool) -> str:
     if user.narrowed:
         parts.append(
             f"{user.user} read every row of {', '.join(user.narrowed)} in Insights 3, because Apply User "
-            "Permissions was off. They now read only the rows and columns desk gives them."
+            "Permissions was off. They now read only the rows and columns desk gives them. If they need every "
+            "row, remove their User Permissions on these doctypes."
         )
     return " ".join(parts)
 
