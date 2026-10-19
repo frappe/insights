@@ -138,10 +138,9 @@ def desk_definition(doctype: str) -> dict:
     """The fields desk requires before it saves a `doctype`, though the island
     renders it.
 
-    Desk shows a Dashboard Chart or Number Card to whoever may read its
-    `document_type`. Counting Insights charts marks the document as one that
-    shows an Insights chart and nothing else, and `has_permission` narrows it to
-    the chart's readers. `timeseries` is what desk's form sets for a Count
+    Counting Insights charts marks the document as one that shows an Insights
+    chart and nothing else, and frappe asks Insights who may read it
+    (`may_read_shown_chart`). `timeseries` is what desk's form sets for a Count
     chart, so the form opens saved. Removing the app deletes the documents of
     its module, so none is left counting a doctype that is gone.
     """
