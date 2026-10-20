@@ -202,6 +202,11 @@ export function needsYou(item: UpgradeItem): boolean {
 	return groups().some((group) => group.kind === 'now' && group.codes.includes(item.code))
 }
 
+/** The picture of the group an item belongs to, which a step of mixed items shows while it is current. */
+export function pictureOf(item: UpgradeItem): PictureName | undefined {
+	return groups().find((group) => group.codes.includes(item.code))?.picture
+}
+
 /** One row per thing. Two items with the same code, reference and data say the same sentence. */
 export function rowsOf(items: UpgradeItem[]): Row[] {
 	const rows = new Map<string, Row>()
@@ -249,23 +254,17 @@ export function wizardSteps(
 			),
 		)
 		if (!rows.length) continue
-		const own = rows.filter((row) => group.codes.includes(row.item.code)).length
+		const mixed = rows.some((row) => !group.codes.includes(row.item.code))
 		// a step asks for the reader when any of its items does
 		const kind = rows.some((row) => needsYou(row.item)) ? 'now' : 'note'
 		steps.push({
 			id: group.id,
 			label: group.label,
 			section: 'upgrade',
-			group:
-				own === rows.length
-					? { ...group, kind }
-					: {
-							...group,
-							...yourNotes(),
-							codes,
-							kind,
-							picture: own ? group.picture : undefined,
-					  },
+			group: mixed
+				? // each item shows its own group's picture, if it has one
+				  { ...group, ...yourNotes(), codes, kind, picture: undefined }
+				: { ...group, kind },
 			rows,
 		})
 	}

@@ -10,6 +10,7 @@ import upgrade from './upgrade'
 import UpgradeSentence from './UpgradeSentence.vue'
 import {
 	keyAction,
+	pictureOf,
 	sentenceOf,
 	welcomeSlides,
 	type ItemAction,
@@ -46,6 +47,9 @@ const skippedCount = computed(
 )
 const current = computed(() => queue.value[0])
 const handled = computed(() => rows.value.length - queue.value.length)
+const picture = computed(
+	() => group.value?.picture ?? (current.value ? pictureOf(current.value.item) : undefined),
+)
 const badge = computed<{ theme: 'green' | 'amber' | 'gray'; label: string }>(() => {
 	if (!current.value && !skippedCount.value) return { theme: 'green', label: __('Done') }
 	return group.value?.kind === 'now'
@@ -278,11 +282,11 @@ function onKeydown(event: KeyboardEvent) {
 				<!-- one height on every step, so the picture neither jumps nor leaves the
 				     lower half of the step empty -->
 				<div
-					v-if="group.picture"
+					v-if="picture"
 					class="flex h-[220px] shrink-0 items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-2.5"
 				>
 					<UpgradePicture
-						:name="group.picture"
+						:name="picture"
 						:person="person"
 						:doctype="current?.item.data?.doctypes?.[0]"
 					/>
