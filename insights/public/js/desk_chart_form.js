@@ -15,11 +15,36 @@ const LAYOUT_FIELDTYPES = ["Section Break", "Column Break", "Tab Break"];
  * picker to the charts that suit the doctype.
  */
 insights.desk.chart_form = ({ keep, props, chart_types, height }) => {
+	// Desk's own wording is about desk's permissions. For an Insights chart,
+	// Is Public only lists it in other users' pickers, and the Insights chart's
+	// sharing decides who sees it.
+	const CLAIMED_FIELDS = {
+		is_public: {
+			label: __("Others can add it to their dashboards"),
+			description: __(
+				"Lists it when other users add a chart to a dashboard or workspace. It does not change who sees it.",
+			),
+		},
+		// only a developer exports standard documents
+		is_standard: { hidden: frappe.boot.developer_mode ? 0 : 1 },
+	};
+
 	function show(frm) {
 		const claimed = Boolean(frm.doc.insights_chart);
 		// desk's own `before_save` parses the filters, and the form never set them
 		if (claimed && !frm.doc.filters_json) frm.doc.filters_json = "[]";
 		for (const df of frappe.get_meta(frm.doctype).fields) {
+			if (CLAIMED_FIELDS[df.fieldname]) {
+				for (const [property, value] of Object.entries(
+					CLAIMED_FIELDS[df.fieldname],
+				))
+					frm.set_df_property(
+						df.fieldname,
+						property,
+						claimed ? value : df[property],
+					);
+				continue;
+			}
 			if (
 				keep.includes(df.fieldname) ||
 				LAYOUT_FIELDTYPES.includes(df.fieldtype)
@@ -48,22 +73,75 @@ insights.desk.chart_form = ({ keep, props, chart_types, height }) => {
 		frm.insights_preview?.handle.unmount();
 		frm.insights_preview?.$el.remove();
 		frm.insights_preview = null;
+		frm.set_df_property("insights_chart", "description", "");
 		if (!chart || !frappe.ui.mount_island) return;
 
-		const $el = $(`<div class="insights-chart-preview"></div>`)
-			.css({
-				height: `${height}px`,
-				marginBottom: "var(--margin-md)",
-				padding: "var(--padding-sm)",
-				border: "1px solid var(--border-color)",
-				borderRadius: "var(--border-radius-md)",
-			})
-			.insertAfter(frm.fields_dict.insights_chart.$wrapper);
-		const handle = frappe.ui.mount_island("insights.chart", $el.get(0), {
-			chart,
-			...props,
+		// a row of its own below the section's columns, as wide as the form
+		const $el = $(`
+			<div class="col-sm-12">
+				<div class="insights-chart-preview">
+					<div class="insights-chart-preview-header"></div>
+					<div class="insights-chart-preview-body"></div>
+				</div>
+			</div>
+		`).appendTo(frm.fields_dict.insights_chart.$wrapper.closest(".section-body"));
+		$el.find(".insights-chart-preview").css({
+			marginBottom: "var(--margin-lg)",
+			padding: "var(--padding-md)",
+			border: "1px solid var(--border-color)",
+			borderRadius: "var(--border-radius-md)",
 		});
+		$el.find(".insights-chart-preview-body").css({ height: `${height}px` });
+		const handle = frappe.ui.mount_island(
+			"insights.chart",
+			$el.find(".insights-chart-preview-body").get(0),
+			{ chart, ...props },
+		);
 		frm.insights_preview = { chart, $el, handle };
+
+		frappe
+			.xcall("insights.desk.get_form_chart", { chart })
+			.then((shown) => {
+				if (!shown || frm.insights_preview?.chart !== chart) return;
+				describe(frm, chart, shown);
+			});
+	}
+
+	function describe(frm, chart, { title, workbook, can_share }) {
+		const url = `${frappe.boot.insights_path}/workbook/${encodeURIComponent(
+			workbook,
+		)}/chart/${encodeURIComponent(chart)}`;
+		const link = (href, text) =>
+			`<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+
+		const sharing = __(
+			"Users with an Insights role see it when the chart's sharing in Insights allows them.",
+		);
+		frm.set_df_property(
+			"insights_chart",
+			"description",
+			can_share
+				? `${sharing} ${link(`${url}?share=1`, __("Change sharing"))}`
+				: sharing,
+		);
+
+		frm.insights_preview.$el
+			.find(".insights-chart-preview-header")
+			.css({
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "space-between",
+				gap: "var(--margin-sm)",
+				marginBottom: "var(--margin-md)",
+			})
+			.append(
+				$(`<span class="text-base font-medium ellipsis"></span>`).text(
+					title || chart,
+				),
+				$(link(url, __("Open in Insights"))).addClass(
+					"text-muted small",
+				),
+			);
 	}
 
 	return {

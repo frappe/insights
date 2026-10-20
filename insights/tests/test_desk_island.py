@@ -18,6 +18,7 @@ from insights.desk import (
     DESK_ISLANDS,
     boot_app_path,
     fill_shipped_claims,
+    get_form_chart,
     install_custom_fields,
     island_for,
     report_dangling_claims,
@@ -496,6 +497,21 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         ).insert()
 
         self.assertEqual((desk_chart.module, desk_card.module), ("Contacts", "Contacts"))
+
+    # @feature desk.chart-form
+    def test_a_desk_form_tells_only_a_reader_of_the_chart_its_title_and_workbook(self):
+        reader = create_user(USER_1, roles=["Insights User", "Desk User"]).name
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Form")
+
+        with as_user(reader):
+            self.assertIsNone(get_form_chart(chart.name))
+        frappe.share.add(chart.doctype, chart.name, user=reader, read=1, notify=0)
+        with as_user(reader):
+            self.assertEqual(
+                get_form_chart(chart.name),
+                {"title": "Desk Island Test Form", "workbook": self.dashboard.workbook, "can_share": False},
+            )
+        self.assertTrue(get_form_chart(chart.name)["can_share"])
 
     # @feature desk.show-in-desk
     def test_show_in_desk_makes_a_dashboard_chart_that_shows_the_chart(self):

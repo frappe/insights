@@ -124,6 +124,23 @@ def show_in_desk(chart) -> dict:
     return {"doctype": doctype, "name": name, "url": get_url_to_form(doctype, name)}
 
 
+@frappe.whitelist()
+def get_form_chart(chart: str) -> dict | None:
+    """What the form of a desk chart or card says about the Insights chart it
+    shows: its title, its workbook for the link to it, and whether the caller
+    may change who sees it. Nothing for a chart the caller may not read."""
+    from insights.permissions import can_share
+    from insights.resolver import may_read
+
+    doctype = DESK_ISLANDS["Dashboard Chart"]["options"]
+    if not frappe.db.exists(doctype, chart):
+        return None
+    doc = frappe.get_doc(doctype, chart)
+    if not may_read(doc):
+        return None
+    return {"title": doc.title, "workbook": doc.workbook, "can_share": can_share(doc)}
+
+
 def desk_doctype(chart) -> str:
     return "Number Card" if chart.chart_type == "Number" else "Dashboard Chart"
 
