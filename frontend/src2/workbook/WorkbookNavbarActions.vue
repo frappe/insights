@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { GitFork, PackagePlus, Share2 } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { waitUntil } from '../helpers'
 import router from '../router'
 import session from '../session'
 import { __ } from '../translation'
@@ -14,6 +16,13 @@ import WorkbookShareDialog from './WorkbookShareDialog.vue'
 const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
+// The upgrade wizard links here to change who may open the workbook. The
+// owner arrives with the loaded document.
+if (useRoute().query.share) {
+	waitUntil(() => Boolean(workbook.doc.owner)).then(() => {
+		showShareDialog.value = workbook.canShare
+	})
+}
 const showLineageDialog = ref(false)
 const showExportDialog = ref(false)
 
