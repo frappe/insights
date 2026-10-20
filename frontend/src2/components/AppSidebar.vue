@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { breakpointsTailwind, useBreakpoints, useStorage } from '@vueuse/core'
 import {
 	Book,
 	Database,
@@ -68,7 +68,18 @@ import { TrialBanner } from '@framework/ui/components/TrialBanner/index.ts'
 import { __ } from '../translation'
 import session from '../session'
 
-const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
+// Below the small breakpoint the open sidebar covers most of the page, so it
+// starts collapsed there, and toggling it does not change the stored choice
+const isNarrow = useBreakpoints(breakpointsTailwind).smaller('sm')
+const collapsedWhenWide = useStorage('insights:sidebarCollapsed', false)
+const collapsedWhenNarrow = ref(true)
+const isSidebarCollapsed = computed({
+	get: () => (isNarrow.value ? collapsedWhenNarrow.value : collapsedWhenWide.value),
+	set: (collapsed) => {
+		if (isNarrow.value) collapsedWhenNarrow.value = collapsed
+		else collapsedWhenWide.value = collapsed
+	},
+})
 const showSettingsDialog = ref(false)
 
 // A reader without an Insights role reads dashboards and nothing else, so the
