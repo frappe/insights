@@ -185,16 +185,18 @@ function onKeydown(event: KeyboardEvent) {
 				<h2 class="text-3xl font-semibold text-ink-gray-9">
 					{{ __('Welcome to Insights 4') }}
 				</h2>
-				<div class="flex flex-col items-center gap-2.5 text-center">
+				<!-- the picture keeps its height in a dialog that fits its content, and grows
+				     into the room a taller one leaves, the same on every slide -->
+				<div class="flex grow flex-col items-center gap-2.5 text-center">
 					<div
-						class="flex h-[300px] w-full items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-5"
+						class="flex w-full shrink-0 grow basis-[300px] items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-5"
 					>
 						<UpgradePicture :name="slides[slide].picture" :person="person" />
 					</div>
 					<div class="mt-1.5 text-2xl font-semibold text-ink-gray-9">
 						{{ slides[slide].label }}
 					</div>
-					<p class="max-w-[460px] text-p-base text-ink-gray-6">
+					<p class="min-h-[2lh] max-w-[460px] text-p-base text-ink-gray-6">
 						{{ slides[slide].text }}
 					</p>
 					<div class="mt-1 flex gap-1.5" role="tablist">
@@ -240,7 +242,7 @@ function onKeydown(event: KeyboardEvent) {
 				<h2 class="text-3xl font-semibold text-ink-gray-9">
 					{{ __('Share the workbook, not the chart') }}
 				</h2>
-				<div class="flex flex-col gap-2.5">
+				<div class="flex grow flex-col gap-2.5">
 					<div class="text-xs font-semibold text-ink-gray-5">{{ __('Before') }}</div>
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">
@@ -250,11 +252,13 @@ function onKeydown(event: KeyboardEvent) {
 						</span>
 						{{ __('and could let people edit it.') }}
 					</p>
-					<div class="flex justify-center rounded-5 bg-surface-alpha-gray-1 p-3.5 pb-2.5">
+					<div
+						class="flex grow items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-3.5 pb-2.5"
+					>
 						<UpgradePicture name="shareBefore" :person="person" />
 					</div>
 				</div>
-				<div class="mt-1 flex flex-col gap-2.5">
+				<div class="mt-1 flex grow flex-col gap-2.5">
 					<div class="text-xs font-semibold text-ink-blue-link">{{ __('Now') }}</div>
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">
@@ -262,7 +266,9 @@ function onKeydown(event: KeyboardEvent) {
 						</span>
 						{{ __('Sharing a chart or dashboard only lets them read it.') }}
 					</p>
-					<div class="flex justify-center rounded-5 bg-surface-alpha-gray-1 p-3.5 pb-2.5">
+					<div
+						class="flex grow items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-3.5 pb-2.5"
+					>
 						<UpgradePicture name="shareNow" :person="person" />
 					</div>
 				</div>
@@ -278,11 +284,12 @@ function onKeydown(event: KeyboardEvent) {
 					<span class="font-semibold text-ink-gray-9">{{ group.lead[0] }}</span>
 					{{ group.lead[1] }}
 				</p>
-				<!-- one height on every step, so the picture neither jumps nor leaves the
-				     lower half of the step empty -->
+				<!-- The picture grows into the room the dialog leaves, and the item below
+				     keeps one height through the step, so nothing moves from item to item
+				     and no band is left empty. Without a picture the item sits in the middle. -->
 				<div
 					v-if="picture"
-					class="flex h-[220px] shrink-0 items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-2.5"
+					class="flex shrink-0 grow basis-[220px] items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-2.5"
 				>
 					<UpgradePicture
 						:name="picture"
@@ -292,112 +299,135 @@ function onKeydown(event: KeyboardEvent) {
 				</div>
 
 				<div
-					v-if="current && sentence"
-					class="flex flex-col gap-3 rounded-5 border border-outline-gray-2 bg-surface-base px-4 py-3.5 shadow-sm"
-					aria-live="polite"
+					class="flex flex-col gap-2"
+					:class="
+						picture
+							? 'min-h-[196px] shrink-0'
+							: current
+							  ? 'grow justify-center'
+							  : 'grow'
+					"
 				>
-					<div class="flex items-center gap-2.5 text-xs text-ink-gray-5 tabular-nums">
-						<span>{{
-							__('{0} of {1}', String(handled + 1), String(rows.length))
-						}}</span>
-						<div
-							class="h-1 max-w-[120px] flex-1 overflow-hidden rounded-1 bg-surface-gray-3"
-						>
+					<div
+						v-if="current && sentence"
+						class="flex flex-col gap-3 rounded-5 border border-outline-gray-2 bg-surface-base px-4 py-3.5 shadow-sm"
+						:class="picture ? 'grow' : ''"
+						aria-live="polite"
+					>
+						<div class="flex items-center gap-2.5 text-xs text-ink-gray-5 tabular-nums">
+							<span>{{
+								__('{0} of {1}', String(handled + 1), String(rows.length))
+							}}</span>
 							<div
-								class="h-full rounded-1 bg-surface-blue-7"
-								:style="{ width: `${Math.round((handled / rows.length) * 100)}%` }"
+								class="h-1 max-w-[120px] flex-1 overflow-hidden rounded-1 bg-surface-gray-3"
+							>
+								<div
+									class="h-full rounded-1 bg-surface-blue-7"
+									:style="{
+										width: `${Math.round((handled / rows.length) * 100)}%`,
+									}"
+								/>
+							</div>
+						</div>
+						<p class="text-p-md text-ink-gray-6">
+							<UpgradeSentence :parts="sentence.text" />
+						</p>
+						<div
+							v-if="sentence.todo"
+							class="-mt-1 flex items-center gap-2 text-p-base font-medium text-ink-gray-8"
+						>
+							<span
+								class="grid size-5 shrink-0 place-items-center rounded-full bg-surface-blue-2 text-ink-blue-7"
+							>
+								<ArrowRight class="size-3" stroke-width="2" />
+							</span>
+							<span><UpgradeSentence :parts="sentence.todo" /></span>
+						</div>
+						<div class="mt-auto flex items-center gap-2">
+							<Button
+								v-if="
+									sentence.action &&
+									(sentence.action.kind !== 'fix' || current.item.can_fix)
+								"
+								variant="subtle"
+								@click="openAction(sentence.action)"
+							>
+								{{ sentence.action.label }}
+								<template v-if="sentence.action.kind === 'form'" #suffix>
+									<ExternalLink
+										class="size-3.5 text-ink-gray-7"
+										stroke-width="1.5"
+									/>
+								</template>
+							</Button>
+							<span class="flex-1" />
+							<Button
+								variant="ghost"
+								:label="__('Skip')"
+								@click="upgrade.skip(current.item.name)"
+							/>
+							<Button
+								data-primary
+								variant="solid"
+								:loading="pending"
+								@click="markDone(current)"
+							>
+								{{ group.kind === 'note' ? __('Got it') : __('Done') }}
+								<template #suffix>
+									<KeyboardShortcut
+										combo="Enter"
+										use-icons
+										class="!text-ink-gray-4"
+									/>
+								</template>
+							</Button>
+						</div>
+					</div>
+
+					<div
+						v-else
+						class="flex grow flex-col items-center justify-center gap-3 rounded-5 border border-dashed border-outline-gray-2 bg-surface-gray-1 px-4 py-3.5 text-center"
+					>
+						<Check
+							v-if="!skippedCount"
+							class="size-5 text-ink-green-7"
+							stroke-width="2"
+						/>
+						<p class="text-p-md text-ink-gray-8">
+							{{
+								skippedCount === 0
+									? __('All done here.')
+									: skippedCount === 1
+									  ? __('1 skipped. It stays in your list for later.')
+									  : __(
+												'{0} skipped. They stay in your list for later.',
+												String(skippedCount),
+									    )
+							}}
+						</p>
+						<div v-if="skippedCount">
+							<Button
+								variant="subtle"
+								:label="__('Go through skipped')"
+								@click="upgrade.unskip(rows.map((row) => row.item.name))"
 							/>
 						</div>
 					</div>
-					<p class="text-p-md text-ink-gray-6">
-						<UpgradeSentence :parts="sentence.text" />
-					</p>
+
+					<!-- kept in place before the first item is done, so the card doesn't shrink then -->
 					<div
-						v-if="sentence.todo"
-						class="-mt-1 flex items-center gap-2 text-p-base font-medium text-ink-gray-8"
+						class="flex h-4 items-center gap-1 text-xs text-ink-gray-5"
+						:class="doneCount || skippedCount ? '' : 'invisible'"
 					>
-						<span
-							class="grid size-5 shrink-0 place-items-center rounded-full bg-surface-blue-2 text-ink-blue-7"
-						>
-							<ArrowRight class="size-3" stroke-width="2" />
-						</span>
-						<span><UpgradeSentence :parts="sentence.todo" /></span>
+						<template v-if="doneCount">
+							<Check class="size-3 text-ink-green-7" stroke-width="2" />
+							{{ __('{0} done', String(doneCount)) }}
+						</template>
+						<template v-if="doneCount && skippedCount"> · </template>
+						<template v-if="skippedCount">{{
+							__('{0} skipped', String(skippedCount))
+						}}</template>
 					</div>
-					<div class="flex items-center gap-2">
-						<Button
-							v-if="
-								sentence.action &&
-								(sentence.action.kind !== 'fix' || current.item.can_fix)
-							"
-							variant="subtle"
-							@click="openAction(sentence.action)"
-						>
-							{{ sentence.action.label }}
-							<template v-if="sentence.action.kind === 'form'" #suffix>
-								<ExternalLink class="size-3.5 text-ink-gray-7" stroke-width="1.5" />
-							</template>
-						</Button>
-						<span class="flex-1" />
-						<Button
-							variant="ghost"
-							:label="__('Skip')"
-							@click="upgrade.skip(current.item.name)"
-						/>
-						<Button
-							data-primary
-							variant="solid"
-							:loading="pending"
-							@click="markDone(current)"
-						>
-							{{ group.kind === 'note' ? __('Got it') : __('Done') }}
-							<template #suffix>
-								<KeyboardShortcut
-									combo="Enter"
-									use-icons
-									class="!text-ink-gray-4"
-								/>
-							</template>
-						</Button>
-					</div>
-				</div>
-
-				<div
-					v-else
-					class="flex flex-col gap-3 rounded-5 border border-dashed border-outline-gray-2 bg-surface-gray-1 px-4 py-3.5"
-				>
-					<p class="text-p-md text-ink-gray-8">
-						{{
-							skippedCount === 0
-								? __('All done here.')
-								: skippedCount === 1
-								  ? __('1 skipped. It stays in your list for later.')
-								  : __(
-											'{0} skipped. They stay in your list for later.',
-											String(skippedCount),
-								    )
-						}}
-					</p>
-					<div v-if="skippedCount">
-						<Button
-							variant="subtle"
-							:label="__('Go through skipped')"
-							@click="upgrade.unskip(rows.map((row) => row.item.name))"
-						/>
-					</div>
-				</div>
-
-				<div
-					v-if="doneCount || skippedCount"
-					class="-mt-1.5 flex items-center gap-1 text-xs text-ink-gray-5"
-				>
-					<template v-if="doneCount">
-						<Check class="size-3 text-ink-green-7" stroke-width="2" />
-						{{ __('{0} done', String(doneCount)) }}
-					</template>
-					<template v-if="doneCount && skippedCount"> · </template>
-					<template v-if="skippedCount">{{
-						__('{0} skipped', String(skippedCount))
-					}}</template>
 				</div>
 			</template>
 		</div>
