@@ -79,7 +79,10 @@ test.describe('dashboard', () => {
 		await expect(page.getByRole('link', { name: 'Dashboard 1' })).toBeVisible()
 
 		await page.getByRole('button', { name: 'Edit', exact: true }).click()
-		await page.getByRole('button', { name: 'Chart', exact: true }).click()
+		// An empty dashboard offers Chart twice: in the toolbar, and under its
+		// "Add a chart" empty state, which comes second.
+		await expect(page.getByText('Add a chart', { exact: true })).toBeVisible()
+		await page.getByRole('button', { name: 'Chart', exact: true }).last().click()
 
 		// The selector searches the workbook's charts by title, and keeps only the
 		// ones that match.
@@ -456,7 +459,7 @@ test.describe('dashboard', () => {
 		await expect(items(page)).toHaveCount(0)
 
 		// An empty dashboard shows no grid. Its empty state is inside the drop target.
-		const grid = page.getByText('This dashboard is empty')
+		const grid = page.getByText('Add a chart', { exact: true })
 		await page.getByRole('link', { name: chart.title }).dragTo(grid)
 
 		await expect(items(page).filter({ hasText: chart.title })).toHaveCount(1)
