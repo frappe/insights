@@ -173,24 +173,30 @@ def preview_user_for(doc) -> str | None:
     return key["user"]
 
 
-def why_rows_follow_reader(query: str | None, content) -> dict | None:
+def why_rows_follow_reader(
+    query: str | None, content, operations_by_name: dict[str, list] | None = None
+) -> dict | None:
     """Why `query`, and `content` that reads its rows, may give each reader
     other rows, or None when every reader gets the same rows. Answers the
     `reason` (`script`, `site_table` or `table_restriction`) and the `table`
-    it reads, if any."""
+    it reads, if any. `operations_by_name` is as for `source_tables`."""
     from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name, is_site_db
     from insights.insights.query_utils import source_tables, transitive_closure
 
     if not query:
         return None
-    operations = frappe.get_all(
-        "Insights Query v3", filters={"name": ("in", [query, *transitive_closure(query)])}, pluck="operations"
-    )
+    queries = [query, *transitive_closure(query, operations_by_name=operations_by_name)]
+    if operations_by_name is None:
+        operations = frappe.get_all(
+            "Insights Query v3", filters={"name": ("in", queries)}, pluck="operations"
+        )
+    else:
+        operations = [operations_by_name.get(name) for name in queries]
     if any(runs_as_user(frappe.parse_json(node)) for node in [content, *operations]):
         return {"reason": "script"}
 
     restrictions_apply = frappe.db.get_single_value("Insights Settings", "enable_permissions")
-    for table in source_tables(query):
+    for table in source_tables(query, operations_by_name=operations_by_name):
         data_source, table_name = table["data_source"], table["table_name"]
         if is_site_db(data_source):
             return {"reason": "site_table", "table": table_name.removeprefix("tab")}

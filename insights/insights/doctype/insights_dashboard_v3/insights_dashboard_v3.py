@@ -848,7 +848,7 @@ def preview_refusal(dashboard) -> str | None:
     dashboard on which none of their charts would run, and the browser
     captures the sign-in page it falls back to.
     """
-    if dashboard.name not in same_rows_for_every_reader([dashboard.name]):
+    if dashboard.name not in same_rows_for_every_reader([dashboard.name], user=dashboard.owner):
         return frappe._("Each viewer sees their own data, so there's no shared preview")
     if refused_doctypes(dashboard.name, dashboard.owner) is not None:
         return frappe._("The owner of this dashboard can't read its data, so there's no preview")

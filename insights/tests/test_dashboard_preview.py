@@ -16,6 +16,8 @@ from werkzeug.test import EnvironBuilder
 
 from insights.api.dashboards import get_dashboards
 from insights.api.view import get_dashboard, get_dashboard_preview
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
 from insights.permission_user import permission_user_for
 from insights.permissions import has_doc_permission, same_rows_for_every_reader
 from insights.tests.base import InsightsIntegrationTestCase
@@ -29,6 +31,7 @@ from insights.tests.factories import (
     delete_users,
 )
 from insights.tests.permissions_utils import (
+    NON_INSIGHTS_USER,
     USER_1,
     USER_2,
     create_test_team,
@@ -221,6 +224,7 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
 
 
 READER = USER_2
+EXTERNAL = frappe.scrub("Same Rows DuckDB")
 
 
 class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
@@ -232,10 +236,24 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
     @classmethod
     def before_class(cls):
         create_test_users()
+        frappe.get_doc(
+            {
+                "doctype": DT.DATA_SOURCE,
+                "title": "Same Rows DuckDB",
+                "database_type": "DuckDB",
+                "database_name": "same_rows_test_duckdb",
+            }
+        ).insert()
+        for table in ("orders", "customers"):
+            frappe.get_doc(
+                {"doctype": DT.TABLE, "table": table, "label": table, "data_source": EXTERNAL}
+            ).insert()
 
     @classmethod
     def after_class(cls):
-        delete_users(OWNER, READER)
+        if frappe.db.exists(DT.DATA_SOURCE, EXTERNAL):
+            frappe.delete_doc(DT.DATA_SOURCE, EXTERNAL, force=True)
+        delete_users(OWNER, READER, NON_INSIGHTS_USER)
 
     def board(self, run_as_owner=(False,), table="tabToDo"):
         """A Private dashboard of OWNER's on `table`, with one chart per entry of `run_as_owner`."""
@@ -321,6 +339,123 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
         dashboard = self.board()
         frappe.db.set_value(DT.WORKBOOK, dashboard.workbook, "is_standard", 1)
         self.assertFalse(self.holds(dashboard))
+
+    def query(self, workbook, operations) -> str:
+        """A query of OWNER's in `workbook`, stored with `operations` as they are."""
+        query = create_test_query(OWNER, workbook, title="Same Rows Query").name
+        frappe.db.set_value(DT.QUERY, query, "operations", frappe.as_json(operations))
+        return query
+
+    def shared_board(self, workbook, queries, run_as_owner=(), config=None):
+        """A dashboard of OWNER's that every signed-in user may open, with one
+        chart per query. The charts at the indexes in `run_as_owner` run as OWNER."""
+        items = []
+        for i, query in enumerate(queries):
+            chart = create_test_chart(OWNER, workbook, query=query, title="Same Rows Chart", config=config)
+            if i in run_as_owner:
+                with as_user(OWNER):
+                    chart.run_as_owner = 1
+                    chart.save()
+            items.append({"id": f"chart-{i}", "type": "chart", "chart": chart.name})
+        dashboard = create_test_dashboard(OWNER, workbook, title="Same Rows Dashboard", items=items)
+        frappe.db.set_value(DT.DASHBOARD, dashboard.name, "visibility", "Everyone")
+        return dashboard
+
+    def holds_for(self, dashboard, user) -> bool:
+        return dashboard.name in same_rows_for_every_reader([dashboard.name], user=user)
+
+    def grant(self, user, table, restriction=None):
+        """A team that grants `user` the `table` of the external source."""
+        team = create_test_team(f"same-rows-{frappe.generate_hash(length=6)}", [user])
+        team.append(
+            "team_permissions",
+            {
+                "resource_type": DT.TABLE,
+                "resource_name": get_table_name(EXTERNAL, table),
+                "table_restrictions": restriction,
+            },
+        )
+        team.save(ignore_permissions=True)
+        clear_team_cache()
+        self.addCleanup(clear_team_cache)
+
+    # @feature dashboard.preview-same-rows
+    def test_a_shared_dashboard_on_another_data_source_shows_one_preview(self):
+        """Only desk and Table Restrictions give readers other rows, and neither
+        applies to an external table without a restriction."""
+        workbook = create_test_workbook(OWNER, title="Same Rows Workbook").name
+        orders = self.query(workbook, read(EXTERNAL, "orders"))
+        site = self.query(workbook, read("Site DB", "tabToDo"))
+
+        for label, queries, holds in (
+            ("an external table", [orders], True),
+            ("a site table", [site], False),
+            ("a query that reads an external table", [self.query(workbook, read_query(orders))], True),
+            ("a query that reads a site table", [self.query(workbook, read_query(site))], False),
+            ("a query that no longer exists", [self.query(workbook, read_query("no-such-query"))], True),
+        ):
+            with self.subTest(label):
+                self.assertEqual(self.holds(self.shared_board(workbook, queries)), holds)
+
+    # @feature dashboard.preview-same-rows
+    def test_one_chart_that_may_give_readers_other_rows_takes_the_preview_away(self):
+        workbook = create_test_workbook(OWNER, title="Same Rows Workbook").name
+        orders = self.query(workbook, read(EXTERNAL, "orders"))
+        site = self.query(workbook, read("Site DB", "tabToDo"))
+        script = self.query(workbook, [*read(EXTERNAL, "orders"), {"type": "code", "code": "df = df"}])
+
+        self.assertFalse(self.holds(self.shared_board(workbook, [orders, site])))
+        self.assertTrue(self.holds(self.shared_board(workbook, [orders, site], run_as_owner=(1,))))
+        self.assertFalse(self.holds(self.shared_board(workbook, [orders, script])))
+        self.assertFalse(
+            self.holds(
+                self.shared_board(workbook, [orders], config={"label": {"expression": "frappe.session.user"}})
+            )
+        )
+
+    # @feature dashboard.preview-same-rows permissions.table-row-restriction
+    def test_a_table_restriction_on_one_table_takes_the_preview_away(self):
+        workbook = create_test_workbook(OWNER, title="Same Rows Workbook").name
+        dashboard = self.shared_board(
+            workbook,
+            [
+                self.query(workbook, read(EXTERNAL, "orders")),
+                self.query(workbook, read(EXTERNAL, "customers")),
+            ],
+        )
+        self.set_team_permissions(1)
+        self.assertTrue(self.holds(dashboard))
+
+        self.grant(READER, "customers", restriction="region == 'North'")
+        self.assertFalse(self.holds(dashboard))
+
+    # @feature dashboard.preview-same-rows permissions.team-grant
+    def test_the_preview_shows_only_to_a_reader_who_may_read_its_tables(self):
+        """The chart refuses such a reader, so the image would show them rows
+        they may not read. The chart that runs as its owner lets them open the
+        dashboard."""
+        workbook = create_test_workbook(OWNER, title="Same Rows Workbook").name
+        dashboard = self.shared_board(
+            workbook,
+            [
+                self.query(workbook, read(EXTERNAL, "orders")),
+                self.query(workbook, read("Site DB", "tabToDo")),
+            ],
+            run_as_owner=(1,),
+        )
+        self.with_preview(dashboard)
+
+        self.assertTrue(self.holds_for(dashboard, READER))
+        self.assertTrue(self.fetch(dashboard).startswith(b"\xff\xd8"))
+        self.assertFalse(self.holds_for(dashboard, NON_INSIGHTS_USER))
+        with self.assertRaises(frappe.DoesNotExistError):
+            self.fetch(dashboard, user=NON_INSIGHTS_USER)
+
+        self.set_team_permissions(1)
+        self.assertFalse(self.holds_for(dashboard, READER))
+        self.grant(READER, "orders")
+        self.assertTrue(self.holds_for(dashboard, READER))
+        self.assertTrue(self.fetch(dashboard).startswith(b"\xff\xd8"))
 
     # @feature dashboard.preview-same-rows dashboard.list
     def test_the_list_sends_a_preview_only_where_every_reader_sees_the_same_rows(self):
@@ -461,6 +596,14 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
         file_url = self.with_preview(dashboard)
         frappe.delete_doc(DT.DASHBOARD, dashboard.name, force=True, ignore_permissions=True)
         self.assertFalse(frappe.db.exists("File", {"file_url": file_url}))
+
+
+def read(data_source, table):
+    return [{"type": "source", "table": {"type": "table", "data_source": data_source, "table_name": table}}]
+
+
+def read_query(query):
+    return [{"type": "source", "table": {"type": "query", "workbook": "", "query_name": query}}]
 
 
 def remove_file_on_disk(file_url):

@@ -469,6 +469,24 @@ def query_operations(query_name: str, operations_by_name: dict[str, list] | None
     return frappe.db.get_value("Insights Query v3", query_name, "operations")
 
 
+def reachable_operations(queries) -> dict[str, list | None]:
+    """The stored operations of `queries` and of every query they read, by name.
+
+    One read per hop, for a caller that walks many queries. A name with no row
+    maps to None.
+    """
+    found: dict[str, list | None] = {}
+    frontier = {name for name in queries if name}
+    while frontier:
+        rows = frappe.get_all(
+            "Insights Query v3", filters={"name": ("in", list(frontier))}, fields=["name", "operations"]
+        )
+        found.update(dict.fromkeys(frontier))
+        found.update({row.name: row.operations for row in rows})
+        frontier = {name for row in rows for name in referenced_queries(row.operations)} - found.keys()
+    return found
+
+
 def get_direct_dependencies(query_name: str, operations_by_name: dict[str, list] | None = None) -> list[str]:
     """Return the query names this query directly depends on.
 

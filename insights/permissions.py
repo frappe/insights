@@ -1422,56 +1422,84 @@ def only_owner_reads(readers: frappe._dict) -> bool:
     )
 
 
-def same_rows_for_every_reader(dashboards: list[str], readers: dict | None = None) -> set[str]:
-    """The `dashboards` every reader sees with the same rows, so one preview image may show to all of them.
+def same_rows_for_every_reader(
+    dashboards: list[str], readers: dict | None = None, user: str | None = None
+) -> set[str]:
+    """The `dashboards` every reader sees with the same rows, so one preview image may show to `user`.
 
     That holds when nobody but its owner may open it (`only_owner_reads`), or
-    when every chart on it runs as its owner (`declared_owner`). An app's
-    dashboard always fails: roles read it, and its charts never run as their
-    owner. `readers` is `dashboard_readers` of `dashboards`, when the caller
-    has it already.
+    when each chart on it shows every reader the same rows. A chart does when
+    it runs as its owner (`declared_owner`), or when none of its rows follow
+    the reader (`why_rows_follow_reader`): no site table, no Table
+    Restriction, no script. Such a chart still refuses a reader who may not
+    read one of its tables, so the preview shows only to a `user` who may. A
+    chart that no longer exists, names no query, or reads a query that no
+    longer exists, shows nobody any rows. An app's dashboard always fails:
+    roles read it, and its charts read the site database as their reader.
+
+    `readers` is `dashboard_readers` of `dashboards`, when the caller has it
+    already. `user` is the session user unless given.
     """
-    from insights.permission_user import declared_owner
+    from insights.insights.doctype.insights_team.insights_team import check_table_permission
+    from insights.insights.query_utils import reachable_operations, source_tables
+    from insights.permission_user import declared_owner, runs_as_user, why_rows_follow_reader
 
     if not dashboards:
         return set()
     readers = readers if readers is not None else dashboard_readers(dashboards)
+    user = user or frappe.session.user
 
+    shared = {
+        name
+        for name, dashboard in readers.items()
+        if not dashboard.is_standard and not only_owner_reads(dashboard)
+    }
     CHART = "Insights Chart v3"
     charts: dict[str, list[str]] = {}
     for row in frappe.get_all(
         "Insights Dashboard Chart v3",
-        filters={"parenttype": "Insights Dashboard v3", "parent": ["in", dashboards]},
+        filters={"parenttype": "Insights Dashboard v3", "parent": ["in", list(shared)]},
         fields=["parent", "chart"],
     ):
         charts.setdefault(row.parent, []).append(row.chart)
-    checked = set(
-        frappe.get_all(
+    stored = {
+        chart.name: chart
+        for chart in frappe.get_all(
             CHART,
-            filters={
-                "name": ["in", [chart for names in charts.values() for chart in names]],
-                "run_as_owner": 1,
-            },
-            pluck="name",
+            filters={"name": ["in", [chart for names in charts.values() for chart in names]]},
+            fields=["name", "query", "config", "run_as_owner"],
         )
-    )
-    runs_as_owner = {}
+    }
+    operations = reachable_operations({chart.query for chart in stored.values()})
+    query_answers: dict[str, bool] = {}
+    table_answers: dict[tuple[str, str], bool] = {}
 
-    def all_run_as_owner(names: list[str]) -> bool:
-        if not set(names) <= checked:
-            return False
-        for name in names:
-            if name not in runs_as_owner:
-                runs_as_owner[name] = bool(declared_owner(frappe._dict(doctype=CHART, name=name)))
-            if not runs_as_owner[name]:
-                return False
-        return True
+    def may_read(table: dict) -> bool:
+        key = (table["data_source"], table["table_name"])
+        if key not in table_answers:
+            table_answers[key] = check_table_permission(*key, user=user, raise_error=False)
+        return table_answers[key]
+
+    def query_shows_same_rows(query: str) -> bool:
+        if query not in query_answers:
+            query_answers[query] = not why_rows_follow_reader(query, None, operations) and all(
+                may_read(table) for table in source_tables(query, operations_by_name=operations)
+            )
+        return query_answers[query]
+
+    def shows_same_rows(name: str) -> bool:
+        chart = stored.get(name)
+        if not chart or not chart.query:
+            return True
+        if chart.run_as_owner and declared_owner(frappe._dict(doctype=CHART, name=name)):
+            return True
+        return not runs_as_user(frappe.parse_json(chart.config)) and query_shows_same_rows(chart.query)
 
     return {
         name
         for name, dashboard in readers.items()
         if not dashboard.is_standard
-        and (only_owner_reads(dashboard) or all_run_as_owner(charts.get(name, [])))
+        and (name not in shared or all(shows_same_rows(chart) for chart in charts.get(name, [])))
     }
 
 
