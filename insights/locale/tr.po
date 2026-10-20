@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-10-05 11:28\n"
+"PO-Revision-Date: 2026-10-20 13:32\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Turkish\n"
 "MIME-Version: 1.0\n"
@@ -767,7 +767,7 @@ msgstr ""
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Data Source"
-msgstr ""
+msgstr "Veri Kaynağı"
 
 #: frontend/src2/components/AppSidebar.vue:84
 #: frontend/src2/data_source/DataSourceList.vue:146
@@ -2292,7 +2292,7 @@ msgstr ""
 #. Label of the preview_image (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Preview Image"
-msgstr ""
+msgstr "Önizleme resmi"
 
 #. Label of the primary_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json

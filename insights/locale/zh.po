@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-10-05 11:28\n"
+"PO-Revision-Date: 2026-10-20 13:32\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Chinese Simplified\n"
 "MIME-Version: 1.0\n"
@@ -767,7 +767,7 @@ msgstr "数据查询"
 #: insights/insights/doctype/insights_table_link_v3/insights_table_link_v3.json
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Data Source"
-msgstr ""
+msgstr "数据来源"
 
 #: frontend/src2/components/AppSidebar.vue:84
 #: frontend/src2/data_source/DataSourceList.vue:146
@@ -2491,7 +2491,7 @@ msgstr ""
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:60
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:71
 msgid "Right"
-msgstr "右对齐"
+msgstr "右"
 
 #. Label of the right_column (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:294
