@@ -17,8 +17,10 @@ const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
 // The upgrade wizard links here to change who may open the workbook.
-// `can_share` arrives with the loaded document.
-if (useRoute().query.share) {
+// `can_share` arrives with the loaded document. A chart's link with the same
+// query opens the chart's own share dialog instead.
+const route = useRoute()
+if (route.name === 'Workbook' && route.query.share) {
 	waitUntil(() => Boolean(workbook.doc.owner)).then(() => {
 		showShareDialog.value = workbook.canShare
 	})
