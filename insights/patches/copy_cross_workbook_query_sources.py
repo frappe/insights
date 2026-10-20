@@ -183,10 +183,8 @@ def report_missing_values(copy, source) -> None:
     variables = ", ".join(variable.variable_name for variable in source.variables)
     add_item(
         "P21",
-        f'Query "{copy.title or copy.name}" in workbook "{workbook_title or copy.workbook}" is a copy of the '
-        f"query of the same name in {source_workbook}, because a query here reads it and a query "
-        f"may now read only its own workbook. The values of its variables ({variables}) were not copied, "
-        "because they may be passwords. Enter them in the copy, or it will not run.",
+        f'"{copy.title or copy.name}" in "{workbook_title or copy.workbook}", copied from {source_workbook}: '
+        f"enter its variables ({variables}), which may be passwords and were not copied",
         reference=(QUERY, copy.name),
         user=None if owner == "Administrator" else owner,
     )
@@ -197,9 +195,8 @@ def report_cycle(copy, source: str) -> None:
     source_title = frappe.db.get_value(QUERY, source, "title") or source
     add_item(
         "P21",
-        f'Query "{copy.title or copy.name}" in workbook "{workbook_title or copy.workbook}" is a copy of a query '
-        f'of another workbook. It reads query "{source_title}", which reads it back, so it could not run in '
-        "Insights 3 either. Remove that source from the copy, or it will not run.",
+        f'"{copy.title or copy.name}" in "{workbook_title or copy.workbook}": remove its source '
+        f'"{source_title}", which reads it back. It could not run in Insights 3 either.',
         reference=(QUERY, copy.name),
         user=None if owner == "Administrator" else owner,
     )

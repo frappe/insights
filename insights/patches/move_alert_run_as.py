@@ -38,27 +38,16 @@ def move_or_report(alert, enabler: str | None, owner: str | None) -> str:
     """Move the alert to `owner` where that keeps its rows. The message says which happened."""
     title = alert.title
     if not enabler:
-        return (
-            f'Alert "{title}" has no user to run as, so it will stop at its next run. '
-            "Turn it off and on again as an editor of its workbook."
-        )
+        return f'"{title}" has no user to run as, so it stops at its next run'
 
     if not owner or not may_run_as(ALERT, alert.name, owner):
-        return (
-            f'Alert "{title}" will stop at its next run: neither {enabler} nor the workbook\'s owner can edit '
-            "its workbook. Share the workbook with an editor, then turn the alert off and on again as them."
-        )
+        return f'"{title}" stops at its next run: neither {enabler} nor the workbook\'s owner can edit it'
 
     if why := why_query_rows_differ(alert.query, {"expression": alert.condition}, (enabler, owner)):
         return (
-            f'Alert "{title}" will stop at its next run: {enabler}, who turned it on, can\'t edit its workbook. '
-            f"It still runs as {enabler}, not as {owner}, who owns the workbook, because it {why}: {owner} may "
-            f"see other rows, and its recipients would get them. Share the workbook with {enabler} to edit, "
-            "or turn the alert off and on again as an editor."
+            f'"{title}" stops at its next run: {enabler}, who turned it on, can\'t edit the workbook. It '
+            f"{why}, so {owner}, who owns the workbook, may see other rows."
         )
 
     frappe.db.set_value(ALERT, alert.name, "permission_user", owner, update_modified=False)
-    return (
-        f'Alert "{title}" now runs as {owner}, who owns its workbook, because {enabler}, who turned it on, '
-        "can't edit the workbook. Both read the same rows, so it sends what it sent before."
-    )
+    return f'"{title}" now runs as {owner}, who owns the workbook, in place of {enabler}, with the same rows'

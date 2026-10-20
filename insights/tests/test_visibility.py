@@ -930,4 +930,4 @@ class TestOrgShareMigration(InsightsIntegrationTestCase):
                 frappe.db.exists("DocShare", {"share_doctype": doc.doctype, "share_name": doc.name})
             )
             message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": doc.workbook}, "message")
-            self.assertIn(f'"{doc.title}" in workbook', message)
+            self.assertIn(f'"{doc.title}" with everyone', message)

@@ -82,7 +82,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
 
         [item] = items("P4")
         self.assertEqual((item.reference_doctype, item.reference_name), (DT.WORKBOOK, self.workbook))
-        self.assertIn(f"let {MEMBER} edit", item.message)
+        self.assertIn(f"{MEMBER} edited them", item.message)
         self.assertNotIn(AUTHOR, item.message)
 
     # @feature upgrade.left-to-do-reported
@@ -94,7 +94,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
 
         [item] = items("P12")
         self.assertEqual(item.reference_name, self.chart)
-        self.assertIn("whose account is disabled", item.message)
+        self.assertIn("is disabled", item.message)
 
     # @feature upgrade.left-to-do-reported
     def test_a_chart_whose_owner_still_runs_it_is_not_reported(self):

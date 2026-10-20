@@ -514,9 +514,9 @@ class TestDrawnAsInsights3(InsightsIntegrationTestCase):
 
         self.assertEqual(moved(one), [])
         self.assertEqual([code for code, _ in moved(two)], ["C4"])
-        self.assertIn("now reads Revenue only", moved(two)[0][1])
+        self.assertIn("line reads Revenue only", moved(two)[0][1])
         self.assertEqual([code for code, _ in moved(one, split="region")], ["C4"])
-        self.assertIn("is gone", moved([])[0][1])
+        self.assertIn("line removed", moved([])[0][1])
 
     # @feature upgrade.charts-draw-as-before
     def test_the_patch_tells_the_owner_what_it_could_not_keep(self):

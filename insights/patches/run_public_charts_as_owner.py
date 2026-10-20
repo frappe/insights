@@ -70,16 +70,9 @@ def keep_edit(chart: str, previous_owner: str) -> None:
 def report(chart: str, owner: str, publisher: str, moved: bool) -> None:
     title = frappe.db.get_value(CHART, chart, "title") or chart
     if moved:
-        message = (
-            f'Public chart "{title}" now belongs to {publisher}, who published it, and runs as its owner. '
-            f"Its public link keeps showing the rows {publisher} can see, as before. It belonged to {owner}."
-        )
+        message = f'"{title}": now owned by {publisher}, who published it, instead of {owner}'
     else:
-        message = (
-            f'Public chart "{title}" was published by {publisher}, whose account is disabled, so it now runs '
-            f"as each reader and guests see nothing. To show {owner}'s rows to guests, turn on Run as owner "
-            "in its share dialog."
-        )
+        message = f'"{title}": {publisher}, who published it, is disabled, so guests see nothing'
     add_item("P11", message, reference=(CHART, chart), user=None if owner == "Administrator" else owner)
 
 
@@ -92,9 +85,7 @@ def report_reader_rows(chart: str, owner: str) -> None:
         return
     add_item(
         "P10",
-        f'Public chart "{title or chart}" now runs as its owner, {owner}, so every signed-in reader sees '
-        f"{owner}'s rows instead of their own, because {why}. To show each reader their own rows, stop "
-        "sharing the chart and its dashboards publicly, then turn off Run as owner.",
+        f'"{title or chart}", owned by {owner}, {why}',
         reference=(CHART, chart),
         user=None if owner == "Administrator" else owner,
     )
@@ -112,13 +103,13 @@ def why_rows_follow_reader(query: str | None, content) -> str | None:
         "Insights Query v3", filters={"name": ("in", [query, *transitive_closure(query)])}, pluck="operations"
     )
     if any(runs_as_user(frappe.parse_json(node)) for node in [content, *operations]):
-        return "it runs a script or an expression that calls frappe"
+        return "runs a script or an expression that calls frappe"
 
     restrictions_apply = frappe.db.get_single_value("Insights Settings", "enable_permissions")
     for table in source_tables(query):
         data_source, table_name = table["data_source"], table["table_name"]
         if is_site_db(data_source):
-            return f"it reads {table_name.removeprefix('tab')}, which desk permissions filter"
+            return f"reads {table_name.removeprefix('tab')}"
         if restrictions_apply and frappe.db.exists(
             "Insights Resource Permission",
             {
@@ -127,7 +118,7 @@ def why_rows_follow_reader(query: str | None, content) -> str | None:
                 "table_restrictions": ("is", "set"),
             },
         ):
-            return f"a Table Restriction filters {table_name}"
+            return f"reads {table_name}, which a Table Restriction filters"
     return None
 
 

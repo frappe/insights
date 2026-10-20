@@ -95,15 +95,10 @@ def statistic_lines_moved(config: dict, written: dict, title: str) -> list[tuple
         align = "Right" if new.get("align") == "Right" else "Left"
         on_axis = [s for s in series if (s.get("align") or "Left") == align]
         if not new.get("measure_name"):
-            found.append(
-                f'The {name} line on "{title}" is gone: it needs a measure, and the chart plots only the count.'
-            )
+            found.append(f"{name} line removed, as the chart plots only the count")
         elif len(on_axis) > 1 or split:
-            found.append(
-                f'The {name} line on "{title}" now reads {new["measure_name"]} only. Insights 3 read every '
-                "value the chart plotted, so the line may move."
-            )
-    return [("C4", " ".join(found))] if found else []
+            found.append(f"{name} line reads {new['measure_name']} only")
+    return [("C4", f'"{title}": {"; ".join(found)}')] if found else []
 
 
 def is_count(value) -> bool:
@@ -143,9 +138,7 @@ def number_units_as_insights_3(config: dict, title: str) -> list[tuple[str, str]
             found.append(
                 (
                     "N4",
-                    f'Number card "{title}" printed its currency symbol before its suffix "{suffix}". '
-                    "Insights 4 prints the suffix in place of a symbol that goes after the number, so the "
-                    "symbol no longer shows. Add it to the reading's suffix to show it again.",
+                    f'"{title}", suffix "{suffix}"',
                 )
             )
         option["suffix"] = suffix
@@ -182,10 +175,7 @@ def number_period_as_insights_3(config: dict, title: str) -> list[tuple[str, str
             config["window"] = window
         else:
             config.pop("window", None)
-        message = (
-            f'Number card "{title}" grouped {column} by time of day, which Insights 4 can\'t do. It now shows '
-            "the total of all rows. Pick a Date or Datetime column to show a period."
-        )
+        message = f'"{title}" on {column}'
         return [("N6", message)]
 
     if window.get("span") or window.get("grain"):
@@ -193,8 +183,5 @@ def number_period_as_insights_3(config: dict, title: str) -> list[tuple[str, str
     config["window"] = {**window, "grain": "day"}
     if data_type != "Datetime":
         return []
-    message = (
-        f'Number card "{title}" now shows the total of the latest day in {column}. Insights 3 showed '
-        "the value at the latest date and time."
-    )
+    message = f'"{title}" on {column}'
     return [("N5", message)]

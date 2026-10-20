@@ -837,7 +837,7 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
         (two_copy,) = self.sources_of(one_copy)
         self.assertEqual(self.sources_of(two_copy), [one])
         message = frappe.db.get_value(ITEM, {"code": "P21", "reference_name": two_copy}, "message")
-        self.assertIn('reads query "Copy Cycle One", which reads it back', message)
+        self.assertIn('remove its source "Copy Cycle One", which reads it back', message)
 
 
 class TestASourceIsAQueryOfItsOwnWorkbook(InsightsIntegrationTestCase):

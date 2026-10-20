@@ -32,7 +32,7 @@ INSIGHTS_ROLES = ("Insights User", "Insights Admin")
 def execute():
     found = site_data_findings()
     for user in found.users:
-        add_item(CODE, user_message(user, found.desk_filtered), reference=("User", user.user))
+        add_item(CODE, user_message(user), reference=("User", user.user))
     for team in found.restrictions:
         add_item(CODE, restriction_message(team), reference=(TEAM, team.team))
 
@@ -75,7 +75,6 @@ def site_data_findings() -> frappe._dict:
             users.append(frappe._dict(user=user, unreadable=sorted(unreadable), narrowed=sorted(narrowed)))
 
     return frappe._dict(
-        desk_filtered=desk_filtered,
         users=users,
         restrictions=site_restrictions(site_sources) if team_permissions else [],
     )
@@ -185,33 +184,16 @@ def site_restrictions(site_sources: list[str]) -> list[frappe._dict]:
     return list(teams.values())
 
 
-def user_message(user: frappe._dict, desk_filtered: bool) -> str:
+def user_message(user: frappe._dict) -> str:
     parts = []
     if user.unreadable:
-        doctypes = ", ".join(user.unreadable)
-        before = (
-            f"{user.user} could pick {doctypes} in Insights 3, where desk let them read no rows."
-            if desk_filtered
-            else f"{user.user} read every row of {doctypes} in Insights 3, because Apply User Permissions was off."
-        )
-        parts.append(
-            f"{before} Site data now follows desk permissions alone, so their charts on these doctypes say "
-            "Not Permitted. To show them rows, give them a desk role that reads these doctypes."
-        )
+        parts.append(f"charts on {', '.join(user.unreadable)} say Not Permitted")
     if user.narrowed:
-        parts.append(
-            f"{user.user} read every row of {', '.join(user.narrowed)} in Insights 3, because Apply User "
-            "Permissions was off. They now read only the rows and columns desk gives them. If they need every "
-            "row, remove their User Permissions on these doctypes."
-        )
-    return " ".join(parts)
+        parts.append(f"reads only the rows desk gives them of {', '.join(user.narrowed)}")
+    return f"{user.user}: {'; '.join(parts)}"
 
 
 def restriction_message(team: frappe._dict) -> str:
-    restrictions = ", ".join(f"{r.doctype} (`{r.restriction}`)" for r in team.restrictions)
-    members = ", ".join(team.users) or "nobody"
-    return (
-        f"Team {team.team}'s Table Restrictions on site data no longer apply: {restrictions}. Site data "
-        f"now follows desk permissions alone, so {members} read every row desk gives them. To keep the "
-        "narrowing, give them User Permissions."
-    )
+    restrictions = ", ".join(f"{r.doctype} `{r.restriction}`" for r in team.restrictions)
+    members = ", ".join(team.users) or "no members"
+    return f'Team "{team.team}" ({members}): {restrictions}'

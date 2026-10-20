@@ -79,9 +79,8 @@ def report_team_grants_that_lost_write():
     for workbook, found in lost.items():
         add_item(
             "P4",
-            f"{plural('Team', found.teams)} {', '.join(sorted(found.teams))} let {', '.join(sorted(found.users))} edit "
-            f"{quoted(found.titles)} in Insights 3. A team now gives read access only. To let them edit, "
-            "share this workbook with them as editors.",
+            f"{quoted(found.titles)}: {', '.join(sorted(found.users))} edited them through "
+            f"{plural('team', found.teams)} {', '.join(sorted(found.teams))}",
             reference=(WORKBOOK, workbook),
         )
 
@@ -97,16 +96,14 @@ def report_charts_that_cannot_run_as_owner():
         if chart.owner == "Administrator" or may_run_as(CHART, chart.name, chart.owner):
             continue
         if not frappe.db.get_value("User", chart.owner, "enabled"):
-            why = "whose account is disabled"
+            why = "is disabled"
         elif chart.owner not in insights_users:
-            why = "who has no Insights role"
+            why = "has no Insights role"
         else:
-            why = "who cannot edit its workbook"
+            why = "can't edit its workbook"
         add_item(
             "P12",
-            f'Chart "{chart.title or chart.name}" runs as its owner, {chart.owner}, {why}. Until they may '
-            "edit it again, it runs as each reader, so guests see nothing. Enable them, give them an "
-            "Insights role or share the workbook with them as an editor.",
+            f'"{chart.title or chart.name}": its owner, {chart.owner}, {why}',
             reference=(CHART, chart.name),
         )
 
@@ -124,9 +121,7 @@ def report_trusted_code_of_authors():
                 continue
             add_item(
                 "P20",
-                f'{doc.owner} can no longer change the code in "{doc.title or doc.name}": only an Insights '
-                "Admin can change a script, an expression that runs SQL or a stored procedure call now. It "
-                f"still runs. To let {doc.owner} edit it, add them to the Admin team.",
+                f'"{doc.title or doc.name}" by {doc.owner}',
                 reference=(doctype, doc.name),
                 user=doc.owner,
             )
@@ -147,8 +142,7 @@ def report_scripts_with_refused_names():
         if names := refused_names(code):
             add_item(
                 "Q1",
-                f'Script "{query.title or query.name}" uses {", ".join(f"`{n}`" for n in names)}, which a '
-                "script can no longer use. It fails until they are removed.",
+                f'"{query.title or query.name}" uses {", ".join(f"`{n}`" for n in names)}',
                 reference=(QUERY, query.name),
                 user=author(query.owner),
             )
@@ -157,8 +151,7 @@ def report_scripts_with_refused_names():
         if names := refused_names(job.script or "", IMPORT_JOB_NAMES):
             add_item(
                 "J4",
-                f'Import job "{job.title or job.name}" uses {", ".join(f"`{n}`" for n in names)}, which a '
-                "script can no longer use. Its runs fail, and its table stops syncing, until they are removed.",
+                f'"{job.title or job.name}" uses {", ".join(f"`{n}`" for n in names)}',
                 reference=(IMPORT_JOB, job.name),
                 user=author(job.owner),
             )
@@ -178,13 +171,8 @@ def report_template_copies():
         untouched = bool(copy.get("imported_checksum")) and is_untouched(copy.name)
         add_item(
             "W2",
-            f'"{copy.title}" is a copy of an Insights 3 template. The standard workbook "{title}" replaces it '
-            "and gets updates, so this copy no longer does. "
-            + (
-                "Nobody has changed it since it was made, so you can delete it."
-                if untouched
-                else "Keep it if you changed it, or delete it."
-            ),
+            f'"{copy.title}": replaced by "{title}", '
+            + ("never changed" if untouched else "may have been changed"),
             reference=(WORKBOOK, copy.name),
             action="delete_workbook" if untouched else None,
         )
@@ -231,9 +219,7 @@ def report_blank_fiscal_year_start():
     start = get_fiscal_year_start_date()
     add_item(
         "Q13",
-        f"Fiscal Year Start is blank, so fiscal years now start on {start.day} {start.strftime('%B')}. Insights 3 "
-        "started them on 1 April in date filters and on 1 January in fiscal-year groups. Set Fiscal Year "
-        "Start to choose the date.",
+        f"Fiscal years now start on {start.day} {start.strftime('%B')}",
         action="open_settings",
     )
 

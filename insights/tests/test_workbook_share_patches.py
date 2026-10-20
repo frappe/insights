@@ -133,8 +133,7 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
             frappe.db.exists("DocShare", {"share_doctype": DT.WORKBOOK, "share_name": self.workbook})
         )
         message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": self.workbook}, "message")
-        self.assertIn(f'The chart "{PREFIX} Chart"', message)
-        self.assertIn("shared with everyone to edit", message)
+        self.assertIn(f'chart "{PREFIX} Chart" with everyone to edit', message)
 
     def alert_enabled_by(self, user, operations=None):
         query = create_test_query(OWNER, self.workbook, operations=operations)
@@ -177,7 +176,7 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
 
         self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), AUTHOR)
         message = frappe.db.get_value(ITEM, {"code": "P19", "reference_name": alert}, "message")
-        self.assertIn("will stop at its next run", message)
+        self.assertIn("stops at its next run", message)
         self.assertIn("reads the site table tabToDo", message)
 
     # @feature upgrade.alerts-keep-running
@@ -198,4 +197,4 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
 
         self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), AUTHOR)
         message = frappe.db.get_value(ITEM, {"code": "P19", "reference_name": alert}, "message")
-        self.assertIn("will stop at its next run", message)
+        self.assertIn("stops at its next run", message)

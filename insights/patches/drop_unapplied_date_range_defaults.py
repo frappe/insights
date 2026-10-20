@@ -55,9 +55,7 @@ def report(dashboard, item) -> None:
     start, _, end = item["default_value"].partition(",")
     add_item(
         "K1",
-        f'Dashboard "{dashboard.title or dashboard.name}" showed {start} to {end} as the default of its filter '
-        f'"{item.get("filter_name")}", but Insights 3 never applied it, so the dashboard showed every date. '
-        "The default is removed to keep it that way. Set it again to apply the range.",
+        f'"{dashboard.title or dashboard.name}", filter "{item.get("filter_name")}": {start} to {end}',
         reference=(DASHBOARD, dashboard.name),
         user=None if dashboard.owner == "Administrator" else dashboard.owner,
     )

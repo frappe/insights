@@ -214,9 +214,7 @@ def chart_title(cache: str) -> str | None:
 def report_alert(alert) -> None:
     add_item(
         "J1",
-        f'Alert "{alert.title}" checked the data of chart "{chart_title(alert.query) or alert.query}". It now checks a copy of that '
-        "data, kept as a query, so changes to the chart no longer reach it. Open the query to change "
-        "what the alert checks.",
+        f'"{alert.title}" on chart "{chart_title(alert.query) or alert.query}"',
         reference=(QUERY, alert.query),
         user=None if alert.owner == "Administrator" else alert.owner,
     )

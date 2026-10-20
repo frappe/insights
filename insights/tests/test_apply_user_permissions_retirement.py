@@ -204,10 +204,8 @@ class TestSiteDataFindings(InsightsIntegrationTestCase):
         )
         team_item, user_item = items
         self.assertIn("status == 'Open'", team_item.message)
-        self.assertIn("User Permissions", team_item.message)
         self.assertIn("Deleted Document", user_item.message)
         self.assertIn("Not Permitted", user_item.message)
-        self.assertIn("desk role", user_item.message)
 
         # the app has no page for a user or a team, so Open goes to the desk form
         listed = {item.reference_name: item for item in get_upgrade_items()}

@@ -33,9 +33,7 @@ def execute():
     for workbook, owners in shared.items():
         add_item(
             "P3",
-            f'Workbook "{workbook_title(workbook)}" is now shared with {", ".join(owners)} to edit. They made '
-            "queries, charts, dashboards or alerts in it, and in Insights 4 only the workbook gives access "
-            "to them. Unshare anyone who should not edit the whole workbook.",
+            f'"{workbook_title(workbook)}": {", ".join(owners)} can now edit it',
             reference=(WORKBOOK, workbook),
         )
 

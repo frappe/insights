@@ -95,8 +95,7 @@ def report(doctype: str, doc, refused: set[str]) -> None:
     names = ", ".join(f"`{name}`" for name in sorted(refused))
     add_item(
         "Q5",
-        f'{kind} "{doc.title or doc.name}" calls {names} in an expression. Insights 4 refuses this because it '
-        "reaches the database connection. Remove the call, or ask an admin to make it a script query.",
+        f'{kind} "{doc.title or doc.name}" calls {names}',
         reference=(doctype, doc.name),
         user=None if doc.owner == "Administrator" else doc.owner,
     )

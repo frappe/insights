@@ -93,17 +93,10 @@ def message(workbook: str, users: set | None, doctypes: set | None, everyone: li
     parts = []
     if users:
         shared = " and ".join(sorted(f"{MEMBER_LABELS.get(doctype, doctype)}s" for doctype in doctypes or ()))
-        parts.append(
-            f'Workbook "{title}" is now shared with {", ".join(sorted(users))}, because its {shared} were '
-            "shared with them. Insights 4 shares workbooks, not what is in them. Unshare anyone who should "
-            "not see the whole workbook."
-        )
+        parts.append(f"now shared with {', '.join(sorted(users))}, as its {shared} were")
     for share in everyone or []:
         label = MEMBER_LABELS.get(share.share_doctype, share.share_doctype)
         member_title = frappe.db.get_value(share.share_doctype, share.share_name, "title") or share.share_name
         to_edit = " to edit" if share.write else ""
-        parts.append(
-            f'The {label} "{member_title}" in workbook "{title}" was shared with everyone{to_edit}, and '
-            "that share is removed. Share the workbook with the people who need it."
-        )
-    return " ".join(parts)
+        parts.append(f'removed the share of {label} "{member_title}" with everyone{to_edit}')
+    return f'"{title}": {"; ".join(parts)}'
