@@ -53,12 +53,18 @@ const options = computed(() => {
 	return [{ label: address, value: address, description: __('Share with this address') }]
 })
 
+const emptyText = computed(() =>
+	query.value.trim() ? __('No matching users') : __('No other Insights users'),
+)
+
 // the picker lists Insights users only, so a colleague missing from it is
 // usually one without an Insights role
-const emptyText = computed(() =>
+const footerText = computed(() =>
 	props.allowCustomEmail
-		? __('No Insights user matches. Type a full email address to share.')
-		: __('No Insights user matches. Only users with an Insights role are listed.'),
+		? __(
+				'Only users with an Insights role are listed. Type a full email address to share with anyone else.',
+		  )
+		: __('Only users with an Insights role are listed.'),
 )
 </script>
 
@@ -80,6 +86,14 @@ const emptyText = computed(() =>
 
 		<template #item-prefix="{ item }">
 			<Avatar size="sm" :label="item.label" :image="item.user_image" />
+		</template>
+
+		<template #footer>
+			<div
+				class="w-0 min-w-full border-t border-outline-gray-1 px-3 py-2 text-sm text-ink-gray-5"
+			>
+				{{ footerText }}
+			</div>
 		</template>
 	</Combobox>
 </template>
