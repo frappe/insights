@@ -1214,6 +1214,16 @@ class IbisQueryBuilder:
         # select of the table the data source lists. A schema it does not read
         # has no such table
         for ref in extract_sql_table_refs(raw_sql, dialect=dialect):
+            # `sales.orders` names schema `sales` and a table literally named
+            # "sales.orders" alike, in a binding and in the listed tables
+            if data_source.database_type == "PostgreSQL" and "." in ref.name:
+                frappe.throw(
+                    frappe._("Table names with a dot are not supported for native queries: {0}").format(
+                        ref.name
+                    ),
+                    QueryRefused,
+                    title=frappe._("Unsupported SQL Query"),
+                )
             if ref.catalog or not data_source.sql_table_name(ref.name, ref.db):
                 frappe.throw(
                     frappe._("{0} is not in a schema this data source reads").format(ref.reference),
@@ -1358,6 +1368,10 @@ class IbisQueryBuilder:
             alias = table_exp.args.get("alias") or sg.exp.TableAlias(this=table_exp.this.copy())
             subquery = sg.parse_one(table_sql, dialect=dialect).subquery()
             subquery.set("alias", alias)
+            # in `(a JOIN b)` sqlglot hangs the joins on `a`; they go with its binding
+            for key in ("joins", "laterals", "pivots"):
+                if table_exp.args.get(key):
+                    subquery.set(key, table_exp.args[key])
             table_exp.replace(subquery)
 
         return parsed.sql(dialect=dialect)

@@ -167,6 +167,26 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         )
 
     # @feature query.native-sql
+    def test_every_table_of_an_aliased_grouped_join_gets_a_binding(self):
+        """A scope does not list the first table of `(a JOIN b) AS g`. Unbound, it
+        would be read without the reader's permissions."""
+        raw_sql = "select g.name from (`tabUser` join `tabToDo` on true) as g"
+
+        self.assertEqual(
+            self.builder._get_sql_table_names(raw_sql, self.data_source, dialect=self.dialect),
+            {"tabUser": "tabUser", "tabToDo": "tabToDo"},
+        )
+
+    # @feature query.native-sql
+    def test_a_cte_in_an_aliased_grouped_join_is_not_a_table(self):
+        raw_sql = "with c as (select 1 as id) select g.id from (c cross join `tabToDo`) as g"
+
+        self.assertEqual(
+            self.builder._get_sql_table_names(raw_sql, self.data_source, dialect=self.dialect),
+            {"tabToDo": "tabToDo"},
+        )
+
+    # @feature query.native-sql
     def test_a_commented_query_names_the_tables_it_runs_on(self):
         """The run strips comments before it binds tables, so the tables read
         for permission checks must come from the same text. PostgreSQL and
@@ -406,9 +426,60 @@ class TestNativeSQL(InsightsIntegrationTestCase):
                 "WITH orders AS (SELECT 1 AS id) SELECT (SELECT orders.id FROM finance.x AS x) "
                 "FROM sales.orders AS orders",
             ),
+            (
+                # one UNION branch does not see the other's `orders`
+                "select row_to_json(orders) from sales.orders "
+                "union all select row_to_json(orders) from finance.orders",
+                "SELECT ROW_TO_JSON(orders) FROM sales.orders AS orders "
+                "UNION ALL SELECT ROW_TO_JSON(orders) FROM finance.orders AS orders",
+            ),
+            (
+                # an aliased group hides the `orders` it joins
+                "select row_to_json(orders) from sales.orders "
+                "cross join (finance.orders cross join finance.invoices) as g",
+                "SELECT ROW_TO_JSON(orders) FROM sales.orders AS orders CROSS JOIN "
+                '(finance.orders AS "finance.orders" CROSS JOIN finance.invoices AS invoices) AS g',
+            ),
         ):
             with self.subTest(raw_sql=raw_sql):
                 self.assertEqual(alias_qualified_tables(raw_sql, "postgres"), aliased)
+
+    # @feature query.native-sql
+    def test_a_grouped_join_keeps_the_tables_it_joins(self):
+        # sqlglot hangs the joins of `(a JOIN b)` on `a`, so replacing `a` alone drops `b`
+        rewritten = self.builder._replace_sql_tables(
+            "select orders.id from (orders join invoices on orders.id = invoices.order_id)",
+            {"orders": "SELECT * FROM orders", "invoices": "SELECT * FROM invoices"},
+            dialect="postgres",
+        )
+
+        self.assertEqual(
+            rewritten,
+            "SELECT orders.id FROM ((SELECT * FROM orders) AS orders JOIN (SELECT * FROM invoices) AS invoices "
+            "ON orders.id = invoices.order_id)",
+        )
+
+    # @feature query.native-sql-schema-qualified
+    def test_a_grouped_join_is_read_by_the_tables_it_joins(self):
+        self.assertEqual(
+            alias_qualified_tables(
+                "select sales.orders.id from (sales.orders join finance.invoices "
+                "on sales.orders.id = finance.invoices.order_id)",
+                "postgres",
+            ),
+            "SELECT orders.id FROM (sales.orders AS orders JOIN finance.invoices AS invoices "
+            "ON orders.id = invoices.order_id)",
+        )
+
+    # @feature query.native-sql-schema-qualified
+    def test_an_aliased_grouped_join_hides_the_tables_it_joins(self):
+        # outside the group, `orders` is its alias, not either of the tables it joins
+        self.assertEqual(
+            alias_qualified_tables(
+                "select orders.id from (sales.orders join finance.orders using (id)) as orders", "postgres"
+            ),
+            'SELECT orders.id FROM (sales.orders AS "sales.orders" JOIN finance.orders AS "finance.orders" USING (id)) AS orders',
+        )
 
     # @feature query.native-sql-schema-qualified
     def test_a_column_that_could_name_two_tables_is_refused(self):
@@ -416,6 +487,26 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         with self.assertRaises(QueryRefused):
             alias_qualified_tables(
                 "select orders.id from sales.orders join finance.orders on true", "postgres"
+            )
+
+    # @feature query.native-sql-schema-qualified
+    def test_an_alias_spelled_as_a_full_table_name_is_refused(self):
+        # the rewrite would alias `sales.orders` as `"sales.orders"` too
+        with self.assertRaises(QueryRefused):
+            alias_qualified_tables(
+                'select 1 from sales.orders join finance.orders on true join sales.refunds as "sales.orders" on true',
+                "postgres",
+            )
+
+    # @feature query.native-sql-schema-qualified
+    def test_a_table_named_with_a_dot_is_refused(self):
+        # its name is spelled as `sales.orders` is, so it cannot get a binding of its own
+        with self.assertRaises(QueryRefused):
+            self.builder._validate_native_sql(
+                'select s.id from "sales.orders" s cross join sales.orders o',
+                use_live_connection=True,
+                data_source=self.postgres_data_source("sales, finance"),
+                dialect="postgres",
             )
 
     # @feature query.native-sql-schema-qualified
