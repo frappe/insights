@@ -237,10 +237,13 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
     def after_class(cls):
         delete_users(OWNER, READER)
 
-    def board(self, run_as_owner=(False,)):
-        """A Private dashboard of OWNER's, with one chart per entry of `run_as_owner`."""
+    def board(self, run_as_owner=(False,), table="tabToDo"):
+        """A Private dashboard of OWNER's on `table`, with one chart per entry of `run_as_owner`."""
         workbook = create_test_workbook(OWNER, title="Same Rows Workbook").name
-        query = create_test_query(OWNER, workbook, title="Same Rows Query").name
+        source = {"type": "table", "data_source": "Site DB", "table_name": table}
+        query = create_test_query(
+            OWNER, workbook, title="Same Rows Query", operations=[{"type": "source", "table": source}]
+        ).name
         charts = []
         for runs_as_owner in run_as_owner:
             chart = create_test_chart(OWNER, workbook, query=query, title="Same Rows Chart")
@@ -377,6 +380,23 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
             with as_user(OWNER), self.assertRaises(frappe.ValidationError):
                 update_dashboard_preview(shared.name)
         capture.assert_not_called()
+
+    # @feature dashboard.preview-image
+    def test_no_preview_is_rendered_of_a_dashboard_its_owner_cannot_read(self):
+        """The page refuses such a dashboard, and the browser captured the
+        sign-in page it falls back to."""
+        from insights.api.dashboards import update_dashboard_preview
+
+        dashboard = self.board(table="tabError Log")
+        self.assertTrue(self.holds(dashboard))
+        with patch(
+            "insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3.get_page_preview"
+        ) as capture:
+            self.assertIsNone(frappe.get_doc(DT.DASHBOARD, dashboard.name).generate_dashboard_preview())
+            with as_user(OWNER), self.assertRaises(frappe.ValidationError):
+                update_dashboard_preview(dashboard.name)
+        capture.assert_not_called()
+        self.assertFalse(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "preview_image"))
 
     # @feature dashboard.preview-same-rows
     def test_a_reader_fetches_a_preview_only_while_every_reader_sees_the_same_rows(self):

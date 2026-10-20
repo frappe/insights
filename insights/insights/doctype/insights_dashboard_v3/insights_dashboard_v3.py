@@ -20,7 +20,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     result_column,
 )
 from insights.insights.query_utils import transitive_closure
-from insights.not_permitted import answers_refusal
+from insights.not_permitted import answers_refusal, refused_doctypes
 from insights.permission_user import runs_as
 from insights.permissions import same_rows_for_every_reader
 from insights.preview_key import generate_preview_key
@@ -523,11 +523,7 @@ class InsightsDashboardv3(Document):
         self.generate_dashboard_preview()
 
     def generate_dashboard_preview(self):
-        # Every reader of the list sees the preview, and it shows the rows of
-        # the user it is rendered for: the owner, whoever asks for it. Under
-        # the rule nobody else reads the dashboard, or every chart on it shows
-        # the owner's rows anyway.
-        if self.name not in same_rows_for_every_reader([self.name]):
+        if preview_refusal(self):
             return None
 
         with generate_preview_key(self.name, self.owner) as key:
@@ -840,6 +836,23 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     group = routed.setdefault(chart, {"type": "filter_group", "logical_operator": "And", "filters": []})
     group["filters"] = [*group["filters"], *rules]
     return routed
+
+
+def preview_refusal(dashboard) -> str | None:
+    """Why `dashboard` gets no preview image, or None when it may have one.
+
+    Every reader of the list sees the preview, and it shows the rows of the
+    user it is rendered for: the owner, whoever asks for it. Under the rule
+    nobody else reads the dashboard, or every chart on it shows the owner's
+    rows anyway. And the owner must be able to open it: the page refuses a
+    dashboard on which none of their charts would run, and the browser
+    captures the sign-in page it falls back to.
+    """
+    if dashboard.name not in same_rows_for_every_reader([dashboard.name]):
+        return frappe._("Each viewer sees their own data, so there's no shared preview")
+    if refused_doctypes(dashboard.name, dashboard.owner) is not None:
+        return frappe._("The owner of this dashboard can't read its data, so there's no preview")
+    return None
 
 
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:

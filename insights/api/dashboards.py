@@ -9,7 +9,7 @@ from insights.api.list_filters import (
     match_records,
 )
 from insights.decorators import insights_whitelist
-from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import preview_url
+from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import preview_refusal, preview_url
 from insights.insights.query_utils import source_tables
 from insights.permissions import can_write, dashboard_readers, same_rows_for_every_reader
 
@@ -224,7 +224,7 @@ def update_dashboard_preview(dashboard_name: str):
         frappe.throw(
             frappe._("Only an editor of this dashboard can refresh its preview"), frappe.PermissionError
         )
+    if refusal := preview_refusal(dashboard):
+        frappe.throw(refusal)
     preview_image = dashboard.generate_dashboard_preview()
-    if not preview_image:
-        frappe.throw(frappe._("Each viewer sees their own data, so there's no shared preview"))
     return preview_url(dashboard.name, preview_image)
