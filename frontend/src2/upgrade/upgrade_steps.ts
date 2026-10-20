@@ -30,8 +30,11 @@ export type PictureName =
 	| 'chartOwner'
 	| 'numberCards'
 
+/** What a slide's feature needs of the reader: the server says whether they have it. */
+export type Can = { readStandardDashboards: boolean; showInDesk: boolean; share: boolean }
+
 /** One feature a reader of Insights 3 meets first, and the screen it is on. */
-export type Slide = { label: string; text: string; picture: PictureName }
+export type Slide = { label: string; text: string; picture: PictureName; needs?: keyof Can }
 
 // What a reader of Insights 3 gains most, one per slide. The last leads into
 // the upgrade steps, which are mostly about permissions.
@@ -42,11 +45,13 @@ export const welcomeSlides = translatedTable<Slide[]>(() => [
 			'Selling, Stock, Accounts, Payroll and more come ready to use. Duplicate one to change it.',
 		),
 		picture: 'appDashboards',
+		needs: 'readStandardDashboards',
 	},
 	{
 		label: __('Charts on desk workspaces'),
 		text: __('Pick Show in Desk on a chart to put it on a desk dashboard or workspace.'),
 		picture: 'showInDesk',
+		needs: 'showInDesk',
 	},
 	{
 		label: __('Click a chart for its rows'),
@@ -64,6 +69,7 @@ export const welcomeSlides = translatedTable<Slide[]>(() => [
 		label: __('Share dashboards with desk roles'),
 		text: __('Anyone with those roles can open the dashboard, even without an Insights role.'),
 		picture: 'roles',
+		needs: 'share',
 	},
 	{
 		label: __('Desk permissions decide'),
@@ -71,6 +77,11 @@ export const welcomeSlides = translatedTable<Slide[]>(() => [
 		picture: 'notPermitted',
 	},
 ])
+
+/** The welcome slides of what the reader can do. */
+export function slidesFor(can: Can): Slide[] {
+	return welcomeSlides().filter((slide) => !slide.needs || can[slide.needs])
+}
 
 /** What a wizard step is about. `now` asks for a decision, `note` only tells. */
 export type Group = {

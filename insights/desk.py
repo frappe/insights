@@ -151,6 +151,12 @@ def can_show_in_desk(chart) -> bool:
     return bool(frappe.has_permission(desk_doctype(chart), "create"))
 
 
+def can_show_charts_in_desk() -> bool:
+    """Whether the caller may create the desk document Show in Desk makes for
+    some chart."""
+    return any(frappe.has_permission(doctype, "create") for doctype in ("Dashboard Chart", "Number Card"))
+
+
 def desk_definition(doctype: str) -> dict:
     """The fields desk requires before it saves a `doctype`, though the island
     renders it.

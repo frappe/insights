@@ -25,6 +25,10 @@ type SessionUser = {
 	upgrade_item_count: number
 	/** Whether the user works through every open upgrade item, not only their own. */
 	is_upgrade_admin?: boolean
+	/** Whether the user may open a dashboard an app ships. */
+	reads_standard_dashboards?: boolean
+	/** Whether the user may create the desk document Show in Desk makes for a chart. */
+	can_show_in_desk?: boolean
 }
 
 // Settings of the site, not of whoever is reading it. A guest opening a public
@@ -120,6 +124,8 @@ async function fetchSessionInfo() {
 		upgraded_from_v3: Boolean(userInfo.upgraded_from_v3),
 		owns_workbooks: Boolean(userInfo.owns_workbooks),
 		is_upgrade_admin: Boolean(userInfo.is_upgrade_admin),
+		reads_standard_dashboards: Boolean(userInfo.reads_standard_dashboards),
+		can_show_in_desk: Boolean(userInfo.can_show_in_desk),
 	})
 }
 

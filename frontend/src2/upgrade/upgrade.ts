@@ -3,7 +3,7 @@ import { call } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
 import { showErrorToast } from '../helpers'
 import session from '../session'
-import { detailsOf, stepIndexOf, wizardSteps } from './upgrade_steps'
+import { detailsOf, slidesFor, stepIndexOf, wizardSteps } from './upgrade_steps'
 
 export type UpgradeItem = {
 	name: string
@@ -68,6 +68,15 @@ function progressStore() {
 // the server's rule for who works through every item, so the steps match the items it sent
 const admin = computed(() => Boolean(session.user.is_upgrade_admin))
 const sharing = computed(() => admin.value || Boolean(session.user.owns_workbooks))
+
+const slides = computed(() =>
+	slidesFor({
+		readStandardDashboards: Boolean(session.user.reads_standard_dashboards),
+		// as the chart's own menu offers it
+		showInDesk: Boolean(session.user.has_desk_access && session.user.can_show_in_desk),
+		share: sharing.value,
+	}),
+)
 
 const steps = computed(() =>
 	wizardSteps([...items.value, ...done.value], {
@@ -192,6 +201,7 @@ const upgrade = reactive({
 	loaded,
 	showWizard,
 	showDetails,
+	slides,
 	steps,
 	stepIndex,
 	details,

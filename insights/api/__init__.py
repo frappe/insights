@@ -10,6 +10,7 @@ from frappe.monitor import add_data_to_monitor
 
 import insights
 from insights.decorators import insights_whitelist
+from insights.desk import can_show_charts_in_desk
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
 )
@@ -145,6 +146,11 @@ def get_user_info():
         "owns_workbooks": bool(frappe.db.exists("Insights Workbook", {"owner": frappe.session.user})),
         "upgrade_item_count": frappe.db.count(UPGRADE_ITEM, open_item_filters()),
         "is_upgrade_admin": is_upgrade_admin(),
+        # what the upgrade wizard's welcome shows only to those who can do it
+        "reads_standard_dashboards": bool(
+            frappe.get_list("Insights Dashboard v3", filters={"is_standard": 1}, limit=1)
+        ),
+        "can_show_in_desk": can_show_charts_in_desk(),
     }
 
 

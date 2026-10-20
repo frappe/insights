@@ -5,6 +5,7 @@ import {
 	keyAction,
 	pictureOf,
 	sentenceOf,
+	slidesFor,
 	stepIndexOf,
 	wizardSteps,
 	type Part,
@@ -93,6 +94,29 @@ describe('the wizard steps', () => {
 			(step) => step.id === 'notes',
 		)!
 		expect('rows' in toAlice && toAlice.rows.map((row) => row.names)).toEqual([['to-alice']])
+	})
+})
+
+describe('the welcome', () => {
+	// @feature upgrade.wizard
+	it('shows a slide only to someone who can do what it shows', () => {
+		const pictures = (can: Partial<Parameters<typeof slidesFor>[0]>) =>
+			slidesFor({
+				readStandardDashboards: false,
+				showInDesk: false,
+				share: false,
+				...can,
+			}).map((slide) => slide.picture)
+		expect(pictures({})).toEqual(['drill', 'currency', 'notPermitted'])
+		expect(pictures({ share: true })).toEqual(['drill', 'currency', 'roles', 'notPermitted'])
+		expect(pictures({ readStandardDashboards: true, showInDesk: true, share: true })).toEqual([
+			'appDashboards',
+			'showInDesk',
+			'drill',
+			'currency',
+			'roles',
+			'notPermitted',
+		])
 	})
 })
 

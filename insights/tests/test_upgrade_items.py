@@ -229,6 +229,14 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
             self.assertEqual(app["logo"], standard.app_logo_url(app["app"]))
 
     # @feature upgrade.wizard
+    def test_the_session_says_what_the_welcome_shows_only_to_those_who_can_do_it(self):
+        standard = bool(frappe.db.exists(DT.DASHBOARD, {"is_standard": 1}))
+        self.assertEqual(self.user_info("Administrator")["reads_standard_dashboards"], standard)
+        self.assertTrue(self.user_info("Administrator")["can_show_in_desk"])
+        self.assertFalse(self.user_info(ALICE)["reads_standard_dashboards"])
+        self.assertFalse(self.user_info(ALICE)["can_show_in_desk"])
+
+    # @feature upgrade.wizard
     def test_the_session_says_whether_the_user_owns_a_workbook(self):
         self.assertFalse(self.user_info(BOB)["owns_workbooks"])
         create_test_workbook(BOB, title=f"{PREFIX} Owned")

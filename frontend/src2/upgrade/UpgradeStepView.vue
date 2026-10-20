@@ -12,7 +12,6 @@ import {
 	keyAction,
 	pictureOf,
 	sentenceOf,
-	welcomeSlides,
 	type ItemAction,
 	type Row,
 	type Step,
@@ -26,7 +25,7 @@ const props = defineProps<{ step: Step }>()
 const emit = defineEmits<{ close: [] }>()
 
 const router = useRouter()
-const slides = computed(() => welcomeSlides())
+const slides = computed(() => upgrade.slides)
 const progress = computed(() => upgrade.progress)
 const index = computed(() => upgrade.steps.findIndex((step) => step.id === props.step.id))
 const isLast = computed(() => index.value === upgrade.steps.length - 1)
