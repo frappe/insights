@@ -405,11 +405,21 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         None when this data source does not read `schema`: binding the bare name would
         read a same-named table in another schema.
         """
-        if not schema:
+        if schema:
+            if self.database_type != "PostgreSQL" or schema not in self.get_postgres_schemas():
+                return None
+            return self.format_table_name(table, schema)
+
+        if not self.qualify_table_names():
             return table
-        if self.database_type != "PostgreSQL" or schema not in self.get_postgres_schemas():
-            return None
-        return self.format_table_name(table, schema)
+
+        # PostgreSQL reads an unqualified name from the first schema in the search
+        # path that has it, and the connection sets the search path to `schema`
+        names = [self.format_table_name(table, s) for s in self.get_postgres_schemas()]
+        listed = frappe.get_all(
+            "Insights Table v3", filters={"data_source": self.name, "table": ("in", names)}, pluck="table"
+        )
+        return next((name for name in names if name in listed), names[0])
 
     def table_identity(self, table_name: str) -> str:
         """Name the remote table `table_name` points at, free of the spelling of the day.

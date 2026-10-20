@@ -5,7 +5,7 @@ import sqlglot as sg
 from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
-from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3, get_table_name
 from insights.insights.query_utils import (
     extract_sql_table_refs,
     extract_table_deps_from_sql_operations,
@@ -400,6 +400,28 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         self.assertEqual(
             extract_table_deps_from_sql_operations(operations),
             [{"data_source": "Deleted Source", "table_name": "orders"}],
+        )
+
+    # @feature query.native-sql-schema-qualified
+    def test_an_unqualified_name_reads_the_first_schema_that_lists_it(self):
+        # as PostgreSQL's search path does, so the permission check names the table read
+        postgres = self.postgres_data_source("sales, finance")
+        postgres.name = "native_sql_postgres"
+        for table in ("sales.orders", "finance.orders", "finance.invoices"):
+            frappe.get_doc(
+                {
+                    "doctype": "Insights Table v3",
+                    "name": get_table_name(postgres.name, table),
+                    "data_source": postgres.name,
+                    "table": table,
+                }
+            ).db_insert()
+
+        self.assertEqual(
+            self.builder._get_sql_table_names(
+                "select * from orders, invoices, refunds", postgres, "postgres"
+            ),
+            {"orders": "sales.orders", "invoices": "finance.invoices", "refunds": "sales.refunds"},
         )
 
     def postgres_data_source(self, schema):
