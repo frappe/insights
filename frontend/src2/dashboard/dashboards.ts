@@ -28,6 +28,8 @@ export type DashboardListItem = {
 	is_favourite: boolean
 	/** The title of the app that ships its workbook, when one does. */
 	shipped_by: string | null
+	/** That app's `app_logo_url`, when it declares one. */
+	shipped_by_logo: string | null
 	cells: DashboardCell[]
 	/** Whether the caller may write it, and so update its preview image. */
 	can_write: boolean
