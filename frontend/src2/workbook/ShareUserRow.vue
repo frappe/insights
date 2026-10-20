@@ -20,9 +20,9 @@ const props = defineProps<{
 <template>
 	<div class="flex w-full items-center gap-2 py-1">
 		<Avatar size="xl" :label="props.fullName" :image="props.image" />
-		<div class="flex flex-1 flex-col">
-			<div class="leading-5">{{ props.fullName }}</div>
-			<div class="text-xs text-ink-gray-5">{{ props.email }}</div>
+		<div class="flex min-w-0 flex-1 flex-col">
+			<div class="truncate leading-5">{{ props.fullName }}</div>
+			<div class="truncate text-xs text-ink-gray-5">{{ props.email }}</div>
 		</div>
 		<slot>
 			<Button
