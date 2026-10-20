@@ -199,7 +199,8 @@ def update_admin_team(user, method=None):
                 },
             )
         if is_admin and user.name not in admin_team_members():
-            team = frappe.get_cached_doc("Insights Team", "Admin")
+            # the cache misses rows written directly, like the delete above
+            team = frappe.get_doc("Insights Team", "Admin")
             team.append("team_members", {"user": user.name})
             team.save(ignore_permissions=True)
 
