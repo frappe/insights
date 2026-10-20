@@ -22,6 +22,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 from insights.insights.query_utils import transitive_closure
 from insights.not_permitted import answers_refusal
 from insights.permission_user import runs_as
+from insights.permissions import same_rows_for_every_reader
 from insights.preview_key import generate_preview_key
 from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File, get_app_url
@@ -522,12 +523,14 @@ class InsightsDashboardv3(Document):
         self.generate_dashboard_preview()
 
     def generate_dashboard_preview(self):
-        # A preview shows the rows of whoever rendered it to every reader. An
-        # app's dashboard is read by roles, and each reader may see other rows.
-        if standard.is_standard_member(self):
+        # Every reader of the list sees the preview, and it shows the rows of
+        # the user it is rendered for: the owner, whoever asks for it. Under
+        # the rule nobody else reads the dashboard, or every chart on it shows
+        # the owner's rows anyway.
+        if self.name not in same_rows_for_every_reader([self.name]):
             return None
 
-        with generate_preview_key(self.name) as key:
+        with generate_preview_key(self.name, self.owner) as key:
             preview = get_page_preview(
                 # The browser runs on the server and passes a preview key, so
                 # the page it opens is the site's own, not one a request header

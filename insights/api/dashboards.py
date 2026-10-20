@@ -250,4 +250,7 @@ def update_dashboard_preview(dashboard_name: str):
         frappe.throw(
             frappe._("Only an editor of this dashboard can refresh its preview"), frappe.PermissionError
         )
-    return preview_url(dashboard.name, dashboard.generate_dashboard_preview())
+    preview_image = dashboard.generate_dashboard_preview()
+    if not preview_image:
+        frappe.throw(frappe._("Each viewer sees their own data, so there's no shared preview"))
+    return preview_url(dashboard.name, preview_image)

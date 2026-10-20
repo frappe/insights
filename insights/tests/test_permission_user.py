@@ -67,7 +67,7 @@ class TestPreviewKeyNamesItsUser(InsightsIntegrationTestCase):
     def test_a_preview_key_names_the_user_it_was_cut_for(self):
         from insights.preview_key import cache_key, generate_preview_key
 
-        with as_user(PUBLISHER), generate_preview_key("some-dashboard") as key:
+        with generate_preview_key("some-dashboard", PUBLISHER) as key:
             stored = frappe.cache.get_value(cache_key(key))
 
         self.assertEqual(stored, {"dashboard": "some-dashboard", "user": PUBLISHER})

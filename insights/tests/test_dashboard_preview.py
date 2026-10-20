@@ -161,9 +161,11 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
         self.assertEqual(self.render(self.dashboard)["viewer_title"], "Preview Dashboard")
 
     # @feature dashboard.preview-image
-    def test_the_render_runs_as_the_user_the_key_was_cut_for(self):
+    def test_the_render_runs_as_the_dashboards_owner_whoever_asks(self):
+        """Administrator asks here. Under the rule the owner's rows are the
+        ones every reader sees."""
         runs_as = self.render(self.dashboard)["runs_as"]
-        self.assertEqual(runs_as[self.chart], "Administrator")
+        self.assertEqual(runs_as[self.chart], OWNER)
         # a chart the key does not open runs as the caller
         self.assertEqual(runs_as[self.other_chart], "Guest")
 
@@ -361,6 +363,20 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
 
         with as_user(user):
             return bool(find_file_by_url(file_url))
+
+    # @feature dashboard.preview-same-rows
+    def test_no_preview_is_rendered_where_readers_see_different_rows(self):
+        from insights.api.dashboards import update_dashboard_preview
+
+        shared = self.board()
+        self.share_with_role(shared)
+        with patch(
+            "insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3.get_page_preview"
+        ) as capture:
+            self.assertIsNone(frappe.get_doc(DT.DASHBOARD, shared.name).generate_dashboard_preview())
+            with as_user(OWNER), self.assertRaises(frappe.ValidationError):
+                update_dashboard_preview(shared.name)
+        capture.assert_not_called()
 
     # @feature dashboard.preview-same-rows
     def test_a_reader_fetches_a_preview_only_while_every_reader_sees_the_same_rows(self):

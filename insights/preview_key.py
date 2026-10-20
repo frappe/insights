@@ -17,7 +17,7 @@ def cache_key(key: str) -> str:
 
 
 @contextmanager
-def generate_preview_key(dashboard: str):
+def generate_preview_key(dashboard: str, user: str):
     """A key that stands in for the reader of one dashboard, for one render.
 
     The key names its dashboard, so a leaked key reads that dashboard and the
@@ -30,7 +30,7 @@ def generate_preview_key(dashboard: str):
     """
     key = frappe.generate_hash()
     try:
-        frappe.cache.set_value(cache_key(key), {"dashboard": dashboard, "user": frappe.session.user})
+        frappe.cache.set_value(cache_key(key), {"dashboard": dashboard, "user": user})
         yield key
     finally:
         frappe.cache.delete_value(cache_key(key))
