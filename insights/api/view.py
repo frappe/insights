@@ -28,7 +28,6 @@ from insights.insights.doctype.insights_chart_v3.chart_drill import (
     drill_rows_range,
     drill_rows_values,
 )
-from insights.insights.doctype.insights_chart_v3.chart_query import config_errors
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
     can_filter_card,
     card_filter_source,
@@ -216,7 +215,7 @@ def chart_answer(
     A chart with a missing required setting returns which one, as the Builder
     shows its author, and runs nothing.
     """
-    if errors := config_errors(doc.chart_type, doc.query, frappe.parse_json(doc.config or "{}")):
+    if errors := doc.setup_errors():
         return {"errors": errors}
 
     # present the chart before fetching rows. If a query is saved during the

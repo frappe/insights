@@ -434,6 +434,22 @@ class InsightsChartv3(Document):
         query.flags.execution_reference = self.query
         return query
 
+    def setup_errors(self, config: dict | None = None) -> list[str]:
+        """What the chart still needs before it can run: a slot `config_errors`
+        names, or a source query with no operations yet.
+
+        The builder saves a new query after the chart beside it asks for rows, so
+        an empty query is a step on the way to a chart, not a broken one.
+        """
+        if config is None:
+            config = frappe.parse_json(self.config or "{}")
+        if errors := config_errors(self.chart_type, self.query, config):
+            return errors
+        query = frappe.db.get_value("Insights Query v3", self.query, ["name", "operations"], as_dict=True)
+        if query and not frappe.parse_json(query.operations or "[]"):
+            return [_("Query is empty")]
+        return []
+
     def get_operations(self, order_by: list | None = None):
         """The operations that produce the chart's rows.
 
@@ -448,7 +464,7 @@ class InsightsChartv3(Document):
         config = frappe.parse_json(self.config or "{}")
         if order_by is not None:
             config["order_by"] = reader_order(order_by)
-        errors = config_errors(self.chart_type, self.query, config)
+        errors = self.setup_errors(config)
         if errors:
             frappe.throw(
                 _("Chart {0} is not configured: {1}. Open it in Insights to configure it.").format(
