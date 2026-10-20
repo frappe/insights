@@ -152,6 +152,10 @@ class TestPostgresSchemaPrefix(FrappeTestCase):
         multi = make_data_source(schema="public, sales")
         self.assertEqual(multi.format_table_name("orders", "sales"), "sales.orders")
         self.assertEqual(multi.split_table_name("sales.orders"), ("sales", "orders"))
+
+        dotted = make_data_source(schema="a.b, a")
+        self.assertEqual(dotted.split_table_name("a.b.orders"), ("a.b", "orders"))
+        self.assertEqual(dotted.split_table_name("a.orders"), ("a", "orders"))
         # no schema given — frappe tables live in the first one configured
         self.assertEqual(multi.format_table_name("tabUser"), "public.tabUser")
 
