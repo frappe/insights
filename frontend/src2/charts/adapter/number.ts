@@ -1,4 +1,3 @@
-import { defineAsyncComponent } from 'vue'
 import type { NumberCardProgress, NumberCardProps, NumberCardSparkline } from 'frappe-ui/charts'
 import { ROW_HEIGHT } from '../../dashboard/grid_placement'
 import { toNumber } from '../../helpers'
@@ -13,9 +12,12 @@ import type {
 import type { Dimension, Measure, QueryResultRow } from '../../types/query.types'
 import { numberFormatOf, printNumber } from '../number_format'
 import { LAST_YEAR, periodOf, previousWindowLabel, windowShiftLabel } from '../window'
+import NumberCards from '../components/NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
-const NumberCards = defineAsyncComponent(() => import('../components/NumberCards.vue'))
+// Loaded with the page, unlike the other types. A Number Chart draws its own
+// loading card, so it mounts before its rows, and a lazy chunk queued behind
+// the dashboard's data requests left the cell blank until then.
 
 // A Number Chart has several Measures and v2's card is one reading, so a
 // reading is a card and the chart is the row of them. Two more things v2 will
