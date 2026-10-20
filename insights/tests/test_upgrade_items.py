@@ -9,8 +9,9 @@ import frappe
 from insights.api import get_user_info
 from insights.api.upgrade import dismiss_upgrade_item, fix_upgrade_item, get_upgrade_items, mark_upgrade_seen
 from insights.patches import mark_v3_users as mark_v3_users_patch
+from insights.patches.run_public_charts_as_owner import report as report_public_chart
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import DT, create_test_workbook, create_user, delete_users
+from insights.tests.factories import DT, create_test_chart, create_test_workbook, create_user, delete_users
 from insights.upgrade import ITEM, SEEN_VERSION, add_item, mark_v3_users
 
 ALICE = "upgrade_alice@test.com"
@@ -24,8 +25,8 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
 
     @classmethod
     def before_class(cls):
-        create_user(ALICE, roles="Insights User")
-        create_user(BOB, roles="Insights User")
+        create_user(ALICE, first_name="Alice", last_name="Moss", roles="Insights User")
+        create_user(BOB, first_name="Bob", last_name="Lane", roles="Insights User")
 
     @classmethod
     def after_class(cls):
@@ -90,6 +91,37 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertEqual(self.user_info(ALICE)["upgrade_item_count"], 1)
         self.assertEqual(len(get_upgrade_items()), 3)
         self.assertEqual(self.user_info("Administrator")["upgrade_item_count"], 3)
+
+    # @feature upgrade.attention-items
+    def test_an_item_names_its_people_by_first_name_and_a_moved_chart_names_both_owners(self):
+        workbook = create_test_workbook(BOB, title=f"{PREFIX} Published")
+        chart = create_test_chart(BOB, workbook.name, title=f"{PREFIX} Chart")
+        report_public_chart(chart.name, BOB, ALICE, moved=True)
+        add_item("P3", "A workbook is shared.", data={"workbook": "Sales", "users": [ALICE, "Nobody"]})
+        data = {"chart": f"{PREFIX} Chart", "publisher": ALICE, "owner": BOB}
+        people = {
+            ALICE: {"full_name": "Alice Moss", "first_name": "Alice"},
+            BOB: {"full_name": "Bob Lane", "first_name": "Bob"},
+        }
+
+        items = get_upgrade_items()
+
+        self.assertEqual(
+            [(i.code, i.user, i.data, i.people) for i in items],
+            [
+                ("P11", BOB, data, people),
+                ("P11", ALICE, data, people),
+                ("P3", None, {"workbook": "Sales", "users": [ALICE, "Nobody"]}, {ALICE: people[ALICE]}),
+            ],
+        )
+        with self.as_user(ALICE):
+            self.assertEqual([(i.data, i.people) for i in get_upgrade_items()], [(data, people)])
+
+    # @feature upgrade.attention-items
+    def test_an_item_without_data_has_none_to_show(self):
+        add_item("Q13", "Set Fiscal Year Start to pin it.", action="open_settings")
+
+        self.assertEqual([(i.data, i.people) for i in get_upgrade_items()], [({}, {})])
 
     # @feature upgrade.attention-items
     def test_a_system_manager_sees_every_open_item_as_desk_shows_them(self):

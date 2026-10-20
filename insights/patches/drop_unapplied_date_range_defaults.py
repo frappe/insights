@@ -53,9 +53,16 @@ def is_unapplied_range(item) -> bool:
 
 def report(dashboard, item) -> None:
     start, _, end = item["default_value"].partition(",")
+    data = {
+        "dashboard": dashboard.title or dashboard.name,
+        "filter": item.get("filter_name"),
+        "start": start,
+        "end": end,
+    }
     add_item(
         "K1",
-        f'"{dashboard.title or dashboard.name}", filter "{item.get("filter_name")}": {start} to {end}',
+        f'"{data["dashboard"]}", filter "{data["filter"]}": {start} to {end}',
         reference=(DASHBOARD, dashboard.name),
         user=None if dashboard.owner == "Administrator" else dashboard.owner,
+        data=data,
     )

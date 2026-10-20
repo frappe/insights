@@ -27,6 +27,18 @@ DISABLED = "workbook_share_patch_disabled@test.com"
 PREFIX = "Workbook Share Patch Test"
 
 
+def item(code, reference_name):
+    """The message and data of the item `code` on `reference_name`."""
+    message, data = frappe.db.get_value(
+        ITEM, {"code": code, "reference_name": reference_name}, ["message", "data"]
+    )
+    return message, frappe.parse_json(data)
+
+
+def alert_data(enabler, outcome):
+    return {"alert": f"{PREFIX} Alert", "enabler": enabler, "owner": OWNER, "outcome": outcome}
+
+
 class TestWorkbookSharePatches(InsightsIntegrationTestCase):
     SAVEPOINT = "test_workbook_share_patches"
 
@@ -66,10 +78,13 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         items = frappe.get_all(
             ITEM,
             filters={"code": "P3", "reference_name": self.workbook},
-            fields=["reference_name", "user", "message"],
+            fields=["reference_name", "user", "message", "data"],
         )
         self.assertEqual([(i.reference_name, i.user) for i in items], [(self.workbook, None)])
         self.assertIn(AUTHOR, items[0].message)
+        self.assertEqual(
+            frappe.parse_json(items[0].data), {"workbook": f"{PREFIX} Workbook", "users": [AUTHOR]}
+        )
 
     # @feature upgrade.owners-keep-access
     def test_a_read_share_is_raised_to_edit_once(self):
@@ -118,8 +133,11 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         self.assertTrue(self.can(AUTHOR, "read"))
         self.assertFalse(self.can(AUTHOR, "write"))
         self.assertFalse(frappe.db.exists("DocShare", {"share_doctype": DT.QUERY, "share_name": query.name}))
-        message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": self.workbook}, "message")
+        message, data = item("P7", self.workbook)
         self.assertIn(AUTHOR, message)
+        self.assertEqual(
+            data, {"workbook": f"{PREFIX} Workbook", "users": [AUTHOR], "shared": ["query"], "removed": []}
+        )
 
     # @feature upgrade.member-shares-kept
     def test_a_chart_shared_with_everyone_to_edit_is_reported_not_widened(self):
@@ -132,8 +150,17 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         self.assertFalse(
             frappe.db.exists("DocShare", {"share_doctype": DT.WORKBOOK, "share_name": self.workbook})
         )
-        message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": self.workbook}, "message")
+        message, data = item("P7", self.workbook)
         self.assertIn(f'chart "{PREFIX} Chart" with everyone to edit', message)
+        self.assertEqual(
+            data,
+            {
+                "workbook": f"{PREFIX} Workbook",
+                "users": [],
+                "shared": [],
+                "removed": [{"kind": "chart", "title": f"{PREFIX} Chart", "write": True}],
+            },
+        )
 
     def alert_enabled_by(self, user, operations=None):
         query = create_test_query(OWNER, self.workbook, operations=operations)
@@ -164,8 +191,9 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         move_alert_run_as()
 
         self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), OWNER)
-        message = frappe.db.get_value(ITEM, {"code": "P19", "reference_name": alert}, "message")
+        message, data = item("P19", alert)
         self.assertIn(f"now runs as {OWNER}", message)
+        self.assertEqual(data, alert_data(AUTHOR, "moved"))
 
     # @feature upgrade.alerts-keep-running
     def test_an_alert_is_not_moved_to_an_owner_who_may_read_other_rows(self):
@@ -175,9 +203,10 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         move_alert_run_as()
 
         self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), AUTHOR)
-        message = frappe.db.get_value(ITEM, {"code": "P19", "reference_name": alert}, "message")
+        message, data = item("P19", alert)
         self.assertIn("stops at its next run", message)
         self.assertIn("reads the site table tabToDo", message)
+        self.assertEqual(data, alert_data(AUTHOR, "rows_differ"))
 
     # @feature upgrade.alerts-keep-running
     def test_an_alert_its_enabler_may_run_is_left_alone(self):
@@ -196,5 +225,6 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         move_alert_run_as()
 
         self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), AUTHOR)
-        message = frappe.db.get_value(ITEM, {"code": "P19", "reference_name": alert}, "message")
+        message, data = item("P19", alert)
         self.assertIn("stops at its next run", message)
+        self.assertEqual(data, alert_data(AUTHOR, "no_editor"))

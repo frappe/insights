@@ -13,7 +13,8 @@
   "reference_doctype",
   "reference_name",
   "section_break_message",
-  "message"
+  "message",
+  "data"
  ],
  "fields": [
   {
@@ -75,11 +76,17 @@
    "fieldtype": "Small Text",
    "label": "Message",
    "reqd": 1
+  },
+  {
+   "fieldname": "data",
+   "fieldtype": "JSON",
+   "label": "Data",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "links": [],
- "modified": "2026-10-20 12:00:00.000000",
+ "modified": "2026-10-20 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Upgrade Item",

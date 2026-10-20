@@ -11,6 +11,7 @@ import frappe
 
 from insights.insights.doctype.insights_data_source_v3.sandbox import refused_names
 from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
+from insights.insights.query_builders.sql_functions import get_fiscal_year_start_date
 from insights.patches import report_upgrade_items as report
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -32,11 +33,14 @@ TEAM_NAME = "Upgrade Report Team"
 
 
 def items(code):
-    return frappe.get_all(
+    found = frappe.get_all(
         ITEM,
         filters={"code": code},
-        fields=["reference_doctype", "reference_name", "user", "action", "message"],
+        fields=["reference_doctype", "reference_name", "user", "action", "message", "data"],
     )
+    for item in found:
+        item.data = frappe.parse_json(item.data)
+    return found
 
 
 class TestUpgradeReport(InsightsIntegrationTestCase):
@@ -84,6 +88,9 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
         self.assertEqual((item.reference_doctype, item.reference_name), (DT.WORKBOOK, self.workbook))
         self.assertIn(f"{MEMBER} edited them", item.message)
         self.assertNotIn(AUTHOR, item.message)
+        self.assertEqual(
+            item.data, {"items": [f"{PREFIX} Dashboard"], "users": [MEMBER], "teams": [team.name]}
+        )
 
     # @feature upgrade.left-to-do-reported
     def test_a_chart_whose_owner_may_no_longer_run_it_is_reported(self):
@@ -95,6 +102,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
         [item] = items("P12")
         self.assertEqual(item.reference_name, self.chart)
         self.assertIn("is disabled", item.message)
+        self.assertEqual(item.data, {"chart": f"{PREFIX} Chart", "owner": AUTHOR, "reason": "disabled"})
 
     # @feature upgrade.left-to-do-reported
     def test_a_chart_whose_owner_still_runs_it_is_not_reported(self):
@@ -118,6 +126,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
 
         [item] = items("P20")
         self.assertEqual((item.reference_name, item.user), (self.query, AUTHOR))
+        self.assertEqual(item.data, {"title": f"{PREFIX} Query", "author": AUTHOR})
 
     # @feature upgrade.left-to-do-reported
     def test_a_script_that_uses_a_name_the_sandbox_refuses_is_reported_to_its_author(self):
@@ -136,6 +145,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
         [item] = items("Q1")
         self.assertEqual((item.reference_name, item.user), (self.query, AUTHOR))
         self.assertIn("`frappe.db.set_value`", item.message)
+        self.assertEqual(item.data, {"title": f"{PREFIX} Query", "names": ["frappe.db.set_value"]})
 
     # @feature upgrade.left-to-do-reported
     def test_an_import_job_whose_script_will_fail_is_reported(self):
@@ -156,6 +166,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
         self.assertEqual(item.reference_name, job.name)
         self.assertIn("`frappe.enqueue`", item.message)
         self.assertNotIn("client", item.message)
+        self.assertEqual(item.data, {"title": f"{PREFIX} Job", "names": ["frappe.enqueue"]})
 
     # @feature upgrade.left-to-do-reported
     def test_a_template_copy_nobody_changed_can_be_deleted_and_a_changed_one_cannot(self):
@@ -183,6 +194,9 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
         self.assertEqual(untouched.action, "delete_workbook")
         self.assertIn('"Selling"', untouched.message)
         self.assertFalse(changed.action)
+        shipped = {"workbook": PREFIX, "standard": "Selling", "app": "ERPNext"}
+        self.assertEqual(untouched.data, {**shipped, "untouched": True})
+        self.assertEqual(changed.data, {**shipped, "untouched": False})
 
     # @feature upgrade.left-to-do-reported
     def test_a_blank_fiscal_year_start_is_reported_with_the_settings_to_set_it(self):
@@ -192,6 +206,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
 
         [item] = items("Q13")
         self.assertEqual(item.action, "open_settings")
+        self.assertEqual(item.data, {"start": get_fiscal_year_start_date().isoformat()})
 
         frappe.db.delete(ITEM)
         frappe.db.set_single_value(DT.SETTINGS, "fiscal_year_start", "2026-04-01")

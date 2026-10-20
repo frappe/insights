@@ -91,11 +91,16 @@ def as_item_reads(expression: str) -> str:
 
 
 def report(doctype: str, doc, refused: set[str]) -> None:
-    kind = "Query" if doctype == QUERY else "Chart"
-    names = ", ".join(f"`{name}`" for name in sorted(refused))
+    data = {
+        "title": doc.title or doc.name,
+        "names": sorted(refused),
+        "kind": "query" if doctype == QUERY else "chart",
+    }
+    names = ", ".join(f"`{name}`" for name in data["names"])
     add_item(
         "Q5",
-        f'{kind} "{doc.title or doc.name}" calls {names}',
+        f'{data["kind"].capitalize()} "{data["title"]}" calls {names}',
         reference=(doctype, doc.name),
         user=None if doc.owner == "Administrator" else doc.owner,
+        data=data,
     )

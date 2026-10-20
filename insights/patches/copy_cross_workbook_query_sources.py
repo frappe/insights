@@ -175,28 +175,38 @@ def copy_into(
 
 def report_missing_values(copy, source) -> None:
     workbook_title, owner = frappe.db.get_value(WORKBOOK, copy.workbook, ["title", "owner"])
-    source_workbook = (
-        f'workbook "{frappe.db.get_value(WORKBOOK, source.workbook, "title") or source.workbook}"'
+    data = {
+        "query": copy.title or copy.name,
+        "workbook": workbook_title or copy.workbook,
+        "source_workbook": (frappe.db.get_value(WORKBOOK, source.workbook, "title") or source.workbook)
         if source.workbook
-        else "no workbook"
-    )
-    variables = ", ".join(variable.variable_name for variable in source.variables)
+        else None,
+        "variables": [variable.variable_name for variable in source.variables],
+    }
+    source_workbook = f'workbook "{data["source_workbook"]}"' if data["source_workbook"] else "no workbook"
     add_item(
         "P21",
-        f'"{copy.title or copy.name}" in "{workbook_title or copy.workbook}", copied from {source_workbook}: '
-        f"enter its variables ({variables}), which may be passwords and were not copied",
+        f'"{data["query"]}" in "{data["workbook"]}", copied from {source_workbook}: '
+        f"enter its variables ({', '.join(data['variables'])}), which may be passwords and were not copied",
         reference=(QUERY, copy.name),
         user=None if owner == "Administrator" else owner,
+        data=data,
     )
 
 
 def report_cycle(copy, source: str) -> None:
     workbook_title, owner = frappe.db.get_value(WORKBOOK, copy.workbook, ["title", "owner"])
-    source_title = frappe.db.get_value(QUERY, source, "title") or source
+    data = {
+        "query": copy.title or copy.name,
+        "workbook": workbook_title or copy.workbook,
+        "source": frappe.db.get_value(QUERY, source, "title") or source,
+        "cycle": True,
+    }
     add_item(
         "P21",
-        f'"{copy.title or copy.name}" in "{workbook_title or copy.workbook}": remove its source '
-        f'"{source_title}", which reads it back. It could not run in Insights 3 either.',
+        f'"{data["query"]}" in "{data["workbook"]}": remove its source '
+        f'"{data["source"]}", which reads it back. It could not run in Insights 3 either.',
         reference=(QUERY, copy.name),
         user=None if owner == "Administrator" else owner,
+        data=data,
     )

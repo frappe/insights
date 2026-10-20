@@ -81,22 +81,33 @@ def move_to_workbooks(shares: list) -> None:
         kinds.setdefault(workbook, set()).add(share.share_doctype)
 
     for workbook in sorted({*granted, *everyone}):
-        add_item(
-            "P7",
-            message(workbook, granted.get(workbook), kinds.get(workbook), everyone.get(workbook)),
-            reference=(WORKBOOK, workbook),
-        )
+        data = item_data(workbook, granted.get(workbook), kinds.get(workbook), everyone.get(workbook))
+        add_item("P7", message(data), reference=(WORKBOOK, workbook), data=data)
 
 
-def message(workbook: str, users: set | None, doctypes: set | None, everyone: list | None) -> str:
-    title = workbook_title(workbook)
+def item_data(workbook: str, users: set | None, doctypes: set | None, everyone: list | None) -> dict:
+    return {
+        "workbook": workbook_title(workbook),
+        "users": sorted(users or ()),
+        "shared": sorted(MEMBER_LABELS.get(doctype, doctype) for doctype in doctypes or ()),
+        "removed": [
+            {
+                "kind": MEMBER_LABELS.get(share.share_doctype, share.share_doctype),
+                "title": frappe.db.get_value(share.share_doctype, share.share_name, "title")
+                or share.share_name,
+                "write": bool(share.write),
+            }
+            for share in everyone or []
+        ],
+    }
+
+
+def message(data: dict) -> str:
     parts = []
-    if users:
-        shared = " and ".join(sorted(f"{MEMBER_LABELS.get(doctype, doctype)}s" for doctype in doctypes or ()))
-        parts.append(f"now shared with {', '.join(sorted(users))}, as its {shared} were")
-    for share in everyone or []:
-        label = MEMBER_LABELS.get(share.share_doctype, share.share_doctype)
-        member_title = frappe.db.get_value(share.share_doctype, share.share_name, "title") or share.share_name
-        to_edit = " to edit" if share.write else ""
-        parts.append(f'removed the share of {label} "{member_title}" with everyone{to_edit}')
-    return f'"{title}": {"; ".join(parts)}'
+    if data["users"]:
+        shared = " and ".join("queries" if kind == "query" else f"{kind}s" for kind in data["shared"])
+        parts.append(f"now shared with {', '.join(data['users'])}, as its {shared} were")
+    for removed in data["removed"]:
+        to_edit = " to edit" if removed["write"] else ""
+        parts.append(f'removed the share of {removed["kind"]} "{removed["title"]}" with everyone{to_edit}')
+    return f'"{data["workbook"]}": {"; ".join(parts)}'

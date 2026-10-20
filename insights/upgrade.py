@@ -22,12 +22,14 @@ def add_item(
     reference: tuple[str, str] | None = None,
     user: str | None = None,
     action: str | None = None,
+    data: dict | None = None,
 ):
     """Record what the upgrade could not carry over.
 
     `reference` is a `(doctype, name)` pair. `user` is the person it concerns;
-    without one it is for admins. A patch that runs again adds no second item,
-    and does not bring back one a user dismissed.
+    without one it is for admins. `data` holds the names and values the item's
+    sentence shows, by key: users as user ids, documents by title. A patch that
+    runs again adds no second item, and does not bring back one a user dismissed.
     """
     reference_doctype, reference_name = reference or (None, None)
     key = {
@@ -38,7 +40,7 @@ def add_item(
     }
     if frappe.db.exists(ITEM, {field: value or ("is", "not set") for field, value in key.items()}):
         return
-    frappe.get_doc({"doctype": ITEM, **key, "message": message, "action": action}).insert(
+    frappe.get_doc({"doctype": ITEM, **key, "message": message, "action": action, "data": data or {}}).insert(
         ignore_permissions=True
     )
 

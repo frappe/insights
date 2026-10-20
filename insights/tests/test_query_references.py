@@ -807,10 +807,19 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
         self.assertEqual(variable.variable_name, "LOG_PASSWORD")
         self.assertIsNone(variable.get_password("variable_value", raise_exception=False))
         (item,) = frappe.get_all(
-            ITEM, filters={"code": "P21", "reference_name": copy}, fields=["user", "message"]
+            ITEM, filters={"code": "P21", "reference_name": copy}, fields=["user", "message", "data"]
         )
         self.assertEqual(item.user, OWNER)
         self.assertIn("LOG_PASSWORD", item.message)
+        self.assertEqual(
+            frappe.parse_json(item.data),
+            {
+                "query": "Copy Secret Source",
+                "workbook": "Copy Secret Near Workbook",
+                "source_workbook": "Copy Secret Far Workbook",
+                "variables": ["LOG_PASSWORD"],
+            },
+        )
         self.assertEqual(
             frappe.get_doc(DT.QUERY, source.name).variables[0].get_password("variable_value"), "hunter2"
         )
@@ -836,8 +845,19 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
         (one_copy,) = self.sources_of(reader)
         (two_copy,) = self.sources_of(one_copy)
         self.assertEqual(self.sources_of(two_copy), [one])
-        message = frappe.db.get_value(ITEM, {"code": "P21", "reference_name": two_copy}, "message")
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "P21", "reference_name": two_copy}, ["message", "data"]
+        )
         self.assertIn('remove its source "Copy Cycle One", which reads it back', message)
+        self.assertEqual(
+            frappe.parse_json(data),
+            {
+                "query": "Copy Cycle Two",
+                "workbook": "Copy Cycle Near Workbook",
+                "source": "Copy Cycle One",
+                "cycle": True,
+            },
+        )
 
 
 class TestASourceIsAQueryOfItsOwnWorkbook(InsightsIntegrationTestCase):

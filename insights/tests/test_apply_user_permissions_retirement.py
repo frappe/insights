@@ -11,7 +11,7 @@ from insights.api.upgrade import get_upgrade_items
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
 from insights.patches.report_site_data_follows_desk import execute as report_site_data
-from insights.patches.report_site_data_follows_desk import site_data_findings
+from insights.patches.report_site_data_follows_desk import restriction_data, site_data_findings
 from insights.patches.retire_site_apply_user_permissions import FIELD, SETTINGS
 from insights.patches.retire_site_apply_user_permissions import execute as retire
 from insights.tests.base import InsightsIntegrationTestCase
@@ -185,6 +185,20 @@ class TestSiteDataFindings(InsightsIntegrationTestCase):
         self.assertEqual(users[READER].unreadable, ["Deleted Document"])
         self.assertEqual(users[READER].narrowed, ["ToDo"])
 
+    # @feature upgrade.site-data-follows-desk
+    def test_a_restriction_names_its_field_and_value_only_when_it_compares_one_field_to_text(self):
+        self.assertEqual(
+            restriction_data("ToDo", 'status == "Open"'),
+            {"doctype": "ToDo", "condition": 'status == "Open"', "field": "status", "value": "Open"},
+        )
+        self.assertEqual(
+            restriction_data("ToDo", "status == 'Open' and priority == 'High'"),
+            {"doctype": "ToDo", "condition": "status == 'Open' and priority == 'High'"},
+        )
+        self.assertEqual(
+            restriction_data("ToDo", "status != 'Open'"), {"doctype": "ToDo", "condition": "status != 'Open'"}
+        )
+
     # @feature upgrade.site-data-follows-desk upgrade.attention-items
     def test_the_patch_tells_the_admins_who_lost_rows_and_what_fixes_it(self):
         self.set_team_permissions(1)
@@ -195,7 +209,7 @@ class TestSiteDataFindings(InsightsIntegrationTestCase):
         items = frappe.get_all(
             ITEM,
             filters={"code": "P17", "reference_name": ("in", [READER, OUTSIDER, self.team])},
-            fields=["reference_doctype", "reference_name", "user", "message"],
+            fields=["reference_doctype", "reference_name", "user", "message", "data"],
             order_by="reference_doctype asc",
         )
         self.assertEqual(
@@ -206,6 +220,20 @@ class TestSiteDataFindings(InsightsIntegrationTestCase):
         self.assertIn("status == 'Open'", team_item.message)
         self.assertIn("Deleted Document", user_item.message)
         self.assertIn("Not Permitted", user_item.message)
+        self.assertEqual(
+            frappe.parse_json(team_item.data),
+            {
+                "team": self.team,
+                "members": [READER],
+                "restrictions": [
+                    {"doctype": "ToDo", "condition": "status == 'Open'", "field": "status", "value": "Open"}
+                ],
+            },
+        )
+        self.assertEqual(
+            frappe.parse_json(user_item.data),
+            {"user": READER, "doctypes": ["Deleted Document"], "narrowed": []},
+        )
 
         # the app has no page for a user or a team, so Open goes to the desk form
         listed = {item.reference_name: item for item in get_upgrade_items()}

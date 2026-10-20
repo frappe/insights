@@ -929,5 +929,11 @@ class TestOrgShareMigration(InsightsIntegrationTestCase):
             self.assertFalse(
                 frappe.db.exists("DocShare", {"share_doctype": doc.doctype, "share_name": doc.name})
             )
-            message = frappe.db.get_value(ITEM, {"code": "P7", "reference_name": doc.workbook}, "message")
+            message, data = frappe.db.get_value(
+                ITEM, {"code": "P7", "reference_name": doc.workbook}, ["message", "data"]
+            )
             self.assertIn(f'"{doc.title}" with everyone', message)
+            kind = "chart" if doc.doctype == DT.CHART else "dashboard"
+            self.assertIn(
+                {"kind": kind, "title": doc.title, "write": True}, frappe.parse_json(data)["removed"]
+            )

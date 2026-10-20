@@ -70,17 +70,29 @@ def keep_edit(chart: str, previous_owner: str) -> None:
 def report(chart: str, owner: str, publisher: str, moved: bool) -> None:
     title = frappe.db.get_value(CHART, chart, "title") or chart
     if moved:
+        data = {"chart": title, "publisher": publisher, "owner": owner}
         message = f'"{title}": now owned by {publisher}, who published it, instead of {owner}'
+        users = (owner, publisher)
     else:
+        data = {"chart": title, "publisher": publisher, "publisher_disabled": True}
         message = f'"{title}": {publisher}, who published it, is disabled, so guests see nothing'
-    add_item("P11", message, reference=(CHART, chart), user=None if owner == "Administrator" else owner)
-    if moved:
+        users = (owner,)
+    for user in users:
         add_item(
             "P11",
-            f'"{title}": now owned by you instead of {owner}, so its readers see your rows',
+            message,
             reference=(CHART, chart),
-            user=None if publisher == "Administrator" else publisher,
+            user=None if user == "Administrator" else user,
+            data=data,
         )
+
+
+# why a public chart may give each reader other rows, by `why_rows_follow_reader`'s reason
+READER_ROWS = {
+    "script": "runs a script or an expression that calls frappe",
+    "site_table": "reads {table}",
+    "table_restriction": "reads {table}, which a Table Restriction filters",
+}
 
 
 def report_reader_rows(chart: str, owner: str) -> None:
@@ -90,17 +102,20 @@ def report_reader_rows(chart: str, owner: str) -> None:
     why = why_rows_follow_reader(query, config)
     if not why:
         return
+    data = {"chart": title or chart, "owner": owner, **why}
     add_item(
         "P10",
-        f'"{title or chart}", owned by {owner}, {why}',
+        f'"{data["chart"]}", owned by {owner}, {READER_ROWS[why["reason"]].format(**why)}',
         reference=(CHART, chart),
         user=None if owner == "Administrator" else owner,
+        data=data,
     )
 
 
-def why_rows_follow_reader(query: str | None, content) -> str | None:
+def why_rows_follow_reader(query: str | None, content) -> dict | None:
     """Why `query`, and `content` that reads its rows, may give each reader
-    other rows, or None when every reader gets the same rows."""
+    other rows, or None when every reader gets the same rows. Answers the
+    `reason`, a key of `READER_ROWS`, and the `table` it reads, if any."""
     from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name, is_site_db
     from insights.insights.query_utils import source_tables, transitive_closure
 
@@ -110,13 +125,13 @@ def why_rows_follow_reader(query: str | None, content) -> str | None:
         "Insights Query v3", filters={"name": ("in", [query, *transitive_closure(query)])}, pluck="operations"
     )
     if any(runs_as_user(frappe.parse_json(node)) for node in [content, *operations]):
-        return "runs a script or an expression that calls frappe"
+        return {"reason": "script"}
 
     restrictions_apply = frappe.db.get_single_value("Insights Settings", "enable_permissions")
     for table in source_tables(query):
         data_source, table_name = table["data_source"], table["table_name"]
         if is_site_db(data_source):
-            return f"reads {table_name.removeprefix('tab')}"
+            return {"reason": "site_table", "table": table_name.removeprefix("tab")}
         if restrictions_apply and frappe.db.exists(
             "Insights Resource Permission",
             {
@@ -125,7 +140,7 @@ def why_rows_follow_reader(query: str | None, content) -> str | None:
                 "table_restrictions": ("is", "set"),
             },
         ):
-            return f"reads {table_name}, which a Table Restriction filters"
+            return {"reason": "table_restriction", "table": table_name}
     return None
 
 

@@ -56,8 +56,19 @@ class TestUnappliedDateRangeDefaults(InsightsIntegrationTestCase):
 
         self.assertNotIn("default_value", filters["Posted"])
         self.assertEqual(filters["Posted"]["default_operator"], "between")
-        message = frappe.db.get_value(ITEM, {"code": "K1", "reference_name": dashboard}, "message")
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "K1", "reference_name": dashboard}, ["message", "data"]
+        )
         self.assertIn("2024-01-01 to 2024-01-31", message)
+        self.assertEqual(
+            frappe.parse_json(data),
+            {
+                "dashboard": f"{PREFIX} Dashboard",
+                "filter": "Posted",
+                "start": "2024-01-01",
+                "end": "2024-01-31",
+            },
+        )
 
     # @feature upgrade.dashboard-filters-apply-as-before
     def test_a_default_insights_3_applied_is_kept(self):

@@ -474,7 +474,9 @@ class TestDrawnAsInsights3(InsightsIntegrationTestCase):
         config, found = drawn("Number", config)
 
         self.assertEqual(config["number_column_options"][0], {"suffix": " net"})
-        self.assertEqual([code for code, _ in found], ["N4"])
+        self.assertEqual(
+            [(code, data) for code, _, data in found], [("N4", {"chart": "Card", "suffix": " net"})]
+        )
 
     # @feature upgrade.charts-draw-as-before
     def test_a_card_on_a_date_reads_its_latest_day(self):
@@ -487,7 +489,10 @@ class TestDrawnAsInsights3(InsightsIntegrationTestCase):
         self.assertEqual((config["window"], found), ({"grain": "day"}, []))
         self.assertEqual(monthly["window"], {"grain": "month"})
         self.assertEqual(timed["window"], {"grain": "day"})
-        self.assertEqual([code for code, _ in timed_found], ["N5"])
+        self.assertEqual(
+            [(code, data) for code, _, data in timed_found],
+            [("N5", {"chart": "Card", "column": "posting_date"})],
+        )
 
     # @feature upgrade.charts-draw-as-before
     def test_a_card_on_a_time_of_day_shows_the_total_and_is_reported(self):
@@ -497,7 +502,9 @@ class TestDrawnAsInsights3(InsightsIntegrationTestCase):
         )
 
         self.assertNotIn("window", config)
-        self.assertEqual([code for code, _ in found], ["N6"])
+        self.assertEqual(
+            [(code, data) for code, _, data in found], [("N6", {"chart": "Card", "column": "at"})]
+        )
 
     # @feature upgrade.charts-draw-as-before
     def test_a_statistic_line_over_more_than_one_series_or_none_is_reported(self):
@@ -513,10 +520,18 @@ class TestDrawnAsInsights3(InsightsIntegrationTestCase):
         )
 
         self.assertEqual(moved(one), [])
-        self.assertEqual([code for code, _ in moved(two)], ["C4"])
+        self.assertEqual([code for code, *_ in moved(two)], ["C4"])
         self.assertIn("line reads Revenue only", moved(two)[0][1])
-        self.assertEqual([code for code, _ in moved(one, split="region")], ["C4"])
+        self.assertEqual(
+            moved(two)[0][2],
+            {"chart": "Card", "lines": [{"statistic": "average", "removed": False, "measure": "Revenue"}]},
+        )
+        self.assertEqual([code for code, *_ in moved(one, split="region")], ["C4"])
         self.assertIn("line removed", moved([])[0][1])
+        self.assertEqual(
+            moved([])[0][2],
+            {"chart": "Card", "lines": [{"statistic": "average", "removed": True, "measure": None}]},
+        )
 
     # @feature upgrade.charts-draw-as-before
     def test_the_patch_tells_the_owner_what_it_could_not_keep(self):
@@ -539,5 +554,8 @@ class TestDrawnAsInsights3(InsightsIntegrationTestCase):
         stored = frappe.parse_json(frappe.db.get_value(DT.CHART, chart.name, "config"))
         self.assertNotIn("window", stored)
         self.assertNotIn("granularity", stored["date_column"])
-        message = frappe.db.get_value(ITEM, {"code": "N6", "reference_name": chart.name}, "message")
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "N6", "reference_name": chart.name}, ["message", "data"]
+        )
         self.assertIn('"Busy hour"', message)
+        self.assertEqual(frappe.parse_json(data), {"chart": "Busy hour", "column": "at"})

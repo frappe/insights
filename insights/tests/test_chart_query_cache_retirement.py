@@ -123,9 +123,16 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         self.assertEqual(
             frappe.db.sql_list(f"select `{FIELD}` from `tab{CHART}` where name = %s", chart), [None]
         )
+        items = frappe.get_all(ITEM, filters={"code": "J1"}, fields=["reference_name", "user", "data"])
         self.assertEqual(
-            frappe.get_all(ITEM, filters={"code": "J1"}, fields=["reference_name", "user"]),
-            [{"reference_name": cache, "user": ALERT_OWNER}],
+            [(item.reference_name, item.user, frappe.parse_json(item.data)) for item in items],
+            [
+                (
+                    cache,
+                    ALERT_OWNER,
+                    {"alert": "Chart Query Cache Test Alert", "chart": "Chart Query Cache Test Chart"},
+                )
+            ],
         )
 
     # @feature upgrade.cached-queries-removed

@@ -31,23 +31,36 @@ def execute():
 
         workbook = workbook_of(frappe._dict(alert, doctype=ALERT))
         owner = workbook and frappe.db.get_value(WORKBOOK, workbook, "owner")
-        add_item("P19", move_or_report(alert, enabler, owner), reference=(ALERT, alert.name))
+        message, data = move_or_report(alert, enabler, owner)
+        add_item("P19", message, reference=(ALERT, alert.name), data=data)
 
 
-def move_or_report(alert, enabler: str | None, owner: str | None) -> str:
-    """Move the alert to `owner` where that keeps its rows. The message says which happened."""
-    title = alert.title
+def move_or_report(alert, enabler: str | None, owner: str | None) -> tuple[str, dict]:
+    """Move the alert to `owner` where that keeps its rows. Answers the item's
+    message and data, which say which happened."""
+    data = {"alert": alert.title, "enabler": enabler or None, "owner": owner or None}
+    title = data["alert"]
     if not enabler:
-        return f'"{title}" has no user to run as, so it stops at its next run'
+        return (
+            f'"{title}" has no user to run as, so it stops at its next run',
+            {**data, "outcome": "no_user"},
+        )
 
     if not owner or not may_run_as(ALERT, alert.name, owner):
-        return f'"{title}" stops at its next run: neither {enabler} nor the workbook\'s owner can edit it'
+        return (
+            f'"{title}" stops at its next run: neither {enabler} nor the workbook\'s owner can edit it',
+            {**data, "outcome": "no_editor"},
+        )
 
     if why := why_query_rows_differ(alert.query, {"expression": alert.condition}, (enabler, owner)):
         return (
             f'"{title}" stops at its next run: {enabler}, who turned it on, can\'t edit the workbook. It '
-            f"{why}, so {owner}, who owns the workbook, may see other rows."
+            f"{why}, so {owner}, who owns the workbook, may see other rows.",
+            {**data, "outcome": "rows_differ"},
         )
 
     frappe.db.set_value(ALERT, alert.name, "permission_user", owner, update_modified=False)
-    return f'"{title}" now runs as {owner}, who owns the workbook, in place of {enabler}, with the same rows'
+    return (
+        f'"{title}" now runs as {owner}, who owns the workbook, in place of {enabler}, with the same rows',
+        {**data, "outcome": "moved"},
+    )

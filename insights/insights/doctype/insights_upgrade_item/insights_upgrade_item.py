@@ -15,6 +15,7 @@ class InsightsUpgradeItem(Document):
 
         action: DF.Literal["", "delete_workbook", "open_settings"]
         code: DF.Data
+        data: DF.JSON | None
         message: DF.SmallText
         reference_doctype: DF.Link | None
         reference_name: DF.DynamicLink | None

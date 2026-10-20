@@ -34,7 +34,7 @@ def execute():
 
         written = normalize_chart_config(config, chart.chart_type)
         title = chart.title or chart.name
-        for code, message in [
+        for code, message, data in [
             *draw_as_insights_3(written, chart.chart_type, title),
             *statistic_lines_moved(config, written, title),
         ]:
@@ -43,6 +43,7 @@ def execute():
                 message,
                 reference=(CHART, chart.name),
                 user=None if chart.owner == "Administrator" else chart.owner,
+                data=data,
             )
         if written == config:
             continue
@@ -52,9 +53,9 @@ def execute():
         frappe.db.set_value(CHART, chart.name, "config", frappe.as_json(written), update_modified=False)
 
 
-def draw_as_insights_3(config: dict, chart_type: str, title: str) -> list[tuple[str, str]]:
+def draw_as_insights_3(config: dict, chart_type: str, title: str) -> list[tuple[str, str, dict]]:
     """Write into `config` what Insights 3 drew it with, in place. Answers the
-    `(code, message)` of each thing it could not keep."""
+    `(code, message, data)` of each thing it could not keep."""
     y_axis = config.get("y_axis")
     if chart_type == "Bar" and isinstance(y_axis, dict) and "stack" not in y_axis:
         # C1: Insights 3 stacked a Bar that stated nothing on load
@@ -74,7 +75,7 @@ def draw_as_insights_3(config: dict, chart_type: str, title: str) -> list[tuple[
     return []
 
 
-def statistic_lines_moved(config: dict, written: dict, title: str) -> list[tuple[str, str]]:
+def statistic_lines_moved(config: dict, written: dict, title: str) -> list[tuple[str, str, dict]]:
     """C4: a reference line at a statistic read every value Insights 3 plotted on
     its axis, stack totals included. `normalize_chart_config` points it at the
     first series on that axis, which differs once the axis plots more than one
@@ -85,7 +86,7 @@ def statistic_lines_moved(config: dict, written: dict, title: str) -> list[tuple
     series = [s for s in after.get("series") or [] if isinstance(s, dict)]
     split_by = written.get("split_by")
     split = isinstance(split_by, dict) and ((split_by.get("dimension") or {}).get("column_name"))
-    found = []
+    lines = []
     for old, new in zip(
         before.get("reference_lines") or [], after.get("reference_lines") or [], strict=False
     ):
@@ -95,17 +96,25 @@ def statistic_lines_moved(config: dict, written: dict, title: str) -> list[tuple
         align = "Right" if new.get("align") == "Right" else "Left"
         on_axis = [s for s in series if (s.get("align") or "Left") == align]
         if not new.get("measure_name"):
-            found.append(f"{name} line removed, as the chart plots only the count")
+            lines.append({"statistic": name, "removed": True, "measure": None})
         elif len(on_axis) > 1 or split:
-            found.append(f"{name} line reads {new['measure_name']} only")
-    return [("C4", f'"{title}": {"; ".join(found)}')] if found else []
+            lines.append({"statistic": name, "removed": False, "measure": new["measure_name"]})
+    if not lines:
+        return []
+    found = [
+        f"{line['statistic']} line removed, as the chart plots only the count"
+        if line["removed"]
+        else f"{line['statistic']} line reads {line['measure']} only"
+        for line in lines
+    ]
+    return [("C4", f'"{title}": {"; ".join(found)}', {"chart": title, "lines": lines})]
 
 
 def is_count(value) -> bool:
     return isinstance(value, int | float) and not isinstance(value, bool) and value >= 1
 
 
-def number_units_as_insights_3(config: dict, title: str) -> list[tuple[str, str]]:
+def number_units_as_insights_3(config: dict, title: str) -> list[tuple[str, str, dict]]:
     """N4: each reading's prefix and suffix, printed with its unit as Insights 3 did.
 
     Insights 3 read a reading's own prefix and suffix, else the card's. A prefix
@@ -135,12 +144,7 @@ def number_units_as_insights_3(config: dict, title: str) -> list[tuple[str, str]
         if unit == "percent":
             suffix = f"%{suffix}"
         elif unit == "currency" and (config.get("currency_column") or symbol_on_right()):
-            found.append(
-                (
-                    "N4",
-                    f'"{title}", suffix "{suffix}"',
-                )
-            )
+            found.append(("N4", f'"{title}", suffix "{suffix}"', {"chart": title, "suffix": suffix}))
         option["suffix"] = suffix
     return found
 
@@ -150,7 +154,7 @@ def symbol_on_right() -> bool:
     return bool(currency and frappe.db.get_value("Currency", currency, "symbol_on_right"))
 
 
-def number_period_as_insights_3(config: dict, title: str) -> list[tuple[str, str]]:
+def number_period_as_insights_3(config: dict, title: str) -> list[tuple[str, str, dict]]:
     """N5 and N6: the period a card on a date column read in Insights 3.
 
     Insights 3 grouped a card by its date column, by the granularity when it had
@@ -175,13 +179,11 @@ def number_period_as_insights_3(config: dict, title: str) -> list[tuple[str, str
             config["window"] = window
         else:
             config.pop("window", None)
-        message = f'"{title}" on {column}'
-        return [("N6", message)]
+        return [("N6", f'"{title}" on {column}', {"chart": title, "column": column})]
 
     if window.get("span") or window.get("grain"):
         return []
     config["window"] = {**window, "grain": "day"}
     if data_type != "Datetime":
         return []
-    message = f'"{title}" on {column}'
-    return [("N5", message)]
+    return [("N5", f'"{title}" on {column}', {"chart": title, "column": column})]

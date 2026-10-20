@@ -17,7 +17,7 @@ def get_upgrade_items():
     items = frappe.get_all(
         ITEM,
         filters=open_item_filters(),
-        fields=["name", "code", "message", "reference_doctype", "reference_name", "user", "action"],
+        fields=["name", "code", "message", "data", "reference_doctype", "reference_name", "user", "action"],
         order_by="code asc, creation asc",
     )
     # an app uninstalled since the upgrade took the doctype an item names
@@ -28,10 +28,44 @@ def get_upgrade_items():
     }
     items = [item for item in items if item.reference_doctype not in gone]
     for item in items:
+        item.data = frappe.parse_json(item.data) or {}
+    people = names_of_users({value for item in items for value in strings_in(item.data)})
+    for item in items:
         item.workbook = reference_workbook(item)
         item.form_url = form_url(item)
         item.can_fix = can_fix(item)
+        item.people = {value: people[value] for value in strings_in(item.data) if value in people}
     return items
+
+
+def strings_in(data: dict) -> set[str]:
+    """The strings of an item's data: its values, and those in its lists and
+    in the dicts they hold."""
+    found = set()
+    for value in data.values():
+        for entry in value if isinstance(value, list) else [value]:
+            for string in entry.values() if isinstance(entry, dict) else [entry]:
+                if isinstance(string, str):
+                    found.add(string)
+    return found
+
+
+def names_of_users(values: set[str]) -> dict[str, dict]:
+    """The full and first name of each of `values` that is a user."""
+    users = (
+        frappe.get_all(
+            "User", filters={"name": ("in", list(values))}, fields=["name", "full_name", "first_name"]
+        )
+        if values
+        else []
+    )
+    return {
+        user.name: {
+            "full_name": user.full_name or user.name,
+            "first_name": user.first_name or user.full_name or user.name,
+        }
+        for user in users
+    }
 
 
 def form_url(item) -> str | None:

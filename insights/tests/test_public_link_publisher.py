@@ -92,8 +92,14 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
         self.run_patch_without_the_column()
 
-        message = frappe.db.get_value(ITEM, {"code": "P10", "reference_name": self.chart}, "message")
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "P10", "reference_name": self.chart}, ["message", "data"]
+        )
         self.assertIn("reads ToDo", message)
+        self.assertEqual(
+            frappe.parse_json(data),
+            {"chart": f"{PREFIX} Chart", "owner": OWNER, "reason": "site_table", "table": "ToDo"},
+        )
 
     # @feature upgrade.public-links-keep-rows
     def test_a_link_on_rows_every_reader_reads_alike_is_not_reported(self):
@@ -105,14 +111,18 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), PUBLISHER)
         self.assertTrue(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
         # the previous owner, Administrator, is told through the admins' item
-        message = frappe.db.get_value(
-            ITEM, {"code": "P11", "reference_name": self.chart, "user": ("is", "not set")}, "message"
+        items = frappe.get_all(
+            ITEM,
+            filters={"code": "P11", "reference_name": self.chart},
+            fields=["user", "message", "data"],
+            order_by="creation asc",
         )
-        self.assertIn(f"now owned by {PUBLISHER}, who published it", message)
-        message = frappe.db.get_value(
-            ITEM, {"code": "P11", "reference_name": self.chart, "user": PUBLISHER}, "message"
+        message = f'"{PREFIX} Chart": now owned by {PUBLISHER}, who published it, instead of {OWNER}'
+        data = {"chart": f"{PREFIX} Chart", "publisher": PUBLISHER, "owner": OWNER}
+        self.assertEqual(
+            [(item.user, item.message, frappe.parse_json(item.data)) for item in items],
+            [(None, message, data), (PUBLISHER, message, data)],
         )
-        self.assertIn("now owned by you", message)
 
     # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner upgrade.public-links-keep-rows
     def test_a_link_another_person_published_moves_to_the_publisher(self):
@@ -136,8 +146,14 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
         self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), OWNER)
         self.assertFalse(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
-        message = frappe.db.get_value(ITEM, {"code": "P11", "reference_name": self.chart}, "message")
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "P11", "reference_name": self.chart}, ["message", "data"]
+        )
         self.assertIn(f"{PUBLISHER}, who published it, is disabled", message)
+        self.assertEqual(
+            frappe.parse_json(data),
+            {"chart": f"{PREFIX} Chart", "publisher": PUBLISHER, "publisher_disabled": True},
+        )
 
     def published_by_another_person_on(self, operations):
         """Publishes the chart on a dashboard another user owns, with `operations` as its query."""

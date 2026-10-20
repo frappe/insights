@@ -212,11 +212,13 @@ def chart_title(cache: str) -> str | None:
 
 
 def report_alert(alert) -> None:
+    data = {"alert": alert.title, "chart": chart_title(alert.query) or alert.query}
     add_item(
         "J1",
-        f'"{alert.title}" on chart "{chart_title(alert.query) or alert.query}"',
+        f'"{data["alert"]}" on chart "{data["chart"]}"',
         reference=(QUERY, alert.query),
         user=None if alert.owner == "Administrator" else alert.owner,
+        data=data,
     )
 
 

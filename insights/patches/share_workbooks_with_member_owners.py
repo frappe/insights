@@ -31,10 +31,12 @@ def execute():
         shared.setdefault(workbook, []).append(owner)
 
     for workbook, owners in shared.items():
+        data = {"workbook": workbook_title(workbook), "users": owners}
         add_item(
             "P3",
-            f'"{workbook_title(workbook)}": {", ".join(owners)} can now edit it',
+            f'"{data["workbook"]}": {", ".join(owners)} can now edit it',
             reference=(WORKBOOK, workbook),
+            data=data,
         )
 
 

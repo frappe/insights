@@ -80,5 +80,10 @@ class TestBackendAttributeRewrite(InsightsIntegrationTestCase):
         operations = frappe.parse_json(frappe.db.get_value(DT.QUERY, kept, "operations"))
         self.assertEqual(operations[1]["expression"]["expression"], "q['source']")
         self.assertFalse(frappe.db.exists(ITEM, {"code": "Q5", "reference_name": kept}))
-        message = frappe.db.get_value(ITEM, {"code": "Q5", "reference_name": called}, "message")
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "Q5", "reference_name": called}, ["message", "data"]
+        )
         self.assertIn("`execute`", message)
+        self.assertEqual(
+            frappe.parse_json(data), {"title": f"{PREFIX} Executes", "names": ["execute"], "kind": "query"}
+        )

@@ -15,6 +15,8 @@ them further by the team's Table Restriction. Now desk decides alone, so:
 Each finding becomes an upgrade item for the admins.
 """
 
+import re
+
 import frappe
 from frappe.model import no_value_fields
 from frappe.utils import cint
@@ -27,14 +29,22 @@ DATA_SOURCE = "Insights Data Source v3"
 TABLE = "Insights Table v3"
 TEAM = "Insights Team"
 INSIGHTS_ROLES = ("Insights User", "Insights Admin")
+# a restriction that keeps the rows whose one field holds one value
+FIELD_EQUALS = re.compile(r"""^(\w+)\s*==\s*(?:'([^']*)'|"([^"]*)")$""")
 
 
 def execute():
     found = site_data_findings()
     for user in found.users:
-        add_item(CODE, user_message(user), reference=("User", user.user))
+        data = {"user": user.user, "doctypes": user.unreadable, "narrowed": user.narrowed}
+        add_item(CODE, user_message(data), reference=("User", user.user), data=data)
     for team in found.restrictions:
-        add_item(CODE, restriction_message(team), reference=(TEAM, team.team))
+        data = {
+            "team": team.team,
+            "members": team.users,
+            "restrictions": [restriction_data(r.doctype, r.restriction) for r in team.restrictions],
+        }
+        add_item(CODE, restriction_message(data), reference=(TEAM, team.team), data=data)
 
 
 def site_data_findings() -> frappe._dict:
@@ -184,16 +194,25 @@ def site_restrictions(site_sources: list[str]) -> list[frappe._dict]:
     return list(teams.values())
 
 
-def user_message(user: frappe._dict) -> str:
+def restriction_data(doctype: str, condition: str) -> dict:
+    """A restriction, with the field and value it compares when it is that simple."""
+    data = {"doctype": doctype, "condition": condition}
+    if match := FIELD_EQUALS.match(condition):
+        field, single, double = match.groups()
+        data.update(field=field, value=double if single is None else single)
+    return data
+
+
+def user_message(data: dict) -> str:
     parts = []
-    if user.unreadable:
-        parts.append(f"charts on {', '.join(user.unreadable)} say Not Permitted")
-    if user.narrowed:
-        parts.append(f"reads only the rows desk gives them of {', '.join(user.narrowed)}")
-    return f"{user.user}: {'; '.join(parts)}"
+    if data["doctypes"]:
+        parts.append(f"charts on {', '.join(data['doctypes'])} say Not Permitted")
+    if data["narrowed"]:
+        parts.append(f"reads only the rows desk gives them of {', '.join(data['narrowed'])}")
+    return f"{data['user']}: {'; '.join(parts)}"
 
 
-def restriction_message(team: frappe._dict) -> str:
-    restrictions = ", ".join(f"{r.doctype} `{r.restriction}`" for r in team.restrictions)
-    members = ", ".join(team.users) or "no members"
-    return f'Team "{team.team}" ({members}): {restrictions}'
+def restriction_message(data: dict) -> str:
+    restrictions = ", ".join(f"{r['doctype']} `{r['condition']}`" for r in data["restrictions"])
+    members = ", ".join(data["members"]) or "no members"
+    return f'Team "{data["team"]}" ({members}): {restrictions}'

@@ -23,6 +23,12 @@ SETTINGS = "Insights Settings"
 IMPORT_JOB_NAMES = ("client", "table", "state", "secrets", "log")
 # a template import inserts its documents in one request
 IMPORT_SECONDS = 300
+# why a chart cannot run as its owner, by reason
+OWNER_CANNOT_RUN = {
+    "disabled": "is disabled",
+    "no_insights_role": "has no Insights role",
+    "cannot_edit": "can't edit its workbook",
+}
 
 
 def execute():
@@ -77,11 +83,13 @@ def report_team_grants_that_lost_write():
         found.users.update(users)
 
     for workbook, found in lost.items():
+        data = {"items": sorted(found.titles), "users": sorted(found.users), "teams": sorted(found.teams)}
         add_item(
             "P4",
-            f"{quoted(found.titles)}: {', '.join(sorted(found.users))} edited them through "
-            f"{plural('team', found.teams)} {', '.join(sorted(found.teams))}",
+            f"{quoted(data['items'])}: {', '.join(data['users'])} edited them through "
+            f"{plural('team', data['teams'])} {', '.join(data['teams'])}",
             reference=(WORKBOOK, workbook),
+            data=data,
         )
 
 
@@ -96,15 +104,17 @@ def report_charts_that_cannot_run_as_owner():
         if chart.owner == "Administrator" or may_run_as(CHART, chart.name, chart.owner):
             continue
         if not frappe.db.get_value("User", chart.owner, "enabled"):
-            why = "is disabled"
+            reason = "disabled"
         elif chart.owner not in insights_users:
-            why = "has no Insights role"
+            reason = "no_insights_role"
         else:
-            why = "can't edit its workbook"
+            reason = "cannot_edit"
+        data = {"chart": chart.title or chart.name, "owner": chart.owner, "reason": reason}
         add_item(
             "P12",
-            f'"{chart.title or chart.name}": its owner, {chart.owner}, {why}',
+            f'"{data["chart"]}": its owner, {chart.owner}, {OWNER_CANNOT_RUN[reason]}',
             reference=(CHART, chart.name),
+            data=data,
         )
 
 
@@ -119,11 +129,13 @@ def report_trusted_code_of_authors():
             content = {"expression": doc[field]} if doctype == ALERT else doc[field]
             if doc.owner == "Administrator" or is_admin(doc.owner) or not trusted_code_of(content):
                 continue
+            data = {"title": doc.title or doc.name, "author": doc.owner}
             add_item(
                 "P20",
-                f'"{doc.title or doc.name}" by {doc.owner}',
+                f'"{data["title"]}" by {doc.owner}',
                 reference=(doctype, doc.name),
                 user=doc.owner,
+                data=data,
             )
 
 
@@ -140,21 +152,29 @@ def report_scripts_with_refused_names():
             op.get("code") or "" for op in operations if isinstance(op, dict) and op.get("type") == "code"
         )
         if names := refused_names(code):
+            data = {"title": query.title or query.name, "names": names}
             add_item(
                 "Q1",
-                f'"{query.title or query.name}" uses {", ".join(f"`{n}`" for n in names)}',
+                uses_message(data),
                 reference=(QUERY, query.name),
                 user=author(query.owner),
+                data=data,
             )
 
     for job in frappe.get_all(IMPORT_JOB, fields=["name", "title", "owner", "script", "enabled"]):
         if names := refused_names(job.script or "", IMPORT_JOB_NAMES):
+            data = {"title": job.title or job.name, "names": names}
             add_item(
                 "J4",
-                f'"{job.title or job.name}" uses {", ".join(f"`{n}`" for n in names)}',
+                uses_message(data),
                 reference=(IMPORT_JOB, job.name),
                 user=author(job.owner),
+                data=data,
             )
+
+
+def uses_message(data: dict) -> str:
+    return f'"{data["title"]}" uses {", ".join(f"`{name}`" for name in data["names"])}'
 
 
 def report_template_copies():
@@ -164,27 +184,34 @@ def report_template_copies():
 
     for copy in template_copies():
         standard_name = standard_workbook_of(copy.from_template)
-        title = standard_name and shipped_title(standard, standard_name)
-        if not title:
+        shipped = standard_name and shipped_by(standard, standard_name)
+        if not shipped:
             continue
         # Insights 3 counted a copy without a checksum as changed
         untouched = bool(copy.get("imported_checksum")) and is_untouched(copy.name)
+        data = {"workbook": copy.title, **shipped, "untouched": untouched}
         add_item(
             "W2",
-            f'"{copy.title}": replaced by "{title}", '
+            f'"{copy.title}": replaced by "{data["standard"]}", '
             + ("never changed" if untouched else "may have been changed"),
             reference=(WORKBOOK, copy.name),
             action="delete_workbook" if untouched else None,
+            data=data,
         )
 
 
-def shipped_title(standard, name: str) -> str | None:
-    """The title of the standard workbook `name`, if an installed app ships it.
-    Read from the file: a migrate imports it after the patches."""
-    for _, module in standard.app_modules():
+def shipped_by(standard, name: str) -> dict | None:
+    """The title of the standard workbook `name` as `standard`, and of the
+    installed app that ships it as `app`. Read from the file: a migrate imports
+    it after the patches."""
+    for app, module in standard.app_modules():
         path = standard.file_path(WORKBOOK, name, module)
         if os.path.exists(path):
-            return frappe.get_file_json(path).get("title") or name
+            app_title = frappe.get_hooks("app_title", app_name=app)
+            return {
+                "standard": frappe.get_file_json(path).get("title") or name,
+                "app": app_title[0] if app_title else app,
+            }
     return None
 
 
@@ -221,6 +248,7 @@ def report_blank_fiscal_year_start():
         "Q13",
         f"Fiscal years now start on {start.day} {start.strftime('%B')}",
         action="open_settings",
+        data={"start": start.isoformat()},
     )
 
 
