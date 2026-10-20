@@ -19,13 +19,15 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
     seen_refs = set()
     for table_exp in parsed.find_all(sg.exp.Table):
         table_name = table_exp.name
-        if not table_name or table_name in cte_aliases:
+        # a CTE name has no schema, so a qualified reference is always a real table
+        if not table_name or (not table_exp.db and table_name in cte_aliases):
             continue
 
         table_ref = frappe._dict(
             name=table_name,
             db=str(table_exp.db) if table_exp.db else None,
             catalog=str(table_exp.catalog) if table_exp.catalog else None,
+            reference=table_reference(table_exp),
         )
         ref_key = (table_ref.name, table_ref.db, table_ref.catalog)
         if ref_key in seen_refs:
@@ -35,6 +37,164 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
         table_refs.append(table_ref)
 
     return table_refs
+
+
+def alias_qualified_tables(raw_sql: str, dialect: sg.Dialect | None) -> str:
+    """`raw_sql` with each unaliased `schema.table` given an explicit alias, and each
+    column that names it pointed at that alias.
+
+    A binding replaces the table with a select, which has no schema. The database
+    knows an unaliased `sales.orders` as `orders`, so that stays its alias, and a
+    whole-row `orders` still names it. Where another table of the query is also
+    known as `orders`, only the schema tells them apart, so the alias is the full
+    `"sales.orders"`.
+    """
+    from sqlglot.optimizer.scope import build_scope
+
+    try:
+        parsed = sg.parse_one(raw_sql, dialect=dialect)
+    except Exception:
+        return raw_sql  # nosemgrep - the database reports a query it cannot parse
+
+    # a CTE name has no schema, so a qualified table is always a real one
+    tables = [table for table in parsed.find_all(sg.exp.Table) if table.db and not table.alias]
+    if not tables:
+        return raw_sql
+
+    root = build_scope(parsed)
+    scopes = list(root.traverse()) if root else []
+    items = [(scope, item) for scope in scopes for item in from_items(scope)]
+    scope_of = {id(item): scope for scope, item in items}
+    lineage = {id(scope): ancestors(scope) for scope in scopes}
+
+    # a table shares its name only with the tables of blocks it can see or that
+    # can see it: one UNION branch does not see the other's
+    def visible_sources(table):
+        own = scope_of.get(id(table))
+        by_name = {}
+        for scope in scopes:
+            if own is None or id(own) in lineage[id(scope)] or id(scope) in lineage[id(own)]:
+                # as the table sees them: an aliased group hides what it joins
+                for item in from_items(scope, table):
+                    source = (
+                        table_reference(item)
+                        if isinstance(item, sg.exp.Table) and not item.alias
+                        else id(item)
+                    )
+                    by_name.setdefault(item.alias_or_name, set()).add(source)
+        return by_name
+
+    shared = {}
+    for table in tables:
+        sources_by_name = visible_sources(table)
+        shared[id(table)] = len(sources_by_name.get(table.name, ())) > 1
+        # the query's own `"sales.orders"` would then name two tables
+        if shared[id(table)] and table_reference(table) in sources_by_name:
+            from insights.exceptions import QueryRefused
+
+            frappe.throw(
+                frappe._("Rename the alias {0}: it is the full name of a table the query reads").format(
+                    table_reference(table)
+                ),
+                QueryRefused,
+                title=frappe._("Unsupported SQL Query"),
+            )
+
+    def alias(table):
+        if shared[id(table)]:
+            return sg.exp.to_identifier(table_reference(table), quoted=True)
+        return table.this.copy()
+
+    for scope in scopes:
+        for column in scope.find_all(sg.exp.Column):
+            if column.table and (table := column_table(scope, column)) in tables:
+                column.set("table", alias(table))
+                column.set("db", None)
+
+    for table in tables:
+        table.set("alias", sg.exp.TableAlias(this=alias(table)))
+
+    return parsed.sql(dialect=dialect)
+
+
+def ancestors(scope) -> set[int]:
+    """The ids of `scope` and of every block that encloses it."""
+    ids = set()
+    while scope:
+        ids.add(id(scope))
+        scope = scope.parent
+    return ids
+
+
+def from_items(scope, node: sg.exp.Expression | None = None) -> list[sg.exp.Expression]:
+    """The tables, subqueries and lateral joins a query block reads FROM and JOIN, as
+    `node` sees them; every one of them, aliased groups included, without it."""
+    select = scope.expression
+    if not isinstance(select, sg.exp.Select):
+        return []
+    items = [select.args["from_"].this] if select.args.get("from_") else []
+    items += [join.this for join in select.args.get("joins") or []]
+    return [table for item in items for table in grouped_join_items(item, node)]
+
+
+def grouped_join_items(
+    item: sg.exp.Expression, node: sg.exp.Expression | None = None
+) -> list[sg.exp.Expression]:
+    """A `(a JOIN b)` as the items it joins, at any depth. sqlglot parses it as a
+    subquery of `a`, with the joins hung on `a` or on the subquery. An aliased
+    group hides `a` and `b` behind its alias, except from its own ON clauses."""
+    joined = [table for join in item.args.get("joins") or [] for table in grouped_join_items(join.this, node)]
+    if isinstance(item, sg.exp.Subquery) and isinstance(item.this, sg.exp.Table | sg.exp.Subquery):
+        if item.alias and node is not None and not is_inside(node, item):
+            return [item, *joined]
+        inner = grouped_join_items(item.this, node)
+        return [item, *inner, *joined] if item.alias and node is None else [*inner, *joined]
+    return [item, *joined]
+
+
+def is_inside(node: sg.exp.Expression, ancestor: sg.exp.Expression) -> bool:
+    while node is not None:
+        if node is ancestor:
+            return True
+        node = node.parent
+    return False
+
+
+def column_table(scope, column: sg.exp.Column) -> sg.exp.Expression | None:
+    """The FROM item a qualified column names, looked up as the database does: in
+    the nearest query block outward that has one. A block with two refuses the
+    query, as the database would."""
+    while scope is not None:
+        items = from_items(scope, column)
+        if column.args.get("db"):
+            sources = [
+                item
+                for item in items
+                if isinstance(item, sg.exp.Table)
+                and not item.alias
+                and item.db == column.db
+                and item.name == column.table
+            ]
+        else:
+            sources = [item for item in items if item.alias_or_name == column.table]
+
+        if len(sources) > 1:
+            from insights.exceptions import QueryRefused
+
+            frappe.throw(
+                frappe._("{0} could name more than one table").format(column.sql()),
+                QueryRefused,
+                title=frappe._("Unsupported SQL Query"),
+            )
+        if sources:
+            return sources[0]
+        scope = scope.parent
+    return None
+
+
+def table_reference(table_exp: sg.exp.Table) -> str:
+    """A table as a SQL query names it, with its schema when the query gives one."""
+    return f"{table_exp.db}.{table_exp.name}" if table_exp.db else table_exp.name
 
 
 def extract_query_deps_from_operations(operations: list) -> list[str]:
@@ -88,14 +248,19 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
         ds = op.get("data_source") or ""
         if not raw_sql or not ds:
             continue
-        db_type = frappe.db.get_value("Insights Data Source v3", ds, "database_type", cache=True)
-        dialect = db_type_to_sqlglot_dialect(db_type)
+        # a deleted data source still names its tables, so a chart reading one stays refused
+        data_source = frappe.db.exists("Insights Data Source v3", ds) and frappe.get_cached_doc(
+            "Insights Data Source v3", ds
+        )
+        dialect = db_type_to_sqlglot_dialect(data_source.database_type) if data_source else None
         for ref in extract_sql_table_refs(raw_sql, dialect=dialect):
-            key = (ds, ref.name)
-            if key in seen:
+            # a schema the data source does not read names no table; the run refuses it
+            table_name = data_source.sql_table_name(ref.name, ref.db) if data_source else ref.name
+            key = (ds, table_name)
+            if not table_name or key in seen:
                 continue
             seen.add(key)
-            result.append({"data_source": ds, "table_name": ref.name})
+            result.append({"data_source": ds, "table_name": table_name})
     return result
 
 
