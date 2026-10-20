@@ -2,6 +2,7 @@ import frappe
 import ibis
 import sqlglot as sg
 
+from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
@@ -47,10 +48,12 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         permissions of the user who runs the test.
         """
         if replace_map is None:
-            tables = self.builder._get_sql_table_names(raw_sql, dialect=self.dialect)
+            tables = self.builder._get_sql_table_names(raw_sql, self.data_source, dialect=self.dialect)
             replace_map = {
-                table: ibis.to_sql(InsightsTablev3.get_ibis_table(SITE_DB, table, use_live_connection=True))
-                for table in tables
+                reference: ibis.to_sql(
+                    InsightsTablev3.get_ibis_table(SITE_DB, table, use_live_connection=True)
+                )
+                for reference, table in tables.items()
             }
         return self.builder._replace_sql_tables(raw_sql, replace_map, dialect=self.dialect)
 
@@ -147,11 +150,16 @@ class TestNativeSQL(InsightsIntegrationTestCase):
             "join `tabUser` u on 1 = 1"
         )
 
-        self.assertEqual(self.builder._get_sql_table_names(raw_sql, dialect=self.dialect), {"tabUser"})
+        self.assertEqual(
+            self.builder._get_sql_table_names(raw_sql, self.data_source, dialect=self.dialect),
+            {"tabUser": "tabUser"},
+        )
 
         # inside its own block, the CTE does hide the table
         hidden = "with `tabUser` as (select 1 as n) select n from `tabUser`"
-        self.assertEqual(self.builder._get_sql_table_names(hidden, dialect=self.dialect), set())
+        self.assertEqual(
+            self.builder._get_sql_table_names(hidden, self.data_source, dialect=self.dialect), {}
+        )
 
     # @feature query.native-sql
     def test_a_commented_query_names_the_tables_it_runs_on(self):
@@ -172,7 +180,10 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         applies the reader's permissions."""
         raw_sql = "select u.name from (select 1 as n) as `tabUser` join `tabUser` as u on 1 = 1"
 
-        self.assertEqual(self.builder._get_sql_table_names(raw_sql, dialect=self.dialect), {"tabUser"})
+        self.assertEqual(
+            self.builder._get_sql_table_names(raw_sql, self.data_source, dialect=self.dialect),
+            {"tabUser": "tabUser"},
+        )
 
         rewritten = self.rewrite(raw_sql, {"tabUser": "SELECT * FROM `tabUser`"})
 
@@ -275,13 +286,77 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         self.assertEqual(self.rewrite(raw_sql, {}), raw_sql)
 
     # @feature query.native-sql-one-statement
-    def test_a_schema_qualified_table_is_refused(self):
-        # a binding is looked up by the bare name, so reading `sales.orders`
-        # would bind whichever `orders` the default schema holds
-        with self.assertRaises(frappe.ValidationError):
-            self.builder._validate_native_sql(
-                "select * from sales.orders", use_live_connection=True, dialect=self.dialect
-            )
+    def test_a_table_in_a_schema_the_data_source_does_not_read_is_refused(self):
+        # binding the bare name would read whichever `orders` the data source's schema holds
+        postgres = self.postgres_data_source("sales, finance")
+        for raw_sql, data_source in (
+            ("select * from sales.orders", self.data_source),
+            ("select * from hr.employees", postgres),
+            ("select * from shop.sales.orders", postgres),
+        ):
+            with self.subTest(raw_sql=raw_sql, data_source=data_source.database_type):
+                with self.assertRaises(QueryRefused):
+                    self.builder._validate_native_sql(
+                        raw_sql,
+                        use_live_connection=True,
+                        data_source=data_source,
+                        dialect=data_source.get_sqlglot_dialect(),
+                    )
+
+    # @feature query.native-sql-schema-qualified
+    def test_a_schema_qualified_table_reads_the_table_the_data_source_lists(self):
+        raw_sql = "select o.amount, i.paid from sales.orders o join finance.invoices i on i.order_id = o.id"
+
+        for schema, tables in (
+            ("sales, finance", {"sales.orders": "sales.orders", "finance.invoices": "finance.invoices"}),
+            # one schema leaves names unqualified, as `get_table_list` lists them
+            ("sales", None),
+        ):
+            with self.subTest(schema=schema):
+                postgres = self.postgres_data_source(schema)
+                if tables is None:
+                    with self.assertRaises(QueryRefused):
+                        self.builder._validate_native_sql(
+                            raw_sql, use_live_connection=True, data_source=postgres, dialect="postgres"
+                        )
+                    self.assertEqual(
+                        self.builder._get_sql_table_names("select * from sales.orders", postgres, "postgres"),
+                        {"sales.orders": "orders"},
+                    )
+                    continue
+
+                self.builder._validate_native_sql(
+                    raw_sql, use_live_connection=True, data_source=postgres, dialect="postgres"
+                )
+                self.assertEqual(self.builder._get_sql_table_names(raw_sql, postgres, "postgres"), tables)
+
+    # @feature query.native-sql-schema-qualified
+    def test_a_schema_qualified_table_is_replaced_by_its_binding(self):
+        raw_sql = "select orders.amount from sales.orders join orders as o on o.id = orders.id"
+
+        rewritten = self.builder._replace_sql_tables(
+            raw_sql,
+            {"sales.orders": 'SELECT * FROM "sales"."orders" WHERE region = \'north\''},
+            dialect="postgres",
+        )
+
+        # the unqualified `orders` names another table, so it keeps its own reference
+        self.assertEqual(
+            rewritten,
+            'SELECT orders.amount FROM (SELECT * FROM "sales"."orders" WHERE region = \'north\') AS orders '
+            "JOIN orders AS o ON o.id = orders.id",
+        )
+
+    def postgres_data_source(self, schema):
+        return frappe.get_doc(
+            {
+                "doctype": "Insights Data Source v3",
+                "title": "Native SQL Postgres",
+                "database_type": "PostgreSQL",
+                "database_name": "shop",
+                "schema": schema,
+            }
+        )
 
     # --- the format button ---
 

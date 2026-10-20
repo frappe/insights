@@ -399,6 +399,18 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             return schema, table
         return schemas[0], table_name
 
+    def sql_table_name(self, table: str, schema: str | None = None) -> str | None:
+        """The table a SQL query reads as `schema.table`, named as `get_table_list` names it.
+
+        None when this data source does not read `schema`: binding the bare name would
+        read a same-named table in another schema.
+        """
+        if not schema:
+            return table
+        if self.database_type != "PostgreSQL" or schema not in self.get_postgres_schemas():
+            return None
+        return self.format_table_name(table, schema)
+
     def table_identity(self, table_name: str) -> str:
         """Name the remote table `table_name` points at, free of the spelling of the day.
 

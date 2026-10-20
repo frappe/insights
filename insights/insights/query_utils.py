@@ -31,6 +31,7 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
             name=table_name,
             db=str(table_exp.db) if table_exp.db else None,
             catalog=str(table_exp.catalog) if table_exp.catalog else None,
+            reference=table_reference(table_exp),
         )
         ref_key = (table_ref.name, table_ref.db, table_ref.catalog)
         if ref_key in seen_refs:
@@ -40,6 +41,11 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
         table_refs.append(table_ref)
 
     return table_refs
+
+
+def table_reference(table_exp: sg.exp.Table) -> str:
+    """A table as a SQL query names it, with its schema when the query gives one."""
+    return f"{table_exp.db}.{table_exp.name}" if table_exp.db else table_exp.name
 
 
 def real_table_refs(parsed: sg.Expression) -> list[sg.exp.Table]:
@@ -131,16 +137,18 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
             continue
         raw_sql = op.get("raw_sql") or ""
         ds = op.get("data_source") or ""
-        if not raw_sql or not ds:
+        if not raw_sql or not ds or not frappe.db.exists("Insights Data Source v3", ds):
             continue
-        db_type = frappe.db.get_value("Insights Data Source v3", ds, "database_type", cache=True)
-        dialect = db_type_to_sqlglot_dialect(db_type)
+        data_source = frappe.get_cached_doc("Insights Data Source v3", ds)
+        dialect = db_type_to_sqlglot_dialect(data_source.database_type)
         for ref in extract_sql_table_refs(raw_sql, dialect=dialect):
-            key = (ds, ref.name)
-            if key in seen:
+            # a schema the data source does not read names no table; the run refuses it
+            table_name = data_source.sql_table_name(ref.name, ref.db)
+            key = (ds, table_name)
+            if not table_name or key in seen:
                 continue
             seen.add(key)
-            result.append({"data_source": ds, "table_name": ref.name})
+            result.append({"data_source": ds, "table_name": table_name})
     return result
 
 
