@@ -158,12 +158,13 @@ function unskip(names: string[]) {
 	progress.skipped = progress.skipped.filter((name) => !names.includes(name))
 }
 
-/** Marks every item of a row done: an admin closes both sides of a change at once. */
+/**
+ * Marks every item of a row done: an admin closes both sides of a change at once.
+ * One closed elsewhere since the wizard loaded is done all the same.
+ */
 async function markDone(names: string[]) {
 	try {
-		for (const name of names) {
-			await call('insights.api.upgrade.dismiss_upgrade_item', { name })
-		}
+		await call('insights.api.upgrade.dismiss_upgrade_items', { names })
 	} catch (error) {
 		showErrorToast(error as Error, false)
 		return

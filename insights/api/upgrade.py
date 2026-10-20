@@ -103,9 +103,14 @@ def mark_upgrade_seen():
 
 
 @insights_whitelist(methods=["POST"])
-def dismiss_upgrade_item(name: str):
-    item = get_item(name)
-    item.db_set("status", "Dismissed")
+def dismiss_upgrade_items(names: list[str]) -> list[str]:
+    """Dismiss each of `names` still open to the session user, and return them.
+    Another admin or another tab may have closed some already, which leaves
+    nothing to do for those."""
+    names = frappe.get_all(ITEM, filters={**open_item_filters(), "name": ("in", names)}, pluck="name")
+    for name in names:
+        frappe.db.set_value(ITEM, name, "status", "Dismissed")
+    return names
 
 
 @insights_whitelist(methods=["POST"])

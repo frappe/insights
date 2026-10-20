@@ -7,7 +7,7 @@ add their own.
 import frappe
 
 from insights.api import get_user_info
-from insights.api.upgrade import dismiss_upgrade_item, fix_upgrade_item, get_upgrade_items, mark_upgrade_seen
+from insights.api.upgrade import dismiss_upgrade_items, fix_upgrade_item, get_upgrade_items, mark_upgrade_seen
 from insights.patches import mark_v3_users as mark_v3_users_patch
 from insights.patches.run_public_charts_as_owner import report as report_public_chart
 from insights.tests.base import InsightsIntegrationTestCase
@@ -147,17 +147,26 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         bobs = frappe.db.get_value(ITEM, {"user": BOB})
 
         with self.as_user(ALICE):
-            self.assertRaises(frappe.PermissionError, dismiss_upgrade_item, bobs)
-            dismiss_upgrade_item(alices)
+            self.assertEqual(dismiss_upgrade_items([alices, bobs]), [alices])
             self.assertEqual(get_upgrade_items(), [])
         self.assertEqual(frappe.db.get_value(ITEM, bobs, "status"), "Open")
+
+    # @feature upgrade.attention-items
+    def test_dismissing_an_item_closed_elsewhere_still_closes_the_rest(self):
+        add_item("P11", "Moved to Bob.", user=ALICE)
+        add_item("P11", "Moved to Bob.", user=BOB)
+        names = frappe.get_all(ITEM, pluck="name")
+        frappe.db.set_value(ITEM, names[0], "status", "Dismissed")
+
+        self.assertEqual(dismiss_upgrade_items(names), names[1:])
+        self.assertEqual(frappe.get_all(ITEM, filters={"status": "Open"}), [])
 
     # @feature upgrade.attention-items
     def test_a_patch_that_runs_again_does_not_bring_back_a_dismissed_item(self):
         workbook = create_test_workbook("Administrator", title=f"{PREFIX} Copy")
         reference = (DT.WORKBOOK, workbook.name)
         add_item("W2", "This copy duplicates a standard workbook.", reference=reference)
-        dismiss_upgrade_item(frappe.db.get_value(ITEM, {"code": "W2"}))
+        dismiss_upgrade_items([frappe.db.get_value(ITEM, {"code": "W2"})])
 
         add_item("W2", "This copy duplicates a standard workbook.", reference=reference)
 
