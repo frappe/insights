@@ -28,7 +28,7 @@ def execute():
     reads other rows than the publisher, the publisher becomes the owner, so
     the link keeps serving the rows it served. The publisher chose to publish
     those rows, and `validate_run_as_owner` lets only the owner share them.
-    The previous owner is told. A disabled publisher can run nothing, so that
+    The previous owner and the publisher are told. A disabled publisher can run nothing, so that
     chart is left running as its reader, and its owner is told.
     """
     for chart, publisher in publicly_reachable_charts().items():
@@ -74,6 +74,13 @@ def report(chart: str, owner: str, publisher: str, moved: bool) -> None:
     else:
         message = f'"{title}": {publisher}, who published it, is disabled, so guests see nothing'
     add_item("P11", message, reference=(CHART, chart), user=None if owner == "Administrator" else owner)
+    if moved:
+        add_item(
+            "P11",
+            f'"{title}": now owned by you instead of {owner}, so its readers see your rows',
+            reference=(CHART, chart),
+            user=None if publisher == "Administrator" else publisher,
+        )
 
 
 def report_reader_rows(chart: str, owner: str) -> None:

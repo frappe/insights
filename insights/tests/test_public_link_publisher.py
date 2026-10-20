@@ -104,8 +104,15 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
     def assert_moved_to_the_publisher(self):
         self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), PUBLISHER)
         self.assertTrue(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
-        message = frappe.db.get_value(ITEM, {"code": "P11", "reference_name": self.chart}, "message")
+        # the previous owner, Administrator, is told through the admins' item
+        message = frappe.db.get_value(
+            ITEM, {"code": "P11", "reference_name": self.chart, "user": ("is", "not set")}, "message"
+        )
         self.assertIn(f"now owned by {PUBLISHER}, who published it", message)
+        message = frappe.db.get_value(
+            ITEM, {"code": "P11", "reference_name": self.chart, "user": PUBLISHER}, "message"
+        )
+        self.assertIn("now owned by you", message)
 
     # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner upgrade.public-links-keep-rows
     def test_a_link_another_person_published_moves_to_the_publisher(self):
