@@ -24,7 +24,7 @@ from insights.insights.query_builders.sql_functions import get_fiscal_year_start
 from insights.permissions import can_download
 from insights.telemetry import get_entry
 from insights.upgrade import ITEM as UPGRADE_ITEM
-from insights.upgrade import open_item_filters, upgraded_from_v3
+from insights.upgrade import is_upgrade_admin, open_item_filters, upgraded_from_v3
 from insights.utils import get_currencies, get_owned_file
 
 
@@ -144,6 +144,7 @@ def get_user_info():
         "upgraded_from_v3": upgraded_from_v3(),
         "owns_workbooks": bool(frappe.db.exists("Insights Workbook", {"owner": frappe.session.user})),
         "upgrade_item_count": frappe.db.count(UPGRADE_ITEM, open_item_filters()),
+        "is_upgrade_admin": is_upgrade_admin(),
     }
 
 

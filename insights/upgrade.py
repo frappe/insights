@@ -85,12 +85,16 @@ def mark_seen(user: str | None = None):
     frappe.defaults.set_user_default(SEEN_VERSION, "4", user)
 
 
+def is_upgrade_admin(user: str | None = None) -> bool:
+    """Whether `user` holds a role the doctype lets read every item."""
+    return bool({"Insights Admin", "System Manager"} & set(frappe.get_roles(user or frappe.session.user)))
+
+
 def open_item_filters(user: str | None = None) -> dict:
-    """An admin works through every open item, anyone else through their own.
-    The admins are the roles the doctype lets read every item."""
+    """An admin works through every open item, anyone else through their own."""
     user = user or frappe.session.user
     filters = {"status": "Open"}
-    if not {"Insights Admin", "System Manager"} & set(frappe.get_roles(user)):
+    if not is_upgrade_admin(user):
         filters["user"] = user
     return filters
 

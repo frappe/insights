@@ -136,6 +136,9 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
 
         with self.as_user(BOB):
             self.assertEqual([(i.code, i.user) for i in get_upgrade_items()], [("P20", ALICE)])
+        # the wizard lays out its steps by the same rule
+        self.assertTrue(self.user_info(BOB)["is_upgrade_admin"])
+        self.assertFalse(self.user_info(ALICE)["is_upgrade_admin"])
 
     # @feature upgrade.attention-items
     def test_an_item_whose_doctype_is_gone_is_left_out(self):

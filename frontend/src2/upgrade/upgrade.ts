@@ -65,18 +65,18 @@ function progressStore() {
 	return stored
 }
 
-const sharing = computed(() => session.user.is_admin || Boolean(session.user.owns_workbooks))
+// the server's rule for who works through every item, so the steps match the items it sent
+const admin = computed(() => Boolean(session.user.is_upgrade_admin))
+const sharing = computed(() => admin.value || Boolean(session.user.owns_workbooks))
 
 const steps = computed(() =>
 	wizardSteps([...items.value, ...done.value], {
 		sharing: sharing.value,
-		admin: session.user.is_admin,
+		admin: admin.value,
 		me: session.user.email,
 	}),
 )
-const details = computed(() =>
-	detailsOf([...items.value, ...done.value], { admin: session.user.is_admin }),
-)
+const details = computed(() => detailsOf([...items.value, ...done.value], { admin: admin.value }))
 
 const doneNames = computed(() => new Set(done.value.map((item) => item.name)))
 const isDone = (name: string) => doneNames.value.has(name)

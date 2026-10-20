@@ -23,6 +23,8 @@ type SessionUser = {
 	owns_workbooks?: boolean
 	/** Open upgrade items the user works through. */
 	upgrade_item_count: number
+	/** Whether the user works through every open upgrade item, not only their own. */
+	is_upgrade_admin?: boolean
 }
 
 // Settings of the site, not of whoever is reading it. A guest opening a public
@@ -117,6 +119,7 @@ async function fetchSessionInfo() {
 		can_write_trusted_code: Boolean(userInfo.can_write_trusted_code),
 		upgraded_from_v3: Boolean(userInfo.upgraded_from_v3),
 		owns_workbooks: Boolean(userInfo.owns_workbooks),
+		is_upgrade_admin: Boolean(userInfo.is_upgrade_admin),
 	})
 }
 

@@ -49,7 +49,7 @@ const ITEMS = [
 
 async function wizard(items: UpgradeItem[] = ITEMS) {
 	vi.resetModules()
-	session.user = reactive({ email: DAVE, is_admin: true, upgraded_from_v3: false })
+	session.user = reactive({ email: DAVE, is_upgrade_admin: true, upgraded_from_v3: false })
 	call.mockReset()
 	call.mockImplementation(async (method: string, args?: { names: string[] }) => {
 		if (method === 'insights.api.upgrade.get_upgrade_items') return items
@@ -113,7 +113,7 @@ describe('the upgrade wizard', () => {
 	// @feature upgrade.wizard
 	it('treats a one-step wizard closed early as finished', async () => {
 		const upgrade = await wizard([])
-		session.user.is_admin = false
+		session.user.is_upgrade_admin = false
 		await upgrade.open()
 		expect(upgrade.steps.map((step) => step.id)).toEqual(['welcome'])
 
