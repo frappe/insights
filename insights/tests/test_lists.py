@@ -213,6 +213,23 @@ class TestDashboardList(InsightsIntegrationTestCase):
         self.assertEqual(sorted(everyones), [self.OWN, self.OTHERS])
 
     # @feature dashboard.list
+    def test_the_dashboard_list_names_the_workbook_who_else_may_open_it_and_the_last_open(self):
+        with self.as_user(OWNER):
+            frappe.get_doc(DT.DASHBOARD, self.others).track_view()
+            listed = {row.name: row for row in get_dashboards()}
+
+        own, others = listed[self.own], listed[self.others]
+        self.assertEqual(own.workbook_title, f"{TITLE_PREFIX} Dash Workbook Mine")
+        self.assertEqual(own.shared_with, [])
+        self.assertIsNone(own.last_opened)
+        # a share on the dashboard opens it, not its workbook
+        self.assertIsNone(others.workbook_title)
+        self.assertEqual(others.shared_with, [OWNER])
+        self.assertIsNotNone(others.last_opened)
+        for row in (own, others):
+            self.assertFalse(row.shared_with_organization or row.visible_to_roles or row.is_public)
+
+    # @feature dashboard.list
     def test_the_list_puts_the_dashboard_opened_last_first(self):
         with self.as_user(OWNER):
             frappe.get_doc(DT.DASHBOARD, self.others).track_view()

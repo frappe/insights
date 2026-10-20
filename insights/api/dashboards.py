@@ -11,7 +11,7 @@ from insights.api.list_filters import (
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import preview_url
 from insights.insights.query_utils import source_tables
-from insights.permissions import can_write, same_rows_for_every_reader
+from insights.permissions import can_write, dashboard_readers, same_rows_for_every_reader
 
 DASHBOARD = "Insights Dashboard v3"
 DASHBOARD_CHART = "Insights Dashboard Chart v3"
@@ -147,16 +147,36 @@ DASHBOARD_LIST_FIELDS = [
 
 
 def _enrich_dashboards(dashboards):
-    view_counts = dashboard_view_counts([dashboard.name for dashboard in dashboards])
-    apps = standard.shipping_apps(
-        list({dashboard.workbook for dashboard in dashboards if dashboard.workbook})
-    )
+    names = [dashboard.name for dashboard in dashboards]
+    workbooks = list({dashboard.workbook for dashboard in dashboards if dashboard.workbook})
+    view_counts = dashboard_view_counts(names)
+    last_opened = get_last_opened(DASHBOARD, names)
+    apps = standard.shipping_apps(workbooks)
+    # only the workbooks the caller may read are named
+    workbook_titles = {}
+    if workbooks and frappe.has_permission("Insights Workbook"):
+        workbook_titles = dict(
+            frappe.get_list(
+                "Insights Workbook",
+                filters={"name": ["in", workbooks]},
+                fields=["name", "title"],
+                as_list=True,
+            )
+        )
     user = frappe.session.user
-    same_rows = same_rows_for_every_reader([dashboard.name for dashboard in dashboards])
+    readers = dashboard_readers(names)
+    same_rows = same_rows_for_every_reader(names, readers)
     for dashboard in dashboards:
         app = apps.get(dashboard.workbook)
         dashboard["shipped_by"] = app and standard.app_title(app)
         dashboard["shipped_by_logo"] = app and standard.app_logo_url(app)
+        dashboard["workbook_title"] = workbook_titles.get(dashboard.workbook)
+        dashboard["last_opened"] = last_opened.get(str(dashboard.name))
+        access = readers.get(dashboard.name) or frappe._dict()
+        dashboard["shared_with"] = access.shared_with or []
+        dashboard["shared_with_organization"] = bool(access.shared_with_organization)
+        dashboard["visible_to_roles"] = access.visible_to_roles or []
+        dashboard["is_public"] = bool(access.is_public)
         # a preview shows the rows of whoever it was rendered for
         dashboard["same_rows_for_every_reader"] = dashboard.name in same_rows
         dashboard["preview_image"] = (

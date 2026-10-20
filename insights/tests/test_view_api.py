@@ -1038,7 +1038,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertFalse(card.can_write)
         self.assertFalse(card.is_favourite)
         self.assertEqual(card.owner_name, frappe.utils.get_fullname(OWNER))
-        for field in ("owner", "workbook", "_liked_by"):
+        for field in ("owner", "workbook", "workbook_title", "shared_with", "visible_to_roles", "_liked_by"):
             self.assertNotIn(field, card)
         self.assertIsNone(card.preview_image)
         self.assertEqual(

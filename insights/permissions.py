@@ -1341,24 +1341,23 @@ def can_read_rows(doc, user=None) -> bool:
     return bool(InsightsPermissions(user, ignore_visibility=True).has_doc_permission(stored, "read"))
 
 
-def same_rows_for_every_reader(dashboards: list[str]) -> set[str]:
-    """The `dashboards` every reader sees with the same rows, so one preview image may show to all of them.
+def dashboard_readers(dashboards: list[str]) -> dict[str, frappe._dict]:
+    """Who besides its owner may open each of `dashboards`, by the grants of this module's table.
 
-    That holds when nobody but its owner holds a grant on it, or when every
-    chart on it runs as its owner (`declared_owner`). The grants are the rows
-    of this module's table that name other users: the workbook's owner and
-    shares, the dashboard's shares, a team grant and a visibility level. An
-    admin may open anything and is not counted. An app's dashboard always
-    fails: roles read it, and its charts never run as their owner.
+    `shared_with` lists the users a share on the dashboard or its workbook
+    names. `shared_with_organization`, `visible_to_roles` and `is_public` are
+    the wider grants: an org-wide share or the `Everyone` level, the `Roles`
+    level, the `Public` level. `team_granted` is a team grant, and
+    `workbook_owner` the workbook's owner, who may be another user. An admin
+    may open anything and is not counted. The dashboard list shows this as its
+    Access column.
     """
     from insights.api.list_filters import get_shares
-    from insights.permission_user import declared_owner
 
     if not dashboards:
-        return set()
+        return {}
 
     DASHBOARD = "Insights Dashboard v3"
-    CHART = "Insights Chart v3"
     rows = frappe.get_all(
         DASHBOARD, filters={"name": ["in", dashboards]}, fields=["name", "owner", "workbook", "visibility"]
     )
@@ -1376,6 +1375,7 @@ def same_rows_for_every_reader(dashboards: list[str]) -> set[str]:
         "Has Role",
         filters={"parenttype": DASHBOARD, "parentfield": "visible_to_roles", "parent": ["in", dashboards]},
         fields=["parent", "role"],
+        order_by="role asc",
     ):
         roles.setdefault(role.parent, []).append(role)
     everyone_dashboards, dashboard_users = get_shares(DASHBOARD, dashboards)
@@ -1388,10 +1388,60 @@ def same_rows_for_every_reader(dashboards: list[str]) -> set[str]:
         )
     )
 
+    readers = {}
+    for row in rows:
+        workbook = workbooks.get(row.workbook) or frappe._dict()
+        level, visible_to = reach(
+            frappe._dict(visibility=row.visibility, visible_to_roles=roles.get(row.name))
+        )
+        shared_with = {*dashboard_users.get(row.name, []), *workbook_users.get(row.workbook, [])}
+        readers[row.name] = frappe._dict(
+            owner=row.owner,
+            is_standard=bool(workbook.is_standard),
+            workbook_owner=workbook.owner,
+            shared_with=sorted(shared_with - {row.owner}),
+            shared_with_organization=row.name in everyone_dashboards
+            or row.workbook in everyone_workbooks
+            or VISIBILITY_LEVELS[level] == EVERYONE,
+            visible_to_roles=sorted(visible_to),
+            is_public=VISIBILITY_LEVELS[level] == PUBLIC,
+            team_granted=row.name in team_granted,
+        )
+    return readers
+
+
+def only_owner_reads(readers: frappe._dict) -> bool:
+    """Whether nobody but its owner may open a dashboard, given its `dashboard_readers`."""
+    return not (
+        readers.shared_with
+        or readers.shared_with_organization
+        or readers.visible_to_roles
+        or readers.is_public
+        or readers.team_granted
+        or (readers.workbook_owner and readers.workbook_owner != readers.owner)
+    )
+
+
+def same_rows_for_every_reader(dashboards: list[str], readers: dict | None = None) -> set[str]:
+    """The `dashboards` every reader sees with the same rows, so one preview image may show to all of them.
+
+    That holds when nobody but its owner may open it (`only_owner_reads`), or
+    when every chart on it runs as its owner (`declared_owner`). An app's
+    dashboard always fails: roles read it, and its charts never run as their
+    owner. `readers` is `dashboard_readers` of `dashboards`, when the caller
+    has it already.
+    """
+    from insights.permission_user import declared_owner
+
+    if not dashboards:
+        return set()
+    readers = readers if readers is not None else dashboard_readers(dashboards)
+
+    CHART = "Insights Chart v3"
     charts: dict[str, list[str]] = {}
     for row in frappe.get_all(
         "Insights Dashboard Chart v3",
-        filters={"parenttype": DASHBOARD, "parent": ["in", dashboards]},
+        filters={"parenttype": "Insights Dashboard v3", "parent": ["in", dashboards]},
         fields=["parent", "chart"],
     ):
         charts.setdefault(row.parent, []).append(row.chart)
@@ -1417,23 +1467,11 @@ def same_rows_for_every_reader(dashboards: list[str]) -> set[str]:
                 return False
         return True
 
-    def only_owner_reads(row) -> bool:
-        workbook = workbooks.get(row.workbook)
-        shared_users = {*dashboard_users.get(row.name, []), *workbook_users.get(row.workbook, [])}
-        return not (
-            (workbook and workbook.owner != row.owner)
-            or shared_users - {row.owner}
-            or row.name in everyone_dashboards
-            or row.workbook in everyone_workbooks
-            or row.name in team_granted
-            or reaches_anybody(frappe._dict(visibility=row.visibility, visible_to_roles=roles.get(row.name)))
-        )
-
     return {
-        row.name
-        for row in rows
-        if not (workbooks.get(row.workbook) or {}).get("is_standard")
-        and (only_owner_reads(row) or all_run_as_owner(charts.get(row.name, [])))
+        name
+        for name, dashboard in readers.items()
+        if not dashboard.is_standard
+        and (only_owner_reads(dashboard) or all_run_as_owner(charts.get(name, [])))
     }
 
 
