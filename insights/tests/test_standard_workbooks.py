@@ -18,6 +18,7 @@ from frappe.modules.import_file import import_doc
 
 from insights import standard
 from insights.api import get_site_info
+from insights.api.dashboards import get_dashboards
 from insights.api.workbooks import get_workbooks
 from insights.migrate import after_app_install, sync_standard_workbooks
 from insights.tests.base import InsightsIntegrationTestCase
@@ -228,6 +229,21 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
         ]
         self.assertEqual(workbook["shipped_by"], frappe.get_hooks("app_title", app_name="insights")[0])
         self.assertEqual(workbook["visible_to_roles"], ["Desk User"])
+
+    # @feature standard.ship dashboard.list
+    def test_the_dashboard_list_shows_the_app_logo_when_it_has_one(self):
+        self.import_file()
+
+        def listed():
+            (dashboard,) = [
+                d for d in get_dashboards(sources=["created", "shared", "others"]) if d["name"] == DASHBOARD
+            ]
+            return dashboard
+
+        with self.patch_hooks({"app_logo_url": ["/assets/insights/logo.svg"]}):
+            self.assertEqual(listed()["shipped_by_logo"], "/assets/insights/logo.svg")
+        with self.patch_hooks({"app_logo_url": []}):
+            self.assertIsNone(listed()["shipped_by_logo"])
 
     # @feature standard.ship
     def test_an_imported_member_lands_in_the_folder_the_file_titles(self):

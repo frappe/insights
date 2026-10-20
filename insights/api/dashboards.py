@@ -149,13 +149,15 @@ DASHBOARD_LIST_FIELDS = [
 
 def _enrich_dashboards(dashboards):
     view_counts = dashboard_view_counts([dashboard.name for dashboard in dashboards])
-    shipped_by = standard.shipped_by(
+    apps = standard.shipping_apps(
         list({dashboard.workbook for dashboard in dashboards if dashboard.workbook})
     )
     user = frappe.session.user
     cells = _dashboard_cells(dashboards)
     for dashboard in dashboards:
-        dashboard["shipped_by"] = shipped_by.get(dashboard.workbook)
+        app = apps.get(dashboard.workbook)
+        dashboard["shipped_by"] = app and standard.app_title(app)
+        dashboard["shipped_by_logo"] = app and standard.app_logo_url(app)
         dashboard["cells"] = cells.get(dashboard.name, [])
         dashboard["views"] = view_counts.get(str(dashboard.name), 0)
         dashboard["is_favourite"] = bool(dashboard._liked_by) and user in frappe.as_json(dashboard._liked_by)

@@ -313,14 +313,27 @@ def is_read_only(workbook: str | None) -> bool:
 
 def shipped_by(workbooks: list[str]) -> dict[str, str]:
     """The title of the app that ships each of `workbooks`, for those an app ships."""
+    return {workbook: app_title(app) for workbook, app in shipping_apps(workbooks).items()}
+
+
+def shipping_apps(workbooks: list[str]) -> dict[str, str]:
+    """The app that ships each of `workbooks`, for those an app ships."""
     if not workbooks:
         return {}
 
-    titles = {}
+    apps = {}
     for workbook in frappe.get_all(
         WORKBOOK, filters={"name": ["in", workbooks], "is_standard": 1}, fields=["name", "module"]
     ):
         app = frappe.local.module_app.get(frappe.scrub(workbook.module or ""))
         if app:
-            titles[workbook.name] = (frappe.get_hooks("app_title", app_name=app) or [app])[0]
-    return titles
+            apps[workbook.name] = app
+    return apps
+
+
+def app_title(app: str) -> str:
+    return (frappe.get_hooks("app_title", app_name=app) or [app])[0]
+
+
+def app_logo_url(app: str) -> str | None:
+    return (frappe.get_hooks("app_logo_url", app_name=app) or [None])[0]
