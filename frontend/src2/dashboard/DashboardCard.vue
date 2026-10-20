@@ -39,9 +39,7 @@ watch(
 </script>
 
 <template>
-	<div
-		class="group/card relative flex w-full cursor-pointer flex-col gap-2 rounded-4 bg-surface-base"
-	>
+	<div class="group/card relative flex w-full flex-col gap-2 rounded-4 bg-surface-base">
 		<router-link
 			:to="`/dashboards/${dashboard.name}`"
 			class="flex h-[150px] overflow-hidden rounded-4 border border-outline-gray-2 transition-transform duration-200 group-hover/card:scale-[1.01]"
@@ -96,7 +94,7 @@ watch(
 		</Button>
 
 		<div class="flex items-center justify-between gap-2">
-			<div class="flex-1 min-w-0">
+			<router-link :to="`/dashboards/${dashboard.name}`" class="min-w-0 flex-1">
 				<p class="truncate text-sm" :title="dashboard.title">
 					{{ dashboard.title }}
 				</p>
@@ -121,7 +119,7 @@ watch(
 						{{ dashboard.modified_from_now }}
 					</span>
 				</div>
-			</div>
+			</router-link>
 			<div v-if="dropdownOptions.length" class="flex flex-shrink-0 items-center">
 				<Dropdown :options="dropdownOptions">
 					<Button variant="ghost">
