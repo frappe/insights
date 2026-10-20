@@ -1029,7 +1029,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         _, _, listed = self.make_content(visibility="Everyone", title="View API Card Dashboard")
         _, _, public = self.make_content(visibility="Public", title="View API Public Card Dashboard")
         for dashboard in (listed, public):
-            frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", "/files/preview.jpeg")
+            frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", "/private/files/x.jpeg?ab12")
 
         with as_user(DESK_USER):
             cards = {dashboard.name: dashboard for dashboard in get_dashboards()}
@@ -1042,7 +1042,10 @@ class TestViewAPI(InsightsIntegrationTestCase):
         for field in ("owner", "workbook", "_liked_by"):
             self.assertNotIn(field, card)
         self.assertIsNone(card.preview_image)
-        self.assertEqual(cards[public.name].preview_image, "/files/preview.jpeg")
+        self.assertEqual(
+            cards[public.name].preview_image,
+            f"/api/method/insights.api.view.get_dashboard_preview?dashboard={public.name}&v=ab12",
+        )
 
     # @feature permissions.denied-says-no-access
     def test_filter_values_answer_like_any_other_reference(self):

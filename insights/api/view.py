@@ -36,7 +36,14 @@ from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 impor
 )
 from insights.not_permitted import answers_refusal
 from insights.permission_user import runs_as
-from insights.permissions import InsightsPermissions, can_copy, can_export, can_read_rows, can_write
+from insights.permissions import (
+    InsightsPermissions,
+    can_copy,
+    can_export,
+    can_read_rows,
+    can_write,
+    same_rows_for_every_reader,
+)
 from insights.resolver import (
     CHART,
     DASHBOARD,
@@ -130,6 +137,28 @@ def get_dashboards() -> list[dict]:
         for field in ("workbook", "_liked_by"):
             dashboard.pop(field, None)
     return dashboards
+
+
+@frappe.whitelist(methods=["GET"])
+def get_dashboard_preview(dashboard: str):
+    """A dashboard's preview image, while every reader sees the same rows on it.
+
+    The file belongs to no document, so this is the only way to it
+    (`create_preview_file`). Sharing a dashboard takes its preview away at
+    once, here and in the list (`same_rows_for_every_reader`).
+    """
+    name = resolve_for_read(DASHBOARD, dashboard)
+    preview_image = frappe.db.get_value(DASHBOARD, name, "preview_image")
+    if not preview_image or name not in same_rows_for_every_reader([name]):
+        not_found()
+
+    file = frappe.get_doc("File", {"file_url": preview_image.partition("?")[0], "is_private": 1})
+    frappe.response.update(
+        type="download",
+        display_content_as="inline",
+        filename=file.file_name,
+        filecontent=file.get_content(),
+    )
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only

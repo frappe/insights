@@ -17,13 +17,7 @@ def execute():
     ):
         # the stored url ends in a query string that defeats the browser cache
         for file in frappe.get_all(
-            "File",
-            filters={
-                "attached_to_doctype": "Insights Dashboard v3",
-                "attached_to_name": dashboard.name,
-                "file_url": dashboard.preview_image.split("?")[0],
-            },
-            pluck="name",
+            "File", filters={"file_url": dashboard.preview_image.split("?")[0]}, pluck="name"
         ):
             frappe.delete_doc("File", file, ignore_permissions=True)
         frappe.db.set_value(

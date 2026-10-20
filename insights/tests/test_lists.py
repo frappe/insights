@@ -309,14 +309,17 @@ class TestDashboardList(InsightsIntegrationTestCase):
         )
 
         with patch.object(
-            InsightsDashboardv3, "generate_dashboard_preview", return_value="/preview.png"
+            InsightsDashboardv3, "generate_dashboard_preview", return_value="/private/files/x.jpeg?ab12"
         ) as rendered:
             for user, dashboard, writes in ((OWNER, self.others, False), (OWNER, self.own, True)):
                 with self.subTest(user=user, dashboard=dashboard), self.as_user(user):
                     row = next(row for row in get_dashboards() if row["name"] == dashboard)
                     self.assertIs(row["can_write"], writes)
                     if writes:
-                        self.assertEqual(update_dashboard_preview(dashboard), "/preview.png")
+                        self.assertEqual(
+                            update_dashboard_preview(dashboard),
+                            f"/api/method/insights.api.view.get_dashboard_preview?dashboard={dashboard}&v=ab12",
+                        )
                     else:
                         with self.assertRaises(frappe.PermissionError):
                             update_dashboard_preview(dashboard)

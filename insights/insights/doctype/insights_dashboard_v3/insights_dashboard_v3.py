@@ -3,6 +3,7 @@
 
 import re
 from collections.abc import Callable
+from urllib.parse import urlencode
 
 import frappe
 import requests
@@ -234,6 +235,7 @@ class InsightsDashboardv3(Document):
 
     def after_delete(self):
         standard.export_member(self)
+        delete_preview_file(self.name)
 
     @frappe.whitelist()
     def track_view(self, surface: str | None = None):
@@ -888,27 +890,46 @@ def get_page_preview_via_service(url: str, headers: dict | None = None) -> bytes
         frappe.throw("Failed to generate preview")
 
 
+PREVIEW_FILE_SUFFIX = "-preview.jpeg"
+
+
 def create_preview_file(content: bytes, dashboard_name: str):
-    file_name = f"{dashboard_name}-preview.jpeg"
-    file = File.get_or_create_doc(
-        attached_to_doctype="Insights Dashboard v3",
-        attached_to_name=dashboard_name,
-        file_name=file_name,
-        is_private=1,
-    )
-    if file.name:
-        file.content = content
-        file.save_file(overwrite=True)
-        file.save()
-    else:
-        # insert file while ensuring file name is same as the one we want
-        # first insert without content to reserve the file name (ignoring validate_file_on_disk)
-        # then overwrite the file with the content
+    """Save a preview as a private file that belongs to no document.
+
+    Frappe lets every reader of a document download its attachments, and
+    lets a file's owner download it. A preview shows the rows of the user it
+    was rendered for, so Administrator owns it and only
+    `insights.api.view.get_dashboard_preview` serves it.
+    """
+    file = File.get_or_create_doc(file_name=f"{dashboard_name}{PREVIEW_FILE_SUFFIX}", is_private=1)
+    if not file.name:
+        # insert without content first to reserve the file name (ignoring validate_file_on_disk)
         file.flags.ignore_validate = True
         file.insert()
         file.flags.ignore_validate = False
-        file.content = content
-        file.save_file(overwrite=True)
-        file.save()
+    file.content = content
+    file.save_file(overwrite=True)
+    file.save()
+    if file.owner != "Administrator":
+        file.db_set("owner", "Administrator", update_modified=False)
 
     return file.file_url
+
+
+def delete_preview_file(dashboard_name: str):
+    for file in frappe.get_all(
+        "File", filters={"file_name": f"{dashboard_name}{PREVIEW_FILE_SUFFIX}", "is_private": 1}, pluck="name"
+    ):
+        frappe.delete_doc("File", file, ignore_permissions=True)
+
+
+def preview_url(dashboard_name: str, preview_image: str | None) -> str | None:
+    """Where the browser fetches a dashboard's preview from.
+
+    `preview_image` ends in a version that changes with each render, which
+    the URL keeps so a new render is not served from the browser's cache.
+    """
+    if not preview_image:
+        return None
+    query = urlencode({"dashboard": dashboard_name, "v": preview_image.partition("?")[2]})
+    return f"/api/method/insights.api.view.get_dashboard_preview?{query}"

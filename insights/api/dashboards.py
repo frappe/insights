@@ -9,7 +9,7 @@ from insights.api.list_filters import (
     match_records,
 )
 from insights.decorators import insights_whitelist
-from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import is_grid_number
+from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import is_grid_number, preview_url
 from insights.insights.query_utils import source_tables
 from insights.permissions import can_write, same_rows_for_every_reader
 
@@ -162,8 +162,11 @@ def _enrich_dashboards(dashboards):
         dashboard["cells"] = cells.get(dashboard.name, [])
         # a preview shows the rows of whoever it was rendered for
         dashboard["same_rows_for_every_reader"] = dashboard.name in same_rows
-        if not dashboard["same_rows_for_every_reader"]:
-            dashboard["preview_image"] = None
+        dashboard["preview_image"] = (
+            preview_url(dashboard.name, dashboard.preview_image)
+            if dashboard["same_rows_for_every_reader"]
+            else None
+        )
         dashboard["views"] = view_counts.get(str(dashboard.name), 0)
         dashboard["is_favourite"] = bool(dashboard._liked_by) and user in frappe.as_json(dashboard._liked_by)
         # the list shows the preview refresh only to editors
@@ -247,4 +250,4 @@ def update_dashboard_preview(dashboard_name: str):
         frappe.throw(
             frappe._("Only an editor of this dashboard can refresh its preview"), frappe.PermissionError
         )
-    return dashboard.generate_dashboard_preview()
+    return preview_url(dashboard.name, dashboard.generate_dashboard_preview())

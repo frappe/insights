@@ -74,6 +74,7 @@ ENDPOINTS_ACCEPTING_GET = [
     "insights.api.view.get_chart_count",
     "insights.api.view.get_chart_data",
     "insights.api.view.get_dashboard",
+    "insights.api.view.get_dashboard_preview",
     "insights.api.view.get_drill_data",
     "insights.api.view.get_drill_rows_range",
     "insights.api.view.get_drill_rows_values",

@@ -7,6 +7,7 @@ the documents that image already shows, not every document a public link could.
 """
 
 import io
+import os
 from unittest.mock import patch
 
 import frappe
@@ -14,7 +15,7 @@ from PIL import Image
 from werkzeug.test import EnvironBuilder
 
 from insights.api.dashboards import get_dashboards
-from insights.api.view import get_dashboard
+from insights.api.view import get_dashboard, get_dashboard_preview
 from insights.permission_user import permission_user_for
 from insights.permissions import has_doc_permission, same_rows_for_every_reader
 from insights.tests.base import InsightsIntegrationTestCase
@@ -322,12 +323,116 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
         shared = self.board()
         self.share_with_role(shared)
         for dashboard in (private, shared):
-            frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", "/private/files/x.jpeg")
+            frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", "/private/files/x.jpeg?ab12")
 
         with as_user(OWNER):
             listed = {row.name: row for row in get_dashboards(limit=0)}
 
-        self.assertEqual(listed[private.name].preview_image, "/private/files/x.jpeg")
+        self.assertEqual(
+            listed[private.name].preview_image,
+            f"/api/method/insights.api.view.get_dashboard_preview?dashboard={private.name}&v=ab12",
+        )
         self.assertTrue(listed[private.name].same_rows_for_every_reader)
         self.assertIsNone(listed[shared.name].preview_image)
         self.assertFalse(listed[shared.name].same_rows_for_every_reader)
+
+    def with_preview(self, dashboard) -> str:
+        """Give `dashboard` a rendered preview, and return its file's URL."""
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
+            create_preview_file,
+        )
+
+        image = io.BytesIO()
+        Image.new("RGB", (2, 2)).save(image, "JPEG")
+        file_url = create_preview_file(image.getvalue(), dashboard.name)
+        self.addCleanup(remove_file_on_disk, file_url)
+        frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", f"{file_url}?ab12")
+        return file_url
+
+    def fetch(self, dashboard, user=READER) -> bytes:
+        self.addCleanup(clear_download_response)
+        with as_user(user):
+            get_dashboard_preview(dashboard.name)
+        return frappe.response.filecontent
+
+    def downloads(self, file_url, user=READER) -> bool:
+        """Whether Frappe's own `/private/files` route serves `file_url` to `user`."""
+        from frappe.core.doctype.file.utils import find_file_by_url
+
+        with as_user(user):
+            return bool(find_file_by_url(file_url))
+
+    # @feature dashboard.preview-same-rows
+    def test_a_reader_fetches_a_preview_only_while_every_reader_sees_the_same_rows(self):
+        shared = self.board(run_as_owner=(True,))
+        self.share_with_role(shared)
+        self.with_preview(shared)
+        self.assertTrue(self.fetch(shared).startswith(b"\xff\xd8"))
+
+        with as_user(OWNER):
+            shared.reload()
+            chart = frappe.get_doc(DT.CHART, shared.linked_charts[0].chart)
+            chart.run_as_owner = 0
+            chart.save()
+        with self.assertRaises(frappe.DoesNotExistError):
+            self.fetch(shared)
+
+    # @feature dashboard.preview-same-rows
+    def test_a_user_who_cannot_open_the_dashboard_cannot_fetch_its_preview(self):
+        private = self.board()
+        self.with_preview(private)
+        self.assertTrue(self.fetch(private, user=OWNER))
+        with self.assertRaises(frappe.PermissionError):
+            self.fetch(private)
+
+    # @feature dashboard.preview-same-rows
+    def test_a_reader_of_the_dashboard_cannot_download_its_preview_file(self):
+        """Frappe serves an attachment to every reader of its document, so the
+        preview file belongs to none."""
+        dashboard = self.board()
+        file_url = self.with_preview(dashboard)
+        with as_user(OWNER):
+            update_dashboard_access(dashboard.name, [READER])
+
+        self.assertFalse(self.downloads(file_url))
+        self.assertFalse(self.downloads(file_url, user=OWNER))
+
+    # @feature dashboard.preview-same-rows
+    def test_the_patch_detaches_a_preview_file_from_its_dashboard(self):
+        from insights.patches import detach_dashboard_previews
+
+        dashboard = self.board()
+        copy = self.board()
+        file_url = self.with_preview(dashboard)
+        attached = frappe.get_doc("File", {"file_url": file_url})
+        attached.db_set({"attached_to_doctype": DT.DASHBOARD, "attached_to_name": dashboard.name})
+        frappe.db.set_value(DT.DASHBOARD, copy.name, "preview_image", f"{file_url}?cd34")
+        with as_user(OWNER):
+            update_dashboard_access(dashboard.name, [READER])
+        self.assertTrue(self.downloads(file_url))
+
+        detach_dashboard_previews.execute()
+
+        self.assertFalse(self.downloads(file_url))
+        self.assertEqual(
+            frappe.db.get_value(DT.DASHBOARD, dashboard.name, "preview_image"), f"{file_url}?ab12"
+        )
+        self.assertIsNone(frappe.db.get_value(DT.DASHBOARD, copy.name, "preview_image"))
+
+    # @feature dashboard.preview-same-rows
+    def test_deleting_a_dashboard_deletes_its_preview_file(self):
+        dashboard = self.board()
+        file_url = self.with_preview(dashboard)
+        frappe.delete_doc(DT.DASHBOARD, dashboard.name, force=True, ignore_permissions=True)
+        self.assertFalse(frappe.db.exists("File", {"file_url": file_url}))
+
+
+def remove_file_on_disk(file_url):
+    path = frappe.get_site_path(file_url.lstrip("/"))
+    if os.path.exists(path):
+        os.remove(path)
+
+
+def clear_download_response():
+    for key in ("type", "display_content_as", "filename", "filecontent"):
+        frappe.response.pop(key, None)
