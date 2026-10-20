@@ -1,4 +1,4 @@
-import { Building2, Lock, ShieldCheck, Users } from 'lucide-vue-next'
+import { Building2, Globe, Lock, ShieldCheck, Users } from 'lucide-vue-next'
 import { describe, expect, it, vi } from 'vitest'
 import { access, useAccessSources } from './access'
 
@@ -33,6 +33,16 @@ describe('who a workbook is shared with', () => {
 			label: 'Everyone',
 		})
 		expect(access({}, name)).toEqual({ icon: Lock, label: 'Private' })
+	})
+
+	// @feature dashboard.list
+	it('says Public over every narrower grant', () => {
+		expect(
+			access(
+				{ is_public: true, shared_with_organization: true, shared_with: ['ann@x.com'] },
+				name,
+			),
+		).toEqual({ icon: Globe, label: 'Public' })
 	})
 })
 

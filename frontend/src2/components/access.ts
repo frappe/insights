@@ -1,5 +1,5 @@
 import { useStorage } from '@vueuse/core'
-import { Building2, Lock, ShieldCheck, Users } from 'lucide-vue-next'
+import { Building2, Globe, Lock, ShieldCheck, Users } from 'lucide-vue-next'
 import { computed } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
@@ -35,10 +35,13 @@ export type Shared = {
 	shared_with?: string[]
 	shared_with_organization?: boolean
 	visible_to_roles?: string[]
+	/** Anyone with the link may open it, signed in or not. */
+	is_public?: boolean
 }
 
 /** The icon and label of who a listed document is shared with. */
 export function access(item: Shared, getName: (email: string) => string) {
+	if (item.is_public) return { icon: Globe, label: __('Public') }
 	if (item.shared_with_organization) return { icon: Building2, label: __('Everyone') }
 
 	const shared = item.shared_with || []

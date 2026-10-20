@@ -1,4 +1,4 @@
-import { useTimeAgo } from '@vueuse/core'
+import { useStorage, useTimeAgo } from '@vueuse/core'
 import { call, toast } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { showErrorToast } from '../helpers'
@@ -26,6 +26,16 @@ export type DashboardListItem = {
 	same_rows_for_every_reader: boolean
 	views: number
 	is_favourite: boolean
+	/** Set only for a caller who may read the workbook. Not sent to a reader without an Insights role. */
+	workbook_title?: string | null
+	/** When the caller last opened it. */
+	last_opened: string | null
+	last_opened_from_now: string
+	/** Who else may open it. Not sent to a reader without an Insights role. */
+	shared_with?: string[]
+	shared_with_organization?: boolean
+	visible_to_roles?: string[]
+	is_public?: boolean
 	/** The title of the app that ships its workbook, when one does. */
 	shipped_by: string | null
 	/** That app's `app_logo_url`, when it declares one. */
@@ -43,7 +53,19 @@ const mapTimeAgo = (dashboard: any) => ({
 	...dashboard,
 	created_from_now: useTimeAgo(dashboard.creation),
 	modified_from_now: useTimeAgo(dashboard.modified),
+	last_opened_from_now: dashboard.last_opened ? useTimeAgo(dashboard.last_opened) : '',
 })
+
+export type DashboardView = 'grid' | 'list'
+
+/** The view the Dashboards page shows, kept in the browser for each user. */
+export function useDashboardView() {
+	return useStorage<DashboardView>(
+		`insights:dashboard-view:${session.user.email}`,
+		'grid',
+		localStorage,
+	)
+}
 
 async function fetchDashboards(limit: number, sources: AccessSource[], filters: WireFilters) {
 	loading.value = true
