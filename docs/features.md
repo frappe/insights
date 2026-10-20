@@ -63,7 +63,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.sql-column | A user adds a column from a raw SQL expression written in the source's dialect. |
 | query.unknown-operation-refused | A pipeline holding an operation this version does not know is refused, not silently skipped. |
 | query.native-sql | A user writes native SQL against a data source and runs it. |
-| query.native-sql-one-statement | Native SQL is one statement over unqualified table names; more than one statement or a schema-qualified name is refused. |
+| query.native-sql-one-statement | Native SQL is one statement; more than one statement, or a table in a schema the data source does not read, is refused. |
+| query.native-sql-schema-qualified | Native SQL on a PostgreSQL data source names a table as `schema.table` for any schema the data source reads. |
 | query.native-sql-format | A user reformats the SQL text. |
 | query.native-sql-schema-explorer | A user browses the source's tables and columns and inserts a name into the SQL. |
 | query.native-sql-autocomplete | The SQL editor autocompletes table and column names. |
