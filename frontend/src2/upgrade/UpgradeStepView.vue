@@ -286,7 +286,7 @@ function onKeydown(event: KeyboardEvent) {
 				</p>
 				<!-- The picture grows into the room the dialog leaves, and the item below
 				     keeps one height through the step, so nothing moves from item to item
-				     and no band is left empty. Without a picture the item sits in the middle. -->
+				     and no band is left empty. An item without a picture takes its place. -->
 				<div
 					v-if="picture"
 					class="flex shrink-0 grow basis-[220px] items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-2.5"
@@ -300,18 +300,11 @@ function onKeydown(event: KeyboardEvent) {
 
 				<div
 					class="flex flex-col gap-2"
-					:class="
-						picture
-							? 'min-h-[196px] shrink-0'
-							: current
-							  ? 'grow justify-center'
-							  : 'grow'
-					"
+					:class="picture || current ? 'min-h-[196px] shrink-0' : 'grow'"
 				>
 					<div
 						v-if="current && sentence"
-						class="flex flex-col gap-3 rounded-5 border border-outline-gray-2 bg-surface-base px-4 py-3.5 shadow-sm"
-						:class="picture ? 'grow' : ''"
+						class="flex grow flex-col gap-3 rounded-5 border border-outline-gray-2 bg-surface-base px-4 py-3.5 shadow-sm"
 						aria-live="polite"
 					>
 						<div class="flex items-center gap-2.5 text-xs text-ink-gray-5 tabular-nums">
