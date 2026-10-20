@@ -80,11 +80,12 @@ watch(
 				</p>
 				<div class="mt-1.5 flex items-center gap-3">
 					<div v-if="dashboard.shipped_by" class="flex min-w-0 items-center gap-1.5">
-						<img
-							v-if="dashboard.shipped_by_logo"
-							:src="dashboard.shipped_by_logo"
-							alt=""
-							class="size-3.5 shrink-0 rounded-sm"
+						<Avatar
+							class="shrink-0"
+							size="xs"
+							shape="square"
+							:label="dashboard.shipped_by"
+							:image="dashboard.shipped_by_logo ?? undefined"
 						/>
 						<span class="truncate text-xs text-ink-gray-5">
 							{{ dashboard.shipped_by }}

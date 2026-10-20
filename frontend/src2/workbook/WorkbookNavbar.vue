@@ -3,6 +3,7 @@ import { inject } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
 import { workbookKey } from './workbook_key'
 import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
+import { Avatar } from 'frappe-ui'
 import { LockIcon } from 'lucide-vue-next'
 
 const workbook = inject(workbookKey)!
@@ -39,11 +40,12 @@ const workbook = inject(workbookKey)!
 								tabindex="0"
 								class="flex shrink-0 items-center gap-1.5 rounded-4 px-0.5 text-base text-ink-gray-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							>
-								<img
-									v-if="workbook.doc.shipped_by_logo"
-									:src="workbook.doc.shipped_by_logo"
-									alt=""
-									class="size-4 shrink-0 rounded-sm"
+								<Avatar
+									class="shrink-0"
+									size="xs"
+									shape="square"
+									:label="workbook.doc.shipped_by"
+									:image="workbook.doc.shipped_by_logo ?? undefined"
 								/>
 								{{ workbook.doc.shipped_by }}
 							</span>

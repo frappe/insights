@@ -176,7 +176,17 @@ watchEffect(() => {
 						class="absolute inset-0 sm:rounded-[10px]"
 						:aria-label="workbook.title"
 					/>
-					<Tooltip :text="userStore.getName(workbook.owner) || workbook.owner">
+					<Tooltip v-if="workbook.shipped_by" :text="workbook.shipped_by">
+						<div class="relative flex size-5 shrink-0 items-center justify-center">
+							<Avatar
+								size="xs"
+								shape="square"
+								:label="workbook.shipped_by"
+								:image="workbook.shipped_by_logo ?? undefined"
+							/>
+						</div>
+					</Tooltip>
+					<Tooltip v-else :text="userStore.getName(workbook.owner) || workbook.owner">
 						<Avatar
 							class="relative shrink-0"
 							size="sm"
@@ -187,18 +197,6 @@ watchEffect(() => {
 					<span class="ml-3 truncate text-base text-ink-gray-8">{{
 						workbook.title
 					}}</span>
-					<span
-						v-if="workbook.shipped_by"
-						class="ml-2 flex shrink-0 items-center gap-1.5 text-base text-ink-gray-5"
-					>
-						<img
-							v-if="workbook.shipped_by_logo"
-							:src="workbook.shipped_by_logo"
-							alt=""
-							class="size-4 shrink-0 rounded-sm"
-						/>
-						{{ workbook.shipped_by }}
-					</span>
 				</ListCell>
 				<ListCell>
 					<span class="truncate text-base text-ink-gray-6">
