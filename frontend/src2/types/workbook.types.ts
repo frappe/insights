@@ -26,6 +26,7 @@ export type WorkbookListItem = {
 	shared_with_organization?: boolean
 	/** The title of the app that ships the workbook, when one does. */
 	shipped_by: string | null
+	shipped_by_logo: string | null
 	/** The roles its dashboards show to. An app shares its workbook this way. */
 	visible_to_roles: string[]
 }
@@ -76,6 +77,7 @@ export type InsightsWorkbook = {
 	/** Set when an app ships the workbook. `module` is the module it ships in. */
 	is_standard?: boolean
 	shipped_by?: string | null
+	shipped_by_logo?: string | null
 	module?: string | null
 }
 

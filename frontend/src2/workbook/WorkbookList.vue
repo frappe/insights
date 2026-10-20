@@ -2,7 +2,7 @@
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
 import { QuickFilter } from '@framework/ui/QuickFilter'
 import { useMagicKeys, whenever } from '@vueuse/core'
-import { Avatar, Badge, Breadcrumbs, MultiSelect } from 'frappe-ui'
+import { Avatar, Breadcrumbs, MultiSelect } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
 import { PlusIcon } from 'lucide-vue-next'
 import { access, AccessSource, useAccessSources } from '../components/access'
@@ -187,12 +187,18 @@ watchEffect(() => {
 					<span class="ml-3 truncate text-base text-ink-gray-8">{{
 						workbook.title
 					}}</span>
-					<Badge
+					<span
 						v-if="workbook.shipped_by"
-						class="ml-2 shrink-0"
-						size="sm"
-						:label="workbook.shipped_by"
-					/>
+						class="ml-2 flex shrink-0 items-center gap-1.5 text-base text-ink-gray-5"
+					>
+						<img
+							v-if="workbook.shipped_by_logo"
+							:src="workbook.shipped_by_logo"
+							alt=""
+							class="size-4 shrink-0 rounded-sm"
+						/>
+						{{ workbook.shipped_by }}
+					</span>
 				</ListCell>
 				<ListCell>
 					<span class="truncate text-base text-ink-gray-6">

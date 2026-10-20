@@ -218,7 +218,7 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
         self.import_file()
 
         with self.patch_hooks({"app_title": []}):
-            self.assertEqual(standard.shipped_by([WORKBOOK]), {WORKBOOK: "insights"})
+            self.assertEqual(frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict().shipped_by, "insights")
 
     # @feature standard.ship workbook.list
     def test_the_workbook_list_names_the_app_and_the_roles_it_shows_it_to(self):
@@ -229,6 +229,18 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
         ]
         self.assertEqual(workbook["shipped_by"], frappe.get_hooks("app_title", app_name="insights")[0])
         self.assertEqual(workbook["visible_to_roles"], ["Desk User"])
+
+    # @feature standard.ship workbook.list
+    def test_the_workbook_list_and_header_show_the_app_logo(self):
+        self.import_file()
+
+        with self.patch_hooks({"app_logo_url": ["/assets/insights/logo.svg"]}):
+            (workbook,) = [
+                w for w in get_workbooks(sources=["created", "shared", "others"]) if w["name"] == WORKBOOK
+            ]
+            self.assertEqual(workbook["shipped_by_logo"], "/assets/insights/logo.svg")
+            doc = frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict()
+            self.assertEqual(doc.shipped_by_logo, "/assets/insights/logo.svg")
 
     # @feature standard.ship dashboard.list
     def test_the_dashboard_list_shows_the_app_logo_when_it_has_one(self):
@@ -331,6 +343,7 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
             "read_only",
             "can_copy",
             "shipped_by",
+            "shipped_by_logo",
             "data_backup",
         ):
             self.assertNotIn(field, file)

@@ -364,7 +364,9 @@ class InsightsWorkbook(Document):
         d.dashboards = frappe.as_json(d.dashboards)
         d.read_only = not can_write(self)
         d.can_copy = can_copy(self)
-        d.shipped_by = standard.shipped_by([self.name]).get(self.name)
+        app = standard.shipping_apps([self.name]).get(self.name)
+        d.shipped_by = app and standard.app_title(app)
+        d.shipped_by_logo = app and standard.app_logo_url(app)
         return d
 
     @frappe.whitelist()
@@ -407,7 +409,7 @@ class InsightsWorkbook(Document):
         longer belongs to the app, so it is left out.
         """
         doc_export.update(self.export_members(shipped=True))
-        for field in ("read_only", "can_copy", "shipped_by", "data_backup"):
+        for field in ("read_only", "can_copy", "shipped_by", "shipped_by_logo", "data_backup"):
             doc_export.pop(field, None)
 
     def export_members(self, shipped: bool = False) -> dict:

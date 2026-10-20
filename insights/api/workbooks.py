@@ -67,12 +67,14 @@ def get_workbooks(
 
     data_sources = _workbook_data_sources(workbook_names)
     last_opened = get_last_opened("Insights Workbook", workbook_names)
-    shipped_by = standard.shipped_by(workbook_names)
+    apps = standard.shipping_apps(workbook_names)
     roles = _dashboard_roles(workbook_names)
     for workbook in workbooks:
         workbook["data_sources"] = data_sources.get(workbook["name"], [])
         workbook["last_opened"] = last_opened.get(workbook["name"])
-        workbook["shipped_by"] = shipped_by.get(workbook["name"])
+        app = apps.get(workbook["name"])
+        workbook["shipped_by"] = app and standard.app_title(app)
+        workbook["shipped_by_logo"] = app and standard.app_logo_url(app)
         workbook["visible_to_roles"] = roles.get(workbook["name"], [])
 
     return workbooks

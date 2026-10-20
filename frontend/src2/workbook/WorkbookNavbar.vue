@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { Badge } from 'frappe-ui'
 import { inject } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
 import { workbookKey } from './workbook_key'
 import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
-import { PencilIcon, PencilOff, PenOff, ShieldAlert } from 'lucide-vue-next'
+import { LockIcon } from 'lucide-vue-next'
 
 const workbook = inject(workbookKey)!
 </script>
@@ -26,13 +25,38 @@ const workbook = inject(workbookKey)!
 				</slot>
 			</div>
 			<div class="flex flex-1 items-center justify-center">
-				<div class="relative flex items-center gap-3">
+				<div class="relative flex min-w-0 items-center">
+					<template v-if="workbook.doc.shipped_by">
+						<Tooltip
+							:text="
+								__(
+									'Shipped with {0}. Duplicate it to make changes.',
+									workbook.doc.shipped_by,
+								)
+							"
+						>
+							<span
+								tabindex="0"
+								class="flex shrink-0 items-center gap-1.5 rounded-4 px-0.5 text-base text-ink-gray-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+							>
+								<img
+									v-if="workbook.doc.shipped_by_logo"
+									:src="workbook.doc.shipped_by_logo"
+									alt=""
+									class="size-4 shrink-0 rounded-sm"
+								/>
+								{{ workbook.doc.shipped_by }}
+							</span>
+						</Tooltip>
+						<span class="mx-1 text-base text-ink-gray-4" aria-hidden="true">/</span>
+					</template>
 					<Tooltip
-						v-if="workbook.doc.read_only"
-						text="You have read-only access to this workbook"
+						v-else-if="workbook.doc.read_only"
+						:text="__('You have read-only access to this workbook')"
 					>
-						<ShieldAlert
-							class="absolute -left-6 h-4 w-4 cursor-pointer text-ink-orange-6"
+						<LockIcon
+							tabindex="0"
+							class="absolute -left-6 size-4 rounded-4 text-ink-gray-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							stroke-width="1.5"
 						/>
 					</Tooltip>
@@ -43,22 +67,6 @@ const workbook = inject(workbookKey)!
 						@returned="workbook.doc.title = $event"
 						@blur="workbook.doc.title = $event"
 					></ContentEditable>
-					<Tooltip
-						v-if="workbook.doc.shipped_by"
-						:text="
-							__(
-								'Ships with {0}. Duplicate it to make your own changes.',
-								workbook.doc.shipped_by,
-							)
-						"
-					>
-						<Badge
-							theme="gray"
-							:label="workbook.doc.shipped_by"
-							tabindex="0"
-							class="focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-						/>
-					</Tooltip>
 				</div>
 			</div>
 			<div class="absolute right-0">

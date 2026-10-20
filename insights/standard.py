@@ -311,11 +311,6 @@ def is_read_only(workbook: str | None) -> bool:
     return bool(frappe.db.get_value(WORKBOOK, workbook, "is_standard"))
 
 
-def shipped_by(workbooks: list[str]) -> dict[str, str]:
-    """The title of the app that ships each of `workbooks`, for those an app ships."""
-    return {workbook: app_title(app) for workbook, app in shipping_apps(workbooks).items()}
-
-
 def shipping_apps(workbooks: list[str]) -> dict[str, str]:
     """The app that ships each of `workbooks`, for those an app ships."""
     if not workbooks:
