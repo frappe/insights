@@ -1,25 +1,19 @@
 <script setup lang="tsx">
 import { Avatar } from 'frappe-ui'
-import { Eye, MoreVertical, RefreshCw, Star } from 'lucide-vue-next'
+import { Eye, MoreVertical, Star } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { __ } from '../translation'
 import useUserStore from '../users/users'
 import DashboardLayoutSketch from './DashboardLayoutSketch.vue'
 import { DashboardListItem } from './dashboards'
 
-interface Props {
+const props = defineProps<{
 	dashboard: DashboardListItem
 	dropdownOptions: any[]
-	previewLoading?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
-	previewLoading: false,
-})
+}>()
 
 const emit = defineEmits<{
 	'toggle-favorite': []
-	'update-preview': []
 }>()
 
 // a reader without an Insights role cannot list users, and gets the owner's name
@@ -53,21 +47,7 @@ watch(
 				@error="previewFailed = true"
 				class="h-full w-full object-cover object-top opacity-80"
 			/>
-			<div v-else class="relative h-full w-full">
-				<DashboardLayoutSketch :cells="dashboard.cells" />
-				<Button
-					v-if="dashboard.can_write && !dashboard.shipped_by"
-					class="absolute bottom-2 right-2"
-					variant="outline"
-					@click.prevent.stop="emit('update-preview')"
-					:loading="previewLoading"
-				>
-					<template #prefix>
-						<RefreshCw class="h-3.5 w-3.5 text-ink-gray-5" />
-					</template>
-					<span class="text-ink-gray-6">{{ __('Load Preview') }}</span>
-				</Button>
-			</div>
+			<DashboardLayoutSketch v-else :cells="dashboard.cells" />
 		</router-link>
 		<Button
 			v-if="dropdownOptions.length"

@@ -193,9 +193,7 @@ watchEffect(() => {
 							:key="dashboard.name"
 							:dashboard="dashboard"
 							:dropdown-options="dropdownOptions(dashboard)"
-							:preview-loading="store.updatingPreviewImage[dashboard.name]"
 							@toggle-favorite="toggleFavorite(dashboard)"
-							@update-preview="store.updatePreviewImage(dashboard.name)"
 						/>
 					</div>
 				</section>
