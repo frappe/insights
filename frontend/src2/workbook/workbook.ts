@@ -196,7 +196,7 @@ function makeWorkbook(name: string) {
 	}
 
 	const isOwner = computed(() => workbook.doc.owner === session.user?.email)
-	const canShare = computed(() => isOwner.value)
+	const canShare = computed(() => Boolean(workbook.doc.can_share))
 
 	async function getSharePermissions(): Promise<UpdateSharePermissionsArgs> {
 		const method = 'insights.api.workbooks.get_share_permissions'

@@ -342,6 +342,7 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
             "timestamp",
             "read_only",
             "can_copy",
+            "can_share",
             "shipped_by",
             "shipped_by_logo",
             "data_backup",

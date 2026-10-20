@@ -301,6 +301,24 @@ class TestWorkbook(InsightsIntegrationTestCase):
         )
         self.assertGreater(len(imported_result["columns"]), 0)
 
+    # @feature permissions.share-workbook-user
+    def test_the_workbook_says_who_may_share_it_as_the_share_endpoints_decide(self):
+        bundle = create_workbook_bundle(USER_1, "Workbook Who Shares")
+        name = bundle["workbook"].name
+        with self.as_user(USER_1):
+            update_share_permissions(name, [], organization_access="view")
+            self.assertTrue(get_workbook(name)["can_share"])
+
+        with self.as_user(COLLABORATOR):
+            self.assertFalse(get_workbook(name)["can_share"])
+            with self.assertRaises(frappe.PermissionError):
+                get_share_permissions(name)
+
+        # an admin who doesn't own the workbook may still share it
+        with self.as_user("Administrator"):
+            self.assertTrue(get_workbook(name)["can_share"])
+            get_share_permissions(name)
+
     # @feature permissions.share-workbook-org permissions.viewer-cannot-edit
     def test_shared_workbook_supports_read_only_public_access_but_blocks_structure_changes(self):
         bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Shared")

@@ -74,6 +74,8 @@ export type InsightsWorkbook = {
 	read_only: boolean
 	/** A read-only workbook the reader may duplicate instead. */
 	can_copy?: boolean
+	/** Whether the reader may change who the workbook is shared with. */
+	can_share?: boolean
 	/** Set when an app ships the workbook. `module` is the module it ships in. */
 	is_standard?: boolean
 	shipped_by?: string | null

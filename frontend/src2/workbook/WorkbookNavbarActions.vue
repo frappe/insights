@@ -16,8 +16,8 @@ import WorkbookShareDialog from './WorkbookShareDialog.vue'
 const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
-// The upgrade wizard links here to change who may open the workbook. The
-// owner arrives with the loaded document.
+// The upgrade wizard links here to change who may open the workbook.
+// `can_share` arrives with the loaded document.
 if (useRoute().query.share) {
 	waitUntil(() => Boolean(workbook.doc.owner)).then(() => {
 		showShareDialog.value = workbook.canShare
