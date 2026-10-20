@@ -1338,13 +1338,17 @@ class IbisQueryBuilder:
             return raw_sql
 
         parsed = sg.parse_one(raw_sql, dialect=dialect)
+        columns = list(parsed.find_all(sg.exp.Column))
+        replaced = set()
 
         # collect first: the replacements have their own table references, and
         # re-reading them would replace a table inside its own binding
         for table_exp in real_table_refs(parsed):
-            table_sql = replace_map.get(table_reference(table_exp))
+            reference = table_reference(table_exp)
+            table_sql = replace_map.get(reference)
             if table_sql is None:
                 continue
+            replaced.add(reference)
 
             # an unaliased reference keeps the table name as its alias, so a
             # qualified column such as `tabTask`.name still resolves
@@ -1352,6 +1356,13 @@ class IbisQueryBuilder:
             subquery = sg.parse_one(table_sql, dialect=dialect).subquery()
             subquery.set("alias", alias)
             table_exp.replace(subquery)
+
+        # the binding answers to the bare table name, so `sales.orders.amount`
+        # has to become `orders.amount`
+        for column in columns:
+            if column.args.get("db") and f"{column.db}.{column.table}" in replaced:
+                column.set("db", None)
+                column.set("catalog", None)
 
         return parsed.sql(dialect=dialect)
 

@@ -347,6 +347,16 @@ class TestNativeSQL(InsightsIntegrationTestCase):
             "JOIN orders AS o ON o.id = orders.id",
         )
 
+    # @feature query.native-sql-schema-qualified
+    def test_a_column_qualified_with_its_schema_reads_the_binding(self):
+        rewritten = self.builder._replace_sql_tables(
+            "select sales.orders.amount from sales.orders",
+            {"sales.orders": 'SELECT * FROM "sales"."orders"'},
+            dialect="postgres",
+        )
+
+        self.assertEqual(rewritten, 'SELECT orders.amount FROM (SELECT * FROM "sales"."orders") AS orders')
+
     def postgres_data_source(self, schema):
         return frappe.get_doc(
             {
