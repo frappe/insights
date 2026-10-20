@@ -387,10 +387,36 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         stored before that was the case may still carry the prefix — so accept both.
         """
         schemas = self.get_postgres_schemas()
-        schema, separator, table = table_name.partition(".")
-        if separator and schema in schemas:
-            return schema, table
+        # a schema name may itself have a dot
+        for schema in sorted(schemas, key=len, reverse=True):
+            if table_name.startswith(f"{schema}."):
+                return schema, table_name[len(schema) + 1 :]
         return schemas[0], table_name
+
+    def sql_table_name(self, table: str, schema: str | None = None) -> str | None:
+        """The table a SQL query reads as `schema.table` or `table`, named as `get_table_list`
+        lists it.
+
+        PostgreSQL reads an unqualified name from the first schema in the search path that
+        has it, and the connection sets the search path to `schema`.
+
+        None when this data source does not read `schema`: binding the bare name would
+        read a same-named table in another schema.
+        """
+        if self.database_type != "PostgreSQL":
+            return None if schema else table
+
+        schemas = self.get_postgres_schemas()
+        if schema:
+            if schema not in schemas:
+                return None
+            schemas = [schema]
+
+        names = [self.format_table_name(table, s) for s in schemas]
+        listed = frappe.get_all(
+            "Insights Table v3", filters={"data_source": self.name, "table": ("in", names)}, pluck="table"
+        )
+        return next((name for name in names if name in listed), names[0])
 
     def table_identity(self, table_name: str) -> str:
         """Name the remote table `table_name` points at, free of the spelling of the day.

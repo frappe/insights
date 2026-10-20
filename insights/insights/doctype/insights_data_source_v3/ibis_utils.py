@@ -3,6 +3,7 @@ import time
 from contextlib import contextmanager
 from datetime import date
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 import frappe
 import ibis
@@ -32,12 +33,20 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 from insights.insights.query_builders.sql_functions import handle_timespan
-from insights.insights.query_utils import extract_sql_table_refs, get_direct_dependencies
+from insights.insights.query_utils import (
+    alias_qualified_tables,
+    extract_sql_table_refs,
+    get_direct_dependencies,
+    table_reference,
+)
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import fiscal_year_start, week_start
 from .ibis.utils import assert_expression_has_no_io, get_functions
+
+if TYPE_CHECKING:
+    from .insights_data_source_v3 import InsightsDataSourcev3
 
 try:
     from frappe.concurrency_limiter import concurrent_limit
@@ -759,7 +768,8 @@ class IbisQueryBuilder:
         target_dialect = source_dialect if self.use_live_connection else "duckdb"
 
         if check_permissions or not self.use_live_connection:
-            tables = self._get_sql_table_names(raw_sql, dialect=source_dialect)
+            raw_sql = alias_qualified_tables(raw_sql, source_dialect)
+            tables = self._get_sql_table_names(raw_sql, data_source=ds, dialect=source_dialect)
             replace_map = self._get_sql_table_bindings(
                 data_source,
                 tables,
@@ -849,33 +859,48 @@ class IbisQueryBuilder:
 
         return transpiled_sql[0]
 
-    def _get_sql_table_names(self, raw_sql: str, dialect: sg.Dialect | None) -> set[str]:
-        tables = set()
+    def _get_sql_table_names(
+        self, raw_sql: str, data_source: "InsightsDataSourcev3", dialect: sg.Dialect | None
+    ) -> dict[str, str]:
+        """Each table reference in `raw_sql`, mapped to the table it reads."""
+        tables = {}
         for table_ref in extract_sql_table_refs(raw_sql, dialect=dialect):
-            # a binding is looked up by the bare name, so a qualified reference would
-            # bind the same-named table in the default schema — a different table
-            if table_ref.db or table_ref.catalog:
+            # `sales.orders` names schema `sales` and a table literally named
+            # "sales.orders" alike, in a binding and in the listed tables
+            if data_source.database_type == "PostgreSQL" and "." in table_ref.name:
                 frappe.throw(
-                    frappe._("Schema-qualified table names are not supported for native queries yet"),
+                    frappe._("Table names with a dot are not supported for native queries: {0}").format(
+                        table_ref.name
+                    ),
                     QueryRefused,
                     title=frappe._("Unsupported SQL Query"),
                 )
 
-            tables.add(table_ref.name)
+            # binding the bare name would read a same-named table in another schema
+            table_name = not table_ref.catalog and data_source.sql_table_name(table_ref.name, table_ref.db)
+            if not table_name:
+                frappe.throw(
+                    frappe._("{0} is not in a schema this data source reads").format(table_ref.reference),
+                    QueryRefused,
+                    title=frappe._("Unsupported SQL Query"),
+                )
+
+            tables[table_ref.reference] = table_name
 
         return tables
 
     def _get_sql_table_bindings(
         self,
         data_source: str,
-        tables: set[str],
+        tables: dict[str, str],
         dialect: sg.Dialect | None,
         use_live_connection: bool,
         check_permissions: bool,
     ) -> dict[str, str]:
         replace_map = {}
+        database_dialect = sg.Dialect.get_or_raise(dialect)
 
-        for table_name in tables:
+        for reference, table_name in tables.items():
             table_expr = InsightsTablev3.get_ibis_table(
                 data_source,
                 table_name,
@@ -883,14 +908,20 @@ class IbisQueryBuilder:
             )
             table_sql = ibis.to_sql(table_expr)
 
-            if use_live_connection and check_permissions:
+            # a table with no permission filter can stay as written, unless the database
+            # could read it as another table: one its search path finds first, or the
+            # lowercase one PostgreSQL folds an unquoted mixed-case name to. A quoted and
+            # an unquoted spelling share one reference, so assume it is unquoted
+            as_read = ".".join(
+                database_dialect.normalize_identifier(sg.exp.Identifier(this=part, quoted=False)).name
+                for part in reference.split(".")
+            )
+            if use_live_connection and check_permissions and table_name == as_read:
                 table_sql_parsed = sg.parse_one(table_sql, dialect=dialect)
                 if not table_sql_parsed.find(sg.exp.Where):
-                    # if we are running in live connection and there are no permission filters applied,
-                    # we skip replacing the table with a subquery
                     continue
 
-            replace_map[table_name] = table_sql
+            replace_map[reference] = table_sql
 
         return replace_map
 
@@ -912,11 +943,16 @@ class IbisQueryBuilder:
             return raw_sql
 
         parsed = sg.parse_one(raw_sql, dialect=dialect)
+        # a CTE is read by its bare name, which no binding is for, as in
+        # `extract_sql_table_refs`; `"sales.orders"` would otherwise match `sales.orders`
+        cte_names = {cte.alias_or_name for cte in parsed.find_all(sg.exp.CTE)}
 
         # collect first: the replacements carry their own table references, and
         # re-reading them would replace a table inside its own binding
         for table_exp in list(parsed.find_all(sg.exp.Table)):
-            table_sql = replace_map.get(table_exp.name)
+            if not table_exp.db and table_exp.name in cte_names:
+                continue
+            table_sql = replace_map.get(table_reference(table_exp))
             if table_sql is None:
                 continue
 
@@ -925,6 +961,10 @@ class IbisQueryBuilder:
             alias = table_exp.args.get("alias") or sg.exp.TableAlias(this=table_exp.this.copy())
             subquery = sg.parse_one(table_sql, dialect=dialect).subquery()
             subquery.set("alias", alias)
+            # in `(a JOIN b)` sqlglot hangs the joins on `a`; they go with its binding
+            for key in ("joins", "laterals", "pivots"):
+                if table_exp.args.get(key):
+                    subquery.set(key, table_exp.args[key])
             table_exp.replace(subquery)
 
         return parsed.sql(dialect=dialect)
