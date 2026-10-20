@@ -6,6 +6,7 @@ import traceback
 from contextlib import contextmanager
 from datetime import date, datetime
 from functools import cached_property
+from typing import TYPE_CHECKING
 
 import frappe
 import ibis
@@ -46,11 +47,14 @@ from insights.insights.query_builders.sql_functions import (
     within_days,
 )
 from insights.insights.query_utils import (
+    alias_qualified_tables,
     check_source_workbook,
     extract_sql_table_refs,
+    fold_identifiers,
     get_direct_dependencies,
     real_table_refs,
     runs_stored_procedure,
+    table_reference,
 )
 from insights.permission_user import get_permission_user, script_session
 from insights.utils import create_execution_log
@@ -67,6 +71,9 @@ from .ibis.utils import (
     table_names,
 )
 from .sandbox import NotDefined, expression_globals, script_globals
+
+if TYPE_CHECKING:
+    from .insights_data_source_v3 import InsightsDataSourcev3
 
 try:
     from frappe.concurrency_limiter import concurrent_limit
@@ -1098,7 +1105,7 @@ class IbisQueryBuilder:
         calls_procedure = runs_stored_procedure(raw_sql)
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
         raw_sql = self._validate_native_sql(
-            raw_sql, use_live_connection=self.use_live_connection, dialect=source_dialect
+            raw_sql, use_live_connection=self.use_live_connection, data_source=ds, dialect=source_dialect
         )
 
         # the data store reads DuckDB, so from the transpile on, that is the dialect
@@ -1110,7 +1117,7 @@ class IbisQueryBuilder:
         # except a stored procedure call, which names no table and is trusted
         # code (`trusted_code_of`). `_validate_native_sql` refuses the other
         # shapes a binding cannot be built for, instead of running them unbound
-        tables = self._get_sql_table_names(raw_sql, dialect=source_dialect)
+        tables = self._get_sql_table_names(raw_sql, data_source=ds, dialect=source_dialect)
         bindings = self._get_sql_table_bindings(
             db,
             data_source,
@@ -1166,9 +1173,14 @@ class IbisQueryBuilder:
         return results
 
     def _validate_native_sql(
-        self, raw_sql: str, use_live_connection: bool, dialect: sg.Dialect | None = None
+        self,
+        raw_sql: str,
+        use_live_connection: bool,
+        data_source: "InsightsDataSourcev3",
+        dialect: sg.Dialect | None = None,
     ) -> str:
-        """Refuse a SQL query that the rest of `apply_sql` cannot run correctly.
+        """Refuse a SQL query that the rest of `apply_sql` cannot run correctly, and
+        return it with its table names spelled as the database resolves them.
 
         All the refusals are here together, because a refusal raised from
         inside a rewrite looks like a bug in the rewrite.
@@ -1194,16 +1206,20 @@ class IbisQueryBuilder:
                     title=frappe._("Unsupported SQL Query"),
                 )
 
+        # a stored procedure names no table, and its text is not SQL sqlglot reads
+        if not runs_stored_procedure(raw_sql):
+            raw_sql = alias_qualified_tables(fold_identifiers(raw_sql, dialect), dialect)
+
         # every table a SQL query names is replaced with a permission-filtered
-        # select, looked up by bare name. A qualified reference would then get
-        # the same-named table in the default schema, a different table. So it
-        # is refused.
-        if any(ref.db or ref.catalog for ref in extract_sql_table_refs(raw_sql, dialect=dialect)):
-            frappe.throw(
-                frappe._("Schema-qualified table names are not supported for native queries yet"),
-                QueryRefused,
-                title=frappe._("Unsupported SQL Query"),
-            )
+        # select of the table the data source lists. A schema it does not read
+        # has no such table
+        for ref in extract_sql_table_refs(raw_sql, dialect=dialect):
+            if ref.catalog or not data_source.sql_table_name(ref.name, ref.db):
+                frappe.throw(
+                    frappe._("{0} is not in a schema this data source reads").format(ref.reference),
+                    QueryRefused,
+                    title=frappe._("Unsupported SQL Query"),
+                )
 
         return raw_sql
 
@@ -1229,15 +1245,20 @@ class IbisQueryBuilder:
 
         return transpiled_sql[0]
 
-    def _get_sql_table_names(self, raw_sql: str, dialect: sg.Dialect | None) -> set[str]:
-        # bare names: `_validate_native_sql` has already refused a qualified one
-        return {table_ref.name for table_ref in extract_sql_table_refs(raw_sql, dialect=dialect)}
+    def _get_sql_table_names(
+        self, raw_sql: str, data_source: "InsightsDataSourcev3", dialect: sg.Dialect | None
+    ) -> dict[str, str]:
+        """Each table reference in `raw_sql`, mapped to the table it reads."""
+        return {
+            ref.reference: data_source.sql_table_name(ref.name, ref.db)
+            for ref in extract_sql_table_refs(raw_sql, dialect=dialect)
+        }
 
     def _get_sql_table_bindings(
         self,
         db,
         data_source: str,
-        tables: set[str],
+        tables: dict[str, str],
         use_live_connection: bool,
     ) -> dict[str, IbisQuery]:
         """The permission-filtered relation that replaces each table the SQL names.
@@ -1252,7 +1273,7 @@ class IbisQueryBuilder:
         """
         bindings = {}
 
-        for table_name in tables:
+        for reference, table_name in tables.items():
             table_expr = InsightsTablev3.get_ibis_table(
                 data_source,
                 table_name,
@@ -1260,7 +1281,7 @@ class IbisQueryBuilder:
                 import_if_not_exists=self.import_if_not_exists,
             )
             db._register_in_memory_tables(table_expr)
-            bindings[table_name] = table_expr
+            bindings[reference] = table_expr
 
         return bindings
 
@@ -1280,9 +1301,9 @@ class IbisQueryBuilder:
         the SQL defines itself, as an alias or a CTE column, belongs to no table.
         """
         by_reference = {
-            table.alias_or_name: relations[table.name]
+            table.alias_or_name: relations[table_reference(table)]
             for table in parsed.find_all(sg.exp.Table)
-            if table.name in relations
+            if table_reference(table) in relations
         }
         defined = {alias.alias.lower() for alias in parsed.find_all(sg.exp.Alias)}
 
@@ -1328,7 +1349,7 @@ class IbisQueryBuilder:
         # collect first: the replacements have their own table references, and
         # re-reading them would replace a table inside its own binding
         for table_exp in real_table_refs(parsed):
-            table_sql = replace_map.get(table_exp.name)
+            table_sql = replace_map.get(table_reference(table_exp))
             if table_sql is None:
                 continue
 
