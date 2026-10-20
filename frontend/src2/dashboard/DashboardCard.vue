@@ -1,10 +1,9 @@
 <script setup lang="tsx">
 import { Avatar } from 'frappe-ui'
-import { Eye, MoreVertical, Star } from 'lucide-vue-next'
+import { Eye, LayoutDashboard, MoreVertical, Star } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { __ } from '../translation'
 import useUserStore from '../users/users'
-import DashboardLayoutSketch from './DashboardLayoutSketch.vue'
 import { DashboardListItem } from './dashboards'
 
 const props = defineProps<{
@@ -25,6 +24,7 @@ const ownerName = computed(
 		props.dashboard.owner ||
 		'',
 )
+const noSharedPreview = __("Each viewer sees their own data, so there's no shared preview")
 const previewFailed = ref(false)
 watch(
 	() => props.dashboard.preview_image,
@@ -47,7 +47,18 @@ watch(
 				@error="previewFailed = true"
 				class="h-full w-full object-cover object-top opacity-80"
 			/>
-			<DashboardLayoutSketch v-else :cells="dashboard.cells" />
+			<Tooltip
+				v-else
+				:text="noSharedPreview"
+				:disabled="dashboard.same_rows_for_every_reader"
+			>
+				<div
+					class="flex h-full w-full items-center justify-center bg-surface-gray-1"
+					:aria-label="dashboard.same_rows_for_every_reader ? undefined : noSharedPreview"
+				>
+					<LayoutDashboard class="size-8 text-ink-gray-3" stroke-width="1.25" />
+				</div>
+			</Tooltip>
 		</router-link>
 		<Button
 			v-if="dropdownOptions.length"

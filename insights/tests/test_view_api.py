@@ -1035,7 +1035,6 @@ class TestViewAPI(InsightsIntegrationTestCase):
             cards = {dashboard.name: dashboard for dashboard in get_dashboards()}
 
         card = cards[listed.name]
-        self.assertIn("cells", card)
         self.assertFalse(card.can_write)
         self.assertFalse(card.is_favourite)
         self.assertEqual(card.owner_name, frappe.utils.get_fullname(OWNER))

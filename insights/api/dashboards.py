@@ -9,7 +9,7 @@ from insights.api.list_filters import (
     match_records,
 )
 from insights.decorators import insights_whitelist
-from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import is_grid_number, preview_url
+from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import preview_url
 from insights.insights.query_utils import source_tables
 from insights.permissions import can_write, same_rows_for_every_reader
 
@@ -142,7 +142,6 @@ DASHBOARD_LIST_FIELDS = [
     "creation",
     "modified",
     "preview_image",
-    "items",
     "_liked_by",
 ]
 
@@ -153,13 +152,11 @@ def _enrich_dashboards(dashboards):
         list({dashboard.workbook for dashboard in dashboards if dashboard.workbook})
     )
     user = frappe.session.user
-    cells = _dashboard_cells(dashboards)
     same_rows = same_rows_for_every_reader([dashboard.name for dashboard in dashboards])
     for dashboard in dashboards:
         app = apps.get(dashboard.workbook)
         dashboard["shipped_by"] = app and standard.app_title(app)
         dashboard["shipped_by_logo"] = app and standard.app_logo_url(app)
-        dashboard["cells"] = cells.get(dashboard.name, [])
         # a preview shows the rows of whoever it was rendered for
         dashboard["same_rows_for_every_reader"] = dashboard.name in same_rows
         dashboard["preview_image"] = (
@@ -171,49 +168,6 @@ def _enrich_dashboards(dashboards):
         dashboard["is_favourite"] = bool(dashboard._liked_by) and user in frappe.as_json(dashboard._liked_by)
         # the list shows the preview refresh only to editors
         dashboard["can_write"] = can_write(frappe.get_doc(DASHBOARD, dashboard.name))
-
-
-GRID_KEYS = ("x", "y", "w", "h")
-
-
-def _dashboard_cells(dashboards) -> dict[str, list[dict]]:
-    """Where each dashboard's cards sit, and what each shows.
-
-    The list draws them for a dashboard with no preview image. It names no
-    data, so every reader of the list may see it.
-    """
-    items = {
-        dashboard.name: frappe.parse_json(dashboard.pop("items", None) or "[]") for dashboard in dashboards
-    }
-    chart_names = {
-        item.get("chart") for rows in items.values() for item in rows if item.get("type") == "chart"
-    }
-    chart_types = dict(
-        frappe.get_all(
-            "Insights Chart v3",
-            filters={"name": ["in", list(chart_names)]},
-            fields=["name", "chart_type"],
-            as_list=True,
-        )
-        if chart_names
-        else []
-    )
-
-    def kind(item):
-        if item.get("type") == "chart":
-            return chart_types.get(item.get("chart")) or "chart"
-        return item.get("type")
-
-    # a layout saved before `place_unplaced_items`, or written to the database,
-    # can miss a key, and one such cell must not fail the whole list
-    return {
-        name: [
-            {**{key: item["layout"][key] for key in GRID_KEYS}, "kind": kind(item)}
-            for item in rows
-            if all(is_grid_number((item.get("layout") or {}).get(key)) for key in GRID_KEYS)
-        ]
-        for name, rows in items.items()
-    }
 
 
 def dashboard_view_counts(names: list[str], since: str | None = None) -> dict[str, int]:

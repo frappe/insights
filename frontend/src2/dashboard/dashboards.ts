@@ -7,9 +7,6 @@ import type { FilterCondition, WireFilters } from '@framework/ui/Filter'
 import type { AccessSource } from '../components/access'
 import { __ } from '../translation'
 
-/** Where a card sits on a dashboard, and what it shows: a chart type, a filter or text. */
-export type DashboardCell = { x: number; y: number; w: number; h: number; kind: string }
-
 export type DashboardListItem = {
 	name: string
 	title: string
@@ -23,14 +20,16 @@ export type DashboardListItem = {
 	modified: string
 	created_from_now: string
 	modified_from_now: string
-	preview_image: string
+	/** Set only while `same_rows_for_every_reader`, and once a preview was rendered. */
+	preview_image: string | null
+	/** Whether every reader sees the same rows, so one preview image may show to all of them. */
+	same_rows_for_every_reader: boolean
 	views: number
 	is_favourite: boolean
 	/** The title of the app that ships its workbook, when one does. */
 	shipped_by: string | null
 	/** That app's `app_logo_url`, when it declares one. */
 	shipped_by_logo: string | null
-	cells: DashboardCell[]
 	/** Whether the caller may write it, and so update its preview image. */
 	can_write: boolean
 }
