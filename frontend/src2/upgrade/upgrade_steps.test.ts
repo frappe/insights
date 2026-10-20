@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import type { UpgradeItem } from './upgrade'
-import { detailsOf, sentenceOf, stepIndexOf, wizardSteps, type Part } from './upgrade_steps'
+import {
+	detailsOf,
+	keyAction,
+	sentenceOf,
+	stepIndexOf,
+	wizardSteps,
+	type Part,
+} from './upgrade_steps'
 
 const BOB = 'bob@fixture.test'
 const ALICE = 'alice@fixture.test'
@@ -318,6 +325,104 @@ describe('an item sentence', () => {
 	})
 
 	// @feature upgrade.item-sentences
+	it('says who an alert runs as now, or why it will stop', () => {
+		const alert = { alert: 'Low stock' }
+		const moved = sentenceOf(
+			item('a', 'P19', { ...alert, outcome: 'moved', owner: ALICE, enabler: BOB }),
+			DAVE,
+		)
+		expect(text(moved.text)).toBe(
+			'The alert “Low stock” now runs as Alice, who owns its workbook, in place of Bob.',
+		)
+		expect(moved.todo).toBeUndefined()
+		expect(
+			text(sentenceOf(item('b', 'P19', { ...alert, outcome: 'no_user' }), DAVE).text),
+		).toBe('The alert “Low stock” has no one to run as, so it will stop.')
+		const stops = sentenceOf(
+			item('c', 'P19', { ...alert, outcome: 'stops', enabler: BOB }),
+			DAVE,
+		)
+		expect(text(stops.text)).toBe(
+			'The alert “Low stock” will stop, because Bob can’t edit its workbook.',
+		)
+		expect(text(stops.todo)).toBe('Share the workbook with Bob to edit.')
+	})
+
+	// @feature upgrade.item-sentences
+	it('says which setting a number reads differently and how to set it again', () => {
+		const cases: [string, Record<string, any>, string, string][] = [
+			[
+				'K1',
+				{ dashboard: 'Sales', start: '2024-01-01', end: '2024-03-31' },
+				'“Sales” lost its default date range (2024-01-01 – 2024-03-31), which Insights 3 showed but never applied.',
+				'Set it again if you want it.',
+			],
+			[
+				'N4',
+				{ chart: 'Revenue' },
+				'The number card “Revenue” lost its currency sign.',
+				'Add the sign to the card’s suffix.',
+			],
+			[
+				'N6',
+				{ chart: 'Revenue' },
+				'The number card “Revenue” now shows a total of all rows.',
+				'Pick a Date column to show a period.',
+			],
+			[
+				'Q13',
+				{ start: '2024-04-01' },
+				'Fiscal years now start on 1 April, from ERPNext’s current fiscal year.',
+				'Set Fiscal Year Start to choose.',
+			],
+		]
+		for (const [code, data, said, todo] of cases) {
+			const sentence = sentenceOf(item('a', code, data), DAVE, 'en-GB')
+			expect(text(sentence.text)).toBe(said)
+			expect(text(sentence.todo)).toBe(todo)
+		}
+		const settings = sentenceOf(
+			item('b', 'Q13', { start: '2024-04-01' }, { action: 'open_settings' }),
+			DAVE,
+		)
+		expect(settings.action).toEqual({ kind: 'fix', label: 'Open settings' })
+	})
+
+	// @feature upgrade.item-sentences
+	it('names what a detail item is about', () => {
+		const cases: [string, Record<string, any>, string][] = [
+			[
+				'N5',
+				{ chart: 'Revenue', column: 'Posting Date' },
+				'The number card “Revenue” now shows the total of the latest day of Posting Date.',
+			],
+			[
+				'J1',
+				{ alert: 'Watch a cache', chart: 'Revenue' },
+				'The alert “Watch a cache” checks a saved copy of “Revenue”. Changes to the chart don’t reach it.',
+			],
+			[
+				'P21',
+				{ query: 'Origin script', workbook: 'Reader', variables: ['api_token'] },
+				'The script “Origin script” was copied into “Reader” without its secret api_token. It won’t run until someone enters it.',
+			],
+			[
+				'P21',
+				{ cycle: true, query: 'A', workbook: 'Sales', source: 'B' },
+				'The query “A” in “Sales” reads “B”, which reads it back. Remove that source.',
+			],
+			[
+				'W2',
+				{ workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' },
+				'“Sales Performance” is a copy of an Insights 3 template. ERPNext’s “Selling” replaces it and gets updates.',
+			],
+		]
+		for (const [code, data, said] of cases) {
+			expect(text(sentenceOf(item('a', code, data), DAVE).text)).toBe(said)
+		}
+	})
+
+	// @feature upgrade.item-sentences
 	it('falls back to the stored message for an item written before it had data', () => {
 		const old = item('a', 'P17', {})
 		expect(text(sentenceOf(old, DAVE).text)).toBe('P17 message')
@@ -342,5 +447,34 @@ describe('an item sentence', () => {
 			label: 'Open workbook sharing',
 			route: { name: 'Workbook', params: { workbook_name: '25' }, query: { share: '1' } },
 		})
+	})
+})
+
+describe('a key in the wizard', () => {
+	const at = (focus: Partial<Parameters<typeof keyAction>[1]> = {}) => ({
+		inField: false,
+		onControl: false,
+		moreSlides: false,
+		...focus,
+	})
+
+	// @feature upgrade.wizard
+	it('goes back with ←, and pages only the welcome slides with →', () => {
+		expect(keyAction('ArrowLeft', at())).toBe('back')
+		expect(keyAction('ArrowRight', at({ moreSlides: true }))).toBe('next')
+		expect(keyAction('ArrowRight', at())).toBeUndefined()
+	})
+
+	// @feature upgrade.wizard
+	it('presses the primary button with Enter, unless another control has focus', () => {
+		expect(keyAction('Enter', at())).toBe('primary')
+		expect(keyAction('Enter', at({ onControl: true }))).toBeUndefined()
+	})
+
+	// @feature upgrade.wizard
+	it('leaves typing in a field alone', () => {
+		for (const key of ['ArrowLeft', 'ArrowRight', 'Enter']) {
+			expect(keyAction(key, at({ inField: true, moreSlides: true }))).toBeUndefined()
+		}
 	})
 })

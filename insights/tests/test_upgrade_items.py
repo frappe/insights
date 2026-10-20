@@ -224,3 +224,9 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         for app in apps:
             self.assertEqual(app["title"], standard.app_title(app["app"]))
             self.assertEqual(app["logo"], standard.app_logo_url(app["app"]))
+
+    # @feature upgrade.wizard
+    def test_the_session_says_whether_the_user_owns_a_workbook(self):
+        self.assertFalse(self.user_info(BOB)["owns_workbooks"])
+        create_test_workbook(BOB, title=f"{PREFIX} Owned")
+        self.assertTrue(self.user_info(BOB)["owns_workbooks"])
