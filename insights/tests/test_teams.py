@@ -9,7 +9,7 @@ import frappe
 
 from insights.api.user import create_team, delete_team, update_team
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import DT, delete_users
+from insights.tests.factories import DT, create_user, delete_users
 from insights.tests.permissions_utils import (
     ADMIN,
     USER_1,
@@ -79,21 +79,12 @@ class TestTeamManagement(InsightsIntegrationTestCase):
 
     # @feature settings.team-manage
     def test_the_admin_team_keeps_its_name_and_cannot_be_deleted(self):
-        # the site's Admin team can have rows for users another suite deleted, and
-        # a save would fail on the dangling link before it reached the name guard
-        admins = [
-            member.user
-            for member in frappe.get_doc(DT.TEAM, "Admin").team_members
-            if frappe.db.exists("User", member.user)
-        ]
-        self.assertTrue(admins, "the Admin team must hold a member that still exists")
-
         with self.as_user(ADMIN):
             update_team(
                 {
                     "name": "Admin",
                     "team_name": "Renamed Admins",
-                    "team_members": [{"user": member} for member in admins],
+                    "team_members": [{"user": member} for member in members_of("Admin")],
                     "team_permissions": [],
                 }
             )
@@ -105,6 +96,18 @@ class TestTeamManagement(InsightsIntegrationTestCase):
             delete_team("Admin")
 
         self.assertTrue(frappe.db.exists(DT.TEAM, "Admin"))
+
+    # @feature settings.team-manage
+    def test_a_deleted_admin_leaves_the_admin_team_so_the_next_admin_joins_it(self):
+        departed = create_user("departed_admin@test.com", roles="Insights Admin").name
+        self.assertIn(departed, members_of("Admin"))
+
+        delete_users(departed)
+        self.assertNotIn(departed, members_of("Admin"))
+
+        newcomer = create_user("next_admin@test.com", roles="Insights Admin").name
+        self.addCleanup(delete_users, newcomer)
+        self.assertIn(newcomer, members_of("Admin"))
 
 
 class TestTableRestrictionValidation(InsightsIntegrationTestCase):

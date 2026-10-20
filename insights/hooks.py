@@ -170,6 +170,7 @@ ignore_links_on_delete = ["Insights Upgrade Item"]
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
+        "on_trash": "insights.insights.doctype.insights_team.insights_team.remove_deleted_user",
     },
     # a desk document that links to Insights content renders through an
     # Insights island — see insights/desk.py

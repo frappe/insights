@@ -178,7 +178,8 @@ class InsightsTeam(Document):
 
 def update_admin_team(user, method=None):
     try:
-        if not user.has_value_changed("roles"):
+        # a delete runs on_change after on_trash, with every role "changed"
+        if user.flags.in_delete or not user.has_value_changed("roles"):
             return
 
         roles = user.get("roles", [])
@@ -204,6 +205,13 @@ def update_admin_team(user, method=None):
 
     except Exception:
         frappe.log_error(title="update_admin_team")
+
+
+def remove_deleted_user(user, method=None):
+    """A row naming a deleted user fails every later save of its team, and
+    `update_admin_team` logs that and moves on."""
+    frappe.db.delete("Insights Team Member", {"user": user.name})
+    clear_cache()
 
 
 def clear_cache():
