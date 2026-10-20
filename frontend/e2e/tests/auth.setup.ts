@@ -1,6 +1,6 @@
 import { test as setup } from '@playwright/test'
 import { CREDENTIALS, captureAuthState, readCsrfToken } from '../helpers/auth'
-import { createFrappeApi } from '../helpers/frappe'
+import { createFrappeApi, type FrappeApi } from '../helpers/frappe'
 import { setTeamPermissions } from '../helpers/insights'
 import { saveSiteState } from '../helpers/site-state'
 import { ensureInsightsUser } from '../helpers/users'
@@ -15,6 +15,7 @@ setup('authenticate', async ({ browser }) => {
 	const adminContext = await captureAuthState(browser, 'admin')
 	const adminApi = createFrappeApi(adminContext.request, readCsrfToken('admin'))
 	await ensureInsightsUser(adminApi, CREDENTIALS.viewer)
+	await markUpgradeSeen(adminApi)
 
 	// Team permissions are on for the whole run. A test that flipped them would
 	// flip them for every worker beside it, because the suite runs fully
@@ -30,5 +31,15 @@ setup('authenticate', async ({ browser }) => {
 	await adminContext.close()
 
 	const viewerContext = await captureAuthState(browser, 'viewer')
+	await markUpgradeSeen(createFrappeApi(viewerContext.request, readCsrfToken('viewer')))
 	await viewerContext.close()
 })
+
+/**
+ * The Insights 4 welcome dialog opens over every page for a user marked as an
+ * Insights 3 user, and a test site that once migrated from a 3.x build marks
+ * them. No flow here is about the upgrade, so the run starts past it.
+ */
+async function markUpgradeSeen(api: FrappeApi): Promise<void> {
+	await api.callMethod('insights.api.upgrade.mark_upgrade_seen')
+}
