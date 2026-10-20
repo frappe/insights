@@ -1,9 +1,9 @@
+import { useStorage } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { showErrorToast } from '../helpers'
 import session from '../session'
-
-export type UpgradeTab = 'whats_new' | 'attention'
+import { detailsOf, stepIndexOf, wizardSteps } from './upgrade_steps'
 
 export type UpgradeItem = {
 	name: string
@@ -13,6 +13,10 @@ export type UpgradeItem = {
 	reference_name: string | null
 	user: string | null
 	action: '' | 'delete_workbook' | 'open_settings' | null
+	/** The names and values the item's sentence shows, by key, as the patch stored them. */
+	data?: Record<string, any>
+	/** Each user the data names, as the sentence calls them. */
+	people?: Record<string, { full_name: string; first_name: string }>
 	/** The workbook the reference is opened in, if it has a route in the app. */
 	workbook: string | null
 	/** The desk form of a reference the app has no page for, such as a user. */
@@ -21,53 +25,189 @@ export type UpgradeItem = {
 	can_fix: boolean
 }
 
-const upgrade = reactive({
-	show: false,
-	tab: 'whats_new' as UpgradeTab,
-	items: [] as UpgradeItem[],
-	open,
-	close,
-	dismiss,
-	fix,
+/** Where the reader left the wizard, kept in the browser so Resume returns there. */
+type Progress = {
+	step: string
+	slide: number
+	/** Steps the reader has looked at. */
+	seen: string[]
+	/** Items put off for later. They stay open on the server. */
+	skipped: string[]
+	/** Whether the wizard was ever opened here. Until then there is nothing to resume. */
+	started: boolean
+	finished: boolean
+}
+
+const freshProgress = (): Progress => ({
+	step: 'welcome',
+	slide: 0,
+	seen: [],
+	skipped: [],
+	started: false,
+	finished: false,
 })
 
-async function loadItems() {
-	upgrade.items = await call('insights.api.upgrade.get_upgrade_items')
-	session.user.upgrade_item_count = upgrade.items.length
+const items = ref<UpgradeItem[]>([])
+/** Items marked done in this visit. The server no longer lists them, and the step still counts them. */
+const done = ref<UpgradeItem[]>([])
+const loaded = ref(false)
+const showWizard = ref(false)
+const showDetails = ref(false)
+
+let stored: ReturnType<typeof useStorage<Progress>> | undefined
+function progressStore() {
+	stored ??= useStorage<Progress>(
+		`insights:upgrade-wizard:${session.user.email}`,
+		freshProgress(),
+		localStorage,
+		{ mergeDefaults: true },
+	)
+	return stored
 }
 
-function open(tab: UpgradeTab) {
-	upgrade.tab = tab
-	upgrade.show = true
-	return loadItems().catch((error) => showErrorToast(error, false))
+const sharing = computed(() => session.user.is_admin || Boolean(session.user.owns_workbooks))
+
+const steps = computed(() =>
+	wizardSteps([...items.value, ...done.value], {
+		sharing: sharing.value,
+		admin: session.user.is_admin,
+		me: session.user.email,
+	}),
+)
+const details = computed(() =>
+	detailsOf([...items.value, ...done.value], { admin: session.user.is_admin }),
+)
+
+const doneNames = computed(() => new Set(done.value.map((item) => item.name)))
+const isDone = (name: string) => doneNames.value.has(name)
+
+const stepIndex = computed(() => stepIndexOf(steps.value, progressStore().value.step))
+
+const openWizardItems = computed(() =>
+	steps.value
+		.flatMap((step) => ('rows' in step ? step.rows : []))
+		.filter((row) => !isDone(row.item.name)),
+)
+const openDetailItems = computed(() =>
+	details.value.flatMap((group) => group.rows).filter((row) => !isDone(row.item.name)),
+)
+
+async function load() {
+	try {
+		items.value = await call('insights.api.upgrade.get_upgrade_items')
+		loaded.value = true
+	} catch (error) {
+		showErrorToast(error as Error, false)
+	}
+	session.user.upgrade_item_count = items.value.length
 }
 
+function open() {
+	showWizard.value = true
+	progressStore().value.started = true
+	return loaded.value ? Promise.resolve() : load()
+}
+
+/** Closes the wizard. It no longer opens by itself, and the sidebar card resumes it. */
 async function close() {
-	upgrade.show = false
+	showWizard.value = false
+	// one step has nowhere to resume to
+	if (steps.value.length === 1) progressStore().value.finished = true
 	if (!session.user.upgraded_from_v3) return
 	session.user.upgraded_from_v3 = false
-	await call('insights.api.upgrade.mark_upgrade_seen').catch((error) =>
+	await call('insights.api.upgrade.mark_upgrade_seen').catch((error: Error) =>
 		showErrorToast(error, false),
 	)
 }
 
-function dismiss(item: UpgradeItem) {
-	return resolve(item, 'insights.api.upgrade.dismiss_upgrade_item')
+function goTo(id: string, slide?: number) {
+	const progress = progressStore().value
+	if (progress.step !== id) progress.seen = [...new Set([...progress.seen, progress.step])]
+	progress.step = id
+	if (slide !== undefined) progress.slide = slide
 }
 
-function fix(item: UpgradeItem) {
-	return resolve(item, 'insights.api.upgrade.fix_upgrade_item')
+function finish() {
+	const progress = progressStore().value
+	progress.seen = [...new Set([...progress.seen, progress.step])]
+	progress.finished = true
+	return close()
 }
 
-async function resolve(item: UpgradeItem, method: string) {
+/** Back at the first step with items left, with the skipped ones in line again. */
+function resume() {
+	const progress = progressStore().value
+	if (progress.finished) {
+		const next = steps.value.find(
+			(step) => 'rows' in step && step.rows.some((row) => !isDone(row.item.name)),
+		)
+		progress.step = next?.id ?? 'welcome'
+		progress.skipped = []
+		progress.finished = false
+	}
+	return open()
+}
+
+function skip(name: string) {
+	const progress = progressStore().value
+	progress.skipped = [...new Set([...progress.skipped, name])]
+}
+
+function unskip(names: string[]) {
+	const progress = progressStore().value
+	progress.skipped = progress.skipped.filter((name) => !names.includes(name))
+}
+
+/** Marks every item of a row done: an admin closes both sides of a change at once. */
+async function markDone(names: string[]) {
 	try {
-		await call(method, { name: item.name })
-	} catch (error: any) {
-		showErrorToast(error, false)
+		for (const name of names) {
+			await call('insights.api.upgrade.dismiss_upgrade_item', { name })
+		}
+	} catch (error) {
+		showErrorToast(error as Error, false)
 		return
 	}
-	upgrade.items = upgrade.items.filter((i) => i.name !== item.name)
-	session.user.upgrade_item_count = upgrade.items.length
+	const closed = items.value.filter((item) => names.includes(item.name))
+	done.value = [...done.value, ...closed]
+	items.value = items.value.filter((item) => !names.includes(item.name))
+	session.user.upgrade_item_count = items.value.length
 }
+
+async function fix(item: UpgradeItem) {
+	try {
+		await call('insights.api.upgrade.fix_upgrade_item', { name: item.name })
+	} catch (error) {
+		showErrorToast(error as Error, false)
+		return
+	}
+	done.value = [...done.value, item]
+	items.value = items.value.filter((i) => i.name !== item.name)
+	session.user.upgrade_item_count = items.value.length
+}
+
+const upgrade = reactive({
+	items,
+	loaded,
+	showWizard,
+	showDetails,
+	steps,
+	stepIndex,
+	details,
+	openWizardItems,
+	openDetailItems,
+	progress: computed(() => progressStore().value),
+	isDone,
+	load,
+	open,
+	close,
+	goTo,
+	finish,
+	resume,
+	skip,
+	unskip,
+	markDone,
+	fix,
+})
 
 export default upgrade

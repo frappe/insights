@@ -12,7 +12,7 @@
 			<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 		</template>
 
-		<UpgradeDialog v-if="session.isAuthorized && !isGuestView" />
+		<UpgradeWizard v-if="session.isAuthorized && !isGuestView" />
 
 		<ToastProvider />
 	</div>
@@ -23,7 +23,7 @@ import { ToastProvider, toast } from 'frappe-ui'
 import { computed, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
-import UpgradeDialog from './upgrade/UpgradeDialog.vue'
+import UpgradeWizard from './upgrade/UpgradeWizard.vue'
 import { dialogs } from './helpers/confirm_dialog'
 import { attachRealtimeListener } from './helpers/index.ts'
 import session from './session'
