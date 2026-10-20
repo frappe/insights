@@ -251,11 +251,12 @@ test.describe('charts', () => {
 		await measureDialog.getByText('order_id', { exact: true }).click()
 
 		// A Donut legend spells the share out beside the segment name. 1,778 of the
-		// 2,000 orders are delivered, which rounds to 89%. Every legend entry is
-		// a toggle, so its accessible name says what a press would do.
+		// 2,000 orders are delivered, which rounds to 89%, and 85 are shipped, 4%.
+		// Neither share is close to a rounding tie. Every legend entry is a
+		// toggle, so its accessible name says what a press would do.
 		const legend = legendOf(page)
 		await expect(legend.getByRole('button', { name: 'Hide delivered' })).toContainText('89%')
-		await expect(legend.getByRole('button', { name: 'Hide canceled' })).toContainText('3%')
+		await expect(legend.getByRole('button', { name: 'Hide shipped' })).toContainText('4%')
 	})
 
 	// @feature charts.switch-type-keeps-config
