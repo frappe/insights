@@ -164,6 +164,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.number-comparison | A user compares a reading with the previous period, the same period last year, a constant or a measure, and the card states the change. |
 | charts.number-comparison-show | A user prints a comparison as a percent change or as a difference in the value's own units. |
 | charts.number-comparison-caption | A user writes a caption for the comparison row. |
+| charts.number-progress | A user draws a bar under a card for how far its reading has come: towards its target, or out of 100% for a percent. |
 | charts.number-sparkline | A user plots a trend under a card, split one grain finer than its period and filtered the same way. |
 | charts.donut-max-slices | A user caps the slices plotted; the rest collapse into a tail. |
 | charts.donut-inline-labels | A user prints the shares on the slices instead of a legend. |
@@ -234,7 +235,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.move-resize | A user moves and resizes an item; the item it lands on is pushed out from under it. |
 | dashboard.compact-layout | A user turns gap-closing on or off; a new dashboard closes its gaps. |
 | dashboard.breakpoints | A user arranges the grid per width; a narrow grid stacks cells the author never arranged and keeps the ones they did. |
-| dashboard.cell-height-rule | A Number cell takes the height its reading needs: a delta row when compared, a sparkline band when trended. |
+| dashboard.cell-height-rule | A Number cell takes the height its reading needs: a delta row when compared, a bar when it shows progress, a sparkline band when trended. |
 | dashboard.number-cell-per-reading | A Number chart on a dashboard is one cell per reading, each showing only the reading it names. |
 | dashboard.filter-add | A user adds a dashboard filter with a label and a type. |
 | dashboard.filter-links | A user links a dashboard filter to a chart's column and the chart refilters; an unlinked chart is left alone. |

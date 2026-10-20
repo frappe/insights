@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import ColorInput from '../../components/ColorInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import NumberInput from '../../components/NumberInput.vue'
 import { __ } from '../../translation'
 import type { NumberChartConfig, NumberComparison, NumberTarget } from '../../types/chart.types'
 import type { ColumnOption, Dimension, Measure } from '../../types/query.types'
 import type { NumberPeriod } from '../window'
-import { defaultComparisonLabel } from '../adapter/number'
+import { canDrawProgress, defaultComparisonLabel } from '../adapter/number'
 import MeasurePicker from './MeasurePicker.vue'
 
-// What a reading is read against: the target it aims at, and the one number it
-// is compared with. Two blocks because a card reads them in two places — the
-// target on the value line, the comparison in the delta row — and a reader who
-// wants a second comparison wants a second card.
+// What a reading is read against: the target it aims at, with the bar that
+// fills towards it, and the one number it is compared with. Two blocks because a
+// card reads them in two places — the target on the value line, the comparison
+// in the delta row — and a reader who wants a second comparison wants a second
+// card.
 
 const props = defineProps<{
 	columnOptions: ColumnOption[]
@@ -20,10 +22,16 @@ const props = defineProps<{
 	period?: NumberPeriod
 	/** The chart's date column, which words a `previous` comparison. */
 	dateColumn?: Dimension
+	/** The reading, whose format decides whether a bar has 100% to fill towards. */
+	measure?: Measure
 }>()
 const emit = defineEmits({ 'dialog-open': () => true })
 const target = defineModel<NumberTarget | undefined>('target')
 const comparison = defineModel<NumberComparison | undefined>('comparison')
+const progress = defineModel<boolean | undefined>('progress')
+const progressColor = defineModel<string | undefined>('progressColor')
+/** Flips the comparison's colors, so it sits with the comparison. */
+const negativeIsBetter = defineModel<boolean | undefined>('negativeIsBetter')
 
 const targetSourceOptions = [
 	{ label: __('None'), value: 'none' },
@@ -113,7 +121,9 @@ function blankMeasure(): Measure {
 </script>
 
 <template>
-	<div class="flex flex-col gap-2">
+	<section class="mt-1 flex flex-col gap-2 border-t pt-3">
+		<p class="text-xs-medium text-ink-gray-8">{{ __('Target') }}</p>
+
 		<InlineFormControlLabel :label="__('Target')">
 			<FormControl
 				type="select"
@@ -123,14 +133,14 @@ function blankMeasure(): Measure {
 			/>
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="targetSource === 'constant'">
+		<InlineFormControlLabel v-if="targetSource === 'constant'" :label="__('Value')">
 			<NumberInput
 				:model-value="target?.value"
 				@update:model-value="target = { value: $event }"
 			/>
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="targetSource === 'measure'">
+		<InlineFormControlLabel v-if="targetSource === 'measure'" :label="__('Measure')">
 			<MeasurePicker
 				v-model="targetMeasure"
 				:column-options="columnOptions"
@@ -138,6 +148,18 @@ function blankMeasure(): Measure {
 				@dialog-open="emit('dialog-open')"
 			/>
 		</InlineFormControlLabel>
+
+		<template v-if="canDrawProgress(target, measure)">
+			<Toggle :label="__('Progress bar')" v-model="progress" />
+
+			<InlineFormControlLabel v-if="progress" :label="__('Bar color')">
+				<ColorInput v-model="progressColor" placement="left-start" />
+			</InlineFormControlLabel>
+		</template>
+	</section>
+
+	<section class="mt-1 flex flex-col gap-2 border-t pt-3">
+		<p class="text-xs-medium text-ink-gray-8">{{ __('Comparison') }}</p>
 
 		<InlineFormControlLabel :label="__('Compare with')">
 			<FormControl
@@ -148,11 +170,11 @@ function blankMeasure(): Measure {
 			/>
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="comparison?.source === 'constant'">
+		<InlineFormControlLabel v-if="comparison?.source === 'constant'" :label="__('Value')">
 			<NumberInput v-model="comparison.value" />
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="comparison?.source === 'measure'">
+		<InlineFormControlLabel v-if="comparison?.source === 'measure'" :label="__('Measure')">
 			<MeasurePicker
 				v-model="comparisonMeasure"
 				:column-options="columnOptions"
@@ -162,16 +184,15 @@ function blankMeasure(): Measure {
 		</InlineFormControlLabel>
 
 		<template v-if="comparison">
-			<InlineFormControlLabel>
-				<FormControl
-					type="select"
+			<InlineFormControlLabel :label="__('Show')">
+				<TabButtons
 					:options="showOptions"
 					:modelValue="comparison.show || 'change'"
 					@update:modelValue="comparison.show = $event"
 				/>
 			</InlineFormControlLabel>
 
-			<InlineFormControlLabel>
+			<InlineFormControlLabel :label="__('Caption')">
 				<FormControl
 					autocomplete="off"
 					:placeholder="captionPlaceholder"
@@ -180,5 +201,7 @@ function blankMeasure(): Measure {
 				/>
 			</InlineFormControlLabel>
 		</template>
-	</div>
+
+		<Toggle :label="__('Negative is better')" v-model="negativeIsBetter" />
+	</section>
 </template>

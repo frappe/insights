@@ -75,6 +75,10 @@ _Avoid_: granularity (in prose — `granularity` is the stored key), bucket, res
 One measure a Number chart states, shown as a card of its own — its value, its format, its Period comparison and its target. `number_columns` names the readings and `number_column_options` keeps each one's own settings, positionally. A dashboard cell shows one reading and names it in `reading`, by its `id`, so renaming the measure keeps the cell. A Number chart on a dashboard is as many cells as it has readings.
 _Avoid_: KPI, metric, data point ("card" is the thing shown, "reading" is what it states)
 
+**Progress**:
+How far a reading has come, drawn as a bar under its card: towards its target, or out of 100% for a percent Measure with no target. A reading with neither gets no bar. Stored as `progress` on each reading's options. The bar takes `progress_color`, else the reading's `color`.
+_Avoid_: gauge, attainment
+
 **Period**:
 The stretch of the date column one Number card reads, and the unit its comparison steps back by. Stored as `window`, holding one of a `span` or a `grain` and never both. It is the only thing that groups a card by date: left out, the card reads a dashboard `within` filter on its date column as its Period, and with none is one number over the whole result, its date column used only by the sparkline.
 _Avoid_: slice, window (in prose — `window` is the stored key), timeframe

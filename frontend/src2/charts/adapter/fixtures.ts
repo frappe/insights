@@ -542,6 +542,9 @@ type NumberValueSpec = {
 	target?: (number | null)[]
 	/** Definitions and caveats, behind the card's mark. */
 	info?: string
+	/** A bar under the card for how far the reading has come. */
+	progress?: boolean
+	progressColor?: string
 }
 
 export type NumberChartSpec = {
@@ -596,6 +599,8 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 				: {}),
 			...(value.comparison ? { comparison: value.comparison } : {}),
 			...(value.info ? { info: value.info } : {}),
+			...(value.progress ? { progress: true } : {}),
+			...(value.progressColor ? { progress_color: value.progressColor } : {}),
 		})),
 		sparkline: Boolean(spec.sparkline),
 		...(spec.sparklineColor ? { sparkline_color: spec.sparklineColor } : {}),

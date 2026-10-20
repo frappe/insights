@@ -1,5 +1,5 @@
 import { defineAsyncComponent } from 'vue'
-import type { NumberCardProps, NumberCardSparkline } from 'frappe-ui/charts'
+import type { NumberCardProgress, NumberCardProps, NumberCardSparkline } from 'frappe-ui/charts'
 import { ROW_HEIGHT } from '../../dashboard/grid_placement'
 import { toNumber } from '../../helpers'
 import { granularityOptions } from '../../helpers/constants'
@@ -175,6 +175,17 @@ function readingOf(
 	const aim = scale(targetNumber(target, rows) ?? null)
 	if (aim !== null) card.target = aim
 
+	if (options.progress && canDrawProgress(target, measure)) {
+		const value = progressOf(latest, targetNumber(target, rows))
+		if (value !== undefined) {
+			const progress: NumberCardProgress = { value }
+			// A reading colored to stand for a series is read against that color.
+			const color = options.progress_color || options.color
+			if (color) progress.color = color
+			card.progress = progress
+		}
+	}
+
 	if (comparison) {
 		const against = comparisonNumber(comparison, rows, readings, comparisonRows)
 		if (against !== undefined) {
@@ -226,15 +237,41 @@ function readingOf(
 	return card
 }
 
+/**
+ * How far a reading that can draw a bar has come, in percent. Against its target
+ * when it names one, else it is a percent, whose fraction is out of 100%.
+ */
+function progressOf(latest: number | null, aim: number | null | undefined): number | undefined {
+	if (latest === null) return undefined
+	if (aim !== undefined) return aim ? (latest / aim) * 100 : undefined
+	return latest * 100
+}
+
+/**
+ * Whether the target names a number: a constant, or a Measure with its column
+ * picked. Picking "Measure" as the source stores one with no column until the
+ * author picks it.
+ */
+export function namesTarget(target: NumberTarget | undefined): target is NumberTarget {
+	return typeof target?.value === 'number' || Boolean(target?.measure?.measure_name)
+}
+
+/** Whether the reading has something for a progress bar to fill towards. */
+export function canDrawProgress(
+	target: NumberTarget | undefined,
+	measure: Measure | undefined,
+): boolean {
+	return namesTarget(target) || measure?.format === 'percent'
+}
+
 /** The number the reading is aimed at, or `undefined` when nothing names one. */
 function targetNumber(
 	target: NumberTarget | undefined,
 	rows: QueryResultRow[],
 ): number | null | undefined {
-	if (!target) return undefined
+	if (!namesTarget(target)) return undefined
 	if (typeof target.value === 'number') return target.value
-	const column = target.measure?.measure_name
-	if (!column) return undefined
+	const column = target.measure!.measure_name
 	// Read off the same row the reading came from: a target is the target for the
 	// period on the card, not for the whole series.
 	return toNumber(rows[rows.length - 1]?.[column])
@@ -349,27 +386,33 @@ const CARD = {
 	delta: 13 * 1.35,
 	/** `pb-10`, the band the sparkline is plotted into. */
 	sparkline: 40,
+	/** The progress bar: `h-1` under a `gap-1.5` and its own `mt-0.5`. */
+	progress: 6 + 2 + 4,
 }
 
 /**
  * The rows one reading of a Number Chart takes as a dashboard cell.
  *
  * A card's height is what its blocks add up to, so the author sets the width and
- * the height follows the config. There are three of them: a title and a reading,
- * a delta row under them when the reading is compared with something, and the
- * sparkline band under that.
+ * the height follows the config: a title and a reading, a delta row under them
+ * when the reading is compared with something, the progress bar under that, and
+ * the sparkline band last.
  *
  * A cell that names nothing shows the first reading. One naming a reading the
  * chart dropped keeps the height the chart's own settings give it, so the cell
  * does not move under the author while they decide what to do about it.
  */
 export function numberCardRows(config: NumberChartConfig, reading?: string): number {
-	const options = config.number_column_options?.[readingIndex(config, reading)] || {}
+	const index = readingIndex(config, reading)
+	const options = config.number_column_options?.[index] || {}
 	const comparison = options.comparison
 	const sparkline = Boolean(config.sparkline && config.date_column?.column_name)
+	const progress =
+		options.progress && canDrawProgress(options.target, config.number_columns?.[index])
 
 	let height = CARD.cellPadding + CARD.chrome + CARD.title + CARD.gap + CARD.value
 	if (comparison || sparkline) height += CARD.gap + CARD.delta
+	if (progress) height += CARD.progress
 	if (sparkline) height += CARD.sparkline
 
 	return Math.ceil(height / ROW_HEIGHT)

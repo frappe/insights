@@ -567,6 +567,63 @@ describe('the sparkline', () => {
 	})
 })
 
+describe('the progress bar', () => {
+	const progressOf = (value: NumberChartSpec['values'][number]) =>
+		cardsOf({ values: [{ progress: true, ...value }] })[0].progress
+
+	// @feature charts.number-progress
+	it('fills to how far the reading has come towards its target, in the color the reading chose', () => {
+		expect(
+			progressOf({
+				name: 'Revenue',
+				readings: [300],
+				targetValue: 400,
+				progressColor: '#2490EF',
+			}),
+		).toEqual({ value: 75, color: '#2490EF' })
+	})
+
+	// @feature charts.number-progress
+	it('fills in the reading’s own color when the bar names none', () => {
+		const reading = { name: 'Revenue', readings: [300], targetValue: 400, color: '#E86C13' }
+		expect(progressOf(reading)?.color).toBe('#E86C13')
+		expect(progressOf({ ...reading, progressColor: '#2490EF' })?.color).toBe('#2490EF')
+	})
+
+	// @feature charts.number-progress
+	it('fills a percent reading out of 100% when it aims at nothing', () => {
+		// The Measure holds the fraction, so 0.42 is 42 of the 100 it is out of.
+		expect(progressOf({ name: 'CPU', readings: [0.42], percent: true })?.value).toBeCloseTo(42)
+	})
+
+	// @feature charts.number-progress
+	it('measures a percent reading against its target when it names one', () => {
+		expect(
+			progressOf({ name: 'SLA', readings: [0.42], percent: true, targetValue: 0.5 })?.value,
+		).toBeCloseTo(84)
+	})
+
+	// @feature charts.number-progress
+	it('draws none for a reading with nothing to come towards', () => {
+		expect(progressOf({ name: 'Orders', readings: [1284] })).toBeUndefined()
+		expect(
+			progressOf({ name: 'Revenue', readings: [300], target: [null], targetColumn: true }),
+		).toBeUndefined()
+	})
+
+	// @feature charts.number-progress
+	it('is drawn only for the readings that turn it on', () => {
+		const cards = cardsOf({
+			values: [
+				{ name: 'Revenue', readings: [300], targetValue: 400, progress: true },
+				{ name: 'CPU', readings: [0.42], percent: true },
+			],
+		})
+		expect(cards[0].progress).toEqual({ value: 75 })
+		expect(cards[1].progress).toBeUndefined()
+	})
+})
+
 describe('drilling into a reading', () => {
 	// @feature charts.drill-segment
 	it('names the value the reader pointed at, and the row it was read off', () => {
@@ -620,18 +677,51 @@ describe('the rows a Number cell takes', () => {
 	})
 
 	// @feature dashboard.cell-height-rule
+	it('adds the progress bar for a reading with a target or a percent, and none without', () => {
+		expect(rowsFor({ values: [{ ...revenue, targetValue: 400, progress: true }] })).toBe(5)
+		expect(rowsFor({ values: [{ ...revenue, percent: true, progress: true }] })).toBe(5)
+		expect(rowsFor({ values: [{ ...revenue, progress: true }] })).toBe(4)
+		expect(rowsFor({ values: [{ ...revenue, targetValue: 400 }] })).toBe(4)
+	})
+
+	// @feature dashboard.cell-height-rule
+	it('adds no progress bar for a target that names no number yet', () => {
+		// Picking "Measure" as the target writes one with no column until the
+		// author picks it, and the card draws no bar for it.
+		for (const target of [
+			{
+				measure: {
+					column_name: '',
+					data_type: 'Decimal',
+					measure_name: '',
+					aggregation: '',
+				},
+			},
+			{ value: null },
+		]) {
+			const spec: NumberChartSpec = { values: [{ ...revenue, progress: true }] }
+			const config = numberChart(spec).config as NumberChartConfig
+			config.number_column_options[0].target = target as any
+			expect(numberCardRows(config)).toBe(4)
+		}
+	})
+
+	// @feature dashboard.cell-height-rule
 	it('plots no sparkline band without a Dimension to run the trend along', () => {
 		expect(rowsFor({ values: [revenue], sparkline: true })).toBe(4)
 	})
 
 	// @feature dashboard.cell-height-rule
 	it('leaves every card less than a row of slack', () => {
-		// What picks the row height: the three heights the card has, and how much
-		// of the last row each of them wastes.
+		// What picks the row height: the heights the card has, with and without a
+		// progress bar, and how much of the last row each of them wastes.
 		for (const [rows, height] of [
 			[4, 84.55],
 			[5, 108.1],
 			[7, 148.1],
+			[5, 96.55],
+			[6, 120.1],
+			[8, 160.1],
 		]) {
 			expect(rows * ROW_HEIGHT).toBeGreaterThanOrEqual(height)
 			expect(rows * ROW_HEIGHT - height).toBeLessThan(ROW_HEIGHT)
