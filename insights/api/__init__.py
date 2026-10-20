@@ -142,6 +142,7 @@ def get_user_info():
         "has_demo_data": has_demo_data,
         "has_workbooks": has_workbooks,
         "upgraded_from_v3": upgraded_from_v3(),
+        "owns_workbooks": bool(frappe.db.exists("Insights Workbook", {"owner": frappe.session.user})),
         "upgrade_item_count": frappe.db.count(UPGRADE_ITEM, open_item_filters()),
     }
 

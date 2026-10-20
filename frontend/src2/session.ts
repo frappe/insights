@@ -19,6 +19,8 @@ type SessionUser = {
 	has_workbooks: boolean
 	/** Whether the user used Insights 3 and has not yet closed the upgrade dialog. */
 	upgraded_from_v3: boolean
+	/** Whether the user owns a workbook, so the upgrade wizard explains how sharing changed. */
+	owns_workbooks?: boolean
 	/** Open upgrade items the user works through. */
 	upgrade_item_count: number
 }
@@ -114,6 +116,7 @@ async function fetchSessionInfo() {
 		can_download: Boolean(userInfo.can_download),
 		can_write_trusted_code: Boolean(userInfo.can_write_trusted_code),
 		upgraded_from_v3: Boolean(userInfo.upgraded_from_v3),
+		owns_workbooks: Boolean(userInfo.owns_workbooks),
 	})
 }
 
