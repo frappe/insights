@@ -394,9 +394,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         stored before that was the case may still have the prefix — so accept both.
         """
         schemas = self.get_postgres_schemas()
-        schema, separator, table = table_name.partition(".")
-        if separator and schema in schemas:
-            return schema, table
+        # a schema name may itself have a dot
+        for schema in sorted(schemas, key=len, reverse=True):
+            if table_name.startswith(f"{schema}."):
+                return schema, table_name[len(schema) + 1 :]
         return schemas[0], table_name
 
     def sql_table_name(self, table: str, schema: str | None = None) -> str | None:
