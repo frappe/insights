@@ -91,6 +91,7 @@ ENDPOINTS_ACCEPTING_GET = [
     "insights.api.workbooks.rename_folder",
     "insights.api.workbooks.toggle_folder_expanded",
     "insights.api.workbooks.update_share_permissions",
+    "insights.desk.get_form_chart",
     "insights.insights.doctype.insights_chart_v3.insights_chart_v3.InsightsChartv3.duplicate",
     "insights.insights.doctype.insights_chart_v3.insights_chart_v3.InsightsChartv3.export",
     "insights.insights.doctype.insights_chart_v3.insights_chart_v3.InsightsChartv3.published_reach",
