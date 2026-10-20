@@ -13,19 +13,27 @@ import frappe
 from PIL import Image
 from werkzeug.test import EnvironBuilder
 
+from insights.api.dashboards import get_dashboards
 from insights.api.view import get_dashboard
 from insights.permission_user import permission_user_for
-from insights.permissions import has_doc_permission
+from insights.permissions import has_doc_permission, same_rows_for_every_reader
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
+    as_user,
     create_test_chart,
     create_test_dashboard,
     create_test_query,
     create_test_workbook,
     delete_users,
 )
-from insights.tests.permissions_utils import USER_1, create_test_users
+from insights.tests.permissions_utils import (
+    USER_1,
+    USER_2,
+    create_test_team,
+    create_test_users,
+    update_dashboard_access,
+)
 
 OWNER = USER_1
 ATTACKER_HOST = "attacker.example"
@@ -207,3 +215,119 @@ class TestDashboardPreview(InsightsIntegrationTestCase):
                 insights_dashboard_v3.get_page_preview("http://site.localhost:8000/insights/shared/x")
 
         capture.assert_not_called()
+
+
+READER = USER_2
+
+
+class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
+    """A preview shows the rows of the user it was rendered for. It may show to
+    every reader of a dashboard only when they would all see those rows."""
+
+    SAVEPOINT = "test_same_rows_for_every_reader"
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+
+    @classmethod
+    def after_class(cls):
+        delete_users(OWNER, READER)
+
+    def board(self, run_as_owner=(False,)):
+        """A Private dashboard of OWNER's, with one chart per entry of `run_as_owner`."""
+        workbook = create_test_workbook(OWNER, title="Same Rows Workbook").name
+        query = create_test_query(OWNER, workbook, title="Same Rows Query").name
+        charts = []
+        for runs_as_owner in run_as_owner:
+            chart = create_test_chart(OWNER, workbook, query=query, title="Same Rows Chart")
+            if runs_as_owner:
+                with as_user(OWNER):
+                    chart.run_as_owner = 1
+                    chart.save()
+            charts.append(chart.name)
+        items = [{"id": f"chart-{i}", "type": "chart", "chart": chart} for i, chart in enumerate(charts)]
+        return create_test_dashboard(OWNER, workbook, title="Same Rows Dashboard", items=items)
+
+    def holds(self, dashboard) -> bool:
+        return dashboard.name in same_rows_for_every_reader([dashboard.name])
+
+    def share_with_role(self, dashboard):
+        with as_user(OWNER):
+            dashboard.reload()
+            dashboard.visibility = "Roles"
+            dashboard.append("visible_to_roles", {"role": "Insights User"})
+            dashboard.save()
+
+    # @feature dashboard.preview-same-rows
+    def test_a_dashboard_only_its_owner_reads_shows_one_preview(self):
+        self.assertTrue(self.holds(self.board()))
+
+    # @feature dashboard.preview-same-rows
+    def test_any_grant_to_another_user_takes_the_preview_away(self):
+        def dashboard_share(dashboard):
+            with as_user(OWNER):
+                update_dashboard_access(dashboard.name, [READER])
+
+        def workbook_share(dashboard, everyone=0):
+            frappe.share.add(
+                DT.WORKBOOK,
+                dashboard.workbook,
+                user=None if everyone else READER,
+                everyone=everyone,
+                notify=0,
+            )
+
+        def visibility(level):
+            return lambda dashboard: frappe.db.set_value(DT.DASHBOARD, dashboard.name, "visibility", level)
+
+        def team_grant(dashboard):
+            create_test_team("same-rows-team", [READER], grants=[(DT.DASHBOARD, dashboard.name)])
+
+        for label, grant in (
+            ("shared with a user", dashboard_share),
+            ("shown to a role", self.share_with_role),
+            ("workbook shared with a user", workbook_share),
+            ("workbook shared with everyone", lambda dashboard: workbook_share(dashboard, everyone=1)),
+            ("shown to everyone", visibility("Everyone")),
+            ("public link", visibility("Public")),
+            ("granted to a team", team_grant),
+        ):
+            with self.subTest(label):
+                dashboard = self.board()
+                grant(dashboard)
+                self.assertFalse(self.holds(dashboard))
+
+    # @feature dashboard.preview-same-rows
+    def test_a_shared_dashboard_whose_charts_all_run_as_their_owner_shows_one_preview(self):
+        dashboard = self.board(run_as_owner=(True, True))
+        self.share_with_role(dashboard)
+        self.assertTrue(self.holds(dashboard))
+
+    # @feature dashboard.preview-same-rows
+    def test_one_chart_that_runs_as_its_reader_takes_the_preview_away(self):
+        dashboard = self.board(run_as_owner=(True, False))
+        self.share_with_role(dashboard)
+        self.assertFalse(self.holds(dashboard))
+
+    # @feature dashboard.preview-same-rows
+    def test_an_apps_dashboard_never_shows_a_preview(self):
+        dashboard = self.board()
+        frappe.db.set_value(DT.WORKBOOK, dashboard.workbook, "is_standard", 1)
+        self.assertFalse(self.holds(dashboard))
+
+    # @feature dashboard.preview-same-rows dashboard.list
+    def test_the_list_sends_a_preview_only_where_every_reader_sees_the_same_rows(self):
+        private = self.board()
+        shared = self.board()
+        self.share_with_role(shared)
+        for dashboard in (private, shared):
+            frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", "/private/files/x.jpeg")
+
+        with as_user(OWNER):
+            listed = {row.name: row for row in get_dashboards(limit=0)}
+
+        self.assertEqual(listed[private.name].preview_image, "/private/files/x.jpeg")
+        self.assertTrue(listed[private.name].same_rows_for_every_reader)
+        self.assertIsNone(listed[shared.name].preview_image)
+        self.assertFalse(listed[shared.name].same_rows_for_every_reader)

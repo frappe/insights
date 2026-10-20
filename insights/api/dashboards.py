@@ -11,7 +11,7 @@ from insights.api.list_filters import (
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import is_grid_number
 from insights.insights.query_utils import source_tables
-from insights.permissions import can_write
+from insights.permissions import can_write, same_rows_for_every_reader
 
 DASHBOARD = "Insights Dashboard v3"
 DASHBOARD_CHART = "Insights Dashboard Chart v3"
@@ -154,11 +154,16 @@ def _enrich_dashboards(dashboards):
     )
     user = frappe.session.user
     cells = _dashboard_cells(dashboards)
+    same_rows = same_rows_for_every_reader([dashboard.name for dashboard in dashboards])
     for dashboard in dashboards:
         app = apps.get(dashboard.workbook)
         dashboard["shipped_by"] = app and standard.app_title(app)
         dashboard["shipped_by_logo"] = app and standard.app_logo_url(app)
         dashboard["cells"] = cells.get(dashboard.name, [])
+        # a preview shows the rows of whoever it was rendered for
+        dashboard["same_rows_for_every_reader"] = dashboard.name in same_rows
+        if not dashboard["same_rows_for_every_reader"]:
+            dashboard["preview_image"] = None
         dashboard["views"] = view_counts.get(str(dashboard.name), 0)
         dashboard["is_favourite"] = bool(dashboard._liked_by) and user in frappe.as_json(dashboard._liked_by)
         # the list shows the preview refresh only to editors

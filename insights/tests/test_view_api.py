@@ -1022,21 +1022,27 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertNotIn(refused.name, names)
 
     # @feature permissions.reader-app
-    def test_a_reader_lists_cards_with_a_sketch_and_no_workbook_preview_or_email(self):
+    def test_a_reader_lists_cards_with_no_workbook_or_email_and_a_preview_only_of_the_owners_rows(self):
         """The Dashboards list draws them as it draws everyone's. A preview shows
-        the rows of whoever rendered it."""
+        the rows of whoever it was rendered for, so a chart that runs as its
+        reader takes it away."""
         _, _, listed = self.make_content(visibility="Everyone", title="View API Card Dashboard")
-        frappe.db.set_value(DT.DASHBOARD, listed.name, "preview_image", "/files/preview.jpeg")
+        _, _, public = self.make_content(visibility="Public", title="View API Public Card Dashboard")
+        for dashboard in (listed, public):
+            frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", "/files/preview.jpeg")
 
         with as_user(DESK_USER):
-            (card,) = [dashboard for dashboard in get_dashboards() if dashboard.name == listed.name]
+            cards = {dashboard.name: dashboard for dashboard in get_dashboards()}
 
+        card = cards[listed.name]
         self.assertIn("cells", card)
         self.assertFalse(card.can_write)
         self.assertFalse(card.is_favourite)
         self.assertEqual(card.owner_name, frappe.utils.get_fullname(OWNER))
-        for field in ("owner", "workbook", "preview_image", "_liked_by"):
+        for field in ("owner", "workbook", "_liked_by"):
             self.assertNotIn(field, card)
+        self.assertIsNone(card.preview_image)
+        self.assertEqual(cards[public.name].preview_image, "/files/preview.jpeg")
 
     # @feature permissions.denied-says-no-access
     def test_filter_values_answer_like_any_other_reference(self):

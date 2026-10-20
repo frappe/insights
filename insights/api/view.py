@@ -104,9 +104,8 @@ def get_dashboards() -> list[dict]:
     draws its cards: what the app lists for a reader with no Insights role.
 
     The grants decide, as they do for every View, so an admin gets only what
-    was granted to them. A reader gets the layout sketch, never a preview,
-    because a preview shows the rows of whoever rendered it. They get no
-    workbook, which they cannot open, and the owner by name only.
+    was granted to them. They get no workbook, which they cannot open, and
+    the owner by name only.
     """
     from insights.api.dashboards import DASHBOARD_LIST_FIELDS, _enrich_dashboards
 
@@ -128,7 +127,7 @@ def get_dashboards() -> list[dict]:
     _enrich_dashboards(dashboards)
     for dashboard in dashboards:
         dashboard.owner_name = frappe.utils.get_fullname(dashboard.pop("owner"))
-        for field in ("preview_image", "workbook", "_liked_by"):
+        for field in ("workbook", "_liked_by"):
             dashboard.pop(field, None)
     return dashboards
 

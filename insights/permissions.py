@@ -1341,6 +1341,102 @@ def can_read_rows(doc, user=None) -> bool:
     return bool(InsightsPermissions(user, ignore_visibility=True).has_doc_permission(stored, "read"))
 
 
+def same_rows_for_every_reader(dashboards: list[str]) -> set[str]:
+    """The `dashboards` every reader sees with the same rows, so one preview image may show to all of them.
+
+    That holds when nobody but its owner holds a grant on it, or when every
+    chart on it runs as its owner (`declared_owner`). The grants are the rows
+    of this module's table that name other users: the workbook's owner and
+    shares, the dashboard's shares, a team grant and a visibility level. An
+    admin may open anything and is not counted. An app's dashboard always
+    fails: roles read it, and its charts never run as their owner.
+    """
+    from insights.api.list_filters import get_shares
+    from insights.permission_user import declared_owner
+
+    if not dashboards:
+        return set()
+
+    DASHBOARD = "Insights Dashboard v3"
+    CHART = "Insights Chart v3"
+    rows = frappe.get_all(
+        DASHBOARD, filters={"name": ["in", dashboards]}, fields=["name", "owner", "workbook", "visibility"]
+    )
+    workbook_names = list({row.workbook for row in rows if row.workbook})
+    workbooks = {
+        workbook.name: workbook
+        for workbook in frappe.get_all(
+            "Insights Workbook",
+            filters={"name": ["in", workbook_names]},
+            fields=["name", "owner", "is_standard"],
+        )
+    }
+    roles: dict[str, list] = {}
+    for role in frappe.get_all(
+        "Has Role",
+        filters={"parenttype": DASHBOARD, "parentfield": "visible_to_roles", "parent": ["in", dashboards]},
+        fields=["parent", "role"],
+    ):
+        roles.setdefault(role.parent, []).append(role)
+    everyone_dashboards, dashboard_users = get_shares(DASHBOARD, dashboards)
+    everyone_workbooks, workbook_users = get_shares("Insights Workbook", workbook_names)
+    team_granted = set(
+        frappe.get_all(
+            "Insights Resource Permission",
+            filters={"resource_type": DASHBOARD, "resource_name": ["in", dashboards]},
+            pluck="resource_name",
+        )
+    )
+
+    charts: dict[str, list[str]] = {}
+    for row in frappe.get_all(
+        "Insights Dashboard Chart v3",
+        filters={"parenttype": DASHBOARD, "parent": ["in", dashboards]},
+        fields=["parent", "chart"],
+    ):
+        charts.setdefault(row.parent, []).append(row.chart)
+    checked = set(
+        frappe.get_all(
+            CHART,
+            filters={
+                "name": ["in", [chart for names in charts.values() for chart in names]],
+                "run_as_owner": 1,
+            },
+            pluck="name",
+        )
+    )
+    runs_as_owner = {}
+
+    def all_run_as_owner(names: list[str]) -> bool:
+        if not set(names) <= checked:
+            return False
+        for name in names:
+            if name not in runs_as_owner:
+                runs_as_owner[name] = bool(declared_owner(frappe._dict(doctype=CHART, name=name)))
+            if not runs_as_owner[name]:
+                return False
+        return True
+
+    def only_owner_reads(row) -> bool:
+        workbook = workbooks.get(row.workbook)
+        shared_users = {*dashboard_users.get(row.name, []), *workbook_users.get(row.workbook, [])}
+        return not (
+            (workbook and workbook.owner != row.owner)
+            or shared_users - {row.owner}
+            or row.name in everyone_dashboards
+            or row.workbook in everyone_workbooks
+            or row.name in team_granted
+            or reaches_anybody(frappe._dict(visibility=row.visibility, visible_to_roles=roles.get(row.name)))
+        )
+
+    return {
+        row.name
+        for row in rows
+        if not (workbooks.get(row.workbook) or {}).get("is_standard")
+        and (only_owner_reads(row) or all_run_as_owner(charts.get(row.name, [])))
+    }
+
+
 def can_download(user=None) -> bool:
     """Whether this user may download data as a file at all.
 
