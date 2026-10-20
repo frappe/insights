@@ -49,10 +49,12 @@ from insights.insights.query_builders.sql_functions import (
 from insights.insights.query_utils import (
     check_source_workbook,
     extract_sql_table_refs,
+    fold_identifiers,
     get_direct_dependencies,
     real_table_refs,
     runs_stored_procedure,
     table_reference,
+    unaliased_name_clashes,
 )
 from insights.permission_user import get_permission_user, script_session
 from insights.utils import create_execution_log
@@ -1102,6 +1104,8 @@ class IbisQueryBuilder:
 
         calls_procedure = runs_stored_procedure(raw_sql)
         raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
+        if not calls_procedure:
+            raw_sql = fold_identifiers(raw_sql, source_dialect)
         raw_sql = self._validate_native_sql(
             raw_sql, use_live_connection=self.use_live_connection, data_source=ds, dialect=source_dialect
         )
@@ -1213,6 +1217,13 @@ class IbisQueryBuilder:
                     QueryRefused,
                     title=frappe._("Unsupported SQL Query"),
                 )
+
+        for name in unaliased_name_clashes(raw_sql, dialect=dialect):
+            frappe.throw(
+                frappe._("Give one of the tables named {0} an alias").format(name),
+                QueryRefused,
+                title=frappe._("Unsupported SQL Query"),
+            )
 
         return raw_sql
 

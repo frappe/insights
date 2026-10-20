@@ -6,7 +6,11 @@ from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
-from insights.insights.query_utils import extract_sql_table_refs
+from insights.insights.query_utils import (
+    extract_sql_table_refs,
+    extract_table_deps_from_sql_operations,
+    fold_identifiers,
+)
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import as_user, create_user, delete_users
 
@@ -356,6 +360,47 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         )
 
         self.assertEqual(rewritten, 'SELECT orders.amount FROM (SELECT * FROM "sales"."orders") AS orders')
+
+    # @feature query.native-sql-schema-qualified
+    def test_two_unaliased_tables_with_one_name_are_refused(self):
+        # both would be replaced under the alias `orders`
+        postgres = self.postgres_data_source("sales, finance")
+
+        def validate(raw_sql):
+            self.builder._validate_native_sql(
+                raw_sql, use_live_connection=True, data_source=postgres, dialect="postgres"
+            )
+
+        with self.assertRaises(QueryRefused):
+            validate("select * from sales.orders join finance.orders on finance.orders.id = sales.orders.id")
+
+        validate("select * from sales.orders s join finance.orders f on f.id = s.id")
+        validate("select * from sales.orders where id in (select id from finance.orders)")
+
+    # @feature query.native-sql-schema-qualified
+    def test_an_unquoted_name_reads_as_postgres_folds_it(self):
+        postgres = self.postgres_data_source("sales, Finance")
+        raw_sql = fold_identifiers('select * from Sales.Orders join "Finance".invoices on 1 = 1', "postgres")
+
+        self.assertEqual(
+            self.builder._get_sql_table_names(raw_sql, postgres, "postgres"),
+            {"sales.orders": "sales.orders", "Finance.invoices": "Finance.invoices"},
+        )
+        # DuckDB lowercases a quoted name too, so only PostgreSQL folds
+        for dialect in ("duckdb", "mysql"):
+            self.assertEqual(fold_identifiers("select * from Orders", dialect), "select * from Orders")
+
+    # @feature query.native-sql-schema-qualified
+    def test_a_deleted_data_source_still_names_its_tables(self):
+        # an unnamed table would let a chart reading it pass the permission check
+        operations = [
+            {"type": "sql", "data_source": "Deleted Source", "raw_sql": "select * from sales.orders"}
+        ]
+
+        self.assertEqual(
+            extract_table_deps_from_sql_operations(operations),
+            [{"data_source": "Deleted Source", "table_name": "orders"}],
+        )
 
     def postgres_data_source(self, schema):
         return frappe.get_doc(

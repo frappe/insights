@@ -43,6 +43,50 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
     return table_refs
 
 
+def fold_identifiers(raw_sql: str, dialect: sg.Dialect | None) -> str:
+    """`raw_sql` with every unquoted identifier lowercased, as PostgreSQL reads it, so
+    `Sales.Orders` names the table the data source lists as `sales.orders`.
+
+    Only PostgreSQL: DuckDB lowercases quoted identifiers too, which would lose a
+    mixed-case table name.
+    """
+    if dialect != "postgres":
+        return raw_sql
+
+    from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+
+    try:
+        parsed = sg.parse_one(raw_sql, dialect=dialect)
+    except Exception:
+        return raw_sql  # nosemgrep - the database reports a query it cannot parse
+
+    return normalize_identifiers(parsed, dialect=dialect).sql(dialect=dialect)
+
+
+def unaliased_name_clashes(raw_sql: str, dialect: sg.Dialect | None) -> list[str]:
+    """Bare names that two unaliased tables of one query block share, such as
+    `orders` for `sales.orders` and `finance.orders`.
+
+    A table is replaced under its bare name, so the pair would read as two
+    sources with one name.
+    """
+    from sqlglot.optimizer.scope import build_scope
+
+    try:
+        root = build_scope(sg.parse_one(raw_sql, dialect=dialect))
+    except Exception:
+        return []  # nosemgrep - an unparseable query runs nothing, so it reads no table
+
+    clashes = []
+    for scope in root.traverse() if root else []:
+        references_by_name = {}
+        for table in scope.tables:
+            if not table.alias:
+                references_by_name.setdefault(table.name, set()).add(table_reference(table))
+        clashes += [name for name, references in references_by_name.items() if len(references) > 1]
+    return clashes
+
+
 def table_reference(table_exp: sg.exp.Table) -> str:
     """A table as a SQL query names it, with its schema when the query gives one."""
     return f"{table_exp.db}.{table_exp.name}" if table_exp.db else table_exp.name
@@ -137,13 +181,16 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
             continue
         raw_sql = op.get("raw_sql") or ""
         ds = op.get("data_source") or ""
-        if not raw_sql or not ds or not frappe.db.exists("Insights Data Source v3", ds):
+        if not raw_sql or not ds:
             continue
-        data_source = frappe.get_cached_doc("Insights Data Source v3", ds)
-        dialect = db_type_to_sqlglot_dialect(data_source.database_type)
-        for ref in extract_sql_table_refs(raw_sql, dialect=dialect):
+        # a deleted data source still names its tables, so a chart reading one stays refused
+        data_source = frappe.db.exists("Insights Data Source v3", ds) and frappe.get_cached_doc(
+            "Insights Data Source v3", ds
+        )
+        dialect = db_type_to_sqlglot_dialect(data_source.database_type) if data_source else None
+        for ref in extract_sql_table_refs(fold_identifiers(raw_sql, dialect), dialect=dialect):
             # a schema the data source does not read names no table; the run refuses it
-            table_name = data_source.sql_table_name(ref.name, ref.db)
+            table_name = data_source.sql_table_name(ref.name, ref.db) if data_source else ref.name
             key = (ds, table_name)
             if not table_name or key in seen:
                 continue
