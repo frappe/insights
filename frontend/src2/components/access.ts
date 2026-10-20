@@ -31,7 +31,7 @@ export function useAccessSources(storageKey: string) {
 	return { options, selected, shown, sources }
 }
 
-type Shared = {
+export type Shared = {
 	shared_with?: string[]
 	shared_with_organization?: boolean
 	visible_to_roles?: string[]
