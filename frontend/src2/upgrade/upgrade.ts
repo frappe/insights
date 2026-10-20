@@ -12,7 +12,7 @@ export type UpgradeItem = {
 	reference_doctype: string | null
 	reference_name: string | null
 	user: string | null
-	action: '' | 'share_workbook' | 'delete_workbook' | 'open_settings' | null
+	action: '' | 'delete_workbook' | 'open_settings' | null
 	/** The workbook the reference is opened in, if it has a route in the app. */
 	workbook: string | null
 	/** The desk form of a reference the app has no page for, such as a user. */

@@ -1,8 +1,6 @@
 import frappe
-from frappe.share import add_docshare
 
 from insights.decorators import insights_whitelist
-from insights.permissions import validate_shareable_users
 from insights.upgrade import (
     ITEM,
     WORKBOOK,
@@ -51,9 +49,8 @@ def can_fix(item) -> bool:
     """Whether the session user holds the permission the item's fix needs."""
     if item.action == "open_settings":
         return bool(frappe.has_permission("Insights Settings", "write"))
-    if item.action == "delete_workbook" or (item.action == "share_workbook" and item.user):
-        ptype = "share" if item.action == "share_workbook" else "delete"
-        return bool(frappe.has_permission("Insights Workbook", ptype, doc=item.reference_name))
+    if item.action == "delete_workbook":
+        return bool(frappe.has_permission("Insights Workbook", "delete", doc=item.reference_name))
     return False
 
 
@@ -81,11 +78,8 @@ def dismiss_upgrade_item(name: str):
 def fix_upgrade_item(name: str):
     """Apply the item's fix with the session user's own permission on its reference."""
     item = get_item(name)
-    if item.action == "share_workbook" and item.user:
-        validate_shareable_users({item.user})
-        # checks the session user may share the workbook
-        add_docshare("Insights Workbook", item.reference_name, user=item.user, write=1)
-    elif item.action == "delete_workbook":
+    if item.action == "delete_workbook":
+        # checks the session user may delete the workbook
         frappe.delete_doc("Insights Workbook", item.reference_name)
     else:
         frappe.throw(frappe._("This item has no fix to apply."))

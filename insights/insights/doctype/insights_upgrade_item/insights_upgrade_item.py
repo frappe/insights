@@ -13,7 +13,7 @@ class InsightsUpgradeItem(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
-        action: DF.Literal["", "share_workbook", "delete_workbook", "open_settings"]
+        action: DF.Literal["", "delete_workbook", "open_settings"]
         code: DF.Data
         message: DF.SmallText
         reference_doctype: DF.Link | None

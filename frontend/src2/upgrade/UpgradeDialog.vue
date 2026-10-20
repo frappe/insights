@@ -86,7 +86,6 @@ function openReference(item: UpgradeItem) {
 }
 
 const FIX_LABELS = {
-	share_workbook: __('Share as editor'),
 	delete_workbook: __('Delete copy'),
 	open_settings: __('Open settings'),
 }

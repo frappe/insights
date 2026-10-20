@@ -132,42 +132,21 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertEqual(frappe.get_all(ITEM, filters={"code": "W2"}, pluck="status"), ["Dismissed"])
 
     # @feature upgrade.attention-fix
-    def test_fix_shares_the_workbook_back_with_write(self):
-        workbook = create_test_workbook("Administrator", title=f"{PREFIX} Shared")
-        add_item(
-            "P3",
-            "Alice lost access.",
-            reference=(DT.WORKBOOK, workbook.name),
-            user=ALICE,
-            action="share_workbook",
-        )
-        item = frappe.db.get_value(ITEM, {"code": "P3"})
-
-        with self.as_user(ALICE):
-            self.assertFalse(frappe.has_permission(DT.WORKBOOK, "write", workbook.name))
-        self.assertTrue(get_upgrade_items()[0].can_fix)
-        fix_upgrade_item(item)
-
-        with self.as_user(ALICE):
-            self.assertTrue(frappe.has_permission(DT.WORKBOOK, "write", workbook.name))
-        self.assertEqual(frappe.db.get_value(ITEM, item, "status"), "Done")
-
-    # @feature upgrade.attention-fix
     def test_fix_needs_the_users_own_permission_on_what_it_names(self):
         workbook = create_test_workbook(BOB, title=f"{PREFIX} Bobs")
         add_item(
-            "P3",
-            "Alice lost access.",
+            "W2",
+            "This copy duplicates a standard workbook.",
             reference=(DT.WORKBOOK, workbook.name),
             user=ALICE,
-            action="share_workbook",
+            action="delete_workbook",
         )
-        item = frappe.db.get_value(ITEM, {"code": "P3"})
+        item = frappe.db.get_value(ITEM, {"code": "W2"})
 
         with self.as_user(ALICE):
             self.assertFalse(get_upgrade_items()[0].can_fix)
             self.assertRaises(frappe.PermissionError, fix_upgrade_item, item)
-            self.assertFalse(frappe.has_permission(DT.WORKBOOK, "read", workbook.name))
+        self.assertTrue(frappe.db.exists(DT.WORKBOOK, workbook.name))
         self.assertEqual(frappe.db.get_value(ITEM, item, "status"), "Open")
 
     # @feature upgrade.attention-fix

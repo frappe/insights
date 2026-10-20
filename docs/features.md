@@ -480,7 +480,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.duplicate-folder-titles | Folders of one type that shared a title in a workbook before titles were unique are numbered apart, the way a new folder is. |
 | upgrade.v3-users-welcomed | A user of Insights 3 sees the upgrade dialog once after the upgrade, and a user new to Insights 4 never does. |
 | upgrade.attention-items | What the upgrade could not carry over waits as an item: an admin sees every open item, anyone else only their own, and either dismisses it. |
-| upgrade.attention-fix | An item's Fix applies its fix with the user's own permission on what the item names: it shares a workbook back, or deletes a template copy. |
+| upgrade.attention-fix | An item's Fix applies its fix with the user's own permission on what the item names: it deletes a template copy. |
 | upgrade.owners-keep-access | After the upgrade, a user who made a query, chart, dashboard or alert in a workbook that does not name them can edit the workbook, and an admin is told who was added. |
 | upgrade.member-shares-kept | After the upgrade, a user a query, chart, dashboard, alert or folder was shared with keeps that access through a share of its workbook. A share with everyone is removed, not widened, and an admin is told about each. |
 | upgrade.copied-sources-reported | After the upgrade, the owner of a workbook that got a copy of another workbook's query is told when the copy needs its variable values entered. A query left in a deleted workbook is skipped. |
