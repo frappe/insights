@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { createResource } from 'frappe-ui'
 import { NumberCard } from 'frappe-ui/charts'
-import { CalendarDays, Copy, Filter, LayoutDashboard, Scroll } from 'lucide-vue-next'
+import { Copy, LayoutDashboard, Scroll } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import VisibilitySelector from '../../components/VisibilitySelector.vue'
 import OwnerAvatar from '../../components/OwnerAvatar.vue'
 import RunAsOwnerField from '../../charts/components/RunAsOwnerField.vue'
 import DrillActions from '../../charts/drill/DrillActions.vue'
+import { columnIcon } from '../../query/column_icon'
 import { __ } from '../../translation'
 import OrganizationAccessRow from '../../workbook/OrganizationAccessRow.vue'
 import type { PictureName } from '../upgrade_steps'
@@ -112,7 +113,9 @@ const runsAsOwner = ref(true)
 
 		<div v-else-if="props.name === 'currency'" class="flex flex-col items-start gap-3">
 			<Button variant="outline" class="text-sm">
-				<template #prefix><Filter class="h-4 w-4" stroke-width="1.5" /></template>
+				<template #prefix>
+					<component :is="columnIcon('String')" class="h-4 w-4" stroke-width="1.5" />
+				</template>
 				<span class="text-ink-gray-8">
 					{{ __('Company') }} <span class="font-medium">Kaveri Traders</span>
 				</span>
@@ -226,7 +229,9 @@ const runsAsOwner = ref(true)
 
 		<div v-else-if="props.name === 'numberCards'" class="flex flex-col items-start gap-3">
 			<Button variant="outline" class="text-sm">
-				<template #prefix><CalendarDays class="h-4 w-4" stroke-width="1.5" /></template>
+				<template #prefix>
+					<component :is="columnIcon('Date')" class="h-4 w-4" stroke-width="1.5" />
+				</template>
 				<span class="text-ink-gray-8">{{ __('Posting Date') }}</span>
 			</Button>
 			<div class="w-56">
