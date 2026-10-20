@@ -171,3 +171,50 @@ def preview_user_for(doc) -> str | None:
     if not key or not doc.name or not is_being_previewed(doc.doctype, doc.name):
         return None
     return key["user"]
+
+
+def why_rows_follow_reader(query: str | None, content) -> dict | None:
+    """Why `query`, and `content` that reads its rows, may give each reader
+    other rows, or None when every reader gets the same rows. Answers the
+    `reason` (`script`, `site_table` or `table_restriction`) and the `table`
+    it reads, if any."""
+    from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name, is_site_db
+    from insights.insights.query_utils import source_tables, transitive_closure
+
+    if not query:
+        return None
+    operations = frappe.get_all(
+        "Insights Query v3", filters={"name": ("in", [query, *transitive_closure(query)])}, pluck="operations"
+    )
+    if any(runs_as_user(frappe.parse_json(node)) for node in [content, *operations]):
+        return {"reason": "script"}
+
+    restrictions_apply = frappe.db.get_single_value("Insights Settings", "enable_permissions")
+    for table in source_tables(query):
+        data_source, table_name = table["data_source"], table["table_name"]
+        if is_site_db(data_source):
+            return {"reason": "site_table", "table": table_name.removeprefix("tab")}
+        if restrictions_apply and frappe.db.exists(
+            "Insights Resource Permission",
+            {
+                "resource_type": "Insights Table v3",
+                "resource_name": get_table_name(data_source, table_name),
+                "table_restrictions": ("is", "set"),
+            },
+        ):
+            return {"reason": "table_restriction", "table": table_name}
+    return None
+
+
+def runs_as_user(node) -> bool:
+    """Whether `node` holds a script, or an expression that calls frappe."""
+    if isinstance(node, list):
+        return any(runs_as_user(value) for value in node)
+    if not isinstance(node, dict):
+        return False
+    if node.get("type") == "code":
+        return True
+    expression = node.get("expression")
+    if isinstance(expression, str) and "frappe" in expression:
+        return True
+    return any(runs_as_user(value) for value in node.values())
