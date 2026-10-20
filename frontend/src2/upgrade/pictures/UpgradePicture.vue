@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { createResource } from 'frappe-ui'
 import { NumberCard } from 'frappe-ui/charts'
 import { CalendarDays, Copy, Filter, LayoutDashboard, Scroll } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
@@ -6,7 +7,6 @@ import VisibilitySelector from '../../components/VisibilitySelector.vue'
 import OwnerAvatar from '../../components/OwnerAvatar.vue'
 import RunAsOwnerField from '../../charts/components/RunAsOwnerField.vue'
 import DrillActions from '../../charts/drill/DrillActions.vue'
-import useDashboardStore from '../../dashboard/dashboards'
 import { __ } from '../../translation'
 import OrganizationAccessRow from '../../workbook/OrganizationAccessRow.vue'
 import type { PictureName } from '../upgrade_steps'
@@ -28,22 +28,28 @@ const props = defineProps<{
 
 const BARS = [40, 62, 50, 84, 58, 70]
 
-// The dashboards the reader's apps ship, as the Dashboards page lists them.
+// The dashboards the first slide names, by the app that ships them, with the
+// title and logo the workbook list shows that app by. The same rows for every
+// reader, whether or not they may open them.
 const SAMPLE_APP_DASHBOARDS = [
-	{ title: 'Selling', app: 'ERPNext' },
-	{ title: 'Stock', app: 'ERPNext' },
-	{ title: 'Accounts', app: 'ERPNext' },
-	{ title: 'Payroll', app: 'Frappe HR' },
-	{ title: 'Expense Claims', app: 'Frappe HR' },
+	{ title: 'Selling', app: 'erpnext' },
+	{ title: 'Stock', app: 'erpnext' },
+	{ title: 'Accounts', app: 'erpnext' },
+	{ title: 'Payroll', app: 'hrms' },
+	{ title: 'Expense Claims', app: 'hrms' },
 ]
-const dashboardStore = useDashboardStore()
-const appDashboards = computed(() => {
-	const shipped = dashboardStore.dashboards.filter((dashboard) => dashboard.shipped_by)
-	if (!shipped.length) return SAMPLE_APP_DASHBOARDS.map((row) => ({ ...row, logo: null }))
-	const named = SAMPLE_APP_DASHBOARDS.map((row) => shipped.find((d) => d.title === row.title))
-	const rows = named.some(Boolean) ? named.filter(Boolean) : shipped.slice(0, 5)
-	return rows.map((d) => ({ title: d!.title, app: d!.shipped_by!, logo: d!.shipped_by_logo }))
+const APP_TITLES: Record<string, string> = { erpnext: 'ERPNext', hrms: 'Frappe HR' }
+const shippingApps = createResource({
+	url: 'insights.api.upgrade.get_shipping_apps',
+	cache: 'insights_shipping_apps',
+	auto: props.name === 'appDashboards',
 })
+const appDashboards = computed(() =>
+	SAMPLE_APP_DASHBOARDS.map((row) => {
+		const app = (shippingApps.data ?? []).find((a: { app: string }) => a.app === row.app)
+		return { title: row.title, app: app?.title ?? APP_TITLES[row.app], logo: app?.logo ?? null }
+	}),
+)
 
 const inr = (value: number) => value.toLocaleString('en-IN')
 

@@ -7,7 +7,13 @@ add their own.
 import frappe
 
 from insights.api import get_user_info
-from insights.api.upgrade import dismiss_upgrade_items, fix_upgrade_item, get_upgrade_items, mark_upgrade_seen
+from insights.api.upgrade import (
+    dismiss_upgrade_items,
+    fix_upgrade_item,
+    get_shipping_apps,
+    get_upgrade_items,
+    mark_upgrade_seen,
+)
 from insights.patches import mark_v3_users as mark_v3_users_patch
 from insights.patches.run_public_charts_as_owner import report as report_public_chart
 from insights.tests.base import InsightsIntegrationTestCase
@@ -203,3 +209,18 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         fix_upgrade_item(frappe.db.get_value(ITEM, {"code": "W2"}))
 
         self.assertFalse(frappe.db.exists(DT.WORKBOOK, workbook.name))
+
+    # @feature upgrade.wizard
+    def test_the_apps_that_ship_workbooks_come_with_their_title_and_logo(self):
+        from insights import standard
+
+        workbooks = frappe.get_all(DT.WORKBOOK, filters={"is_standard": 1}, pluck="name")
+        shipping = set(standard.shipping_apps(workbooks).values())
+        with self.as_user(ALICE):
+            apps = get_shipping_apps()
+
+        self.assertTrue(apps)
+        self.assertEqual({app["app"] for app in apps}, shipping)
+        for app in apps:
+            self.assertEqual(app["title"], standard.app_title(app["app"]))
+            self.assertEqual(app["logo"], standard.app_logo_url(app["app"]))

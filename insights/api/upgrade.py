@@ -1,5 +1,6 @@
 import frappe
 
+from insights import standard
 from insights.decorators import insights_whitelist
 from insights.upgrade import (
     ITEM,
@@ -124,6 +125,18 @@ def fix_upgrade_item(name: str):
         frappe.throw(frappe._("This item has no fix to apply."))
     # a save would check the reference, which the fix may have deleted
     item.db_set("status", "Done")
+
+
+@insights_whitelist()
+def get_shipping_apps() -> list[dict]:
+    """Each app that ships workbooks, by the title and logo the workbook list
+    shows it with. The wizard's welcome pictures the dashboards they ship to a
+    reader who may open none of them."""
+    workbooks = frappe.get_all(WORKBOOK, filters={"is_standard": 1}, pluck="name")
+    return [
+        {"app": app, "title": standard.app_title(app), "logo": standard.app_logo_url(app)}
+        for app in sorted(set(standard.shipping_apps(workbooks).values()))
+    ]
 
 
 @insights_whitelist()
