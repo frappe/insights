@@ -42,18 +42,18 @@ const percent = computed(() => {
 </script>
 
 <template>
-	<SidebarCard v-if="show" theme="blue">
-		<template #prefix><Sparkle class="size-4 text-ink-blue-7" stroke-width="1.5" /></template>
+	<SidebarCard v-if="show">
+		<template #prefix><Sparkle class="size-4 text-ink-gray-8" stroke-width="1.5" /></template>
 		<template #title>{{ __('Insights 4') }}</template>
 		<template #description>
 			<span class="flex flex-col gap-1.5">
 				<span>{{ description }}</span>
 				<span
 					v-if="unfinished || left"
-					class="block h-1 overflow-hidden rounded-1 bg-surface-gray-3"
+					class="block h-1 overflow-hidden rounded-1 bg-surface-gray-2"
 				>
 					<span
-						class="block h-full rounded-1 bg-surface-blue-7"
+						class="block h-full rounded-1 bg-surface-gray-10"
 						:style="{ width: `${percent}%` }"
 					/>
 				</span>
@@ -63,7 +63,6 @@ const percent = computed(() => {
 			<Button
 				v-if="unfinished || left"
 				variant="subtle"
-				theme="blue"
 				size="sm"
 				class="w-full"
 				:label="unfinished ? __('Resume') : __('Review')"

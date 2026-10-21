@@ -254,7 +254,7 @@ function onKeydown(event: KeyboardEvent) {
 							:href="RELEASE_NOTES"
 							target="_blank"
 							rel="noopener"
-							class="text-ink-blue-link hover:underline"
+							class="text-ink-gray-8 underline hover:text-ink-gray-9"
 							>{{ __('Release notes') }}</a
 						>
 					</span>
@@ -283,7 +283,7 @@ function onKeydown(event: KeyboardEvent) {
 					</div>
 				</div>
 				<div class="mt-1 flex grow flex-col gap-2.5">
-					<div class="text-xs font-semibold text-ink-blue-link">{{ __('Now') }}</div>
+					<div class="text-xs font-semibold text-ink-gray-9">{{ __('Now') }}</div>
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">
 							{{ __('People edit through the workbook.') }}
@@ -375,10 +375,10 @@ function onKeydown(event: KeyboardEvent) {
 								__('{0} of {1}', String(handled + 1), String(rows.length))
 							}}</span>
 							<div
-								class="h-1 max-w-[120px] flex-1 overflow-hidden rounded-1 bg-surface-gray-3"
+								class="h-1 max-w-[120px] flex-1 overflow-hidden rounded-1 bg-surface-gray-2"
 							>
 								<div
-									class="h-full rounded-1 bg-surface-blue-7"
+									class="h-full rounded-1 bg-surface-gray-10"
 									:style="{
 										width: `${Math.round((handled / rows.length) * 100)}%`,
 									}"
@@ -393,7 +393,7 @@ function onKeydown(event: KeyboardEvent) {
 							class="-mt-1 flex items-center gap-2 text-p-base font-medium text-ink-gray-8"
 						>
 							<span
-								class="grid size-5 shrink-0 place-items-center rounded-full bg-surface-blue-2 text-ink-blue-7"
+								class="grid size-5 shrink-0 place-items-center rounded-full bg-surface-gray-2 text-ink-gray-8"
 							>
 								<ArrowRight class="size-3" stroke-width="2" />
 							</span>

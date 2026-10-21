@@ -66,8 +66,8 @@ function state(step: Step) {
 		<template #description>{{ __('What is new, and what the upgrade left for you') }}</template>
 		<SettingsSidebar>
 			<div class="flex items-center gap-2 px-1.5 pb-1 pt-2">
-				<span class="grid size-[26px] place-items-center rounded-4 bg-surface-blue-2">
-					<Sparkle class="size-4 text-ink-blue-7" stroke-width="1.5" />
+				<span class="grid size-[26px] place-items-center rounded-4 bg-surface-gray-2">
+					<Sparkle class="size-4 text-ink-gray-8" stroke-width="1.5" />
 				</span>
 				<span class="text-base font-semibold text-ink-gray-9">{{ __('Insights 4') }}</span>
 			</div>
