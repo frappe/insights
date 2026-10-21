@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { UpgradeItem } from './upgrade'
 import {
-	detailsOf,
 	keyAction,
 	pictureOf,
 	sentenceOf,
@@ -58,9 +57,6 @@ describe('the wizard steps', () => {
 		expect(
 			wizardSteps([], { sharing: false, admin: true, me: DAVE }).map((step) => step.id),
 		).toEqual(['welcome'])
-		expect(detailsOf(items, { admin: true }).map((group) => group.title)).toEqual([
-			'Copies of Insights 3 templates',
-		])
 	})
 
 	// @feature upgrade.wizard
@@ -144,7 +140,7 @@ describe('resuming the wizard', () => {
 
 describe('the wizard steps of someone who is not an admin', () => {
 	// @feature upgrade.wizard
-	it('hold their own detail items in Good to know, and leave Details for admins empty', () => {
+	it('hold their own items outside the groups in Good to know', () => {
 		const items = [
 			item('moved', 'P11', { chart: 'KPIs', publisher: BOB, owner: ALICE }, { user: ALICE }),
 			item('script', 'P20', { title: 'Script rows', author: ALICE }, { user: ALICE }),
@@ -155,7 +151,6 @@ describe('the wizard steps of someone who is not an admin', () => {
 		expect('group' in notes && notes.group.title).toBe('A few changes to what you made')
 		expect('group' in notes && notes.group.picture).toBeUndefined()
 		expect(items.map(pictureOf)).toEqual(['chartOwner', undefined])
-		expect(detailsOf(items, { admin: false })).toEqual([])
 	})
 
 	// @feature upgrade.wizard

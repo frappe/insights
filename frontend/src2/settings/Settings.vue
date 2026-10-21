@@ -1,16 +1,7 @@
 <script setup lang="ts">
-import {
-	Building2,
-	CircleUser,
-	DatabaseZap,
-	KeyRound,
-	SettingsIcon,
-	Sparkle,
-	Users,
-} from 'lucide-vue-next'
+import { Building2, CircleUser, DatabaseZap, KeyRound, SettingsIcon, Users } from 'lucide-vue-next'
 import { defineAsyncComponent, shallowRef } from 'vue'
 import TabbedSidebarLayout, { Tab, TabGroup } from '../components/TabbedSidebarLayout.vue'
-import session from '../session'
 import { __ } from '../translation'
 
 const showDialog = defineModel({ required: true, default: false })
@@ -55,18 +46,6 @@ const tabGroups: TabGroup[] = [
 				icon: DatabaseZap,
 				component: defineAsyncComponent(() => import('./DataStoreSettings.vue')),
 			},
-			// what the upgrade from Insights 3 changed that rarely needs anyone
-			...(session.user.is_admin
-				? [
-						{
-							label: __('Upgrade details'),
-							icon: Sparkle,
-							component: defineAsyncComponent(
-								() => import('../upgrade/UpgradeDetailsSettings.vue'),
-							),
-						},
-				  ]
-				: []),
 		],
 	},
 ]

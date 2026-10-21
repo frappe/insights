@@ -3,7 +3,7 @@ import { call } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
 import { showErrorToast } from '../helpers'
 import session from '../session'
-import { detailsOf, slidesFor, stepIndexOf, wizardSteps } from './upgrade_steps'
+import { slidesFor, stepIndexOf, wizardSteps } from './upgrade_steps'
 
 export type UpgradeItem = {
 	name: string
@@ -52,7 +52,6 @@ const items = ref<UpgradeItem[]>([])
 const done = ref<UpgradeItem[]>([])
 const loaded = ref(false)
 const showWizard = ref(false)
-const showDetails = ref(false)
 
 let stored: ReturnType<typeof useStorage<Progress>> | undefined
 function progressStore() {
@@ -85,7 +84,6 @@ const steps = computed(() =>
 		me: session.user.email,
 	}),
 )
-const details = computed(() => detailsOf([...items.value, ...done.value], { admin: admin.value }))
 
 const doneNames = computed(() => new Set(done.value.map((item) => item.name)))
 const isDone = (name: string) => doneNames.value.has(name)
@@ -96,9 +94,6 @@ const openWizardItems = computed(() =>
 	steps.value
 		.flatMap((step) => ('rows' in step ? step.rows : []))
 		.filter((row) => !isDone(row.item.name)),
-)
-const openDetailItems = computed(() =>
-	details.value.flatMap((group) => group.rows).filter((row) => !isDone(row.item.name)),
 )
 
 async function load() {
@@ -200,13 +195,10 @@ const upgrade = reactive({
 	items,
 	loaded,
 	showWizard,
-	showDetails,
 	slides,
 	steps,
 	stepIndex,
-	details,
 	openWizardItems,
-	openDetailItems,
 	progress: computed(() => progressStore().value),
 	isDone,
 	load,

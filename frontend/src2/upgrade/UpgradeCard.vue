@@ -5,7 +5,6 @@ import { computed, watch } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
 import upgrade from './upgrade'
-import UpgradeDetailsDialog from './UpgradeDetailsDialog.vue'
 import { needsYou } from './upgrade_steps'
 
 // Where the wizard is picked up again: the step it was left at, or what is
@@ -19,12 +18,9 @@ watch(
 const progress = computed(() => upgrade.progress)
 const left = computed(() => upgrade.openWizardItems.length)
 const now = computed(() => upgrade.openWizardItems.filter((row) => needsYou(row.item)).length)
-const details = computed(() => upgrade.openDetailItems.length)
 
 const unfinished = computed(() => progress.value.started && !progress.value.finished)
-const show = computed(
-	() => !upgrade.showWizard && (unfinished.value || left.value > 0 || details.value > 0),
-)
+const show = computed(() => !upgrade.showWizard && (unfinished.value || left.value > 0))
 
 const description = computed(() => {
 	if (unfinished.value) {
@@ -64,26 +60,15 @@ const percent = computed(() => {
 			</span>
 		</template>
 		<template #actions>
-			<div class="flex flex-col gap-1">
-				<Button
-					v-if="unfinished || left"
-					variant="subtle"
-					theme="blue"
-					size="sm"
-					class="w-full"
-					:label="unfinished ? __('Resume') : __('Review')"
-					@click="upgrade.resume()"
-				/>
-				<Button
-					v-if="details"
-					variant="subtle"
-					size="sm"
-					class="w-full"
-					:label="__('Details for admins · {0}', String(details))"
-					@click="upgrade.showDetails = true"
-				/>
-			</div>
+			<Button
+				v-if="unfinished || left"
+				variant="subtle"
+				theme="blue"
+				size="sm"
+				class="w-full"
+				:label="unfinished ? __('Resume') : __('Review')"
+				@click="upgrade.resume()"
+			/>
 		</template>
 	</SidebarCard>
-	<UpgradeDetailsDialog />
 </template>

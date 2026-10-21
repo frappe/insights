@@ -178,27 +178,13 @@ export const groups = translatedTable<Group[]>(() => [
 ])
 
 // The Good to know step of someone who isn't an admin, when it holds more than
-// moved charts: their own items an admin would find in Details for admins.
+// moved charts: their own items outside the groups.
 const yourNotes = translatedTable<Pick<Group, 'title' | 'lead'>>(() => ({
 	title: __('A few changes to what you made'),
 	lead: [__('The upgrade changed some of your work,'), __('and each change says what it means.')],
 }))
 
-// Items an ordinary admin does not act on in the wizard: nothing breaks if
-// they wait, or they take a developer. Listed apart, in this order.
-export const detailGroups = translatedTable<Record<string, string>>(() => ({
-	P21: __('Scripts copied without their secrets'),
-	Q1: __('Scripts that will fail'),
-	J4: __('Import jobs that will fail'),
-	Q5: __('Expressions that reach the database'),
-	W2: __('Copies of Insights 3 templates'),
-	P20: __('Code only admins can edit'),
-	J1: __('Alerts that check a saved copy'),
-	C4: __('Reference lines that moved'),
-	N5: __('Number cards that show a day now'),
-}))
-
-// Detail items that tell of something failing until someone acts: a script or
+// Items outside the groups that tell of something failing until someone acts: a script or
 // import that will fail, a script without its secret.
 const FAILURES = new Set(['P21', 'Q1', 'J4', 'Q5'])
 
@@ -240,7 +226,8 @@ export function rowsOf(items: UpgradeItem[]): Row[] {
  *
  * A note only tells, so it stays for the person it is addressed to: an admin
  * gets no step for another user's note. Someone who isn't an admin finds their
- * own detail items in Good to know, as Details for admins is not theirs.
+ * own items outside the groups in Good to know. An admin finds those changes in
+ * the release notes.
  */
 export function wizardSteps(
 	items: UpgradeItem[],
@@ -291,26 +278,6 @@ export function stepIndexOf(steps: Step[], id: string): number {
 	const at = order.indexOf(id)
 	const index = steps.findIndex((step) => order.indexOf(step.id) >= at)
 	return index < 0 ? steps.length - 1 : index
-}
-
-/** The rows the wizard leaves to Details for admins, grouped and titled. */
-export function detailsOf(
-	items: UpgradeItem[],
-	options: { admin: boolean },
-): { title: string; rows: Row[] }[] {
-	if (!options.admin) return []
-	const inWizard = new Set(groups().flatMap((group) => group.codes))
-	const titles = detailGroups()
-	const order = Object.keys(titles)
-	const byCode = new Map<string, Row[]>()
-	for (const row of rowsOf(items)) {
-		if (inWizard.has(row.item.code)) continue
-		byCode.set(row.item.code, [...(byCode.get(row.item.code) ?? []), row])
-	}
-	const rank = (code: string) => (code in titles ? order.indexOf(code) : order.length)
-	return [...byCode.entries()]
-		.sort(([a], [b]) => rank(a) - rank(b))
-		.map(([code, rows]) => ({ title: titles[code] ?? __('Other changes'), rows }))
 }
 
 /**
