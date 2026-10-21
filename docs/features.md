@@ -340,6 +340,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | desk.chart-form | The form of a Dashboard Chart or Number Card that shows an Insights chart says that users with an Insights role see it when the chart's sharing in Insights allows them, links a sharer to the chart's Share dialog, and titles its preview with a link to the chart. Is Public reads as what it does: others can add it to their dashboards. |
 | desk.dangling-claim | A migrate lists each desk Dashboard, Dashboard Chart and Number Card that links to an Insights dashboard or chart that no longer exists, and never fails because of one. |
 | desk.shipped-claim | A desk Dashboard, Dashboard Chart or Number Card an app ships links the Insights content its file names, even when the app was installed before Insights. |
+| desk.without-islands | On a Frappe without desk islands, Insights installs and migrates, offers no Show in Desk, and adds nothing to desk's Dashboard, Dashboard Chart and Number Card. |
 | desk.uninstall | Removing Insights removes the fields that link desk documents to Insights content, so every desk Dashboard, Dashboard Chart and Number Card still opens. |
 | desk.dashboard-page | On a frappe with page islands (not v16), `/app/insights-dashboard/<dashboard>` shows that dashboard to a desk user. The route, or a sidebar item's route options, names the dashboard. |
 

@@ -37,6 +37,7 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 from frappe.model.naming import append_number_if_name_exists
 from frappe.utils import get_url_to_form
 
+from insights import desk_islands
 from insights.hooks import insights_path
 
 # desk doctype -> the Custom Field that links it to Insights content, the
@@ -75,6 +76,9 @@ DESK_ISLANDS = {
         "definition": ("document_type", "report_name", "method"),
     },
 }
+# without islands desk renders every document itself, so none links to Insights
+if not desk_islands():
+    DESK_ISLANDS = {}
 
 
 def boot_app_path(bootinfo) -> None:
@@ -109,6 +113,8 @@ def show_in_desk(chart) -> dict:
     and a document they cannot read is not theirs to open.
     """
     chart = frappe.get_doc(chart.doctype, chart.name)
+    if not can_show_in_desk(chart):
+        frappe.throw(frappe._("You cannot show this chart in desk"), frappe.PermissionError)
     doctype = desk_doctype(chart)
     fieldname = DESK_ISLANDS[doctype]["fieldname"]
     name = next(iter(frappe.get_list(doctype, filters={fieldname: chart.name}, pluck="name", limit=1)), None)
@@ -132,6 +138,8 @@ def get_form_chart(chart: str) -> dict | None:
     from insights.permissions import can_share
     from insights.resolver import may_read
 
+    if "Dashboard Chart" not in DESK_ISLANDS:
+        return None
     doctype = DESK_ISLANDS["Dashboard Chart"]["options"]
     if not frappe.db.exists(doctype, chart):
         return None
@@ -148,13 +156,17 @@ def desk_doctype(chart) -> str:
 def can_show_in_desk(chart) -> bool:
     """Whether the caller may create the desk document Show in Desk makes for
     `chart`. Desk grants create to System Manager and Dashboard Manager."""
-    return bool(frappe.has_permission(desk_doctype(chart), "create"))
+    doctype = desk_doctype(chart)
+    return doctype in DESK_ISLANDS and bool(frappe.has_permission(doctype, "create"))
 
 
 def can_show_charts_in_desk() -> bool:
     """Whether the caller may create the desk document Show in Desk makes for
     some chart."""
-    return any(frappe.has_permission(doctype, "create") for doctype in ("Dashboard Chart", "Number Card"))
+    return any(
+        doctype in DESK_ISLANDS and frappe.has_permission(doctype, "create")
+        for doctype in ("Dashboard Chart", "Number Card")
+    )
 
 
 def desk_definition(doctype: str) -> dict:

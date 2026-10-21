@@ -1,6 +1,7 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from importlib.util import find_spec
 from typing import TYPE_CHECKING
 
 __version__ = "4.0.0-dev"
@@ -11,7 +12,17 @@ if TYPE_CHECKING:
     warehouse: Warehouse
     db_connections: dict
 
-__all__ = ["create_toast", "db_connections", "notify", "warehouse"]
+__all__ = ["create_toast", "db_connections", "desk_islands", "notify", "warehouse"]
+
+
+def desk_islands() -> bool:
+    """Whether Frappe mounts islands on desk pages. Insights draws its charts and
+    dashboards in desk with them, and stays out of desk on a Frappe without.
+
+    A module is checked, not a System Settings field, because `hooks.py` reads
+    it at import.
+    """
+    return find_spec("frappe.utils.island") is not None
 
 
 def __getattr__(name):
