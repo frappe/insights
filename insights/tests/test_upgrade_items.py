@@ -18,12 +18,21 @@ from insights.api.upgrade import (
 from insights.patches import mark_v3_users as mark_v3_users_patch
 from insights.patches.run_public_charts_as_owner import report as report_public_chart
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import DT, create_test_chart, create_test_workbook, create_user, delete_users
+from insights.tests.factories import (
+    DT,
+    create_test_chart,
+    create_test_dashboard,
+    create_test_workbook,
+    create_user,
+    delete_users,
+)
 from insights.upgrade import ITEM, SEEN_VERSION, add_item, mark_v3_users
 
 ALICE = "upgrade_alice@test.com"
 BOB = "upgrade_bob@test.com"
 NEWCOMER = "upgrade_newcomer@test.com"
+# a desk user with no Insights role, who uses Insights to read dashboards only
+READER = "upgrade_reader@test.com"
 PREFIX = "Upgrade Items Test"
 
 
@@ -34,12 +43,13 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
     def before_class(cls):
         create_user(ALICE, first_name="Alice", last_name="Moss", roles="Insights User")
         create_user(BOB, first_name="Bob", last_name="Lane", roles="Insights User")
+        create_user(READER, first_name="Rae", last_name="Reader", roles="Report Manager")
 
     @classmethod
     def after_class(cls):
         for name in frappe.get_all(DT.WORKBOOK, filters={"title": ("like", f"{PREFIX}%")}, pluck="name"):
             frappe.delete_doc(DT.WORKBOOK, name, force=True, ignore_permissions=True)
-        delete_users(ALICE, BOB, NEWCOMER)
+        delete_users(ALICE, BOB, NEWCOMER, READER)
 
     def before_test(self):
         frappe.db.delete(ITEM)
@@ -261,6 +271,19 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertTrue(self.user_info("Administrator")["can_show_in_desk"])
         self.assertFalse(self.user_info(ALICE)["reads_standard_dashboards"])
         self.assertFalse(self.user_info(ALICE)["can_show_in_desk"])
+
+    # @feature upgrade.wizard
+    def test_a_reader_with_no_insights_role_is_told_whether_they_read_a_shipped_dashboard(self):
+        frappe.db.delete(DT.DASHBOARD, {"is_standard": 1})
+        self.assertFalse(self.user_info(READER)["reads_standard_dashboards"])
+
+        workbook = create_test_workbook("Administrator", title=f"{PREFIX} Reader")
+        dashboard = create_test_dashboard("Administrator", workbook.name, title=f"{PREFIX} Reader Board")
+        dashboard.visibility = "Roles"
+        dashboard.append("visible_to_roles", {"role": "Report Manager"})
+        dashboard.save(ignore_permissions=True)
+        dashboard.db_set("is_standard", 1)
+        self.assertTrue(self.user_info(READER)["reads_standard_dashboards"])
 
     # @feature upgrade.wizard
     def test_the_session_says_whether_the_user_owns_a_workbook(self):

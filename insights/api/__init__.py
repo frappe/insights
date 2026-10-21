@@ -23,6 +23,7 @@ from insights.insights.doctype.insights_team.insights_team import (
 )
 from insights.insights.query_builders.sql_functions import get_fiscal_year_start_date
 from insights.permissions import can_download
+from insights.resolver import DASHBOARD, may_read
 from insights.telemetry import get_entry
 from insights.upgrade import ITEM as UPGRADE_ITEM
 from insights.upgrade import is_upgrade_admin, item_filters, upgraded_from_v3
@@ -147,11 +148,18 @@ def get_user_info():
         "upgrade_item_count": frappe.db.count(UPGRADE_ITEM, {**item_filters(), "status": "Open"}),
         "is_upgrade_admin": is_upgrade_admin(),
         # what the upgrade wizard's welcome shows only to those who can do it
-        "reads_standard_dashboards": bool(
-            frappe.get_list("Insights Dashboard v3", filters={"is_standard": 1}, limit=1)
-        ),
+        "reads_standard_dashboards": reads_standard_dashboards(),
         "can_show_in_desk": can_show_charts_in_desk(),
     }
+
+
+def reads_standard_dashboards() -> bool:
+    """Whether the user may open a shipped dashboard. A View decides it, as it
+    does for a reader with no Insights role, whom `frappe.get_list` refuses."""
+    return any(
+        may_read(frappe.get_cached_doc(DASHBOARD, name))
+        for name in frappe.get_all(DASHBOARD, filters={"is_standard": 1}, pluck="name")
+    )
 
 
 def get_csv_file(filename: str):
