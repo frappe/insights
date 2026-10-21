@@ -164,6 +164,18 @@ export const groups = translatedTable<Group[]>(() => [
 		picture: 'numberCards',
 	},
 	{
+		id: 'copies',
+		label: __('Template copies'),
+		kind: 'now',
+		codes: ['W2'],
+		title: __('Some workbooks are copies of a shipped dashboard'),
+		lead: [
+			__('ERPNext and Frappe HR now ship dashboards,'),
+			__('so copies of their templates get no updates.'),
+		],
+		picture: 'appDashboards',
+	},
+	{
 		id: 'notes',
 		label: __('Good to know'),
 		kind: 'note',
@@ -796,11 +808,23 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		}
 	},
 	W2(item, d) {
+		const text = say(
+			__('{0} is a copy of an Insights v3 template. {1} replaces it and gets updates.'),
+			quoted(d.workbook),
+			[{ text: d.app ? __('{0}’s', d.app) + ' ' : '' }, quoted(d.standard)],
+		)
+		if (item.action === 'delete_workbook') {
+			return {
+				text,
+				todo: say(__('The copy was never changed, so delete it.')),
+				action: { kind: 'fix', label: __('Delete copy') },
+			}
+		}
 		return {
-			text: say(
-				__('{0} is a copy of an Insights v3 template. {1} replaces it and gets updates.'),
-				quoted(d.workbook),
-				[{ text: d.app ? __('{0}’s', d.app) + ' ' : '' }, quoted(d.standard)],
+			text,
+			todo: say(
+				__('Move what you changed to {0}, then delete the copy.'),
+				quoted(d.standard),
 			),
 			action: routeTo(item, __('Open workbook')),
 		}

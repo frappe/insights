@@ -54,7 +54,7 @@ describe('the wizard steps', () => {
 		]
 		expect(
 			wizardSteps(items, { sharing: true, admin: true, me: DAVE }).map((step) => step.id),
-		).toEqual(['welcome', 'sharing', 'access', 'workbooks'])
+		).toEqual(['welcome', 'sharing', 'access', 'workbooks', 'copies'])
 		expect(
 			wizardSteps([], { sharing: false, admin: true, me: DAVE }).map((step) => step.id),
 		).toEqual(['welcome'])
@@ -404,6 +404,17 @@ describe('an item sentence', () => {
 			DAVE,
 		)
 		expect(settings.action).toEqual({ kind: 'fix', label: 'Open settings' })
+
+		const copy = { workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' }
+		const changed = sentenceOf(item('c', 'W2', copy, { workbook: 'wb' }), DAVE)
+		expect(text(changed.text)).toBe(
+			'“Sales Performance” is a copy of an Insights v3 template. ERPNext’s “Selling” replaces it and gets updates.',
+		)
+		expect(text(changed.todo)).toBe('Move what you changed to “Selling”, then delete the copy.')
+		expect(changed.action).toMatchObject({ kind: 'route', label: 'Open workbook' })
+		const untouched = sentenceOf(item('d', 'W2', copy, { action: 'delete_workbook' }), DAVE)
+		expect(text(untouched.todo)).toBe('The copy was never changed, so delete it.')
+		expect(untouched.action).toEqual({ kind: 'fix', label: 'Delete copy' })
 	})
 
 	// @feature upgrade.item-sentences
@@ -428,11 +439,6 @@ describe('an item sentence', () => {
 				'P21',
 				{ cycle: true, query: 'A', workbook: 'Sales', source: 'B' },
 				'The query “A” in “Sales” reads “B”, which reads it back. Remove that source.',
-			],
-			[
-				'W2',
-				{ workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' },
-				'“Sales Performance” is a copy of an Insights v3 template. ERPNext’s “Selling” replaces it and gets updates.',
 			],
 		]
 		for (const [code, data, said] of cases) {

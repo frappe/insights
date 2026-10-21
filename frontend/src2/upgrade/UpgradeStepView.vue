@@ -3,6 +3,7 @@ import { KeyboardShortcut } from 'frappe-ui'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ExternalLink, Info, X } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
 import { __ } from '../translation'
 import UpgradePicture from './pictures/UpgradePicture.vue'
@@ -60,9 +61,12 @@ const badge = computed<{ theme: 'green' | 'amber' | 'gray'; label: string }>(() 
 const sentenceFor = (row: Row) => sentenceOf(row.item, session.user.email, session.user.locale)
 const sentence = computed(() => (current.value ? sentenceFor(current.value) : undefined))
 
-/** The row's button, unless it is a fix the reader may not apply. */
+/** The row's button, unless it is a fix the reader may not apply, or one already applied. */
 function actionOf(row: Row, of: Sentence): ItemAction | undefined {
-	if (of.action && (of.action.kind !== 'fix' || row.item.can_fix)) return of.action
+	if (!of.action) return
+	if (of.action.kind !== 'fix' || (row.item.can_fix && row.item.status !== 'Done')) {
+		return of.action
+	}
 }
 
 const doneEntries = computed(() =>
@@ -130,14 +134,32 @@ function back() {
 const showSettings = ref(false)
 const pending = ref(false)
 
-function openAction(action: ItemAction) {
+function openAction(action: ItemAction, row: Row) {
 	if (action.kind === 'fix') {
-		showSettings.value = true
+		applyFix(row)
 		return
 	}
 	// a new tab, so the wizard stays where the reader is
 	const url = action.kind === 'form' ? action.url : router.resolve(action.route).href
 	window.open(url, '_blank', 'noopener')
+}
+
+function applyFix(row: Row) {
+	const { item } = row
+	if (item.action === 'open_settings') {
+		showSettings.value = true
+		return
+	}
+	confirmDialog({
+		title: __('Delete {0}?', `“${item.data?.workbook}”`),
+		message: __(
+			'The copy was never changed, and {0} replaces it. This cannot be undone.',
+			`“${item.data?.standard}”`,
+		),
+		theme: 'red',
+		primaryActionLabel: __('Delete copy'),
+		onSuccess: () => upgrade.fix(item),
+	})
 }
 
 async function markDone(row: Row) {
@@ -342,7 +364,7 @@ function onKeydown(event: KeyboardEvent) {
 									variant="ghost"
 									size="sm"
 									:label="action.label"
-									@click="openAction(action)"
+									@click="openAction(action, row)"
 								>
 									<template v-if="action.kind === 'form'" #suffix>
 										<ExternalLink
@@ -351,7 +373,9 @@ function onKeydown(event: KeyboardEvent) {
 										/>
 									</template>
 								</Button>
+								<!-- a fix that was applied, as a deleted copy, can't be put back -->
 								<Button
+									v-if="row.item.status !== 'Done'"
 									variant="ghost"
 									size="sm"
 									:label="__('Undo')"
@@ -415,7 +439,7 @@ function onKeydown(event: KeyboardEvent) {
 							<Button
 								v-if="currentAction"
 								variant="subtle"
-								@click="openAction(currentAction)"
+								@click="openAction(currentAction, current)"
 							>
 								{{ currentAction.label }}
 								<template v-if="currentAction.kind === 'form'" #suffix>

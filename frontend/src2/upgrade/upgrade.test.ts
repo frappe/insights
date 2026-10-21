@@ -56,6 +56,7 @@ async function wizard(items: UpgradeItem[] = ITEMS) {
 		if (method === 'insights.api.upgrade.get_upgrade_items') return items
 		if (method === 'insights.api.upgrade.dismiss_upgrade_items') return args!.names
 		if (method === 'insights.api.upgrade.reopen_upgrade_items') return args!.names
+		if (method === 'insights.api.upgrade.fix_upgrade_item') return null
 	})
 	const { default: upgrade } = await import('./upgrade')
 	await upgrade.load()
@@ -111,6 +112,24 @@ describe('the upgrade wizard', () => {
 		expect(upgrade.isDone('access')).toBe(true)
 		expect(upgrade.openWizardItems.map((row) => row.item.name)).toEqual(['range'])
 		expect(upgrade.steps.map((step) => step.id)).toContain('access')
+	})
+
+	// @feature upgrade.attention-fix
+	it('deletes an unchanged template copy through its fix, and counts it done', async () => {
+		const copy = {
+			...item('copy', 'W2', { workbook: 'Sales Performance', standard: 'Selling' }),
+			action: 'delete_workbook' as const,
+			can_fix: true,
+		}
+		const upgrade = await wizard([
+			...ITEMS.map((i) => ({ ...i, status: 'Open' as const })),
+			copy,
+		])
+		await upgrade.fix(copy)
+
+		expect(call).toHaveBeenCalledWith('insights.api.upgrade.fix_upgrade_item', { name: 'copy' })
+		expect(upgrade.items.find((i) => i.name === 'copy')!.status).toBe('Done')
+		expect(upgrade.openWizardItems.map((row) => row.item.name)).toEqual(['access', 'range'])
 	})
 
 	// @feature upgrade.wizard
