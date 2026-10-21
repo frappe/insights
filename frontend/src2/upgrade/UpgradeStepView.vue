@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { KeyboardShortcut } from 'frappe-ui'
-import { ArrowLeft, ArrowRight, Check, ExternalLink, Info, X } from 'lucide-vue-next'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, ExternalLink, Info, X } from 'lucide-vue-next'
 import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import session from '../session'
@@ -14,6 +14,7 @@ import {
 	sentenceOf,
 	type ItemAction,
 	type Row,
+	type Sentence,
 	type Step,
 } from './upgrade_steps'
 
@@ -40,7 +41,8 @@ const isDone = (row: Row) => row.names.every((name) => upgrade.isDone(name))
 const queue = computed(() =>
 	rows.value.filter((row) => !isDone(row) && !skipped.value.has(row.item.name)),
 )
-const doneCount = computed(() => rows.value.filter(isDone).length)
+const doneRows = computed(() => rows.value.filter(isDone))
+const doneCount = computed(() => doneRows.value.length)
 const skippedCount = computed(
 	() => rows.value.filter((row) => !isDone(row) && skipped.value.has(row.item.name)).length,
 )
@@ -55,11 +57,26 @@ const badge = computed<{ theme: 'green' | 'amber' | 'gray'; label: string }>(() 
 		? { theme: 'amber', label: __('Needs you now') }
 		: { theme: 'gray', label: __('Nothing to do') }
 })
-const sentence = computed(() =>
-	current.value
-		? sentenceOf(current.value.item, session.user.email, session.user.locale)
-		: undefined,
+const sentenceFor = (row: Row) => sentenceOf(row.item, session.user.email, session.user.locale)
+const sentence = computed(() => (current.value ? sentenceFor(current.value) : undefined))
+
+/** The row's button, unless it is a fix the reader may not apply. */
+function actionOf(row: Row, of: Sentence): ItemAction | undefined {
+	if (of.action && (of.action.kind !== 'fix' || row.item.can_fix)) return of.action
+}
+
+const doneEntries = computed(() =>
+	doneRows.value.map((row) => {
+		const said = sentenceFor(row)
+		return { row, said, action: actionOf(row, said) }
+	}),
 )
+const currentAction = computed(() =>
+	current.value && sentence.value ? actionOf(current.value, sentence.value) : undefined,
+)
+
+const showDone = ref(false)
+const doneOpen = computed(() => showDone.value && doneCount.value > 0)
 
 // Who the share rows in a picture show: the person the current item is about,
 // else the one the reader's items name most, else the reader.
@@ -129,7 +146,8 @@ async function markDone(row: Row) {
 	pending.value = false
 }
 
-// The primary button takes focus on every screen, so Enter presses it.
+// The primary button takes focus on every screen, and back from the done list's
+// toggle, so Enter presses it.
 const body = ref<HTMLElement>()
 function focusPrimary() {
 	nextTick(() => {
@@ -141,7 +159,13 @@ function focusPrimary() {
 }
 onMounted(focusPrimary)
 watch(
-	() => [props.step.id, slide.value, current.value?.item.name, queue.value.length],
+	() => [
+		props.step.id,
+		slide.value,
+		current.value?.item.name,
+		queue.value.length,
+		showDone.value,
+	],
 	focusPrimary,
 )
 
@@ -286,9 +310,48 @@ function onKeydown(event: KeyboardEvent) {
 				</p>
 				<!-- The picture grows into the room the dialog leaves, and the item below
 				     keeps one height through the step, so nothing moves from item to item
-				     and no band is left empty. An item without a picture takes its place. -->
+				     and no band is left empty. An item without a picture takes its place.
+				     The open done list takes the picture's place too, and scrolls inside it. -->
+				<div v-if="doneOpen" class="relative shrink-0 grow basis-[220px]">
+					<div
+						class="absolute inset-x-0 top-0 max-h-full overflow-y-auto rounded-5 border border-outline-gray-2"
+					>
+						<div class="flex flex-col divide-y divide-outline-gray-1">
+							<div
+								v-for="{ row, said, action } in doneEntries"
+								:key="row.item.name"
+								class="flex items-center gap-2 py-1.5 pl-3 pr-1.5"
+							>
+								<p class="flex-1 text-p-sm text-ink-gray-5">
+									<UpgradeSentence :parts="said.text" muted />
+								</p>
+								<Button
+									v-if="action"
+									variant="ghost"
+									size="sm"
+									:label="action.label"
+									@click="openAction(action)"
+								>
+									<template v-if="action.kind === 'form'" #suffix>
+										<ExternalLink
+											class="size-3.5 text-ink-gray-7"
+											stroke-width="1.5"
+										/>
+									</template>
+								</Button>
+								<Button
+									variant="ghost"
+									size="sm"
+									:label="__('Undo')"
+									:tooltip="__('Put it back in the list')"
+									@click="upgrade.reopen(row.names)"
+								/>
+							</div>
+						</div>
+					</div>
+				</div>
 				<div
-					v-if="picture"
+					v-else-if="picture"
 					class="flex shrink-0 grow basis-[220px] items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-2.5"
 				>
 					<UpgradePicture
@@ -300,7 +363,7 @@ function onKeydown(event: KeyboardEvent) {
 
 				<div
 					class="flex flex-col gap-2"
-					:class="picture || current ? 'min-h-[196px] shrink-0' : 'grow'"
+					:class="picture || current || doneOpen ? 'min-h-[196px] shrink-0' : 'grow'"
 				>
 					<div
 						v-if="current && sentence"
@@ -338,15 +401,12 @@ function onKeydown(event: KeyboardEvent) {
 						</div>
 						<div class="mt-auto flex items-center gap-2">
 							<Button
-								v-if="
-									sentence.action &&
-									(sentence.action.kind !== 'fix' || current.item.can_fix)
-								"
+								v-if="currentAction"
 								variant="subtle"
-								@click="openAction(sentence.action)"
+								@click="openAction(currentAction)"
 							>
-								{{ sentence.action.label }}
-								<template v-if="sentence.action.kind === 'form'" #suffix>
+								{{ currentAction.label }}
+								<template v-if="currentAction.kind === 'form'" #suffix>
 									<ExternalLink
 										class="size-3.5 text-ink-gray-7"
 										stroke-width="1.5"
@@ -412,10 +472,27 @@ function onKeydown(event: KeyboardEvent) {
 						class="flex h-4 items-center gap-1 text-xs text-ink-gray-5"
 						:class="doneCount || skippedCount ? '' : 'invisible'"
 					>
-						<template v-if="doneCount">
-							<Check class="size-3 text-ink-green-7" stroke-width="2" />
+						<!-- the button overflows the line, so the item above keeps its height -->
+						<Button
+							v-if="doneCount"
+							variant="ghost"
+							size="xs"
+							class="-my-1 -ml-1.5 !text-ink-gray-5"
+							:aria-expanded="doneOpen"
+							@click="showDone = !showDone"
+						>
+							<template #prefix>
+								<Check class="size-3 text-ink-green-7" stroke-width="2" />
+							</template>
 							{{ __('{0} done', String(doneCount)) }}
-						</template>
+							<template #suffix>
+								<ChevronDown
+									class="size-3 transition-transform"
+									:class="doneOpen ? 'rotate-180' : ''"
+									stroke-width="2"
+								/>
+							</template>
+						</Button>
 						<template v-if="doneCount && skippedCount"> · </template>
 						<template v-if="skippedCount">{{
 							__('{0} skipped', String(skippedCount))

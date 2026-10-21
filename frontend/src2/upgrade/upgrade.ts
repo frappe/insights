@@ -1,6 +1,6 @@
 import { useStorage } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { showErrorToast } from '../helpers'
 import session from '../session'
 import { slidesFor, stepIndexOf, wizardSteps } from './upgrade_steps'
@@ -8,6 +8,8 @@ import { slidesFor, stepIndexOf, wizardSteps } from './upgrade_steps'
 export type UpgradeItem = {
 	name: string
 	code: string
+	/** Done when its fix was applied, Dismissed when the reader marked it done. */
+	status: 'Open' | 'Done' | 'Dismissed'
 	message: string
 	reference_doctype: string | null
 	reference_name: string | null
@@ -48,8 +50,6 @@ const freshProgress = (): Progress => ({
 })
 
 const items = ref<UpgradeItem[]>([])
-/** Items marked done in this visit. The server no longer lists them, and the step still counts them. */
-const done = ref<UpgradeItem[]>([])
 const loaded = ref(false)
 const showWizard = ref(false)
 
@@ -78,15 +78,24 @@ const slides = computed(() =>
 )
 
 const steps = computed(() =>
-	wizardSteps([...items.value, ...done.value], {
+	wizardSteps(items.value, {
 		sharing: sharing.value,
 		admin: admin.value,
 		me: session.user.email,
 	}),
 )
 
-const doneNames = computed(() => new Set(done.value.map((item) => item.name)))
+const doneNames = computed(
+	() => new Set(items.value.filter((item) => item.status !== 'Open').map((item) => item.name)),
+)
 const isDone = (name: string) => doneNames.value.has(name)
+
+function setStatus(names: string[], status: UpgradeItem['status']) {
+	for (const item of items.value) if (names.includes(item.name)) item.status = status
+}
+
+const openCount = computed(() => items.value.filter((item) => !isDone(item.name)).length)
+watch(openCount, (count) => (session.user.upgrade_item_count = count))
 
 const stepIndex = computed(() => stepIndexOf(steps.value, progressStore().value.step))
 
@@ -103,7 +112,6 @@ async function load() {
 	} catch (error) {
 		showErrorToast(error as Error, false)
 	}
-	session.user.upgrade_item_count = items.value.length
 }
 
 function open() {
@@ -173,10 +181,18 @@ async function markDone(names: string[]) {
 		showErrorToast(error as Error, false)
 		return
 	}
-	const closed = items.value.filter((item) => names.includes(item.name))
-	done.value = [...done.value, ...closed]
-	items.value = items.value.filter((item) => !names.includes(item.name))
-	session.user.upgrade_item_count = items.value.length
+	setStatus(names, 'Dismissed')
+}
+
+/** Puts a row's items back in the queue. */
+async function reopen(names: string[]) {
+	try {
+		await call('insights.api.upgrade.reopen_upgrade_items', { names })
+	} catch (error) {
+		showErrorToast(error as Error, false)
+		return
+	}
+	setStatus(names, 'Open')
 }
 
 async function fix(item: UpgradeItem) {
@@ -186,9 +202,7 @@ async function fix(item: UpgradeItem) {
 		showErrorToast(error as Error, false)
 		return
 	}
-	done.value = [...done.value, item]
-	items.value = items.value.filter((i) => i.name !== item.name)
-	session.user.upgrade_item_count = items.value.length
+	setStatus([item.name], 'Done')
 }
 
 const upgrade = reactive({
@@ -210,6 +224,7 @@ const upgrade = reactive({
 	skip,
 	unskip,
 	markDone,
+	reopen,
 	fix,
 })
 

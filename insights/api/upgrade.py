@@ -15,10 +15,21 @@ from insights.upgrade import (
 
 @insights_whitelist()
 def get_upgrade_items():
+    """The session user's items, closed ones too, so the wizard can show what was done."""
     items = frappe.get_all(
         ITEM,
-        filters={**item_filters(), "status": "Open"},
-        fields=["name", "code", "message", "data", "reference_doctype", "reference_name", "user", "action"],
+        filters=item_filters(),
+        fields=[
+            "name",
+            "code",
+            "status",
+            "message",
+            "data",
+            "reference_doctype",
+            "reference_name",
+            "user",
+            "action",
+        ],
         order_by="code asc, creation asc",
     )
     # an app uninstalled since the upgrade took the doctype an item names

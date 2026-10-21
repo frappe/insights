@@ -270,8 +270,8 @@ export function wizardSteps(
 }
 
 /**
- * Where the wizard opens for a stored step id. A step whose items were all
- * closed since is gone, and the reader goes on to the step after it.
+ * Where the wizard opens for a stored step id. A step the reader no longer
+ * gets is gone, and the reader goes on to the step after it.
  */
 export function stepIndexOf(steps: Step[], id: string): number {
 	const order = ['welcome', 'sharing', ...groups().map((group) => group.id)]

@@ -88,16 +88,23 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
                 self.assertEqual(self.user_info(ALICE)["upgraded_from_v3"], welcomed)
 
     # @feature upgrade.attention-items
-    def test_an_admin_sees_every_open_item_and_a_user_only_their_own(self):
+    def test_an_admin_sees_every_item_and_a_user_only_their_own_closed_ones_too(self):
         add_item("Q13", "Set Fiscal Year Start to pin it.", action="open_settings")
         add_item("P20", "Only admins can edit this script now.", user=ALICE)
         add_item("P20", "Only admins can edit this script now.", user=BOB)
+        frappe.db.set_value(ITEM, {"user": BOB}, "status", "Dismissed")
 
         with self.as_user(ALICE):
-            self.assertEqual([(i.code, i.user) for i in get_upgrade_items()], [("P20", ALICE)])
+            self.assertEqual(
+                [(i.code, i.user, i.status) for i in get_upgrade_items()], [("P20", ALICE, "Open")]
+            )
         self.assertEqual(self.user_info(ALICE)["upgrade_item_count"], 1)
+        with self.as_user(BOB):
+            self.assertEqual([(i.user, i.status) for i in get_upgrade_items()], [(BOB, "Dismissed")])
+        self.assertEqual(self.user_info(BOB)["upgrade_item_count"], 0)
         self.assertEqual(len(get_upgrade_items()), 3)
-        self.assertEqual(self.user_info("Administrator")["upgrade_item_count"], 3)
+        # counts only what is left to do
+        self.assertEqual(self.user_info("Administrator")["upgrade_item_count"], 2)
 
     # @feature upgrade.attention-items
     def test_an_item_names_its_people_by_first_name_and_a_moved_chart_names_both_owners(self):
@@ -131,7 +138,7 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertEqual([(i.data, i.people) for i in get_upgrade_items()], [({}, {})])
 
     # @feature upgrade.attention-items
-    def test_a_system_manager_sees_every_open_item_as_desk_shows_them(self):
+    def test_a_system_manager_sees_every_item_as_desk_shows_them(self):
         add_item("P20", "Only admins can edit this script now.", user=ALICE)
         frappe.get_doc(DT.USER, BOB).add_roles("System Manager")
 
@@ -158,7 +165,7 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
 
         with self.as_user(ALICE):
             self.assertEqual(dismiss_upgrade_items([alices, bobs]), [alices])
-            self.assertEqual(get_upgrade_items(), [])
+            self.assertEqual([i.status for i in get_upgrade_items()], ["Dismissed"])
         self.assertEqual(frappe.db.get_value(ITEM, bobs, "status"), "Open")
 
     # @feature upgrade.attention-items

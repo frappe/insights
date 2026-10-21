@@ -29,6 +29,7 @@ function item(name: string, code: string, data: Record<string, any>): UpgradeIte
 	return {
 		name,
 		code,
+		status: 'Open',
 		message: '',
 		reference_doctype: null,
 		reference_name: null,
@@ -54,6 +55,7 @@ async function wizard(items: UpgradeItem[] = ITEMS) {
 	call.mockImplementation(async (method: string, args?: { names: string[] }) => {
 		if (method === 'insights.api.upgrade.get_upgrade_items') return items
 		if (method === 'insights.api.upgrade.dismiss_upgrade_items') return args!.names
+		if (method === 'insights.api.upgrade.reopen_upgrade_items') return args!.names
 	})
 	const { default: upgrade } = await import('./upgrade')
 	await upgrade.load()
@@ -108,6 +110,26 @@ describe('the upgrade wizard', () => {
 		})
 		expect(upgrade.isDone('access')).toBe(true)
 		expect(upgrade.openWizardItems.map((row) => row.item.name)).toEqual(['range'])
+		expect(upgrade.steps.map((step) => step.id)).toContain('access')
+	})
+
+	// @feature upgrade.wizard
+	it('keeps an item closed before in its step, counted as done, and puts it back on Undo', async () => {
+		const upgrade = await wizard([{ ...ITEMS[0], status: 'Dismissed' }, ITEMS[1]])
+		session.user.upgrade_item_count = 1
+
+		expect(upgrade.steps.map((step) => step.id)).toContain('access')
+		expect(upgrade.isDone('access')).toBe(true)
+		expect(upgrade.openWizardItems.map((row) => row.item.name)).toEqual(['range'])
+
+		await upgrade.reopen(['access'])
+
+		expect(call).toHaveBeenCalledWith('insights.api.upgrade.reopen_upgrade_items', {
+			names: ['access'],
+		})
+		expect(upgrade.isDone('access')).toBe(false)
+		expect(upgrade.openWizardItems.map((row) => row.item.name)).toEqual(['access', 'range'])
+		expect(session.user.upgrade_item_count).toBe(2)
 	})
 
 	// @feature upgrade.wizard

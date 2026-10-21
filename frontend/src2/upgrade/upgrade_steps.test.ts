@@ -24,6 +24,7 @@ function item(name: string, code: string, data: Record<string, any> = {}, extra 
 	return {
 		name,
 		code,
+		status: 'Open',
 		message: `${code} message`,
 		reference_doctype: null,
 		reference_name: null,
