@@ -6,8 +6,8 @@ from insights.upgrade import (
     ITEM,
     WORKBOOK,
     get_item,
+    item_filters,
     mark_seen,
-    open_item_filters,
     standard_workbook_of,
     template_copies,
 )
@@ -17,7 +17,7 @@ from insights.upgrade import (
 def get_upgrade_items():
     items = frappe.get_all(
         ITEM,
-        filters=open_item_filters(),
+        filters={**item_filters(), "status": "Open"},
         fields=["name", "code", "message", "data", "reference_doctype", "reference_name", "user", "action"],
         order_by="code asc, creation asc",
     )
@@ -108,7 +108,9 @@ def dismiss_upgrade_items(names: list[str]) -> list[str]:
     """Dismiss each of `names` still open to the session user, and return them.
     Another admin or another tab may have closed some already, which leaves
     nothing to do for those."""
-    names = frappe.get_all(ITEM, filters={**open_item_filters(), "name": ("in", names)}, pluck="name")
+    names = frappe.get_all(
+        ITEM, filters={**item_filters(), "status": "Open", "name": ("in", names)}, pluck="name"
+    )
     for name in names:
         frappe.db.set_value(ITEM, name, "status", "Dismissed")
     return names

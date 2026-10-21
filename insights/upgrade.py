@@ -90,18 +90,15 @@ def is_upgrade_admin(user: str | None = None) -> bool:
     return bool({"Insights Admin", "System Manager"} & set(frappe.get_roles(user or frappe.session.user)))
 
 
-def open_item_filters(user: str | None = None) -> dict:
-    """An admin works through every open item, anyone else through their own."""
+def item_filters(user: str | None = None) -> dict:
+    """The items `user` works through: an admin every item, anyone else their own."""
     user = user or frappe.session.user
-    filters = {"status": "Open"}
-    if not is_upgrade_admin(user):
-        filters["user"] = user
-    return filters
+    return {} if is_upgrade_admin(user) else {"user": user}
 
 
 def get_item(name: str):
     """The open item `name`, if the session user may work on it."""
-    filters = {**open_item_filters(), "name": name}
+    filters = {**item_filters(), "status": "Open", "name": name}
     if not frappe.db.exists(ITEM, filters):
         frappe.throw(frappe._("This upgrade item is not open to you."), frappe.PermissionError)
     return frappe.get_doc(ITEM, name)
