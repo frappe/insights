@@ -191,9 +191,9 @@ describe('an item sentence', () => {
 	it('names both sides of a moved chart', () => {
 		const moved = item('a', 'P11', { chart: 'Script rows', publisher: BOB, owner: ALICE })
 		expect(text(sentenceOf(moved, DAVE).text)).toBe(
-			'“Script rows” now belongs to Bob, who published it, instead of Alice. Its readers see the same rows as before.',
+			'The Script rows chart now belongs to Bob, who published it, instead of Alice. Its readers see the same rows as before.',
 		)
-		expect(names(sentenceOf(moved, ALICE).text)).toEqual(['“Script rows”', 'Bob', 'you'])
+		expect(names(sentenceOf(moved, ALICE).text)).toEqual(['Script rows', 'Bob', 'you'])
 	})
 
 	// @feature upgrade.item-sentences
@@ -240,9 +240,9 @@ describe('an item sentence', () => {
 			items: ['Revenue', 'Margin', 'Orders'],
 		})
 		expect(names(sentenceOf(edited, DAVE).text)).toEqual(
-			expect.arrayContaining(['“Revenue”', '“Margin”', '“Orders”']),
+			expect.arrayContaining(['Revenue', 'Margin', 'Orders']),
 		)
-		expect(text(sentenceOf(edited, DAVE).text)).toContain('“Revenue”, “Margin” and “Orders”')
+		expect(text(sentenceOf(edited, DAVE).text)).toContain('Revenue, Margin and Orders')
 	})
 
 	// @feature upgrade.item-sentences
@@ -289,7 +289,7 @@ describe('an item sentence', () => {
 			removed: [{ kind: 'chart', title: 'Revenue', write: true }],
 		})
 		expect(text(sentenceOf(one, DAVE).text)).toBe(
-			'Everyone could edit the chart “Revenue”. That share is gone, so only people the workbook “Sales” is shared with can open it.',
+			'Everyone could edit the Revenue chart. That share is gone, so only people the Sales workbook is shared with can open it.',
 		)
 		const both = item('b', 'P7', {
 			workbook: 'Sales',
@@ -301,8 +301,8 @@ describe('an item sentence', () => {
 			],
 		})
 		expect(text(sentenceOf(both, DAVE).text)).toBe(
-			'Alice and Bob can now open the whole workbook “Sales”, as some of its charts and dashboards were shared with them. ' +
-				'Everyone could edit the chart “Revenue” and open the dashboard “Overview”. Those shares are gone, so only people the workbook “Sales” is shared with can open them.',
+			'Alice and Bob can now open the whole Sales workbook, as some of its charts and dashboards were shared with them. ' +
+				'Everyone could edit the Revenue chart and open the Overview dashboard. Those shares are gone, so only people the Sales workbook is shared with can open them.',
 		)
 	})
 
@@ -338,7 +338,7 @@ describe('an item sentence', () => {
 		expect(sentenceOf(item('a', 'P20', data, onChart), DAVE).action?.label).toBe('Open chart')
 		expect(sentenceOf(item('b', 'P20', data, onAlert), DAVE).action?.label).toBe('Open alert')
 		expect(text(sentenceOf(item('c', 'P20', data), DAVE).text)).toBe(
-			'Only admins can edit Alice’s script “Script rows” now. It still runs.',
+			'Only admins can edit Alice’s Script rows script now. It still runs.',
 		)
 	})
 
@@ -350,18 +350,18 @@ describe('an item sentence', () => {
 			DAVE,
 		)
 		expect(text(moved.text)).toBe(
-			'The alert “Low stock” now runs as Alice, who owns its workbook, in place of Bob.',
+			'The Low stock alert now runs as Alice, who owns its workbook, in place of Bob.',
 		)
 		expect(moved.todo).toBeUndefined()
 		expect(
 			text(sentenceOf(item('b', 'P19', { ...alert, outcome: 'no_user' }), DAVE).text),
-		).toBe('The alert “Low stock” has no one to run as, so it will stop.')
+		).toBe('The Low stock alert has no one to run as, so it will stop.')
 		const stops = sentenceOf(
 			item('c', 'P19', { ...alert, outcome: 'stops', enabler: BOB }),
 			DAVE,
 		)
 		expect(text(stops.text)).toBe(
-			'The alert “Low stock” will stop, because Bob can’t edit its workbook.',
+			'The Low stock alert will stop, because Bob can’t edit its workbook.',
 		)
 		expect(text(stops.todo)).toBe('Share the workbook with Bob to edit.')
 	})
@@ -372,19 +372,19 @@ describe('an item sentence', () => {
 			[
 				'K1',
 				{ dashboard: 'Sales', start: '2024-01-01', end: '2024-03-31' },
-				'“Sales” lost its default date range (2024-01-01 – 2024-03-31), which Insights v3 showed but never applied.',
+				'The Sales dashboard lost its default date range (2024-01-01 – 2024-03-31), which Insights v3 showed but never applied.',
 				'Set it again if you want it.',
 			],
 			[
 				'N4',
 				{ chart: 'Revenue' },
-				'The number card “Revenue” lost its currency sign.',
+				'The Revenue number card lost its currency sign.',
 				'Add the sign to the card’s suffix.',
 			],
 			[
 				'N6',
 				{ chart: 'Revenue' },
-				'The number card “Revenue” now shows a total of all rows.',
+				'The Revenue number card now shows a total of all rows.',
 				'Pick a Date column to show a period.',
 			],
 			[
@@ -408,9 +408,11 @@ describe('an item sentence', () => {
 		const copy = { workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' }
 		const changed = sentenceOf(item('c', 'W2', copy, { workbook: 'wb' }), DAVE)
 		expect(text(changed.text)).toBe(
-			'“Sales Performance” is a copy of an Insights v3 template. ERPNext’s “Selling” replaces it and gets updates.',
+			'The Sales Performance workbook is a copy of an Insights v3 template. ERPNext’s Selling workbook replaces it and gets updates.',
 		)
-		expect(text(changed.todo)).toBe('Move what you changed to “Selling”, then delete the copy.')
+		expect(text(changed.todo)).toBe(
+			'Move what you changed to the Selling workbook, then delete the copy.',
+		)
 		expect(changed.action).toMatchObject({ kind: 'route', label: 'Open workbook' })
 		const untouched = sentenceOf(item('d', 'W2', copy, { action: 'delete_workbook' }), DAVE)
 		expect(text(untouched.todo)).toBe('The copy was never changed, so delete it.')
@@ -423,22 +425,22 @@ describe('an item sentence', () => {
 			[
 				'N5',
 				{ chart: 'Revenue', column: 'Posting Date' },
-				'The number card “Revenue” now shows the total of the latest day of Posting Date.',
+				'The Revenue number card now shows the total of the latest day of Posting Date.',
 			],
 			[
 				'J1',
 				{ alert: 'Watch a cache', chart: 'Revenue' },
-				'The alert “Watch a cache” checks a saved copy of “Revenue”. Changes to the chart don’t reach it.',
+				'The Watch a cache alert checks a saved copy of the Revenue chart. Changes to the chart don’t reach it.',
 			],
 			[
 				'P21',
 				{ query: 'Origin script', workbook: 'Reader', variables: ['api_token'] },
-				'The script “Origin script” was copied into “Reader” without its secret api_token. It won’t run until someone enters it.',
+				'The Origin script script was copied into the Reader workbook without its secret api_token. It won’t run until someone enters it.',
 			],
 			[
 				'P21',
 				{ cycle: true, query: 'A', workbook: 'Sales', source: 'B' },
-				'The query “A” in “Sales” reads “B”, which reads it back. Remove that source.',
+				'The A query in the Sales workbook reads the B query, which reads it back. Remove that source.',
 			],
 		]
 		for (const [code, data, said] of cases) {

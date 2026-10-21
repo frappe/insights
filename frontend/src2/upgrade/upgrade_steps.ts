@@ -327,7 +327,30 @@ export function say(template: string, ...args: (Part | Part[])[]): Part[] {
 }
 
 const em = (text: string): Part => ({ text, em: true })
-const quoted = (title: string): Part => em(`“${title}”`)
+type Kind =
+	| 'workbook'
+	| 'chart'
+	| 'number card'
+	| 'dashboard'
+	| 'query'
+	| 'script'
+	| 'alert'
+	| 'import job'
+
+/** A name and what it is: **Sales** workbook. */
+function titled(kind: Kind, title: string): Part[] {
+	const template = {
+		workbook: __('{0} workbook'),
+		chart: __('{0} chart'),
+		'number card': __('{0} number card'),
+		dashboard: __('{0} dashboard'),
+		query: __('{0} query'),
+		script: __('{0} script'),
+		alert: __('{0} alert'),
+		'import job': __('{0} import job'),
+	}[kind]
+	return say(template, em(title))
+}
 
 /** "a, b and c", or "a, b, c and 2 more" past `limit`. */
 export function listOf(names: string[], limit = Infinity): string {
@@ -540,8 +563,8 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				: em(`${possessive(people, d.owner)} ${documents(d.table)}`)
 		return {
 			text: say(
-				__('Everyone who opens {0} now sees {1}, not their own.'),
-				quoted(d.chart),
+				__('Everyone who opens the {0} now sees {1}, not their own.'),
+				titled('chart', d.chart),
 				rows,
 			),
 			action: routeTo(item, __('Open sharing'), { share: '1' }),
@@ -552,21 +575,21 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		const text =
 			d.reason === 'disabled'
 				? say(
-						__('{0} can’t run as {1}, who is disabled, so guests see nothing.'),
-						quoted(d.chart),
+						__('The {0} can’t run as {1}, who is disabled, so guests see nothing.'),
+						titled('chart', d.chart),
 						owner,
 				  )
 				: d.reason === 'no_insights_role'
 				  ? say(
 							__(
-								'{0} can’t run as {1}, who has no Insights role, so guests see nothing.',
+								'The {0} can’t run as {1}, who has no Insights role, so guests see nothing.',
 							),
-							quoted(d.chart),
+							titled('chart', d.chart),
 							owner,
 				    )
 				  : say(
-							__('{0} can’t run as {1} any more, so guests see nothing.'),
-							quoted(d.chart),
+							__('The {0} can’t run as {1} any more, so guests see nothing.'),
+							titled('chart', d.chart),
 							owner,
 				    )
 		// what lets the chart run as its owner again: the owner back, a role, or edit access
@@ -593,17 +616,16 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		}
 	},
 	P7(item, d, people) {
-		const removed: { kind: string; title: string; write: boolean }[] = d.removed ?? []
+		const removed: { kind: 'chart' | 'dashboard' | 'query'; title: string; write: boolean }[] =
+			d.removed ?? []
 		const users: string[] = d.users ?? []
 		const text: Part[] = []
 		if (users.length) {
 			text.push(
 				...say(
-					__(
-						'{0} can now open the whole workbook {1}, as some of its {2} were shared with them.',
-					),
+					__('{0} can now open the whole {1}, as some of its {2} were shared with them.'),
 					em(names(people, users, true)),
-					quoted(d.workbook),
+					titled('workbook', d.workbook),
 					{ text: listOf((d.shared ?? []).map(memberKinds)) },
 				),
 			)
@@ -611,9 +633,8 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		if (removed.length) {
 			const shares = removed.map((share) =>
 				say(
-					share.write ? __('edit the {0} {1}') : __('open the {0} {1}'),
-					{ text: memberKind(share.kind) },
-					quoted(share.title),
+					share.write ? __('edit the {0}') : __('open the {0}'),
+					titled(share.kind, share.title),
 				),
 			)
 			if (text.length) text.push({ text: ' ' })
@@ -621,13 +642,13 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				...say(
 					removed.length > 1
 						? __(
-								'Everyone could {0}. Those shares are gone, so only people the workbook {1} is shared with can open them.',
+								'Everyone could {0}. Those shares are gone, so only people the {1} is shared with can open them.',
 						  )
 						: __(
-								'Everyone could {0}. That share is gone, so only people the workbook {1} is shared with can open it.',
+								'Everyone could {0}. That share is gone, so only people the {1} is shared with can open it.',
 						  ),
 					joined(shares),
-					quoted(d.workbook),
+					titled('workbook', d.workbook),
 				),
 			)
 		}
@@ -638,9 +659,9 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		const one = users.length === 1
 		return {
 			text: say(
-				__('{0} made something in {1}, so {2} can now edit the whole workbook.'),
+				__('{0} made something in the {1}, so {2} can now edit the whole workbook.'),
 				em(names(people, users, true)),
-				quoted(d.workbook),
+				titled('workbook', d.workbook),
 				{ text: one ? person(people, users[0]) : __('they') },
 			),
 			action: workbookSharing(item, __('Open workbook sharing')),
@@ -649,7 +670,8 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	P4(item, d, people) {
 		const users: string[] = d.users ?? []
 		const teams: string[] = d.teams ?? []
-		const titles = (d.items ?? []).map((title: string) => quoted(title))
+		// the patch keeps titles only, not whether each is a chart, dashboard or query
+		const titles = (d.items ?? []).map((title: string) => em(title))
 		const itemParts =
 			titles.length < 2
 				? titles
@@ -681,20 +703,20 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		}
 	},
 	P19(item, d, people) {
-		const alert = quoted(d.alert)
+		const alert = titled('alert', d.alert)
 		let text: Part[]
 		if (d.outcome === 'moved') {
 			text = say(
-				__('The alert {0} now runs as {1}, who owns its workbook, in place of {2}.'),
+				__('The {0} now runs as {1}, who owns its workbook, in place of {2}.'),
 				alert,
 				em(person(people, d.owner)),
 				em(person(people, d.enabler)),
 			)
 		} else if (d.outcome === 'no_user') {
-			text = say(__('The alert {0} has no one to run as, so it will stop.'), alert)
+			text = say(__('The {0} has no one to run as, so it will stop.'), alert)
 		} else {
 			text = say(
-				__('The alert {0} will stop, because {1} can’t edit its workbook.'),
+				__('The {0} will stop, because {1} can’t edit its workbook.'),
 				alert,
 				em(person(people, d.enabler)),
 			)
@@ -714,9 +736,9 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		return {
 			text: say(
 				__(
-					'{0} lost its default date range ({1}), which Insights v3 showed but never applied.',
+					'The {0} lost its default date range ({1}), which Insights v3 showed but never applied.',
 				),
-				quoted(d.dashboard),
+				titled('dashboard', d.dashboard),
 				{ text: `${d.start} – ${d.end}` },
 			),
 			todo: say(__('Set it again if you want it.')),
@@ -725,14 +747,14 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	},
 	N4(item, d) {
 		return {
-			text: say(__('The number card {0} lost its currency sign.'), quoted(d.chart)),
+			text: say(__('The {0} lost its currency sign.'), titled('number card', d.chart)),
 			todo: say(__('Add the sign to the card’s suffix.')),
 			action: routeTo(item, __('Open chart')),
 		}
 	},
 	N6(item, d) {
 		return {
-			text: say(__('The number card {0} now shows a total of all rows.'), quoted(d.chart)),
+			text: say(__('The {0} now shows a total of all rows.'), titled('number card', d.chart)),
 			todo: say(__('Pick a Date column to show a period.')),
 			action: routeTo(item, __('Open chart')),
 		}
@@ -740,8 +762,8 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	N5(item, d) {
 		return {
 			text: say(
-				__('The number card {0} now shows the total of the latest day of {1}.'),
-				quoted(d.chart),
+				__('The {0} now shows the total of the latest day of {1}.'),
+				titled('number card', d.chart),
 				em(d.column),
 			),
 			action: routeTo(item, __('Open chart')),
@@ -764,8 +786,8 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		if (d.publisher_disabled) {
 			return {
 				text: say(
-					__('{0} was published by {1}, who is disabled, so guests see nothing.'),
-					quoted(d.chart),
+					__('The {0} was published by {1}, who is disabled, so guests see nothing.'),
+					titled('chart', d.chart),
 					em(person(people, d.publisher)),
 				),
 				action: routeTo(item, __('Open chart')),
@@ -774,9 +796,9 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		return {
 			text: say(
 				__(
-					'{0} now belongs to {1}, who published it, instead of {2}. Its readers see the same rows as before.',
+					'The {0} now belongs to {1}, who published it, instead of {2}. Its readers see the same rows as before.',
 				),
-				quoted(d.chart),
+				titled('chart', d.chart),
 				em(person(people, d.publisher)),
 				em(person(people, d.owner)),
 			),
@@ -787,10 +809,12 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		if (d.cycle) {
 			return {
 				text: say(
-					__('The query {0} in {1} reads {2}, which reads it back. Remove that source.'),
-					quoted(d.query),
-					quoted(d.workbook),
-					quoted(d.source),
+					__(
+						'The {0} in the {1} reads the {2}, which reads it back. Remove that source.',
+					),
+					titled('query', d.query),
+					titled('workbook', d.workbook),
+					titled('query', d.source),
 				),
 				action: routeTo(item, __('Open query')),
 			}
@@ -798,10 +822,10 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		return {
 			text: say(
 				__(
-					'The script {0} was copied into {1} without its secret {2}. It won’t run until someone enters it.',
+					'The {0} was copied into the {1} without its secret {2}. It won’t run until someone enters it.',
 				),
-				quoted(d.query),
-				quoted(d.workbook),
+				titled('script', d.query),
+				titled('workbook', d.workbook),
 				em(listOf(d.variables ?? [])),
 			),
 			action: routeTo(item, __('Open query')),
@@ -809,9 +833,12 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	},
 	W2(item, d) {
 		const text = say(
-			__('{0} is a copy of an Insights v3 template. {1} replaces it and gets updates.'),
-			quoted(d.workbook),
-			[{ text: d.app ? __('{0}’s', d.app) + ' ' : '' }, quoted(d.standard)],
+			__('The {0} is a copy of an Insights v3 template. {1} replaces it and gets updates.'),
+			titled('workbook', d.workbook),
+			[
+				{ text: d.app ? __('{0}’s', d.app) + ' ' : __('The') + ' ' },
+				...titled('workbook', d.standard),
+			],
 		)
 		if (item.action === 'delete_workbook') {
 			return {
@@ -823,8 +850,8 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		return {
 			text,
 			todo: say(
-				__('Move what you changed to {0}, then delete the copy.'),
-				quoted(d.standard),
+				__('Move what you changed to the {0}, then delete the copy.'),
+				titled('workbook', d.standard),
 			),
 			action: routeTo(item, __('Open workbook')),
 		}
@@ -832,16 +859,15 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	P20(item, d, people) {
 		const kind =
 			item.reference_doctype === 'Insights Chart v3'
-				? __('chart')
+				? 'chart'
 				: item.reference_doctype === 'Insights Alert'
-				  ? __('alert')
-				  : __('script')
+				  ? 'alert'
+				  : 'script'
 		return {
 			text: say(
-				__('Only admins can edit {0} {1} {2} now. It still runs.'),
+				__('Only admins can edit {0} {1} now. It still runs.'),
 				em(possessive(people, d.author)),
-				{ text: kind },
-				quoted(d.title),
+				titled(kind, d.title),
 			),
 			action: routeTo(
 				item,
@@ -856,11 +882,9 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	J1(item, d) {
 		return {
 			text: say(
-				__(
-					'The alert {0} checks a saved copy of {1}. Changes to the chart don’t reach it.',
-				),
-				quoted(d.alert),
-				quoted(d.chart),
+				__('The {0} checks a saved copy of the {1}. Changes to the chart don’t reach it.'),
+				titled('alert', d.alert),
+				titled('chart', d.chart),
 			),
 			action: routeTo(item, __('Open query')),
 		}
@@ -884,17 +908,13 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		)
 		return {
 			text: say(
-				__('On {0}, {1}. Check it still looks right.'),
-				quoted(d.chart),
+				__('On the {0}, {1}. Check it still looks right.'),
+				titled('chart', d.chart),
 				parts.flatMap((part, index) => (index ? [{ text: '; ' }, ...part] : part)),
 			),
 			action: routeTo(item, __('Open chart')),
 		}
 	},
-}
-
-function memberKind(kind: string) {
-	return { chart: __('chart'), dashboard: __('dashboard'), query: __('query') }[kind] ?? kind
 }
 
 function memberKinds(kind: string) {
@@ -905,9 +925,12 @@ function refusedNames(item: UpgradeItem, d: Record<string, any>): Sentence {
 	return {
 		text: say(
 			__(
-				'{0} uses {1}, which Insights v4 doesn’t allow. It will fail until they are removed.',
+				'The {0} uses {1}, which Insights v4 doesn’t allow. It will fail until they are removed.',
 			),
-			quoted(d.title),
+			titled(
+				item.code === 'J4' ? 'import job' : item.code === 'Q5' ? d.kind : 'script',
+				d.title,
+			),
 			em(listOf(d.names ?? [])),
 		),
 		action: routeTo(item, __('Open it')) ?? formAction(item, __('Open it')),
