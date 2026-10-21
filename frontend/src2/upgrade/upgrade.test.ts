@@ -78,18 +78,14 @@ describe('the upgrade wizard', () => {
 	})
 
 	// @feature upgrade.wizard
-	it('puts a skipped item off and back in line on resume after finishing', async () => {
+	it('resumes after finishing at the first step with an open item', async () => {
 		const upgrade = await wizard()
 		await upgrade.open()
-		upgrade.skip('access')
-		expect(upgrade.progress.skipped).toEqual(['access'])
-
 		await upgrade.finish()
 		expect(upgrade.progress.finished).toBe(true)
 
 		await upgrade.resume()
 		expect(upgrade.progress.finished).toBe(false)
-		expect(upgrade.progress.skipped).toEqual([])
 		expect(upgrade.steps[upgrade.stepIndex].id).toBe('access')
 	})
 

@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest'
 import type { UpgradeItem } from './upgrade'
 import {
 	keyAction,
+	nextOpenIndex,
 	pictureOf,
 	sentenceOf,
 	slidesFor,
+	startIndex,
 	stepIndexOf,
 	wizardSteps,
 	type Part,
@@ -480,14 +482,14 @@ describe('a key in the wizard', () => {
 	const at = (focus: Partial<Parameters<typeof keyAction>[1]> = {}) => ({
 		inField: false,
 		onControl: false,
-		moreSlides: false,
+		hasNext: false,
 		...focus,
 	})
 
 	// @feature upgrade.wizard
-	it('goes back with ←, and pages only the welcome slides with →', () => {
+	it('goes back with ←, and pages with → only while a slide or item follows', () => {
 		expect(keyAction('ArrowLeft', at())).toBe('back')
-		expect(keyAction('ArrowRight', at({ moreSlides: true }))).toBe('next')
+		expect(keyAction('ArrowRight', at({ hasNext: true }))).toBe('next')
 		expect(keyAction('ArrowRight', at())).toBeUndefined()
 	})
 
@@ -500,7 +502,28 @@ describe('a key in the wizard', () => {
 	// @feature upgrade.wizard
 	it('leaves typing in a field alone', () => {
 		for (const key of ['ArrowLeft', 'ArrowRight', 'Enter']) {
-			expect(keyAction(key, at({ inField: true, moreSlides: true }))).toBeUndefined()
+			expect(keyAction(key, at({ inField: true, hasNext: true }))).toBeUndefined()
 		}
+	})
+})
+
+describe('the item a step shows', () => {
+	const rows = ['a', 'b', 'c', 'd'].map((name) => ({ item: item(name, 'P10'), names: [name] }))
+	const doneOf =
+		(...names: string[]) =>
+		(row: (typeof rows)[number]) =>
+			names.includes(row.item.name)
+
+	// @feature upgrade.wizard
+	it('opens on the first open item, or the last when all are done', () => {
+		expect(startIndex(rows, doneOf('a', 'b'))).toBe(2)
+		expect(startIndex(rows, doneOf('a', 'b', 'c', 'd'))).toBe(3)
+	})
+
+	// @feature upgrade.wizard
+	it('moves on after Done to the next open item, going round to the first', () => {
+		expect(nextOpenIndex(rows, 1, doneOf('b', 'c'))).toBe(3)
+		expect(nextOpenIndex(rows, 3, doneOf('b', 'c', 'd'))).toBe(0)
+		expect(nextOpenIndex(rows, 2, doneOf('a', 'b', 'c', 'd'))).toBe(2)
 	})
 })

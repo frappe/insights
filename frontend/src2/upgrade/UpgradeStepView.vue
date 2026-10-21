@@ -4,7 +4,8 @@ import {
 	ArrowLeft,
 	ArrowRight,
 	Check,
-	ChevronDown,
+	ChevronLeft,
+	ChevronRight,
 	ExternalLink,
 	Info,
 	Undo2,
@@ -20,8 +21,10 @@ import upgrade from './upgrade'
 import UpgradeSentence from './UpgradeSentence.vue'
 import {
 	keyAction,
+	nextOpenIndex,
 	pictureOf,
 	sentenceOf,
+	startIndex,
 	type ItemAction,
 	type Row,
 	type Sentence,
@@ -46,23 +49,27 @@ const firstScreen = computed(() => index.value === 0 && slide.value === 0)
 
 const rows = computed(() => ('rows' in props.step ? props.step.rows : []))
 const group = computed(() => ('group' in props.step ? props.step.group : undefined))
-const skipped = computed(() => new Set(progress.value.skipped))
 const isDone = (row: Row) => row.names.every((name) => upgrade.isDone(name))
-const queue = computed(() =>
-	rows.value.filter((row) => !isDone(row) && !skipped.value.has(row.item.name)),
+const openCount = computed(() => rows.value.filter((row) => !isDone(row)).length)
+const doneCount = computed(() => rows.value.length - openCount.value)
+
+// The item the reader moved to. Unset, the step shows where it starts.
+const cursor = ref<string>()
+watch(
+	() => props.step.id,
+	() => (cursor.value = undefined),
 )
-const doneRows = computed(() => rows.value.filter(isDone))
-const doneCount = computed(() => doneRows.value.length)
-const skippedCount = computed(
-	() => rows.value.filter((row) => !isDone(row) && skipped.value.has(row.item.name)).length,
-)
-const current = computed(() => queue.value[0])
-const handled = computed(() => rows.value.length - queue.value.length)
+const itemIndex = computed(() => {
+	const at = rows.value.findIndex((row) => row.item.name === cursor.value)
+	return at === -1 ? startIndex(rows.value, isDone) : at
+})
+const current = computed<Row | undefined>(() => rows.value[itemIndex.value])
+const currentDone = computed(() => Boolean(current.value && isDone(current.value)))
 const picture = computed(
 	() => group.value?.picture ?? (current.value ? pictureOf(current.value.item) : undefined),
 )
 const badge = computed<{ theme: 'green' | 'amber' | 'gray'; label: string }>(() => {
-	if (!current.value && !skippedCount.value) return { theme: 'green', label: __('Done') }
+	if (!openCount.value) return { theme: 'green', label: __('Done') }
 	return group.value?.kind === 'now'
 		? { theme: 'amber', label: __('Needs you now') }
 		: { theme: 'gray', label: __('Nothing to do') }
@@ -78,13 +85,9 @@ function actionOf(row: Row, of: Sentence): ItemAction | undefined {
 	}
 }
 
-const doneEntries = computed(() => doneRows.value.map((row) => ({ row, said: sentenceFor(row) })))
 const currentAction = computed(() =>
 	current.value && sentence.value ? actionOf(current.value, sentence.value) : undefined,
 )
-
-const showDone = ref(false)
-const doneOpen = computed(() => showDone.value && doneCount.value > 0)
 
 // Who the share rows in a picture show: the person the current item is about,
 // else the one the reader's items name most, else the reader.
@@ -166,14 +169,26 @@ function applyFix(row: Row) {
 	})
 }
 
+function moveTo(at: number) {
+	const row = rows.value[at]
+	if (row) cursor.value = row.item.name
+}
+
 async function markDone(row: Row) {
+	// held here, as the step's start moves once the row is done
+	cursor.value = row.item.name
 	pending.value = true
 	await upgrade.markDone(row.names)
 	pending.value = false
+	if (isDone(row)) moveTo(nextOpenIndex(rows.value, itemIndex.value, isDone))
 }
 
-// The primary button takes focus on every screen, and back from the done list's
-// toggle, so Enter presses it.
+function undo(row: Row) {
+	cursor.value = row.item.name
+	upgrade.reopen(row.names)
+}
+
+// The primary button takes focus on every screen, so Enter presses it.
 const body = ref<HTMLElement>()
 function focusPrimary() {
 	nextTick(() => {
@@ -184,30 +199,25 @@ function focusPrimary() {
 	})
 }
 onMounted(focusPrimary)
-watch(
-	() => [
-		props.step.id,
-		slide.value,
-		current.value?.item.name,
-		queue.value.length,
-		showDone.value,
-	],
-	focusPrimary,
-)
+watch(() => [props.step.id, slide.value, current.value?.item.name, currentDone.value], focusPrimary)
 
 function onKeydown(event: KeyboardEvent) {
 	const target = event.target as HTMLElement
 	const action = keyAction(event.key, {
 		inField: Boolean(target.closest('input, textarea, [contenteditable="true"]')),
 		onControl: Boolean(target.closest('button, a')),
-		moreSlides: props.step.id === 'welcome' && !onLastSlide.value,
+		hasNext: group.value
+			? itemIndex.value < rows.value.length - 1
+			: props.step.id === 'welcome' && !onLastSlide.value,
 	})
 	const primary = body.value
 		?.closest('[data-upgrade-step]')
 		?.querySelector<HTMLElement>('[data-primary]')
 	if (!action || (action === 'primary' && !primary)) return
 	event.preventDefault()
-	if (action === 'back') back()
+	if (action === 'back' && group.value && itemIndex.value > 0) moveTo(itemIndex.value - 1)
+	else if (action === 'back') back()
+	else if (action === 'next' && group.value) moveTo(itemIndex.value + 1)
 	else if (action === 'next') next()
 	else primary!.click()
 }
@@ -348,43 +358,9 @@ function onKeydown(event: KeyboardEvent) {
 				</p>
 				<!-- The picture grows into the room the dialog leaves, and the item below
 				     keeps one height through the step, so nothing moves from item to item
-				     and no band is left empty. An item without a picture takes its place.
-				     The open done list takes the picture's place too, and scrolls inside it. -->
-				<div v-if="doneOpen" class="relative shrink-0 grow basis-[220px]">
-					<div
-						class="absolute inset-x-0 top-0 max-h-full overflow-y-auto rounded-5 border border-outline-gray-2"
-					>
-						<div class="flex flex-col divide-y divide-outline-gray-1">
-							<div
-								v-for="{ row, said } in doneEntries"
-								:key="row.item.name"
-								class="flex items-center gap-2 py-1.5 pl-3 pr-1.5"
-							>
-								<p class="flex-1 text-p-sm text-ink-gray-5">
-									<UpgradeSentence :parts="said.text" muted />
-								</p>
-								<!-- a fix that was applied, as a deleted copy, can't be put back -->
-								<Button
-									v-if="row.item.status !== 'Done'"
-									variant="ghost"
-									size="sm"
-									:aria-label="__('Undo')"
-									:tooltip="__('Put it back in the list')"
-									@click="upgrade.reopen(row.names)"
-								>
-									<template #icon>
-										<Undo2
-											class="size-3.5 text-ink-gray-6"
-											stroke-width="1.5"
-										/>
-									</template>
-								</Button>
-							</div>
-						</div>
-					</div>
-				</div>
+				     and no band is left empty. An item without a picture takes its place. -->
 				<div
-					v-else-if="picture"
+					v-if="picture"
 					class="flex shrink-0 grow basis-[220px] items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-2.5"
 				>
 					<UpgradePicture
@@ -395,141 +371,116 @@ function onKeydown(event: KeyboardEvent) {
 				</div>
 
 				<div
-					class="flex flex-col gap-2"
-					:class="picture || current || doneOpen ? 'min-h-[196px] shrink-0' : 'grow'"
+					v-if="current && sentence"
+					class="flex min-h-[196px] shrink-0 flex-col gap-3 rounded-5 border border-outline-gray-2 bg-surface-base px-4 py-3.5 shadow-sm"
+					aria-live="polite"
 				>
-					<div
-						v-if="current && sentence"
-						class="flex grow flex-col gap-3 rounded-5 border border-outline-gray-2 bg-surface-base px-4 py-3.5 shadow-sm"
-						aria-live="polite"
-					>
-						<div class="flex items-center gap-2.5 text-xs text-ink-gray-5 tabular-nums">
-							<span>{{
-								__('{0} of {1}', String(handled + 1), String(rows.length))
-							}}</span>
-							<div
-								class="h-1 max-w-[120px] flex-1 overflow-hidden rounded-1 bg-surface-gray-2"
-							>
-								<div
-									class="h-full rounded-1 bg-surface-gray-10"
-									:style="{
-										width: `${Math.round((handled / rows.length) * 100)}%`,
-									}"
-								/>
-							</div>
-						</div>
-						<p class="text-p-md text-ink-gray-6">
-							<UpgradeSentence :parts="sentence.text" />
-						</p>
+					<div class="flex items-center gap-2.5 text-xs text-ink-gray-5 tabular-nums">
+						<span>{{
+							__('{0} of {1}', String(itemIndex + 1), String(rows.length))
+						}}</span>
 						<div
-							v-if="sentence.todo"
-							class="-mt-1 flex items-center gap-2 text-p-base font-medium text-ink-gray-8"
+							class="h-1 max-w-[120px] flex-1 overflow-hidden rounded-1 bg-surface-gray-2"
 						>
-							<span
-								class="grid size-5 shrink-0 place-items-center rounded-full bg-surface-gray-2 text-ink-gray-8"
-							>
-								<ArrowRight class="size-3" stroke-width="2" />
-							</span>
-							<span><UpgradeSentence :parts="sentence.todo" /></span>
+							<div
+								class="h-full rounded-1 bg-surface-gray-10"
+								:style="{
+									width: `${Math.round((doneCount / rows.length) * 100)}%`,
+								}"
+							/>
 						</div>
-						<div class="mt-auto flex items-center gap-2">
-							<Button
-								v-if="currentAction"
-								variant="subtle"
-								@click="openAction(currentAction, current)"
-							>
-								{{ currentAction.label }}
-								<template v-if="currentAction.kind === 'form'" #suffix>
-									<ExternalLink
-										class="size-3.5 text-ink-gray-7"
-										stroke-width="1.5"
-									/>
-								</template>
-							</Button>
-							<span class="flex-1" />
+						<span class="flex-1" />
+						<div v-if="rows.length > 1" class="-my-1 -mr-1.5 flex">
 							<Button
 								variant="ghost"
-								:label="__('Skip')"
-								@click="upgrade.skip(current.item.name)"
-							/>
-							<Button
-								data-primary
-								variant="solid"
-								:loading="pending"
-								@click="markDone(current)"
+								size="sm"
+								:aria-label="__('Previous')"
+								:tooltip="__('Previous (←)')"
+								:disabled="itemIndex === 0"
+								@click="moveTo(itemIndex - 1)"
 							>
-								{{ group.kind === 'note' ? __('Got it') : __('Done') }}
-								<template #suffix>
-									<KeyboardShortcut
-										combo="Enter"
-										use-icons
-										class="!text-ink-gray-4"
-									/>
+								<template #icon>
+									<ChevronLeft class="size-4" stroke-width="1.5" />
+								</template>
+							</Button>
+							<Button
+								variant="ghost"
+								size="sm"
+								:aria-label="__('Next')"
+								:tooltip="__('Next (→)')"
+								:disabled="itemIndex === rows.length - 1"
+								@click="moveTo(itemIndex + 1)"
+							>
+								<template #icon>
+									<ChevronRight class="size-4" stroke-width="1.5" />
 								</template>
 							</Button>
 						</div>
 					</div>
-
-					<div
-						v-else
-						class="flex grow flex-col items-center justify-center gap-3 rounded-5 border border-dashed border-outline-gray-2 bg-surface-gray-1 px-4 py-3.5 text-center"
+					<p
+						class="text-p-md"
+						:class="currentDone ? 'text-ink-gray-5' : 'text-ink-gray-6'"
 					>
-						<Check
-							v-if="!skippedCount"
-							class="size-5 text-ink-green-7"
-							stroke-width="2"
-						/>
-						<p class="text-p-md text-ink-gray-8">
-							{{
-								skippedCount === 0
-									? __('All done here.')
-									: skippedCount === 1
-									  ? __('1 skipped. It stays in your list for later.')
-									  : __(
-												'{0} skipped. They stay in your list for later.',
-												String(skippedCount),
-									    )
-							}}
-						</p>
-						<div v-if="skippedCount">
-							<Button
-								variant="subtle"
-								:label="__('Go through skipped')"
-								@click="upgrade.unskip(rows.map((row) => row.item.name))"
-							/>
-						</div>
-					</div>
-
-					<!-- kept in place before the first item is done, so the card doesn't shrink then -->
+						<UpgradeSentence :parts="sentence.text" :muted="currentDone" />
+					</p>
 					<div
-						class="flex h-4 items-center gap-1 text-xs text-ink-gray-5"
-						:class="doneCount || skippedCount ? '' : 'invisible'"
+						v-if="sentence.todo"
+						class="-mt-1 flex items-center gap-2 text-p-base font-medium"
+						:class="currentDone ? 'text-ink-gray-5' : 'text-ink-gray-8'"
 					>
-						<!-- the button overflows the line, so the item above keeps its height -->
-						<Button
-							v-if="doneCount"
-							variant="ghost"
-							size="xs"
-							class="-my-1 -ml-1.5 !text-ink-gray-5"
-							:aria-expanded="doneOpen"
-							@click="showDone = !showDone"
+						<span
+							class="grid size-5 shrink-0 place-items-center rounded-full bg-surface-gray-2"
 						>
-							<template #prefix>
-								<Check class="size-3 text-ink-green-7" stroke-width="2" />
+							<ArrowRight class="size-3" stroke-width="2" />
+						</span>
+						<span><UpgradeSentence :parts="sentence.todo" :muted="currentDone" /></span>
+					</div>
+					<div class="mt-auto flex items-center gap-2">
+						<Button
+							v-if="currentAction"
+							variant="subtle"
+							@click="openAction(currentAction, current)"
+						>
+							{{ currentAction.label }}
+							<template v-if="currentAction.kind === 'form'" #suffix>
+								<ExternalLink class="size-3.5 text-ink-gray-7" stroke-width="1.5" />
 							</template>
-							{{ __('{0} done', String(doneCount)) }}
+						</Button>
+						<span class="flex-1" />
+						<template v-if="currentDone">
+							<span class="flex items-center gap-1 text-sm text-ink-gray-5">
+								<Check class="size-3.5 text-ink-green-7" stroke-width="2" />
+								{{ __('Done') }}
+							</span>
+							<!-- a fix that was applied, as a deleted copy, can't be put back -->
+							<Button
+								v-if="current.item.status !== 'Done'"
+								variant="ghost"
+								:aria-label="__('Undo')"
+								:tooltip="__('Put it back in the list')"
+								@click="undo(current)"
+							>
+								<template #icon>
+									<Undo2 class="size-4 text-ink-gray-6" stroke-width="1.5" />
+								</template>
+							</Button>
+						</template>
+						<Button
+							v-else
+							data-primary
+							variant="solid"
+							:loading="pending"
+							@click="markDone(current)"
+						>
+							{{ group.kind === 'note' ? __('Got it') : __('Done') }}
 							<template #suffix>
-								<ChevronDown
-									class="size-3 transition-transform"
-									:class="doneOpen ? 'rotate-180' : ''"
-									stroke-width="2"
+								<KeyboardShortcut
+									combo="Enter"
+									use-icons
+									class="!text-ink-gray-4"
 								/>
 							</template>
 						</Button>
-						<template v-if="doneCount && skippedCount"> · </template>
-						<template v-if="skippedCount">{{
-							__('{0} skipped', String(skippedCount))
-						}}</template>
 					</div>
 				</div>
 			</template>
@@ -541,7 +492,7 @@ function onKeydown(event: KeyboardEvent) {
 			</Button>
 			<span class="flex-1" />
 			<Button
-				v-if="group && current"
+				v-if="group && openCount"
 				variant="subtle"
 				:label="__('Later')"
 				:tooltip="__('The rest stay in your list')"

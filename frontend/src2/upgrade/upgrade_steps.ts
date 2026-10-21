@@ -294,17 +294,33 @@ export function stepIndexOf(steps: Step[], id: string): number {
 
 /**
  * What a key does in the wizard. ← goes back on every step, → pages the welcome
- * slides, and Enter presses the screen's primary button unless focus is on
- * another control, which Enter presses itself. Typing in a field is left alone.
+ * slides and a step's items, and Enter presses the screen's primary button unless
+ * focus is on another control, which Enter presses itself. Typing in a field is
+ * left alone.
  */
 export function keyAction(
 	key: string,
-	focus: { inField: boolean; onControl: boolean; moreSlides: boolean },
+	focus: { inField: boolean; onControl: boolean; hasNext: boolean },
 ): 'back' | 'next' | 'primary' | undefined {
 	if (focus.inField) return
 	if (key === 'ArrowLeft') return 'back'
-	if (key === 'ArrowRight' && focus.moreSlides) return 'next'
+	if (key === 'ArrowRight' && focus.hasNext) return 'next'
 	if (key === 'Enter' && !focus.onControl) return 'primary'
+}
+
+/** The row a step opens on: its first open one, else its last. */
+export function startIndex(rows: Row[], isDone: (row: Row) => boolean): number {
+	const open = rows.findIndex((row) => !isDone(row))
+	return open === -1 ? rows.length - 1 : open
+}
+
+/** The next open row after `from`, going round to the first; `from` when none is. */
+export function nextOpenIndex(rows: Row[], from: number, isDone: (row: Row) => boolean): number {
+	for (let offset = 1; offset < rows.length; offset++) {
+		const index = (from + offset) % rows.length
+		if (!isDone(rows[index])) return index
+	}
+	return from
 }
 
 // ---------- sentences ----------

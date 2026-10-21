@@ -33,8 +33,6 @@ type Progress = {
 	slide: number
 	/** Steps the reader has looked at. */
 	seen: string[]
-	/** Items put off for later. They stay open on the server. */
-	skipped: string[]
 	/** Whether the wizard was ever opened here. Until then there is nothing to resume. */
 	started: boolean
 	finished: boolean
@@ -44,7 +42,6 @@ const freshProgress = (): Progress => ({
 	step: 'welcome',
 	slide: 0,
 	seen: [],
-	skipped: [],
 	started: false,
 	finished: false,
 })
@@ -146,7 +143,7 @@ function finish() {
 	return close()
 }
 
-/** Back at the first step with items left, with the skipped ones in line again. */
+/** Back at the first step with items left. */
 function resume() {
 	const progress = progressStore().value
 	if (progress.finished) {
@@ -154,20 +151,9 @@ function resume() {
 			(step) => 'rows' in step && step.rows.some((row) => !isDone(row.item.name)),
 		)
 		progress.step = next?.id ?? 'welcome'
-		progress.skipped = []
 		progress.finished = false
 	}
 	return open()
-}
-
-function skip(name: string) {
-	const progress = progressStore().value
-	progress.skipped = [...new Set([...progress.skipped, name])]
-}
-
-function unskip(names: string[]) {
-	const progress = progressStore().value
-	progress.skipped = progress.skipped.filter((name) => !names.includes(name))
 }
 
 /**
@@ -184,7 +170,7 @@ async function markDone(names: string[]) {
 	setStatus(names, 'Dismissed')
 }
 
-/** Puts a row's items back in the queue. */
+/** Opens a row's items again. */
 async function reopen(names: string[]) {
 	try {
 		await call('insights.api.upgrade.reopen_upgrade_items', { names })
@@ -221,8 +207,6 @@ const upgrade = reactive({
 	goTo,
 	finish,
 	resume,
-	skip,
-	unskip,
 	markDone,
 	reopen,
 	fix,
