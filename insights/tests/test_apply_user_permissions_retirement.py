@@ -186,6 +186,13 @@ class TestSiteDataFindings(InsightsIntegrationTestCase):
         self.assertEqual(users[READER].narrowed, ["ToDo"])
 
     # @feature upgrade.site-data-follows-desk
+    def test_a_site_that_never_wrote_apply_user_permissions_had_it_off(self):
+        """Insights v3 read the missing row as 0, so desk narrows here too."""
+        users, _ = self.findings(team_permissions=1, switch=None)
+
+        self.assertEqual(users[READER].narrowed, ["ToDo"])
+
+    # @feature upgrade.site-data-follows-desk
     def test_a_restriction_names_its_field_and_value_only_when_it_compares_one_field_to_text(self):
         self.assertEqual(
             restriction_data("ToDo", 'status == "Open"'),

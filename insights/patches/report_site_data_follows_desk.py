@@ -57,7 +57,7 @@ def site_data_findings() -> frappe._dict:
     `restrictions` that stopped applying and the `users` they applied to.
 
     Read Apply User Permissions before `retire_site_apply_user_permissions`
-    deletes it. A site without it filtered by desk.
+    deletes it. A missing row means off, as Insights v3 read it.
     """
     from insights.insights.doctype.insights_team.insights_team import clear_cache
 
@@ -66,7 +66,7 @@ def site_data_findings() -> frappe._dict:
     applied = frappe.db.get_value(
         "Singles", {"doctype": SETTINGS, "field": "apply_user_permissions"}, "value", order_by=None
     )
-    desk_filtered = applied is None or bool(cint(applied))
+    desk_filtered = bool(cint(applied))
 
     site_sources = frappe.get_all(DATA_SOURCE, filters={"is_site_db": 1}, pluck="name")
     used = used_site_tables(site_sources)
