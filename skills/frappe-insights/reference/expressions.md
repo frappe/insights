@@ -150,13 +150,7 @@ Constants: `literal(value)` (alias `constant`), or `ibis.literal(value)`.
 
 ## The site holds the real list
 
-This page is a working subset. Your site may run a newer Insights than this page. Ask the site rather than guess:
-
-```sh
-frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list
-frappectl -s $SITE method call insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description \
-  -F funcName=json_value
-```
+This page is a working subset. Your site may run a newer Insights than this page. Ask the site rather than guess. Call `insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_list` for every function, and `insights.insights.doctype.insights_data_source_v3.ibis.utils.get_function_description` with `{"funcName": "json_value"}` for one.
 
 `get_function_description` returns the signature and the docstring. The docstring says what a function returns and what it costs. This page compares `json_value` with `json_extract`. The docstring is what settles that question. The parameter is `funcName`, camelCase.
 

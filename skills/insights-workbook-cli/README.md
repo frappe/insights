@@ -1,5 +1,7 @@
 # insights-workbook-cli
 
+> **Deprecated.** This skill will be removed soon. Link [`frappe-insights`](../frappe-insights/) instead: it works over the site's assistant, MCP and frappectl, and reads the same `reference/` files.
+
 A skill that lets a coding agent build, edit and explain Frappe Insights workbooks on a live site over `frappectl`. It needs no Insights source and installs nothing on the site. It supports Insights 4 (develop) sites only.
 
 `SKILL.md` is the procedure. `reference/` is the workbook contract. `examples/build_workbook.py` is the build script the agent copies or imports. It holds the client, the probes, the in-place upsert and the verify.
