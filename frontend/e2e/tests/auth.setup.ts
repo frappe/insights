@@ -36,8 +36,8 @@ setup('authenticate', async ({ browser }) => {
 })
 
 /**
- * The Insights 4 welcome dialog opens over every page for a user marked as an
- * Insights 3 user, and a test site that once migrated from a 3.x build marks
+ * The Insights v4 welcome dialog opens over every page for a user marked as an
+ * Insights v3 user, and a test site that once migrated from a 3.x build marks
  * them. No flow here is about the upgrade, so the run starts past it.
  */
 async function markUpgradeSeen(api: FrappeApi): Promise<void> {

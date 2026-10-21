@@ -52,7 +52,7 @@ describe('a user with an Insights role', () => {
 	})
 })
 
-describe('a link to an Insights 3 template', () => {
+describe('a link to an Insights v3 template', () => {
 	// @feature upgrade.template-links-open
 	it('opens the workbook that holds the template, else the workbooks list', async () => {
 		session.isAuthorized = true

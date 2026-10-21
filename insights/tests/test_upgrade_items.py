@@ -1,4 +1,4 @@
-"""The upgrade from Insights 3: who is welcomed, and what reaches whom.
+"""The upgrade from Insights v3: who is welcomed, and what reaches whom.
 
 See `insights/upgrade.py`. The patches that add items come later; these tests
 add their own.

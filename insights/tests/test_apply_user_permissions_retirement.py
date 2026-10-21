@@ -168,7 +168,7 @@ class TestSiteDataFindings(InsightsIntegrationTestCase):
 
     # @feature upgrade.site-data-follows-desk
     def test_with_team_permissions_off_every_insights_user_was_let_in(self):
-        """Insights 3 let every Insights user into every table, and applied no
+        """Insights v3 let every Insights user into every table, and applied no
         Table Restriction."""
         users, teams = self.findings(team_permissions=0, switch="1")
 

@@ -44,7 +44,7 @@ const percent = computed(() => {
 <template>
 	<SidebarCard v-if="show">
 		<template #prefix><Sparkle class="size-4 text-ink-gray-8" stroke-width="1.5" /></template>
-		<template #title>{{ __('Insights 4') }}</template>
+		<template #title>{{ __('Insights v4') }}</template>
 		<template #description>
 			<span class="flex flex-col gap-1.5">
 				<span>{{ description }}</span>

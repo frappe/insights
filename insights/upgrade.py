@@ -1,8 +1,8 @@
-"""What the upgrade from Insights 3 could not carry over, and who used Insights 3.
+"""What the upgrade from Insights v3 could not carry over, and who used Insights v3.
 
 A patch that cannot carry something over records it with `add_item`. The
 upgrade dialog lists the items, and opens once for each user who used
-Insights 3.
+Insights v3.
 """
 
 import frappe
@@ -12,7 +12,7 @@ ITEM = "Insights Upgrade Item"
 SEEN_VERSION = "insights_seen_version"
 INSIGHTS_ROLES = ("Insights User", "Insights Admin")
 WORKBOOK = "Insights Workbook"
-# Insights 3's template folders, and the standard workbook that replaces each
+# Insights v3's template folders, and the standard workbook that replaces each
 TEMPLATE_WORKBOOKS = {"accounting": "accounts", "purchasing": "buying", "sales": "selling", "stock": "stock"}
 
 
@@ -46,11 +46,11 @@ def add_item(
 
 
 def was_on_v3() -> bool:
-    """Whether this migrate is the upgrade from a release of Insights 3.
+    """Whether this migrate is the upgrade from a release of Insights v3.
 
     Read during patches: frappe writes the new version into Installed
     Application after them. A develop build said 3.x until it became 4.0.0-dev,
-    and never ran the Insights 3 that users are welcomed from.
+    and never ran the Insights v3 that users are welcomed from.
     """
     row = frappe.db.get_value(
         "Installed Application",
@@ -62,7 +62,7 @@ def was_on_v3() -> bool:
 
 
 def mark_v3_users():
-    """Mark everyone who could use Insights at migrate time as an Insights 3 user.
+    """Mark everyone who could use Insights at migrate time as an Insights v3 user.
 
     A new site never runs it: installing an app marks its patches done.
     """
@@ -105,10 +105,10 @@ def get_item(name: str):
 
 
 def template_copies(template: str | None = None) -> list[frappe._dict]:
-    """The workbooks made from an Insights 3 template, or from `template`
+    """The workbooks made from an Insights v3 template, or from `template`
     (`app/folder`), oldest first.
 
-    Insights 3 recorded the template in `from_template`, and earlier releases
+    Insights v3 recorded the template in `from_template`, and earlier releases
     only its folder. The field is gone, and its column stays.
     """
     if not frappe.db.has_column(WORKBOOK, "from_template"):
@@ -128,5 +128,5 @@ def template_copies(template: str | None = None) -> list[frappe._dict]:
 
 
 def standard_workbook_of(template: str) -> str | None:
-    """The standard workbook that replaces the Insights 3 template `template`."""
+    """The standard workbook that replaces the Insights v3 template `template`."""
     return TEMPLATE_WORKBOOKS.get(template.rpartition("/")[2])

@@ -4,7 +4,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import normalize_ch
 from insights.upgrade import add_item
 
 CHART = "Insights Chart v3"
-# what Insights 3 showed with no `max_slices`
+# what Insights v3 showed with no `max_slices`
 DONUT_SLICES = 10
 STATISTIC_NAMES = {
     "average": "average",
@@ -19,10 +19,10 @@ def execute():
     """Every stored chart config in the shape the readers read, written once.
 
     Runs `normalize_chart_config` over every stored config. See its docstring
-    for why. Then `draw_as_insights_3` writes what Insights 3 assumed on load
-    and Insights 4 reads from the config. It belongs here and not in
+    for why. Then `draw_as_insights_3` writes what Insights v3 assumed on load
+    and Insights v4 reads from the config. It belongs here and not in
     `normalize_chart_config`: that runs on every save, and a chart saved on
-    Insights 4 means what it says. A site that already ran this patch keeps
+    Insights v4 means what it says. A site that already ran this patch keeps
     what it showed since.
 
     Idempotent: a chart already in the shape is not written.
@@ -54,19 +54,19 @@ def execute():
 
 
 def draw_as_insights_3(config: dict, chart_type: str, title: str) -> list[tuple[str, str, dict]]:
-    """Write into `config` what Insights 3 drew it with, in place. Answers the
+    """Write into `config` what Insights v3 drew it with, in place. Answers the
     `(code, message, data)` of each thing it could not keep."""
     y_axis = config.get("y_axis")
     if chart_type == "Bar" and isinstance(y_axis, dict) and "stack" not in y_axis:
-        # C1: Insights 3 stacked a Bar that stated nothing on load
+        # C1: Insights v3 stacked a Bar that stated nothing on load
         y_axis["stack"] = True
     if chart_type == "Line" and isinstance(y_axis, dict):
-        # C2: Insights 3 never read these on a Line. They are left from the Bar
-        # every new chart started as, and Insights 4 stacks a Line by them.
+        # C2: Insights v3 never read these on a Line. They are left from the Bar
+        # every new chart started as, and Insights v4 stacks a Line by them.
         for key in ("stack", "normalize", "overlap"):
             y_axis.pop(key, None)
     if chart_type == "Donut":
-        # C7: Insights 3 drew this many slices and then Others. Insights 4 counts
+        # C7: Insights v3 drew this many slices and then Others. Insights v4 counts
         # Others among them.
         slices = config.get("max_slices")
         config["max_slices"] = (int(slices) if is_count(slices) else DONUT_SLICES) + 1
@@ -76,7 +76,7 @@ def draw_as_insights_3(config: dict, chart_type: str, title: str) -> list[tuple[
 
 
 def statistic_lines_moved(config: dict, written: dict, title: str) -> list[tuple[str, str, dict]]:
-    """C4: a reference line at a statistic read every value Insights 3 plotted on
+    """C4: a reference line at a statistic read every value Insights v3 plotted on
     its axis, stack totals included. `normalize_chart_config` points it at the
     first series on that axis, which differs once the axis plots more than one
     series, and leaves no line on a chart that plots only the count."""
@@ -115,11 +115,11 @@ def is_count(value) -> bool:
 
 
 def number_units_as_insights_3(config: dict, title: str) -> list[tuple[str, str, dict]]:
-    """N4: each reading's prefix and suffix, printed with its unit as Insights 3 did.
+    """N4: each reading's prefix and suffix, printed with its unit as Insights v3 did.
 
-    Insights 3 read a reading's own prefix and suffix, else the card's. A prefix
+    Insights v3 read a reading's own prefix and suffix, else the card's. A prefix
     replaced the unit's, and a blank one left it. A suffix printed after the
-    unit's. Insights 4 prints whatever a reading states in place of the unit,
+    unit's. Insights v4 prints whatever a reading states in place of the unit,
     blank included, so a blank is dropped and a suffix holds the unit's.
     """
     columns = config.get("number_columns")
@@ -155,12 +155,12 @@ def symbol_on_right() -> bool:
 
 
 def number_period_as_insights_3(config: dict, title: str) -> list[tuple[str, str, dict]]:
-    """N5 and N6: the period a card on a date column read in Insights 3.
+    """N5 and N6: the period a card on a date column read in Insights v3.
 
-    Insights 3 grouped a card by its date column, by the granularity when it had
-    one, and showed the last group. Insights 4 groups a card only by a period, so
+    Insights v3 grouped a card by its date column, by the granularity when it had
+    one, and showed the last group. Insights v4 groups a card only by a period, so
     a card with none shows the total. A day is the period that keeps a Date's
-    groups. Insights 4 has no period for a time of day, so a Time card shows the
+    groups. Insights v4 has no period for a time of day, so a Time card shows the
     total and is reported.
     """
     date_column = config.get("date_column")

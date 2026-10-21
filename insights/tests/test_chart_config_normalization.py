@@ -406,7 +406,7 @@ class TestChartConfigNormalizationPatch(InsightsIntegrationTestCase):
 
 
 def drawn(chart_type, config):
-    """The config as Insights 4 draws what Insights 3 drew, and what could not be kept."""
+    """The config as Insights v4 draws what Insights v3 drew, and what could not be kept."""
     config = copy.deepcopy(config)
     found = draw_as_insights_3(config, chart_type, "Card")
     return config, found
@@ -425,7 +425,7 @@ def number_card(date_column=None, window=None, **options):
 
 
 class TestDrawnAsInsights3(InsightsIntegrationTestCase):
-    """The one-time step that writes what Insights 3 assumed when it drew a chart."""
+    """The one-time step that writes what Insights v3 assumed when it drew a chart."""
 
     SAVEPOINT = "test_drawn_as_insights_3"
 

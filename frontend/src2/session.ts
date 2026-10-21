@@ -17,7 +17,7 @@ type SessionUser = {
 	has_demo_data: boolean
 	/** Whether the site has a workbook of its own, not one an app ships. */
 	has_workbooks: boolean
-	/** Whether the user used Insights 3 and has not yet closed the upgrade dialog. */
+	/** Whether the user used Insights v3 and has not yet closed the upgrade dialog. */
 	upgraded_from_v3: boolean
 	/** Whether the user owns a workbook, so the upgrade wizard explains how sharing changed. */
 	owns_workbooks?: boolean

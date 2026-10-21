@@ -247,7 +247,7 @@ def refused_names(code: str, names=()) -> list[str]:
     try:
         tree = ast.parse(code)
     except SyntaxError:
-        return []  # nosemgrep - a script that does not parse failed on Insights 3 as well
+        return []  # nosemgrep - a script that does not parse failed on Insights v3 as well
 
     allowed = script_globals()
     assigned = {

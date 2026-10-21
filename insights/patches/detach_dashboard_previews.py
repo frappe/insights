@@ -9,7 +9,7 @@ def execute():
     """Detach preview files from the documents they were attached to.
 
     Frappe lets every reader of a document download its attachments, and a
-    preview shows the rows of the user it was rendered for. Insights 3
+    preview shows the rows of the user it was rendered for. Insights v3
     attached them to the workbook, later to the dashboard.
     `get_dashboard_preview` serves them now. A file that is not its
     dashboard's current preview goes: Frappe saves identical content once, so

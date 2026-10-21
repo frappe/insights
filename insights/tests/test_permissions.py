@@ -1219,7 +1219,7 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
 
     # @feature permissions.table-row-restriction upgrade.older-restrictions-read
     def test_a_restriction_written_with_ibis_underscore_reads_the_column(self):
-        """Insights 3 never ran `_.status`, and Insights 4 read `_` as the
+        """Insights v3 never ran `_.status`, and Insights v4 read `_` as the
         translation function, so every query on the table failed."""
         from insights.patches.drop_underscore_from_table_restrictions import execute
 

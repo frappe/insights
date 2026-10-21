@@ -372,7 +372,7 @@ describe('an item sentence', () => {
 			[
 				'K1',
 				{ dashboard: 'Sales', start: '2024-01-01', end: '2024-03-31' },
-				'“Sales” lost its default date range (2024-01-01 – 2024-03-31), which Insights 3 showed but never applied.',
+				'“Sales” lost its default date range (2024-01-01 – 2024-03-31), which Insights v3 showed but never applied.',
 				'Set it again if you want it.',
 			],
 			[
@@ -432,7 +432,7 @@ describe('an item sentence', () => {
 			[
 				'W2',
 				{ workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' },
-				'“Sales Performance” is a copy of an Insights 3 template. ERPNext’s “Selling” replaces it and gets updates.',
+				'“Sales Performance” is a copy of an Insights v3 template. ERPNext’s “Selling” replaces it and gets updates.',
 			],
 		]
 		for (const [code, data, said] of cases) {

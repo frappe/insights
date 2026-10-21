@@ -33,10 +33,10 @@ export type PictureName =
 /** What a slide's feature needs of the reader: the server says whether they have it. */
 export type Can = { readStandardDashboards: boolean; showInDesk: boolean; share: boolean }
 
-/** One feature a reader of Insights 3 meets first, and the screen it is on. */
+/** One feature a reader of Insights v3 meets first, and the screen it is on. */
 export type Slide = { label: string; text: string; picture: PictureName; needs?: keyof Can }
 
-// What a reader of Insights 3 gains most, one per slide. The last leads into
+// What a reader of Insights v3 gains most, one per slide. The last leads into
 // the upgrade steps, which are mostly about permissions.
 export const welcomeSlides = translatedTable<Slide[]>(() => [
 	{
@@ -158,7 +158,7 @@ export const groups = translatedTable<Group[]>(() => [
 		codes: ['K1', 'N4', 'N6', 'Q13'],
 		title: __('Some numbers need a setting again'),
 		lead: [
-			__('Insights 4 reads a few settings differently,'),
+			__('Insights v4 reads a few settings differently,'),
 			__('so these show other numbers until you set them again.'),
 		],
 		picture: 'numberCards',
@@ -702,7 +702,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		return {
 			text: say(
 				__(
-					'{0} lost its default date range ({1}), which Insights 3 showed but never applied.',
+					'{0} lost its default date range ({1}), which Insights v3 showed but never applied.',
 				),
 				quoted(d.dashboard),
 				{ text: `${d.start} – ${d.end}` },
@@ -798,7 +798,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	W2(item, d) {
 		return {
 			text: say(
-				__('{0} is a copy of an Insights 3 template. {1} replaces it and gets updates.'),
+				__('{0} is a copy of an Insights v3 template. {1} replaces it and gets updates.'),
 				quoted(d.workbook),
 				[{ text: d.app ? __('{0}’s', d.app) + ' ' : '' }, quoted(d.standard)],
 			),
@@ -881,7 +881,7 @@ function refusedNames(item: UpgradeItem, d: Record<string, any>): Sentence {
 	return {
 		text: say(
 			__(
-				'{0} uses {1}, which Insights 4 doesn’t allow. It will fail until they are removed.',
+				'{0} uses {1}, which Insights v4 doesn’t allow. It will fail until they are removed.',
 			),
 			quoted(d.title),
 			em(listOf(d.names ?? [])),

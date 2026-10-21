@@ -8,17 +8,17 @@ from insights.upgrade import add_item
 WORKBOOK = "Insights Workbook"
 QUERY = "Insights Query v3"
 ALERT = "Insights Alert"
-# Insights 3 let the owner of each of these edit it, whatever the workbook allowed
+# Insights v3 let the owner of each of these edit it, whatever the workbook allowed
 OWNED_MEMBERS = (QUERY, "Insights Chart v3", "Insights Dashboard v3")
 
 
 def execute():
     """Share each workbook with the owners of its members who cannot edit it.
 
-    Insights 3 let an owner edit what they made. Insights 4 gives access through
+    Insights v3 let an owner edit what they made. Insights v4 gives access through
     the workbook only, so an owner the workbook does not name loses edit, and
     read too unless a share gives it. A user who is not an Insights user, or is
-    disabled, could not open Insights 3 either, and is skipped.
+    disabled, could not open Insights v3 either, and is skipped.
     """
     users = get_insights_users()
     shared = {}

@@ -207,7 +207,7 @@ function onKeydown(event: KeyboardEvent) {
 			<!-- Welcome: one feature per slide -->
 			<template v-if="props.step.id === 'welcome'">
 				<h2 class="text-3xl font-semibold text-ink-gray-9">
-					{{ __('Welcome to Insights 4') }}
+					{{ __('Welcome to Insights v4') }}
 				</h2>
 				<!-- the picture keeps its height in a dialog that fits its content, and grows
 				     into the room a taller one leaves, the same on every slide -->
@@ -249,7 +249,7 @@ function onKeydown(event: KeyboardEvent) {
 				>
 					<Info class="size-4 shrink-0 text-ink-gray-5" stroke-width="1.5" />
 					<span>
-						{{ __('A few numbers change because Insights 3 computed them wrongly.') }}
+						{{ __('A few numbers change because Insights v3 computed them wrongly.') }}
 						<a
 							:href="RELEASE_NOTES"
 							target="_blank"
@@ -271,7 +271,7 @@ function onKeydown(event: KeyboardEvent) {
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">
 							{{
-								__('In Insights 3, you shared each chart or dashboard on its own,')
+								__('In Insights v3, you shared each chart or dashboard on its own,')
 							}}
 						</span>
 						{{ __('and could let people edit it.') }}
