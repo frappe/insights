@@ -1,6 +1,6 @@
 """The pure verify helpers in the workbook skill's build template.
 
-`skills/insights-workbook-cli/examples/build_workbook.py` is a template an agent copies,
+`skills/frappe-insights/examples/build_workbook.py` is a template an agent copies,
 so it never runs in this app. Its name-set helpers are what decide whether a
 workbook verifies, and each case below is a defect that shipped once.
 """
@@ -12,11 +12,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 TEMPLATE = (
-    Path(__file__).resolve().parents[2]
-    / "skills"
-    / "insights-workbook-cli"
-    / "examples"
-    / "build_workbook.py"
+    Path(__file__).resolve().parents[2] / "skills" / "frappe-insights" / "examples" / "build_workbook.py"
 )
 
 

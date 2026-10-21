@@ -1,10 +1,12 @@
 ---
 name: insights-workbook-cli
 version: 3
-description: Create, read, update and delete Frappe Insights workbooks — queries, charts and dashboards — on a stock Insights 4 (develop) site through the frappectl CLI. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted.
+description: Deprecated, use the frappe-insights skill instead. Create, read, update and delete Frappe Insights workbooks — queries, charts and dashboards — on a stock Insights 4 (develop) site through the frappectl CLI. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted.
 ---
 
 # Insights workbooks over frappectl
+
+> **Deprecated.** This skill will be removed soon. Use `frappe-insights` in `skills/frappe-insights/`: it works the same over the site's assistant, MCP and frappectl, and reads the same `reference/` files. Tell the user to switch.
 
 You author workbook content and push it to a live Insights site with `frappectl`. This file is the procedure. `reference/` is the contract.
 

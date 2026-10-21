@@ -50,13 +50,13 @@ items = build_the_layout_i_planned()
 call("doc", "update", "Insights Dashboard v3", dashboard, stdin=json.dumps({"items": items}))
 ```
 
-`doc update` does not protect you here. Its optimistic check compares `modified`. You read the document a moment before you wrote it, so the check passes. It catches an edit made *during* your write, not one made since your last run. Never reach for `--force`.
+An update does not protect you here. Its optimistic check compares `modified`. You read the document a moment before you wrote it, so the check passes. It catches an edit made *during* your write, not one made since your last run. Never force it.
 
 **Create the whole `items` array exactly once, when you create the dashboard.** One later write may replace it: a redesign the user asked for, when the live `items` equal the `items` your script last wrote. Keep a copy of every `items` you write, and compare it with the live array right before the redesign. If they differ, the user changed the layout since. Merge instead, or ask. `modified_by` is not that proof, because it does not say which fields changed.
 
 Every other write after creation is a merge into the live array:
 
-1. `doc get` the dashboard and parse `items`.
+1. Read the dashboard and parse `items`.
 2. Match each item you want to change against a live item, by key.
 3. Change only the fields you mean to change. Keep the live `layout` as it is.
 4. Append a new chart below the current bottom: `y = max(item.layout.y + item.layout.h)`. Put a new filter in the top filter row, right of the last filter. When that row is full or there is none, put it at `x:0 y:0` and move every other item down 2 rows, as the app does.
@@ -79,7 +79,7 @@ Four rules the merge must keep:
 - **Merge a filter's `links` key by key.** Add the entry for your new chart. Leave every other entry alone, including one the user wired by hand.
 - **Keep keys you do not recognise**, on the item and on the document. Copy the live item and update it. Do not rebuild it from scratch.
 
-`examples/build_workbook.py` ships `patch_dashboard()`, which does exactly this, and `Build.upsert` runs it for a dashboard's `items`. Use them instead of writing the merge again.
+With a shell, `examples/build_workbook.py` ships `patch_dashboard()`, which does exactly this, and `Build.upsert` runs it for a dashboard's `items`. Use them instead of writing the merge again.
 
 ## Filters — routing is by query name
 
@@ -123,9 +123,8 @@ A filter item declares `links`: which charts it affects and, per chart, which **
 
 `insights.api.view.get_chart_data` takes the filter state as `filters`, keyed by filter name, one `{"operator", "value"}` per filter. It routes that state through the dashboard's links, so it needs `dashboard`. Without `dashboard` it ignores `filters`, and the chart runs unfiltered.
 
-```sh
-frappectl -s $SITE method call insights.api.view.get_chart_data -F chart=<chart> -F dashboard=<dashboard> \
-  -F 'filters:={"Company": {"operator": "=", "value": "Acme"}, "Date Range": {"operator": "within", "value": "last 3 months"}}'
+```json
+{"chart": "<chart>", "dashboard": "<dashboard>", "filters": {"Company": {"operator": "=", "value": "Acme"}, "Date Range": {"operator": "within", "value": "last 3 months"}}}
 ```
 
 The chart must be on that dashboard, or the call answers "not found". A filter with no operator, or with an empty value for an operator that needs one, is not applied.

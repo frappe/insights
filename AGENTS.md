@@ -15,7 +15,7 @@ frappe-ui in `frontend/src2/`, built with Vite.
 - Query engine: operations JSON → ibis → SQL, against the source or the DuckDB data
   store (`insights_data_source_v3/data_warehouse.py`, `ibis_utils.py`)
 - `skills/` — the skills this app ships for other agents to use against a live
-  site (`insights-workbook-cli`). They document the API contract, so a change to
+  site (`frappe-insights`). They document the API contract, so a change to
   what a whitelisted method returns is a change to them
 - `CONTEXT.md` — the glossary; use its terms in code, tickets, and commits
 
