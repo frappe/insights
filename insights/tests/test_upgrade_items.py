@@ -13,6 +13,7 @@ from insights.api.upgrade import (
     get_shipping_apps,
     get_upgrade_items,
     mark_upgrade_seen,
+    reopen_upgrade_items,
 )
 from insights.patches import mark_v3_users as mark_v3_users_patch
 from insights.patches.run_public_charts_as_owner import report as report_public_chart
@@ -169,6 +170,24 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
 
         self.assertEqual(dismiss_upgrade_items(names), names[1:])
         self.assertEqual(frappe.get_all(ITEM, filters={"status": "Open"}), [])
+
+    # @feature upgrade.attention-items
+    def test_a_user_reopens_their_own_closed_item_and_no_one_elses(self):
+        add_item("P20", "Only admins can edit this script now.", user=ALICE)
+        add_item("P20", "Only admins can edit this script now.", user=BOB)
+        add_item("Q13", "Set Fiscal Year Start to pin it.", action="open_settings")
+        alices = frappe.db.get_value(ITEM, {"user": ALICE})
+        bobs = frappe.db.get_value(ITEM, {"user": BOB})
+        open_one = frappe.db.get_value(ITEM, {"code": "Q13"})
+        for name in (alices, bobs):
+            frappe.db.set_value(ITEM, name, "status", "Dismissed")
+
+        with self.as_user(ALICE):
+            self.assertEqual(reopen_upgrade_items([alices, bobs]), [alices])
+        self.assertEqual(frappe.db.get_value(ITEM, alices, "status"), "Open")
+        self.assertEqual(frappe.db.get_value(ITEM, bobs, "status"), "Dismissed")
+        # an admin reopens anyone's, and an open item has nothing to reopen
+        self.assertEqual(reopen_upgrade_items([bobs, open_one]), [bobs])
 
     # @feature upgrade.attention-items
     def test_a_patch_that_runs_again_does_not_bring_back_a_dismissed_item(self):

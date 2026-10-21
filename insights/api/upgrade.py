@@ -117,6 +117,17 @@ def dismiss_upgrade_items(names: list[str]) -> list[str]:
 
 
 @insights_whitelist(methods=["POST"])
+def reopen_upgrade_items(names: list[str]) -> list[str]:
+    """Reopen each of `names` closed and in the session user's scope, and return them."""
+    names = frappe.get_all(
+        ITEM, filters={**item_filters(), "status": ("!=", "Open"), "name": ("in", names)}, pluck="name"
+    )
+    for name in names:
+        frappe.db.set_value(ITEM, name, "status", "Open")
+    return names
+
+
+@insights_whitelist(methods=["POST"])
 def fix_upgrade_item(name: str):
     """Apply the item's fix with the session user's own permission on its reference."""
     item = get_item(name)
