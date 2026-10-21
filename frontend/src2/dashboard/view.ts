@@ -242,9 +242,10 @@ export type DashboardView = {
 	loading: boolean
 	// the reference names no dashboard
 	notFound: boolean
-	// the reader may not read the dashboard. `doctypes` names what its charts
-	// read when the reader may read the dashboard but none of its charts' data
-	noAccess?: NotPermitted
+	// the reader may not read the dashboard. `sharedWith` is the server's line
+	// naming the roles it is shared with. `doctypes` names what its charts read
+	// when the reader may read the dashboard but none of its charts' data
+	noAccess?: NotPermitted & { sharedWith?: string }
 	// the request failed for another reason, so a retry may succeed
 	failed: boolean
 	name: string
@@ -396,7 +397,7 @@ function makeDashboardPage(
 	const state = reactive({
 		loading: true,
 		notFound: false,
-		noAccess: undefined as NotPermitted | undefined,
+		noAccess: undefined as DashboardView['noAccess'],
 		failed: false,
 		name: '',
 		title: '',
@@ -569,7 +570,16 @@ function makeDashboardPage(
 				opened = false
 				const refusal = refusalOf(error)
 				state.notFound = refusal === 'notFound'
-				state.noAccess = refusal === 'noAccess' ? { doctypes: [] } : undefined
+				state.noAccess =
+					refusal === 'noAccess'
+						? {
+								doctypes: [],
+								sharedWith:
+									error.exc_type === 'SharedWithRoles'
+										? error.messages?.at(-1)
+										: undefined,
+						  }
+						: undefined
 				state.failed = !refusal
 			})
 			.finally(() => {

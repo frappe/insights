@@ -44,5 +44,6 @@ export type Refusal = 'notFound' | 'noAccess'
 
 export function refusalOf(error: any): Refusal | undefined {
 	if (error?.exc_type === 'DoesNotExistError') return 'notFound'
-	if (error?.exc_type === 'PermissionError') return 'noAccess'
+	if (error?.exc_type === 'PermissionError' || error?.exc_type === 'SharedWithRoles')
+		return 'noAccess'
 }

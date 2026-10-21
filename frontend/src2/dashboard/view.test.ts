@@ -150,14 +150,17 @@ describe('a dashboard opened a second time', () => {
 // The server tells a missing dashboard from one the reader may not read, and
 // says nothing else about the second.
 describe('a dashboard the reader may not open', () => {
-	const refused = (exc_type: string) => Object.assign(new Error(exc_type), { exc_type })
+	const refused = (exc_type: string, messages: string[] = []) =>
+		Object.assign(new Error(exc_type), { exc_type, messages })
 
-	// @feature permissions.denied-says-no-access
+	// @feature permissions.denied-says-no-access permissions.no-access-names-roles
 	it('says Not Found for a reference that names nothing, and No Access for a refusal', async () => {
 		answer.dashboard = refused('DoesNotExistError')
 		const missing = await opened('missing')
-		answer.dashboard = refused('PermissionError')
+		answer.dashboard = refused('PermissionError', ["You don't have access to this dashboard"])
 		const denied = await opened('denied')
+		answer.dashboard = refused('SharedWithRoles', ['Shared with Stock User'])
+		const shared = await opened('shared')
 
 		expect([missing.notFound, missing.noAccess, missing.failed]).toEqual([
 			true,
@@ -166,9 +169,10 @@ describe('a dashboard the reader may not open', () => {
 		])
 		expect([denied.notFound, denied.noAccess, denied.failed]).toEqual([
 			false,
-			{ doctypes: [] },
+			{ doctypes: [], sharedWith: undefined },
 			false,
 		])
+		expect(shared.noAccess).toEqual({ doctypes: [], sharedWith: 'Shared with Stock User' })
 		expect(denied.title).toBe('')
 		expect(dataCalls()).toHaveLength(0)
 	})

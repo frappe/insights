@@ -4,6 +4,7 @@ from insights.insights.doctype.insights_team.insights_team import clear_cache as
 from insights.resolver import (
     CHART,
     DASHBOARD,
+    SharedWithRoles,
     resolve,
     resolve_for_read,
 )
@@ -99,6 +100,36 @@ class TestInsightsResolver(InsightsIntegrationTestCase):
         # returns the name, for server code that has already checked access.
         with self.as_user(USER_2):
             self.assertEqual(resolve(DASHBOARD, dashboard.name), dashboard.name)
+
+    # @feature permissions.no-access-names-roles
+    def test_a_denied_dashboard_names_the_roles_it_is_shared_with(self):
+        dashboard = self.make_dashboard(title="Resolver Test Roles Dashboard")
+        dashboard.visibility = "Roles"
+        dashboard.append("visible_to_roles", {"role": "Website Manager"})
+        dashboard.append("visible_to_roles", {"role": "Report Manager"})
+        dashboard.save(ignore_permissions=True)
+
+        with self.as_user(USER_2), self.assertRaises(SharedWithRoles) as raised:
+            resolve_for_read(DASHBOARD, dashboard.name)
+        self.assertEqual(str(raised.exception), "Shared with Report Manager, Website Manager")
+
+        # a guest is asked to sign in, not to get a role
+        with self.as_user("Guest"), self.assertRaises(frappe.PermissionError) as raised:
+            resolve_for_read(DASHBOARD, dashboard.name)
+        self.assertEqual(str(raised.exception), "You don't have access to this dashboard")
+
+        # a reader who holds a listed role is refused by something else, so no role is named
+        frappe.get_doc("User", USER_2).add_roles("Report Manager")
+        self.addCleanup(lambda: frappe.get_doc("User", USER_2).remove_roles("Report Manager"))
+        permission = frappe.get_doc(
+            {"doctype": "User Permission", "user": USER_2, "allow": DT.DASHBOARD, "for_value": "other"}
+        ).insert(ignore_permissions=True, ignore_links=True)
+        self.addCleanup(
+            frappe.delete_doc, "User Permission", permission.name, force=True, ignore_permissions=True
+        )
+        with self.as_user(USER_2), self.assertRaises(frappe.PermissionError) as raised:
+            resolve_for_read(DASHBOARD, dashboard.name)
+        self.assertEqual(str(raised.exception), "You don't have access to this dashboard")
 
     # @feature permissions.denied-says-no-access
     def test_a_user_permission_narrows_the_view_too(self):

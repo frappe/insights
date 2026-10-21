@@ -21,7 +21,7 @@ from frappe import _
 from frappe.permissions import has_user_permission
 
 from insights.not_permitted import refuse, refused_doctypes
-from insights.permissions import has_doc_permission
+from insights.permissions import has_doc_permission, reach
 
 DASHBOARD = "Insights Dashboard v3"
 CHART = "Insights Chart v3"
@@ -72,8 +72,9 @@ def resolve_for_read(doctype: str, reference: str) -> str:
     name = resolve(doctype, reference)
     if not name:
         not_found()
-    if not may_read(frappe.get_doc(doctype, name)):
-        no_access(doctype)
+    doc = frappe.get_doc(doctype, name)
+    if not may_read(doc):
+        no_access(doc)
 
     doctypes = dashboard_refusal(name) if doctype == DASHBOARD else None
     if doctypes is not None:
@@ -95,14 +96,36 @@ def not_found():
     frappe.throw(_("Not Found"), exc=frappe.DoesNotExistError)
 
 
-def no_access(doctype: str):
-    """The answer for content the caller may not read."""
-    message = (
-        _("You don't have access to this dashboard")
-        if doctype == DASHBOARD
-        else _("You don't have access to this chart")
-    )
-    frappe.throw(message, exc=frappe.PermissionError)
+class SharedWithRoles(frappe.PermissionError):
+    """No Access to a dashboard, whose message names the roles it is shared with."""
+
+
+def no_access(doc):
+    """The answer for content the caller may not read.
+
+    A dashboard names the roles it is shared with that the reader lacks, so
+    they know which role to ask an admin for. Who may read a board says
+    nothing about what it shows.
+    """
+    if doc.doctype != DASHBOARD:
+        frappe.throw(_("You don't have access to this chart"), exc=frappe.PermissionError)
+    if roles := roles_to_ask_for(doc):
+        frappe.throw(_("Shared with {0}").format(", ".join(roles)), exc=SharedWithRoles)
+    frappe.throw(_("You don't have access to this dashboard"), exc=frappe.PermissionError)
+
+
+def roles_to_ask_for(doc) -> list[str]:
+    """The roles `doc` is shared with, when the reader holds none of them.
+
+    A reader who holds one was refused for another reason, such as a User
+    Permission, and a guest is asked to sign in, so neither gets a role to ask for.
+    """
+    if frappe.session.user == "Guest":
+        return []
+    roles = reach(doc)[1]
+    if roles & set(frappe.get_roles()):
+        return []
+    return sorted(_(role) for role in roles)
 
 
 def may_read(doc, user: str | None = None) -> bool:

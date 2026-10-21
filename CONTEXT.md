@@ -217,7 +217,7 @@ The answer a View gives for a reference that names nothing. `resolve_for_read` r
 _Avoid_: not available, unavailable
 
 **No Access**:
-The answer a View gives for content the reader may not read: "You don't have access to this dashboard" or "this chart". `resolve_for_read` raises `frappe.PermissionError`. The reader learns that the content exists, and nothing else about it. A dashboard on which every chart is **Not Permitted** is No Access too, and names the doctypes its charts need, except to a user who may write it.
+The answer a View gives for content the reader may not read: "You don't have access to this dashboard" or "this chart". `resolve_for_read` raises `frappe.PermissionError`. The reader learns that the content exists, and nothing else about it, except the roles a dashboard is shared with when they hold none of them. A dashboard on which every chart is **Not Permitted** is No Access too, and names the doctypes its charts need, except to a user who may write it.
 _Avoid_: forbidden, denied, hidden, Not Found (for content that exists)
 
 **Not Permitted**:

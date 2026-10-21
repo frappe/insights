@@ -98,8 +98,13 @@ function exportImage() {
 			<p class="text-base-medium text-ink-gray-8">
 				{{ __("You don't have access to this dashboard") }}
 			</p>
-			<p v-if="dashboard.noAccess.doctypes.length" class="text-p-sm text-ink-gray-5">
-				{{ refusalDetail(dashboard.noAccess.doctypes, '') }}
+			<p
+				v-if="dashboard.noAccess.doctypes.length || dashboard.noAccess.sharedWith"
+				class="text-p-sm text-ink-gray-5"
+			>
+				{{
+					refusalDetail(dashboard.noAccess.doctypes, dashboard.noAccess.sharedWith ?? '')
+				}}
 			</p>
 		</div>
 
