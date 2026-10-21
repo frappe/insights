@@ -162,9 +162,10 @@ def desk_definition(doctype: str) -> dict:
     renders it.
 
     Counting Insights charts marks the document as one that shows an Insights
-    chart and nothing else, and frappe asks Insights who may read it
-    (`may_read_shown_chart`). `timeseries` is what desk's form sets for a Count
-    chart, so the form opens saved.
+    chart and nothing else (`shown_chart`). Frappe lets the readers of the
+    counted doctype read it, so only holders of an Insights role, and
+    `has_permission` narrows them to the chart's readers. `timeseries` is what
+    desk's form sets for a Count chart, so the form opens saved.
     """
     if doctype == "Number Card":
         return {
@@ -207,23 +208,11 @@ def has_permission(doc, ptype, user) -> bool:
     Only a document that counts Insights charts is narrowed. One claimed by
     hand counts what its author chose, and is read by the readers of that.
     """
-    return not shown_chart(doc) or may_read_shown_chart(doc, user)
-
-
-def may_read_shown_chart(doc, user) -> bool:
-    """Whether `user` may read a desk document that counts Insights charts.
-
-    Frappe asks this in place of read on the doctype
-    (`chart_document_type_permission`), so a desk user with no Insights role
-    sees the documents of the charts they may read.
-    """
-    from frappe.permissions import get_doctypes_with_read
-
     from insights.resolver import may_read
 
     chart = shown_chart(doc)
     if not chart:
-        return DESK_ISLANDS[doc.doctype]["options"] in get_doctypes_with_read(user)
+        return True
     if not frappe.db.exists(chart.doctype, chart.name):
         return False
     return may_read(frappe.get_doc(chart.doctype, chart.name), user)

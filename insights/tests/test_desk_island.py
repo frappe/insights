@@ -617,8 +617,11 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         )
 
     # @feature desk.chart-island desk.number-card-island permissions.non-insights-user
-    def test_a_desk_user_without_an_insights_role_sees_the_desk_charts_of_charts_they_read(self):
-        reader = create_user(DESK_READER, roles=["Sales User", "Desk User"]).name
+    def test_a_desk_chart_shows_to_users_with_an_insights_role_who_read_its_chart(self):
+        # frappe lets the readers of the doctype a desk chart counts read it, and
+        # only Insights roles read `Insights Chart v3`
+        no_role = create_user(DESK_READER, roles=["Sales User", "Desk User"]).name
+        reader = create_user(USER_1, roles=["Sales User", "Insights User", "Desk User"]).name
         workbook = self.dashboard.workbook
         shown = {}
         for name in ("Readable", "Hidden"):
@@ -659,18 +662,19 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         ).insert()
         self.addCleanup(frappe.delete_doc, "Workspace", workspace.name, force=True)
 
-        with as_user(reader):
-            page = get_desktop_page(frappe.as_json({"name": workspace.name}))
-            seen = {
-                "dashboard charts": [row.chart for row in get_permitted_charts(desk_dashboard.name)],
-                "dashboard cards": [row.card for row in get_permitted_cards(desk_dashboard.name)],
-                "workspace charts": [row.chart_name for row in page["charts"]["items"]],
-                "workspace cards": [row.number_card_name for row in page["number_cards"]["items"]],
-            }
+        def seen(user):
+            with as_user(user):
+                page = get_desktop_page(frappe.as_json({"name": workspace.name}))
+                return {
+                    "dashboard charts": [row.chart for row in get_permitted_charts(desk_dashboard.name)],
+                    "dashboard cards": [row.card for row in get_permitted_cards(desk_dashboard.name)],
+                    "workspace charts": [row.chart_name for row in page["charts"]["items"]],
+                    "workspace cards": [row.number_card_name for row in page["number_cards"]["items"]],
+                }
 
-        self.assertNotIn("Insights User", frappe.get_roles(reader))
+        self.assertFalse(any(seen(no_role).values()))
         self.assertEqual(
-            seen,
+            seen(reader),
             {
                 "dashboard charts": [shown["Readable", "Bar"]],
                 "dashboard cards": [shown["Readable", "Number"]],

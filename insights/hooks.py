@@ -150,8 +150,6 @@ has_permission = {
     "Number Card": "insights.desk.has_permission",
 }
 
-chart_document_type_permission = {"Insights Chart v3": "insights.desk.may_read_shown_chart"}
-
 # DocType Class
 # ---------------
 # Override standard doctype classes
