@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { KeyboardShortcut } from 'frappe-ui'
-import { ArrowLeft, ArrowRight, Check, ChevronDown, ExternalLink, Info, X } from 'lucide-vue-next'
+import {
+	ArrowLeft,
+	ArrowRight,
+	Check,
+	ChevronDown,
+	ExternalLink,
+	Info,
+	Undo2,
+	X,
+} from 'lucide-vue-next'
 import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { confirmDialog } from '../helpers/confirm_dialog'
@@ -69,12 +78,7 @@ function actionOf(row: Row, of: Sentence): ItemAction | undefined {
 	}
 }
 
-const doneEntries = computed(() =>
-	doneRows.value.map((row) => {
-		const said = sentenceFor(row)
-		return { row, said, action: actionOf(row, said) }
-	}),
-)
+const doneEntries = computed(() => doneRows.value.map((row) => ({ row, said: sentenceFor(row) })))
 const currentAction = computed(() =>
 	current.value && sentence.value ? actionOf(current.value, sentence.value) : undefined,
 )
@@ -352,36 +356,29 @@ function onKeydown(event: KeyboardEvent) {
 					>
 						<div class="flex flex-col divide-y divide-outline-gray-1">
 							<div
-								v-for="{ row, said, action } in doneEntries"
+								v-for="{ row, said } in doneEntries"
 								:key="row.item.name"
 								class="flex items-center gap-2 py-1.5 pl-3 pr-1.5"
 							>
 								<p class="flex-1 text-p-sm text-ink-gray-5">
 									<UpgradeSentence :parts="said.text" muted />
 								</p>
-								<Button
-									v-if="action"
-									variant="ghost"
-									size="sm"
-									:label="action.label"
-									@click="openAction(action, row)"
-								>
-									<template v-if="action.kind === 'form'" #suffix>
-										<ExternalLink
-											class="size-3.5 text-ink-gray-7"
-											stroke-width="1.5"
-										/>
-									</template>
-								</Button>
 								<!-- a fix that was applied, as a deleted copy, can't be put back -->
 								<Button
 									v-if="row.item.status !== 'Done'"
 									variant="ghost"
 									size="sm"
-									:label="__('Undo')"
+									:aria-label="__('Undo')"
 									:tooltip="__('Put it back in the list')"
 									@click="upgrade.reopen(row.names)"
-								/>
+								>
+									<template #icon>
+										<Undo2
+											class="size-3.5 text-ink-gray-6"
+											stroke-width="1.5"
+										/>
+									</template>
+								</Button>
 							</div>
 						</div>
 					</div>
