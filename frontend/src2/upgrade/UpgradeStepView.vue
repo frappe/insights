@@ -209,6 +209,18 @@ function onKeydown(event: KeyboardEvent) {
 				<h2 class="text-3xl font-semibold text-ink-gray-9">
 					{{ __('Welcome to Insights v4') }}
 				</h2>
+				<!-- names the old release the later screens compare with; kept in place on
+				     every slide, so the picture doesn't move -->
+				<p
+					class="-mt-1.5 text-p-base text-ink-gray-5"
+					:class="slide === 0 ? '' : 'invisible'"
+					:aria-hidden="slide !== 0"
+				>
+					<span class="font-semibold text-ink-gray-9">
+						{{ __('This site was upgraded from Insights v3.') }}
+					</span>
+					{{ __('Here is what is new.') }}
+				</p>
 				<!-- the picture keeps its height in a dialog that fits its content, and grows
 				     into the room a taller one leaves, the same on every slide -->
 				<div class="flex grow flex-col items-center gap-2.5 text-center">
