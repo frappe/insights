@@ -59,7 +59,7 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
 
     # @feature upgrade.number-older-shapes
     def test_a_reading_that_names_its_own_keeps_it(self):
-        named = {"comparison": {"source": "constant", "value": 10}}
+        named = {"comparison": {"source": "last year"}}
         chart = config("Revenue", "Profit", options=[named, {}], comparison=True)
 
         normalize(chart)
@@ -151,6 +151,61 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
             [o["comparison"] for o in options_of(chart)],
             [{"source": "last year"}, PREVIOUS],
         )
+
+    # @feature charts.number-target-gap upgrade.number-older-shapes
+    def test_a_comparison_with_a_number_becomes_the_target_and_prints_its_gap(self):
+        """A comparison reads a period now. A fixed number or a Measure is a
+        target, so the reading aims at it and prints the gap it printed."""
+        budget = measure("Budget")
+        chart = config(
+            "Revenue",
+            "Profit",
+            options=[
+                {"comparison": {"source": "constant", "value": 120, "label": "vs plan"}},
+                {"comparison": {"source": "measure", "measure": budget, "show": "delta"}},
+            ],
+        )
+
+        self.assertTrue(normalize(chart))
+
+        self.assertEqual(
+            options_of(chart),
+            [
+                {"target": {"value": 120, "gap": "change", "label": "vs plan"}},
+                {"target": {"measure": budget, "gap": "delta"}},
+            ],
+        )
+
+    # @feature upgrade.number-older-shapes
+    def test_a_comparison_with_a_number_beside_a_target_is_kept_for_the_author(self):
+        """The reading keeps the target it aims at. The comparison is not printed,
+        and it is kept so the form can ask the author to move it to a second
+        reading."""
+        against = {"source": "constant", "value": 120}
+        chart = config("Tickets", options=[{"target": {"value": 100}, "comparison": against}])
+
+        self.assertTrue(normalize(chart))
+
+        self.assertEqual(
+            options_of(chart),
+            [{"target": {"value": 100}, "retired_comparison": against}],
+        )
+
+    # @feature upgrade.number-older-shapes
+    def test_a_comparison_naming_no_number_goes(self):
+        """It printed no delta row, so there is nothing to keep."""
+        chart = config(
+            "Revenue",
+            "Profit",
+            options=[
+                {"comparison": {"source": "constant"}},
+                {"comparison": {"source": "measure", "measure": measure("")}},
+            ],
+        )
+
+        self.assertTrue(normalize(chart))
+
+        self.assertEqual(options_of(chart), [{}, {}])
 
     # @feature charts.number-negative-is-better upgrade.number-older-shapes
     def test_the_chart_flag_for_which_way_is_up_becomes_each_readings(self):
