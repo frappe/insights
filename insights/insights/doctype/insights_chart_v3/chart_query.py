@@ -711,13 +711,12 @@ def _within(date_column: dict, timespan: dict) -> dict:
 
 
 def _number_measures(config: dict) -> list[dict]:
-    """The measures a Number Chart summarizes: its readings, their targets, and
-    what they are compared with.
+    """The measures a Number Chart summarizes: its readings and their targets.
 
-    A target or a comparison read off a measure is a column of the card's own
-    result, so the summarize has to include it even though no card is plotted
-    behind it. Two readings measured against the same measure share one column,
-    which is why the list is deduped by name. `_measure_name_errors` is what
+    A target read off a measure is a column of the card's own result, so the
+    summarize has to include it even though no card is plotted behind it. Two
+    readings measured against the same measure share one column, which is why
+    the list is deduped by name. `_measure_name_errors` is what
     guarantees a shared name means a shared measure.
     """
     measures = []
@@ -732,20 +731,20 @@ def _number_measures(config: dict) -> list[dict]:
 
 def _all_number_measures(config: dict):
     """Every measure the card's config names, duplicates included: the readings
-    first, then each reading's target and comparison."""
+    first, then each reading's target. A comparison reads a period, which is a
+    row of the readings and no measure of its own."""
     yield from _named_measures(config.get("number_columns"))
     for options in config.get("number_column_options") or []:
-        for slot in ("target", "comparison"):
-            measure = ((options or {}).get(slot) or {}).get("measure") or {}
-            if measure.get("measure_name"):
-                yield measure
+        measure = ((options or {}).get("target") or {}).get("measure") or {}
+        if measure.get("measure_name"):
+            yield measure
 
 
 def _measure_name_errors(config: dict) -> list[str]:
     """The names that name two different measures on one card, empty when none do.
 
     A name is a column of the card's one result, and the card reads every
-    reading, target and comparison back by name. Two measures under one name
+    reading and target back by name. Two measures under one name
     collapse to one column, so every card that named the other one silently
     reads a number it never asked for.
     """
@@ -764,7 +763,7 @@ def _measure_name_errors(config: dict) -> list[str]:
 def _computation(measure: dict) -> str:
     """What a measure computes, minus how it is displayed.
 
-    A comparison picked to match a reading names the same fold without keeping
+    A target picked to match a reading names the same fold without keeping
     the reading's display options, and the two are still one column.
     """
     keys = ("expression", "column_name", "aggregation")
@@ -1047,6 +1046,7 @@ def normalize_number_shapes(config: dict) -> bool:
                 moved = True
 
         moved = _normalize_comparison(beside) or moved
+        moved = _comparison_to_target(beside) or moved
 
     if len(options) > len(columns):
         # an option outlives the reading it sits beside, and derivation reads the
@@ -1103,6 +1103,52 @@ def _normalize_comparison(options: dict) -> bool:
     year_back = shift.get("unit") in ("year", "fiscal year") and shift.get("count") == -1
     comparison["source"] = "last year" if year_back else "previous"
     return True
+
+
+def _comparison_to_target(options: dict) -> bool:
+    """A comparison with a fixed number or a Measure, moved to where it belongs.
+
+    A comparison reads a period, and a fixed number or a Measure is a target.
+    Without a target of its own, the reading takes the number as its target and
+    prints the gap the comparison printed, under the caption it had. A reading
+    that already aims at a target keeps it. Its comparison is kept as
+    `retired_comparison`, which the card does not print and the form asks the
+    author to move to a second reading. A comparison naming no number printed
+    nothing, so it goes.
+    """
+    comparison = options.get("comparison")
+    if not isinstance(comparison, dict) or comparison.get("source") not in ("constant", "measure"):
+        return False
+
+    del options["comparison"]
+    against = named_number(comparison)
+    if not against:
+        return True
+
+    if named_number(options.get("target")):
+        options["retired_comparison"] = comparison
+        return True
+
+    target = {**against, "gap": "delta" if comparison.get("show") == "delta" else "change"}
+    if comparison.get("label"):
+        target["label"] = comparison["label"]
+    options["target"] = target
+    return True
+
+
+def named_number(against) -> dict:
+    """The fixed number or the Measure a target or a comparison names, as a
+    target holds it, or nothing when it names neither. A Measure with no name
+    is one whose column the author has not picked yet."""
+    if not isinstance(against, dict):
+        return {}
+    value = against.get("value")
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return {"value": value}
+    measure = against.get("measure")
+    if isinstance(measure, dict) and measure.get("measure_name"):
+        return {"measure": measure}
+    return {}
 
 
 def _measured_against(options: dict, flag) -> dict:

@@ -163,8 +163,9 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.number-period-include-current | A user includes the in-progress period in a card's window. |
 | charts.number-period-from-dashboard | A card that states no Period reads a dashboard's `within` date filter as its Period, so its comparison steps back from the dashboard's span. Any other date filter only narrows its rows. |
 | charts.number-date-column | A user picks the date column a card's period and sparkline read. |
-| charts.number-target | A user measures a reading against a constant or a measure and the card states the gap. |
-| charts.number-comparison | A user compares a reading with the previous period, the same period last year, a constant or a measure, and the card states the change. |
+| charts.number-target | A user aims a reading at a constant or a measure, and the card prints the target beside the reading. |
+| charts.number-target-gap | A user prints a reading's gap to its target in the delta row, as a percent change or a difference, under a caption of their own. |
+| charts.number-comparison | A user compares a reading with the previous period or the same period last year, and the card states the change. |
 | charts.number-comparison-show | A user prints a comparison as a percent change or as a difference in the value's own units. |
 | charts.number-comparison-caption | A user writes a caption for the comparison row. |
 | charts.number-progress | A user draws a bar under a card for how far its reading has come: towards its target, or out of 100% for a percent. |

@@ -16,7 +16,8 @@ def execute():
     chart's own `window`, and a granularity on the date column before it. Two more
     said which way is up: the reading's own flag, and a chart-level one before it.
     Every chart is rewritten into the first of each, so nothing reads the older
-    shapes.
+    shapes. A comparison with a fixed number or a Measure becomes the reading's
+    target, since a comparison now reads only a period.
 
     Idempotent — a chart already in the shape is left alone.
     """
