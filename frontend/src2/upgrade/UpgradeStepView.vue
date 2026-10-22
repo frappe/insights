@@ -253,13 +253,9 @@ function onKeydown(event: KeyboardEvent) {
 					:aria-hidden="slide !== 0"
 				>
 					<span class="font-semibold text-ink-gray-9">
-						{{ __('This site now runs Insights 3.50.') }}
+						{{ __('Sharing and permissions now work as they should.') }}
 					</span>
-					{{
-						__(
-							'It fixes sharing and permissions, so people read and change only what they may. Here is what is new.',
-						)
-					}}
+					{{ __('People read and change only what they may. Here is what is new.') }}
 				</p>
 				<!-- the picture keeps its height in a dialog that fits its content, and grows
 				     into the room a taller one leaves, the same on every slide -->
