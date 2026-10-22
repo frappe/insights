@@ -542,7 +542,7 @@ function _formatNumber(value: any, columnName?: string, row?: any) {
 	if (isNull) {
 		return props.replaceNullsWithZeros ? 0 : 'null'
 	}
-	const { scale, prefix, suffix } = getFormatUnits(
+	const { scale, prefix, suffix, frappe_number_format } = getFormatUnits(
 		columnName ? props.columnFormats?.[columnName] : undefined,
 		columnName
 			? row
@@ -551,7 +551,9 @@ function _formatNumber(value: any, columnName?: string, row?: any) {
 			: undefined,
 	)
 	const scaled = value * scale
-	const printed = props.compactNumbers ? getShortNumber(scaled) : formatNumber(scaled)
+	const printed = props.compactNumbers
+		? getShortNumber(scaled, 0, frappe_number_format)
+		: formatNumber(scaled, 0, frappe_number_format)
 	return `${prefix}${printed}${suffix}`
 }
 

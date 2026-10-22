@@ -32,7 +32,7 @@ from insights.insights.query_utils import (
     source_tables,
     sync_query_references,
 )
-from insights.utils import as_text, deep_convert_dict_to_dict, get_currency_symbols
+from insights.utils import as_text, deep_convert_dict_to_dict, get_currencies
 
 
 class InsightsQueryv3(Document):
@@ -275,7 +275,7 @@ class InsightsQueryv3(Document):
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
             "rows": results,
-            "currency_symbols": get_currency_symbols(codes),
+            "currency_symbols": get_currencies(codes),
             "time_taken": time_taken,
             "is_aggregated_sql": _sql_has_group_by(sql) if sql else False,
         }

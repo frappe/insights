@@ -23,7 +23,7 @@ from insights.insights.doctype.insights_team.insights_team import (
 )
 from insights.permission_user import permission_user
 from insights.telemetry import get_entry
-from insights.utils import get_currency_symbols, get_owned_file
+from insights.utils import get_currencies, get_owned_file
 
 
 @insights_whitelist()
@@ -60,12 +60,13 @@ def get_security_update():
             }
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's display
-# currency, which a public dashboard already prints
+@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's number format and
+# display currency, which a public dashboard already prints
 def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
     dashboard needs them to print an amount the way the workbook does."""
     return {
+        "number_format": frappe.db.get_single_value("System Settings", "number_format"),
         # the two properties `docs/telemetry.md` puts on every event. The browser
         # has no other way to read them, and only a signed-in one ever sends one
         **(
@@ -89,7 +90,7 @@ def get_currency_info():
     # System Settings writes the default only when the field changes, so read the
     # field too — a site installed with a currency has never "changed" it
     currency = frappe.db.get_default("currency") or frappe.db.get_single_value("System Settings", "currency")
-    return {"currency": currency or None, "currency_symbols": get_currency_symbols([currency])}
+    return {"currency": currency or None, "currency_symbols": get_currencies([currency])}
 
 
 @insights_whitelist()
