@@ -273,6 +273,7 @@ watch(
 // open: a period list is short, and the reader narrows it by typing.
 const periods = ref<Partial<Record<string, string[]>>>({})
 const periodsFetching = ref(false)
+let periodsRequest = 0
 
 /** the unit the list on screen shows */
 const periodUnit = computed<PeriodUnit | undefined>(() => {
@@ -291,16 +292,22 @@ watch(
 		const grain = PERIOD_GRAINS[unit]
 		if (periods.value[grain]) return
 
+		const id = ++periodsRequest
 		periodsFetching.value = true
 		const starts = await props
 			.valuesProvider(column.value)('', grain)
 			.catch((error) => {
-				showErrorToast(error, false)
-				return []
+				if (id === periodsRequest) showErrorToast(error, false)
+				return undefined
 			})
+		if (id !== periodsRequest) return
+		periodsFetching.value = false
+		// a failed ask is not an answer, so the list asks again when it is opened again
+		if (!starts) return
 		// a datetime column answers a timestamp, and the rows go by the day
 		periods.value = { ...periods.value, [grain]: starts.map((s) => String(s).slice(0, 10)) }
-		periodsFetching.value = false
+		// the reopened period's row exists only now, so the highlight can land on it
+		if (editing.value) highlight(selectedRowKey(editing.value, stage.value) || '')
 	},
 	{ immediate: true },
 )
@@ -336,6 +343,13 @@ function periodRows(): ListItem[] {
 		}))
 }
 
+/** a period's own label, typed, is that period wherever a range is picked */
+const typedPeriod = computed(() =>
+	stage.value === 'value' && kind.value === 'date' && calendar.value !== 'day'
+		? parsePeriod(search.value)
+		: undefined,
+)
+
 /** The rule the typed text spells, where the stage has a place for one. */
 const typed = computed<(Draft & { label: string }) | undefined>(() => {
 	const text = search.value.trim()
@@ -362,12 +376,10 @@ const typed = computed<(Draft & { label: string }) | undefined>(() => {
 
 	if (kind.value !== 'date') return undefined
 
-	// a period's own label, typed, is that period wherever a range is picked
-	const typedPeriod = calendar.value === 'day' ? undefined : parsePeriod(text)
-	if (typedPeriod)
+	if (typedPeriod.value)
 		return {
-			...periodRule(typedPeriod),
-			label: __('Use “{0}”', periodLabel(typedPeriod.unit, typedPeriod.start)),
+			...periodRule(typedPeriod.value),
+			label: __('Use “{0}”', periodLabel(typedPeriod.value.unit, typedPeriod.value.start)),
 		}
 
 	if (!calendar.value) {
@@ -513,8 +525,9 @@ const rows = computed<ListItem[]>(() => {
 		.filter((list) => matches(list.label))
 		.map((list) => ({ key: `list:${list.unit}`, label: list.label }))
 
-	// dates: the input and the highlighted grid already read the draft
-	if (calendar.value === 'range') return [...use, ...lists]
+	// dates: the input and the highlighted grid already read the draft, so only a
+	// typed period gets a row
+	if (calendar.value === 'range') return typedPeriod.value ? [...use, ...lists] : lists
 	if (calendar.value) return []
 	const presets = datePresets()
 		.filter((p) => matches(p.label))
@@ -729,7 +742,7 @@ function onKeydown(event: KeyboardEvent) {
 		return
 	}
 	// → opens a year's quarters, the way its › does, and ← comes back out
-	if (event.key === 'ArrowRight' && highlightedRow()?.opens) {
+	if (event.key === 'ArrowRight' && !search.value && highlightedRow()?.opens) {
 		event.preventDefault()
 		open(highlightedRow()!)
 		return
@@ -905,19 +918,32 @@ function focusInput() {
 			</Tooltip>
 		</div>
 
-		<FilterPickerList
-			v-if="rows.length || fetching || emptyText"
-			:items="rows"
-			:stage="stage"
-			:loading="fetching"
-			:empty="emptyText"
-			@pick="pick"
-			@open="open"
-			@remove="emit('remove', $event.filter!)"
-		/>
+		<!-- A range calendar sits above its rows: they go as the reader types a
+		     range, and the days must stay where the first click found them. -->
+		<div class="flex flex-col" :class="calendar === 'range' ? 'flex-col-reverse' : ''">
+			<FilterPickerList
+				v-if="rows.length || fetching || periodsFetching || emptyText"
+				:items="rows"
+				:stage="stage"
+				:loading="fetching || periodsFetching"
+				:empty="emptyText"
+				@pick="pick"
+				@open="open"
+				@remove="emit('remove', $event.filter!)"
+			/>
 
-		<div v-if="calendar" :class="rows.length ? 'border-t border-outline-gray-1' : ''">
-			<FilterPickerCalendar :mode="calendar" :text="search" @write="search = $event" />
+			<div
+				v-if="calendar"
+				:class="
+					rows.length
+						? calendar === 'range'
+							? 'border-b border-outline-gray-1'
+							: 'border-t border-outline-gray-1'
+						: ''
+				"
+			>
+				<FilterPickerCalendar :mode="calendar" :text="search" @write="search = $event" />
+			</div>
 		</div>
 
 		<!-- The row grows in rather than appearing: it arrives a stage after the
