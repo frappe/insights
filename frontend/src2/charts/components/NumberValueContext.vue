@@ -4,17 +4,24 @@ import ColorInput from '../../components/ColorInput.vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import NumberInput from '../../components/NumberInput.vue'
 import { __ } from '../../translation'
-import type { NumberChartConfig, NumberComparison, NumberTarget } from '../../types/chart.types'
+import type {
+	NumberChartConfig,
+	NumberComparison,
+	NumberComparisonShow,
+	NumberRetiredComparison,
+	NumberTarget,
+} from '../../types/chart.types'
 import type { ColumnOption, Dimension, Measure } from '../../types/query.types'
 import type { NumberPeriod } from '../window'
 import { canDrawProgress, defaultComparisonLabel } from '../adapter/number'
 import MeasurePicker from './MeasurePicker.vue'
 
 // What a reading is read against: the target it aims at, with the bar that
-// fills towards it, and the one number it is compared with. Two blocks because a
-// card reads them in two places — the target on the value line, the comparison
-// in the delta row — and a reader who wants a second comparison wants a second
-// card.
+// fills towards it, and the one period it is compared with. The target answers
+// "compared with what" and the comparison "compared with when". The target
+// prints on the value line and the comparison in the delta row. The delta row
+// holds one gap, so a target prints its own there only on a reading compared
+// with no period.
 
 const props = defineProps<{
 	columnOptions: ColumnOption[]
@@ -28,9 +35,10 @@ const props = defineProps<{
 const emit = defineEmits({ 'dialog-open': () => true })
 const target = defineModel<NumberTarget | undefined>('target')
 const comparison = defineModel<NumberComparison | undefined>('comparison')
+const retiredComparison = defineModel<NumberRetiredComparison | undefined>('retiredComparison')
 const progress = defineModel<boolean | undefined>('progress')
 const progressColor = defineModel<string | undefined>('progressColor')
-/** Flips the comparison's colors, so it sits with the comparison. */
+/** Flips the delta row's colors, so it sits with the comparison. */
 const negativeIsBetter = defineModel<boolean | undefined>('negativeIsBetter')
 
 const targetSourceOptions = [
@@ -41,16 +49,30 @@ const targetSourceOptions = [
 
 // Listed even when they cannot be picked. A list that changed shape under the
 // author would hide the dependency. A disabled row states it, and the remedy is
-// one section up.
+// one section up: a period, or a target that prints no gap.
 const comparisonSourceOptions = computed(() => [
 	{ label: __('None'), value: 'none' },
-	{ label: __('Previous period'), value: 'previous', disabled: !props.period },
+	{
+		label: __('Previous period'),
+		value: 'previous',
+		disabled: !props.period || Boolean(target.value?.gap),
+	},
 	// A year back is the same span anchored a year earlier, which only a span
 	// names. A grain period would have to count rows back instead, and a gap in
 	// the data would make it count the wrong one.
-	{ label: __('Same period last year'), value: 'last year', disabled: !props.period?.span },
-	{ label: __('Number'), value: 'constant' },
-	{ label: __('Measure'), value: 'measure' },
+	{
+		label: __('Same period last year'),
+		value: 'last year',
+		disabled: !props.period?.span || Boolean(target.value?.gap),
+	},
+])
+
+// The delta row holds one gap, so a reading compared with a period has no room
+// for the target's.
+const gapOptions = computed(() => [
+	{ label: __('None'), value: 'none' },
+	{ label: __('% change'), value: 'change', disabled: Boolean(comparison.value) },
+	{ label: __('Difference'), value: 'delta', disabled: Boolean(comparison.value) },
 ])
 
 // The caption the card prints when the author types none. Shown as the field's
@@ -73,10 +95,43 @@ const targetSource = computed(() => {
 
 function setTargetSource(source: string) {
 	// The old source's field named the old source's number, so it goes with it.
+	// How the gap prints is not about the number, so it stays.
+	const printed = {
+		...(target.value?.gap ? { gap: target.value.gap } : {}),
+		...(target.value?.label ? { label: target.value.label } : {}),
+	}
 	if (source === 'none') target.value = undefined
-	else if (source === 'measure') target.value = { measure: blankMeasure() }
-	else target.value = {}
+	else if (source === 'measure') target.value = { ...printed, measure: blankMeasure() }
+	else target.value = { ...printed }
 }
+
+function setTargetValue(value: number | undefined) {
+	target.value = { ...target.value, value }
+}
+
+function setGap(gap: string) {
+	if (!target.value) return
+	const next = { ...target.value }
+	if (gap === 'none') {
+		// The caption names the gap, so it goes when the gap does.
+		delete next.gap
+		delete next.label
+	} else {
+		next.gap = gap as NumberComparisonShow
+	}
+	target.value = next
+}
+
+/**
+ * What the retired comparison measured against, as the author would type it
+ * into a target: the raw number, or the Measure's name.
+ */
+const retiredAgainst = computed(() => {
+	const retired = retiredComparison.value
+	if (!retired) return ''
+	if (retired.source === 'measure') return retired.measure?.measure_name || ''
+	return typeof retired.value === 'number' ? String(retired.value) : ''
+})
 
 const comparisonSource = computed(() => comparison.value?.source || 'none')
 
@@ -93,7 +148,6 @@ function setComparisonSource(source: string) {
 		source: source as NumberComparison['source'],
 		show: comparison.value?.show || 'change',
 		...(comparison.value?.label ? { label: comparison.value.label } : {}),
-		...(source === 'measure' ? { measure: blankMeasure() } : {}),
 	}
 }
 
@@ -102,11 +156,6 @@ function setComparisonSource(source: string) {
 const targetMeasure = computed<Measure>({
 	get: () => target.value?.measure as Measure,
 	set: (measure) => (target.value = { ...target.value, measure }),
-})
-
-const comparisonMeasure = computed<Measure>({
-	get: () => comparison.value?.measure as Measure,
-	set: (measure) => comparison.value && (comparison.value.measure = measure),
 })
 
 /**
@@ -136,7 +185,7 @@ function blankMeasure(): Measure {
 		<InlineFormControlLabel v-if="targetSource === 'constant'" :label="__('Value')">
 			<NumberInput
 				:model-value="target?.value"
-				@update:model-value="target = { value: $event }"
+				@update:model-value="setTargetValue($event)"
 			/>
 		</InlineFormControlLabel>
 
@@ -148,6 +197,26 @@ function blankMeasure(): Measure {
 				@dialog-open="emit('dialog-open')"
 			/>
 		</InlineFormControlLabel>
+
+		<template v-if="target">
+			<InlineFormControlLabel :label="__('Gap')">
+				<FormControl
+					type="select"
+					:options="gapOptions"
+					:modelValue="target.gap || 'none'"
+					@update:modelValue="setGap($event)"
+				/>
+			</InlineFormControlLabel>
+
+			<InlineFormControlLabel v-if="target.gap" :label="__('Caption')">
+				<FormControl
+					autocomplete="off"
+					:placeholder="__('vs target')"
+					:modelValue="target.label"
+					@update:modelValue="target = { ...target, label: $event || undefined }"
+				/>
+			</InlineFormControlLabel>
+		</template>
 
 		<template v-if="canDrawProgress(target, measure)">
 			<Toggle :label="__('Progress bar')" v-model="progress" />
@@ -170,18 +239,17 @@ function blankMeasure(): Measure {
 			/>
 		</InlineFormControlLabel>
 
-		<InlineFormControlLabel v-if="comparison?.source === 'constant'" :label="__('Value')">
-			<NumberInput v-model="comparison.value" />
-		</InlineFormControlLabel>
-
-		<InlineFormControlLabel v-if="comparison?.source === 'measure'" :label="__('Measure')">
-			<MeasurePicker
-				v-model="comparisonMeasure"
-				:column-options="columnOptions"
-				@remove="comparison = undefined"
-				@dialog-open="emit('dialog-open')"
-			/>
-		</InlineFormControlLabel>
+		<div v-if="retiredComparison" class="flex flex-col items-start gap-1.5">
+			<p class="text-p-xs text-ink-gray-5">
+				{{
+					__(
+						'This reading was also compared with {0}. A comparison reads only a period now, so the card no longer shows it. To keep it, add a second reading with {0} as its target.',
+						retiredAgainst,
+					)
+				}}
+			</p>
+			<Button size="sm" :label="__('Dismiss')" @click="retiredComparison = undefined" />
+		</div>
 
 		<template v-if="comparison">
 			<InlineFormControlLabel :label="__('Show')">
