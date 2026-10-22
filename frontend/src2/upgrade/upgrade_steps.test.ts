@@ -374,7 +374,7 @@ describe('an item sentence', () => {
 			[
 				'K1',
 				{ dashboard: 'Sales', start: '2024-01-01', end: '2024-03-31' },
-				'The Sales dashboard lost its default date range (2024-01-01 – 2024-03-31), which Insights v3 showed but never applied.',
+				'The Sales dashboard lost its default date range (2024-01-01 – 2024-03-31), which earlier releases showed but never applied.',
 				'Set it again if you want it.',
 			],
 			[
@@ -410,7 +410,7 @@ describe('an item sentence', () => {
 		const copy = { workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' }
 		const changed = sentenceOf(item('c', 'W2', copy, { workbook: 'wb' }), DAVE)
 		expect(text(changed.text)).toBe(
-			'The Sales Performance workbook is a copy of an Insights v3 template. ERPNext’s Selling workbook replaces it and gets updates.',
+			'The Sales Performance workbook is a copy of an old Insights template. ERPNext’s Selling workbook replaces it and gets updates.',
 		)
 		expect(text(changed.todo)).toBe(
 			'Move what you changed to the Selling workbook, then delete the copy.',

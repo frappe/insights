@@ -243,7 +243,7 @@ function onKeydown(event: KeyboardEvent) {
 			<!-- Welcome: one feature per slide -->
 			<template v-if="props.step.id === 'welcome'">
 				<h2 class="text-3xl font-semibold text-ink-gray-9">
-					{{ __('Welcome to Insights v4') }}
+					{{ __('Welcome to Insights 3.50') }}
 				</h2>
 				<!-- names the old release the later screens compare with; kept in place on
 				     every slide, so the picture doesn't move -->
@@ -253,9 +253,13 @@ function onKeydown(event: KeyboardEvent) {
 					:aria-hidden="slide !== 0"
 				>
 					<span class="font-semibold text-ink-gray-9">
-						{{ __('This site was upgraded from Insights v3.') }}
+						{{ __('This site now runs Insights 3.50.') }}
 					</span>
-					{{ __('Here is what is new.') }}
+					{{
+						__(
+							'It fixes sharing and permissions, so people read and change only what they may. Here is what is new.',
+						)
+					}}
 				</p>
 				<!-- the picture keeps its height in a dialog that fits its content, and grows
 				     into the room a taller one leaves, the same on every slide -->
@@ -297,7 +301,11 @@ function onKeydown(event: KeyboardEvent) {
 				>
 					<Info class="size-4 shrink-0 text-ink-gray-5" stroke-width="1.5" />
 					<span>
-						{{ __('A few numbers change because Insights v3 computed them wrongly.') }}
+						{{
+							__(
+								'A few numbers change because earlier releases computed them wrongly.',
+							)
+						}}
 						<a
 							:href="RELEASE_NOTES"
 							target="_blank"
@@ -318,9 +326,7 @@ function onKeydown(event: KeyboardEvent) {
 					<div class="text-xs font-semibold text-ink-gray-5">{{ __('Before') }}</div>
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">
-							{{
-								__('In Insights v3, you shared each chart or dashboard on its own,')
-							}}
+							{{ __('Before 3.50, you shared each chart or dashboard on its own,') }}
 						</span>
 						{{ __('and could let people edit it.') }}
 					</p>

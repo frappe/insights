@@ -33,10 +33,10 @@ export type PictureName =
 /** What a slide's feature needs of the reader: the server says whether they have it. */
 export type Can = { readStandardDashboards: boolean; showInDesk: boolean; share: boolean }
 
-/** One feature a reader of Insights v3 meets first, and the screen it is on. */
+/** One feature a reader upgrading to Insights 3.50 meets first, and the screen it is on. */
 export type Slide = { label: string; text: string; picture: PictureName; needs?: keyof Can }
 
-// What a reader of Insights v3 gains most, one per slide. The last leads into
+// What a reader upgrading to Insights 3.50 gains most, one per slide. The last leads into
 // the upgrade steps, which are mostly about permissions.
 export const welcomeSlides = translatedTable<Slide[]>(() => [
 	{
@@ -158,7 +158,7 @@ export const groups = translatedTable<Group[]>(() => [
 		codes: ['K1', 'N4', 'N6', 'Q13'],
 		title: __('Some numbers need a setting again'),
 		lead: [
-			__('Insights v4 reads a few settings differently,'),
+			__('Insights 3.50 reads a few settings differently,'),
 			__('so these show other numbers until you set them again.'),
 		],
 		picture: 'numberCards',
@@ -752,7 +752,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		return {
 			text: say(
 				__(
-					'The {0} lost its default date range ({1}), which Insights v3 showed but never applied.',
+					'The {0} lost its default date range ({1}), which earlier releases showed but never applied.',
 				),
 				titled('dashboard', d.dashboard),
 				{ text: `${d.start} – ${d.end}` },
@@ -849,7 +849,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	},
 	W2(item, d) {
 		const text = say(
-			__('The {0} is a copy of an Insights v3 template. {1} replaces it and gets updates.'),
+			__('The {0} is a copy of an old Insights template. {1} replaces it and gets updates.'),
 			titled('workbook', d.workbook),
 			[
 				{ text: d.app ? __('{0}’s', d.app) + ' ' : __('The') + ' ' },
@@ -941,7 +941,7 @@ function refusedNames(item: UpgradeItem, d: Record<string, any>): Sentence {
 	return {
 		text: say(
 			__(
-				'The {0} uses {1}, which Insights v4 doesn’t allow. It will fail until they are removed.',
+				'The {0} uses {1}, which Insights 3.50 doesn’t allow. It will fail until they are removed.',
 			),
 			titled(
 				item.code === 'J4' ? 'import job' : item.code === 'Q5' ? d.kind : 'script',

@@ -16,7 +16,7 @@ import upgrade from './upgrade'
 import UpgradeStepView from './UpgradeStepView.vue'
 import type { Step } from './upgrade_steps'
 
-// The upgrade from Insights v3, one step at a time: what is new, how sharing
+// The upgrade to Insights 3.50, one step at a time: what is new, how sharing
 // changed, then each group of items that needs the reader. It opens once by
 // itself; the sidebar card resumes it where the reader left it.
 watch(
@@ -62,14 +62,16 @@ function state(step: Step) {
 		size="4xl"
 		:keyboard-shortcut="false"
 	>
-		<template #title>{{ __('Insights v4') }}</template>
+		<template #title>{{ __('Insights 3.50') }}</template>
 		<template #description>{{ __('What is new, and what the upgrade left for you') }}</template>
 		<SettingsSidebar>
 			<div class="flex items-center gap-2 px-1.5 pb-1 pt-2">
 				<span class="grid size-[26px] place-items-center rounded-4 bg-surface-gray-2">
 					<Sparkle class="size-4 text-ink-gray-8" stroke-width="1.5" />
 				</span>
-				<span class="text-base font-semibold text-ink-gray-9">{{ __('Insights v4') }}</span>
+				<span class="text-base font-semibold text-ink-gray-9">{{
+					__('Insights 3.50')
+				}}</span>
 			</div>
 			<template v-for="section in ['new', 'upgrade'] as const" :key="section">
 				<SettingsNavGroup
