@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatNumber, getFormatUnits, getShortNumber } from '../../helpers'
+import { formatNumber, getFormatUnits, getShortNumber, type FormatUnits } from '../../helpers'
 import { getRowCurrency } from '../../query/helpers'
 import { NumberChartConfig, NumberColumnOptions } from '../../types/chart.types'
 import { DataFormat, QueryResult, QueryResultColumn, QueryResultRow } from '../../types/query.types'
@@ -66,8 +66,8 @@ const cards = computed(() => {
 		return {
 			measure_name,
 			values: numberValues,
-			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers, format),
-			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers, format),
+			currentValue: getFormattedValue(currentValue, decimal, shorten_numbers, units),
+			previousValue: getFormattedValue(previousValue, decimal, shorten_numbers, units),
 			delta,
 			// percentDelta is already a percentage change, so it keeps the default format
 			percentDelta: getFormattedValue(percentDelta, decimal, shorten_numbers),
@@ -82,15 +82,15 @@ const getFormattedValue = (
 	value: number,
 	decimal?: number,
 	shorten_numbers?: boolean,
-	format?: DataFormat,
+	units?: FormatUnits,
 ) => {
 	if (isNaN(value)) return 0
 	// the number alone — its unit prints around it, from the same format
-	const scaled = value * getFormatUnits(format).scale
+	const scaled = value * (units?.scale ?? 1)
 	if (shorten_numbers) {
-		return getShortNumber(scaled, decimal)
+		return getShortNumber(scaled, decimal, units?.frappe_number_format)
 	}
-	return formatNumber(scaled, decimal)
+	return formatNumber(scaled, decimal, units?.frappe_number_format)
 }
 
 function getNumberOption(index: number, option: keyof NumberColumnOptions) {
