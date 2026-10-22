@@ -225,7 +225,7 @@ class InsightsQueryv3(Document):
         builder.force = force
         builder.import_if_not_exists = import_if_not_exists
         if builder.build() is None:
-            frappe.throw("Failed to build query", QueryRefused)
+            frappe.throw(frappe._("Failed to build query"), QueryRefused)
 
         return builder
 
