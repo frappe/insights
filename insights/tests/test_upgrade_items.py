@@ -1,4 +1,4 @@
-"""The upgrade from Insights v3: who is welcomed, and what reaches whom.
+"""The upgrade from Insights before 3.50: who is welcomed, and what reaches whom.
 
 See `insights/upgrade.py`. The patches that add items come later; these tests
 add their own.
@@ -78,13 +78,15 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertTrue(self.user_info(BOB)["upgraded_from_v3"])
 
     # @feature upgrade.v3-users-welcomed
-    def test_only_a_site_upgrading_from_a_release_of_insights_3_welcomes_its_users(self):
+    def test_only_a_site_upgrading_from_a_release_before_3_50_welcomes_its_users(self):
         row = {"parent": "Installed Applications", "app_name": "insights"}
         for version, branch, welcomed in (
             ("3.14.2", "version-3", True),
+            ("3.15.1", "version-3-hotfix", True),
             ("3.3.1", "develop", False),
-            ("4.0.0-dev", "develop", False),
-            ("4.0.0", "version-4", False),
+            ("3.50.0-dev", "develop", False),
+            ("3.50.0-dev", "desk-dashboards", False),
+            ("3.50.0", "version-3", False),
         ):
             with self.subTest(version=version, branch=branch):
                 frappe.db.set_value(

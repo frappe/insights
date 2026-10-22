@@ -1,18 +1,19 @@
-"""What the upgrade from Insights v3 could not carry over, and who used Insights v3.
+"""What the upgrade to Insights 3.50 could not carry over, and who used an earlier release.
 
 A patch that cannot carry something over records it with `add_item`. The
-upgrade dialog lists the items, and opens once for each user who used
-Insights v3.
+upgrade dialog lists the items, and opens once for each user who used an
+earlier release.
 """
 
 import frappe
+from semantic_version import Version
 
 ITEM = "Insights Upgrade Item"
 # a user default, so it is per user and survives a cache clear
 SEEN_VERSION = "insights_seen_version"
 INSIGHTS_ROLES = ("Insights User", "Insights Admin")
 WORKBOOK = "Insights Workbook"
-# Insights v3's template folders, and the standard workbook that replaces each
+# The template folders before 3.50, and the standard workbook that replaces each
 TEMPLATE_WORKBOOKS = {"accounting": "accounts", "purchasing": "buying", "sales": "selling", "stock": "stock"}
 
 
@@ -46,11 +47,11 @@ def add_item(
 
 
 def was_on_v3() -> bool:
-    """Whether this migrate is the upgrade from a release of Insights v3.
+    """Whether this migrate is the upgrade from a release before 3.50.
 
     Read during patches: frappe writes the new version into Installed
-    Application after them. A develop build said 3.x until it became 4.0.0-dev,
-    and never ran the Insights v3 that users are welcomed from.
+    Application after them. A develop build said 3.x for a while, and never ran
+    the release that users are welcomed from.
     """
     row = frappe.db.get_value(
         "Installed Application",
@@ -58,11 +59,17 @@ def was_on_v3() -> bool:
         ["app_version", "git_branch"],
         as_dict=True,
     )
-    return bool(row) and (row.app_version or "").startswith("3.") and row.git_branch != "develop"
+    if not row or row.git_branch == "develop":
+        return False
+    try:
+        version = Version.coerce(row.app_version or "")
+    except ValueError:
+        return False  # nosemgrep - a version that does not parse names no release before 3.50
+    return (version.major, version.minor) < (3, 50)
 
 
 def mark_v3_users():
-    """Mark everyone who could use Insights at migrate time as an Insights v3 user.
+    """Mark everyone who could use Insights at migrate time as a user of Insights before 3.50.
 
     A new site never runs it: installing an app marks its patches done.
     """
@@ -82,7 +89,7 @@ def upgraded_from_v3(user: str | None = None) -> bool:
 
 
 def mark_seen(user: str | None = None):
-    frappe.defaults.set_user_default(SEEN_VERSION, "4", user)
+    frappe.defaults.set_user_default(SEEN_VERSION, "3.50", user)
 
 
 def is_upgrade_admin(user: str | None = None) -> bool:
@@ -105,10 +112,10 @@ def get_item(name: str):
 
 
 def template_copies(template: str | None = None) -> list[frappe._dict]:
-    """The workbooks made from an Insights v3 template, or from `template`
+    """The workbooks made from an old Insights template, or from `template`
     (`app/folder`), oldest first.
 
-    Insights v3 recorded the template in `from_template`, and earlier releases
+    Insights before 3.50 recorded the template in `from_template`, and earlier releases
     only its folder. The field is gone, and its column stays.
     """
     if not frappe.db.has_column(WORKBOOK, "from_template"):
@@ -128,5 +135,5 @@ def template_copies(template: str | None = None) -> list[frappe._dict]:
 
 
 def standard_workbook_of(template: str) -> str | None:
-    """The standard workbook that replaces the Insights v3 template `template`."""
+    """The standard workbook that replaces the old Insights template `template`."""
     return TEMPLATE_WORKBOOKS.get(template.rpartition("/")[2])
