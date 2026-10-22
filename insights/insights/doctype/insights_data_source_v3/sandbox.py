@@ -224,9 +224,13 @@ def expression_globals() -> dict:
     safe_globals = get_safe_globals()
     return sandbox_globals(
         safe_globals,
-        names={name: safe_globals[name] for name in EXPRESSION_NAMES},
+        names={name: safe_globals[name] for name in EXPRESSION_NAMES if name in safe_globals},
         frappe_names={
-            **{name: safe_globals["frappe"][name] for name in EXPRESSION_FRAPPE},
+            **{
+                name: safe_globals["frappe"][name]
+                for name in EXPRESSION_FRAPPE
+                if name in safe_globals["frappe"]
+            },
             "get_doc": read_doc,
             "get_list": read_list,
         },

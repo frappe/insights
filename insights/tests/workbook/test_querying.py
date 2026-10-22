@@ -1175,6 +1175,24 @@ class TestQuerying(InsightsIntegrationTestCase):
         )
 
     # @feature query.expression-sandbox
+    def test_an_expression_runs_without_a_name_this_frappe_lacks(self):
+        # Frappe v15's safe globals have no `frappe.number_format`
+        from frappe.utils.safe_exec import get_safe_globals
+
+        from insights.insights.doctype.insights_data_source_v3 import sandbox
+
+        def without_number_format():
+            safe_globals = get_safe_globals()
+            del safe_globals["frappe"]["number_format"]
+            return safe_globals
+
+        with patch.object(sandbox, "get_safe_globals", without_number_format):
+            names = sandbox.expression_globals()
+
+        self.assertNotIn("number_format", names["frappe"])
+        self.assertIn("format_date", names["frappe"])
+
+    # @feature query.expression-sandbox
     def test_an_expression_reads_only_what_its_reader_may_and_writes_nothing(self):
         """Any writer of a query writes its expressions, and a chart runs them for
         every reader. `safe_eval` runs one statement and `safe_exec` runs several."""
