@@ -79,8 +79,8 @@ export type NumberFormatConfigSource = NumberFormatSource & {
 export type ResolvedNumberFormat = NumberFormat & {
 	/** What the stored number is multiplied by before it prints. */
 	scale: number
-	/** The currency's Frappe number format. Empty falls back to the site's. */
-	number_format?: string
+	/** The currency's Frappe number format, such as `#,###.##`. */
+	frappe_number_format?: string
 }
 
 /** Decimal places a shortened number prints when no layer states one. v2's default. */
@@ -109,7 +109,7 @@ export function numberFormatOf(
 			measure?.measure_name ? config?.number_formats?.[measure.measure_name] : null,
 		),
 	])
-	return { ...merged, scale: unit.scale, number_format: unit.number_format }
+	return { ...merged, scale: unit.scale, frappe_number_format: unit.frappe_number_format }
 }
 
 /**
@@ -185,11 +185,15 @@ export function printNumber(value: any, format: ResolvedNumberFormat): string {
 	// digits are the locale's, so no digit of ours can be tested for.
 	const print = (magnitude: number) =>
 		format.shorten
-			? getShortNumber(magnitude, format.decimals ?? SHORT_DECIMALS, format.number_format)
+			? getShortNumber(
+					magnitude,
+					format.decimals ?? SHORT_DECIMALS,
+					format.frappe_number_format,
+			  )
 			: formatNumber(
 					magnitude,
 					format.decimals ?? guessPrecision(Math.abs(scaled)),
-					format.number_format,
+					format.frappe_number_format,
 			  )
 	const printed = print(Math.abs(scaled))
 	const sign = scaled < 0 && printed !== print(0) ? '-' : ''

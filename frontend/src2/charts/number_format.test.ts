@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import session from '../session'
 import {
 	axisChart,
@@ -89,8 +89,14 @@ describe("what the Measure's own format says", () => {
 })
 
 describe("what Frappe's number format says", () => {
+	afterEach(() => {
+		session.site.number_format = ''
+		session.site.currency = null
+		session.site.currency_symbols = {}
+	})
+
 	// @feature charts.currency-number-format
-	it('groups a plain number by the site, not by its country', () => {
+	it("groups a plain number by the site's number format", () => {
 		session.site.number_format = '#,##,###.##'
 		const shortened = { number_format: { shorten: true, decimals: 2 } }
 		expect(numberFormatter()(15800000)).toBe('1,58,00,000')
@@ -98,7 +104,6 @@ describe("what Frappe's number format says", () => {
 
 		session.site.number_format = '#,###.##'
 		expect(numberFormatter(shortened)(15800000)).toBe('15.8M')
-		session.site.number_format = ''
 	})
 
 	// @feature charts.currency-number-format
@@ -118,10 +123,9 @@ describe("what Frappe's number format says", () => {
 		expect(numberFormatter(shortened, revenue, rowsIn('INR'))(15800000)).toBe('₹ 1.58Cr')
 		// a currency that states no format groups by the site's
 		expect(numberFormatter(shortened, revenue, rowsIn('SEK'))(15800000)).toBe('1.58Cr kr')
-
-		session.site.number_format = ''
-		session.site.currency = null
-		session.site.currency_symbols = {}
+		// rows in two currencies are an amount in none, so the site's grouping holds
+		const mixed = [...rowsIn('AED'), ...rowsIn('INR')]
+		expect(numberFormatter(shortened, revenue, mixed)(15800000)).toBe('1.58Cr')
 	})
 })
 

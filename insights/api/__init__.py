@@ -6,7 +6,6 @@ import os
 
 import frappe
 from frappe.handler import is_valid_http_method, is_whitelisted
-from frappe.locale import get_number_format
 from frappe.monitor import add_data_to_monitor
 
 import insights
@@ -24,7 +23,7 @@ from insights.insights.doctype.insights_team.insights_team import (
 from insights.insights.query_builders.sql_functions import get_fiscal_year_start_date
 from insights.permissions import can_download
 from insights.telemetry import get_entry
-from insights.utils import get_currency_symbols, get_owned_file
+from insights.utils import get_currencies, get_owned_file
 
 
 @insights_whitelist()
@@ -67,8 +66,7 @@ def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
     dashboard needs them to print an amount the way the workbook does."""
     return {
-        # what Desk groups a plain number by: the language's, else System Settings'
-        "number_format": get_number_format().string,
+        "number_format": frappe.db.get_single_value("System Settings", "number_format"),
         # `docs/telemetry.md` puts app_version and entry on every event.
         # developer_mode decides whether an author may export a workbook to an
         # app. Guests get none of them.
@@ -104,7 +102,7 @@ def get_currency_info():
     # System Settings writes the default only when the field changes, so read the
     # field too — a site installed with a currency has never "changed" it
     currency = frappe.db.get_default("currency") or frappe.db.get_single_value("System Settings", "currency")
-    return {"currency": currency or None, "currency_symbols": get_currency_symbols([currency])}
+    return {"currency": currency or None, "currency_symbols": get_currencies([currency])}
 
 
 @frappe.whitelist()

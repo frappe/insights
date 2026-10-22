@@ -40,7 +40,7 @@ from insights.not_permitted import answers_refusal
 from insights.utils import (
     as_text,
     deep_convert_dict_to_dict,
-    get_currency_symbols,
+    get_currencies,
     refuse_delete_while_linked,
 )
 
@@ -348,7 +348,7 @@ class InsightsQueryv3(Document):
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
             "rows": results,
-            "currency_symbols": get_currency_symbols(codes),
+            "currency_symbols": get_currencies(codes),
             "time_taken": time_taken,
             "is_aggregated_sql": _sql_has_group_by(sql) if sql else False,
         }
