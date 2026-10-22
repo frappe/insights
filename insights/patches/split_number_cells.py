@@ -52,7 +52,7 @@ def execute():
 
 
 def upgrade_cells(items: list, configs: dict) -> list:
-    """Cells arranged on Insights v3's grid, as `resize_dashboard_cells` and this
+    """Cells arranged on the grid before 3.50, as `resize_dashboard_cells` and this
     patch leave a dashboard the site already had."""
     items = rescale_items(items, configs) or items
     if expand_items(items, configs):

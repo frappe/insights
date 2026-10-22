@@ -1,7 +1,7 @@
 """The upgrade patches that move access onto the workbook, and the alerts that follow it.
 
-Insights v3 let an owner edit what they made and let a share on a query, chart
-or dashboard grant edit. Insights v4 gives access through the workbook only. See
+Insights before 3.50 let an owner edit what they made and let a share on a query, chart
+or dashboard grant edit. Insights 3.50 gives access through the workbook only. See
 `insights/patches/share_workbooks_with_member_owners.py`.
 """
 
@@ -118,7 +118,7 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         self.assertFalse(frappe.db.exists(ITEM, {"code": "P3", "reference_name": self.workbook}))
 
     def old_share(self, doctype, name, **flags):
-        """A share as Insights v3 wrote it, which Insights v4 refuses to save."""
+        """A share as Insights before 3.50 wrote it, which Insights 3.50 refuses to save."""
         frappe.get_doc(
             {"doctype": "DocShare", "share_doctype": doctype, "share_name": name, "read": 1, **flags}
         ).db_insert()

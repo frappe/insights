@@ -12,7 +12,7 @@ WORKBOOK = "Insights Workbook"
 def execute():
     """Run an alert as its workbook's owner where its enabler may not.
 
-    Insights v3 sent an alert as whoever turned it on. Insights v4 also needs that
+    Insights before 3.50 sent an alert as whoever turned it on. Insights 3.50 also needs that
     user to edit the alert's workbook, and stops the alert at its next run
     otherwise. After the shares above, an enabler who made something in the
     workbook can. One who cannot would stop a running alert, so it runs as the

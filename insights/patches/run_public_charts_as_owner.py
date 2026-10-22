@@ -97,7 +97,7 @@ READER_ROWS = {
 
 
 def report_reader_rows(chart: str, owner: str) -> None:
-    """A signed-in reader saw their own rows of a public chart in Insights v3.
+    """A signed-in reader saw their own rows of a public chart in Insights before 3.50.
     Run as owner shows every reader the owner's rows."""
     query, config, title = frappe.db.get_value(CHART, chart, ["query", "config", "title"])
     why = why_rows_follow_reader(query, config)

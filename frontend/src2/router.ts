@@ -60,7 +60,7 @@ const routes = [
 		],
 	},
 	{
-		// a link to an Insights v3 template, such as ERPNext's old workspace banner
+		// a link to an old Insights template, such as ERPNext's old workspace banner
 		path: '/template/:app/:folder',
 		name: 'Template',
 		component: () => import('./workbook/WorkbookList.vue'),

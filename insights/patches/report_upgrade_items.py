@@ -1,4 +1,4 @@
-"""List what the upgrade from Insights v3 leaves for an admin or an author to do.
+"""List what the upgrade from Insights before 3.50 leaves for an admin or an author to do.
 
 Nothing here changes data. Each finding becomes an upgrade item. Runs after
 the patches that share workbooks, because those decide who may edit what.
@@ -32,7 +32,7 @@ OWNER_CANNOT_RUN = {
 
 
 def execute():
-    # a develop site has run with each of these since it moved off Insights v3
+    # a develop site has run with each of these since it moved off Insights before 3.50
     if not was_on_v3():
         return
     report_team_grants_that_lost_write()
@@ -45,7 +45,7 @@ def execute():
 
 def report_team_grants_that_lost_write():
     """P4: a team grant on a dashboard or chart let its members edit it in
-    Insights v3. It gives read now, and only the workbook gives write."""
+    Insights before 3.50. It gives read now, and only the workbook gives write."""
     from insights.insights.doctype.insights_team.insights_team import clear_cache, is_admin
 
     if not frappe.db.get_single_value(SETTINGS, "enable_permissions"):
@@ -94,7 +94,7 @@ def report_team_grants_that_lost_write():
 
 
 def report_charts_that_cannot_run_as_owner():
-    """P12: Insights v3 ran a public chart as its publisher whatever happened to
+    """P12: Insights before 3.50 ran a public chart as its publisher whatever happened to
     them. A chart runs as its owner only while the owner may edit it."""
     from insights.permission_user import may_run_as
     from insights.permissions import get_insights_users
@@ -178,7 +178,7 @@ def uses_message(data: dict) -> str:
 
 
 def report_template_copies():
-    """W2: a workbook made from an Insights v3 template. An app now ships the
+    """W2: a workbook made from an old Insights template. An app now ships the
     standard workbook that replaces it, and the copy gets no more updates."""
     from insights import standard
 
@@ -187,7 +187,7 @@ def report_template_copies():
         shipped = standard_name and shipped_by(standard, standard_name)
         if not shipped:
             continue
-        # Insights v3 counted a copy without a checksum as changed
+        # Insights before 3.50 counted a copy without a checksum as changed
         untouched = bool(copy.get("imported_checksum")) and is_untouched(copy.name)
         data = {"workbook": copy.title, **shipped, "untouched": untouched}
         add_item(
@@ -219,7 +219,7 @@ def is_untouched(workbook: str) -> bool:
     """Whether every query, chart and dashboard of `workbook` is as the template
     import made it: made in one go, and not changed since.
 
-    Insights v3's own checksum read its export, which the patches have changed.
+    The checksum before 3.50 read its export, which the patches have changed.
     A patch that saved a document makes it look changed, which only means no
     delete is offered.
     """
@@ -236,7 +236,7 @@ def is_untouched(workbook: str) -> bool:
 
 def report_blank_fiscal_year_start():
     """Q13: a blank Fiscal Year Start follows ERPNext's current fiscal year.
-    Insights v3 started the year on 1 April for date filters and 1 January for
+    Insights before 3.50 started the year on 1 April for date filters and 1 January for
     fiscal-year groups."""
     from insights.insights.query_builders.sql_functions import get_fiscal_year_start_date
 

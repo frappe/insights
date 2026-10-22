@@ -591,7 +591,7 @@ class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
 
     # @feature upgrade.older-export-imports
     def test_a_file_insights_3_exported_lands_on_the_new_grid(self):
-        """Insights v3 exported the wrapped shape, with rows 52px tall and a Number
+        """Insights before 3.50 exported the wrapped shape, with rows 52px tall and a Number
         chart's readings in one cell. A dashboard the site already had was moved
         by `resize_dashboard_cells` and `split_number_cells`; a file is moved on import."""
         self.assertEqual(self.imported_cells(wrap=True), {"text": (5, 8), "first": (0, 4), "second": (0, 4)})
@@ -599,8 +599,8 @@ class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
 
     # @feature upgrade.older-export-imports
     def test_a_file_insights_3_exported_draws_as_the_same_workbook_upgraded_in_place(self):
-        """The patches change what Insights v3 assumed on load into what Insights v4
-        reads. A file Insights v3 exported gets the same changes on import."""
+        """The patches change what Insights before 3.50 assumed on load into what Insights 3.50
+        reads. A file Insights before 3.50 exported gets the same changes on import."""
         (chart_name,) = self.file["charts"]
         bar = {**self.file["charts"][chart_name], "chart_type": "Bar", "config": {"y_axis": {"series": []}}}
         (dashboard_name,) = self.file["dashboards"]

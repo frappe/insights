@@ -799,7 +799,7 @@ def workbook_contents(workbook_data) -> "frappe._dict":
     The old format put the workbook in `doc` and its members in
     `dependencies`. This function flattens that format, so one reader works for
     the files an app ships and for every file a site exported before. It is
-    what Insights v3 exported, so its dashboard cells are on Insights v3's grid,
+    what Insights before 3.50 exported, so its dashboard cells are on the grid before 3.50,
     and `wrapped` stays set on the flattened file to say so.
     """
     data = deep_convert_dict_to_dict(frappe.parse_json(workbook_data) or {})
@@ -818,7 +818,7 @@ def workbook_contents(workbook_data) -> "frappe._dict":
 
 
 def upgrade_v3_contents(contents) -> None:
-    """Upgrade an Insights v3 file's members in place, as the patches upgraded
+    """Upgrade the members of a file from before 3.50 in place, as the patches upgraded
     the ones a site already held, so an imported workbook draws as the same
     workbook upgraded on its site. An import reports nothing: whoever imports it
     sees the result.

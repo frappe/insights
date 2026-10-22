@@ -165,7 +165,7 @@ def get_shipping_apps() -> list[dict]:
 
 @insights_whitelist()
 def get_template_workbook(template: str) -> str | None:
-    """The workbook an Insights v3 template link opens: the site's copy of
+    """The workbook an old Insights template link opens: the site's copy of
     `template`, else the standard workbook that replaced it, if the user may
     read it."""
     names = [copy.name for copy in template_copies(template)]

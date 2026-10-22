@@ -1,4 +1,4 @@
-"""Expressions from Insights v3 that read a column named like a backend attribute.
+"""Expressions from Insights before 3.50 that read a column named like a backend attribute.
 
 See `insights/patches/rewrite_backend_attribute_names.py`.
 """

@@ -174,7 +174,7 @@ node_modules
 insights/docs/current
 insights/public/frontend
 insights/www/_insights.html
-# Insights v3 builds wrote these, and a leftover one would stop `bench update`
+# Insights before 3.50 builds wrote these, and a leftover one would stop `bench update`
 insights/www/insights.html
 insights/www/insights_v2.html
 .nyc_output

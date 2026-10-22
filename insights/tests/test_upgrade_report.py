@@ -1,7 +1,7 @@
-"""What the upgrade from Insights v3 leaves for an admin or an author to do.
+"""What the upgrade from Insights before 3.50 leaves for an admin or an author to do.
 
 See `insights/patches/report_upgrade_items.py`. Each test sets up the state
-Insights v3 left and the earlier patches made, runs one report, and reads the
+Insights before 3.50 left and the earlier patches made, runs one report, and reads the
 items it wrote.
 """
 

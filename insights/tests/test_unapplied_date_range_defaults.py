@@ -1,4 +1,4 @@
-"""The date range defaults Insights v3 stored as text and never applied.
+"""The date range defaults Insights before 3.50 stored as text and never applied.
 
 See `insights/patches/drop_unapplied_date_range_defaults.py`.
 """
