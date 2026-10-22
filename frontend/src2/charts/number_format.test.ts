@@ -54,7 +54,9 @@ describe("what the Measure's own format says", () => {
 	// @feature charts.measure-unit
 	it('prints the site currency where the site puts it', () => {
 		session.site.currency = 'INR'
-		session.site.currency_symbols = { INR: { symbol: '₹', symbol_on_right: false } }
+		session.site.currency_symbols = {
+			INR: { symbol: '₹', symbol_on_right: false, number_format: '' },
+		}
 		expect(numberFormatter(null, measure('revenue', 'currency'))(1200)).toBe('₹ 1,200')
 
 		session.site.currency_symbols.INR.symbol_on_right = true
@@ -68,8 +70,8 @@ describe("what the Measure's own format says", () => {
 	it('prints the currency the rows carry, and none when they mix', () => {
 		session.site.currency = 'INR'
 		session.site.currency_symbols = {
-			INR: { symbol: '₹', symbol_on_right: false },
-			AED: { symbol: 'د.إ', symbol_on_right: true },
+			INR: { symbol: '₹', symbol_on_right: false, number_format: '' },
+			AED: { symbol: 'د.إ', symbol_on_right: true, number_format: '' },
 		}
 		const revenue = measure('revenue', 'currency')
 		const dirhams = [{ revenue: 1200, revenue__currency: 'AED' }]
@@ -81,6 +83,43 @@ describe("what the Measure's own format says", () => {
 		const withoutCurrency = [{ revenue: 1200 }]
 		expect(numberFormatter(null, revenue, withoutCurrency)(1200)).toBe('₹ 1,200')
 
+		session.site.currency = null
+		session.site.currency_symbols = {}
+	})
+})
+
+describe("what Frappe's number format says", () => {
+	// @feature charts.currency-number-format
+	it('groups a plain number by the site, not by its country', () => {
+		session.site.number_format = '#,##,###.##'
+		const shortened = { number_format: { shorten: true, decimals: 2 } }
+		expect(numberFormatter()(15800000)).toBe('1,58,00,000')
+		expect(numberFormatter(shortened)(15800000)).toBe('1.58Cr')
+
+		session.site.number_format = '#,###.##'
+		expect(numberFormatter(shortened)(15800000)).toBe('15.8M')
+		session.site.number_format = ''
+	})
+
+	// @feature charts.currency-number-format
+	it('groups an amount by the currency the rows carry', () => {
+		session.site.number_format = '#,##,###.##'
+		session.site.currency = 'INR'
+		session.site.currency_symbols = {
+			INR: { symbol: '₹', symbol_on_right: false, number_format: '#,##,###.##' },
+			AED: { symbol: 'د.إ', symbol_on_right: true, number_format: '#,###.##' },
+			SEK: { symbol: 'kr', symbol_on_right: true, number_format: '' },
+		}
+		const revenue = measure('revenue', 'currency')
+		const shortened = { number_format: { shorten: true, decimals: 2 } }
+		const rowsIn = (code: string) => [{ revenue: 15800000, revenue__currency: code }]
+
+		expect(numberFormatter(shortened, revenue, rowsIn('AED'))(15800000)).toBe('15.8M د.إ')
+		expect(numberFormatter(shortened, revenue, rowsIn('INR'))(15800000)).toBe('₹ 1.58Cr')
+		// a currency that states no format groups by the site's
+		expect(numberFormatter(shortened, revenue, rowsIn('SEK'))(15800000)).toBe('1.58Cr kr')
+
+		session.site.number_format = ''
 		session.site.currency = null
 		session.site.currency_symbols = {}
 	})

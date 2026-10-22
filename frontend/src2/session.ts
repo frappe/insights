@@ -20,9 +20,10 @@ type SessionUser = {
 // Settings of the site, not of whoever is reading it. A guest opening a public
 // dashboard gets these and nothing else, so a shared chart prints its amounts
 // the same way the workbook does.
-type CurrencySymbol = { symbol: string; symbol_on_right: boolean }
+type CurrencySymbol = { symbol: string; symbol_on_right: boolean; number_format: string }
 type SiteInfo = {
-	country: string
+	/** Frappe's number format for a plain number, such as `#,###.##`. */
+	number_format: string
 	/** The day a week is counted from, as `Insights Settings` names it. */
 	week_starts_on: string
 	/** The date a fiscal year starts on: `Insights Settings`, else ERPNext's current Fiscal Year. */
@@ -39,7 +40,7 @@ type SiteInfo = {
 }
 
 const emptySite: SiteInfo = {
-	country: '',
+	number_format: '',
 	week_starts_on: 'Monday',
 	fiscal_year_start: '1995-04-01',
 	currency: null,

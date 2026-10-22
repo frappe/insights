@@ -6,6 +6,7 @@ import os
 
 import frappe
 from frappe.handler import is_valid_http_method, is_whitelisted
+from frappe.locale import get_number_format
 from frappe.monitor import add_data_to_monitor
 
 import insights
@@ -60,13 +61,14 @@ def get_security_update():
             }
 
 
-@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's country and
+@frappe.whitelist(allow_guest=True)  # nosemgrep - the payload is the site's number format and
 # currency, which a public dashboard already prints
 def get_site_info():
     """Settings of the site, not of whoever reads it. A guest opening a public
     dashboard needs them to print an amount the way the workbook does."""
     return {
-        "country": frappe.db.get_single_value("System Settings", "country"),
+        # what Desk groups a plain number by: the language's, else System Settings'
+        "number_format": get_number_format().string,
         # `docs/telemetry.md` puts app_version and entry on every event.
         # developer_mode decides whether an author may export a workbook to an
         # app. Guests get none of them.

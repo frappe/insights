@@ -244,25 +244,30 @@ class InsightsPageRenderer(TemplatePage):
 
 
 def get_currency_symbols(codes) -> dict:
-    """The symbol for each currency code.
+    """The symbol and number format of each currency code.
 
     Codes arrive with each result, so nothing is sent ahead. A code with no Currency
     row, or with no symbol, prints as the code, the way fmt_money does.
-    `hide_currency_symbol` empties every symbol.
+    `hide_currency_symbol` empties every symbol, and leaves the number format.
     """
     codes = {code for code in codes if code}
-    if not codes or frappe.utils.cint(frappe.defaults.get_global_default("hide_currency_symbol")):
+    if not codes:
         return {}
 
+    hide_symbol = frappe.utils.cint(frappe.defaults.get_global_default("hide_currency_symbol"))
     # one read: a measure pointed at the wrong column names as many codes as rows
     rows = frappe.db.get_all(
-        "Currency", filters={"name": ("in", list(codes))}, fields=["name", "symbol", "symbol_on_right"]
+        "Currency",
+        filters={"name": ("in", list(codes))},
+        fields=["name", "symbol", "symbol_on_right", "number_format"],
     )
     known = {row.name: row for row in rows}
     return {
         code: {
-            "symbol": (known[code].symbol if code in known else None) or code,
+            "symbol": "" if hide_symbol else (known[code].symbol if code in known else None) or code,
             "symbol_on_right": bool(known[code].symbol_on_right) if code in known else False,
+            # empty when the currency states none, so the site's applies, as in fmt_money
+            "number_format": (known[code].number_format if code in known else None) or "",
         }
         for code in codes
     }
