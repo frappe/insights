@@ -310,11 +310,25 @@ export function fiscalStartMonth(): number {
 	return dayjs(session.site.fiscal_year_start).month()
 }
 
+/** The first day of the fiscal year `date` falls in, on the configured day. */
+export function fiscalYearStartOf(date: string): string {
+	const d = dayjs(date)
+	const start = dayjs(session.site.fiscal_year_start)
+	const thisYear = d.month(start.month()).date(start.date())
+	return (d.isBefore(thisYear) ? thisYear.subtract(1, 'year') : thisYear).format('YYYY-MM-DD')
+}
+
 /** `Q2 FY25-26`: the fiscal quarter `date` falls in. */
 export function fiscalQuarterName(date: string): string {
 	const d = dayjs(date)
 	const monthsIn = (d.month() - fiscalStartMonth() + 12) % 12
-	return `Q${Math.floor(monthsIn / 3) + 1} FY${fiscalYearName(d).slice(2)}`
+	// A quarter starts on the 1st and a fiscal year may start later in its first
+	// month, so the quarter's last day names its year.
+	const lastDay = d
+		.startOf('month')
+		.add(3 - (monthsIn % 3), 'month')
+		.subtract(1, 'day')
+	return `Q${Math.floor(monthsIn / 3) + 1} FY${fiscalYearName(lastDay).slice(2)}`
 }
 
 export function getMeasures(columns: QueryResultColumn[]): Measure[] {

@@ -488,7 +488,8 @@ class InsightsQueryv3(Document):
         """The values a picker lists for `column_name`. With `granularity`, the
         periods it has rows in instead, as each period's first day, newest first.
         A date picker lists those and labels them itself, so `search_term` does
-        not narrow them, and `limit` is lifted to ten years of months."""
+        not narrow them, and `limit` is lifted to 500, so a long year list never
+        offers a year whose quarters were cut off."""
         with set_adhoc_filters(adhoc_filters):
             builder = self.get_builder(active_operation_idx)
         column_name = builder.get_column(column_name).get_name()
@@ -500,7 +501,7 @@ class InsightsQueryv3(Document):
                 .filter(_[column_name].notnull())
                 .distinct()
                 .order_by(ibis.desc(column_name))
-                .head(max(limit, 120))
+                .head(max(limit, 500))
             )
         else:
             values_query = (

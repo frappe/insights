@@ -20,6 +20,7 @@ import {
 	filter_group,
 	fiscalQuarterName,
 	fiscalStartMonth,
+	fiscalYearStartOf,
 	getFormattedDate,
 } from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
@@ -442,8 +443,10 @@ function isPeriodUnit(unit: string): unit is PeriodUnit {
 
 /** The day the period of `unit` that `date` falls in starts on. */
 export function periodStart(unit: PeriodUnit, date: string): string {
+	// the one period that may start after the 1st, as the server's fiscal year does
+	if (unit === 'fiscal year') return fiscalYearStartOf(date)
 	const d = dayjs(date).startOf('month')
-	const firstMonth = unit === 'fiscal year' || unit === 'fiscal quarter' ? fiscalStartMonth() : 0
+	const firstMonth = unit === 'fiscal quarter' ? fiscalStartMonth() : 0
 	const monthsIn = (d.month() - firstMonth + 12) % PERIOD_MONTHS[unit]
 	return d.subtract(monthsIn, 'month').format(DATE_FORMAT)
 }
@@ -489,7 +492,14 @@ function periodOf(timespan: Timespan): Period | undefined {
 export function parsePeriod(raw: string): Period | undefined {
 	const text = raw.trim().toLowerCase().replace(/\s+/g, ' ')
 	const fiscalStart = (year: string) => {
-		const start = Number(year.length === 2 ? `20${year}` : year)
+		// a two-digit year is the one nearest this year: `FY99-00` is 1999, not 2099
+		const now = dayjs().year()
+		const start =
+			year.length === 4
+				? Number(year)
+				: [1900, 2000, 2100]
+						.map((century) => century + Number(year))
+						.reduce((a, b) => (Math.abs(b - now) < Math.abs(a - now) ? b : a))
 		return dayjs(`${start}-01-01`).month(fiscalStartMonth())
 	}
 
@@ -499,7 +509,11 @@ export function parsePeriod(raw: string): Period | undefined {
 		return { unit: 'fiscal quarter', start: start.format(DATE_FORMAT) }
 	}
 	match = text.match(/^fy ?(\d{2}|\d{4})-\d{2}$/)
-	if (match) return { unit: 'fiscal year', start: fiscalStart(match[1]).format(DATE_FORMAT) }
+	if (match)
+		return {
+			unit: 'fiscal year',
+			start: fiscalYearStartOf(fiscalStart(match[1]).endOf('month').format(DATE_FORMAT)),
+		}
 
 	match = text.match(/^q([1-4]) (\d{4})$/)
 	if (match) {

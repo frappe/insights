@@ -286,13 +286,16 @@ const periodUnit = computed<PeriodUnit | undefined>(() => {
 watch(
 	[() => column.value?.name, periodUnit],
 	async ([name], [previousName]) => {
+		// any change retires the ask in flight: it answers for a list no longer open,
+		// and for another column it would fill this one's lists
+		const id = ++periodsRequest
+		periodsFetching.value = false
 		if (name !== previousName) periods.value = {}
 		const unit = periodUnit.value
 		if (!unit || !column.value) return
 		const grain = PERIOD_GRAINS[unit]
 		if (periods.value[grain]) return
 
-		const id = ++periodsRequest
 		periodsFetching.value = true
 		const starts = await props
 			.valuesProvider(column.value)('', grain)
@@ -328,9 +331,12 @@ function periodRows(): ListItem[] {
 			}))
 	}
 
-	// a year's quarters, in the order the year runs
-	const year = period.year!
-	const end = dayjs(year).add(1, 'year').format('YYYY-MM-DD')
+	// a year's quarters, in the order the year runs. Quarters start on the 1st,
+	// so the year is read by its months: a fiscal year that starts on 6 April
+	// holds the quarter that starts on 1 April.
+	const from = dayjs(period.year!).startOf('month')
+	const year = from.format('YYYY-MM-DD')
+	const end = from.add(1, 'year').format('YYYY-MM-DD')
 	return starts
 		.filter((start) => start >= year && start < end)
 		.sort()

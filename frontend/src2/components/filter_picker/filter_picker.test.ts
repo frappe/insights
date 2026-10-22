@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import session from '../../session'
 import type { QueryResultColumn } from '../../types/query.types'
 import {
 	SPAN_UNITS,
@@ -170,5 +171,33 @@ describe('the periods a date filter lists', () => {
 	it('reads "3 months ago" as the month it lands in', () => {
 		const value = { span: 'current month', anchor: '2026-05-10' }
 		expect(summaryParts({ column: posted, operator: 'within', value }).value).toBe('May 2026')
+	})
+})
+
+describe('a fiscal year that starts after the 1st', () => {
+	const posted: QueryResultColumn = { name: 'posting_date', type: 'Date' }
+	const start = session.site.fiscal_year_start
+	afterEach(() => {
+		session.site.fiscal_year_start = start
+	})
+
+	// @feature query.fiscal-quarter
+	it('keeps the start day for the year, and names a quarter by the year it ends in', () => {
+		session.site.fiscal_year_start = '2020-04-06'
+		expect(periodStart('fiscal year', '2025-04-03')).toBe('2024-04-06')
+		expect(periodStart('fiscal year', '2025-04-06')).toBe('2025-04-06')
+		expect(periodLabel('fiscal year', '2025-04-06')).toBe('FY 2025-26')
+		expect(periodLabel('fiscal quarter', '2025-04-01')).toBe('Q1 FY25-26')
+		expect(parsePeriod('fy 2025-26')).toEqual({ unit: 'fiscal year', start: '2025-04-06' })
+		const picked = { span: 'current fiscal year', anchor: '2025-04-06' }
+		expect(summaryParts({ column: posted, operator: 'within', value: picked }).value).toBe(
+			'FY 2025-26',
+		)
+	})
+
+	// @feature dashboard.filter-date-periods
+	it('reads a two-digit fiscal year as the one nearest today', () => {
+		expect(parsePeriod('fy99-00')).toEqual({ unit: 'fiscal year', start: '1999-04-01' })
+		expect(parsePeriod('q1 fy25-26')).toEqual({ unit: 'fiscal quarter', start: '2025-04-01' })
 	})
 })
