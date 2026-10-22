@@ -5,7 +5,7 @@ import { computed, watch } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
 import upgrade from './upgrade'
-import { needsYou } from './upgrade_steps'
+import { cardDescription } from './upgrade_steps'
 
 // Where the wizard is picked up again: the step it was left at, or what is
 // left once it was finished.
@@ -17,23 +17,19 @@ watch(
 
 const progress = computed(() => upgrade.progress)
 const left = computed(() => upgrade.openWizardItems.length)
-const now = computed(() => upgrade.openWizardItems.filter((row) => needsYou(row.item)).length)
 
 const unfinished = computed(() => progress.value.started && !progress.value.finished)
 const show = computed(() => !upgrade.showWizard && (unfinished.value || left.value > 0))
 
-const description = computed(() => {
-	if (unfinished.value) {
-		return __('Step {0} of {1}', String(upgrade.stepIndex + 1), String(upgrade.steps.length))
-	}
-	if (!left.value) return __('All done')
-	return now.value
-		? __('{0} left, {1} need you now', String(left.value), String(now.value))
-		: __('{0} left', String(left.value))
-})
+const description = computed(() =>
+	cardDescription(
+		left.value,
+		unfinished.value ? { index: upgrade.stepIndex, count: upgrade.steps.length } : undefined,
+	),
+)
 
 const percent = computed(() => {
-	if (unfinished.value) {
+	if (!left.value) {
 		return Math.round((upgrade.stepIndex / Math.max(1, upgrade.steps.length - 1)) * 100)
 	}
 	const total = upgrade.steps.reduce((n, step) => n + ('rows' in step ? step.rows.length : 0), 0)

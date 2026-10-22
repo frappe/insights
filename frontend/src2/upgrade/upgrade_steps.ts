@@ -211,6 +211,17 @@ export function needsYou(item: UpgradeItem): boolean {
 	return groups().some((group) => group.kind === 'now' && group.codes.includes(item.code))
 }
 
+/**
+ * What the sidebar card says: the items left while any is open, else the step
+ * the wizard was left at, else that it is done.
+ */
+export function cardDescription(left: number, step?: { index: number; count: number }): string {
+	if (left === 1) return __('1 item to review')
+	if (left) return __('{0} items to review', String(left))
+	if (step) return __('Step {0} of {1}', String(step.index + 1), String(step.count))
+	return __('All done')
+}
+
 /** The picture of the group an item belongs to, which a step of mixed items shows while it is current. */
 export function pictureOf(item: UpgradeItem): PictureName | undefined {
 	return groups().find((group) => group.codes.includes(item.code))?.picture

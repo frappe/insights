@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { UpgradeItem } from './upgrade'
 import {
+	cardDescription,
 	keyAction,
 	nextOpenIndex,
 	pictureOf,
@@ -475,6 +476,20 @@ describe('an item sentence', () => {
 			label: 'Open workbook sharing',
 			route: { name: 'Workbook', params: { workbook_name: '25' }, query: { share: '1' } },
 		})
+	})
+})
+
+describe('the sidebar card', () => {
+	// @feature upgrade.wizard
+	it('counts the open items, whatever step the wizard was left at', () => {
+		expect(cardDescription(14, { index: 5, count: 6 })).toBe('14 items to review')
+		expect(cardDescription(1)).toBe('1 item to review')
+	})
+
+	// @feature upgrade.wizard
+	it('names the step only when no item is open', () => {
+		expect(cardDescription(0, { index: 1, count: 3 })).toBe('Step 2 of 3')
+		expect(cardDescription(0)).toBe('All done')
 	})
 })
 
