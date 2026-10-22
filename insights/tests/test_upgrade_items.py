@@ -6,6 +6,7 @@ add their own.
 
 import frappe
 
+from insights import desk_islands
 from insights.api import get_user_info
 from insights.api.upgrade import (
     dismiss_upgrade_items,
@@ -257,6 +258,8 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
 
         workbooks = frappe.get_all(DT.WORKBOOK, filters={"is_standard": 1}, pluck="name")
         shipping = set(standard.shipping_apps(workbooks).values())
+        if not shipping:
+            self.skipTest("no installed app ships workbooks")
         with self.as_user(ALICE):
             apps = get_shipping_apps()
 
@@ -270,7 +273,7 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
     def test_the_session_says_what_the_welcome_shows_only_to_those_who_can_do_it(self):
         standard = bool(frappe.db.exists(DT.DASHBOARD, {"is_standard": 1}))
         self.assertEqual(self.user_info("Administrator")["reads_standard_dashboards"], standard)
-        self.assertTrue(self.user_info("Administrator")["can_show_in_desk"])
+        self.assertEqual(self.user_info("Administrator")["can_show_in_desk"], desk_islands())
         self.assertFalse(self.user_info(ALICE)["reads_standard_dashboards"])
         self.assertFalse(self.user_info(ALICE)["can_show_in_desk"])
 

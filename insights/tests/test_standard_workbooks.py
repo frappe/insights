@@ -8,6 +8,7 @@ file gives them.
 
 import os
 import shutil
+import unittest
 from contextlib import contextmanager
 from unittest.mock import patch
 
@@ -16,7 +17,7 @@ from frappe.model.sync import get_doc_files
 from frappe.modules import get_module_path
 from frappe.modules.import_file import import_doc
 
-from insights import standard
+from insights import desk_islands, standard
 from insights.api import get_site_info
 from insights.api.dashboards import get_dashboards
 from insights.api.workbooks import get_workbooks
@@ -964,6 +965,7 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
         self.assertEqual(frappe.db.count("Error Log"), failed + 1)
 
 
+@unittest.skipUnless(desk_islands(), "Frappe has no desk islands")
 class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
     """A release drops a chart that a desk Dashboard Chart shows. The sync keeps
     the chart for the desk document, but the app no longer ships it. So the file

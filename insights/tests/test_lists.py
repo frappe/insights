@@ -296,7 +296,8 @@ class TestDashboardList(InsightsIntegrationTestCase):
         probed = create_test_dashboard(
             OTHER, self.other_workbook, chart=chart.name, title=f"{TITLE_PREFIX} Dashboard Probed"
         ).name
-        for doctype, name in ((DT.DASHBOARD, probed), (DT.CHART, chart.name), (DT.QUERY, query.name)):
+        # cleanups run last first, so the query goes after the chart that reads it
+        for doctype, name in ((DT.QUERY, query.name), (DT.CHART, chart.name), (DT.DASHBOARD, probed)):
             self.addCleanup(frappe.delete_doc, doctype, name, force=True, ignore_permissions=True)
         with as_user(OTHER):
             update_dashboard_access(probed, [OWNER])
