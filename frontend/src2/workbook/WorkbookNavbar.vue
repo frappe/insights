@@ -58,6 +58,8 @@ const workbook = inject(workbookKey)!
 					>
 						<LockIcon
 							tabindex="0"
+							role="img"
+							:aria-label="__('You have read-only access to this workbook')"
 							class="absolute -left-6 size-4 rounded-4 text-ink-gray-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							stroke-width="1.5"
 						/>
