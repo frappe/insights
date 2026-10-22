@@ -208,14 +208,24 @@ export function toNumber(value: any): number | null {
 
 // `precision` is left out, not zeroed, when nobody states one: a caller asking
 // for no decimals means no decimals, and `0 || guess` swallowed that.
-export function formatNumber(number: number, precision?: number): string {
+export function formatNumber(
+	number: number,
+	precision?: number,
+	frappeNumberFormat?: string,
+): string {
 	if (isNaN(number)) return String(number)
 	precision = precision ?? guessPrecision(number)
-	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
-	return new Intl.NumberFormat(locale || 'en-US', {
+	return new Intl.NumberFormat(getLocale(frappeNumberFormat), {
 		minimumFractionDigits: precision,
 		maximumFractionDigits: precision,
 	}).format(number)
+}
+
+// Frappe's number format, such as `#,##,###.##`, picks the grouping, as in Desk.
+// A currency that states none groups by the site's.
+function getLocale(frappeNumberFormat?: string) {
+	if ((frappeNumberFormat || session.site?.number_format) == '#,##,###.##') return 'en-IN'
+	return session.user?.locale || 'en-US'
 }
 
 export type FormatUnits = {
@@ -223,6 +233,7 @@ export type FormatUnits = {
 	scale: number
 	prefix: string
 	suffix: string
+	frappe_number_format?: string
 }
 
 const NO_UNITS: FormatUnits = { scale: 1, prefix: '', suffix: '' }
@@ -237,10 +248,12 @@ export function getFormatUnits(format?: DataFormat, code?: string | null): Forma
 
 	const resolved = code === undefined ? session.site?.currency : code
 	const currency = resolved ? session.site?.currency_symbols?.[resolved] : undefined
-	if (!currency?.symbol) return NO_UNITS
+	if (!currency) return NO_UNITS
+	const units = { ...NO_UNITS, frappe_number_format: currency.number_format }
+	if (!currency.symbol) return units
 	return currency.symbol_on_right
-		? { scale: 1, prefix: '', suffix: ` ${currency.symbol}` }
-		: { scale: 1, prefix: `${currency.symbol} `, suffix: '' }
+		? { ...units, suffix: ` ${currency.symbol}` }
+		: { ...units, prefix: `${currency.symbol} ` }
 }
 
 export function guessPrecision(number: number) {
@@ -252,9 +265,9 @@ export function guessPrecision(number: number) {
 	return Math.min(str.length - decimalIndex - 1, 2)
 }
 
-export function getShortNumber(number: number, precision = 0) {
-	const locale = session.site?.country == 'India' ? 'en-IN' : session.user?.locale
-	let formatted = new Intl.NumberFormat(locale || 'en-US', {
+export function getShortNumber(number: number, precision = 0, frappeNumberFormat?: string) {
+	const locale = getLocale(frappeNumberFormat)
+	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
 		maximumFractionDigits: precision,
 	}).format(number)

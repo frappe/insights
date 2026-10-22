@@ -153,6 +153,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.number-format | A user sets a prefix, suffix and decimals for the chart, and one measure overrides it key by key. |
 | charts.number-format-shorten | A user abbreviates large numbers. |
 | charts.number-format-older-spellings | A chart saved with an older format spelling prints the same as before. |
+| charts.currency-number-format | An amount groups its digits by its currency's number format, and a plain number by the site's, as in Desk. |
 | charts.number-readings | A user adds several readings to a Number chart, each with its own settings that follow it when reordered or removed. |
 | charts.number-reading-color | A user colors one reading's value. |
 | charts.number-negative-is-better | A user marks a reading so that a decrease reads as an improvement. |

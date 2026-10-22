@@ -243,26 +243,35 @@ class InsightsPageRenderer(TemplatePage):
         self.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {allowed_origins}"
 
 
-def get_currency_symbols(codes) -> dict:
-    """The symbol for each currency code.
+def get_currencies(codes) -> dict:
+    """The symbol and number format of each currency code.
 
     Codes arrive with each result, so nothing is sent ahead. A code with no Currency
     row, or with no symbol, prints as the code, the way fmt_money does.
-    `hide_currency_symbol` empties every symbol.
+    `hide_currency_symbol` empties every symbol. A currency's number format is sent
+    only under `use_number_format_from_currency`, the flag Desk reads it under.
     """
     codes = {code for code in codes if code}
-    if not codes or frappe.utils.cint(frappe.defaults.get_global_default("hide_currency_symbol")):
+    if not codes:
         return {}
 
+    hide_symbol = frappe.utils.cint(frappe.defaults.get_global_default("hide_currency_symbol"))
+    use_currency_format = frappe.utils.cint(
+        frappe.db.get_single_value("System Settings", "use_number_format_from_currency")
+    )
     # one read: a measure pointed at the wrong column names as many codes as rows
     rows = frappe.db.get_all(
-        "Currency", filters={"name": ("in", list(codes))}, fields=["name", "symbol", "symbol_on_right"]
+        "Currency",
+        filters={"name": ("in", list(codes))},
+        fields=["name", "symbol", "symbol_on_right", "number_format"],
     )
     known = {row.name: row for row in rows}
+    empty = frappe._dict()
     return {
         code: {
-            "symbol": (known[code].symbol if code in known else None) or code,
-            "symbol_on_right": bool(known[code].symbol_on_right) if code in known else False,
+            "symbol": "" if hide_symbol else known.get(code, empty).symbol or code,
+            "symbol_on_right": bool(known.get(code, empty).symbol_on_right),
+            "number_format": (use_currency_format and known.get(code, empty).number_format) or "",
         }
         for code in codes
     }

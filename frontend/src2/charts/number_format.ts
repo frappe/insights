@@ -15,9 +15,11 @@ import type { DataFormat, QueryResultRow } from '../types/query.types'
  *
  * Four things have a say, and each one overrides the last, key by key:
  *
- *   1. the locale, which groups the digits and picks a precision;
+ *   1. the site's Frappe number format, which groups the digits, and the
+ *      locale, which picks a precision;
  *   2. the Measure's own unit — a currency prints the symbol of the code its
- *      rows carry, or the site's, and a percent is scaled by 100 and prints `%`;
+ *      rows carry, or the site's, and groups by that currency's number format,
+ *      and a percent is scaled by 100 and prints `%`;
  *   3. the chart's `number_format`, the default every value of it inherits;
  *   4. the Measure's `number_formats` entry, which is that value's own.
  *
@@ -77,6 +79,8 @@ export type NumberFormatConfigSource = NumberFormatSource & {
 export type ResolvedNumberFormat = NumberFormat & {
 	/** What the stored number is multiplied by before it prints. */
 	scale: number
+	/** The currency's Frappe number format, such as `#,###.##`. */
+	frappe_number_format?: string
 }
 
 /** Decimal places a shortened number prints when no layer states one. v2's default. */
@@ -105,7 +109,7 @@ export function numberFormatOf(
 			measure?.measure_name ? config?.number_formats?.[measure.measure_name] : null,
 		),
 	])
-	return { ...merged, scale: unit.scale }
+	return { ...merged, scale: unit.scale, frappe_number_format: unit.frappe_number_format }
 }
 
 /**
@@ -181,8 +185,16 @@ export function printNumber(value: any, format: ResolvedNumberFormat): string {
 	// digits are the locale's, so no digit of ours can be tested for.
 	const print = (magnitude: number) =>
 		format.shorten
-			? getShortNumber(magnitude, format.decimals ?? SHORT_DECIMALS)
-			: formatNumber(magnitude, format.decimals ?? guessPrecision(Math.abs(scaled)))
+			? getShortNumber(
+					magnitude,
+					format.decimals ?? SHORT_DECIMALS,
+					format.frappe_number_format,
+			  )
+			: formatNumber(
+					magnitude,
+					format.decimals ?? guessPrecision(Math.abs(scaled)),
+					format.frappe_number_format,
+			  )
 	const printed = print(Math.abs(scaled))
 	const sign = scaled < 0 && printed !== print(0) ? '-' : ''
 	return `${sign}${format.prefix ?? ''}${printed}${format.suffix ?? ''}`
