@@ -20,7 +20,7 @@ import type { Step } from './upgrade_steps'
 // changed, then each group of items that needs the reader. It opens once by
 // itself; the sidebar card resumes it where the reader left it.
 watch(
-	() => session.initialized && session.user.upgraded_from_v3,
+	() => session.initialized && session.user.upgrade_unseen,
 	(upgraded) => upgraded && upgrade.open(),
 	{ immediate: true },
 )

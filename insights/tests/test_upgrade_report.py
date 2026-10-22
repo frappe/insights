@@ -217,7 +217,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
     def test_a_site_that_was_not_on_insights_3_gets_no_report(self):
         frappe.db.set_single_value(DT.SETTINGS, "fiscal_year_start", None)
 
-        with patch.object(report, "was_on_v3", return_value=False):
+        with patch.object(report, "is_upgrade_migrate", return_value=False):
             report.execute()
 
         self.assertEqual(frappe.get_all(ITEM), [])

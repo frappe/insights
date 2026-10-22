@@ -1,6 +1,6 @@
-from insights.upgrade import mark_v3_users, was_on_v3
+from insights.upgrade import is_upgrade_migrate, mark_upgrade_unseen
 
 
 def execute():
-    if was_on_v3():
-        mark_v3_users()
+    if is_upgrade_migrate():
+        mark_upgrade_unseen()

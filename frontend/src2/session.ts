@@ -18,7 +18,7 @@ type SessionUser = {
 	/** Whether the site has a workbook of its own, not one an app ships. */
 	has_workbooks: boolean
 	/** Whether the user used Insights before 3.50 and has not yet closed the upgrade dialog. */
-	upgraded_from_v3: boolean
+	upgrade_unseen: boolean
 	/** Whether the user owns a workbook, so the upgrade wizard explains how sharing changed. */
 	owns_workbooks?: boolean
 	/** Open upgrade items the user works through. */
@@ -77,7 +77,7 @@ const emptyUser: SessionUser = {
 	locale: 'en-US',
 	has_demo_data: false,
 	has_workbooks: false,
-	upgraded_from_v3: false,
+	upgrade_unseen: false,
 	upgrade_item_count: 0,
 }
 
@@ -121,7 +121,7 @@ async function fetchSessionInfo() {
 		has_workbooks: Boolean(userInfo.has_workbooks),
 		can_download: Boolean(userInfo.can_download),
 		can_write_trusted_code: Boolean(userInfo.can_write_trusted_code),
-		upgraded_from_v3: Boolean(userInfo.upgraded_from_v3),
+		upgrade_unseen: Boolean(userInfo.upgrade_unseen),
 		owns_workbooks: Boolean(userInfo.owns_workbooks),
 		is_upgrade_admin: Boolean(userInfo.is_upgrade_admin),
 		reads_standard_dashboards: Boolean(userInfo.reads_standard_dashboards),

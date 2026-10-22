@@ -212,7 +212,7 @@ class InsightsWorkbook(Document):
         """
         contents = workbook_contents(workbook_data)
         if contents.get("wrapped"):
-            upgrade_v3_contents(contents)
+            upgrade_wrapped_contents(contents)
         queries = contents["queries"]
         charts = contents["charts"]
         dashboards = contents["dashboards"]
@@ -817,7 +817,7 @@ def workbook_contents(workbook_data) -> "frappe._dict":
     return data
 
 
-def upgrade_v3_contents(contents) -> None:
+def upgrade_wrapped_contents(contents) -> None:
     """Upgrade the members of a file from before 3.50 in place, as the patches upgraded
     the ones a site already held, so an imported workbook draws as the same
     workbook upgraded on its site. An import reports nothing: whoever imports it

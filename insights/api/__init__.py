@@ -26,7 +26,7 @@ from insights.permissions import can_download
 from insights.resolver import DASHBOARD, may_read
 from insights.telemetry import get_entry
 from insights.upgrade import ITEM as UPGRADE_ITEM
-from insights.upgrade import is_upgrade_admin, item_filters, upgraded_from_v3
+from insights.upgrade import is_upgrade_admin, item_filters, upgrade_unseen
 from insights.utils import get_currencies, get_owned_file
 
 
@@ -143,7 +143,7 @@ def get_user_info():
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
         "has_workbooks": has_workbooks,
-        "upgraded_from_v3": upgraded_from_v3(),
+        "upgrade_unseen": upgrade_unseen(),
         "owns_workbooks": bool(frappe.db.exists("Insights Workbook", {"owner": frappe.session.user})),
         "upgrade_item_count": frappe.db.count(UPGRADE_ITEM, {**item_filters(), "status": "Open"}),
         "is_upgrade_admin": is_upgrade_admin(),

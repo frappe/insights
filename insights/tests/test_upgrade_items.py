@@ -26,7 +26,7 @@ from insights.tests.factories import (
     create_user,
     delete_users,
 )
-from insights.upgrade import ITEM, SEEN_VERSION, add_item, mark_v3_users
+from insights.upgrade import ITEM, SEEN_VERSION, add_item, mark_upgrade_unseen
 
 ALICE = "upgrade_alice@test.com"
 BOB = "upgrade_bob@test.com"
@@ -63,21 +63,21 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         with self.as_user(user):
             return get_user_info()
 
-    # @feature upgrade.v3-users-welcomed
+    # @feature upgrade.users-welcomed
     def test_a_user_of_insights_3_is_welcomed_once_and_a_newcomer_never(self):
-        mark_v3_users()
+        mark_upgrade_unseen()
         create_user(NEWCOMER, roles="Insights User")
 
-        self.assertTrue(self.user_info(ALICE)["upgraded_from_v3"])
-        self.assertTrue(self.user_info("Administrator")["upgraded_from_v3"])
-        self.assertFalse(self.user_info(NEWCOMER)["upgraded_from_v3"])
+        self.assertTrue(self.user_info(ALICE)["upgrade_unseen"])
+        self.assertTrue(self.user_info("Administrator")["upgrade_unseen"])
+        self.assertFalse(self.user_info(NEWCOMER)["upgrade_unseen"])
 
         with self.as_user(ALICE):
             mark_upgrade_seen()
-        self.assertFalse(self.user_info(ALICE)["upgraded_from_v3"])
-        self.assertTrue(self.user_info(BOB)["upgraded_from_v3"])
+        self.assertFalse(self.user_info(ALICE)["upgrade_unseen"])
+        self.assertTrue(self.user_info(BOB)["upgrade_unseen"])
 
-    # @feature upgrade.v3-users-welcomed
+    # @feature upgrade.users-welcomed
     def test_only_a_site_upgrading_from_a_release_before_3_50_welcomes_its_users(self):
         row = {"parent": "Installed Applications", "app_name": "insights"}
         for version, branch, welcomed in (
@@ -97,7 +97,7 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
 
                 mark_v3_users_patch.execute()
 
-                self.assertEqual(self.user_info(ALICE)["upgraded_from_v3"], welcomed)
+                self.assertEqual(self.user_info(ALICE)["upgrade_unseen"], welcomed)
 
     # @feature upgrade.attention-items
     def test_an_admin_sees_every_item_and_a_user_only_their_own_closed_ones_too(self):

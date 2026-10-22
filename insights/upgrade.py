@@ -46,7 +46,7 @@ def add_item(
     )
 
 
-def was_on_v3() -> bool:
+def is_upgrade_migrate() -> bool:
     """Whether this migrate is the upgrade from a release before 3.50.
 
     Read during patches: frappe writes the new version into Installed
@@ -68,8 +68,8 @@ def was_on_v3() -> bool:
     return (version.major, version.minor) < (3, 50)
 
 
-def mark_v3_users():
-    """Mark everyone who could use Insights at migrate time as a user of Insights before 3.50.
+def mark_upgrade_unseen():
+    """Mark everyone who could use Insights at migrate time as not having seen the upgrade.
 
     A new site never runs it: installing an app marks its patches done.
     """
@@ -84,7 +84,7 @@ def mark_v3_users():
         frappe.defaults.set_user_default(SEEN_VERSION, "3", user)
 
 
-def upgraded_from_v3(user: str | None = None) -> bool:
+def upgrade_unseen(user: str | None = None) -> bool:
     return frappe.defaults.get_user_default(SEEN_VERSION, user) == "3"
 
 

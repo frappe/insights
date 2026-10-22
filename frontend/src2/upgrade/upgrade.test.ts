@@ -50,7 +50,7 @@ const ITEMS = [
 
 async function wizard(items: UpgradeItem[] = ITEMS) {
 	vi.resetModules()
-	session.user = reactive({ email: DAVE, is_upgrade_admin: true, upgraded_from_v3: false })
+	session.user = reactive({ email: DAVE, is_upgrade_admin: true, upgrade_unseen: false })
 	call.mockReset()
 	call.mockImplementation(async (method: string, args?: { names: string[] }) => {
 		if (method === 'insights.api.upgrade.get_upgrade_items') return items

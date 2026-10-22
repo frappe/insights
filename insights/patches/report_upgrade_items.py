@@ -9,7 +9,7 @@ import os
 import frappe
 from frappe.utils import get_date_str
 
-from insights.upgrade import add_item, standard_workbook_of, template_copies, was_on_v3
+from insights.upgrade import add_item, is_upgrade_migrate, standard_workbook_of, template_copies
 
 WORKBOOK = "Insights Workbook"
 QUERY = "Insights Query v3"
@@ -33,7 +33,7 @@ OWNER_CANNOT_RUN = {
 
 def execute():
     # a develop site has run with each of these since it moved off Insights before 3.50
-    if not was_on_v3():
+    if not is_upgrade_migrate():
         return
     report_team_grants_that_lost_write()
     report_charts_that_cannot_run_as_owner()
