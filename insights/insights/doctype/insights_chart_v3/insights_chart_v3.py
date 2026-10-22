@@ -126,7 +126,7 @@ class InsightsChartv3(Document):
 
     def on_trash(self):
         standard.guard_member(self)
-        if not self.flags.force_delete:
+        if not (self.flags.force_delete or standard.deleted_with_workbook(self)):
             refuse_delete_while_claimed(self.title or self.name, claims_on(self.doctype, {"name": self.name}))
             refuse_delete_while_linked(self, taken=("Insights Dashboard v3",))
         self.remove_from_dashboards()

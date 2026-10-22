@@ -97,7 +97,7 @@ class InsightsQueryv3(Document):
 
     def on_trash(self):
         standard.guard_member(self)
-        if not self.flags.force_delete:
+        if not (self.flags.force_delete or standard.deleted_with_workbook(self)):
             refuse_delete_while_linked(self, taken=("Insights Alert", "Insights Query Reference"))
 
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):

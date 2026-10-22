@@ -37,6 +37,13 @@ def deleting(workbook: str):
         being_deleted.discard(workbook)
 
 
+def deleted_with_workbook(doc) -> bool:
+    """Whether `doc` goes because its workbook is being deleted, which removes
+    every member that links it. Frappe v15 and v16 do not tell `on_trash` that
+    a delete is forced, so `doc.flags.force_delete` alone misses this case."""
+    return doc.workbook in (frappe.flags.get(BEING_DELETED) or set())
+
+
 def validate_standard(doc) -> None:
     """Refuse a write to a standard document outside developer mode.
 
