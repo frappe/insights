@@ -28,6 +28,7 @@ import type {
 	DrillRowsState,
 	DrillRowsSource,
 } from './drill_stack'
+import type { GranularityType } from '../../helpers/constants'
 
 export type ViewDrillSubject = {
 	chart: string
@@ -68,6 +69,7 @@ export function fetchViewDrillRowsValues(
 	column: string,
 	search_term: string,
 	row_filters: DrillRowFilter[],
+	granularity?: GranularityType,
 ): Promise<string[]> {
 	return call('insights.api.view.get_drill_rows_values', {
 		...subject,
@@ -75,6 +77,7 @@ export function fetchViewDrillRowsValues(
 		column,
 		search_term,
 		row_filters,
+		granularity,
 	})
 }
 
@@ -138,12 +141,13 @@ export function authoringDrillRows(
 				find: state.find,
 				format,
 			}),
-		values: (column, search_term, row_filters) =>
+		values: (column, search_term, row_filters, granularity) =>
 			call('insights.api.authoring.get_drill_rows_values', {
 				...args(),
 				column,
 				search_term,
 				row_filters,
+				granularity,
 			}),
 		range: (column, row_filters) =>
 			call('insights.api.authoring.get_drill_rows_range', { ...args(), column, row_filters }),

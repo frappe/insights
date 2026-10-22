@@ -10,7 +10,7 @@ import { ListFilter, X } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { __ } from '../../translation'
 import type { QueryResultColumn } from '../../types/query.types'
-import { summaryParts, type Filter } from './filter_picker'
+import { summaryParts, type Filter, type ValuesProvider } from './filter_picker'
 import { columnIcon } from '../../query/column_icon'
 import FilterPickerPanel from './FilterPickerPanel.vue'
 
@@ -20,7 +20,7 @@ import FilterPickerPanel from './FilterPickerPanel.vue'
 // own root.
 const props = defineProps<{
 	columns: QueryResultColumn[]
-	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
+	valuesProvider: ValuesProvider
 	/** The smallest and largest a numeric column goes, for the presets it lists. */
 	rangeProvider?: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	column?: QueryResultColumn

@@ -5,7 +5,7 @@
 
 import type { Dayjs } from 'dayjs'
 import type { Component } from 'vue'
-import { FIELDTYPES, type FilterType } from '../../helpers/constants'
+import { FIELDTYPES, type FilterType, type GranularityType } from '../../helpers/constants'
 import dayjs from '../../helpers/dayjs'
 import {
 	buildSpan,
@@ -15,7 +15,13 @@ import {
 	type SpanShape,
 	type SpanUnit,
 } from '../../helpers/span_grammar'
-import { column, filter_group } from '../../query/helpers'
+import {
+	column,
+	filter_group,
+	fiscalQuarterName,
+	fiscalStartMonth,
+	getFormattedDate,
+} from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
 import type {
 	ColumnDataType,
@@ -33,6 +39,14 @@ export type Filter = {
 	operator: FilterOperator
 	value: FilterValue
 }
+
+/**
+ * What a column's filter lists to pick from. With `granularity`, the periods
+ * the column has rows in, as each period's first day, newest first.
+ */
+export type ValuesProvider = (
+	column: QueryResultColumn,
+) => (search: string, granularity?: GranularityType) => Promise<string[]>
 
 export type FilterKind = 'text' | 'number' | 'date'
 
@@ -157,7 +171,15 @@ export function textRule(
  * their own, so the keyboard reaches a relative span the way it reaches
  * everything else.
  */
-export type Stage = 'overview' | 'column' | 'operator' | 'value' | 'relative' | 'unit'
+export type Stage =
+	| 'overview'
+	| 'column'
+	| 'operator'
+	| 'value'
+	| 'relative'
+	| 'unit'
+	| 'period'
+	| 'quarter'
 
 /** One row of a stage's list. */
 export type ListItem = {
@@ -177,6 +199,8 @@ export type ListItem = {
 	removable?: boolean
 	/** a divider above the row */
 	separated?: boolean
+	/** a › button at the end that opens the row's own list */
+	opens?: boolean
 	filter?: Filter
 }
 
@@ -268,6 +292,7 @@ const unitLabels = translatedTable<Record<SpanUnit, [string, string]>>(() => ({
 	quarter: [__('quarter'), __('quarters')],
 	year: [__('year'), __('years')],
 	'fiscal year': [__('fiscal year'), __('fiscal years')],
+	'fiscal quarter': [__('fiscal quarter'), __('fiscal quarters')],
 }))
 
 function unitWords(unit: SpanUnit, count: number): string {
@@ -374,6 +399,134 @@ export const relativeRow = translatedTable<{ key: string; label: string }>(() =>
 	label: __('Relative…'),
 }))
 
+/**
+ * A whole period, by the span unit that names it and the day it starts. The
+ * date stage lists these, and a pick is written as the period's own span
+ * anchored inside it: `{ span: 'current fiscal quarter', anchor: '2025-07-01' }`.
+ */
+export type PeriodUnit = 'year' | 'fiscal year' | 'quarter' | 'fiscal quarter' | 'month'
+export type Period = { unit: PeriodUnit; start: string }
+
+/** The lists the date stage opens onto. A year opens onto its own quarters. */
+export type PeriodList = 'year' | 'fiscal year' | 'month'
+export const periodLists = translatedTable<Array<{ unit: PeriodList; label: string }>>(() => [
+	{ unit: 'year', label: __('Year…') },
+	{ unit: 'fiscal year', label: __('Fiscal year…') },
+	{ unit: 'month', label: __('Month…') },
+])
+
+export const QUARTER_OF: Record<'year' | 'fiscal year', PeriodUnit> = {
+	year: 'quarter',
+	'fiscal year': 'fiscal quarter',
+}
+
+export const PERIOD_GRAINS: Record<PeriodUnit, GranularityType> = {
+	year: 'year',
+	'fiscal year': 'fiscal_year',
+	quarter: 'quarter',
+	'fiscal quarter': 'fiscal_quarter',
+	month: 'month',
+}
+
+const PERIOD_MONTHS: Record<PeriodUnit, number> = {
+	year: 12,
+	'fiscal year': 12,
+	quarter: 3,
+	'fiscal quarter': 3,
+	month: 1,
+}
+
+function isPeriodUnit(unit: string): unit is PeriodUnit {
+	return unit in PERIOD_GRAINS
+}
+
+/** The day the period of `unit` that `date` falls in starts on. */
+export function periodStart(unit: PeriodUnit, date: string): string {
+	const d = dayjs(date).startOf('month')
+	const firstMonth = unit === 'fiscal year' || unit === 'fiscal quarter' ? fiscalStartMonth() : 0
+	const monthsIn = (d.month() - firstMonth + 12) % PERIOD_MONTHS[unit]
+	return d.subtract(monthsIn, 'month').format(DATE_FORMAT)
+}
+
+/** The months a period covers, as its row's note reads them: `Apr – Jun`. */
+export function periodMonths(period: Period): string {
+	const start = dayjs(period.start)
+	const end = start.add(PERIOD_MONTHS[period.unit] - 1, 'month')
+	return `${start.format('MMM')} – ${end.format('MMM')}`
+}
+
+/** `2025`, `FY 2025-26`, `Q3 2025`, `Q2 FY25-26`, `Sep 2025`. */
+export function periodLabel(unit: PeriodUnit, date: string): string {
+	if (unit === 'fiscal quarter') return fiscalQuarterName(date)
+	if (unit === 'fiscal year') return getFormattedDate(date, 'fiscal_year')
+	if (unit === 'quarter') return dayjs(date).format('[Q]Q YYYY')
+	if (unit === 'month') return dayjs(date).format('MMM YYYY')
+	return dayjs(date).format('YYYY')
+}
+
+/** The key a period's row goes by, on whichever list it sits in. */
+export function periodKey(period: Period): string {
+	return `period:${period.unit}:${period.start}`
+}
+
+/** The rule that keeps one whole period. */
+export function periodRule(period: Period): { operator: FilterOperator; value: Timespan } {
+	return { operator: 'within', value: { span: `current ${period.unit}`, anchor: period.start } }
+}
+
+/**
+ * The period a `within` value names whole, if it names one: a `current` span
+ * anchored to a day. "3 months ago" is written so too, and reads as its month.
+ */
+function periodOf(timespan: Timespan): Period | undefined {
+	if (!timespan.anchor) return undefined
+	const span = parseSpan(timespan.span)
+	if (span?.shape !== 'current' || !isPeriodUnit(span.unit)) return undefined
+	return { unit: span.unit, start: periodStart(span.unit, timespan.anchor) }
+}
+
+/** The period a typed label names: any label `periodLabel` prints, in any case. */
+export function parsePeriod(raw: string): Period | undefined {
+	const text = raw.trim().toLowerCase().replace(/\s+/g, ' ')
+	const fiscalStart = (year: string) => {
+		const start = Number(year.length === 2 ? `20${year}` : year)
+		return dayjs(`${start}-01-01`).month(fiscalStartMonth())
+	}
+
+	let match = text.match(/^q([1-4]) fy ?(\d{2}|\d{4})-\d{2}$/)
+	if (match) {
+		const start = fiscalStart(match[2]).add((Number(match[1]) - 1) * 3, 'month')
+		return { unit: 'fiscal quarter', start: start.format(DATE_FORMAT) }
+	}
+	match = text.match(/^fy ?(\d{2}|\d{4})-\d{2}$/)
+	if (match) return { unit: 'fiscal year', start: fiscalStart(match[1]).format(DATE_FORMAT) }
+
+	match = text.match(/^q([1-4]) (\d{4})$/)
+	if (match) {
+		const month = (Number(match[1]) - 1) * 3
+		return {
+			unit: 'quarter',
+			start: dayjs(`${match[2]}-01-01`).month(month).format(DATE_FORMAT),
+		}
+	}
+	if (/^\d{4}$/.test(text)) return { unit: 'year', start: `${text}-01-01` }
+
+	match = text.match(/^([a-z]+) (\d{4})$/)
+	if (match) {
+		const name = match[1]
+		const month = Array.from({ length: 12 }, (_, i) => dayjs().month(i)).findIndex(
+			(d) =>
+				d.format('MMM').toLowerCase() === name || d.format('MMMM').toLowerCase() === name,
+		)
+		if (month >= 0)
+			return {
+				unit: 'month',
+				start: dayjs(`${match[2]}-01-01`).month(month).format(DATE_FORMAT),
+			}
+	}
+	return undefined
+}
+
 /** The calendar an operator's value stage opens under the list. */
 export function calendarOf(op: OperatorDef): 'range' | 'day' | undefined {
 	if (op.operator === 'within') return undefined
@@ -430,7 +583,7 @@ function isDay(text: string): boolean {
 
 /** `date` moved `count` periods of `unit`. */
 function shiftPeriods(date: Dayjs, unit: SpanUnit, count: number): Dayjs {
-	if (unit === 'quarter') return date.add(count * 3, 'month')
+	if (unit === 'quarter' || unit === 'fiscal quarter') return date.add(count * 3, 'month')
 	// a fiscal year is twelve months long wherever it starts, so it moves by the year
 	if (unit === 'fiscal year') return date.add(count, 'year')
 	return date.add(count, unit as any)
@@ -553,6 +706,8 @@ function valueSummary(filter: Filter): string {
 			if (!timespan) return ''
 			if (timespan.anchor && timespan.span === 'current day')
 				return formatDate(timespan.anchor)
+			const period = periodOf(timespan)
+			if (period) return periodLabel(period.unit, period.start)
 			return spanLabel(timespan.span)
 		}
 		if (operator === 'between') {
@@ -580,6 +735,8 @@ export type Path = {
 	text: string
 	/** a `within` rule that is not a preset reopens on the relative stages */
 	relative?: RelativeForm
+	/** a `within` rule that names one whole period reopens on its period list */
+	period?: Period
 }
 
 export function pathOf(filter: Filter): Path {
@@ -621,7 +778,10 @@ export function pathOf(filter: Filter): Path {
 	}
 
 	if (operator === 'within') {
-		const span = timespanOf(value)?.span || ''
+		const timespan = timespanOf(value)
+		const period = timespan && periodOf(timespan)
+		if (period) return { ...base, op: operatorOf('date', 'within') || base.op, period }
+		const span = timespan?.span || ''
 		const parsed = isPreset(span) ? undefined : parseSpan(span)
 		// The relative row shows a direction, so a `to date` span is not one of
 		// its forms: the overview prints it through `spanLabel` instead.
@@ -654,6 +814,8 @@ export function selectedRowKey(filter: Filter, stage: Stage): string | undefined
 	if (stage === 'operator') return path.op.operator
 	if (filter.operator !== 'within') return undefined
 	if (stage === 'unit') return path.relative && `span:${spanOf(path.relative)}`
+
+	if (stage === 'period' || stage === 'quarter') return path.period && periodKey(path.period)
 
 	// an anchored span is a shifted period, not the preset its span names
 	const timespan = timespanOf(filter.value)

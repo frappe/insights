@@ -17,6 +17,7 @@ import {
 	type DashboardViewItem,
 	type FilterState,
 } from './view'
+import type { GranularityType } from '../helpers/constants'
 
 /** The charts this dashboard may use: the workbook's, not every chart on the site. */
 export const chartOptionsKey = 'dashboardChartOptions'
@@ -74,19 +75,22 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 			dashboard.updateFilterState(filter_name, filter?.operator, filter?.value),
 		// Unlike a reader, the builder can get values for a filter whose link is not
 		// saved yet. The values come from the linked chart.
-		filterValues: (filter_name: string, search_term?: string) => {
+		filterValues: (
+			filter_name: string,
+			search_term?: string,
+			granularity?: GranularityType,
+		) => {
 			const filter = dashboard.doc.items.find(
 				(item) => item.type === 'filter' && item.filter_name === filter_name,
 			)
 			const linked = Object.keys((filter?.type === 'filter' && filter.links) || {})[0]
 			if (!linked) return Promise.resolve([])
-			return dashboard.getDistinctColumnValues(filter_name, search_term, linked)
+			return dashboard.getDistinctColumnValues(filter_name, search_term, linked, granularity)
 		},
 		filterRange: dashboard.getFilterColumnRange,
 		cardFilters: computed(() => dashboard.cardFilters),
 		setCardFilters: dashboard.setCardFilters,
-		cardValues: (chart: string, column: string, search_term?: string) =>
-			dashboard.getCardColumnValues(chart, column, search_term),
+		cardValues: dashboard.getCardColumnValues,
 		cardRange: (chart: string, column: string) => dashboard.getCardColumnRange(chart, column),
 		filtered: dashboard.cardIsFiltered,
 		resetCardFilters: dashboard.resetCardFilters,

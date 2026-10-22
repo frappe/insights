@@ -305,6 +305,7 @@ DATE_UNITS = (
     "quarter",
     "year",
     "fiscal year",
+    "fiscal quarter",
 )
 
 
@@ -348,6 +349,8 @@ def get_current_date_range(unit, anchor=None):
         return [get_year_start(today), get_year_ending(today)]
     if unit == "fiscal year":
         return [get_fy_start(today), get_fiscal_year_ending(today)]
+    if unit == "fiscal quarter":
+        return [get_fiscal_quarter_start(today), get_fiscal_quarter_ending(today)]
 
 
 def get_fiscal_year_start_date():
@@ -386,6 +389,18 @@ def get_fiscal_year_ending(date):
     if dt.month < fy_start.month:
         return getdate(f"{dt.year}-{fy_end.month}-{fy_end.day}")  # eg. 2018-03-31
     return getdate(f"{dt.year + 1}-{fy_end.month}-{fy_end.day}")  # eg. 2019-03-31
+
+
+def get_fiscal_quarter_start(date):
+    """The first day of the fiscal quarter `date` falls in: every third month
+    from the month the fiscal year starts in."""
+    dt = getdate(date)
+    months_in = (dt.month - get_fiscal_year_start_date().month) % 3
+    return getdate(get_first_day(add_to_date(dt, months=-months_in)))
+
+
+def get_fiscal_quarter_ending(date):
+    return getdate(add_to_date(get_fiscal_quarter_start(date), months=3, days=-1))
 
 
 def get_directional_date_range(direction, unit, number_of_unit, anchor=None):
@@ -429,6 +444,11 @@ def get_directional_date_range(direction, unit, number_of_unit, anchor=None):
         dates = [
             get_fy_start(add_to_date(today, years=start)),
             get_fiscal_year_ending(add_to_date(today, years=end)),
+        ]
+    if unit == "fiscal quarter":
+        dates = [
+            get_fiscal_quarter_start(add_to_date(today, months=start * 3)),
+            get_fiscal_quarter_ending(add_to_date(today, months=end * 3)),
         ]
 
     if isinstance(dates[0], str):
@@ -583,7 +603,7 @@ def shift_anchor(anchor: datetime.date, unit: str, count: int) -> datetime.date:
         return getdate(add_to_date(anchor, days=7 * count))
     if unit == "month":
         return getdate(add_to_date(anchor, months=count))
-    if unit == "quarter":
+    if unit == "quarter" or unit == "fiscal quarter":
         return getdate(add_to_date(anchor, months=3 * count))
     # a fiscal year is twelve months long wherever it starts, so it moves by the year
     if unit == "year" or unit == "fiscal year":

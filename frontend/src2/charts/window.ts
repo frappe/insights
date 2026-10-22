@@ -114,6 +114,7 @@ const unitLabels = translatedTable<Record<WindowUnit, { one: string; many: strin
 	quarter: { one: __('quarter'), many: __('quarters') },
 	year: { one: __('year'), many: __('years') },
 	'fiscal year': { one: __('fiscal year'), many: __('fiscal years') },
+	'fiscal quarter': { one: __('fiscal quarter'), many: __('fiscal quarters') },
 }))
 
 export function windowUnitLabel(unit: WindowUnit, many = false): string {
@@ -157,24 +158,28 @@ const choiceCopy = translatedTable<Record<string, string>>(() => ({
 	'to date:quarter': __('Quarter to date'),
 	'to date:year': __('Year to date'),
 	'to date:fiscal year': __('Fiscal year to date'),
+	'to date:fiscal quarter': __('Fiscal quarter to date'),
 	'current:day': __('Today'),
 	'current:week': __('This week'),
 	'current:month': __('This month'),
 	'current:quarter': __('This quarter'),
 	'current:year': __('This year'),
 	'current:fiscal year': __('This fiscal year'),
+	'current:fiscal quarter': __('This fiscal quarter'),
 	'last:day': __('Last N days'),
 	'last:week': __('Last N weeks'),
 	'last:month': __('Last N months'),
 	'last:quarter': __('Last N quarters'),
 	'last:year': __('Last N years'),
 	'last:fiscal year': __('Last N fiscal years'),
+	'last:fiscal quarter': __('Last N fiscal quarters'),
 	'grain:day': __('Latest day'),
 	'grain:week': __('Latest week'),
 	'grain:month': __('Latest month'),
 	'grain:quarter': __('Latest quarter'),
 	'grain:year': __('Latest year'),
 	'grain:fiscal year': __('Latest fiscal year'),
+	'grain:fiscal quarter': __('Latest fiscal quarter'),
 }))
 
 /** A run of choices under one heading, as the picker's Combobox reads them. */
@@ -317,6 +322,7 @@ const WINDOW_GRAINS: Record<WindowUnit, GranularityType> = {
 	quarter: 'quarter',
 	year: 'year',
 	'fiscal year': 'fiscal_year',
+	'fiscal quarter': 'fiscal_quarter',
 }
 
 /** One period of a unit, as dayjs steps it. */
@@ -327,6 +333,7 @@ const UNIT_STEPS: Record<WindowUnit, [number, 'day' | 'week' | 'month' | 'year']
 	quarter: [3, 'month'],
 	year: [1, 'year'],
 	'fiscal year': [1, 'year'],
+	'fiscal quarter': [3, 'month'],
 }
 
 /**

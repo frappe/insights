@@ -104,6 +104,7 @@ GRAINS = {
         "quarter": QUARTER,
         "year": YEAR,
         "fiscal_year": None,
+        "fiscal_quarter": None,
     },
     "Datetime": {
         "second": None,
@@ -115,6 +116,7 @@ GRAINS = {
         "quarter": QUARTER,
         "year": YEAR,
         "fiscal_year": None,
+        "fiscal_quarter": None,
     },
     "Time": {"second": SECOND, "minute": MINUTE, "hour": HOUR},
 }
@@ -341,6 +343,7 @@ def drill_rows_values(
     adhoc_filters: dict | None = None,
     row_filters: list | None = None,
     operations: list[dict] | None = None,
+    granularity: str | None = None,
 ) -> list:
     """The values a reader's filter on a rows level suggests.
 
@@ -355,7 +358,7 @@ def drill_rows_values(
         on_surface = _surface_column(column, surface)
 
         return chart.get_query(operations=narrowed).distinct_column_values(
-            on_surface["name"], search_term=search_term, adhoc_filters=adhoc_filters
+            on_surface["name"], search_term=search_term, adhoc_filters=adhoc_filters, granularity=granularity
         )
 
 

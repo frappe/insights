@@ -19,7 +19,15 @@
 // module writes is a span the server runs, and a change to either side is a
 // change to this comment first.
 
-export const SPAN_UNITS = ['day', 'week', 'month', 'quarter', 'year', 'fiscal year'] as const
+export const SPAN_UNITS = [
+	'day',
+	'week',
+	'month',
+	'quarter',
+	'year',
+	'fiscal year',
+	'fiscal quarter',
+] as const
 export type SpanUnit = (typeof SPAN_UNITS)[number]
 
 export type SpanShape = 'to date' | 'current' | 'last' | 'next'

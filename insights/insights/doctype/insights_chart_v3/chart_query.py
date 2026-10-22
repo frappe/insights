@@ -536,6 +536,7 @@ SPARKLINE_GRAINS = {
     "quarter": "month",
     "year": "month",
     "fiscal year": "month",
+    "fiscal quarter": "month",
 }
 
 
@@ -640,7 +641,9 @@ def period_grain(chart_type: str, config: dict | None) -> str:
 
 def grain_step(granularity: str) -> dict:
     """One bucket of a grain, as `add_to_date` keyword arguments."""
-    return {"fiscal_year": {"years": 1}, "quarter": {"months": 3}}.get(granularity) or {f"{granularity}s": 1}
+    return {"fiscal_year": {"years": 1}, "quarter": {"months": 3}, "fiscal_quarter": {"months": 3}}.get(
+        granularity
+    ) or {f"{granularity}s": 1}
 
 
 def _comparison_shifts(config: dict, span: str) -> list[dict]:

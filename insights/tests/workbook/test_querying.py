@@ -528,6 +528,54 @@ class TestQuerying(InsightsIntegrationTestCase):
 
         self.assertEqual(sorted(values), ["Closed", "Open"])
 
+    # @feature dashboard.filter-date-periods query.fiscal-quarter
+    def test_distinct_values_at_a_grain_list_the_periods_newest_first(self):
+        todos = [
+            ("2024-12-31", "Open"),
+            ("2025-03-15", "Open"),
+            ("2025-04-10", "Closed"),
+            ("2025-08-01", "Open"),
+        ]
+        for date, status in todos:
+            frappe.get_doc(
+                {"doctype": "ToDo", "description": f"{TODO_PREFIX} {date}", "status": status, "date": date}
+            ).insert(ignore_permissions=True)
+        frappe.db.commit()  # nosemgrep
+        workbook = create_test_workbook(USER_1)
+        query = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query Periods",
+            operations=[table_source(), self.prefix_filter()],
+        )
+        query_doc = self.get_query(query.name)
+        open_only = {
+            query.name: {
+                "type": "filter_group",
+                "logical_operator": "And",
+                "filters": [
+                    {
+                        "type": "filter",
+                        "column": {"type": "column", "column_name": "status"},
+                        "operator": "=",
+                        "value": "Open",
+                    }
+                ],
+            }
+        }
+
+        def periods(granularity, **kwargs):
+            values = query_doc.distinct_column_values("date", granularity=granularity, **kwargs)
+            return [str(value)[:10] for value in values]
+
+        with db_connections(), self.change_settings("Insights Settings", fiscal_year_start="2020-02-01"):
+            self.assertEqual(periods("quarter"), ["2025-07-01", "2025-04-01", "2025-01-01", "2024-10-01"])
+            self.assertEqual(periods("fiscal_quarter"), ["2025-08-01", "2025-02-01", "2024-11-01"])
+            self.assertEqual(periods("fiscal_year"), ["2025-02-01", "2024-02-01"])
+            self.assertEqual(
+                periods("month", adhoc_filters=open_only), ["2025-08-01", "2025-03-01", "2024-12-01"]
+            )
+
     # @feature query.source-query
     def test_query_can_use_another_query_as_its_source(self):
         self.seed_todos()

@@ -996,7 +996,7 @@ def within(column: ir.DateValue, timespan: str):
     def within(column, timespan)
 
     Filter rows within a timespan. The timespan can be 'Last [N] [Parts]', 'Current [Parts]', or 'Next [N] [Parts]'.
-    Parts can be 'day', 'week', 'month', 'quarter', 'year' or 'fiscal year'.
+    Parts can be 'day', 'week', 'month', 'quarter', 'year', 'fiscal year' or 'fiscal quarter'.
 
     Examples:
     - within(order_date, 'Last 7 days')
@@ -1187,7 +1187,7 @@ def next_value(column: ir.Column, group_by=None, order_by=None, offset=1):
     return column.lead(offset).over(group_by=group_by, order_by=order_by)
 
 
-_DATE_GRAINS = ("day", "week", "month", "quarter", "year", "fiscal_year")
+_DATE_GRAINS = ("day", "week", "month", "quarter", "year", "fiscal_year", "fiscal_quarter")
 _DATETIME_GRAINS = ("second", "minute", "hour", *_DATE_GRAINS)
 
 
@@ -1208,6 +1208,7 @@ def _apply_granularity(column, granularity, data_type=None):
         "quarter",
         "year",
         "fiscal_year",
+        "fiscal_quarter",
     ]
     if granularity not in supported_granularities:
         supported = ", ".join(supported_granularities)
@@ -1223,6 +1224,8 @@ def _apply_granularity(column, granularity, data_type=None):
         return week_start(column).name(column.get_name())
     if granularity == "fiscal_year":
         return fiscal_year_start(column).name(column.get_name())
+    if granularity == "fiscal_quarter":
+        return _fiscal_quarter_start(column).name(column.get_name())
 
     truncate_unit = {
         "second": "s",
@@ -1277,8 +1280,8 @@ def _period_key(date_column, grain):
         ]
     if grain in ("year", "fiscal_year"):
         return period_start.year(), 1
-    if grain in ("month", "quarter"):
-        return period_start.year() * 12 + period_start.month(), 3 if grain == "quarter" else 1
+    if grain in ("month", "quarter", "fiscal_quarter"):
+        return period_start.year() * 12 + period_start.month(), 1 if grain == "month" else 3
     return date_diff(period_start, ibis.date(1970, 1, 1), "day"), 1
 
 
@@ -1530,6 +1533,16 @@ def fiscal_year_start(column: ir.DateValue):
         ibis.date(year - 1, fiscal_year_start_month, fiscal_year_start_day),
         ibis.date(year, fiscal_year_start_month, fiscal_year_start_day),
     ).cast("date")
+
+
+def _fiscal_quarter_start(column: ir.DateValue):
+    """The first day of the fiscal quarter of each date. Built with `ibis.date`
+    rather than a month interval, which SQLite cannot subtract. A quarter can
+    start in the year before its date's, as November does for a January date
+    when the fiscal year starts in February."""
+    months_in = (column.month() - get_fiscal_year_start_date().month + 12) % 3
+    month_index = column.year() * 12 + column.month() - 1 - months_in
+    return ibis.date(month_index // 12, month_index % 12 + 1, 1).cast("date")
 
 
 def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: str):

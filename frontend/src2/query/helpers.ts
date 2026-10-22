@@ -290,21 +290,31 @@ function formatDateBy(date: string, granularity: string, formats: Record<string,
 		return parsed.isValid() ? parsed.format(timeFormats[granularity]) : date
 	}
 
-	if (granularity === 'fiscal_year') {
-		const d = dayjs(date)
-		const fiscalYearStart = session.site.fiscal_year_start
-		const fiscalStartMonth = dayjs(fiscalYearStart).month()
-		const fiscalStartDay = dayjs(fiscalYearStart).date()
-
-		const fiscalStartThisYear = d.month(fiscalStartMonth).date(fiscalStartDay)
-		const startYear = d.isBefore(fiscalStartThisYear) ? d.year() - 1 : d.year()
-		const endYear = startYear + 1
-
-		return `FY ${startYear}-${String(endYear).slice(-2)}`
-	}
+	if (granularity === 'fiscal_year') return `FY ${fiscalYearName(dayjs(date))}`
+	if (granularity === 'fiscal_quarter') return fiscalQuarterName(date)
 
 	if (!formats[granularity]) return date
 	return dayjs(date).format(formats[granularity])
+}
+
+/** `2025-26` for the fiscal year `d` falls in. */
+function fiscalYearName(d: ReturnType<typeof dayjs>): string {
+	const fiscalYearStart = dayjs(session.site.fiscal_year_start)
+	const fiscalStartThisYear = d.month(fiscalYearStart.month()).date(fiscalYearStart.date())
+	const startYear = d.isBefore(fiscalStartThisYear) ? d.year() - 1 : d.year()
+	return `${startYear}-${String(startYear + 1).slice(-2)}`
+}
+
+/** The month, 0 to 11, the site's fiscal year starts in. */
+export function fiscalStartMonth(): number {
+	return dayjs(session.site.fiscal_year_start).month()
+}
+
+/** `Q2 FY25-26`: the fiscal quarter `date` falls in. */
+export function fiscalQuarterName(date: string): string {
+	const d = dayjs(date)
+	const monthsIn = (d.month() - fiscalStartMonth() + 12) % 12
+	return `Q${Math.floor(monthsIn / 3) + 1} FY${fiscalYearName(d).slice(2)}`
 }
 
 export function getMeasures(columns: QueryResultColumn[]): Measure[] {

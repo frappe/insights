@@ -17,6 +17,7 @@ from ibis import _
 from insights import standard
 from insights.decorators import insights_whitelist
 from insights.exceptions import QueryRefused, UnknownColumn
+from insights.insights.doctype.insights_data_source_v3.ibis.functions import _apply_granularity
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
@@ -467,11 +468,12 @@ class InsightsQueryv3(Document):
         search_term: str | None = None,
         limit: int = 20,
         adhoc_filters: dict | None = None,
+        granularity: str | None = None,
     ):
         """The Builder's endpoint for `distinct_column_values`, checked like
         `get_count`. It answers a refusal as a View's picker does."""
         return self.distinct_column_values(
-            column_name, active_operation_idx, search_term, limit, adhoc_filters
+            column_name, active_operation_idx, search_term, limit, adhoc_filters, granularity
         )
 
     def distinct_column_values(
@@ -481,17 +483,34 @@ class InsightsQueryv3(Document):
         search_term: str | None = None,
         limit: int = 20,
         adhoc_filters: dict | None = None,
+        granularity: str | None = None,
     ):
+        """The values a picker lists for `column_name`. With `granularity`, the
+        periods it has rows in instead, as each period's first day, newest first.
+        A date picker lists those and labels them itself, so `search_term` does
+        not narrow them, and `limit` is lifted to ten years of months."""
         with set_adhoc_filters(adhoc_filters):
             builder = self.get_builder(active_operation_idx)
         column_name = builder.get_column(column_name).get_name()
 
-        values_query = (
-            builder.query.select(column_name)
-            .filter(_[column_name].notnull() if not search_term else _[column_name].ilike(f"%{search_term}%"))
-            .distinct()
-            .head(limit)
-        )
+        if granularity:
+            period = _apply_granularity(builder.query[column_name], granularity)
+            values_query = (
+                builder.query.select(period)
+                .filter(_[column_name].notnull())
+                .distinct()
+                .order_by(ibis.desc(column_name))
+                .head(max(limit, 120))
+            )
+        else:
+            values_query = (
+                builder.query.select(column_name)
+                .filter(
+                    _[column_name].notnull() if not search_term else _[column_name].ilike(f"%{search_term}%")
+                )
+                .distinct()
+                .head(limit)
+            )
         result, _time_taken = execute_ibis_query(
             values_query,
             cache_expiry=24 * 60 * 60,

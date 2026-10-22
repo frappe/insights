@@ -9,6 +9,7 @@ import { ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 import { isMac } from '../../composables/useShortcut'
 import { showErrorToast } from '../../helpers'
+import dayjs from '../../helpers/dayjs'
 import { columnIcon } from '../../query/column_icon'
 import { __ } from '../../translation'
 import type { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
@@ -25,8 +26,17 @@ import {
 	operatorRows,
 	parseDatePhrase,
 	parseNumber,
+	parsePeriod,
 	spanFromText,
 	pathOf,
+	PERIOD_GRAINS,
+	periodKey,
+	periodLabel,
+	periodLists,
+	periodMonths,
+	periodRule,
+	periodStart,
+	QUARTER_OF,
 	relativeDirections,
 	relativeRow,
 	selectedRowKey,
@@ -38,9 +48,13 @@ import {
 	type Filter,
 	type ListItem,
 	type OperatorDef,
+	type Period,
+	type PeriodList,
+	type PeriodUnit,
 	type SpanDirection,
 	type SpanUnit,
 	type Stage,
+	type ValuesProvider,
 } from './filter_picker'
 import FilterPickerCalendar from './FilterPickerCalendar.vue'
 import FilterPickerList from './FilterPickerList.vue'
@@ -51,7 +65,7 @@ defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
 	columns: QueryResultColumn[]
-	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
+	valuesProvider: ValuesProvider
 	/** The smallest and largest a numeric column goes, for the presets it lists. */
 	rangeProvider?: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	column?: QueryResultColumn
@@ -83,6 +97,9 @@ const relative = reactive<{ direction: SpanDirection; unit: SpanUnit; includeCur
 	unit: 'day',
 	includeCurrent: false,
 })
+
+/** the period list the reader opened, and the year whose quarters they opened in it */
+const period = reactive<{ list?: PeriodList; year?: string }>({})
 
 const kind = computed(() => (column.value ? kindOf(column.value.type) : undefined))
 const multi = computed(
@@ -119,6 +136,8 @@ function clearValue() {
 	relative.direction = 'last'
 	relative.unit = 'day'
 	relative.includeCurrent = false
+	period.list = undefined
+	period.year = undefined
 }
 
 function go(next: Stage) {
@@ -159,6 +178,22 @@ function load(filter: Filter) {
 	history.value = props.column ? [] : ['overview', 'column']
 	if (needsValue) history.value.push('operator')
 	stage.value = needsValue ? 'value' : 'operator'
+	if (path.period) {
+		const quarter = path.period.unit === 'quarter' || path.period.unit === 'fiscal quarter'
+		period.list = quarter
+			? path.period.unit === 'quarter'
+				? 'year'
+				: 'fiscal year'
+			: (path.period.unit as PeriodList)
+		history.value.push('value')
+		stage.value = 'period'
+		if (quarter) {
+			period.year = periodStart(period.list as PeriodUnit, path.period.start)
+			history.value.push('period')
+			stage.value = 'quarter'
+		}
+		highlight(periodKey(path.period))
+	}
 	if (path.relative) {
 		relative.direction = path.relative.direction
 		relative.unit = path.relative.unit
@@ -234,6 +269,73 @@ watch(
 	{ immediate: true },
 )
 
+// The periods a list shows, by grain. Asked once per grain while the panel is
+// open: a period list is short, and the reader narrows it by typing.
+const periods = ref<Partial<Record<string, string[]>>>({})
+const periodsFetching = ref(false)
+
+/** the unit the list on screen shows */
+const periodUnit = computed<PeriodUnit | undefined>(() => {
+	if (stage.value === 'period') return period.list
+	if (stage.value === 'quarter' && period.list && period.list !== 'month')
+		return QUARTER_OF[period.list]
+	return undefined
+})
+
+watch(
+	[() => column.value?.name, periodUnit],
+	async ([name], [previousName]) => {
+		if (name !== previousName) periods.value = {}
+		const unit = periodUnit.value
+		if (!unit || !column.value) return
+		const grain = PERIOD_GRAINS[unit]
+		if (periods.value[grain]) return
+
+		periodsFetching.value = true
+		const starts = await props
+			.valuesProvider(column.value)('', grain)
+			.catch((error) => {
+				showErrorToast(error, false)
+				return []
+			})
+		// a datetime column answers a timestamp, and the rows go by the day
+		periods.value = { ...periods.value, [grain]: starts.map((s) => String(s).slice(0, 10)) }
+		periodsFetching.value = false
+	},
+	{ immediate: true },
+)
+
+function periodRows(): ListItem[] {
+	const unit = periodUnit.value
+	if (!unit) return []
+	const starts = periods.value[PERIOD_GRAINS[unit]] || []
+
+	if (stage.value === 'period') {
+		return starts
+			.map((start) => ({ unit, start }))
+			.filter((p) => matches(periodLabel(p.unit, p.start)))
+			.map((p) => ({
+				key: periodKey(p),
+				label: periodLabel(p.unit, p.start),
+				opens: p.unit !== 'month',
+			}))
+	}
+
+	// a year's quarters, in the order the year runs
+	const year = period.year!
+	const end = dayjs(year).add(1, 'year').format('YYYY-MM-DD')
+	return starts
+		.filter((start) => start >= year && start < end)
+		.sort()
+		.map((start) => ({ unit, start }))
+		.filter((p) => matches(periodLabel(p.unit, p.start)))
+		.map((p) => ({
+			key: periodKey(p),
+			label: periodLabel(p.unit, p.start).split(' ')[0],
+			note: periodMonths(p),
+		}))
+}
+
 /** The rule the typed text spells, where the stage has a place for one. */
 const typed = computed<(Draft & { label: string }) | undefined>(() => {
 	const text = search.value.trim()
@@ -259,6 +361,14 @@ const typed = computed<(Draft & { label: string }) | undefined>(() => {
 	}
 
 	if (kind.value !== 'date') return undefined
+
+	// a period's own label, typed, is that period wherever a range is picked
+	const typedPeriod = calendar.value === 'day' ? undefined : parsePeriod(text)
+	if (typedPeriod)
+		return {
+			...periodRule(typedPeriod),
+			label: __('Use “{0}”', periodLabel(typedPeriod.unit, typedPeriod.start)),
+		}
 
 	if (!calendar.value) {
 		const span = spanFromText(text)
@@ -364,6 +474,8 @@ const rows = computed<ListItem[]>(() => {
 		]
 	}
 
+	if (stage.value === 'period' || stage.value === 'quarter') return periodRows()
+
 	if (multi.value) {
 		const top = sticky.value.filter((v) => matches(v))
 		const rest = distinct.value.filter((v) => !top.includes(v))
@@ -395,7 +507,14 @@ const rows = computed<ListItem[]>(() => {
 			  }))
 	}
 
+	// The period lists, wherever a range is picked: under the presets, and above
+	// the range calendar a date filter opens on.
+	const lists: ListItem[] = periodLists()
+		.filter((list) => matches(list.label))
+		.map((list) => ({ key: `list:${list.unit}`, label: list.label }))
+
 	// dates: the input and the highlighted grid already read the draft
+	if (calendar.value === 'range') return [...use, ...lists]
 	if (calendar.value) return []
 	const presets = datePresets()
 		.filter((p) => matches(p.label))
@@ -405,13 +524,15 @@ const rows = computed<ListItem[]>(() => {
 		}))
 	const row = relativeRow()
 	const relativeRows: ListItem[] = matches(row.label) ? [{ key: row.key, label: row.label }] : []
-	return [...use, ...presets, ...relativeRows]
+	return [...use, ...presets, ...lists, ...relativeRows]
 })
 
 const emptyText = computed(() => {
 	if (stage.value === 'column') return __('No columns found')
 	if (stage.value === 'operator') return __('No operators found')
 	if (stage.value === 'relative' || stage.value === 'unit') return __('Nothing matches')
+	if (stage.value === 'period' || stage.value === 'quarter')
+		return periodsFetching.value ? '' : __('No dates found')
 	if (multi.value) return fetching.value ? '' : __('No values found')
 	if (kind.value === 'text') return ''
 	if (kind.value === 'number') return ''
@@ -441,6 +562,7 @@ const placeholder = computed(() => {
 		const label = relativeDirections().find((d) => d.key === relative.direction)!.label
 		return __('{0} how many?', label)
 	}
+	if (stage.value === 'period' || stage.value === 'quarter') return __('{0} within…', name)
 	if (!name || !op.value) return __('Type a value…')
 	// numbers read by their sign, and a range keeps its example: `between 30 and
 	// 50` would teach a separator the input does not parse
@@ -484,7 +606,18 @@ function pick(item: ListItem) {
 		}
 		return commit({ operator: 'within', value: { span: item.key.slice(5) } })
 	}
+	if (stage.value === 'period' || stage.value === 'quarter') {
+		const [, unit, start] = item.key.split(':')
+		return commit(periodRule({ unit, start } as Period))
+	}
 	pickValue(item)
+}
+
+/** A year's › opens its quarters; every other row has none. */
+function open(item: ListItem) {
+	if (!item.opens || stage.value !== 'period') return
+	period.year = item.key.split(':')[2]
+	go('quarter')
 }
 
 function pickValue(item: ListItem) {
@@ -507,6 +640,10 @@ function pickValue(item: ListItem) {
 	}
 
 	if (item.key === relativeRow().key) return go('relative')
+	if (item.key.startsWith('list:')) {
+		period.list = item.key.slice(5) as PeriodList
+		return go('period')
+	}
 	if (item.key.startsWith('span:'))
 		return commit({ operator: 'within', value: { span: item.key.slice(5) } })
 }
@@ -563,7 +700,10 @@ onBeforeUnmount(() => {
 function back() {
 	const previous = history.value.pop()
 	if (!previous) return
+	const left = { stage: stage.value, list: period.list, year: period.year }
 	if (stage.value === 'value') clearValue()
+	if (stage.value === 'period') period.list = undefined
+	if (stage.value === 'quarter') period.year = undefined
 	if (previous === 'column') {
 		op.value = undefined
 		column.value = undefined
@@ -575,6 +715,10 @@ function back() {
 	stage.value = previous
 	search.value = ''
 	if (previous === 'operator' && op.value) highlight(op.value.operator)
+	// the reader lands back on the row they opened
+	if (left.stage === 'period') highlight(`list:${left.list}`)
+	if (left.stage === 'quarter' && left.list && left.year)
+		highlight(periodKey({ unit: left.list, start: left.year }))
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -582,6 +726,17 @@ function onKeydown(event: KeyboardEvent) {
 	if (event.key === 'Escape') {
 		// reka closes the popover from here; the draft goes with it
 		cancelled.value = true
+		return
+	}
+	// → opens a year's quarters, the way its › does, and ← comes back out
+	if (event.key === 'ArrowRight' && highlightedRow()?.opens) {
+		event.preventDefault()
+		open(highlightedRow()!)
+		return
+	}
+	if (event.key === 'ArrowLeft' && !search.value && stage.value === 'quarter') {
+		event.preventDefault()
+		back()
 		return
 	}
 	if (event.key === 'Backspace' && !search.value) {
@@ -757,6 +912,7 @@ function focusInput() {
 			:loading="fetching"
 			:empty="emptyText"
 			@pick="pick"
+			@open="open"
 			@remove="emit('remove', $event.filter!)"
 		/>
 

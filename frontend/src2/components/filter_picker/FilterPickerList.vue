@@ -2,7 +2,7 @@
 // Every stage is this list. reka owns the highlight, the arrow keys and the
 // scrolling; this file only renders rows and reports a pick.
 import { Button, Checkbox, LoadingIndicator } from 'frappe-ui'
-import { Check, X } from 'lucide-vue-next'
+import { Check, ChevronRight, X } from 'lucide-vue-next'
 import { ComboboxItem, ComboboxItemIndicator, ComboboxViewport, ListboxContent } from 'reka-ui'
 import { __ } from '../../translation'
 import type { ListItem } from './filter_picker'
@@ -13,7 +13,11 @@ defineProps<{
 	loading?: boolean
 	empty?: string
 }>()
-const emit = defineEmits<{ pick: [item: ListItem]; remove: [item: ListItem] }>()
+const emit = defineEmits<{
+	pick: [item: ListItem]
+	open: [item: ListItem]
+	remove: [item: ListItem]
+}>()
 
 // copied from frappe-ui's src/components/shared/selection/utils.ts — the package
 // exports no subpath that reaches it
@@ -127,6 +131,19 @@ function keyOf(item: ListItem, stage: string) {
 					>
 						<Check class="size-4 text-ink-gray-6" stroke-width="1.5" />
 					</ComboboxItemIndicator>
+					<Button
+						v-if="item.opens"
+						variant="ghost"
+						size="xs"
+						:label="__('Open')"
+						class="-me-1.5 -my-1 shrink-0"
+						@mousedown.prevent
+						@click.stop="emit('open', item)"
+					>
+						<template #icon
+							><ChevronRight class="size-3.5 text-ink-gray-5" stroke-width="1.5"
+						/></template>
+					</Button>
 					<Button
 						v-if="item.removable"
 						variant="ghost"

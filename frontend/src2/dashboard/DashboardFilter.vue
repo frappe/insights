@@ -5,7 +5,7 @@ import { computed } from 'vue'
 import FilterPicker from '../components/filter_picker/FilterPicker.vue'
 import { summaryParts, type Filter } from '../components/filter_picker/filter_picker'
 import { columnIcon } from '../query/column_icon'
-import { FilterType } from '../helpers/constants'
+import { FilterType, type GranularityType } from '../helpers/constants'
 import {
 	ColumnDataType,
 	FilterOperator,
@@ -46,7 +46,8 @@ const column = computed<QueryResultColumn>(() => ({
 // the link that says so is read there, so there is one lookup rather than one
 // per surface.
 function stringValuesProvider() {
-	return (search: string) => props.dashboard.filterValues(filter.value.filter_name, search)
+	return (search: string, granularity?: GranularityType) =>
+		props.dashboard.filterValues(filter.value.filter_name, search, granularity)
 }
 
 // The numbers a number filter lists, cut from the column the link names. The

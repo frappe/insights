@@ -11,7 +11,8 @@
 import { useDebounceFn } from '@vueuse/core'
 import { toast } from 'frappe-ui'
 import { computed, reactive, ref } from 'vue'
-import type { Filter } from '../../components/filter_picker/filter_picker'
+import type { Filter, ValuesProvider } from '../../components/filter_picker/filter_picker'
+import type { GranularityType } from '../../helpers/constants'
 import { getErrorMessage } from '../../helpers'
 import { saveExportedFile } from '../../query/export_file'
 import { column, emptyResult, formatResultRows, order_by } from '../../query/helpers'
@@ -39,7 +40,7 @@ type DrillRowsControls = {
 	// eslint-disable-next-line no-unused-vars
 	setFilters: (own: Filter[]) => void
 	// eslint-disable-next-line no-unused-vars
-	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
+	valuesProvider: ValuesProvider
 	// eslint-disable-next-line no-unused-vars
 	rangeProvider: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 }
@@ -236,8 +237,9 @@ export function makeDrillRows(first: DrillLevelData, source: DrillRowsSource) {
 
 		filters,
 		setFilters,
-		valuesProvider: (column: QueryResultColumn) => (search: string) =>
-			source.values(column.name, search, others(column.name)),
+		valuesProvider:
+			(column: QueryResultColumn) => (search: string, granularity?: GranularityType) =>
+				source.values(column.name, search, others(column.name), granularity),
 		rangeProvider: (column: QueryResultColumn) =>
 			source.range(column.name, others(column.name)),
 

@@ -6,7 +6,11 @@ import {
 	numberPairValues,
 	numberQuickValues,
 	operatorOf,
+	parsePeriod,
+	periodLabel,
+	periodStart,
 	selectedRowKey,
+	summaryParts,
 	spanLabel,
 	toFilterArgs,
 	unitOf,
@@ -119,5 +123,52 @@ describe('the row a reopened rule marks', () => {
 		expect(
 			selectedRowKey(within({ span: 'current month', anchor: '2026-05-10' }), 'value'),
 		).toBeUndefined()
+	})
+})
+
+// The site's fiscal year starts on 1 April here, the session's own default.
+describe('the periods a date filter lists', () => {
+	const posted: QueryResultColumn = { name: 'posting_date', type: 'Date' }
+	const labels: Array<[any, string, string]> = [
+		['year', '2025-01-01', '2025'],
+		['fiscal year', '2025-04-01', 'FY 2025-26'],
+		['quarter', '2025-07-01', 'Q3 2025'],
+		['fiscal quarter', '2025-07-01', 'Q2 FY25-26'],
+		['month', '2025-09-01', 'Sep 2025'],
+	]
+
+	// @feature dashboard.filter-date-periods
+	it('names a period by its own label, and reads that label back', () => {
+		for (const [unit, start, label] of labels) {
+			expect(periodLabel(unit, start)).toBe(label)
+			expect(parsePeriod(label.toLowerCase())).toEqual({ unit, start })
+		}
+		expect(parsePeriod('september 2025')).toEqual({ unit: 'month', start: '2025-09-01' })
+		expect(parsePeriod('last 3 months')).toBeUndefined()
+	})
+
+	// @feature query.fiscal-quarter
+	it('starts a fiscal period from the fiscal year start, in the calendar year before when it must', () => {
+		expect(periodStart('fiscal quarter', '2026-01-15')).toBe('2026-01-01')
+		expect(periodStart('fiscal quarter', '2025-05-20')).toBe('2025-04-01')
+		expect(periodStart('fiscal year', '2026-01-15')).toBe('2025-04-01')
+		expect(periodStart('quarter', '2025-05-20')).toBe('2025-04-01')
+	})
+
+	// @feature dashboard.filter-date-periods
+	it('prints a picked period on the trigger, and reopens on its row', () => {
+		const picked = {
+			column: posted,
+			operator: 'within' as const,
+			value: { span: 'current fiscal quarter', anchor: '2025-07-01' },
+		}
+		expect(summaryParts(picked).value).toBe('Q2 FY25-26')
+		expect(selectedRowKey(picked, 'quarter')).toBe('period:fiscal quarter:2025-07-01')
+	})
+
+	// @feature query.filter-relative-date-shift
+	it('reads "3 months ago" as the month it lands in', () => {
+		const value = { span: 'current month', anchor: '2026-05-10' }
+		expect(summaryParts({ column: posted, operator: 'within', value }).value).toBe('May 2026')
 	})
 })

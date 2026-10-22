@@ -324,6 +324,44 @@ class TestDirectionalSpans(InsightsIntegrationTestCase):
         )
 
 
+class TestFiscalQuarterRanges(InsightsIntegrationTestCase):
+    """A fiscal quarter counts three months at a time from the month the fiscal
+    year starts in."""
+
+    def ranges(self, fiscal_year_start, anchor, spans):
+        with self.change_settings("Insights Settings", fiscal_year_start=fiscal_year_start):
+            return {
+                span: [get_date_str(d) for d in get_date_range(span, anchor=getdate(anchor))]
+                for span in spans
+            }
+
+    # @feature query.fiscal-quarter
+    def test_a_fiscal_quarter_runs_from_the_fiscal_year_start(self):
+        self.assertEqual(
+            self.ranges(
+                "2020-04-01",
+                ANCHOR,
+                ["current fiscal quarter", "last 1 fiscal quarter", "next 3 fiscal quarter"],
+            ),
+            {
+                "current fiscal quarter": ["2026-07-01", "2026-09-30"],
+                "last 1 fiscal quarter": ["2026-04-01", "2026-06-30"],
+                "next 3 fiscal quarter": ["2026-10-01", "2027-06-30"],
+            },
+        )
+
+    # @feature query.fiscal-quarter
+    def test_a_fiscal_quarter_can_start_in_the_calendar_year_before(self):
+        self.assertEqual(
+            self.ranges("2020-02-01", "2026-01-15", ["current fiscal quarter"]),
+            {"current fiscal quarter": ["2025-11-01", "2026-01-31"]},
+        )
+
+    # @feature query.fiscal-quarter
+    def test_a_fiscal_quarter_moves_the_anchor_by_three_months(self):
+        self.assertEqual(shift_anchor(ANCHOR, "fiscal quarter", -1), getdate("2026-05-10"))
+
+
 class TestFiscalYearStart(InsightsIntegrationTestCase):
     # @feature settings.fiscal-year-start
     def test_the_setting_wins_over_erpnext(self):

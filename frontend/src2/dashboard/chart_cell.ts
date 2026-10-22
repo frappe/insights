@@ -13,6 +13,7 @@ import type { Filter } from '../components/filter_picker/filter_picker'
 import type { NumberChartConfig } from '../types/chart.types'
 import type { QueryResultColumn } from '../types/query.types'
 import type { DashboardView, DashboardViewItem } from './view'
+import type { GranularityType } from '../helpers/constants'
 
 export type ChartCellProps = { item: DashboardViewItem; dashboard: DashboardView }
 
@@ -73,10 +74,10 @@ export function useChartCell(props: ChartCellProps) {
 	// The chart's config maps a dimension to its source column. A measure has no
 	// source column, but its number operators need no value list.
 	function valuesProvider(column: QueryResultColumn) {
-		return (search: string) => {
+		return (search: string, granularity?: GranularityType) => {
 			const chart_name = props.item.chart
 			if (!chart_name) return Promise.resolve([])
-			return props.dashboard.cardValues(chart_name, column.name, search)
+			return props.dashboard.cardValues(chart_name, column.name, search, granularity)
 		}
 	}
 

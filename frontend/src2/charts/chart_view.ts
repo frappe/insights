@@ -676,8 +676,15 @@ function makeSavedChartView(
 					read: (state) => fetchViewDrillData(drilled, drill_stack, state),
 					download: (state, format) =>
 						downloadViewDrillRows(drilled, drill_stack, state, format),
-					values: (column, search, rules) =>
-						fetchViewDrillRowsValues(drilled, drill_stack, column, search, rules),
+					values: (column, search, rules, granularity) =>
+						fetchViewDrillRowsValues(
+							drilled,
+							drill_stack,
+							column,
+							search,
+							rules,
+							granularity,
+						),
 					range: (column, rules) =>
 						fetchViewDrillRowsRange(drilled, drill_stack, column, rules),
 				}
