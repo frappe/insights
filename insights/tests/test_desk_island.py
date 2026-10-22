@@ -1,6 +1,7 @@
 import io
 import json
 import shutil
+import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
@@ -11,8 +12,8 @@ from frappe.desk.desktop import get_desktop_page
 from frappe.desk.doctype.dashboard.dashboard import get_permitted_cards, get_permitted_charts
 from frappe.desk.form.load import getdoc
 from frappe.utils import get_url_to_form, set_request
-from frappe.utils.island import get_ui_islands
 
+from insights import desk_islands
 from insights.api import get_doc, run_doc_method
 from insights.desk import (
     DESK_ISLANDS,
@@ -45,6 +46,7 @@ DESK_WORKSPACE = "Desk Island Test Workspace"
 DESK_READER = "desk_island_sales_user@test.com"
 
 
+@unittest.skipUnless(desk_islands(), "Frappe has no desk islands")
 class TestDeskIsland(InsightsIntegrationTestCase):
     SAVEPOINT = "test_desk_island"
 
@@ -123,6 +125,8 @@ class TestDeskIsland(InsightsIntegrationTestCase):
 
     # @feature desk.dashboard-island desk.chart-island desk.number-card-island
     def test_island_names_are_registered(self):
+        from frappe.utils.island import get_ui_islands
+
         islands = get_ui_islands()
         for field in DESK_ISLANDS.values():
             self.assertIn(field["island"], islands)
