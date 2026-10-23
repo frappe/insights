@@ -4,7 +4,7 @@ from unittest.mock import patch
 import frappe
 from frappe.utils import add_days, nowdate
 
-from insights.exceptions import ExpressionSyntaxError, UnknownColumn
+from insights.exceptions import ExpressionSyntaxError, QueryRefused, UnknownColumn
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import CircularQueryReferenceError
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import InsightsIntegrationTestCase
@@ -575,6 +575,9 @@ class TestQuerying(InsightsIntegrationTestCase):
             self.assertEqual(
                 periods("month", adhoc_filters=open_only), ["2025-08-01", "2025-03-01", "2024-12-01"]
             )
+            # a picker lists periods only, never a list of every day or second
+            with self.assertRaises(QueryRefused):
+                periods("day")
 
     # @feature query.source-query
     def test_query_can_use_another_query_as_its_source(self):

@@ -47,6 +47,8 @@ from insights.utils import (
 
 MAX_PROFILE_VALUES = 1_000
 
+PERIOD_GRAINS = ("year", "fiscal_year", "quarter", "fiscal_quarter", "month")
+
 
 class InsightsQueryv3(Document):
     # begin: auto-generated types
@@ -495,10 +497,17 @@ class InsightsQueryv3(Document):
         column_name = builder.get_column(column_name).get_name()
 
         if granularity:
-            period = _apply_granularity(builder.query[column_name], granularity)
+            if granularity not in PERIOD_GRAINS:
+                frappe.throw(
+                    frappe._("A date filter lists periods by {0}, not {1}").format(
+                        ", ".join(PERIOD_GRAINS), granularity
+                    ),
+                    QueryRefused,
+                )
+            # far fewer distinct days than rows to move to their period
+            days = builder.query.select(column_name).filter(_[column_name].notnull()).distinct()
             values_query = (
-                builder.query.select(period)
-                .filter(_[column_name].notnull())
+                days.select(_apply_granularity(days[column_name], granularity))
                 .distinct()
                 .order_by(ibis.desc(column_name))
                 .head(max(limit, 500))
@@ -514,7 +523,8 @@ class InsightsQueryv3(Document):
             )
         result, _time_taken = execute_ibis_query(
             values_query,
-            cache_expiry=24 * 60 * 60,
+            # periods follow new rows as charts do, other values change rarely
+            cache_expiry=60 * 10 if granularity else 24 * 60 * 60,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
