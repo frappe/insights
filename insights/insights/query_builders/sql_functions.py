@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import operator
 from contextlib import contextmanager, suppress
@@ -348,9 +349,9 @@ def get_current_date_range(unit, anchor=None):
     if unit == "year":
         return [get_year_start(today), get_year_ending(today)]
     if unit == "fiscal year":
-        return [get_fy_start(today), get_fiscal_year_ending(today)]
+        return get_fiscal_period(today, 12)
     if unit == "fiscal quarter":
-        return [get_fiscal_quarter_start(today), get_fiscal_quarter_ending(today)]
+        return get_fiscal_period(today, 3)
 
 
 def get_fiscal_year_start_date():
@@ -374,33 +375,28 @@ def get_erpnext_fiscal_year_start():
     )
 
 
-def get_fy_start(date):
+def get_fiscal_period(date, months):
+    """The fiscal year (12 months) or quarter (3) `date` falls in, as [start, end].
+
+    Periods start on the configured fiscal start day, every `months` months from
+    it; in a month shorter than that day, on its last day.
+    """
     fy_start = get_fiscal_year_start_date()
-    dt = getdate(date)  # eg. 2019-01-01
-    if dt.month < fy_start.month:
-        return getdate(f"{dt.year - 1}-{fy_start.month}-{fy_start.day}")  # eg. 2018-04-01
-    return getdate(f"{dt.year}-{fy_start.month}-{fy_start.day}")  # eg. 2019-04-01
-
-
-def get_fiscal_year_ending(date):
-    fy_start = get_fiscal_year_start_date()
-    fy_end = add_to_date(fy_start, years=1, days=-1)
-    dt = getdate(date)  # eg. 2019-04-01
-    if dt.month < fy_start.month:
-        return getdate(f"{dt.year}-{fy_end.month}-{fy_end.day}")  # eg. 2018-03-31
-    return getdate(f"{dt.year + 1}-{fy_end.month}-{fy_end.day}")  # eg. 2019-03-31
-
-
-def get_fiscal_quarter_start(date):
-    """The first day of the fiscal quarter `date` falls in: every third month
-    from the month the fiscal year starts in."""
     dt = getdate(date)
-    months_in = (dt.month - get_fiscal_year_start_date().month) % 3
-    return getdate(get_first_day(add_to_date(dt, months=-months_in)))
+    months_in = dt.year * 12 + dt.month - fy_start.month
+    if dt.day < _fiscal_day(dt.year, dt.month, fy_start.day):
+        months_in -= 1
+    start = fy_start.month - 1 + months_in - months_in % months
+
+    def nth_month(index):
+        year, month = divmod(index, 12)
+        return datetime.date(year, month + 1, _fiscal_day(year, month + 1, fy_start.day))
+
+    return [nth_month(start), nth_month(start + months) - datetime.timedelta(days=1)]
 
 
-def get_fiscal_quarter_ending(date):
-    return getdate(add_to_date(get_fiscal_quarter_start(date), months=3, days=-1))
+def _fiscal_day(year, month, day):
+    return min(day, calendar.monthrange(year, month)[1])
 
 
 def get_directional_date_range(direction, unit, number_of_unit, anchor=None):
@@ -442,13 +438,13 @@ def get_directional_date_range(direction, unit, number_of_unit, anchor=None):
         ]
     if unit == "fiscal year":
         dates = [
-            get_fy_start(add_to_date(today, years=start)),
-            get_fiscal_year_ending(add_to_date(today, years=end)),
+            get_fiscal_period(add_to_date(today, years=start), 12)[0],
+            get_fiscal_period(add_to_date(today, years=end), 12)[1],
         ]
     if unit == "fiscal quarter":
         dates = [
-            get_fiscal_quarter_start(add_to_date(today, months=start * 3)),
-            get_fiscal_quarter_ending(add_to_date(today, months=end * 3)),
+            get_fiscal_period(add_to_date(today, months=start * 3), 3)[0],
+            get_fiscal_period(add_to_date(today, months=end * 3), 3)[1],
         ]
 
     if isinstance(dates[0], str):

@@ -1,4 +1,5 @@
 import { GranularityType } from '../helpers/constants'
+import { SPAN_UNITS } from '../helpers/span_grammar'
 
 export type TableArgs = { type: 'table'; data_source: string; table_name: string }
 export type QueryTableArgs = {
@@ -103,7 +104,9 @@ export interface RelativeDateParts {
 }
 
 export const SPAN_OPTIONS = ['Last', 'Current', 'Next']
-export const INTERVAL_TYPE_OPTIONS = ['Day', 'Week', 'Month', 'Quarter', 'Year', 'Fiscal Year']
+export const INTERVAL_TYPE_OPTIONS = SPAN_UNITS.map((unit) =>
+	unit.replace(/\b\w/g, (letter) => letter.toUpperCase()),
+)
 
 export type SourceArgs = { table: Table }
 export type Source = { type: 'source' } & SourceArgs

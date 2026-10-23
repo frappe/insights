@@ -9,6 +9,7 @@ import {
 	operatorOf,
 	parsePeriod,
 	periodLabel,
+	periodMonths,
 	periodStart,
 	selectedRowKey,
 	summaryParts,
@@ -181,18 +182,45 @@ describe('a fiscal year that starts after the 1st', () => {
 		session.site.fiscal_year_start = start
 	})
 
+	// fiscal start, date, fiscal year start, fiscal quarter start, quarter label;
+	// the server's FISCAL_PERIODS in insights/tests/test_date_ranges.py
+	const FISCAL_PERIODS = [
+		['2020-01-01', '2025-10-23', '2025-01-01', '2025-10-01', 'Q4 FY25-26'],
+		['2020-02-01', '2026-01-15', '2025-02-01', '2025-11-01', 'Q4 FY25-26'],
+		['2020-04-01', '2026-03-31', '2025-04-01', '2026-01-01', 'Q4 FY25-26'],
+		['2020-04-06', '2026-04-05', '2025-04-06', '2026-01-06', 'Q4 FY25-26'],
+		['2020-04-06', '2026-04-06', '2026-04-06', '2026-04-06', 'Q1 FY26-27'],
+		['2020-12-01', '2026-01-01', '2025-12-01', '2025-12-01', 'Q1 FY25-26'],
+		['2020-01-31', '2025-04-29', '2025-01-31', '2025-01-31', 'Q1 FY25-26'],
+		['2020-01-31', '2025-04-30', '2025-01-31', '2025-04-30', 'Q2 FY25-26'],
+	]
+
 	// @feature query.fiscal-quarter
-	it('keeps the start day for the year, and names a quarter by the year it ends in', () => {
+	it('starts a fiscal year and quarter on the fiscal day, as the server does', () => {
+		expect(FISCAL_PERIODS.length).toBeGreaterThan(0)
+		for (const [start, date, year, quarter, label] of FISCAL_PERIODS) {
+			session.site.fiscal_year_start = start
+			expect(periodStart('fiscal year', date), `${start} ${date}`).toBe(year)
+			expect(periodStart('fiscal quarter', date), `${start} ${date}`).toBe(quarter)
+			expect(periodLabel('fiscal quarter', date)).toBe(label)
+			expect(parsePeriod(label)).toEqual({ unit: 'fiscal quarter', start: quarter })
+			expect(parsePeriod(periodLabel('fiscal year', date))).toEqual({
+				unit: 'fiscal year',
+				start: year,
+			})
+			// a quarter reopens in the fiscal year it belongs to
+			expect(periodStart('fiscal year', quarter)).toBe(year)
+		}
+	})
+
+	// @feature query.fiscal-quarter
+	it('reads a picked fiscal year by its label', () => {
 		session.site.fiscal_year_start = '2020-04-06'
-		expect(periodStart('fiscal year', '2025-04-03')).toBe('2024-04-06')
-		expect(periodStart('fiscal year', '2025-04-06')).toBe('2025-04-06')
-		expect(periodLabel('fiscal year', '2025-04-06')).toBe('FY 2025-26')
-		expect(periodLabel('fiscal quarter', '2025-04-01')).toBe('Q1 FY25-26')
-		expect(parsePeriod('fy 2025-26')).toEqual({ unit: 'fiscal year', start: '2025-04-06' })
 		const picked = { span: 'current fiscal year', anchor: '2025-04-06' }
 		expect(summaryParts({ column: posted, operator: 'within', value: picked }).value).toBe(
 			'FY 2025-26',
 		)
+		expect(periodMonths({ unit: 'fiscal quarter', start: '2025-04-06' })).toBe('6 Apr – 5 Jul')
 	})
 
 	// @feature dashboard.filter-date-periods

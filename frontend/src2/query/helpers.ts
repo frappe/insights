@@ -299,36 +299,44 @@ function formatDateBy(date: string, granularity: string, formats: Record<string,
 
 /** `2025-26` for the fiscal year `d` falls in. */
 function fiscalYearName(d: ReturnType<typeof dayjs>): string {
-	const fiscalYearStart = dayjs(session.site.fiscal_year_start)
-	const fiscalStartThisYear = d.month(fiscalYearStart.month()).date(fiscalYearStart.date())
-	const startYear = d.isBefore(fiscalStartThisYear) ? d.year() - 1 : d.year()
+	const startYear = dayjs(fiscalPeriodStart(d.format('YYYY-MM-DD'), 12)).year()
 	return `${startYear}-${String(startYear + 1).slice(-2)}`
 }
 
-/** The month, 0 to 11, the site's fiscal year starts in. */
-export function fiscalStartMonth(): number {
-	return dayjs(session.site.fiscal_year_start).month()
+/**
+ * The first day of the fiscal year (12 months) or quarter (3) `date` falls in.
+ * Periods start on the configured fiscal start day, every `months` months from
+ * it, as the server's `get_fiscal_period` counts them.
+ */
+export function fiscalPeriodStart(date: string, months: number): string {
+	const start = dayjs(session.site.fiscal_year_start)
+	const fiscalDay = (month: ReturnType<typeof dayjs>) =>
+		Math.min(start.date(), month.daysInMonth())
+	const d = dayjs(date)
+	let monthsIn = d.year() * 12 + d.month() - start.month()
+	if (d.date() < fiscalDay(d)) monthsIn -= 1
+	const index = start.month() + monthsIn - (monthsIn % months)
+	const month = dayjs(new Date(Math.floor(index / 12), index % 12, 1))
+	return month.date(fiscalDay(month)).format('YYYY-MM-DD')
 }
 
-/** The first day of the fiscal year `date` falls in, on the configured day. */
-export function fiscalYearStartOf(date: string): string {
-	const d = dayjs(date)
+/** The first day of the fiscal year that starts in calendar year `year`. */
+export function fiscalYearStarting(year: number): string {
 	const start = dayjs(session.site.fiscal_year_start)
-	const thisYear = d.month(start.month()).date(start.date())
-	return (d.isBefore(thisYear) ? thisYear.subtract(1, 'year') : thisYear).format('YYYY-MM-DD')
+	return fiscalPeriodStart(
+		dayjs(new Date(year, start.month(), 1))
+			.endOf('month')
+			.format('YYYY-MM-DD'),
+		12,
+	)
 }
 
 /** `Q2 FY25-26`: the fiscal quarter `date` falls in. */
 export function fiscalQuarterName(date: string): string {
-	const d = dayjs(date)
-	const monthsIn = (d.month() - fiscalStartMonth() + 12) % 12
-	// A quarter starts on the 1st and a fiscal year may start later in its first
-	// month, so the quarter's last day names its year.
-	const lastDay = d
-		.startOf('month')
-		.add(3 - (monthsIn % 3), 'month')
-		.subtract(1, 'day')
-	return `Q${Math.floor(monthsIn / 3) + 1} FY${fiscalYearName(lastDay).slice(2)}`
+	const quarter = dayjs(fiscalPeriodStart(date, 3))
+	const year = dayjs(fiscalPeriodStart(date, 12))
+	const monthsIn = quarter.year() * 12 + quarter.month() - (year.year() * 12 + year.month())
+	return `Q${monthsIn / 3 + 1} FY${fiscalYearName(year).slice(2)}`
 }
 
 export function getMeasures(columns: QueryResultColumn[]): Measure[] {

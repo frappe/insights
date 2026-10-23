@@ -1198,20 +1198,8 @@ def _grains(dtype):
 def _apply_granularity(column, granularity, data_type=None):
     """`column` moved to the start of its `granularity` period, keeping its name.
     The underscore keeps it out of the expression functions."""
-    supported_granularities = [
-        "second",
-        "minute",
-        "hour",
-        "day",
-        "week",
-        "month",
-        "quarter",
-        "year",
-        "fiscal_year",
-        "fiscal_quarter",
-    ]
-    if granularity not in supported_granularities:
-        supported = ", ".join(supported_granularities)
+    if granularity not in _DATETIME_GRAINS:
+        supported = ", ".join(_DATETIME_GRAINS)
         frappe.throw(
             frappe._("Granularity {0} is not supported for {1} columns. Supported granularities: {2}").format(
                 granularity, data_type, supported
@@ -1225,7 +1213,7 @@ def _apply_granularity(column, granularity, data_type=None):
     if granularity == "fiscal_year":
         return fiscal_year_start(column).name(column.get_name())
     if granularity == "fiscal_quarter":
-        return _fiscal_quarter_start(column).name(column.get_name())
+        return _fiscal_period_start(column, 3).name(column.get_name())
 
     truncate_unit = {
         "second": "s",
@@ -1521,28 +1509,29 @@ def fiscal_year_start(column: ir.DateValue):
     - fiscal_year_start(order_date)
     """
 
+    return _fiscal_period_start(column, 12)
+
+
+def _fiscal_period_start(column: ir.DateValue, months: int):
+    """The first day of the fiscal year (12 months) or quarter (3) of each date,
+    by the rule of `get_fiscal_period`. Built with `ibis.date` rather than a
+    month interval, which SQLite cannot subtract."""
     fy_start = get_fiscal_year_start_date()
-    fiscal_year_start_month = fy_start.month
-    fiscal_year_start_day = fy_start.day
-
-    year = column.year()
-    month = column.month()
-
-    return if_else(
-        month < fiscal_year_start_month,
-        ibis.date(year - 1, fiscal_year_start_month, fiscal_year_start_day),
-        ibis.date(year, fiscal_year_start_month, fiscal_year_start_day),
-    ).cast("date")
+    year, month = column.year(), column.month()
+    before_start = column.day() < _fiscal_day(year, month, fy_start.day)
+    months_in = year * 12 + month - fy_start.month - ibis.ifelse(before_start, 1, 0)
+    index = fy_start.month - 1 + months_in - months_in % months
+    start_year, start_month = index // 12, index % 12 + 1
+    return ibis.date(start_year, start_month, _fiscal_day(start_year, start_month, fy_start.day)).cast("date")
 
 
-def _fiscal_quarter_start(column: ir.DateValue):
-    """The first day of the fiscal quarter of each date. Built with `ibis.date`
-    rather than a month interval, which SQLite cannot subtract. A quarter can
-    start in the year before its date's, as November does for a January date
-    when the fiscal year starts in February."""
-    months_in = (column.month() - get_fiscal_year_start_date().month + 12) % 3
-    month_index = column.year() * 12 + column.month() - 1 - months_in
-    return ibis.date(month_index // 12, month_index % 12 + 1, 1).cast("date")
+def _fiscal_day(year, month, day: int):
+    # every month has the first 28 days
+    if day <= 28:
+        return day
+    leap = ((year % 4 == 0) & (year % 100 != 0)) | (year % 400 == 0)
+    days = ibis.cases((month == 2, ibis.ifelse(leap, 29, 28)), (month.isin([4, 6, 9, 11]), 30), else_=31)
+    return ibis.least(day, days)
 
 
 def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: str):

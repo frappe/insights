@@ -18,7 +18,14 @@ import { getFormattedDate } from '../query/helpers'
 import { __, translatedTable } from '../translation'
 import type { ChartConfig, NumberChartConfig } from '../types/chart.types'
 import type { QueryResultRow } from '../types/query.types'
-import { buildSpan, parseSpan, SPAN_UNITS, type SpanUnit } from '../helpers/span_grammar'
+import {
+	buildSpan,
+	parseSpan,
+	SPAN_GRAINS,
+	SPAN_STEPS,
+	SPAN_UNITS,
+	type SpanUnit,
+} from '../helpers/span_grammar'
 
 export const WINDOW_UNITS = SPAN_UNITS
 export type WindowUnit = SpanUnit
@@ -290,7 +297,7 @@ export function periodOfChoice(choice: string, current?: NumberPeriod): NumberPe
 
 	if (choice.startsWith(GRAIN)) {
 		const unit = choice.slice(GRAIN.length) as WindowUnit
-		return { grain: WINDOW_GRAINS[unit] || (unit as GranularityType) }
+		return { grain: SPAN_GRAINS[unit] || (unit as GranularityType) }
 	}
 
 	// A choice nobody here wrote is a span, hand-authored or from a later
@@ -311,29 +318,8 @@ export function periodOfChoice(choice: string, current?: NumberPeriod): NumberPe
 
 /** The span unit a grain names, for reading a grain period back off a choice. */
 function grainUnit(grain: GranularityType): string {
-	const unit = WINDOW_UNITS.find((candidate) => WINDOW_GRAINS[candidate] === grain)
+	const unit = WINDOW_UNITS.find((candidate) => SPAN_GRAINS[candidate] === grain)
 	return unit || grain
-}
-
-const WINDOW_GRAINS: Record<WindowUnit, GranularityType> = {
-	day: 'day',
-	week: 'week',
-	month: 'month',
-	quarter: 'quarter',
-	year: 'year',
-	'fiscal year': 'fiscal_year',
-	'fiscal quarter': 'fiscal_quarter',
-}
-
-/** One period of a unit, as dayjs steps it. */
-const UNIT_STEPS: Record<WindowUnit, [number, 'day' | 'week' | 'month' | 'year']> = {
-	day: [1, 'day'],
-	week: [1, 'week'],
-	month: [1, 'month'],
-	quarter: [3, 'month'],
-	year: [1, 'year'],
-	'fiscal year': [1, 'year'],
-	'fiscal quarter': [3, 'month'],
 }
 
 /**
@@ -348,13 +334,13 @@ export function formatWindowLabel(span: string, start: any): any {
 	const parsed = parseWindowSpan(span)
 	if (!parsed || !start) return start
 
-	const grain = WINDOW_GRAINS[parsed.unit]
+	const grain = SPAN_GRAINS[parsed.unit]
 	const first = getFormattedDate(String(start), grain)
 
 	const periods = windowPeriods(parsed)
 	if (periods < 2) return first
 
-	const [size, step] = UNIT_STEPS[parsed.unit]
+	const [size, step] = SPAN_STEPS[parsed.unit]
 	const last = dayjs(String(start)).add(size * (periods - 1), step)
 	return `${first} – ${getFormattedDate(last.format('YYYY-MM-DD'), grain)}`
 }

@@ -33,8 +33,8 @@ from frappe.utils import add_to_date, get_datetime, get_time
 from insights import user_permissions
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     ORDERED_TYPES,
+    adjacent_bucket,
     count_of_rows,
-    grain_step,
     plotted_measures,
 )
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
@@ -985,13 +985,12 @@ def _grain_bucket(granularity: str, value, data_type: str) -> tuple:
     of day, and a bucket that would run past midnight ends where the day does:
     nothing on a clock is later, so it needs no upper end at all.
     """
-    step = grain_step(granularity)
     if data_type != "Time":
         start = get_datetime(value)
-        return (start, add_to_date(start, **step))
+        return (start, adjacent_bucket(granularity, start))
 
     start = _moment(get_time(value))
-    end = add_to_date(start, **step)
+    end = adjacent_bucket(granularity, start)
     return (start.time(), end.time() if end.date() == start.date() else None)
 
 

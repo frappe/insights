@@ -10,6 +10,7 @@ import dayjs from '../../helpers/dayjs'
 import {
 	buildSpan,
 	parseSpan,
+	SPAN_STEPS,
 	SPAN_UNITS,
 	spanUnitOf,
 	type SpanShape,
@@ -18,9 +19,9 @@ import {
 import {
 	column,
 	filter_group,
+	fiscalPeriodStart,
 	fiscalQuarterName,
-	fiscalStartMonth,
-	fiscalYearStartOf,
+	fiscalYearStarting,
 	getFormattedDate,
 } from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
@@ -282,7 +283,7 @@ export function numberPreview(op: OperatorDef, value: number | [number, number])
 
 const DATE_FORMAT = 'YYYY-MM-DD'
 
-export { SPAN_UNITS, type SpanUnit } from '../../helpers/span_grammar'
+export { SPAN_GRAINS, SPAN_UNITS, type SpanUnit } from '../../helpers/span_grammar'
 /** The unit a typed word names, as the picker's own vocabulary calls it. */
 export const unitOf = spanUnitOf
 
@@ -405,7 +406,8 @@ export const relativeRow = translatedTable<{ key: string; label: string }>(() =>
  * date stage lists these, and a pick is written as the period's own span
  * anchored inside it: `{ span: 'current fiscal quarter', anchor: '2025-07-01' }`.
  */
-export type PeriodUnit = 'year' | 'fiscal year' | 'quarter' | 'fiscal quarter' | 'month'
+export const PERIOD_UNITS = ['year', 'fiscal year', 'quarter', 'fiscal quarter', 'month'] as const
+export type PeriodUnit = (typeof PERIOD_UNITS)[number]
 export type Period = { unit: PeriodUnit; start: string }
 
 /** The lists the date stage opens onto. A year opens onto its own quarters. */
@@ -421,41 +423,24 @@ export const QUARTER_OF: Record<'year' | 'fiscal year', PeriodUnit> = {
 	'fiscal year': 'fiscal quarter',
 }
 
-export const PERIOD_GRAINS: Record<PeriodUnit, GranularityType> = {
-	year: 'year',
-	'fiscal year': 'fiscal_year',
-	quarter: 'quarter',
-	'fiscal quarter': 'fiscal_quarter',
-	month: 'month',
-}
-
-const PERIOD_MONTHS: Record<PeriodUnit, number> = {
-	year: 12,
-	'fiscal year': 12,
-	quarter: 3,
-	'fiscal quarter': 3,
-	month: 1,
-}
-
 function isPeriodUnit(unit: string): unit is PeriodUnit {
-	return unit in PERIOD_GRAINS
+	return (PERIOD_UNITS as readonly string[]).includes(unit)
 }
 
 /** The day the period of `unit` that `date` falls in starts on. */
 export function periodStart(unit: PeriodUnit, date: string): string {
-	// the one period that may start after the 1st, as the server's fiscal year does
-	if (unit === 'fiscal year') return fiscalYearStartOf(date)
+	if (unit === 'fiscal year' || unit === 'fiscal quarter')
+		return fiscalPeriodStart(date, SPAN_STEPS[unit][0])
 	const d = dayjs(date).startOf('month')
-	const firstMonth = unit === 'fiscal quarter' ? fiscalStartMonth() : 0
-	const monthsIn = (d.month() - firstMonth + 12) % PERIOD_MONTHS[unit]
-	return d.subtract(monthsIn, 'month').format(DATE_FORMAT)
+	return d.subtract(d.month() % SPAN_STEPS[unit][0], 'month').format(DATE_FORMAT)
 }
 
-/** The months a period covers, as its row's note reads them: `Apr – Jun`. */
+/** The days a period covers, as its row's note reads them: `Apr – Jun`, or `6 Apr – 5 Jul`. */
 export function periodMonths(period: Period): string {
 	const start = dayjs(period.start)
-	const end = start.add(PERIOD_MONTHS[period.unit] - 1, 'month')
-	return `${start.format('MMM')} – ${end.format('MMM')}`
+	const end = start.add(SPAN_STEPS[period.unit][0], 'month').subtract(1, 'day')
+	const format = start.date() === 1 ? 'MMM' : 'D MMM'
+	return `${start.format(format)} – ${end.format(format)}`
 }
 
 /** `2025`, `FY 2025-26`, `Q3 2025`, `Q2 FY25-26`, `Sep 2025`. */
@@ -500,20 +485,19 @@ export function parsePeriod(raw: string): Period | undefined {
 				: [1900, 2000, 2100]
 						.map((century) => century + Number(year))
 						.reduce((a, b) => (Math.abs(b - now) < Math.abs(a - now) ? b : a))
-		return dayjs(`${start}-01-01`).month(fiscalStartMonth())
+		return fiscalYearStarting(start)
 	}
 
 	let match = text.match(/^q([1-4]) fy ?(\d{2}|\d{4})-\d{2}$/)
 	if (match) {
-		const start = fiscalStart(match[2]).add((Number(match[1]) - 1) * 3, 'month')
-		return { unit: 'fiscal quarter', start: start.format(DATE_FORMAT) }
+		const inQuarter = dayjs(fiscalStart(match[2])).add((Number(match[1]) - 1) * 3, 'month')
+		return {
+			unit: 'fiscal quarter',
+			start: periodStart('fiscal quarter', inQuarter.format(DATE_FORMAT)),
+		}
 	}
 	match = text.match(/^fy ?(\d{2}|\d{4})-\d{2}$/)
-	if (match)
-		return {
-			unit: 'fiscal year',
-			start: fiscalYearStartOf(fiscalStart(match[1]).endOf('month').format(DATE_FORMAT)),
-		}
+	if (match) return { unit: 'fiscal year', start: fiscalStart(match[1]) }
 
 	match = text.match(/^q([1-4]) (\d{4})$/)
 	if (match) {

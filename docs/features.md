@@ -448,7 +448,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 |---|---|
 | settings.profile | A user edits their first and last name. |
 | settings.week-start | An admin sets the weekday the week starts on and week ranges follow it. |
-| settings.fiscal-year-start | An admin sets the fiscal year start and fiscal year ranges follow it. |
+| settings.fiscal-year-start | An admin sets the fiscal year start, and fiscal years and quarters start on that day, in filters and in charts alike. |
 | settings.demo-data | An admin sets up demo data and a demo workbook. |
 | settings.demo-banner-dismiss | A user dismisses the demo data banner and it stays hidden. |
 | settings.security-update-notice | An admin sees a sidebar notice while a newer Insights release fixes security issues. |
