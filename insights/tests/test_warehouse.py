@@ -281,9 +281,9 @@ class TestWarehouseWriteLock(InsightsIntegrationTestCase):
             started = time.monotonic()
             try:
                 db = open_local_duckdb(path, read_only=False, allowed_dir=tmpdir, lock_timeout=60)
+                waited = time.monotonic() - started
             finally:
                 release.join()
-            waited = time.monotonic() - started
             db.disconnect()
 
             self.assertGreaterEqual(waited, 1, "the write open returned before the reader let go")
