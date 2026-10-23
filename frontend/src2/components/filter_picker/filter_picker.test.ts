@@ -169,6 +169,16 @@ describe('the periods a date filter lists', () => {
 	})
 
 	// @feature query.filter-relative-date-shift
+	it('reads a saved shift as the month it moves to', () => {
+		const value = {
+			span: 'current month',
+			anchor: '2026-05-10',
+			shift: { unit: 'month', count: -1 },
+		}
+		expect(summaryParts({ column: posted, operator: 'within', value }).value).toBe('Apr 2026')
+	})
+
+	// @feature query.filter-relative-date-shift
 	it('reads "3 months ago" as the month it lands in', () => {
 		const value = { span: 'current month', anchor: '2026-05-10' }
 		expect(summaryParts({ column: posted, operator: 'within', value }).value).toBe('May 2026')

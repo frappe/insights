@@ -3,7 +3,6 @@
 // one date formatter every stage prints through, and the parts of the line an
 // overview row prints.
 
-import type { Dayjs } from 'dayjs'
 import type { Component } from 'vue'
 import { FIELDTYPES, type FilterType, type GranularityType } from '../../helpers/constants'
 import dayjs from '../../helpers/dayjs'
@@ -23,6 +22,7 @@ import {
 	fiscalQuarterName,
 	fiscalYearStarting,
 	periodStartAfter,
+	shiftDate,
 	getFormattedDate,
 } from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
@@ -475,7 +475,11 @@ function periodOf(timespan: Timespan): Period | undefined {
 	if (!timespan.anchor) return undefined
 	const span = parseSpan(timespan.span)
 	if (span?.shape !== 'current' || !isPeriodUnit(span.unit)) return undefined
-	return { unit: span.unit, start: periodStart(span.unit, timespan.anchor) }
+	// the server moves the anchor before it finds the period, so this does too
+	const shift = timespan.shift
+	const by = shift?.unit && spanUnitOf(shift.unit)
+	const anchor = by ? shiftDate(timespan.anchor, by, shift!.count || 0) : timespan.anchor
+	return { unit: span.unit, start: periodStart(span.unit, anchor) }
 }
 
 /** The period a typed label names: any label `periodLabel` prints, in any case. */
@@ -584,14 +588,6 @@ function isDay(text: string): boolean {
 	return DAY.test(text) && dayjs(text).isValid()
 }
 
-/** `date` moved `count` periods of `unit`. */
-function shiftPeriods(date: Dayjs, unit: SpanUnit, count: number): Dayjs {
-	if (unit === 'quarter' || unit === 'fiscal quarter') return date.add(count * 3, 'month')
-	// a fiscal year is twelve months long wherever it starts, so it moves by the year
-	if (unit === 'fiscal year') return date.add(count, 'year')
-	return date.add(count, unit as any)
-}
-
 /** What a typed date phrase means, where the value stage takes one. */
 export function parseDatePhrase(raw: string): ParsedDate | null {
 	const text = raw.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -625,7 +621,7 @@ export function parseDatePhrase(raw: string): ParsedDate | null {
 	if (match) {
 		const unit = unitOf(match[2])
 		if (!unit) return null
-		const anchor = shiftPeriods(dayjs(), unit, -Number(match[1])).format(DATE_FORMAT)
+		const anchor = shiftDate(dayjs().format(DATE_FORMAT), unit, -Number(match[1]))
 		return { operator: 'within', value: { span: `current ${unit}`, anchor } }
 	}
 

@@ -336,6 +336,23 @@ export function periodStartAfter(unit: SpanUnit, start: string, count: number): 
 		.format('YYYY-MM-DD')
 }
 
+/**
+ * `date` moved `count` periods of `unit`, as the server's `shift_anchor` moves
+ * it: a fiscal date keeps its day, held inside the period it moved to.
+ */
+export function shiftDate(date: string, unit: SpanUnit, count: number): string {
+	const [size, step] = SPAN_STEPS[unit]
+	const moved = dayjs(date)
+		.add(size * count, step)
+		.format('YYYY-MM-DD')
+	if (unit !== 'fiscal year' && unit !== 'fiscal quarter') return moved
+	const start = fiscalPeriodStart(date, size, count)
+	const end = dayjs(fiscalPeriodStart(date, size, count + 1))
+		.subtract(1, 'day')
+		.format('YYYY-MM-DD')
+	return moved < start ? start : moved > end ? end : moved
+}
+
 /** The first day of the fiscal year that starts in calendar year `year`. */
 export function fiscalYearStarting(year: number): string {
 	const start = dayjs(session.site.fiscal_year_start)

@@ -49,7 +49,7 @@ if (stored && storedSpan) {
 
 /** The span string the three controls describe, in the server's format. */
 function written() {
-	if (parts.intervalType.startsWith('Fiscal')) parts.includeCurrent = false
+	if (parts.intervalType === 'Fiscal Year') parts.includeCurrent = false
 	const base =
 		parts.span === 'Current'
 			? `${parts.span} ${parts.intervalType}`
@@ -95,7 +95,7 @@ const toggleLabel = (span: string, intervalType: string) =>
 		</div>
 		<!-- The switch comes first, so it lines up with the fields above. -->
 		<Toggle
-			v-if="parts.span !== 'Current' && !parts.intervalType.startsWith('Fiscal')"
+			v-if="parts.span !== 'Current' && parts.intervalType !== 'Fiscal Year'"
 			v-model="parts.includeCurrent"
 			control-position="start"
 			:label="toggleLabel(parts.span, parts.intervalType)"
