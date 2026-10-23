@@ -578,6 +578,9 @@ class TestQuerying(InsightsIntegrationTestCase):
             # a picker lists periods only, never a list of every day or second
             with self.assertRaises(QueryRefused):
                 periods("day")
+            # and only a column with dates has periods
+            with self.assertRaises(QueryRefused):
+                query_doc.distinct_column_values("status", granularity="year")
 
     # @feature query.source-query
     def test_query_can_use_another_query_as_its_source(self):

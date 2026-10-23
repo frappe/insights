@@ -14,7 +14,7 @@
 
 import dayjs from 'dayjs'
 import type { GranularityType } from '../helpers/constants'
-import { getFormattedDate } from '../query/helpers'
+import { getFormattedDate, periodStartAfter } from '../query/helpers'
 import { __, translatedTable } from '../translation'
 import type { ChartConfig, NumberChartConfig } from '../types/chart.types'
 import type { QueryResultRow } from '../types/query.types'
@@ -22,7 +22,6 @@ import {
 	buildSpan,
 	parseSpan,
 	SPAN_GRAINS,
-	SPAN_STEPS,
 	SPAN_UNITS,
 	type SpanUnit,
 } from '../helpers/span_grammar'
@@ -340,9 +339,12 @@ export function formatWindowLabel(span: string, start: any): any {
 	const periods = windowPeriods(parsed)
 	if (periods < 2) return first
 
-	const [size, step] = SPAN_STEPS[parsed.unit]
-	const last = dayjs(String(start)).add(size * (periods - 1), step)
-	return `${first} – ${getFormattedDate(last.format('YYYY-MM-DD'), grain)}`
+	const last = periodStartAfter(
+		parsed.unit,
+		dayjs(String(start)).format('YYYY-MM-DD'),
+		periods - 1,
+	)
+	return `${first} – ${getFormattedDate(last, grain)}`
 }
 
 /**

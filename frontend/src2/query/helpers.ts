@@ -20,6 +20,7 @@ import { h } from 'vue'
 import { copy } from '../helpers'
 import { FIELDTYPES, getDefaultGranularity, GranularityType } from '../helpers/constants'
 import dayjs from '../helpers/dayjs'
+import { SPAN_STEPS, type SpanUnit } from '../helpers/span_grammar'
 import useSettings from '../settings/settings'
 import {
 	Cast,
@@ -304,20 +305,35 @@ function fiscalYearName(d: ReturnType<typeof dayjs>): string {
 }
 
 /**
- * The first day of the fiscal year (12 months) or quarter (3) `date` falls in.
- * Periods start on the configured fiscal start day, every `months` months from
- * it, as the server's `get_fiscal_period` counts them.
+ * The first day of the fiscal year (12 months) or quarter (3) `date` falls in,
+ * or of the one `shift` periods away. Periods start on the configured fiscal
+ * start day, every `months` months from it, as the server's `get_fiscal_period`
+ * counts them.
  */
-export function fiscalPeriodStart(date: string, months: number): string {
+export function fiscalPeriodStart(date: string, months: number, shift = 0): string {
 	const start = dayjs(session.site.fiscal_year_start)
 	const fiscalDay = (month: ReturnType<typeof dayjs>) =>
 		Math.min(start.date(), month.daysInMonth())
 	const d = dayjs(date)
 	let monthsIn = d.year() * 12 + d.month() - start.month()
 	if (d.date() < fiscalDay(d)) monthsIn -= 1
-	const index = start.month() + monthsIn - (monthsIn % months)
+	const index = start.month() + monthsIn - (monthsIn % months) + shift * months
 	const month = dayjs(new Date(Math.floor(index / 12), index % 12, 1))
 	return month.date(fiscalDay(month)).format('YYYY-MM-DD')
+}
+
+/**
+ * The first day of the period of `unit` `count` periods after the one `start`
+ * opens. A fiscal period is counted, never reached by adding months to a start
+ * that a shorter month moved.
+ */
+export function periodStartAfter(unit: SpanUnit, start: string, count: number): string {
+	const [size, step] = SPAN_STEPS[unit]
+	if (unit === 'fiscal year' || unit === 'fiscal quarter')
+		return fiscalPeriodStart(start, size, count)
+	return dayjs(start)
+		.add(size * count, step)
+		.format('YYYY-MM-DD')
 }
 
 /** The first day of the fiscal year that starts in calendar year `year`. */

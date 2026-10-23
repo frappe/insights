@@ -22,6 +22,7 @@ import {
 	fiscalPeriodStart,
 	fiscalQuarterName,
 	fiscalYearStarting,
+	periodStartAfter,
 	getFormattedDate,
 } from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
@@ -422,6 +423,10 @@ export const QUARTER_OF: Record<'year' | 'fiscal year', PeriodUnit> = {
 	year: 'quarter',
 	'fiscal year': 'fiscal quarter',
 }
+export const YEAR_OF: Partial<Record<PeriodUnit, 'year' | 'fiscal year'>> = {
+	quarter: 'year',
+	'fiscal quarter': 'fiscal year',
+}
 
 function isPeriodUnit(unit: string): unit is PeriodUnit {
 	return (PERIOD_UNITS as readonly string[]).includes(unit)
@@ -438,7 +443,7 @@ export function periodStart(unit: PeriodUnit, date: string): string {
 /** The days a period covers, as its row's note reads them: `Apr – Jun`, or `6 Apr – 5 Jul`. */
 export function periodMonths(period: Period): string {
 	const start = dayjs(period.start)
-	const end = start.add(SPAN_STEPS[period.unit][0], 'month').subtract(1, 'day')
+	const end = dayjs(periodStartAfter(period.unit, period.start, 1)).subtract(1, 'day')
 	const format = start.date() === 1 ? 'MMM' : 'D MMM'
 	return `${start.format(format)} – ${end.format(format)}`
 }
@@ -490,10 +495,10 @@ export function parsePeriod(raw: string): Period | undefined {
 
 	let match = text.match(/^q([1-4]) fy ?(\d{2}|\d{4})-\d{2}$/)
 	if (match) {
-		const inQuarter = dayjs(fiscalStart(match[2])).add((Number(match[1]) - 1) * 3, 'month')
+		const quarter = Number(match[1]) - 1
 		return {
 			unit: 'fiscal quarter',
-			start: periodStart('fiscal quarter', inQuarter.format(DATE_FORMAT)),
+			start: periodStartAfter('fiscal quarter', fiscalStart(match[2]), quarter),
 		}
 	}
 	match = text.match(/^fy ?(\d{2}|\d{4})-\d{2}$/)
@@ -813,7 +818,14 @@ export function selectedRowKey(filter: Filter, stage: Stage): string | undefined
 	if (filter.operator !== 'within') return undefined
 	if (stage === 'unit') return path.relative && `span:${spanOf(path.relative)}`
 
-	if (stage === 'period' || stage === 'quarter') return path.period && periodKey(path.period)
+	if (stage === 'quarter') return path.period && periodKey(path.period)
+	if (stage === 'period') {
+		// a quarter's row on the year list is the year it falls in
+		const list = path.period && YEAR_OF[path.period.unit]
+		return list
+			? periodKey({ unit: list, start: periodStart(list, path.period!.start) })
+			: path.period && periodKey(path.period)
+	}
 
 	// an anchored span is a shifted period, not the preset its span names
 	const timespan = timespanOf(filter.value)

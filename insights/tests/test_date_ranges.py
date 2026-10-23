@@ -382,6 +382,7 @@ FISCAL_PERIODS = [
     ("2020-12-01", "2026-01-01", ["2025-12-01", "2026-11-30"], ["2025-12-01", "2026-02-28"]),
     ("2020-01-31", "2025-04-29", ["2025-01-31", "2026-01-30"], ["2025-01-31", "2025-04-29"]),
     ("2020-01-31", "2025-04-30", ["2025-01-31", "2026-01-30"], ["2025-04-30", "2025-07-30"]),
+    ("2024-02-29", "2025-06-15", ["2025-02-28", "2026-02-27"], ["2025-05-29", "2025-08-28"]),
 ]
 
 
@@ -400,6 +401,27 @@ class TestFiscalPeriods(InsightsIntegrationTestCase):
             ):
                 self.assertEqual([get_date_str(d) for d in get_fiscal_period(date, 12)], year)
                 self.assertEqual([get_date_str(d) for d in get_fiscal_period(date, 3)], quarter)
+
+    # @feature query.fiscal-quarter query.filter-relative-date-shift
+    def test_a_fiscal_period_moves_by_whole_periods(self):
+        """30 April opens a quarter at a 31 January start, and three months back
+        from it is 30 January, still the quarter before last."""
+        dates = [getdate("2024-01-01") + datetime.timedelta(days=n) for n in range(3 * 366)]
+        for start in sorted({row[0] for row in FISCAL_PERIODS}):
+            with self.change_settings("Insights Settings", fiscal_year_start=start):
+                for unit, months in (("fiscal year", 12), ("fiscal quarter", 3)):
+                    with self.subTest(start=start, unit=unit):
+                        for day in dates:
+                            before = get_fiscal_period(day, months, -1)
+                            self.assertEqual(
+                                get_fiscal_period(before[1] + datetime.timedelta(days=1), months)[0],
+                                get_fiscal_period(day, months)[0],
+                                day,
+                            )
+                            self.assertEqual(get_date_range(f"last 1 {unit}", anchor=day), before, day)
+                            self.assertEqual(
+                                get_fiscal_period(shift_anchor(day, unit, -1), months), before, day
+                            )
 
     # @feature settings.fiscal-year-start
     # @feature query.fiscal-quarter

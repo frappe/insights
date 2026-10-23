@@ -647,10 +647,8 @@ def adjacent_bucket(granularity: str, start, direction: int = 1) -> datetime.dat
     shorter than it moves."""
     start = get_datetime(start)
     months = {"fiscal_year": 12, "fiscal_quarter": 3}.get(granularity)
-    if months and direction > 0:
-        return get_datetime(get_fiscal_period(start, months)[1] + datetime.timedelta(days=1))
     if months:
-        return get_datetime(get_fiscal_period(start - datetime.timedelta(days=1), months)[0])
+        return get_datetime(get_fiscal_period(start, months, direction)[0])
     unit, count = {"quarter": ("months", 3)}.get(granularity) or (f"{granularity}s", 1)
     return add_to_date(start, **{unit: count * direction})
 

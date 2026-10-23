@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import session from '../session'
 import type { ChartConfig } from '../types/chart.types'
 import {
 	LAST_YEAR,
@@ -260,6 +261,17 @@ describe('how a window prints', () => {
 			'May, 2026 – August, 2026',
 		)
 		expect(formatWindowLabel('last 2 quarters', '2026-01-01')).toBe('Q1, 2026 – Q2, 2026')
+	})
+
+	// @feature charts.number-period query.fiscal-quarter
+	it('counts fiscal quarters from the fiscal start day', () => {
+		const start = session.site.fiscal_year_start
+		session.site.fiscal_year_start = '2020-01-31'
+		// 30 Apr + 6 months is 30 Oct, a day before the quarter that opens on 31 Oct
+		expect(formatWindowLabel('last 3 fiscal quarters', '2025-04-30')).toBe(
+			'Q2 FY25-26 – Q4 FY25-26',
+		)
+		session.site.fiscal_year_start = start
 	})
 
 	// @feature charts.number-period

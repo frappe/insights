@@ -504,6 +504,11 @@ class InsightsQueryv3(Document):
                     ),
                     QueryRefused,
                 )
+            if not (
+                builder.query[column_name].type().is_date()
+                or builder.query[column_name].type().is_timestamp()
+            ):
+                frappe.throw(frappe._("Only a Date or Datetime column has periods"), QueryRefused)
             # far fewer distinct days than rows to move to their period
             days = builder.query.select(column_name).filter(_[column_name].notnull()).distinct()
             values_query = (

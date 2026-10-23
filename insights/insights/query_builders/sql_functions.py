@@ -375,18 +375,20 @@ def get_erpnext_fiscal_year_start():
     )
 
 
-def get_fiscal_period(date, months):
-    """The fiscal year (12 months) or quarter (3) `date` falls in, as [start, end].
+def get_fiscal_period(date, months, shift=0):
+    """The fiscal year (12 months) or quarter (3) `date` falls in, or the one
+    `shift` periods away, as [start, end].
 
     Periods start on the configured fiscal start day, every `months` months from
-    it; in a month shorter than that day, on its last day.
+    it; in a month shorter than that day, on its last day. So a period is moved
+    by counting periods, never by adding months to a start.
     """
     fy_start = get_fiscal_year_start_date()
     dt = getdate(date)
     months_in = dt.year * 12 + dt.month - fy_start.month
     if dt.day < _fiscal_day(dt.year, dt.month, fy_start.day):
         months_in -= 1
-    start = fy_start.month - 1 + months_in - months_in % months
+    start = fy_start.month - 1 + months_in - months_in % months + shift * months
 
     def nth_month(index):
         year, month = divmod(index, 12)
@@ -438,13 +440,13 @@ def get_directional_date_range(direction, unit, number_of_unit, anchor=None):
         ]
     if unit == "fiscal year":
         dates = [
-            get_fiscal_period(add_to_date(today, years=start), 12)[0],
-            get_fiscal_period(add_to_date(today, years=end), 12)[1],
+            get_fiscal_period(today, 12, start)[0],
+            get_fiscal_period(today, 12, end)[1],
         ]
     if unit == "fiscal quarter":
         dates = [
-            get_fiscal_period(add_to_date(today, months=start * 3), 3)[0],
-            get_fiscal_period(add_to_date(today, months=end * 3), 3)[1],
+            get_fiscal_period(today, 3, start)[0],
+            get_fiscal_period(today, 3, end)[1],
         ]
 
     if isinstance(dates[0], str):
@@ -599,11 +601,16 @@ def shift_anchor(anchor: datetime.date, unit: str, count: int) -> datetime.date:
         return getdate(add_to_date(anchor, days=7 * count))
     if unit == "month":
         return getdate(add_to_date(anchor, months=count))
-    if unit == "quarter" or unit == "fiscal quarter":
+    if unit == "quarter":
         return getdate(add_to_date(anchor, months=3 * count))
-    # a fiscal year is twelve months long wherever it starts, so it moves by the year
-    if unit == "year" or unit == "fiscal year":
+    if unit == "year":
         return getdate(add_to_date(anchor, years=count))
+    if unit in ("fiscal quarter", "fiscal year"):
+        # the same day of the period, kept inside the moved period: a start day
+        # a shorter month moved would otherwise land in the period beside it
+        months = 3 if unit == "fiscal quarter" else 12
+        start, end = get_fiscal_period(anchor, months, count)
+        return min(max(getdate(add_to_date(anchor, months=months * count)), start), end)
 
     raise Exception(f"Invalid shift unit - {unit}")
 

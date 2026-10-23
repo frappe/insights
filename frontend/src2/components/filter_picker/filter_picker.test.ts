@@ -193,6 +193,7 @@ describe('a fiscal year that starts after the 1st', () => {
 		['2020-12-01', '2026-01-01', '2025-12-01', '2025-12-01', 'Q1 FY25-26'],
 		['2020-01-31', '2025-04-29', '2025-01-31', '2025-01-31', 'Q1 FY25-26'],
 		['2020-01-31', '2025-04-30', '2025-01-31', '2025-04-30', 'Q2 FY25-26'],
+		['2024-02-29', '2025-06-15', '2025-02-28', '2025-05-29', 'Q2 FY25-26'],
 	]
 
 	// @feature query.fiscal-quarter
@@ -221,6 +222,20 @@ describe('a fiscal year that starts after the 1st', () => {
 			'FY 2025-26',
 		)
 		expect(periodMonths({ unit: 'fiscal quarter', start: '2025-04-06' })).toBe('6 Apr – 5 Jul')
+		session.site.fiscal_year_start = '2020-01-31'
+		// 30 Apr opens the quarter in a 30-day month, and it runs to the day before 31 Jul
+		expect(periodMonths({ unit: 'fiscal quarter', start: '2025-04-30' })).toBe(
+			'30 Apr – 30 Jul',
+		)
+	})
+
+	// @feature dashboard.filter-date-periods
+	it('lands back on the year a reopened quarter is in', () => {
+		session.site.fiscal_year_start = '2020-04-06'
+		const quarter = { span: 'current fiscal quarter', anchor: '2026-01-20' }
+		const filter = { column: posted, operator: 'within' as const, value: quarter }
+		expect(selectedRowKey(filter, 'quarter')).toBe('period:fiscal quarter:2026-01-06')
+		expect(selectedRowKey(filter, 'period')).toBe('period:fiscal year:2025-04-06')
 	})
 
 	// @feature dashboard.filter-date-periods

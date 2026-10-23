@@ -37,6 +37,7 @@ import {
 	periodRule,
 	periodStart,
 	QUARTER_OF,
+	YEAR_OF,
 	relativeDirections,
 	relativeRow,
 	selectedRowKey,
@@ -179,16 +180,12 @@ function load(filter: Filter) {
 	if (needsValue) history.value.push('operator')
 	stage.value = needsValue ? 'value' : 'operator'
 	if (path.period) {
-		const quarter = path.period.unit === 'quarter' || path.period.unit === 'fiscal quarter'
-		period.list = quarter
-			? path.period.unit === 'quarter'
-				? 'year'
-				: 'fiscal year'
-			: (path.period.unit as PeriodList)
+		const year = YEAR_OF[path.period.unit]
+		period.list = year || (path.period.unit as PeriodList)
 		history.value.push('value')
 		stage.value = 'period'
-		if (quarter) {
-			period.year = periodStart(period.list as PeriodUnit, path.period.start)
+		if (year) {
+			period.year = periodStart(year, path.period.start)
 			history.value.push('period')
 			stage.value = 'quarter'
 		}
@@ -273,6 +270,7 @@ watch(
 // open: a period list is short, and the reader narrows it by typing.
 const periods = ref<Partial<Record<string, string[]>>>({})
 const periodsFetching = ref(false)
+const periodsFailed = ref(false)
 let periodsRequest = 0
 
 /** the unit the list on screen shows */
@@ -297,6 +295,7 @@ watch(
 		if (periods.value[grain]) return
 
 		periodsFetching.value = true
+		periodsFailed.value = false
 		const starts = await props
 			.valuesProvider(column.value)('', grain)
 			.catch((error) => {
@@ -305,6 +304,7 @@ watch(
 			})
 		if (id !== periodsRequest) return
 		periodsFetching.value = false
+		periodsFailed.value = !starts
 		// a failed ask is not an answer, so the list asks again when it is opened again
 		if (!starts) return
 		// a datetime column answers a timestamp, and the rows go by the day
@@ -524,7 +524,8 @@ const rows = computed<ListItem[]>(() => {
 
 	// The period lists, wherever a range is picked: under the presets, and above
 	// the range calendar a date filter opens on.
-	const lists: ListItem[] = periodLists()
+	// a time of day has no periods
+	const lists: ListItem[] = (column.value?.type === 'Time' ? [] : periodLists())
 		.filter((list) => matches(list.label))
 		.map((list) => ({ key: `list:${list.unit}`, label: list.label }))
 
@@ -548,7 +549,11 @@ const emptyText = computed(() => {
 	if (stage.value === 'operator') return __('No operators found')
 	if (stage.value === 'relative' || stage.value === 'unit') return __('Nothing matches')
 	if (stage.value === 'period' || stage.value === 'quarter')
-		return periodsFetching.value ? '' : __('No dates found')
+		return periodsFetching.value
+			? ''
+			: periodsFailed.value
+			  ? __('Could not load dates')
+			  : __('No dates found')
 	if (multi.value) return fetching.value ? '' : __('No values found')
 	if (kind.value === 'text') return ''
 	if (kind.value === 'number') return ''
