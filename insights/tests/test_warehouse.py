@@ -2,6 +2,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from contextlib import contextmanager, suppress
 from datetime import datetime
@@ -35,8 +36,7 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
 
-# A reader in this process shares the DuckDB instance, so it never conflicts.
-# Only a second process reproduces the lock the web workers take in production.
+# A second process reproduces the lock the web workers take in production.
 HOLD_READ_LOCK = """
 import sys, time, duckdb
 con = duckdb.connect(sys.argv[1], read_only=True)
@@ -270,6 +270,23 @@ class TestWarehouseWriteLock(InsightsIntegrationTestCase):
                 db.disconnect()
 
             self.assertGreaterEqual(waited, 2, "the write open returned before the reader let go")
+
+    # @feature data-store.write-lock
+    def test_write_open_waits_for_a_reader_in_this_process(self):
+        with tempfile.TemporaryDirectory(prefix="insights_lock_test_") as tmpdir:
+            path = str(Path(tmpdir) / "warehouse.duckdb")
+            reader = open_local_duckdb(path)
+            release = threading.Timer(2, reader.disconnect)
+            release.start()
+            started = time.monotonic()
+            try:
+                db = open_local_duckdb(path, read_only=False, allowed_dir=tmpdir, lock_timeout=60)
+            finally:
+                release.join()
+            waited = time.monotonic() - started
+            db.disconnect()
+
+            self.assertGreaterEqual(waited, 1, "the write open returned before the reader let go")
 
     # @feature data-store.write-lock
     def test_write_open_gives_up_at_the_timeout(self):
