@@ -8,6 +8,7 @@ import {
 	ChevronRight,
 	ExternalLink,
 	Info,
+	Sparkle,
 	Undo2,
 	X,
 } from 'lucide-vue-next'
@@ -39,13 +40,10 @@ const props = defineProps<{ step: Step }>()
 const emit = defineEmits<{ close: [] }>()
 
 const router = useRouter()
-const slides = computed(() => upgrade.slides)
-const progress = computed(() => upgrade.progress)
 const index = computed(() => upgrade.steps.findIndex((step) => step.id === props.step.id))
 const isLast = computed(() => index.value === upgrade.steps.length - 1)
-const slide = computed(() => Math.min(progress.value.slide, slides.value.length - 1))
-const onLastSlide = computed(() => slide.value === slides.value.length - 1)
-const firstScreen = computed(() => index.value === 0 && slide.value === 0)
+const feature = computed(() => ('feature' in props.step ? props.step.feature : undefined))
+const hasUpgradeSteps = computed(() => upgrade.steps.some((step) => step.section === 'upgrade'))
 
 const rows = computed(() => ('rows' in props.step ? props.step.rows : []))
 const group = computed(() => ('group' in props.step ? props.step.group : undefined))
@@ -119,10 +117,6 @@ function goToIndex(next: number) {
 }
 
 function next() {
-	if (props.step.id === 'welcome' && !onLastSlide.value) {
-		upgrade.goTo('welcome', slide.value + 1)
-		return
-	}
 	if (isLast.value) {
 		upgrade.finish()
 		return
@@ -131,10 +125,6 @@ function next() {
 }
 
 function back() {
-	if (props.step.id === 'welcome' && slide.value > 0) {
-		upgrade.goTo('welcome', slide.value - 1)
-		return
-	}
 	if (index.value > 0) goToIndex(index.value - 1)
 }
 
@@ -199,16 +189,14 @@ function focusPrimary() {
 	})
 }
 onMounted(focusPrimary)
-watch(() => [props.step.id, slide.value, current.value?.item.name, currentDone.value], focusPrimary)
+watch(() => [props.step.id, current.value?.item.name, currentDone.value], focusPrimary)
 
 function onKeydown(event: KeyboardEvent) {
 	const target = event.target as HTMLElement
 	const action = keyAction(event.key, {
 		inField: Boolean(target.closest('input, textarea, [contenteditable="true"]')),
 		onControl: Boolean(target.closest('button, a')),
-		hasNext: group.value
-			? itemIndex.value < rows.value.length - 1
-			: props.step.id === 'welcome' && !onLastSlide.value,
+		hasNext: Boolean(group.value) && itemIndex.value < rows.value.length - 1,
 	})
 	const primary = body.value
 		?.closest('[data-upgrade-step]')
@@ -240,61 +228,27 @@ function onKeydown(event: KeyboardEvent) {
 		</Button>
 
 		<div ref="body" class="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-8 pb-5 pt-6">
-			<!-- Welcome: one feature per slide -->
 			<template v-if="props.step.id === 'welcome'">
-				<h2 class="text-3xl font-semibold text-ink-gray-9">
-					{{ __('Welcome to Insights 3.50') }}
-				</h2>
-				<!-- names the old release the later screens compare with; kept in place on
-				     every slide, so the picture doesn't move -->
-				<p
-					class="-mt-1.5 text-p-base text-ink-gray-5"
-					:class="slide === 0 ? '' : 'invisible'"
-					:aria-hidden="slide !== 0"
-				>
-					<span class="font-semibold text-ink-gray-9">
-						{{ __('Sharing and permissions now work as they should.') }}
+				<div class="flex grow flex-col items-center justify-center gap-3 text-center">
+					<span class="grid size-12 place-items-center rounded-7 bg-surface-gray-2">
+						<Sparkle class="size-6 text-ink-gray-8" stroke-width="1.5" />
 					</span>
-					{{ __('People read and change only what they may. Here is what is new.') }}
-				</p>
-				<!-- the picture keeps its height in a dialog that fits its content, and grows
-				     into the room a taller one leaves, the same on every slide -->
-				<div class="flex grow flex-col items-center gap-2.5 text-center">
-					<div
-						class="flex w-full shrink-0 grow basis-[300px] items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-5"
-					>
-						<UpgradePicture :name="slides[slide].picture" :person="person" />
-					</div>
-					<div class="mt-1.5 text-2xl font-semibold text-ink-gray-9">
-						{{ slides[slide].label }}
-					</div>
-					<p class="min-h-[2lh] max-w-[460px] text-p-base text-ink-gray-6">
-						{{ slides[slide].text }}
+					<h2 class="mt-2 text-3xl font-semibold text-ink-gray-9">
+						{{ __('Welcome to Insights 3.50') }}
+					</h2>
+					<p class="max-w-[460px] text-p-base text-ink-gray-6">
+						{{
+							hasUpgradeSteps
+								? __(
+										'This site now runs Insights 3.50. The next pages show what is new, then what the upgrade left for you.',
+								  )
+								: __(
+										'This site now runs Insights 3.50. The next pages show what is new.',
+								  )
+						}}
 					</p>
-					<div class="mt-1 flex gap-1.5" role="tablist">
-						<Button
-							v-for="(item, i) in slides"
-							:key="item.label"
-							variant="ghost"
-							class="!h-[7px] !min-h-0 !p-0"
-							:class="
-								i === slide
-									? '!w-[18px] !rounded-[4px] !bg-surface-gray-9'
-									: '!w-[7px] !rounded-full !bg-surface-gray-4'
-							"
-							role="tab"
-							:aria-selected="i === slide"
-							:aria-label="item.label"
-							@click="upgrade.goTo('welcome', i)"
-						/>
-					</div>
 				</div>
-				<!-- kept in place on every slide, so the reader's dialog doesn't grow on the last -->
-				<div
-					class="mt-1 flex items-center gap-2 text-p-sm text-ink-gray-6"
-					:class="onLastSlide ? '' : 'invisible'"
-					:aria-hidden="!onLastSlide"
-				>
+				<div class="flex items-center gap-2 text-p-sm text-ink-gray-6">
 					<Info class="size-4 shrink-0 text-ink-gray-5" stroke-width="1.5" />
 					<span>
 						{{
@@ -314,10 +268,8 @@ function onKeydown(event: KeyboardEvent) {
 			</template>
 
 			<!-- Sharing: before on top, now below -->
-			<template v-else-if="props.step.id === 'sharing'">
-				<h2 class="text-3xl font-semibold text-ink-gray-9">
-					{{ __('Share the workbook, not the chart') }}
-				</h2>
+			<template v-else-if="props.step.id === 'sharing' && feature">
+				<h2 class="text-3xl font-semibold text-ink-gray-9">{{ feature.title }}</h2>
 				<div class="flex grow flex-col gap-2.5">
 					<div class="text-xs font-semibold text-ink-gray-5">{{ __('Before') }}</div>
 					<p class="text-p-base text-ink-gray-5">
@@ -335,16 +287,29 @@ function onKeydown(event: KeyboardEvent) {
 				<div class="mt-1 flex grow flex-col gap-2.5">
 					<div class="text-xs font-semibold text-ink-gray-9">{{ __('Now') }}</div>
 					<p class="text-p-base text-ink-gray-5">
-						<span class="font-semibold text-ink-gray-9">
-							{{ __('People edit through the workbook.') }}
-						</span>
-						{{ __('Sharing a chart or dashboard only lets them read it.') }}
+						<span class="font-semibold text-ink-gray-9">{{ feature.lead[0] }}</span>
+						{{ feature.lead[1] }}
 					</p>
 					<div
 						class="flex grow items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-3.5 pb-2.5"
 					>
 						<UpgradePicture name="shareNow" :person="person" />
 					</div>
+				</div>
+			</template>
+
+			<!-- A feature: what the reader gets, then the screen it is on -->
+			<template v-else-if="feature">
+				<h2 class="text-3xl font-semibold text-ink-gray-9">{{ feature.title }}</h2>
+				<p class="-mt-1.5 max-w-[620px] text-p-base text-ink-gray-5">
+					<span class="font-semibold text-ink-gray-9">{{ feature.lead[0] }}</span>
+					{{ feature.lead[1] }}
+				</p>
+				<div
+					v-if="feature.picture"
+					class="flex grow items-center justify-center rounded-5 bg-surface-alpha-gray-1 p-5"
+				>
+					<UpgradePicture :name="feature.picture" :person="person" />
 				</div>
 			</template>
 
@@ -489,7 +454,7 @@ function onKeydown(event: KeyboardEvent) {
 		</div>
 
 		<div class="flex items-center gap-2 border-t border-outline-gray-1 py-3 pl-6 pr-5">
-			<Button v-if="!firstScreen" variant="ghost" :label="__('Back')" @click="back">
+			<Button v-if="index > 0" variant="ghost" :label="__('Back')" @click="back">
 				<template #prefix><ArrowLeft class="size-4" stroke-width="1.5" /></template>
 			</Button>
 			<span class="flex-1" />
@@ -502,15 +467,13 @@ function onKeydown(event: KeyboardEvent) {
 			/>
 			<Button v-else data-primary variant="solid" @click="next">
 				{{
-					props.step.id === 'welcome' && !onLastSlide
-						? __('Next')
-						: group
-						  ? isLast
-								? __('Finish')
-								: __('Next')
-						  : isLast
-						    ? __('Done')
-						    : __('Continue')
+					group
+						? isLast
+							? __('Finish')
+							: __('Next')
+						: isLast
+						  ? __('Done')
+						  : __('Continue')
 				}}
 				<template #suffix>
 					<KeyboardShortcut combo="Enter" use-icons class="!text-ink-gray-4" />

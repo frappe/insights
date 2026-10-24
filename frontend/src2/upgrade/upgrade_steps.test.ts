@@ -6,7 +6,7 @@ import {
 	nextOpenIndex,
 	pictureOf,
 	sentenceOf,
-	slidesFor,
+	featuresFor,
 	startIndex,
 	stepIndexOf,
 	wizardSteps,
@@ -16,6 +16,8 @@ import {
 const BOB = 'bob@fixture.test'
 const ALICE = 'alice@fixture.test'
 const DAVE = 'dave@fixture.test'
+
+const can = (share: boolean) => ({ readStandardDashboards: false, showInDesk: false, share })
 
 const people = {
 	[BOB]: { full_name: 'Bob Fixture', first_name: 'Bob' },
@@ -56,11 +58,20 @@ describe('the wizard steps', () => {
 			item('d', 'W2', { workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' }),
 		]
 		expect(
-			wizardSteps(items, { sharing: true, admin: true, me: DAVE }).map((step) => step.id),
-		).toEqual(['welcome', 'sharing', 'access', 'workbooks', 'copies'])
+			wizardSteps(items, { can: can(true), admin: true, me: DAVE }).map((step) => step.id),
+		).toEqual([
+			'welcome',
+			'charts',
+			'drill',
+			'sharing',
+			'roles',
+			'access',
+			'workbooks',
+			'copies',
+		])
 		expect(
-			wizardSteps([], { sharing: false, admin: true, me: DAVE }).map((step) => step.id),
-		).toEqual(['welcome'])
+			wizardSteps([], { can: can(false), admin: true, me: DAVE }).map((step) => step.id),
+		).toEqual(['welcome', 'charts', 'drill'])
 	})
 
 	// @feature upgrade.wizard
@@ -72,7 +83,7 @@ describe('the wizard steps', () => {
 				item('to-alice', 'P10', data, { ...reference, user: ALICE }),
 				item('to-bob', 'P10', data, { ...reference, user: BOB }),
 			],
-			{ sharing: true, admin: true, me: DAVE },
+			{ can: can(true), admin: true, me: DAVE },
 		)
 		const publicCharts = steps.find((step) => step.id === 'public')!
 		expect('rows' in publicCharts && publicCharts.rows.map((row) => row.names)).toEqual([
@@ -88,34 +99,29 @@ describe('the wizard steps', () => {
 			item('to-bob', 'P11', data, { user: BOB }),
 		]
 		const ids = (me: string) =>
-			wizardSteps(notes, { sharing: true, admin: me === DAVE, me }).map((step) => step.id)
-		expect(ids(DAVE)).toEqual(['welcome', 'sharing'])
-		const toAlice = wizardSteps(notes, { sharing: true, admin: false, me: ALICE }).find(
+			wizardSteps(notes, { can: can(true), admin: me === DAVE, me }).map((step) => step.id)
+		expect(ids(DAVE)).toEqual(['welcome', 'charts', 'drill', 'sharing', 'roles'])
+		const toAlice = wizardSteps(notes, { can: can(true), admin: false, me: ALICE }).find(
 			(step) => step.id === 'notes',
 		)!
 		expect('rows' in toAlice && toAlice.rows.map((row) => row.names)).toEqual([['to-alice']])
 	})
 })
 
-describe('the welcome', () => {
+describe('what is new', () => {
 	// @feature upgrade.wizard
-	it('shows a slide only to someone who can do what it shows', () => {
-		const pictures = (can: Partial<Parameters<typeof slidesFor>[0]>) =>
-			slidesFor({
-				readStandardDashboards: false,
-				showInDesk: false,
-				share: false,
-				...can,
-			}).map((slide) => slide.picture)
-		expect(pictures({})).toEqual(['drill', 'currency', 'notPermitted'])
-		expect(pictures({ share: true })).toEqual(['drill', 'currency', 'roles', 'notPermitted'])
-		expect(pictures({ readStandardDashboards: true, showInDesk: true, share: true })).toEqual([
-			'appDashboards',
-			'showInDesk',
+	it('shows a feature only to someone who can do what it shows', () => {
+		const ids = (has: Partial<Parameters<typeof featuresFor>[0]>) =>
+			featuresFor({ ...can(false), ...has }).map((feature) => feature.id)
+		expect(ids({})).toEqual(['charts', 'drill'])
+		expect(ids({ share: true })).toEqual(['charts', 'drill', 'sharing', 'roles'])
+		expect(ids({ readStandardDashboards: true, showInDesk: true, share: true })).toEqual([
+			'charts',
 			'drill',
-			'currency',
+			'standard',
+			'desk',
+			'sharing',
 			'roles',
-			'notPermitted',
 		])
 	})
 })
@@ -126,7 +132,7 @@ describe('resuming the wizard', () => {
 			item('a', 'P17', { user: BOB, doctypes: ['Customer'] }),
 			item('b', 'K1', { dashboard: 'Sales', start: '2024-01-01', end: '2024-03-31' }),
 		],
-		{ sharing: true, admin: true, me: DAVE },
+		{ can: can(true), admin: true, me: DAVE },
 	)
 
 	// @feature upgrade.wizard
@@ -149,7 +155,7 @@ describe('the wizard steps of someone who is not an admin', () => {
 			item('moved', 'P11', { chart: 'KPIs', publisher: BOB, owner: ALICE }, { user: ALICE }),
 			item('script', 'P20', { title: 'Script rows', author: ALICE }, { user: ALICE }),
 		]
-		const steps = wizardSteps(items, { sharing: true, admin: false, me: ALICE })
+		const steps = wizardSteps(items, { can: can(true), admin: false, me: ALICE })
 		const notes = steps.find((step) => step.id === 'notes')!
 		expect('rows' in notes && notes.rows.map((row) => row.item.code)).toEqual(['P11', 'P20'])
 		expect('group' in notes && notes.group.title).toBe('A few changes to what you made')
@@ -160,7 +166,7 @@ describe('the wizard steps of someone who is not an admin', () => {
 	// @feature upgrade.wizard
 	it('ask for them in Good to know when an item there tells of a failure', () => {
 		const kind = (items: UpgradeItem[]) => {
-			const steps = wizardSteps(items, { sharing: true, admin: false, me: ALICE })
+			const steps = wizardSteps(items, { can: can(true), admin: false, me: ALICE })
 			const notes = steps.find((step) => step.id === 'notes')!
 			return 'group' in notes && notes.group.kind
 		}
@@ -502,7 +508,7 @@ describe('a key in the wizard', () => {
 	})
 
 	// @feature upgrade.wizard
-	it('goes back with ←, and pages with → only while a slide or item follows', () => {
+	it('goes back with ←, and pages with → only while an item follows', () => {
 		expect(keyAction('ArrowLeft', at())).toBe('back')
 		expect(keyAction('ArrowRight', at({ hasNext: true }))).toBe('next')
 		expect(keyAction('ArrowRight', at())).toBeUndefined()

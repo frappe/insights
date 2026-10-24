@@ -17,10 +17,10 @@ export type Sentence = { text: Part[]; todo?: Part[]; action?: ItemAction }
 export type Row = { item: UpgradeItem; names: string[] }
 
 export type PictureName =
+	| 'charts'
 	| 'appDashboards'
 	| 'showInDesk'
 	| 'drill'
-	| 'currency'
 	| 'roles'
 	| 'notPermitted'
 	| 'shareBefore'
@@ -30,57 +30,91 @@ export type PictureName =
 	| 'chartOwner'
 	| 'numberCards'
 
-/** What a slide's feature needs of the reader: the server says whether they have it. */
+/** What a feature page needs of the reader: the server says whether they have it. */
 export type Can = { readStandardDashboards: boolean; showInDesk: boolean; share: boolean }
 
-/** One feature a reader upgrading to Insights 3.50 meets first, and the screen it is on. */
-export type Slide = { label: string; text: string; picture: PictureName; needs?: keyof Can }
+/** One thing a reader upgrading to Insights 3.50 gains, on a page of its own. */
+export type Feature = {
+	id: string
+	label: string
+	title: string
+	/** What the reader gets: a bold lead clause, then the detail. */
+	lead: [string, string]
+	picture?: PictureName
+	needs?: keyof Can
+}
 
-// What a reader upgrading to Insights 3.50 gains most, one per slide. The last leads into
-// the upgrade steps, which are mostly about permissions.
-export const welcomeSlides = translatedTable<Slide[]>(() => [
+// What a reader upgrading to Insights 3.50 gains, most visible first. Sharing has a
+// page of its own design, before and now, and leads into the upgrade steps.
+export const features = translatedTable<Feature[]>(() => [
 	{
-		label: __('Dashboards from ERPNext and Frappe HR'),
-		text: __(
-			'Selling, Stock, Accounts, Payroll and more come ready to use. Duplicate one to change it.',
-		),
+		id: 'charts',
+		label: __('Charts'),
+		title: __('Charts, rebuilt'),
+		lead: [
+			__('Every chart is redrawn on frappe-ui charts,'),
+			__('with dark mode, a Heatmap, trend lines and Number cards that track a target.'),
+		],
+		picture: 'charts',
+	},
+	{
+		id: 'drill',
+		label: __('Rows behind a chart'),
+		title: __('Click a chart for its rows'),
+		lead: [
+			__('Click any bar to see the rows behind it,'),
+			__('or break it down by another column.'),
+		],
+		picture: 'drill',
+	},
+	{
+		id: 'standard',
+		label: __('ERPNext and Frappe HR'),
+		title: __('Dashboards from ERPNext and Frappe HR'),
+		lead: [
+			__('Selling, Stock, Accounts, Payroll and more come ready to use.'),
+			__('Duplicate one to change it.'),
+		],
 		picture: 'appDashboards',
 		needs: 'readStandardDashboards',
 	},
 	{
-		label: __('Charts on desk workspaces'),
-		text: __('Pick Show in Desk on a chart to put it on a desk dashboard or workspace.'),
+		id: 'desk',
+		label: __('Charts in desk'),
+		title: __('Charts on desk workspaces'),
+		lead: [
+			__('Pick Show in Desk on a chart'),
+			__('to put it on a desk dashboard or workspace.'),
+		],
 		picture: 'showInDesk',
 		needs: 'showInDesk',
 	},
 	{
-		label: __('Click a chart for its rows'),
-		text: __('Click any bar to see the rows behind it, or break it down by another column.'),
-		picture: 'drill',
-	},
-	{
-		label: __('Your company, your currency'),
-		text: __(
-			'A Company filter opens on your default company, and amounts print in its currency.',
-		),
-		picture: 'currency',
-	},
-	{
-		label: __('Share dashboards with desk roles'),
-		text: __('Anyone with those roles can open the dashboard, even without an Insights role.'),
-		picture: 'roles',
+		id: 'sharing',
+		label: __('Sharing'),
+		title: __('Share the workbook, not the chart'),
+		lead: [
+			__('People edit through the workbook.'),
+			__('Sharing a chart or dashboard only lets them read it.'),
+		],
 		needs: 'share',
 	},
 	{
-		label: __('Desk permissions decide'),
-		text: __('A chart shows only the rows desk lets you read, and names the access you lack.'),
-		picture: 'notPermitted',
+		id: 'roles',
+		label: __('Desk roles'),
+		title: __('Share dashboards with desk roles'),
+		lead: [
+			__('Anyone with those roles can open the dashboard,'),
+			__('even without an Insights role.'),
+		],
+		picture: 'roles',
+		needs: 'share',
 	},
 ])
 
-/** The welcome slides of what the reader can do. */
-export function slidesFor(can: Can): Slide[] {
-	return welcomeSlides().filter((slide) => !slide.needs || can[slide.needs])
+/** The feature pages of what the reader can do. */
+export function featuresFor(can: Can): Feature[] {
+	return features().filter((feature) => !feature.needs || can[feature.needs])
 }
 
 /** What a wizard step is about. `now` asks for a decision, `note` only tells. */
@@ -96,7 +130,8 @@ export type Group = {
 }
 
 export type Step =
-	| { id: 'welcome' | 'sharing'; label: string; section: 'new' }
+	| { id: 'welcome'; label: string; section: 'welcome' }
+	| { id: string; label: string; section: 'new'; feature: Feature }
 	| { id: string; label: string; section: 'upgrade'; group: Group; rows: Row[] }
 
 // The order an admin works through them: who sees which data, then who may
@@ -254,10 +289,12 @@ export function rowsOf(items: UpgradeItem[]): Row[] {
  */
 export function wizardSteps(
 	items: UpgradeItem[],
-	options: { sharing: boolean; admin: boolean; me: string },
+	options: { can: Can; admin: boolean; me: string },
 ): Step[] {
-	const steps: Step[] = [{ id: 'welcome', label: __('Welcome'), section: 'new' }]
-	if (options.sharing) steps.push({ id: 'sharing', label: __('Sharing'), section: 'new' })
+	const steps: Step[] = [{ id: 'welcome', label: __('Welcome'), section: 'welcome' }]
+	for (const feature of featuresFor(options.can)) {
+		steps.push({ id: feature.id, label: feature.label, section: 'new', feature })
+	}
 	const inSteps = new Set(groups().flatMap((group) => group.codes))
 	for (const group of groups()) {
 		const codes =
@@ -297,15 +334,19 @@ export function wizardSteps(
  * gets is gone, and the reader goes on to the step after it.
  */
 export function stepIndexOf(steps: Step[], id: string): number {
-	const order = ['welcome', 'sharing', ...groups().map((group) => group.id)]
+	const order = [
+		'welcome',
+		...features().map((feature) => feature.id),
+		...groups().map((group) => group.id),
+	]
 	const at = order.indexOf(id)
 	const index = steps.findIndex((step) => order.indexOf(step.id) >= at)
 	return index < 0 ? steps.length - 1 : index
 }
 
 /**
- * What a key does in the wizard. ← goes back on every step, → pages the welcome
- * slides and a step's items, and Enter presses the screen's primary button unless
+ * What a key does in the wizard. ← goes back on every step, → pages a step's
+ * items, and Enter presses the screen's primary button unless
  * focus is on another control, which Enter presses itself. Typing in a field is
  * left alone.
  */

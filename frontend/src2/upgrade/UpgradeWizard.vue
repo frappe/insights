@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-	Dialog,
 	SettingsContent,
 	SettingsDialog,
 	SettingsNavGroup,
@@ -16,8 +15,8 @@ import upgrade from './upgrade'
 import UpgradeStepView from './UpgradeStepView.vue'
 import type { Step } from './upgrade_steps'
 
-// The upgrade to Insights 3.50, one step at a time: what is new, how sharing
-// changed, then each group of items that needs the reader. It opens once by
+// The upgrade to Insights 3.50, one step at a time: a welcome, each thing that is
+// new, then each group of items that needs the reader. It opens once by
 // itself; the sidebar card resumes it where the reader left it.
 watch(
 	() => session.initialized && session.user.upgrade_unseen,
@@ -32,14 +31,16 @@ const show = computed({
 
 const steps = computed(() => upgrade.steps)
 const step = computed(() => steps.value[upgrade.stepIndex])
-// One or two steps read as a single page, with no list of steps beside them.
-// The steps are known once the items load, so the dialog waits for them rather
-// than swap its frame while open.
-const withRail = computed(() => steps.value.length > 2)
 const tab = computed({
 	get: () => step.value?.id,
 	set: (id) => id && upgrade.goTo(String(id)),
 })
+
+const sectionLabels = {
+	welcome: undefined,
+	new: __("What's new"),
+	upgrade: __('Your upgrade'),
+}
 
 const openCount = (step: Step) =>
 	'rows' in step ? step.rows.filter((row) => !row.names.every(upgrade.isDone)).length : 0
@@ -56,7 +57,7 @@ function state(step: Step) {
 
 <template>
 	<SettingsDialog
-		v-if="upgrade.loaded && withRail"
+		v-if="upgrade.loaded"
 		v-model:open="show"
 		v-model:tab="tab"
 		size="4xl"
@@ -73,10 +74,10 @@ function state(step: Step) {
 					__('Insights 3.50')
 				}}</span>
 			</div>
-			<template v-for="section in ['new', 'upgrade'] as const" :key="section">
+			<template v-for="section in ['welcome', 'new', 'upgrade'] as const" :key="section">
 				<SettingsNavGroup
 					v-if="steps.some((s) => s.section === section)"
-					:label="section === 'new' ? __('What\'s new') : __('Your upgrade')"
+					:label="sectionLabels[section]"
 				>
 					<SettingsNavItem
 						v-for="item in steps.filter((s) => s.section === section)"
@@ -118,10 +119,6 @@ function state(step: Step) {
 			</SettingsPanel>
 		</SettingsContent>
 	</SettingsDialog>
-
-	<Dialog v-else-if="upgrade.loaded && step" v-model:open="show" size="2xl" bare>
-		<UpgradeStepView :step="step" @close="show = false" />
-	</Dialog>
 </template>
 
 <style>

@@ -53,6 +53,8 @@ const appDashboards = computed(() =>
 )
 
 const inr = (value: number) => value.toLocaleString('en-IN')
+const inrCompact = (value: number) =>
+	value.toLocaleString('en-IN', { notation: 'compact', maximumFractionDigits: 1 })
 
 const publicVisibility = ref<'Public'>('Public')
 const rolesVisibility = ref<'Roles'>('Roles')
@@ -111,45 +113,33 @@ const runsAsOwner = ref(true)
 			</MenuPicture>
 		</div>
 
-		<div v-else-if="props.name === 'currency'" class="flex flex-col items-start gap-3">
-			<Button variant="outline" class="text-sm">
-				<template #prefix>
-					<component :is="columnIcon('String')" class="h-4 w-4" stroke-width="1.5" />
-				</template>
-				<span class="text-ink-gray-8">
-					{{ __('Company') }} <span class="font-medium">Kaveri Traders</span>
-				</span>
-			</Button>
-			<div class="flex gap-3">
-				<div class="w-52">
-					<NumberCard
-						:title="__('Total Sales')"
-						prefix="₹ "
-						:value="1240000"
-						:format="inr"
-					/>
-				</div>
-				<div class="w-52">
-					<NumberCard
-						:title="__('Outstanding')"
-						prefix="₹ "
-						:value="318500"
-						:format="inr"
-					/>
-				</div>
+		<div v-else-if="props.name === 'charts'" class="flex items-center gap-4">
+			<div class="h-60 w-[26rem]">
+				<ChartPicture
+					type="Line"
+					:title="__('Sales by month')"
+					:values="[38, 52, 47, 66, 61, 78]"
+				/>
+			</div>
+			<div class="flex w-60 flex-col gap-3">
+				<NumberCard
+					:title="__('Sales this quarter')"
+					prefix="₹ "
+					:value="1240000"
+					:target="1500000"
+					:format="inrCompact"
+					:progress="{ value: (1240000 / 1500000) * 100 }"
+				/>
+				<NumberCard
+					:title="__('New customers')"
+					:value="86"
+					:delta="12.4"
+					delta-suffix="%"
+					:delta-caption="__('vs last month')"
+					:sparkline="{ data: [52, 61, 58, 70, 66, 86] }"
+				/>
 			</div>
 		</div>
-
-		<DialogPicture
-			v-else-if="props.name === 'roles'"
-			class="w-[28rem]"
-			:title="__('Share Dashboard')"
-		>
-			<VisibilitySelector
-				v-model:visibility="rolesVisibility"
-				v-model:roles="dashboardRoles"
-			/>
-		</DialogPicture>
 
 		<div v-else-if="props.name === 'notPermitted'" class="h-32 w-[28rem]">
 			<ChartPicture

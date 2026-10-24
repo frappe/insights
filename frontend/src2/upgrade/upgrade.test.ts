@@ -148,11 +148,11 @@ describe('the upgrade wizard', () => {
 	})
 
 	// @feature upgrade.wizard
-	it('treats a one-step wizard closed early as finished', async () => {
+	it('treats a wizard with only what is new, closed early, as finished', async () => {
 		const upgrade = await wizard([])
 		session.user.is_upgrade_admin = false
 		await upgrade.open()
-		expect(upgrade.steps.map((step) => step.id)).toEqual(['welcome'])
+		expect(upgrade.steps.map((step) => step.id)).toEqual(['welcome', 'charts', 'drill'])
 
 		await upgrade.close()
 		expect(upgrade.progress.finished).toBe(true)

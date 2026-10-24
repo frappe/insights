@@ -3,7 +3,7 @@ import { call } from 'frappe-ui'
 import { computed, reactive, ref, watch } from 'vue'
 import { showErrorToast } from '../helpers'
 import session from '../session'
-import { slidesFor, stepIndexOf, wizardSteps } from './upgrade_steps'
+import { stepIndexOf, wizardSteps, type Can } from './upgrade_steps'
 
 export type UpgradeItem = {
 	name: string
@@ -30,7 +30,6 @@ export type UpgradeItem = {
 /** Where the reader left the wizard, kept in the browser so Resume returns there. */
 type Progress = {
 	step: string
-	slide: number
 	/** Steps the reader has looked at. */
 	seen: string[]
 	/** Whether the wizard was ever opened here. Until then there is nothing to resume. */
@@ -40,7 +39,6 @@ type Progress = {
 
 const freshProgress = (): Progress => ({
 	step: 'welcome',
-	slide: 0,
 	seen: [],
 	started: false,
 	finished: false,
@@ -63,20 +61,16 @@ function progressStore() {
 
 // the server's rule for who works through every item, so the steps match the items it sent
 const admin = computed(() => Boolean(session.user.is_upgrade_admin))
-const sharing = computed(() => admin.value || Boolean(session.user.owns_workbooks))
-
-const slides = computed(() =>
-	slidesFor({
-		readStandardDashboards: Boolean(session.user.reads_standard_dashboards),
-		// as the chart's own menu offers it
-		showInDesk: Boolean(session.user.has_desk_access && session.user.can_show_in_desk),
-		share: sharing.value,
-	}),
-)
+const can = computed<Can>(() => ({
+	readStandardDashboards: Boolean(session.user.reads_standard_dashboards),
+	// as the chart's own menu offers it
+	showInDesk: Boolean(session.user.has_desk_access && session.user.can_show_in_desk),
+	share: admin.value || Boolean(session.user.owns_workbooks),
+}))
 
 const steps = computed(() =>
 	wizardSteps(items.value, {
-		sharing: sharing.value,
+		can: can.value,
 		admin: admin.value,
 		me: session.user.email,
 	}),
@@ -120,8 +114,9 @@ function open() {
 /** Closes the wizard. It no longer opens by itself, and the sidebar card resumes it. */
 async function close() {
 	showWizard.value = false
-	// one step has nowhere to resume to
-	if (steps.value.length === 1) progressStore().value.finished = true
+	// what is new is told once, so a wizard with nothing left to do has nothing to resume
+	if (!steps.value.some((step) => step.section === 'upgrade'))
+		progressStore().value.finished = true
 	if (!session.user.upgrade_unseen) return
 	session.user.upgrade_unseen = false
 	await call('insights.api.upgrade.mark_upgrade_seen').catch((error: Error) =>
@@ -129,11 +124,10 @@ async function close() {
 	)
 }
 
-function goTo(id: string, slide?: number) {
+function goTo(id: string) {
 	const progress = progressStore().value
 	if (progress.step !== id) progress.seen = [...new Set([...progress.seen, progress.step])]
 	progress.step = id
-	if (slide !== undefined) progress.slide = slide
 }
 
 function finish() {
@@ -195,7 +189,6 @@ const upgrade = reactive({
 	items,
 	loaded,
 	showWizard,
-	slides,
 	steps,
 	stepIndex,
 	openWizardItems,

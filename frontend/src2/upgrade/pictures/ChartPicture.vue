@@ -10,6 +10,8 @@ import ChartChrome from '../../charts/components/ChartChrome.vue'
 // It is the real card and the real adapter, so its look follows the app's.
 const props = defineProps<{
 	title: string
+	/** A Line chart draws its area and a trend line. */
+	type?: 'Bar' | 'Line'
 	/** One reading per bar. */
 	values?: number[]
 	/** The bar a reader clicked: the others are drawn pale. */
@@ -19,10 +21,19 @@ const props = defineProps<{
 }>()
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']
+// a trend line needs a time axis
+const line = props.type === 'Line'
 
 const config = {
 	x_axis: {
-		dimension: { dimension_name: 'month', column_name: 'month', data_type: 'String' },
+		dimension: line
+			? {
+					dimension_name: 'month',
+					column_name: 'month',
+					data_type: 'Date',
+					granularity: 'month',
+			  }
+			: { dimension_name: 'month', column_name: 'month', data_type: 'String' },
 	},
 	y_axis: {
 		series: [
@@ -33,6 +44,7 @@ const config = {
 					data_type: 'Decimal',
 					aggregation: 'sum',
 				},
+				...(line ? { show_area: true, show_trend_line: true } : {}),
 			},
 		],
 	},
@@ -40,11 +52,11 @@ const config = {
 
 const result = {
 	columns: [
-		{ name: 'month', type: 'String' },
+		{ name: 'month', type: line ? 'Date' : 'String' },
 		{ name: 'amount', type: 'Decimal' },
 	],
 	rows: (props.values ?? []).map((amount, index) => ({
-		month: MONTHS[index % MONTHS.length],
+		month: line ? `2026-0${(index % 9) + 1}-01` : MONTHS[index % MONTHS.length],
 		amount,
 	})),
 } as any
@@ -57,7 +69,7 @@ const { tokens } = useChartTokens(root)
 const filler = computed(() => {
 	if (props.notPermitted) return
 	const adapted = adaptChart({
-		chart_type: 'Bar',
+		chart_type: props.type ?? 'Bar',
 		config,
 		result,
 		title: props.title,
