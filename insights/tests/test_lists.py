@@ -24,6 +24,7 @@ from insights.tests.factories import (
     create_test_dashboard,
     create_test_query,
     create_test_workbook,
+    create_user,
     delete_users,
 )
 from insights.tests.permissions_utils import (
@@ -286,8 +287,8 @@ class TestDashboardList(InsightsIntegrationTestCase):
                             update_dashboard_preview(dashboard)
         self.assertEqual(rendered.call_count, 1)
 
-    def probed_dashboard(self):
-        """A dashboard of OTHER's, shared with OWNER by name, over a chart of a
+    def probed_dashboard(self, reader=OWNER):
+        """A dashboard of OTHER's, shared with `reader` by name, over a chart of a
         query that reads Site DB."""
         query = create_test_query(OTHER, self.other_workbook, title=f"{TITLE_PREFIX} Probed Query")
         chart = create_test_chart(
@@ -300,7 +301,7 @@ class TestDashboardList(InsightsIntegrationTestCase):
         for doctype, name in ((DT.QUERY, query.name), (DT.CHART, chart.name), (DT.DASHBOARD, probed)):
             self.addCleanup(frappe.delete_doc, doctype, name, force=True, ignore_permissions=True)
         with as_user(OTHER):
-            update_dashboard_access(probed, [OWNER])
+            update_dashboard_access(probed, [reader])
 
         def listed(user, *filters):
             with self.as_user(user):
@@ -312,19 +313,29 @@ class TestDashboardList(InsightsIntegrationTestCase):
     def test_a_chart_filter_matches_only_the_charts_the_reader_may_read(self):
         """`get_dashboards`, which `DashboardList.vue`'s Chart filter calls. A
         guess at a chart title a User Permission hides from the reader must not
-        list its dashboard. Its owner still filters by it."""
-        chart, listed = self.probed_dashboard()
+        list its dashboard. Its owner still filters by it.
+
+        The reader is made here. Frappe drops a user's cached User Permissions
+        when one is saved, not when it commits, and this one never commits. Any
+        other process that reads a shared test user's permissions meanwhile, such
+        as the worker `bench start` runs in CI, caches them without it, and the
+        restriction is read as absent. Nobody else acts for a user made here."""
+        reader = create_user(
+            f"list-test-restricted-{frappe.generate_hash(length=8)}@example.com", roles=["Insights User"]
+        ).name
+        self.addCleanup(delete_users, reader)
+        chart, listed = self.probed_dashboard(reader)
 
         own_chart = create_test_chart(OWNER, self.own_workbook, title=f"{TITLE_PREFIX} Allowed").name
         self.addCleanup(frappe.delete_doc, DT.CHART, own_chart, force=True, ignore_permissions=True)
         restriction = frappe.get_doc(
-            {"doctype": "User Permission", "user": OWNER, "allow": DT.CHART, "for_value": own_chart}
+            {"doctype": "User Permission", "user": reader, "allow": DT.CHART, "for_value": own_chart}
         ).insert(ignore_permissions=True)
         self.addCleanup(frappe.delete_doc, "User Permission", restriction.name, force=True)
-        self.assertTrue(listed(OWNER))
+        self.assertTrue(listed(reader))
         for probe in (["chart", "=", chart], ["chart", "like", "%Hidden%"]):
             with self.subTest(probe=probe):
-                self.assertFalse(listed(OWNER, probe))
+                self.assertFalse(listed(reader, probe))
                 self.assertTrue(listed(OTHER, probe))
 
     # @feature dashboard.list
