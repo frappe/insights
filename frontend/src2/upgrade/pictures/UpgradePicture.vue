@@ -141,6 +141,17 @@ const runsAsOwner = ref(true)
 			</div>
 		</div>
 
+		<DialogPicture
+			v-else-if="props.name === 'roles'"
+			class="w-[28rem]"
+			:title="__('Share Dashboard')"
+		>
+			<VisibilitySelector
+				v-model:visibility="rolesVisibility"
+				v-model:roles="dashboardRoles"
+			/>
+		</DialogPicture>
+
 		<div v-else-if="props.name === 'notPermitted'" class="h-32 w-[28rem]">
 			<ChartPicture
 				:key="props.doctype"

@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { createSSRApp, h } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import type { UpgradeItem } from './upgrade'
 import {
 	cardDescription,
@@ -7,11 +9,20 @@ import {
 	pictureOf,
 	sentenceOf,
 	featuresFor,
+	PICTURES,
+	type PictureName,
 	startIndex,
 	stepIndexOf,
 	wizardSteps,
 	type Part,
 } from './upgrade_steps'
+import UpgradePicture from './pictures/UpgradePicture.vue'
+
+// a picture's sample rows name the apps that ship dashboards, which only a site knows
+vi.mock('frappe-ui', async (importOriginal) => ({
+	...(await importOriginal<object>()),
+	call: () => Promise.resolve([]),
+}))
 
 const BOB = 'bob@fixture.test'
 const ALICE = 'alice@fixture.test'
@@ -546,5 +557,27 @@ describe('the item a step shows', () => {
 		expect(nextOpenIndex(rows, 1, doneOf('b', 'c'))).toBe(3)
 		expect(nextOpenIndex(rows, 3, doneOf('b', 'c', 'd'))).toBe(0)
 		expect(nextOpenIndex(rows, 2, doneOf('a', 'b', 'c', 'd'))).toBe(2)
+	})
+})
+
+describe('the picture beside a wizard page', () => {
+	async function drawn(name: PictureName) {
+		const app = createSSRApp({
+			render: () =>
+				h(UpgradePicture, { name, person: { full_name: 'Bob Fixture', email: BOB } }),
+		})
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
+		// the frame holds no element when no branch draws the name
+		return html
+			.slice(html.indexOf('>') + 1, html.lastIndexOf('</div>'))
+			.replace(/<!--.*?-->/g, '')
+	}
+
+	// @feature upgrade.wizard
+	it('draws every picture a page can name', async () => {
+		for (const name of PICTURES) {
+			expect(await drawn(name), name).not.toBe('')
+		}
 	})
 })

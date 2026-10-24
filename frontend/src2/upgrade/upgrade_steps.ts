@@ -16,19 +16,22 @@ export type Sentence = { text: Part[]; todo?: Part[]; action?: ItemAction }
 /** The items about one thing. An admin gets both sides of a change that told two people. */
 export type Row = { item: UpgradeItem; names: string[] }
 
-export type PictureName =
-	| 'charts'
-	| 'appDashboards'
-	| 'showInDesk'
-	| 'drill'
-	| 'roles'
-	| 'notPermitted'
-	| 'shareBefore'
-	| 'shareNow'
-	| 'runAsOwner'
-	| 'workbookAccess'
-	| 'chartOwner'
-	| 'numberCards'
+export const PICTURES = [
+	'charts',
+	'appDashboards',
+	'showInDesk',
+	'drill',
+	'roles',
+	'notPermitted',
+	'shareBefore',
+	'shareNow',
+	'runAsOwner',
+	'workbookAccess',
+	'chartOwner',
+	'numberCards',
+] as const
+
+export type PictureName = (typeof PICTURES)[number]
 
 /** What a feature page needs of the reader: the server says whether they have it. */
 export type Can = { readStandardDashboards: boolean; showInDesk: boolean; share: boolean }
