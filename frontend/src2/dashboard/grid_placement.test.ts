@@ -8,6 +8,7 @@ import {
 	compactLayouts,
 	derivedPlacement,
 	placeGrid,
+	placeNewChart,
 	placeNewFilter,
 	placementsFor,
 	resolveLayouts,
@@ -479,5 +480,37 @@ describe('placeNewFilter', () => {
 		placeNewFilter(second, [first], [chart], 2)
 		expect(second).toEqual(cell('second', 4, 0, 4, 2))
 		expect(chart.y).toBe(2)
+	})
+})
+
+describe('a chart added to a dashboard', () => {
+	// @feature dashboard.chart-placement
+	it('puts a chart beside the last one while the row has room, then starts a row', () => {
+		const filter = cell('filter', 0, 0, 4, 2)
+		const first = placeNewChart('first', 10, 20, [], [filter])
+		expect(first).toEqual(cell('first', 0, 2, 10, 20))
+
+		const second = placeNewChart('second', 10, 20, [first], [filter])
+		expect(second).toEqual(cell('second', 10, 2, 10, 20))
+
+		const third = placeNewChart('third', 10, 20, [first, second], [filter])
+		expect(third).toEqual(cell('third', 0, 22, 10, 20))
+	})
+
+	// @feature dashboard.chart-placement
+	it('starts a row under a bottom row with no room beside its last cell', () => {
+		const wide = cell('wide', 0, 0, 20, 20)
+		expect(placeNewChart('next', 10, 20, [wide])).toEqual(cell('next', 0, 20, 10, 20))
+
+		// the room right of the shorter cell is under the taller one's reach
+		const tall = cell('tall', 10, 0, 10, 30)
+		const short = cell('short', 0, 10, 10, 20)
+		expect(placeNewChart('next', 10, 20, [tall, short])).toEqual(cell('next', 0, 30, 10, 20))
+	})
+
+	// @feature dashboard.chart-placement
+	it('starts a row under a Number card rather than stand beside it', () => {
+		const card = cell('card', 0, 0, 4, 5)
+		expect(placeNewChart('next', 10, 20, [card])).toEqual(cell('next', 0, 5, 10, 20))
 	})
 })

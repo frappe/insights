@@ -238,6 +238,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 |---|---|
 | dashboard.loads | A dashboard loads with every chart rendered. |
 | dashboard.create-add-chart | A user creates a dashboard and adds a chart to it. |
+| dashboard.chart-placement | An added chart takes half the grid's width, beside the last card of the bottom row while the row has room. |
 | dashboard.chart-selector | A user searches the chart list and selects all or none. |
 | dashboard.drag-chart-from-sidebar | A user drags a chart from the sidebar onto the grid. |
 | dashboard.move-resize | A user moves and resizes an item; the item it lands on is pushed out from under it. |

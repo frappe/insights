@@ -46,6 +46,33 @@ export function placeNewFilter(filter: Layout, filters: Layout[], others: Layout
 }
 
 /**
+ * Where a new chart goes: beside the last cell of the bottom row while the row has
+ * room for it and that cell is as tall, else at the start of a new row under every
+ * cell. A chart beside a shorter cell, such as a Number card, leaves a hole under
+ * it. A filter row holds filters only (`exclusiveRow`), so no chart goes beside a
+ * filter.
+ */
+export function placeNewChart(
+	i: string,
+	w: number,
+	h: number,
+	others: Layout[],
+	filters: Layout[] = [],
+): Layout {
+	const bottom = Math.max(0, ...[...others, ...filters].map((layout) => layout.y + layout.h))
+	const last = others
+		.filter((layout) => layout.y + layout.h === bottom)
+		.sort((a, b) => b.x + b.w - (a.x + a.w))[0]
+	if (last && last.h === h) {
+		const beside = { i, x: last.x + last.w, y: last.y, w, h }
+		if (beside.x + w <= GRID_COLUMNS && !others.some((layout) => collides(beside, layout))) {
+			return beside
+		}
+	}
+	return { i, x: 0, y: bottom, w, h }
+}
+
+/**
  * Rank a cell by where it sits: top row first, left to right within a row.
  *
  * Charts reach the execution queue in whatever order their documents load, so

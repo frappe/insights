@@ -32,6 +32,7 @@ import {
 	derivedPlacement,
 	GRID_COLUMNS,
 	layoutRank,
+	placeNewChart,
 	placeNewFilter,
 	sameBox,
 	writePlacement,
@@ -60,6 +61,9 @@ const ARRANGEABLE_WIDTH = 1058
 
 /** Columns a Number cell is dropped at: a fifth of the grid, so five read as a row of cards. */
 const NUMBER_CARD_COLUMNS = 4
+
+/** Columns a chart cell is dropped at: half the grid, so two read side by side. */
+const CHART_COLUMNS = 10
 
 /** Columns a filter cell takes. */
 const FILTER_WIDTH = 4
@@ -160,12 +164,21 @@ function makeDashboard(name: string) {
 	 */
 	async function cellsFor(chart: WorkbookChart, y: number): Promise<WorkbookDashboardItem[]> {
 		if (chart.chart_type !== 'Number') {
+			const layouts = (filters: boolean) =>
+				dashboard.doc.items
+					.filter((item) => (item.type === 'filter') === filters)
+					.map((item) => item.layout)
 			return [
 				{
 					type: 'chart',
 					chart: chart.name,
-					// a row of its own: a chart dropped beside another is read squeezed
-					layout: { i: getUniqueId(), x: 0, y, w: GRID_COLUMNS, h: 20 },
+					layout: placeNewChart(
+						getUniqueId(),
+						CHART_COLUMNS,
+						20,
+						layouts(false),
+						layouts(true),
+					),
 				},
 			]
 		}
