@@ -458,6 +458,7 @@ function onKeydown(event: KeyboardEvent) {
 				<template #prefix><ArrowLeft class="size-4" stroke-width="1.5" /></template>
 			</Button>
 			<span class="flex-1" />
+			<Button v-if="!isLast" variant="ghost" :label="__('Skip')" @click="upgrade.finish()" />
 			<Button
 				v-if="group && openCount"
 				variant="subtle"

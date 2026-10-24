@@ -147,14 +147,22 @@ describe('the upgrade wizard', () => {
 		expect(session.user.upgrade_item_count).toBe(2)
 	})
 
-	// @feature upgrade.wizard
-	it('treats a wizard with only what is new, closed early, as finished', async () => {
+	// @feature upgrade.users-welcomed
+	it('opens by itself until the reader finishes or skips it, and a close puts it away for the visit', async () => {
 		const upgrade = await wizard([])
-		session.user.is_upgrade_admin = false
+		session.user.upgrade_unseen = true
 		await upgrade.open()
-		expect(upgrade.steps.map((step) => step.id)).toEqual(['welcome', 'charts', 'drill'])
 
 		await upgrade.close()
+		expect(upgrade.showWizard).toBe(false)
+		expect(upgrade.progress.finished).toBe(false)
+		expect(session.user.upgrade_unseen).toBe(true)
+		expect(call).not.toHaveBeenCalledWith('insights.api.upgrade.mark_upgrade_seen')
+
+		await upgrade.open()
+		await upgrade.finish()
 		expect(upgrade.progress.finished).toBe(true)
+		expect(session.user.upgrade_unseen).toBe(false)
+		expect(call).toHaveBeenCalledWith('insights.api.upgrade.mark_upgrade_seen')
 	})
 })

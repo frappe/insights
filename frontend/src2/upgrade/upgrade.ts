@@ -111,17 +111,9 @@ function open() {
 	return loaded.value ? Promise.resolve() : load()
 }
 
-/** Closes the wizard. It no longer opens by itself, and the sidebar card resumes it. */
-async function close() {
+/** Puts the wizard away for this visit. The sidebar card resumes it, and the next visit opens it again. */
+function close() {
 	showWizard.value = false
-	// what is new is told once, so a wizard with nothing left to do has nothing to resume
-	if (!steps.value.some((step) => step.section === 'upgrade'))
-		progressStore().value.finished = true
-	if (!session.user.upgrade_unseen) return
-	session.user.upgrade_unseen = false
-	await call('insights.api.upgrade.mark_upgrade_seen').catch((error: Error) =>
-		showErrorToast(error, false),
-	)
 }
 
 function goTo(id: string) {
@@ -130,11 +122,17 @@ function goTo(id: string) {
 	progress.step = id
 }
 
-function finish() {
+/** Ends the wizard on Finish or Skip. It no longer opens by itself. */
+async function finish() {
 	const progress = progressStore().value
 	progress.seen = [...new Set([...progress.seen, progress.step])]
 	progress.finished = true
-	return close()
+	close()
+	if (!session.user.upgrade_unseen) return
+	session.user.upgrade_unseen = false
+	await call('insights.api.upgrade.mark_upgrade_seen').catch((error: Error) =>
+		showErrorToast(error, false),
+	)
 }
 
 /** Back at the first step with items left. */
