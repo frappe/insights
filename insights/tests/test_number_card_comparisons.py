@@ -177,18 +177,26 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         )
 
     # @feature upgrade.number-older-shapes
-    def test_a_comparison_with_a_number_beside_a_target_is_kept_for_the_author(self):
-        """The reading keeps the target it aims at. The comparison is not printed,
-        and it is kept so the form can ask the author to move it to a second
-        reading."""
-        against = {"source": "constant", "value": 120}
-        chart = config("Tickets", options=[{"target": {"value": 100}, "comparison": against}])
+    def test_a_comparison_with_a_number_beside_a_target_is_dropped(self):
+        """The reading keeps the target it aims at. A second fixed number is a
+        second card, so the comparison goes."""
+        chart = config(
+            "Tickets",
+            "Revenue",
+            options=[
+                {"target": {"value": 100}, "comparison": {"source": "constant", "value": 120}},
+                {
+                    "target": {"measure": measure("Budget")},
+                    "comparison": {"source": "measure", "measure": measure("Plan")},
+                },
+            ],
+        )
 
         self.assertTrue(normalize(chart))
 
         self.assertEqual(
             options_of(chart),
-            [{"target": {"value": 100}, "retired_comparison": against}],
+            [{"target": {"value": 100}}, {"target": {"measure": measure("Budget")}}],
         )
 
     # @feature upgrade.number-older-shapes
