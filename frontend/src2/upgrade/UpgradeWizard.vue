@@ -60,7 +60,7 @@ function state(step: Step) {
 		v-if="upgrade.loaded"
 		v-model:open="show"
 		v-model:tab="tab"
-		size="4xl"
+		size="5xl"
 		:keyboard-shortcut="false"
 	>
 		<template #title>{{ __('Insights 3.50') }}</template>
@@ -125,7 +125,7 @@ function state(step: Step) {
 /* frappe-ui's SettingsDialog grows with the window up to 860px and has no height prop */
 @media (min-width: 640px) {
 	[data-slot='content'] > div:has(> [data-upgrade-wizard]) {
-		height: min(640px, calc(100vh - 8rem));
+		height: min(704px, calc(100vh - 6rem));
 	}
 }
 </style>
