@@ -1,5 +1,6 @@
 import ast
 import html
+import re
 import sys
 import time
 import traceback
@@ -205,6 +206,14 @@ PIVOT_TAILS = "insights_pivot_tails"
 # `full` is the client's word for what ibis calls an outer join
 JOIN_TYPES = {"inner": "inner", "left": "left", "right": "right", "full": "outer"}
 
+# sqlglot underlines the token it stopped at with terminal codes
+TERMINAL_CODES = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def sqlglot_message(error: Exception) -> str:
+    return TERMINAL_CODES.sub("", str(error))
+
+
 # frappe's exceptions, and so every one Insights derives from them. Each carries
 # a message for the reader. Any other error is a Python or ibis one
 FRAPPE_ERRORS = tuple(
@@ -352,6 +361,9 @@ class IbisQueryBuilder:
             cause = nested
         elif not frappe.has_permission("Insights Query v3", "write", self.doc):
             cause = type(error).__name__
+        elif isinstance(error, QueryRefused):
+            # a sentence the engine wrote for the author, which its class adds nothing to
+            cause = html.escape(str(error), quote=False)
         elif isinstance(error, FRAPPE_ERRORS):
             # a bare `raise frappe.PermissionError` leaves its message in the flags
             text = str(error) or frappe.flags.error_message
@@ -916,7 +928,7 @@ class IbisQueryBuilder:
             parsed = sg.parse(statement, dialect=dialect)
         except Exception as e:
             frappe.throw(
-                frappe._("Failed to parse the SQL column expression: {0}").format(e),
+                frappe._("Failed to parse the SQL column expression: {0}").format(sqlglot_message(e)),
                 QueryRefused,
             )
 
@@ -1266,7 +1278,7 @@ class IbisQueryBuilder:
             parsed = sg.parse_one(raw_sql, dialect=dialect)
         except Exception as e:
             frappe.throw(
-                frappe._("Failed to parse the SQL query: {0}").format(e),
+                frappe._("Failed to parse the SQL query: {0}").format(sqlglot_message(e)),
                 QueryRefused,
                 title=frappe._("Invalid SQL Query"),
             )
@@ -1290,7 +1302,9 @@ class IbisQueryBuilder:
             transpiled_sql = sg.transpile(raw_sql, read=source_dialect, write="duckdb")
         except Exception as e:
             frappe.throw(
-                frappe._("Failed to translate SQL query for Data Store execution: {0}").format(e),
+                frappe._("Failed to translate SQL query for Data Store execution: {0}").format(
+                    sqlglot_message(e)
+                ),
                 QueryRefused,
                 title=frappe._("Unsupported SQL Query"),
             )

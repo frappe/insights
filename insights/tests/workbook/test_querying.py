@@ -718,6 +718,27 @@ class TestQuerying(InsightsIntegrationTestCase):
             ],
         )
 
+    # @feature query.native-sql-error-text
+    def test_a_sql_typo_is_refused_in_plain_words(self):
+        """sqlglot underlines the token it stopped at with terminal codes, which a
+        browser prints as `[4m`. The refusal is a sentence written for the author,
+        so its class name adds nothing."""
+        workbook = create_test_workbook(USER_1)
+        typo = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query SQL Typo",
+            operations=[{"type": "sql", "data_source": "Site DB", "raw_sql": "SELEC name FROM `tabToDo`"}],
+        )
+
+        frappe.clear_messages()
+        with as_user(USER_1), self.assertRaises(QueryRefused):
+            execute_test_query(typo.name)
+        [message] = [m["message"] for m in frappe.local.message_log]
+        self.assertTrue(message.startswith("Operation 1 (sql): Failed to parse the SQL query: "), message)
+        self.assertIn("SELEC name FROM `tabToDo`", message)
+        self.assertNotIn("\x1b", message)
+
     def seed_todo_without_a_date(self):
         todo = frappe.get_doc(
             {
