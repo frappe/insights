@@ -471,6 +471,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | settings.permissions-toggle | An admin turns team-based permissions on. |
 | settings.allow-download | An admin allows or blocks downloads site-wide. |
 | settings.team-manage | An admin renames a team, adds and removes members, and deletes it; the Admin team cannot be renamed or deleted. |
+| settings.team-list | A user lists the teams they may read, and a user who may read none gets an empty list. |
 | settings.data-store-enable | An admin enables the data store and sets its row and memory limits. |
 | settings.color-scheme | A user switches between light and dark mode. |
 | settings.log-out | A user logs out after a confirm. |

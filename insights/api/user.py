@@ -132,6 +132,9 @@ def get_teams(search_term: str | None = None):
             "creation",
         ],
     )
+    # the queries below match on `IN (...)`, which an empty list makes invalid SQL
+    if not teams:
+        return []
 
     members = frappe.get_all(
         "Insights Team Member",

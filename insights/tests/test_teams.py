@@ -7,7 +7,7 @@ exception at both ends — it keeps its name, and it cannot be deleted.
 
 import frappe
 
-from insights.api.user import create_team, delete_team, update_team
+from insights.api.user import create_team, delete_team, get_teams, update_team
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, create_user, delete_users
 from insights.tests.permissions_utils import (
@@ -108,6 +108,11 @@ class TestTeamManagement(InsightsIntegrationTestCase):
         newcomer = create_user("next_admin@test.com", roles="Insights Admin").name
         self.addCleanup(delete_users, newcomer)
         self.assertIn(newcomer, members_of("Admin"))
+
+    # @feature settings.team-list
+    def test_a_user_who_may_read_no_team_lists_none(self):
+        with self.as_user(USER_1):
+            self.assertEqual(get_teams(), [])
 
 
 class TestTableRestrictionValidation(InsightsIntegrationTestCase):
