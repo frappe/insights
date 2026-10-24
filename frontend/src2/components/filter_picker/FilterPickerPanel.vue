@@ -346,9 +346,9 @@ function periodRows(): ListItem[] {
 		}))
 }
 
-/** a period's own label, typed, is that period wherever a range is picked */
+/** a period's own label, typed, is that period: a `within` rule, so only `within` reads it */
 const typedPeriod = computed(() =>
-	stage.value === 'value' && kind.value === 'date' && calendar.value !== 'day'
+	stage.value === 'value' && kind.value === 'date' && !calendar.value
 		? parsePeriod(search.value)
 		: undefined,
 )
@@ -522,9 +522,7 @@ const rows = computed<ListItem[]>(() => {
 			  }))
 	}
 
-	// dates: the input and the highlighted grid already read the draft, so only a
-	// typed period gets a row
-	if (calendar.value === 'range') return typedPeriod.value ? use : []
+	// dates: the input and the highlighted grid already read the draft
 	if (calendar.value) return []
 	// a time of day has no periods
 	const lists: ListItem[] = (column.value?.type === 'Time' ? [] : periodLists())
