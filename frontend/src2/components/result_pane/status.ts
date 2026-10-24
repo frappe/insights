@@ -35,14 +35,3 @@ export function rowCountText(count: number): string {
 	if (count === 1) return __('Showing 1 row')
 	return __('Showing {0} rows', count.toLocaleString())
 }
-
-/**
- * The range sentence, cut where the count goes. It is translated whole and the
- * count left unfilled, so the control that loads the count stands wherever the
- * language puts the number.
- */
-export function rangeAroundCount(from: number, to: number): [string, string] {
-	const sentence = __('Showing {0}–{1} of {2} rows', String(from), String(to))
-	const [before, after = ''] = sentence.split('{2}')
-	return [before.trim(), after.trim()]
-}
