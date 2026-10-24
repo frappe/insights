@@ -14,6 +14,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.execute | A user runs the query and the result pane shows rows and columns. |
 | query.execute-error | A failed run shows its message once, in the result pane. |
 | query.row-count | The result pane states the total row count, and a reader's filter retires it. |
+| query.result-blanks | The result grid leaves a missing number blank, as it does missing text. |
 | query.select-columns | A user chooses which columns the result keeps. |
 | query.select-columns-order | A user reorders the chosen columns by dragging. |
 | query.remove-column | A user removes a column from the result. |

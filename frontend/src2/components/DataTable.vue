@@ -479,11 +479,10 @@ const defaultFormatter = computed(() => numberFormatter(props.numberFormat))
 
 function _formatNumber(value: any, columnName?: string, row?: QueryResultRow) {
 	const format = columnName ? cellFormatters.value(columnName, row) : defaultFormatter.value
-	const isNull = value === null || value === undefined
 	// A zero standing in for a missing number is still a number of this column,
 	// so it prints in the column's own units.
-	if (isNull) {
-		return props.replaceNullsWithZeros ? format(0) : 'null'
+	if (value === null || value === undefined) {
+		return props.replaceNullsWithZeros ? format(0) : ''
 	}
 	return format(value)
 }
