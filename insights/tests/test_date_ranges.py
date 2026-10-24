@@ -5,7 +5,7 @@ import ibis
 from frappe.utils.data import get_date_str, get_datetime, getdate
 
 from insights.insights.doctype.insights_chart_v3.chart_drill import GRAINS
-from insights.insights.doctype.insights_chart_v3.chart_query import adjacent_bucket
+from insights.insights.doctype.insights_chart_v3.chart_query import _comparison_shift, adjacent_bucket
 from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
     _DATE_GRAINS,
     _DATETIME_GRAINS,
@@ -421,6 +421,12 @@ class TestFiscalPeriods(InsightsIntegrationTestCase):
                             self.assertEqual(get_date_range(f"last 1 {unit}", anchor=day), before, day)
                             self.assertEqual(
                                 get_fiscal_period(shift_anchor(day, unit, -1), months), before, day
+                            )
+                            year_back = _comparison_shift({"source": "last year"}, f"current {unit}")
+                            self.assertEqual(
+                                get_fiscal_period(shift_anchor(day, **year_back), months),
+                                get_fiscal_period(day, months, -12 // months),
+                                day,
                             )
 
     # @feature settings.fiscal-year-start

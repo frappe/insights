@@ -677,12 +677,16 @@ def _comparison_shifts(config: dict, span: str) -> list[dict]:
 def _comparison_shift(comparison: dict, span: str) -> dict | None:
     """The span one comparison asks for, or nothing when it asks for no
     second span."""
+    unit = _span_unit(span)
     if comparison.get("source") == "last year":
-        return {"unit": "year", "count": -1}
+        # a fiscal start day clamps in a shorter month, so a calendar year back
+        # can land in the period beside the one a year back
+        if unit == "fiscal quarter":
+            return {"unit": unit, "count": -4}
+        return {"unit": "fiscal year" if unit == "fiscal year" else "year", "count": -1}
     if comparison.get("source") != "previous":
         return None
 
-    unit = _span_unit(span)
     return {"unit": unit, "count": -_span_periods(span)} if unit else None
 
 
