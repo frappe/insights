@@ -112,6 +112,32 @@ function drawnLabels(props: any): string[] {
 }
 
 describe('the category axis', () => {
+	// @feature charts.every-type-draws-what-the-result-holds
+	it('draws a missing category as a blank label, not "null"', () => {
+		const props = propsOf({
+			type: 'Bar',
+			dimension: 'department',
+			measures: ['amount'],
+			categories: ['Sales', null],
+		})
+
+		expect(drawnLabels(props)).toEqual(['Sales', ''])
+	})
+
+	// @feature charts.every-type-draws-what-the-result-holds
+	it('drills into a missing category as the null it is', () => {
+		const filler = adapt({
+			type: 'Bar',
+			dimension: 'department',
+			measures: ['amount'],
+			categories: ['Sales', null],
+		})
+		const plotted = (filler.props as any).data[1]
+		const target = (filler.drillDown as any).select({ name: 'amount', row: plotted })
+
+		expect(target.row.department).toBeNull()
+	})
+
 	// @feature charts.x-axis
 	it('reads a text Dimension as categories', () => {
 		expect(propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).xAxis).toEqual({

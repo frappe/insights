@@ -100,10 +100,11 @@ function adaptAxisChart(
 	const onRight = (column: string) => seriesByColumn.get(column)?.align === 'Right'
 	const right = columns.filter(onRight)
 
+	const { plotted, resultRowOf } = blankMissingCategories(dimension, x, input.result.rows)
 	const props: BarChartProps = {
 		title: input.title,
 		subtitle: input.description,
-		data: input.result.rows,
+		data: plotted,
 		x,
 		y: columns.filter((column) => !onRight(column)),
 		xAxis: xAxisFor(dimension, x, input.result.rows),
@@ -183,10 +184,29 @@ function adaptAxisChart(
 			// back onto the result.
 			select: (event: ChartDatapointEvent) => ({
 				column: event.name,
-				row: event.row,
+				row: resultRowOf(event.row),
 			}),
 		},
 	}
+}
+
+/**
+ * The rows a category axis plots. echarts labels a null category "null", so a
+ * missing one is plotted blank. A drill reads the result's own row, which still
+ * holds the null.
+ */
+function blankMissingCategories(dimension: Dimension, x: string, rows: QueryResultRow[]) {
+	const resultRows = new Map<QueryResultRow, QueryResultRow>()
+	const plotted =
+		xAxisTypeFor(dimension) === 'category'
+			? rows.map((row) => {
+					if (row[x] !== null && row[x] !== undefined) return row
+					const blank = { ...row, [x]: '' }
+					resultRows.set(blank, row)
+					return blank
+			  })
+			: rows
+	return { plotted, resultRowOf: (row: QueryResultRow) => resultRows.get(row) ?? row }
 }
 
 /**
