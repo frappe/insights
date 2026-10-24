@@ -440,6 +440,56 @@ test.describe('dashboard', () => {
 		await expect(charts(page).getByText('1,800')).toBeVisible()
 	})
 
+	// @feature dashboard.filter-links
+	test('a user links a filter to a chart listed below the editor fold', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const seeded = []
+		for (let index = 1; index <= 9; index++) {
+			seeded.push(
+				await createChart(adminApi, {
+					workbook: workbook.name,
+					query: query.name,
+					title: uniqueTitle(`Chart ${index}`),
+				}),
+			)
+		}
+		const last = seeded[seeded.length - 1]
+		const dashboard = await createDashboard(adminApi, {
+			workbook: workbook.name,
+			charts: seeded.map((chart) => chart.name),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
+
+		await page.getByRole('button', { name: 'Edit', exact: true }).click()
+		await page.getByRole('button', { name: 'Filter', exact: true }).click()
+		const editor = page.getByRole('dialog', { name: 'Edit Filter' })
+		await editor.getByLabel('Label').fill('Status')
+
+		// Nine charts list taller than the editor, so the list scrolls and the
+		// ninth comes to rest above the buttons rather than under them.
+		const lastRow = editor.getByText(last.title)
+		await lastRow.scrollIntoViewIfNeeded()
+		const row = await lastRow.boundingBox()
+		const save = await editor.getByRole('button', { name: 'Save', exact: true }).boundingBox()
+		expect(row!.y + row!.height).toBeLessThanOrEqual(save!.y)
+		// The switches follow the dashboard's charts in order, so the last is the ninth.
+		await editor.getByRole('switch').last().click()
+		await editor.getByPlaceholder('Select a column').click()
+		await page.getByRole('option', { name: 'order_status' }).click()
+		await editor.getByRole('button', { name: 'Save', exact: true }).click()
+		await expect(editor).toBeHidden()
+		await page.getByRole('button', { name: 'Done', exact: true }).click()
+
+		// The filter reads its values from the column of the chart it links.
+		await page.getByRole('button', { name: 'Status', exact: true }).click()
+		await expect(popover(page).getByText('delivered')).toBeVisible()
+	})
+
 	// @feature dashboard.list-view
 	test('a user opens a dashboard row menu in the list and goes to its workbook', async ({
 		page,
