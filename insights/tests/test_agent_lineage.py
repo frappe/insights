@@ -258,7 +258,7 @@ class TestAgentLineage(InsightsIntegrationTestCase):
         self.assertEqual([query["name"] for query in lineage["downstream"]["queries"]], [second])
 
     # @feature tooling.query-lineage
-    def test_downstream_reads_the_reference_table_so_it_lags_the_job_that_rebuilds_it(self):
+    def test_downstream_reads_the_reference_table_not_the_operations(self):
         pending = self.query("Pending", [source(table("table1"))])
         frappe.db.set_value(
             DT.QUERY, pending, "operations", frappe.as_json([source(query_table(self.unrelated))])

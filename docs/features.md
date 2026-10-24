@@ -8,6 +8,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 |---|---|
 | query.source-table | A user picks a table as a query's source and sees its rows. |
 | query.source-query | A user picks another query in the workbook as a source. |
+| query.references-on-save | A query's save records the tables and queries it reads before it returns, and keeps the record of what it still reads. |
 | query.source-cycle-refused | Two queries cannot source each other. |
 | query.interface-picker | A new query opens as a builder, a SQL editor or a script editor. |
 | query.execute | A user runs the query and the result pane shows rows and columns. |

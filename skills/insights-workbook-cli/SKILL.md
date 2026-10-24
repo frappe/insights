@@ -228,7 +228,7 @@ Without the endpoint you get the same documents, in more calls, with no snippet 
 frappectl -s $SITE method call insights.api.ai.lineage.describe_query -F query=<name>
 ```
 
-`upstream` holds every query it reads, through every hop, and the tables at the end, each with `stored`, `row_limit` and `sync_from`. `downstream` holds the queries built on it, the charts on those, the dashboards that show those charts, and the `filter_links` that name one of those queries. It is permission filtered, so a query you cannot read answers "not found". `downstream` comes from an index a background job rebuilds after each save, so a query saved a moment ago may be missing from it. `upstream` is read from the operations and is always current. Without the endpoint, `doc get` each query in the chain and run the `like` searches above for its name.
+`upstream` holds every query it reads, through every hop, and the tables at the end, each with `stored`, `row_limit` and `sync_from`. `downstream` holds the queries built on it, the charts on those, the dashboards that show those charts, and the `filter_links` that name one of those queries. It is permission filtered, so a query you cannot read answers "not found". `downstream` comes from an index that each save of a query rewrites. `upstream` is read from the operations. Without the endpoint, `doc get` each query in the chain and run the `like` searches above for its name.
 
 **Then search the JSON.** It reaches column names, expression text, filter values and measure names. A definition lives there even when no title says so:
 

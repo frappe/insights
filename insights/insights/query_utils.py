@@ -426,34 +426,44 @@ def table_references(operations) -> list[dict]:
 
 
 def sync_query_references(query_name: str, operations) -> None:
-    """Rebuild edge rows for *query_name* in Insights Query Reference.
+    """Make the edge rows of *query_name* in Insights Query Reference match the
+    tables and queries its operations read.
 
-    Deletes all existing outgoing edges for this query then inserts fresh
-    rows for every table and query reference found in operations.
+    Only the rows that changed are written, and each is deleted by name. A delete
+    by `query` would lock the gaps of that index, and two saves of neighbouring
+    queries would deadlock on them (#1147).
     """
     from frappe.model.document import bulk_insert
 
     ops = frappe.parse_json(operations) or []
+    wanted = {("Table", ref["data_source"], ref["table_name"], None) for ref in table_references(ops)}
+    wanted |= {("Query", None, None, dep) for dep in extract_query_deps_from_operations(ops)}
+
+    stale = []
+    for row in frappe.get_all(
+        "Insights Query Reference",
+        filters={"query": query_name},
+        fields=["name", "ref_type", "data_source", "table_name", "ref_query"],
+    ):
+        key = (row.ref_type, row.data_source or None, row.table_name or None, row.ref_query or None)
+        if key in wanted:
+            wanted.discard(key)
+        else:
+            stale.append(row.name)
+
+    if stale:
+        frappe.db.delete("Insights Query Reference", {"name": ["in", stale]})
 
     docs = []
-    for tbl in table_references(ops):
+    for ref_type, data_source, table_name, ref_query in sorted(wanted, key=str):
         ref = frappe.new_doc("Insights Query Reference")
         ref.name = frappe.generate_hash(length=10)
         ref.query = query_name
-        ref.ref_type = "Table"
-        ref.data_source = tbl["data_source"]
-        ref.table_name = tbl["table_name"]
+        ref.ref_type = ref_type
+        ref.data_source = data_source
+        ref.table_name = table_name
+        ref.ref_query = ref_query
         docs.append(ref)
-
-    for dep_query in extract_query_deps_from_operations(ops):
-        ref = frappe.new_doc("Insights Query Reference")
-        ref.name = frappe.generate_hash(length=10)
-        ref.query = query_name
-        ref.ref_type = "Query"
-        ref.ref_query = dep_query
-        docs.append(ref)
-
-    frappe.db.delete("Insights Query Reference", {"query": query_name})
     if docs:
         bulk_insert("Insights Query Reference", docs)
 
@@ -491,13 +501,12 @@ def get_direct_dependencies(query_name: str, operations_by_name: dict[str, list]
     """Return the query names this query directly depends on.
 
     Read from the query's own `operations`, not from `Insights Query Reference`.
-    A forward edge is already in the row, and the edge table is rebuilt by a
-    background job that runs after the save commits, so it lags every write.
+    A forward edge is already in the row.
 
     Only the edge table answers the reverse question - who references this query -
-    so `downstream_queries` reads it and lags one job. `get_lineage_graph` and
-    `get_last_execution_per_table` still read it forwards, where a report that
-    lags one job is the whole point of the index.
+    so `downstream_queries` reads it. `get_lineage_graph` and
+    `get_last_execution_per_table` still read it forwards, as reports over every
+    query.
     """
     if not query_name:
         return []

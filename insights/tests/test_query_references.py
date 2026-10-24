@@ -10,6 +10,8 @@ saved, so a chain stays runnable by everyone who may read the query at its head.
 A reference that arrives with the request was never written, and is checked then.
 """
 
+from unittest.mock import patch
+
 import frappe
 from frappe.utils import set_request
 
@@ -264,8 +266,8 @@ class ASavedReferenceKeepsItsOwnAccess:
 
     # @feature query.source-query
     def test_the_chain_runs_before_the_reference_index_is_built(self):
-        """`Insights Query Reference` is rebuilt by a background job after the save
-        commits, so it lags. What was saved is what decides, and it cannot wait."""
+        """`Insights Query Reference` is derived from what was saved. What was
+        saved is what decides, so a missing row changes nothing."""
         frappe.db.delete("Insights Query Reference", {"query": self.consumer})
         self.addCleanup(
             sync_query_references,
@@ -280,7 +282,7 @@ class ASavedReferenceKeepsItsOwnAccess:
     # @feature query.copy-paste
     def test_an_export_includes_its_references_before_the_index_is_built(self):
         """An export packs the queries it is built on. Which those are comes from
-        the query, not from the index that a background job rebuilds."""
+        the query, not from the index derived from it."""
         frappe.db.delete("Insights Query Reference", {"query": self.consumer})
         self.addCleanup(
             sync_query_references,
@@ -528,8 +530,8 @@ def create_query_over_a_table(owner, workbook, title):
 class TestSourceTablesComeFromTheQuery(InsightsIntegrationTestCase):
     """Which tables a query reads is a forward question, so the row answers it.
 
-    `refresh_stored_tables` runs right after a save, and the edge table is rebuilt
-    by a background job that runs after the save commits.
+    `refresh_stored_tables` runs right after a save, and the edge table is
+    derived from the row.
     """
 
     @classmethod
@@ -960,6 +962,54 @@ class TestRemovingAQuery(InsightsIntegrationTestCase):
 
         self.assertFalse(frappe.db.exists(DT.QUERY, self.base))
         self.assertFalse(any(self.kept()))
+
+
+class TestASaveWritesWhatTheQueryReads(InsightsIntegrationTestCase):
+    """A query's save writes its rows in `Insights Query Reference` before it
+    returns. A job used to write them, one per autosave and none on a full queue,
+    and two jobs could land out of order and leave the older save's rows.
+
+    The rows that stay the same are left in place. Deleting every row of the query
+    would take gap locks on the `query` index, and saves of neighbouring queries
+    would deadlock on them (#1147).
+    """
+
+    def setUp(self):
+        self.workbook = create_test_workbook("Administrator", title="Reference Save Workbook").name
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, self.workbook, force=True, ignore_permissions=True)
+        self.base = create_source_query("Administrator", self.workbook, "Reference Save Base").name
+        self.other = create_source_query("Administrator", self.workbook, "Reference Save Other").name
+
+    def references(self, query):
+        return frappe.get_all(
+            "Insights Query Reference",
+            filters={"query": query},
+            fields=["name", "ref_type", "ref_query", "data_source", "table_name"],
+            order_by="name",
+        )
+
+    # @feature query.references-on-save
+    def test_a_save_writes_the_queries_it_reads_without_a_job(self):
+        with patch("frappe.enqueue") as enqueue:
+            consumer = create_referencing_query(
+                "Administrator", self.workbook, self.base, "Reference Save Consumer"
+            )
+            self.assertEqual([ref.ref_query for ref in self.references(consumer.name)], [self.base])
+
+            consumer.operations = reference_operations(self.other)
+            consumer.save()
+            self.assertEqual([ref.ref_query for ref in self.references(consumer.name)], [self.other])
+        enqueue.assert_not_called()
+
+    # @feature query.references-on-save
+    def test_a_save_that_reads_the_same_queries_leaves_their_rows_in_place(self):
+        consumer = create_referencing_query("Administrator", self.workbook, self.base, "Reference Save Kept")
+        before = self.references(consumer.name)
+
+        consumer.title = "Reference Save Kept, Renamed"
+        consumer.save()
+
+        self.assertEqual(self.references(consumer.name), before)
 
 
 class TestAReferenceInTheRequestIsChecked(AReferenceInTheRequestIsChecked, InsightsIntegrationTestCase):

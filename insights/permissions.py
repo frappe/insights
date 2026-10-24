@@ -776,9 +776,8 @@ class InsightsPermissions:
         column of that chart. It stays in the chart's own workbook, as the
         first hop does.
 
-        Read each query's own `operations`, not the edge table. A background
-        job rebuilds that table after the save commits, so a grant read from it
-        refuses the author a dashboard they just saved.
+        Read each query's own `operations`, the source the edge table is
+        derived from.
 
         Only the hops past the first are found here. The first hop stays a
         join, because computing the chart grant for every query in the graph is

@@ -155,12 +155,11 @@ def refused_doctypes(dashboard: str, user: str | None = None) -> list[str] | Non
     `may_read` says so, the same check `view.charts_on` makes on the same cells.
 
     Nothing runs. A chart's tables come from the operations of its query and of
-    every query that query sources. They come from the query's own row, not
-    from the `Insights Query Reference` table, because a background job
-    rebuilds that table after the save commits. Each chart is checked as the
-    user it would run as, and `permission_user_for` decides that user: the
-    owner while Run as owner is on, the key's user during a preview render, the
-    reader otherwise.
+    every query that query sources. They come from the query's own row, the
+    source the `Insights Query Reference` table is derived from. Each chart is
+    checked as the user it would run as, and `permission_user_for` decides that
+    user: the owner while Run as owner is on, the key's user during a preview
+    render, the reader otherwise.
 
     A table is readable when `check_table_permission` says so, the same rule
     the engine reads rows by: desk on the site database, a team grant
