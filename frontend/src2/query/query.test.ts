@@ -163,6 +163,19 @@ describe('a run the server refuses', () => {
 	})
 })
 
+describe('a script the author runs', () => {
+	// @feature query.script
+	it('runs as the editor holds it, though the pause that writes it has not passed', async () => {
+		const query = makeAdhocQuery()
+		query.setCode({ code: "results = [{'n': 1}]" })
+
+		await query.runCode({ code: "results = [{'m': 2}]" })
+
+		const run = calls.find((c) => c.args.method === 'execute')
+		expect(run.args.docs.operations).toEqual([{ type: 'code', code: "results = [{'m': 2}]" }])
+	})
+})
+
 describe('the page of rows a reader is reading', () => {
 	// @feature query.result-pagination
 	it('turns to the page asked for and asks the server for its rows, never for a page before the first', async () => {

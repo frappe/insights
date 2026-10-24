@@ -725,6 +725,13 @@ export function makeQuery(name: string) {
 		}
 	}
 
+	// the editor writes the script after a pause in typing, so a run takes the
+	// script as the editor holds it, not as it was last written
+	function runCode(args: CodeArgs, force: boolean = false) {
+		setCode(args)
+		return execute(force)
+	}
+
 	function updateVariables(variables: QueryVariable[]) {
 		if (!query.doc.is_script_query) return Promise.resolve()
 
@@ -884,6 +891,7 @@ export function makeQuery(name: string) {
 
 		getCodeOperation,
 		setCode,
+		runCode,
 		updateVariables,
 
 		dimensions,
