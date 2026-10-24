@@ -29,11 +29,16 @@ Insights 3.50 no longer contains v2 or the v2 migrator. New features and bug fix
 
 Your site has {log_count} query executions in the last 30 days, which means you have active usage. To prevent data loss, the update to Insights 3.50 has been blocked until you take action.
 
-Stay on your current Insights 3 release. As an admin, open Insights, then Settings > Migrate from v2, and migrate your v2 queries and dashboards. Releases from 3.13 have it; on an older one, update to 3.15.1 first. Then update to 3.50. Migration guide: https://docs.frappe.io/insights/articles/migrate-from-v2-to-v3
+Stay on your current Insights 3 release and migrate your v2 queries and dashboards first. Then update to 3.50.
+
+- On Insights 3.13 or later: as an admin, open Insights, then Settings > Migrate from v2.
+- On an older release: update to 3.15.1 first. Self-hosted, check out the `v3.15.1` tag. On Frappe Cloud, contact support.
+
+Migration guide: https://docs.frappe.io/insights/articles/migrate-from-v2-to-v3
 
 For any questions or help with the migration, please join telegram group: https://t.me/frappeinsights or reach out to support: https://frappe.io/support
 
-If you have already migrated or do not have any active usage, please set the following site config to allow the upgrade:
+If you have already migrated, or you don't need your v2 work, set the site config below. It skips this check, and v2 data you have not migrated is not carried over:
 
 {{
     "insights_allow_legacy_v2_upgrade": 1
