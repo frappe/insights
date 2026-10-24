@@ -11,14 +11,14 @@ import { Button, TextInput, Tooltip } from 'frappe-ui'
 import { ListFilter, Search } from 'lucide-vue-next'
 import { computed, nextTick, ref, watchEffect } from 'vue'
 import FilterPicker from '../components/filter_picker/FilterPicker.vue'
-import type { Filter } from '../components/filter_picker/filter_picker'
+import type { Filter, ValuesProvider } from '../components/filter_picker/filter_picker'
 import { __ } from '../translation'
 import type { QueryResultColumn } from '../types/query.types'
 
 const props = defineProps<{
 	filterable: boolean
 	columns: QueryResultColumn[]
-	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
+	valuesProvider: ValuesProvider
 	rangeProvider: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	/** Whether the acts wait for the card to be pointed at. A public link has no
 	 *  hover affordances to keep company with, so there they stand. They reveal

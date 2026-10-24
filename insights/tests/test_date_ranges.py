@@ -1,10 +1,20 @@
+import datetime
 from unittest.mock import patch
 
 import ibis
-from frappe.utils.data import get_date_str, getdate
+from frappe.utils.data import get_date_str, get_datetime, getdate
 
+from insights.insights.doctype.insights_chart_v3.chart_drill import GRAINS
+from insights.insights.doctype.insights_chart_v3.chart_query import _comparison_shift, adjacent_bucket
+from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
+    _DATE_GRAINS,
+    _DATETIME_GRAINS,
+    _apply_granularity,
+)
 from insights.insights.query_builders.sql_functions import (
+    DATE_UNITS,
     get_date_range,
+    get_fiscal_period,
     get_fiscal_year_start_date,
     get_window,
     handle_timespan,
@@ -145,6 +155,7 @@ class TestShiftAnchor(InsightsIntegrationTestCase):
             ("quarter", -1): "2026-05-10",
             ("year", -1): "2025-08-10",
             ("fiscal year", -1): "2025-08-10",
+            ("fiscal quarter", -1): "2026-05-10",
             ("month", 2): "2026-10-10",
         }
         for (unit, count), expected in shifts.items():
@@ -322,6 +333,139 @@ class TestDirectionalSpans(InsightsIntegrationTestCase):
             },
             include_current=True,
         )
+
+
+class TestFiscalQuarterRanges(InsightsIntegrationTestCase):
+    """A fiscal quarter counts three months at a time from the fiscal year start."""
+
+    def ranges(self, fiscal_year_start, anchor, spans):
+        with self.change_settings("Insights Settings", fiscal_year_start=fiscal_year_start):
+            return {
+                span: [get_date_str(d) for d in get_date_range(span, anchor=getdate(anchor))]
+                for span in spans
+            }
+
+    # @feature query.fiscal-quarter
+    def test_a_fiscal_quarter_runs_from_the_fiscal_year_start(self):
+        self.assertEqual(
+            self.ranges(
+                "2020-04-01",
+                ANCHOR,
+                ["current fiscal quarter", "last 1 fiscal quarter", "next 3 fiscal quarter"],
+            ),
+            {
+                "current fiscal quarter": ["2026-07-01", "2026-09-30"],
+                "last 1 fiscal quarter": ["2026-04-01", "2026-06-30"],
+                "next 3 fiscal quarter": ["2026-10-01", "2027-06-30"],
+            },
+        )
+
+    # @feature query.fiscal-quarter
+    def test_a_fiscal_quarter_can_start_in_the_calendar_year_before(self):
+        self.assertEqual(
+            self.ranges("2020-02-01", "2026-01-15", ["current fiscal quarter"]),
+            {"current fiscal quarter": ["2025-11-01", "2026-01-31"]},
+        )
+
+    # @feature query.fiscal-quarter
+    def test_a_fiscal_quarter_moves_the_anchor_by_three_months(self):
+        self.assertEqual(shift_anchor(ANCHOR, "fiscal quarter", -1), getdate("2026-05-10"))
+
+
+# fiscal start, date, fiscal year, fiscal quarter
+FISCAL_PERIODS = [
+    ("2020-01-01", "2025-10-23", ["2025-01-01", "2025-12-31"], ["2025-10-01", "2025-12-31"]),
+    ("2020-02-01", "2026-01-15", ["2025-02-01", "2026-01-31"], ["2025-11-01", "2026-01-31"]),
+    ("2020-04-01", "2026-03-31", ["2025-04-01", "2026-03-31"], ["2026-01-01", "2026-03-31"]),
+    ("2020-04-06", "2026-04-05", ["2025-04-06", "2026-04-05"], ["2026-01-06", "2026-04-05"]),
+    ("2020-04-06", "2026-04-06", ["2026-04-06", "2027-04-05"], ["2026-04-06", "2026-07-05"]),
+    ("2020-12-01", "2026-01-01", ["2025-12-01", "2026-11-30"], ["2025-12-01", "2026-02-28"]),
+    ("2020-01-31", "2025-04-29", ["2025-01-31", "2026-01-30"], ["2025-01-31", "2025-04-29"]),
+    ("2020-01-31", "2025-04-30", ["2025-01-31", "2026-01-30"], ["2025-04-30", "2025-07-30"]),
+    ("2024-02-29", "2025-06-15", ["2025-02-28", "2026-02-27"], ["2025-05-29", "2025-08-28"]),
+]
+
+
+class TestFiscalPeriods(InsightsIntegrationTestCase):
+    """A fiscal year or quarter starts on the configured day, every 12 or 3 months
+    from it, and the filter range and the chart bucket agree on it."""
+
+    # @feature settings.fiscal-year-start
+    # @feature query.fiscal-quarter
+    def test_a_date_falls_in_the_period_that_starts_on_the_fiscal_day(self):
+        self.assertTrue(FISCAL_PERIODS)
+        for start, date, year, quarter in FISCAL_PERIODS:
+            with (
+                self.subTest(start=start, date=date),
+                self.change_settings("Insights Settings", fiscal_year_start=start),
+            ):
+                self.assertEqual([get_date_str(d) for d in get_fiscal_period(date, 12)], year)
+                self.assertEqual([get_date_str(d) for d in get_fiscal_period(date, 3)], quarter)
+
+    # @feature query.fiscal-quarter query.filter-relative-date-shift
+    def test_a_fiscal_period_moves_by_whole_periods(self):
+        """30 April opens a quarter at a 31 January start, and three months back
+        from it is 30 January, still the quarter before last."""
+        dates = [getdate("2024-01-01") + datetime.timedelta(days=n) for n in range(3 * 366)]
+        for start in sorted({row[0] for row in FISCAL_PERIODS}):
+            with self.change_settings("Insights Settings", fiscal_year_start=start):
+                for unit, months in (("fiscal year", 12), ("fiscal quarter", 3)):
+                    with self.subTest(start=start, unit=unit):
+                        for day in dates:
+                            before = get_fiscal_period(day, months, -1)
+                            self.assertEqual(
+                                get_fiscal_period(before[1] + datetime.timedelta(days=1), months)[0],
+                                get_fiscal_period(day, months)[0],
+                                day,
+                            )
+                            self.assertEqual(get_date_range(f"last 1 {unit}", anchor=day), before, day)
+                            self.assertEqual(
+                                get_fiscal_period(shift_anchor(day, unit, -1), months), before, day
+                            )
+                            year_back = _comparison_shift({"source": "last year"}, f"current {unit}")
+                            self.assertEqual(
+                                get_fiscal_period(shift_anchor(day, **year_back), months),
+                                get_fiscal_period(day, months, -12 // months),
+                                day,
+                            )
+
+    # @feature settings.fiscal-year-start
+    # @feature query.fiscal-quarter
+    def test_the_chart_bucket_is_the_start_of_the_filter_range(self):
+        dates = [getdate("2024-01-01") + datetime.timedelta(days=n) for n in range(3 * 366)]
+        table = ibis.memtable({"day": dates})
+        for start in sorted({row[0] for row in FISCAL_PERIODS}):
+            with self.change_settings("Insights Settings", fiscal_year_start=start):
+                for grain, months in (("fiscal_year", 12), ("fiscal_quarter", 3)):
+                    with self.subTest(start=start, grain=grain):
+                        buckets = ibis.duckdb.connect().execute(
+                            table.select(_apply_granularity(table.day, grain))
+                        )["day"]
+                        for day, bucket in zip(dates, buckets, strict=True):
+                            first, last = get_fiscal_period(day, months)
+                            self.assertTrue(first <= day <= last, (day, first, last))
+                            self.assertEqual(getdate(bucket), first, day)
+
+
+class TestUnitLists(InsightsIntegrationTestCase):
+    """Each place that reads a span unit or a grain knows every one."""
+
+    # @feature query.filter-relative-date
+    def test_every_span_unit_resolves(self):
+        self.assertTrue(DATE_UNITS)
+        for unit in DATE_UNITS:
+            for span in (f"current {unit}", f"last 2 {unit}", f"next 2 {unit}"):
+                self.assertEqual(len(get_date_range(span, anchor=ANCHOR)), 2, span)
+
+    # @feature charts.drill-segment
+    def test_every_grain_buckets_and_drills(self):
+        self.assertTrue(_DATETIME_GRAINS)
+        self.assertEqual(set(GRAINS["Datetime"]), set(_DATETIME_GRAINS))
+        self.assertEqual(set(GRAINS["Date"]), set(_DATE_GRAINS))
+        table = ibis.memtable({"at": [datetime.datetime(2026, 8, 10, 9, 30)]})
+        for grain in _DATETIME_GRAINS:
+            bucket = ibis.duckdb.connect().execute(table.select(_apply_granularity(table.at, grain)))["at"][0]
+            self.assertGreater(adjacent_bucket(grain, bucket), get_datetime(str(bucket)), grain)
 
 
 class TestFiscalYearStart(InsightsIntegrationTestCase):

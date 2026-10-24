@@ -20,6 +20,7 @@ import { h } from 'vue'
 import { copy } from '../helpers'
 import { FIELDTYPES, getDefaultGranularity, GranularityType } from '../helpers/constants'
 import dayjs from '../helpers/dayjs'
+import { SPAN_STEPS, type SpanUnit } from '../helpers/span_grammar'
 import useSettings from '../settings/settings'
 import {
 	Cast,
@@ -290,21 +291,85 @@ function formatDateBy(date: string, granularity: string, formats: Record<string,
 		return parsed.isValid() ? parsed.format(timeFormats[granularity]) : date
 	}
 
-	if (granularity === 'fiscal_year') {
-		const d = dayjs(date)
-		const fiscalYearStart = session.site.fiscal_year_start
-		const fiscalStartMonth = dayjs(fiscalYearStart).month()
-		const fiscalStartDay = dayjs(fiscalYearStart).date()
-
-		const fiscalStartThisYear = d.month(fiscalStartMonth).date(fiscalStartDay)
-		const startYear = d.isBefore(fiscalStartThisYear) ? d.year() - 1 : d.year()
-		const endYear = startYear + 1
-
-		return `FY ${startYear}-${String(endYear).slice(-2)}`
-	}
+	if (granularity === 'fiscal_year') return `FY ${fiscalYearName(dayjs(date))}`
+	if (granularity === 'fiscal_quarter') return fiscalQuarterName(date)
 
 	if (!formats[granularity]) return date
 	return dayjs(date).format(formats[granularity])
+}
+
+/** `2025-26` for the fiscal year `d` falls in. */
+function fiscalYearName(d: ReturnType<typeof dayjs>): string {
+	const startYear = dayjs(fiscalPeriodStart(d.format('YYYY-MM-DD'), 12)).year()
+	return `${startYear}-${String(startYear + 1).slice(-2)}`
+}
+
+/**
+ * The first day of the fiscal year (12 months) or quarter (3) `date` falls in,
+ * or of the one `shift` periods away. Periods start on the configured fiscal
+ * start day, every `months` months from it, as the server's `get_fiscal_period`
+ * counts them.
+ */
+export function fiscalPeriodStart(date: string, months: number, shift = 0): string {
+	const start = dayjs(session.site.fiscal_year_start)
+	const fiscalDay = (month: ReturnType<typeof dayjs>) =>
+		Math.min(start.date(), month.daysInMonth())
+	const d = dayjs(date)
+	let monthsIn = d.year() * 12 + d.month() - start.month()
+	if (d.date() < fiscalDay(d)) monthsIn -= 1
+	const index = start.month() + monthsIn - (monthsIn % months) + shift * months
+	const month = dayjs(new Date(Math.floor(index / 12), index % 12, 1))
+	return month.date(fiscalDay(month)).format('YYYY-MM-DD')
+}
+
+/**
+ * The first day of the period of `unit` `count` periods after the one `start`
+ * opens. A fiscal period is counted, never reached by adding months to a start
+ * that a shorter month moved.
+ */
+export function periodStartAfter(unit: SpanUnit, start: string, count: number): string {
+	const [size, step] = SPAN_STEPS[unit]
+	if (unit === 'fiscal year' || unit === 'fiscal quarter')
+		return fiscalPeriodStart(start, size, count)
+	return dayjs(start)
+		.add(size * count, step)
+		.format('YYYY-MM-DD')
+}
+
+/**
+ * `date` moved `count` periods of `unit`, as the server's `shift_anchor` moves
+ * it: a fiscal date keeps its day, held inside the period it moved to.
+ */
+export function shiftDate(date: string, unit: SpanUnit, count: number): string {
+	const [size, step] = SPAN_STEPS[unit]
+	const moved = dayjs(date)
+		.add(size * count, step)
+		.format('YYYY-MM-DD')
+	if (unit !== 'fiscal year' && unit !== 'fiscal quarter') return moved
+	const start = fiscalPeriodStart(date, size, count)
+	const end = dayjs(fiscalPeriodStart(date, size, count + 1))
+		.subtract(1, 'day')
+		.format('YYYY-MM-DD')
+	return moved < start ? start : moved > end ? end : moved
+}
+
+/** The first day of the fiscal year that starts in calendar year `year`. */
+export function fiscalYearStarting(year: number): string {
+	const start = dayjs(session.site.fiscal_year_start)
+	return fiscalPeriodStart(
+		dayjs(new Date(year, start.month(), 1))
+			.endOf('month')
+			.format('YYYY-MM-DD'),
+		12,
+	)
+}
+
+/** `Q2 FY25-26`: the fiscal quarter `date` falls in. */
+export function fiscalQuarterName(date: string): string {
+	const quarter = dayjs(fiscalPeriodStart(date, 3))
+	const year = dayjs(fiscalPeriodStart(date, 12))
+	const monthsIn = quarter.year() * 12 + quarter.month() - (year.year() * 12 + year.month())
+	return `Q${monthsIn / 3 + 1} FY${fiscalYearName(year).slice(2)}`
 }
 
 export function getMeasures(columns: QueryResultColumn[]): Measure[] {

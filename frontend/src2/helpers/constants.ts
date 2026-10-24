@@ -71,6 +71,7 @@ export const granularityOptions = [
 	{ label: __('Quarter'), value: 'quarter' },
 	{ label: __('Year'), value: 'year' },
 	{ label: __('Fiscal Year'), value: 'fiscal_year' },
+	{ label: __('Fiscal Quarter'), value: 'fiscal_quarter' },
 ] as const
 
 export type GranularityType = (typeof granularityOptions)[number]['value']

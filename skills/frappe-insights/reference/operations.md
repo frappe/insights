@@ -30,7 +30,7 @@ A query's `operations` is a JSON array executed top to bottom. The first operati
 { "measure_name": "Revenue", "column_name": "grand_total", "data_type": "Decimal", "aggregation": "sum",
   "format": "currency", "currency_column": "currency" }
 
-// Dimension (granularity applies to Date/Datetime only: day | week | month | quarter | year | fiscal_year)
+// Dimension (granularity applies to Date/Datetime only: day | week | month | quarter | year | fiscal_year | fiscal_quarter)
 { "dimension_name": "posting_date", "column_name": "posting_date", "data_type": "Date", "granularity": "month" }
 ```
 
@@ -69,7 +69,7 @@ Operators: `= != > >= < <= in not_in between within contains not_contains starts
 
 - `in` / `not_in`: value is an array.
 - `between`: value is `[start, end]`. Bare date strings expand to full-day bounds.
-- `within` (Date columns): value is a timespan string. The grammar is `"<unit> to date"`, `"Current <unit>"`, `"Last N <unit>s"` or `"Next N <unit>s"`, where the unit is day, week, month, quarter, year or fiscal year. `"Last month"` with no count means `"Last 1 month"`. To include the running period in a last or next span, append `" (include current)"`. The value can also be an object `{ "span": "Month to date", "anchor": "2026-06-30", "shift": { "unit": "year", "count": -1 } }`: `anchor` is the date the span resolves against (default today), and `shift` moves it.
+- `within` (Date columns): value is a timespan string. The grammar is `"<unit> to date"`, `"Current <unit>"`, `"Last N <unit>s"` or `"Next N <unit>s"`, where the unit is day, week, month, quarter, year, fiscal year or fiscal quarter. `"Last month"` with no count means `"Last 1 month"`. To include the running period in a last or next span, append `" (include current)"`. The value can also be an object `{ "span": "Month to date", "anchor": "2026-06-30", "shift": { "unit": "year", "count": -1 } }`: `anchor` is the date the span resolves against (default today), and `shift` moves it.
 - `contains` / `not_contains` match `%value%`. Numerics become strings first.
 - `is_set` / `is_not_set` ignore `value`. For String columns an empty string counts as unset.
 - Column-vs-column: set `value` to a column ref `{ "type": "column", "column_name": "..." }`.

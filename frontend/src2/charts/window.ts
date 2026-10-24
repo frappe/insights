@@ -14,11 +14,17 @@
 
 import dayjs from 'dayjs'
 import type { GranularityType } from '../helpers/constants'
-import { getFormattedDate } from '../query/helpers'
+import { getFormattedDate, periodStartAfter } from '../query/helpers'
 import { __, translatedTable } from '../translation'
 import type { ChartConfig, NumberChartConfig } from '../types/chart.types'
 import type { QueryResultRow } from '../types/query.types'
-import { buildSpan, parseSpan, SPAN_UNITS, type SpanUnit } from '../helpers/span_grammar'
+import {
+	buildSpan,
+	parseSpan,
+	SPAN_GRAINS,
+	SPAN_UNITS,
+	type SpanUnit,
+} from '../helpers/span_grammar'
 
 export const WINDOW_UNITS = SPAN_UNITS
 export type WindowUnit = SpanUnit
@@ -114,6 +120,7 @@ const unitLabels = translatedTable<Record<WindowUnit, { one: string; many: strin
 	quarter: { one: __('quarter'), many: __('quarters') },
 	year: { one: __('year'), many: __('years') },
 	'fiscal year': { one: __('fiscal year'), many: __('fiscal years') },
+	'fiscal quarter': { one: __('fiscal quarter'), many: __('fiscal quarters') },
 }))
 
 export function windowUnitLabel(unit: WindowUnit, many = false): string {
@@ -157,24 +164,28 @@ const choiceCopy = translatedTable<Record<string, string>>(() => ({
 	'to date:quarter': __('Quarter to date'),
 	'to date:year': __('Year to date'),
 	'to date:fiscal year': __('Fiscal year to date'),
+	'to date:fiscal quarter': __('Fiscal quarter to date'),
 	'current:day': __('Today'),
 	'current:week': __('This week'),
 	'current:month': __('This month'),
 	'current:quarter': __('This quarter'),
 	'current:year': __('This year'),
 	'current:fiscal year': __('This fiscal year'),
+	'current:fiscal quarter': __('This fiscal quarter'),
 	'last:day': __('Last N days'),
 	'last:week': __('Last N weeks'),
 	'last:month': __('Last N months'),
 	'last:quarter': __('Last N quarters'),
 	'last:year': __('Last N years'),
 	'last:fiscal year': __('Last N fiscal years'),
+	'last:fiscal quarter': __('Last N fiscal quarters'),
 	'grain:day': __('Latest day'),
 	'grain:week': __('Latest week'),
 	'grain:month': __('Latest month'),
 	'grain:quarter': __('Latest quarter'),
 	'grain:year': __('Latest year'),
 	'grain:fiscal year': __('Latest fiscal year'),
+	'grain:fiscal quarter': __('Latest fiscal quarter'),
 }))
 
 /** A run of choices under one heading, as the picker's Combobox reads them. */
@@ -285,7 +296,7 @@ export function periodOfChoice(choice: string, current?: NumberPeriod): NumberPe
 
 	if (choice.startsWith(GRAIN)) {
 		const unit = choice.slice(GRAIN.length) as WindowUnit
-		return { grain: WINDOW_GRAINS[unit] || (unit as GranularityType) }
+		return { grain: SPAN_GRAINS[unit] || (unit as GranularityType) }
 	}
 
 	// A choice nobody here wrote is a span, hand-authored or from a later
@@ -306,27 +317,8 @@ export function periodOfChoice(choice: string, current?: NumberPeriod): NumberPe
 
 /** The span unit a grain names, for reading a grain period back off a choice. */
 function grainUnit(grain: GranularityType): string {
-	const unit = WINDOW_UNITS.find((candidate) => WINDOW_GRAINS[candidate] === grain)
+	const unit = WINDOW_UNITS.find((candidate) => SPAN_GRAINS[candidate] === grain)
 	return unit || grain
-}
-
-const WINDOW_GRAINS: Record<WindowUnit, GranularityType> = {
-	day: 'day',
-	week: 'week',
-	month: 'month',
-	quarter: 'quarter',
-	year: 'year',
-	'fiscal year': 'fiscal_year',
-}
-
-/** One period of a unit, as dayjs steps it. */
-const UNIT_STEPS: Record<WindowUnit, [number, 'day' | 'week' | 'month' | 'year']> = {
-	day: [1, 'day'],
-	week: [1, 'week'],
-	month: [1, 'month'],
-	quarter: [3, 'month'],
-	year: [1, 'year'],
-	'fiscal year': [1, 'year'],
 }
 
 /**
@@ -341,15 +333,18 @@ export function formatWindowLabel(span: string, start: any): any {
 	const parsed = parseWindowSpan(span)
 	if (!parsed || !start) return start
 
-	const grain = WINDOW_GRAINS[parsed.unit]
+	const grain = SPAN_GRAINS[parsed.unit]
 	const first = getFormattedDate(String(start), grain)
 
 	const periods = windowPeriods(parsed)
 	if (periods < 2) return first
 
-	const [size, step] = UNIT_STEPS[parsed.unit]
-	const last = dayjs(String(start)).add(size * (periods - 1), step)
-	return `${first} – ${getFormattedDate(last.format('YYYY-MM-DD'), grain)}`
+	const last = periodStartAfter(
+		parsed.unit,
+		dayjs(String(start)).format('YYYY-MM-DD'),
+		periods - 1,
+	)
+	return `${first} – ${getFormattedDate(last, grain)}`
 }
 
 /**

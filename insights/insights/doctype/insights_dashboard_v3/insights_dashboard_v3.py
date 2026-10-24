@@ -401,8 +401,10 @@ class InsightsDashboardv3(Document):
         filter_name: str,
         search_term: str | None = None,
         filter_context: dict | None = None,
+        granularity: str | None = None,
     ):
-        """The values one of this dashboard's filters lists.
+        """The values one of this dashboard's filters lists, or with
+        `granularity` the periods it lists.
 
         Read access to the dashboard is checked before this runs. The builder
         calls it through `run_doc_method`, and a reader through
@@ -418,7 +420,7 @@ class InsightsDashboardv3(Document):
         return self.lookup_filter(
             filter_name,
             lambda chart, query, column: query.distinct_column_values(
-                column, search_term=search_term, adhoc_filters=adhoc_filters
+                column, search_term=search_term, adhoc_filters=adhoc_filters, granularity=granularity
             ),
             missing=filter_not_available,
         )

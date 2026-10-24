@@ -336,6 +336,7 @@ def get_drill_rows_values(
     filters: dict | None = None,
     row_filters: list | None = None,
     search_term: str | None = None,
+    granularity: str | None = None,
 ):
     """The values listed by the reader's own filter on a rows level.
 
@@ -354,6 +355,7 @@ def get_drill_rows_values(
         search_term=search_term,
         adhoc_filters=adhoc_filters,
         row_filters=row_filters,
+        granularity=granularity,
     )
 
 
@@ -429,8 +431,10 @@ def get_filter_values(
     filter_name: str,
     search_term: str | None = None,
     filters: dict | None = None,
+    granularity: str | None = None,
 ):
-    """The values a filter on this dashboard lists.
+    """The values a filter on this dashboard lists, or with `granularity` the
+    periods it lists.
 
     The View names the filter. The column behind it is looked up here, because
     the link that names it never leaves the server. The lookup runs under the
@@ -446,7 +450,9 @@ def get_filter_values(
 
     def values(chart, query, column):
         adhoc_filters = route_filters(doc.items, chart, filters, exclude_filter=filter_name)
-        return query.distinct_column_values(column, search_term=search_term, adhoc_filters=adhoc_filters)
+        return query.distinct_column_values(
+            column, search_term=search_term, adhoc_filters=adhoc_filters, granularity=granularity
+        )
 
     return doc.lookup_filter(filter_name, values, missing=not_found)
 
@@ -470,7 +476,13 @@ def get_filter_range(dashboard: str, filter_name: str, filters: dict | None = No
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 @answers_refusal(list)
-def get_card_values(chart: str, column: str, dashboard: str | None = None, search_term: str | None = None):
+def get_card_values(
+    chart: str,
+    column: str,
+    dashboard: str | None = None,
+    search_term: str | None = None,
+    granularity: str | None = None,
+):
     """The values listed by the reader's own filter on one card.
 
     Only a column the card shows is allowed. A column with no source column (a
@@ -484,7 +496,7 @@ def get_card_values(chart: str, column: str, dashboard: str | None = None, searc
 
     with runs_as(doc):
         return frappe.get_cached_doc(QUERY, query).distinct_column_values(
-            column_name, search_term=search_term, adhoc_filters=card_filters
+            column_name, search_term=search_term, adhoc_filters=card_filters, granularity=granularity
         )
 
 

@@ -2,18 +2,39 @@
 // Every stage is this list. reka owns the highlight, the arrow keys and the
 // scrolling; this file only renders rows and reports a pick.
 import { Button, Checkbox, LoadingIndicator } from 'frappe-ui'
-import { Check, X } from 'lucide-vue-next'
-import { ComboboxItem, ComboboxItemIndicator, ComboboxViewport, ListboxContent } from 'reka-ui'
+import { Check, ChevronRight, X } from 'lucide-vue-next'
+import { computed } from 'vue'
+import {
+	ComboboxGroup,
+	ComboboxItem,
+	ComboboxItemIndicator,
+	ComboboxLabel,
+	ComboboxViewport,
+	ListboxContent,
+} from 'reka-ui'
 import { __ } from '../../translation'
 import type { ListItem } from './filter_picker'
 
-defineProps<{
+const props = defineProps<{
 	items: ListItem[]
 	stage: string
 	loading?: boolean
 	empty?: string
 }>()
-const emit = defineEmits<{ pick: [item: ListItem]; remove: [item: ListItem] }>()
+const emit = defineEmits<{
+	pick: [item: ListItem]
+	open: [item: ListItem]
+	remove: [item: ListItem]
+}>()
+
+/** the rows cut where a row starts a group, so each heading labels its own rows */
+const groups = computed(() =>
+	props.items.reduce<Array<{ label?: string; items: ListItem[] }>>((groups, item) => {
+		if (item.group || !groups.length) groups.push({ label: item.group, items: [] })
+		groups[groups.length - 1].items.push(item)
+		return groups
+	}, []),
+)
 
 // copied from frappe-ui's src/components/shared/selection/utils.ts — the package
 // exports no subpath that reaches it
@@ -21,7 +42,8 @@ const itemClasses =
 	'select-none rounded-4 border-0 text-base text-ink-gray-9 transition-colors duration-100 ease-out data-[disabled]:text-ink-gray-4 data-[highlighted]:bg-surface-alpha-gray-2 data-[state=checked]:bg-surface-gray-3 data-[highlighted]:data-[state=checked]:bg-surface-gray-4'
 
 // ItemListRow.vue's layout and its `sm` scale
-const rowClasses = 'group flex w-full items-center gap-2 rounded-4 min-h-7 px-2 py-1.5 text-base'
+const rowClasses =
+	'group flex w-full items-center gap-2 rounded-4 min-h-7 shrink-0 px-2 py-1.5 text-base'
 
 /** a reka-owned row's value is reka's, so the tick reads back as `data-state` */
 function valueOf(item: ListItem) {
@@ -70,76 +92,107 @@ function keyOf(item: ListItem, stage: string) {
 <template>
 	<ListboxContent>
 		<ComboboxViewport class="flex max-h-80 flex-col overflow-auto p-1">
-			<template v-for="item in items" :key="keyOf(item, stage)">
-				<div v-if="item.separated" class="-mx-1 my-1 border-t border-outline-gray-1" />
-				<ComboboxItem
-					:value="valueOf(item)"
-					:data-row-key="item.key"
-					:class="[itemClasses, rowClasses]"
-					@select="onSelect(item, $event)"
-					@mousedown.prevent
-					@click="onClick(item, $event)"
+			<ComboboxGroup
+				v-for="group in groups"
+				:key="group.label ?? ''"
+				class="flex shrink-0 flex-col"
+			>
+				<!-- frappe-ui Combobox's group label -->
+				<ComboboxLabel
+					v-if="group.label"
+					class="flex h-7 items-center px-2 text-sm-medium leading-tighter text-ink-gray-4"
 				>
-					<Checkbox
-						v-if="item.checked !== undefined"
-						:model-value="item.checked"
-						size="sm"
-						tabindex="-1"
-						aria-hidden="true"
-						class="pointer-events-none"
-					/>
-					<component
-						:is="item.icon"
-						v-if="item.icon"
-						class="size-4 shrink-0 text-ink-gray-5"
-						stroke-width="1.5"
-					/>
-					<!-- the note truncates before the label: the reader picks the label, and
+					{{ group.label }}
+				</ComboboxLabel>
+				<template v-for="item in group.items" :key="keyOf(item, stage)">
+					<div v-if="item.separated" class="-mx-1 my-1 border-t border-outline-gray-1" />
+					<ComboboxItem
+						:value="valueOf(item)"
+						:data-row-key="item.key"
+						:class="[itemClasses, rowClasses]"
+						@select="onSelect(item, $event)"
+						@mousedown.prevent
+						@click="onClick(item, $event)"
+					>
+						<Checkbox
+							v-if="item.checked !== undefined"
+							:model-value="item.checked"
+							size="sm"
+							tabindex="-1"
+							aria-hidden="true"
+							class="pointer-events-none"
+						/>
+						<component
+							:is="item.icon"
+							v-if="item.icon"
+							class="size-4 shrink-0 text-ink-gray-5"
+							stroke-width="1.5"
+						/>
+						<!-- the note truncates before the label: the reader picks the label, and
 					     the note only says what it covers. A label beside a note never
 					     shrinks, because any shrink shows its ellipsis -->
-					<span
-						class="truncate text-start"
-						:class="
-							item.operator !== undefined
-								? 'font-medium text-ink-gray-8'
-								: item.note
-								  ? 'max-w-full shrink-0'
-								  : 'flex-1'
-						"
-						>{{ item.label }}</span
-					>
-					<template v-if="item.operator !== undefined">
-						<span class="shrink-0 text-ink-gray-5">{{ item.operator }}</span>
-						<span class="flex-1 truncate text-start text-ink-gray-6">{{
-							item.value
-						}}</span>
-					</template>
-					<span
-						v-if="item.note"
-						class="ms-auto min-w-0 truncate text-sm text-ink-gray-5"
-						:title="item.note"
-						>{{ item.note }}</span
-					>
-					<!-- frappe-ui's Select and Combobox mark the chosen row this way -->
-					<ComboboxItemIndicator
-						v-if="!item.tick"
-						class="ms-1 inline-flex shrink-0 items-center justify-center"
-					>
-						<Check class="size-4 text-ink-gray-6" stroke-width="1.5" />
-					</ComboboxItemIndicator>
-					<Button
-						v-if="item.removable"
-						variant="ghost"
-						size="xs"
-						:label="__('Remove')"
-						class="-me-1.5 -my-1 shrink-0 opacity-0 group-hover:opacity-100 group-data-[highlighted]:opacity-100"
-						@mousedown.prevent
-						@click.stop="emit('remove', item)"
-					>
-						<template #icon><X class="size-3" stroke-width="1.5" /></template>
-					</Button>
-				</ComboboxItem>
-			</template>
+						<span
+							class="truncate text-start"
+							:class="
+								item.operator !== undefined
+									? 'font-medium text-ink-gray-8'
+									: item.note
+									  ? 'max-w-full shrink-0'
+									  : 'flex-1'
+							"
+							>{{ item.label }}</span
+						>
+						<template v-if="item.operator !== undefined">
+							<span class="shrink-0 text-ink-gray-5">{{ item.operator }}</span>
+							<span class="flex-1 truncate text-start text-ink-gray-6">{{
+								item.value
+							}}</span>
+						</template>
+						<span
+							v-if="item.note"
+							class="ms-auto min-w-0 truncate text-sm text-ink-gray-5"
+							:title="item.note"
+							>{{ item.note }}</span
+						>
+						<ChevronRight
+							v-if="item.next"
+							class="ms-auto size-4 shrink-0 text-ink-gray-5"
+							stroke-width="1.5"
+						/>
+						<!-- frappe-ui's Select and Combobox mark the chosen row this way -->
+						<ComboboxItemIndicator
+							v-if="!item.tick"
+							class="ms-1 inline-flex shrink-0 items-center justify-center"
+						>
+							<Check class="size-4 text-ink-gray-6" stroke-width="1.5" />
+						</ComboboxItemIndicator>
+						<Button
+							v-if="item.opens"
+							variant="ghost"
+							size="xs"
+							:label="__('Open')"
+							class="-me-1.5 -my-1 shrink-0"
+							@mousedown.prevent
+							@click.stop="emit('open', item)"
+						>
+							<template #icon
+								><ChevronRight class="size-3.5 text-ink-gray-5" stroke-width="1.5"
+							/></template>
+						</Button>
+						<Button
+							v-if="item.removable"
+							variant="ghost"
+							size="xs"
+							:label="__('Remove')"
+							class="-me-1.5 -my-1 shrink-0 opacity-0 group-hover:opacity-100 group-data-[highlighted]:opacity-100"
+							@mousedown.prevent
+							@click.stop="emit('remove', item)"
+						>
+							<template #icon><X class="size-3" stroke-width="1.5" /></template>
+						</Button>
+					</ComboboxItem>
+				</template>
+			</ComboboxGroup>
 
 			<div
 				v-if="loading && !items.length"

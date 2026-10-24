@@ -17,6 +17,7 @@ from ibis import _
 from insights import standard
 from insights.decorators import insights_whitelist
 from insights.exceptions import QueryRefused, UnknownColumn
+from insights.insights.doctype.insights_data_source_v3.ibis.functions import _apply_granularity
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
@@ -45,6 +46,8 @@ from insights.utils import (
 )
 
 MAX_PROFILE_VALUES = 1_000
+
+PERIOD_GRAINS = ("year", "fiscal_year", "quarter", "fiscal_quarter", "month")
 
 
 class InsightsQueryv3(Document):
@@ -467,11 +470,12 @@ class InsightsQueryv3(Document):
         search_term: str | None = None,
         limit: int = 20,
         adhoc_filters: dict | None = None,
+        granularity: str | None = None,
     ):
         """The Builder's endpoint for `distinct_column_values`, checked like
         `get_count`. It answers a refusal as a View's picker does."""
         return self.distinct_column_values(
-            column_name, active_operation_idx, search_term, limit, adhoc_filters
+            column_name, active_operation_idx, search_term, limit, adhoc_filters, granularity
         )
 
     def distinct_column_values(
@@ -481,20 +485,51 @@ class InsightsQueryv3(Document):
         search_term: str | None = None,
         limit: int = 20,
         adhoc_filters: dict | None = None,
+        granularity: str | None = None,
     ):
+        """The values a picker lists for `column_name`. With `granularity`, the
+        periods it has rows in instead, as each period's first day, newest first.
+        A date picker lists those and labels them itself, so `search_term` does
+        not narrow them, and `limit` is lifted to 500, so a long year list never
+        offers a year whose quarters were cut off."""
         with set_adhoc_filters(adhoc_filters):
             builder = self.get_builder(active_operation_idx)
         column_name = builder.get_column(column_name).get_name()
 
-        values_query = (
-            builder.query.select(column_name)
-            .filter(_[column_name].notnull() if not search_term else _[column_name].ilike(f"%{search_term}%"))
-            .distinct()
-            .head(limit)
-        )
+        if granularity:
+            if granularity not in PERIOD_GRAINS:
+                frappe.throw(
+                    frappe._("A date filter lists periods by {0}, not {1}").format(
+                        ", ".join(PERIOD_GRAINS), granularity
+                    ),
+                    QueryRefused,
+                )
+            if not (
+                builder.query[column_name].type().is_date()
+                or builder.query[column_name].type().is_timestamp()
+            ):
+                frappe.throw(frappe._("Only a Date or Datetime column has periods"), QueryRefused)
+            # far fewer distinct days than rows to move to their period
+            days = builder.query.select(column_name).filter(_[column_name].notnull()).distinct()
+            values_query = (
+                days.select(_apply_granularity(days[column_name], granularity))
+                .distinct()
+                .order_by(ibis.desc(column_name))
+                .head(max(limit, 500))
+            )
+        else:
+            values_query = (
+                builder.query.select(column_name)
+                .filter(
+                    _[column_name].notnull() if not search_term else _[column_name].ilike(f"%{search_term}%")
+                )
+                .distinct()
+                .head(limit)
+            )
         result, _time_taken = execute_ibis_query(
             values_query,
-            cache_expiry=24 * 60 * 60,
+            # periods follow new rows as charts do, other values change rarely
+            cache_expiry=60 * 10 if granularity else 24 * 60 * 60,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )

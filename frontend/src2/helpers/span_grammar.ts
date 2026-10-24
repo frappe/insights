@@ -19,8 +19,40 @@
 // module writes is a span the server runs, and a change to either side is a
 // change to this comment first.
 
-export const SPAN_UNITS = ['day', 'week', 'month', 'quarter', 'year', 'fiscal year'] as const
+import type { GranularityType } from './constants'
+
+export const SPAN_UNITS = [
+	'day',
+	'week',
+	'month',
+	'quarter',
+	'year',
+	'fiscal year',
+	'fiscal quarter',
+] as const
 export type SpanUnit = (typeof SPAN_UNITS)[number]
+
+/** The chart grain a unit's periods group at. */
+export const SPAN_GRAINS: Record<SpanUnit, GranularityType> = {
+	day: 'day',
+	week: 'week',
+	month: 'month',
+	quarter: 'quarter',
+	year: 'year',
+	'fiscal year': 'fiscal_year',
+	'fiscal quarter': 'fiscal_quarter',
+}
+
+/** One period of a unit, as dayjs steps it. */
+export const SPAN_STEPS: Record<SpanUnit, [number, 'day' | 'week' | 'month']> = {
+	day: [1, 'day'],
+	week: [1, 'week'],
+	month: [1, 'month'],
+	quarter: [3, 'month'],
+	year: [12, 'month'],
+	'fiscal year': [12, 'month'],
+	'fiscal quarter': [3, 'month'],
+}
 
 export type SpanShape = 'to date' | 'current' | 'last' | 'next'
 

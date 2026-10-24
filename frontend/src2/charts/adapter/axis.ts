@@ -326,20 +326,21 @@ function xAxisFor(dimension: Dimension, x: string, rows: QueryResultRow[]): Char
 	const type = xAxisTypeFor(dimension)
 	if (type !== 'time') return { type }
 
-	// The one grain a fiscal calendar adds and a plain one has no name for. It is
-	// the reader's own year boundary, so Insights prints it. echarts ticks a year
-	// at calendar boundaries, months from a fiscal year's start, so the ticks sit
-	// on the rows instead.
-	if (dimension.granularity === 'fiscal_year') {
-		const format = (value: any) => getFormattedDate(value, 'fiscal_year')
-		const years = rows.map((row) => row[x])
+	// The two grains a fiscal calendar adds and a plain one has no name for. They
+	// follow the reader's own year boundary, so Insights prints them. echarts ticks
+	// a year or a quarter at calendar boundaries, months from a fiscal one's start,
+	// so the ticks sit on the rows instead.
+	if (dimension.granularity === 'fiscal_year' || dimension.granularity === 'fiscal_quarter') {
+		const granularity = dimension.granularity
+		const format = (value: any) => getFormattedDate(value, granularity)
+		const periods = rows.map((row) => row[x])
 		return {
 			type,
-			timeGrain: 'year',
+			timeGrain: granularity === 'fiscal_year' ? 'year' : 'quarter',
 			format,
 			echartOptions: {
-				axisLabel: { customValues: years, formatter: format },
-				axisTick: { customValues: years },
+				axisLabel: { customValues: periods, formatter: format },
+				axisTick: { customValues: periods },
 			},
 		}
 	}

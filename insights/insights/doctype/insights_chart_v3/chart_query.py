@@ -26,12 +26,14 @@ operations.
 """
 
 import copy
+import datetime
 import json
 import secrets
 
 from frappe import _
+from frappe.utils import add_to_date, get_datetime
 
-from insights.insights.query_builders.sql_functions import span_unit
+from insights.insights.query_builders.sql_functions import get_fiscal_period, span_unit
 
 AXIS_CHARTS = ("Bar", "Line", "Row")
 CHART_TYPES = (
@@ -536,6 +538,7 @@ SPARKLINE_GRAINS = {
     "quarter": "month",
     "year": "month",
     "fiscal year": "month",
+    "fiscal quarter": "month",
 }
 
 
@@ -638,9 +641,16 @@ def period_grain(chart_type: str, config: dict | None) -> str:
     return _period(_config_for_derivation(config, chart_type)).get("grain") or ""
 
 
-def grain_step(granularity: str) -> dict:
-    """One bucket of a grain, as `add_to_date` keyword arguments."""
-    return {"fiscal_year": {"years": 1}, "quarter": {"months": 3}}.get(granularity) or {f"{granularity}s": 1}
+def adjacent_bucket(granularity: str, start, direction: int = 1) -> datetime.datetime:
+    """The start of the bucket after the one `start` opens, or before it with
+    `direction` -1. A fiscal bucket follows the fiscal start day, which a month
+    shorter than it moves."""
+    start = get_datetime(start)
+    months = {"fiscal_year": 12, "fiscal_quarter": 3}.get(granularity)
+    if months:
+        return get_datetime(get_fiscal_period(start, months, direction)[0])
+    unit, count = {"quarter": ("months", 3)}.get(granularity) or (f"{granularity}s", 1)
+    return add_to_date(start, **{unit: count * direction})
 
 
 def _comparison_shifts(config: dict, span: str) -> list[dict]:
@@ -667,12 +677,16 @@ def _comparison_shifts(config: dict, span: str) -> list[dict]:
 def _comparison_shift(comparison: dict, span: str) -> dict | None:
     """The span one comparison asks for, or nothing when it asks for no
     second span."""
+    unit = _span_unit(span)
     if comparison.get("source") == "last year":
-        return {"unit": "year", "count": -1}
+        # a fiscal start day clamps in a shorter month, so a calendar year back
+        # can land in the period beside the one a year back
+        if unit == "fiscal quarter":
+            return {"unit": unit, "count": -4}
+        return {"unit": "fiscal year" if unit == "fiscal year" else "year", "count": -1}
     if comparison.get("source") != "previous":
         return None
 
-    unit = _span_unit(span)
     return {"unit": unit, "count": -_span_periods(span)} if unit else None
 
 

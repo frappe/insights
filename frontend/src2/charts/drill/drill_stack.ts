@@ -6,7 +6,7 @@
 import type { NotPermitted } from '../../not_permitted'
 import { __ } from '../../translation'
 import { computed, reactive, shallowRef } from 'vue'
-import { FIELDTYPES, getGranularityOptions } from '../../helpers/constants'
+import { FIELDTYPES, getGranularityOptions, type GranularityType } from '../../helpers/constants'
 import { getFormattedDate } from '../../query/helpers'
 import { AXIS_CHARTS } from '../../types/chart.types'
 import type {
@@ -550,7 +550,12 @@ export type DrillRowsSource = {
 	 * The values a filter on one column of the cut can pick from. `rules` holds
 	 * the reader's other filters.
 	 */
-	values: (column: string, search: string, rules: DrillRowFilter[]) => Promise<string[]>
+	values: (
+		column: string,
+		search: string,
+		rules: DrillRowFilter[],
+		granularity?: GranularityType,
+	) => Promise<string[]>
 	range: (column: string, rules: DrillRowFilter[]) => Promise<[number, number] | undefined>
 }
 

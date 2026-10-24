@@ -33,8 +33,8 @@ from frappe.utils import add_to_date, get_datetime, get_time
 from insights import user_permissions
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     ORDERED_TYPES,
+    adjacent_bucket,
     count_of_rows,
-    grain_step,
     plotted_measures,
 )
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
@@ -104,6 +104,7 @@ GRAINS = {
         "quarter": QUARTER,
         "year": YEAR,
         "fiscal_year": None,
+        "fiscal_quarter": None,
     },
     "Datetime": {
         "second": None,
@@ -115,6 +116,7 @@ GRAINS = {
         "quarter": QUARTER,
         "year": YEAR,
         "fiscal_year": None,
+        "fiscal_quarter": None,
     },
     "Time": {"second": SECOND, "minute": MINUTE, "hour": HOUR},
 }
@@ -341,6 +343,7 @@ def drill_rows_values(
     adhoc_filters: dict | None = None,
     row_filters: list | None = None,
     operations: list[dict] | None = None,
+    granularity: str | None = None,
 ) -> list:
     """The values a reader's filter on a rows level suggests.
 
@@ -355,7 +358,7 @@ def drill_rows_values(
         on_surface = _surface_column(column, surface)
 
         return chart.get_query(operations=narrowed).distinct_column_values(
-            on_surface["name"], search_term=search_term, adhoc_filters=adhoc_filters
+            on_surface["name"], search_term=search_term, adhoc_filters=adhoc_filters, granularity=granularity
         )
 
 
@@ -982,13 +985,12 @@ def _grain_bucket(granularity: str, value, data_type: str) -> tuple:
     of day, and a bucket that would run past midnight ends where the day does:
     nothing on a clock is later, so it needs no upper end at all.
     """
-    step = grain_step(granularity)
     if data_type != "Time":
         start = get_datetime(value)
-        return (start, add_to_date(start, **step))
+        return (start, adjacent_bucket(granularity, start))
 
     start = _moment(get_time(value))
-    end = add_to_date(start, **step)
+    end = adjacent_bucket(granularity, start)
     return (start.time(), end.time() if end.date() == start.date() else None)
 
 

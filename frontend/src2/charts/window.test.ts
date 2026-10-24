@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import session from '../session'
 import type { ChartConfig } from '../types/chart.types'
 import {
 	LAST_YEAR,
@@ -45,24 +46,28 @@ describe('the periods the picker writes', () => {
 			'to date:quarter': { span: 'quarter to date' },
 			'to date:year': { span: 'year to date' },
 			'to date:fiscal year': { span: 'fiscal year to date' },
+			'to date:fiscal quarter': { span: 'fiscal quarter to date' },
 			'current:day': { span: 'current day' },
 			'current:week': { span: 'current week' },
 			'current:month': { span: 'current month' },
 			'current:quarter': { span: 'current quarter' },
 			'current:year': { span: 'current year' },
 			'current:fiscal year': { span: 'current fiscal year' },
+			'current:fiscal quarter': { span: 'current fiscal quarter' },
 			'last:day': { span: 'last 3 days' },
 			'last:week': { span: 'last 3 weeks' },
 			'last:month': { span: 'last 3 months' },
 			'last:quarter': { span: 'last 3 quarters' },
 			'last:year': { span: 'last 3 years' },
 			'last:fiscal year': { span: 'last 3 fiscal years' },
+			'last:fiscal quarter': { span: 'last 3 fiscal quarters' },
 			'grain:day': { grain: 'day' },
 			'grain:week': { grain: 'week' },
 			'grain:month': { grain: 'month' },
 			'grain:quarter': { grain: 'quarter' },
 			'grain:year': { grain: 'year' },
 			'grain:fiscal year': { grain: 'fiscal_year' },
+			'grain:fiscal quarter': { grain: 'fiscal_quarter' },
 		})
 
 		periods.forEach(([choice, period]) => expect(choiceOfPeriod(period)).toBe(choice))
@@ -256,6 +261,17 @@ describe('how a window prints', () => {
 			'May, 2026 – August, 2026',
 		)
 		expect(formatWindowLabel('last 2 quarters', '2026-01-01')).toBe('Q1, 2026 – Q2, 2026')
+	})
+
+	// @feature charts.number-period query.fiscal-quarter
+	it('counts fiscal quarters from the fiscal start day', () => {
+		const start = session.site.fiscal_year_start
+		session.site.fiscal_year_start = '2020-01-31'
+		// 30 Apr + 6 months is 30 Oct, a day before the quarter that opens on 31 Oct
+		expect(formatWindowLabel('last 3 fiscal quarters', '2025-04-30')).toBe(
+			'Q2 FY25-26 – Q4 FY25-26',
+		)
+		session.site.fiscal_year_start = start
 	})
 
 	// @feature charts.number-period

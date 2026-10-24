@@ -381,6 +381,7 @@ def get_drill_rows_values(
     card_filters: list | None = None,
     row_filters: list | None = None,
     search_term: str | None = None,
+    granularity: str | None = None,
 ):
     """The values listed by the reader's own filter on a rows level of an unsaved shape."""
     if not is_writer(chart_name):
@@ -392,6 +393,7 @@ def get_drill_rows_values(
             filters=filters,
             row_filters=row_filters,
             search_term=search_term,
+            granularity=granularity,
         )
 
     chart, adhoc_filters = drilled_shape(
@@ -405,6 +407,7 @@ def get_drill_rows_values(
         adhoc_filters=adhoc_filters,
         row_filters=row_filters,
         operations=operations,
+        granularity=granularity,
     )
 
 

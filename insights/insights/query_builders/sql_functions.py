@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import operator
 from contextlib import contextmanager, suppress
@@ -305,6 +306,7 @@ DATE_UNITS = (
     "quarter",
     "year",
     "fiscal year",
+    "fiscal quarter",
 )
 
 
@@ -347,7 +349,9 @@ def get_current_date_range(unit, anchor=None):
     if unit == "year":
         return [get_year_start(today), get_year_ending(today)]
     if unit == "fiscal year":
-        return [get_fy_start(today), get_fiscal_year_ending(today)]
+        return get_fiscal_period(today, 12)
+    if unit == "fiscal quarter":
+        return get_fiscal_period(today, 3)
 
 
 def get_fiscal_year_start_date():
@@ -371,21 +375,30 @@ def get_erpnext_fiscal_year_start():
     )
 
 
-def get_fy_start(date):
+def get_fiscal_period(date, months, shift=0):
+    """The fiscal year (12 months) or quarter (3) `date` falls in, or the one
+    `shift` periods away, as [start, end].
+
+    Periods start on the configured fiscal start day, every `months` months from
+    it; in a month shorter than that day, on its last day. So a period is moved
+    by counting periods, never by adding months to a start.
+    """
     fy_start = get_fiscal_year_start_date()
-    dt = getdate(date)  # eg. 2019-01-01
-    if dt.month < fy_start.month:
-        return getdate(f"{dt.year - 1}-{fy_start.month}-{fy_start.day}")  # eg. 2018-04-01
-    return getdate(f"{dt.year}-{fy_start.month}-{fy_start.day}")  # eg. 2019-04-01
+    dt = getdate(date)
+    months_in = dt.year * 12 + dt.month - fy_start.month
+    if dt.day < _fiscal_day(dt.year, dt.month, fy_start.day):
+        months_in -= 1
+    start = fy_start.month - 1 + months_in - months_in % months + shift * months
+
+    def nth_month(index):
+        year, month = divmod(index, 12)
+        return datetime.date(year, month + 1, _fiscal_day(year, month + 1, fy_start.day))
+
+    return [nth_month(start), nth_month(start + months) - datetime.timedelta(days=1)]
 
 
-def get_fiscal_year_ending(date):
-    fy_start = get_fiscal_year_start_date()
-    fy_end = add_to_date(fy_start, years=1, days=-1)
-    dt = getdate(date)  # eg. 2019-04-01
-    if dt.month < fy_start.month:
-        return getdate(f"{dt.year}-{fy_end.month}-{fy_end.day}")  # eg. 2018-03-31
-    return getdate(f"{dt.year + 1}-{fy_end.month}-{fy_end.day}")  # eg. 2019-03-31
+def _fiscal_day(year, month, day):
+    return min(day, calendar.monthrange(year, month)[1])
 
 
 def get_directional_date_range(direction, unit, number_of_unit, anchor=None):
@@ -427,8 +440,13 @@ def get_directional_date_range(direction, unit, number_of_unit, anchor=None):
         ]
     if unit == "fiscal year":
         dates = [
-            get_fy_start(add_to_date(today, years=start)),
-            get_fiscal_year_ending(add_to_date(today, years=end)),
+            get_fiscal_period(today, 12, start)[0],
+            get_fiscal_period(today, 12, end)[1],
+        ]
+    if unit == "fiscal quarter":
+        dates = [
+            get_fiscal_period(today, 3, start)[0],
+            get_fiscal_period(today, 3, end)[1],
         ]
 
     if isinstance(dates[0], str):
@@ -585,9 +603,14 @@ def shift_anchor(anchor: datetime.date, unit: str, count: int) -> datetime.date:
         return getdate(add_to_date(anchor, months=count))
     if unit == "quarter":
         return getdate(add_to_date(anchor, months=3 * count))
-    # a fiscal year is twelve months long wherever it starts, so it moves by the year
-    if unit == "year" or unit == "fiscal year":
+    if unit == "year":
         return getdate(add_to_date(anchor, years=count))
+    if unit in ("fiscal quarter", "fiscal year"):
+        # the same day of the period, kept inside the moved period: a start day
+        # a shorter month moved would otherwise land in the period beside it
+        months = 3 if unit == "fiscal quarter" else 12
+        start, end = get_fiscal_period(anchor, months, count)
+        return min(max(getdate(add_to_date(anchor, months=months * count)), start), end)
 
     raise Exception(f"Invalid shift unit - {unit}")
 

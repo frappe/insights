@@ -9,6 +9,7 @@ import { ComboboxInput, ComboboxRoot } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 import { isMac } from '../../composables/useShortcut'
 import { showErrorToast } from '../../helpers'
+import dayjs from '../../helpers/dayjs'
 import { columnIcon } from '../../query/column_icon'
 import { __ } from '../../translation'
 import type { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
@@ -25,8 +26,18 @@ import {
 	operatorRows,
 	parseDatePhrase,
 	parseNumber,
+	parsePeriod,
 	spanFromText,
 	pathOf,
+	SPAN_GRAINS,
+	periodKey,
+	periodLabel,
+	periodLists,
+	periodMonths,
+	periodRule,
+	periodStart,
+	QUARTER_OF,
+	YEAR_OF,
 	relativeDirections,
 	relativeRow,
 	selectedRowKey,
@@ -38,9 +49,13 @@ import {
 	type Filter,
 	type ListItem,
 	type OperatorDef,
+	type Period,
+	type PeriodList,
+	type PeriodUnit,
 	type SpanDirection,
 	type SpanUnit,
 	type Stage,
+	type ValuesProvider,
 } from './filter_picker'
 import FilterPickerCalendar from './FilterPickerCalendar.vue'
 import FilterPickerList from './FilterPickerList.vue'
@@ -51,7 +66,7 @@ defineOptions({ inheritAttrs: false })
 
 const props = defineProps<{
 	columns: QueryResultColumn[]
-	valuesProvider: (column: QueryResultColumn) => (search: string) => Promise<string[]>
+	valuesProvider: ValuesProvider
 	/** The smallest and largest a numeric column goes, for the presets it lists. */
 	rangeProvider?: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	column?: QueryResultColumn
@@ -83,6 +98,9 @@ const relative = reactive<{ direction: SpanDirection; unit: SpanUnit; includeCur
 	unit: 'day',
 	includeCurrent: false,
 })
+
+/** the period list the reader opened, and the year whose quarters they opened in it */
+const period = reactive<{ list?: PeriodList; year?: string }>({})
 
 const kind = computed(() => (column.value ? kindOf(column.value.type) : undefined))
 const multi = computed(
@@ -119,6 +137,8 @@ function clearValue() {
 	relative.direction = 'last'
 	relative.unit = 'day'
 	relative.includeCurrent = false
+	period.list = undefined
+	period.year = undefined
 }
 
 function go(next: Stage) {
@@ -159,6 +179,18 @@ function load(filter: Filter) {
 	history.value = props.column ? [] : ['overview', 'column']
 	if (needsValue) history.value.push('operator')
 	stage.value = needsValue ? 'value' : 'operator'
+	if (path.period) {
+		const year = YEAR_OF[path.period.unit]
+		period.list = year || (path.period.unit as PeriodList)
+		history.value.push('value')
+		stage.value = 'period'
+		if (year) {
+			period.year = periodStart(year, path.period.start)
+			history.value.push('period')
+			stage.value = 'quarter'
+		}
+		highlight(periodKey(path.period))
+	}
 	if (path.relative) {
 		relative.direction = path.relative.direction
 		relative.unit = path.relative.unit
@@ -234,6 +266,93 @@ watch(
 	{ immediate: true },
 )
 
+// The periods a list shows, by grain. Asked once per grain while the panel is
+// open: a period list is short, and the reader narrows it by typing.
+const periods = ref<Partial<Record<string, string[]>>>({})
+const periodsFetching = ref(false)
+const periodsFailed = ref(false)
+let periodsRequest = 0
+
+/** the unit the list on screen shows */
+const periodUnit = computed<PeriodUnit | undefined>(() => {
+	if (stage.value === 'period') return period.list
+	if (stage.value === 'quarter' && period.list && period.list !== 'month')
+		return QUARTER_OF[period.list]
+	return undefined
+})
+
+watch(
+	[() => column.value?.name, periodUnit],
+	async ([name], [previousName]) => {
+		// any change retires the ask in flight: it answers for a list no longer open,
+		// and for another column it would fill this one's lists
+		const id = ++periodsRequest
+		periodsFetching.value = false
+		if (name !== previousName) periods.value = {}
+		const unit = periodUnit.value
+		if (!unit || !column.value) return
+		const grain = SPAN_GRAINS[unit]
+		if (periods.value[grain]) return
+
+		periodsFetching.value = true
+		periodsFailed.value = false
+		const starts = await props
+			.valuesProvider(column.value)('', grain)
+			.catch((error) => {
+				if (id === periodsRequest) showErrorToast(error, false)
+				return undefined
+			})
+		if (id !== periodsRequest) return
+		periodsFetching.value = false
+		periodsFailed.value = !starts
+		// a failed ask is not an answer, so the list asks again when it is opened again
+		if (!starts) return
+		// a datetime column answers a timestamp, and the rows go by the day
+		periods.value = { ...periods.value, [grain]: starts.map((s) => String(s).slice(0, 10)) }
+		// the reopened period's row exists only now, so the highlight can land on it
+		if (editing.value) highlight(selectedRowKey(editing.value, stage.value) || '')
+	},
+	{ immediate: true },
+)
+
+function periodRows(): ListItem[] {
+	const unit = periodUnit.value
+	if (!unit) return []
+	const starts = periods.value[SPAN_GRAINS[unit]] || []
+
+	if (stage.value === 'period') {
+		return starts
+			.map((start) => ({ unit, start }))
+			.filter((p) => matches(periodLabel(p.unit, p.start)))
+			.map((p) => ({
+				key: periodKey(p),
+				label: periodLabel(p.unit, p.start),
+				opens: p.unit !== 'month',
+			}))
+	}
+
+	// a year's quarters, in the order the year runs
+	const year = period.year!
+	const end = dayjs(year).add(1, 'year').format('YYYY-MM-DD')
+	return starts
+		.filter((start) => start >= year && start < end)
+		.sort()
+		.map((start) => ({ unit, start }))
+		.filter((p) => matches(periodLabel(p.unit, p.start)))
+		.map((p) => ({
+			key: periodKey(p),
+			label: periodLabel(p.unit, p.start).split(' ')[0],
+			note: periodMonths(p),
+		}))
+}
+
+/** a period's own label, typed, is that period: a `within` rule, so only `within` reads it */
+const typedPeriod = computed(() =>
+	stage.value === 'value' && kind.value === 'date' && !calendar.value
+		? parsePeriod(search.value)
+		: undefined,
+)
+
 /** The rule the typed text spells, where the stage has a place for one. */
 const typed = computed<(Draft & { label: string }) | undefined>(() => {
 	const text = search.value.trim()
@@ -259,6 +378,12 @@ const typed = computed<(Draft & { label: string }) | undefined>(() => {
 	}
 
 	if (kind.value !== 'date') return undefined
+
+	if (typedPeriod.value)
+		return {
+			...periodRule(typedPeriod.value),
+			label: __('Use “{0}”', periodLabel(typedPeriod.value.unit, typedPeriod.value.start)),
+		}
 
 	if (!calendar.value) {
 		const span = spanFromText(text)
@@ -364,6 +489,8 @@ const rows = computed<ListItem[]>(() => {
 		]
 	}
 
+	if (stage.value === 'period' || stage.value === 'quarter') return periodRows()
+
 	if (multi.value) {
 		const top = sticky.value.filter((v) => matches(v))
 		const rest = distinct.value.filter((v) => !top.includes(v))
@@ -397,6 +524,10 @@ const rows = computed<ListItem[]>(() => {
 
 	// dates: the input and the highlighted grid already read the draft
 	if (calendar.value) return []
+	// a time of day has no periods
+	const lists: ListItem[] = (column.value?.type === 'Time' ? [] : periodLists())
+		.filter((list) => matches(list.label))
+		.map((list) => ({ key: `list:${list.unit}`, label: list.label, next: true }))
 	const presets = datePresets()
 		.filter((p) => matches(p.label))
 		.map((p) => ({
@@ -404,14 +535,32 @@ const rows = computed<ListItem[]>(() => {
 			label: p.label,
 		}))
 	const row = relativeRow()
-	const relativeRows: ListItem[] = matches(row.label) ? [{ key: row.key, label: row.label }] : []
-	return [...use, ...presets, ...relativeRows]
+	const relativeRows: ListItem[] = matches(row.label)
+		? [{ key: row.key, label: row.label, next: true }]
+		: []
+	return [
+		...use,
+		...grouped(presets, __('Presets')),
+		...grouped(lists, __('Periods')),
+		...grouped(relativeRows, __('Custom')),
+	]
 })
+
+/** The rows under one heading: the first carries it, so a search that hides the group hides its heading. */
+function grouped(rows: ListItem[], group: string): ListItem[] {
+	return rows.map((row, i) => (i ? row : { ...row, group }))
+}
 
 const emptyText = computed(() => {
 	if (stage.value === 'column') return __('No columns found')
 	if (stage.value === 'operator') return __('No operators found')
 	if (stage.value === 'relative' || stage.value === 'unit') return __('Nothing matches')
+	if (stage.value === 'period' || stage.value === 'quarter')
+		return periodsFetching.value
+			? ''
+			: periodsFailed.value
+			  ? __('Could not load dates')
+			  : __('No dates found')
 	if (multi.value) return fetching.value ? '' : __('No values found')
 	if (kind.value === 'text') return ''
 	if (kind.value === 'number') return ''
@@ -441,6 +590,7 @@ const placeholder = computed(() => {
 		const label = relativeDirections().find((d) => d.key === relative.direction)!.label
 		return __('{0} how many?', label)
 	}
+	if (stage.value === 'period' || stage.value === 'quarter') return __('{0} within…', name)
 	if (!name || !op.value) return __('Type a value…')
 	// numbers read by their sign, and a range keeps its example: `between 30 and
 	// 50` would teach a separator the input does not parse
@@ -484,7 +634,18 @@ function pick(item: ListItem) {
 		}
 		return commit({ operator: 'within', value: { span: item.key.slice(5) } })
 	}
+	if (stage.value === 'period' || stage.value === 'quarter') {
+		const [, unit, start] = item.key.split(':')
+		return commit(periodRule({ unit, start } as Period))
+	}
 	pickValue(item)
+}
+
+/** A year's › opens its quarters; every other row has none. */
+function open(item: ListItem) {
+	if (!item.opens || stage.value !== 'period') return
+	period.year = item.key.split(':')[2]
+	go('quarter')
 }
 
 function pickValue(item: ListItem) {
@@ -507,6 +668,10 @@ function pickValue(item: ListItem) {
 	}
 
 	if (item.key === relativeRow().key) return go('relative')
+	if (item.key.startsWith('list:')) {
+		period.list = item.key.slice(5) as PeriodList
+		return go('period')
+	}
 	if (item.key.startsWith('span:'))
 		return commit({ operator: 'within', value: { span: item.key.slice(5) } })
 }
@@ -563,7 +728,10 @@ onBeforeUnmount(() => {
 function back() {
 	const previous = history.value.pop()
 	if (!previous) return
+	const left = { stage: stage.value, list: period.list, year: period.year }
 	if (stage.value === 'value') clearValue()
+	if (stage.value === 'period') period.list = undefined
+	if (stage.value === 'quarter') period.year = undefined
 	if (previous === 'column') {
 		op.value = undefined
 		column.value = undefined
@@ -575,6 +743,10 @@ function back() {
 	stage.value = previous
 	search.value = ''
 	if (previous === 'operator' && op.value) highlight(op.value.operator)
+	// the reader lands back on the row they opened
+	if (left.stage === 'period') highlight(`list:${left.list}`)
+	if (left.stage === 'quarter' && left.list && left.year)
+		highlight(periodKey({ unit: left.list, start: left.year }))
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -582,6 +754,17 @@ function onKeydown(event: KeyboardEvent) {
 	if (event.key === 'Escape') {
 		// reka closes the popover from here; the draft goes with it
 		cancelled.value = true
+		return
+	}
+	// → opens a year's quarters, the way its › does, and ← comes back out
+	if (event.key === 'ArrowRight' && !search.value && highlightedRow()?.opens) {
+		event.preventDefault()
+		open(highlightedRow()!)
+		return
+	}
+	if (event.key === 'ArrowLeft' && !search.value && stage.value === 'quarter') {
+		event.preventDefault()
+		back()
 		return
 	}
 	if (event.key === 'Backspace' && !search.value) {
@@ -750,18 +933,32 @@ function focusInput() {
 			</Tooltip>
 		</div>
 
-		<FilterPickerList
-			v-if="rows.length || fetching || emptyText"
-			:items="rows"
-			:stage="stage"
-			:loading="fetching"
-			:empty="emptyText"
-			@pick="pick"
-			@remove="emit('remove', $event.filter!)"
-		/>
+		<!-- A range calendar sits above its rows: they go as the reader types a
+		     range, and the days must stay where the first click found them. -->
+		<div class="flex flex-col" :class="calendar === 'range' ? 'flex-col-reverse' : ''">
+			<FilterPickerList
+				v-if="rows.length || fetching || periodsFetching || emptyText"
+				:items="rows"
+				:stage="stage"
+				:loading="fetching || periodsFetching"
+				:empty="emptyText"
+				@pick="pick"
+				@open="open"
+				@remove="emit('remove', $event.filter!)"
+			/>
 
-		<div v-if="calendar" :class="rows.length ? 'border-t border-outline-gray-1' : ''">
-			<FilterPickerCalendar :mode="calendar" :text="search" @write="search = $event" />
+			<div
+				v-if="calendar"
+				:class="
+					rows.length
+						? calendar === 'range'
+							? 'border-b border-outline-gray-1'
+							: 'border-t border-outline-gray-1'
+						: ''
+				"
+			>
+				<FilterPickerCalendar :mode="calendar" :text="search" @write="search = $event" />
+			</div>
 		</div>
 
 		<!-- The row grows in rather than appearing: it arrives a stage after the

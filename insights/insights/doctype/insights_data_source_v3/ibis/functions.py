@@ -996,7 +996,7 @@ def within(column: ir.DateValue, timespan: str):
     def within(column, timespan)
 
     Filter rows within a timespan. The timespan can be 'Last [N] [Parts]', 'Current [Parts]', or 'Next [N] [Parts]'.
-    Parts can be 'day', 'week', 'month', 'quarter', 'year' or 'fiscal year'.
+    Parts can be 'day', 'week', 'month', 'quarter', 'year', 'fiscal year' or 'fiscal quarter'.
 
     Examples:
     - within(order_date, 'Last 7 days')
@@ -1187,7 +1187,7 @@ def next_value(column: ir.Column, group_by=None, order_by=None, offset=1):
     return column.lead(offset).over(group_by=group_by, order_by=order_by)
 
 
-_DATE_GRAINS = ("day", "week", "month", "quarter", "year", "fiscal_year")
+_DATE_GRAINS = ("day", "week", "month", "quarter", "year", "fiscal_year", "fiscal_quarter")
 _DATETIME_GRAINS = ("second", "minute", "hour", *_DATE_GRAINS)
 
 
@@ -1198,19 +1198,8 @@ def _grains(dtype):
 def _apply_granularity(column, granularity, data_type=None):
     """`column` moved to the start of its `granularity` period, keeping its name.
     The underscore keeps it out of the expression functions."""
-    supported_granularities = [
-        "second",
-        "minute",
-        "hour",
-        "day",
-        "week",
-        "month",
-        "quarter",
-        "year",
-        "fiscal_year",
-    ]
-    if granularity not in supported_granularities:
-        supported = ", ".join(supported_granularities)
+    if granularity not in _DATETIME_GRAINS:
+        supported = ", ".join(_DATETIME_GRAINS)
         frappe.throw(
             frappe._("Granularity {0} is not supported for {1} columns. Supported granularities: {2}").format(
                 granularity, data_type, supported
@@ -1223,6 +1212,8 @@ def _apply_granularity(column, granularity, data_type=None):
         return week_start(column).name(column.get_name())
     if granularity == "fiscal_year":
         return fiscal_year_start(column).name(column.get_name())
+    if granularity == "fiscal_quarter":
+        return _fiscal_period_start(column, 3).name(column.get_name())
 
     truncate_unit = {
         "second": "s",
@@ -1277,8 +1268,8 @@ def _period_key(date_column, grain):
         ]
     if grain in ("year", "fiscal_year"):
         return period_start.year(), 1
-    if grain in ("month", "quarter"):
-        return period_start.year() * 12 + period_start.month(), 3 if grain == "quarter" else 1
+    if grain in ("month", "quarter", "fiscal_quarter"):
+        return period_start.year() * 12 + period_start.month(), 1 if grain == "month" else 3
     return date_diff(period_start, ibis.date(1970, 1, 1), "day"), 1
 
 
@@ -1518,18 +1509,29 @@ def fiscal_year_start(column: ir.DateValue):
     - fiscal_year_start(order_date)
     """
 
+    return _fiscal_period_start(column, 12)
+
+
+def _fiscal_period_start(column: ir.DateValue, months: int):
+    """The first day of the fiscal year (12 months) or quarter (3) of each date,
+    by the rule of `get_fiscal_period`. Built with `ibis.date` rather than a
+    month interval, which SQLite cannot subtract."""
     fy_start = get_fiscal_year_start_date()
-    fiscal_year_start_month = fy_start.month
-    fiscal_year_start_day = fy_start.day
+    year, month = column.year(), column.month()
+    before_start = column.day() < _fiscal_day(year, month, fy_start.day)
+    months_in = year * 12 + month - fy_start.month - ibis.ifelse(before_start, 1, 0)
+    index = fy_start.month - 1 + months_in - months_in % months
+    start_year, start_month = index // 12, index % 12 + 1
+    return ibis.date(start_year, start_month, _fiscal_day(start_year, start_month, fy_start.day)).cast("date")
 
-    year = column.year()
-    month = column.month()
 
-    return if_else(
-        month < fiscal_year_start_month,
-        ibis.date(year - 1, fiscal_year_start_month, fiscal_year_start_day),
-        ibis.date(year, fiscal_year_start_month, fiscal_year_start_day),
-    ).cast("date")
+def _fiscal_day(year, month, day: int):
+    # every month has the first 28 days
+    if day <= 28:
+        return day
+    leap = ((year % 4 == 0) & (year % 100 != 0)) | (year % 400 == 0)
+    days = ibis.cases((month == 2, ibis.ifelse(leap, 29, 28)), (month.isin([4, 6, 9, 11]), 30), else_=31)
+    return ibis.least(day, days)
 
 
 def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: str):

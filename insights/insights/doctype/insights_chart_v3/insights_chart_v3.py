@@ -4,19 +4,19 @@
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_to_date, get_datetime, getdate
+from frappe.utils import get_datetime, getdate
 
 from insights import standard, user_permissions
 from insights.desk import claims_on, refuse_delete_while_claimed
 from insights.insights.doctype.insights_chart_v3.chart_drill import check_rows
 from insights.insights.doctype.insights_chart_v3.chart_query import (
+    adjacent_bucket,
     column_granularity,
     comparison_sources,
     comparison_timespans,
     config_errors,
     dashboard_period,
     derive_operations,
-    grain_step,
     normalize_chart_config,
     period_column,
     period_grain,
@@ -354,8 +354,7 @@ class InsightsChartv3(Document):
             if not grain or not last:
                 return {"previous": None}
             starts = {get_datetime(row[column]): index for index, row in enumerate(rows) if row.get(column)}
-            back = {unit: -count for unit, count in grain_step(grain).items()}
-            return {"previous": starts.get(add_to_date(get_datetime(last), **back))}
+            return {"previous": starts.get(adjacent_bucket(grain, last, -1))}
 
         starts = {getdate(row[column]): index for index, row in enumerate(rows) if row.get(column)}
 

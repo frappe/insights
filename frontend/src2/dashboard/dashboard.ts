@@ -36,6 +36,7 @@ import {
 	writePlacement,
 } from './grid_placement'
 import { cellRulesFor, defaultFilterStates, FILTER_ROWS, invalidateDashboard } from './view'
+import type { GranularityType } from '../helpers/constants'
 
 /**
  * A filter link, `` `query`.`column` ``, split back into its two halves.
@@ -514,22 +515,30 @@ function makeDashboard(name: string) {
 		filter_name: string,
 		search_term?: string,
 		chart_name?: string,
+		granularity?: GranularityType,
 	) {
 		return dashboard.call('get_distinct_column_values', {
 			filter_name,
 			search_term,
 			filter_context: chart_name ? filterContextFor(chart_name) : undefined,
+			granularity,
 		})
 	}
 
 	// the view endpoints: card values and ranges come from the saved grid, so the
 	// builder needs none of its own
-	function getCardColumnValues(chart_name: string, column: string, search_term?: string) {
+	function getCardColumnValues(
+		chart_name: string,
+		column: string,
+		search_term?: string,
+		granularity?: GranularityType,
+	) {
 		return call('insights.api.view.get_card_values', {
 			dashboard: dashboard.doc.name,
 			chart: chart_name,
 			column,
 			search_term,
+			granularity,
 		})
 	}
 

@@ -221,6 +221,36 @@ class TestNumberCardComparisonRows(InsightsIntegrationTestCase):
         self.assertEqual(str(result["rows"][-1]["date"])[:10], "2026-08-09")
         self.assertEqual(result["comparison_rows"], {"previous": None})
 
+    # @feature charts.number-comparison charts.drill-number-card query.fiscal-quarter
+    def test_a_fiscal_quarter_card_steps_and_drills_by_the_fiscal_start_day(self):
+        """Fiscal quarters start on 6 Feb, 6 May, 6 Aug and 6 Nov, so 3 and 4
+        August fall in the quarter that opened on 6 May."""
+        with self.change_settings("Insights Settings", fiscal_year_start="2020-02-06"):
+            chart = self.make_chart(["previous"], {"grain": "fiscal_quarter"})
+            with db_connections():
+                result = frappe.get_doc(DT.CHART, chart.name).fetch(force=True)
+                drilled = get_drill_data(
+                    chart.name,
+                    self.dashboard.name,
+                    filters={},
+                    drill_stack=[
+                        {
+                            "segment_filters": [{"column": "date", "operator": "=", "value": "2026-05-06"}],
+                            "action": {"rows": True, "measure": "count_0"},
+                        }
+                    ],
+                )
+
+        self.assertEqual(
+            [str(row["date"])[:10] for row in result["rows"]], ["2025-05-06", "2026-05-06", "2026-08-06"]
+        )
+        self.assertEqual([row["count_0"] for row in result["rows"]], [1, 4, 1])
+        self.assertEqual(result["comparison_rows"], {"previous": 1})
+        self.assertEqual(
+            sorted(row["description"] for row in drilled["rows"]),
+            sorted(d for d, date in TODOS.items() if "2026-05-06" <= date < "2026-08-06"),
+        )
+
     # @feature charts.number-period-from-dashboard
     def test_a_card_with_no_period_compares_the_dashboards_span_with_the_one_before(self):
         """Read as a row filter, the span left the card one number and nothing

@@ -22,7 +22,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.filter-operators-by-type | The operators listed depend on the column's type: text, number or date. |
 | query.filter-number-range | A number filter lists presets cut from the column's own smallest and largest values, and a between range. |
 | query.filter-values | A text filter lists the column's distinct values to pick from. |
-| query.filter-relative-date | A user filters on a date with the relative date picker: last, current or next N days, weeks, months, quarters, years or fiscal years. |
+| query.filter-relative-date | A user filters on a date with the relative date picker: last, current or next N days, weeks, months, quarters, years, fiscal years or fiscal quarters. |
+| query.fiscal-quarter | A fiscal quarter counts three months at a time from the fiscal year start, as a span unit and as a date grain. |
 | query.filter-relative-date-include-current | A relative date span can take in the current period. |
 | query.filter-relative-date-shift | A relative span can be measured from a shifted anchor rather than today. |
 | query.filter-date-on-datetime | A date picked for a Datetime column names that whole day, whichever operator compares it. |
@@ -242,6 +243,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.filter-add | A user adds a dashboard filter with a label and a type. |
 | dashboard.filter-links | A user links a dashboard filter to a chart's column and the chart refilters; an unlinked chart is left alone. |
 | dashboard.filter-values | A dashboard filter lists the distinct values, or the number range, of the column it links. |
+| dashboard.filter-date-periods | A date filter lists the years, fiscal years and months its column has rows in under the other filters, a year opens onto its quarters, and a pick keeps that whole period. |
 | dashboard.filter-default | A user sets a filter's default operator and value. |
 | dashboard.filter-user-default | A filter's default is the reader's own user default, such as their company. |
 | dashboard.filter-icon | A user picks an icon for a filter's trigger. |
@@ -446,7 +448,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 |---|---|
 | settings.profile | A user edits their first and last name. |
 | settings.week-start | An admin sets the weekday the week starts on and week ranges follow it. |
-| settings.fiscal-year-start | An admin sets the fiscal year start and fiscal year ranges follow it. |
+| settings.fiscal-year-start | An admin sets the fiscal year start, and fiscal years and quarters start on that day, in filters and in charts alike. |
 | settings.demo-data | An admin sets up demo data and a demo workbook. |
 | settings.demo-banner-dismiss | A user dismisses the demo data banner and it stays hidden. |
 | settings.security-update-notice | An admin sees a sidebar notice while a newer Insights release fixes security issues. |

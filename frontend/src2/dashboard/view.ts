@@ -31,7 +31,7 @@ import {
 	type Filter,
 } from '../components/filter_picker/filter_picker'
 import { showErrorToast } from '../helpers'
-import type { FilterType } from '../helpers/constants'
+import type { FilterType, GranularityType } from '../helpers/constants'
 import { navigate } from '../helpers/navigation'
 import { stableStringify } from '../helpers/stable_stringify'
 import type { NumberChartConfig } from '../types/chart.types'
@@ -251,13 +251,22 @@ export type DashboardView = {
 	filters: FilterValues
 	setFilter: (filter_name: string, state?: FilterState) => void
 	// a filter's values, narrowed by the other filters
-	filterValues: (filter_name: string, search_term?: string) => Promise<string[]>
+	filterValues: (
+		filter_name: string,
+		search_term?: string,
+		granularity?: GranularityType,
+	) => Promise<string[]>
 	// the min and max for a number filter's presets, narrowed the same way
 	filterRange: (filter_name: string) => Promise<[number, number] | undefined>
 	// the filters the reader put on each card
 	cardFilters: Record<string, Filter[]>
 	setCardFilters: (chart: string, filters: Filter[]) => void
-	cardValues: (chart: string, column: string, search_term?: string) => Promise<string[]>
+	cardValues: (
+		chart: string,
+		column: string,
+		search_term?: string,
+		granularity?: GranularityType,
+	) => Promise<string[]>
 	cardRange: (chart: string, column: string) => Promise<[number, number] | undefined>
 	// whether a dashboard filter or a card filter narrows this card, so an empty
 	// card can say why
@@ -572,8 +581,8 @@ function makeDashboardPage(
 		verticalCompact: computed(() => state.verticalCompact),
 		filters: computed(() => state.filters),
 		setFilter,
-		filterValues: (filter_name: string, search_term?: string) =>
-			fetchFilterValues(state.name, filter_name, search_term, state.filters),
+		filterValues: (filter_name: string, search_term?: string, granularity?: GranularityType) =>
+			fetchFilterValues(state.name, filter_name, search_term, state.filters, granularity),
 		filterRange: (filter_name: string) =>
 			call('insights.api.view.get_filter_range', {
 				dashboard: state.name,
@@ -582,12 +591,18 @@ function makeDashboardPage(
 			}),
 		cardFilters: computed(() => state.cardFilters),
 		setCardFilters,
-		cardValues: (chart: string, column: string, search_term?: string) =>
+		cardValues: (
+			chart: string,
+			column: string,
+			search_term?: string,
+			granularity?: GranularityType,
+		) =>
 			call('insights.api.view.get_card_values', {
 				dashboard: state.name,
 				chart,
 				column,
 				search_term,
+				granularity,
 			}),
 		cardRange: (chart: string, column: string) =>
 			call('insights.api.view.get_card_range', { dashboard: state.name, chart, column }),
@@ -638,12 +653,14 @@ function fetchFilterValues(
 	filter_name: string,
 	search_term?: string,
 	filters?: FilterValues,
+	granularity?: GranularityType,
 ): Promise<string[]> {
 	return call('insights.api.view.get_filter_values', {
 		dashboard,
 		filter_name,
 		search_term,
 		filters,
+		granularity,
 	})
 }
 
