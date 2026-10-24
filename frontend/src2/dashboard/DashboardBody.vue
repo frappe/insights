@@ -3,6 +3,7 @@ import { Button } from 'frappe-ui'
 import { computed, ref, type Component } from 'vue'
 import { downloadImage } from '../helpers'
 import { resolveHref } from '../helpers/navigation'
+import LoadFailure from '../components/LoadFailure.vue'
 import { refusalDetail } from '../not_permitted'
 import { __ } from '../translation'
 import type { BreakpointKey, Layout } from '../types/workbook.types'
@@ -80,40 +81,23 @@ function exportImage() {
 	if (!scroller.value) return
 	return downloadImage(scroller.value, `${props.dashboard.title}.png`)
 }
+const noAccessTitle = __("You don't have access to this dashboard")
 </script>
 
 <template>
 	<div class="flex h-full w-full flex-col overflow-hidden">
-		<div
-			v-if="dashboard.notFound"
-			class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
-		>
-			{{ __('Dashboard not found') }}
-		</div>
-
-		<div
+		<LoadFailure v-if="dashboard.notFound" :title="__('Dashboard not found')" />
+		<LoadFailure
 			v-else-if="dashboard.noAccess"
-			class="flex w-full flex-1 flex-col items-center justify-center gap-1 p-4 text-center"
-		>
-			<p class="text-base-medium text-ink-gray-8">
-				{{ __("You don't have access to this dashboard") }}
-			</p>
-			<p
-				v-if="dashboard.noAccess.doctypes.length || dashboard.noAccess.sharedWith"
-				class="text-p-sm text-ink-gray-5"
-			>
-				{{
-					refusalDetail(dashboard.noAccess.doctypes, dashboard.noAccess.sharedWith ?? '')
-				}}
-			</p>
-		</div>
-
-		<div
+			:title="noAccessTitle"
+			:detail="
+				refusalDetail(dashboard.noAccess.doctypes, dashboard.noAccess.sharedWith ?? '')
+			"
+		/>
+		<LoadFailure
 			v-else-if="dashboard.failed"
-			class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
-		>
-			{{ __('Could not load the dashboard. Refresh to try again.') }}
-		</div>
+			:title="__('Could not load the dashboard. Refresh to try again.')"
+		/>
 
 		<div v-else-if="dashboard.loading" class="flex-1 p-4">
 			<div class="h-8 w-64 animate-pulse rounded-4 bg-surface-gray-2" />

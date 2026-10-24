@@ -432,6 +432,7 @@ export function getWorkbookResource(name: string) {
 		},
 		enableAutoSave: true,
 		disableLocalStorage: true,
+		showsLoadFailure: true,
 		transform(doc: any) {
 			doc.folders = safeJSONParse(doc.folders) || []
 			doc.queries = safeJSONParse(doc.queries) || []

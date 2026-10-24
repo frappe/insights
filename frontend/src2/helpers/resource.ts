@@ -2,6 +2,7 @@ import { useStorage, watchDebounced } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
 import { call } from 'frappe-ui'
 import { computed, reactive, ref, UnwrapRef } from 'vue'
+import { refusalOf, type Refusal } from '../not_permitted'
 import { copy, showErrorToast, waitUntil, watchToggle } from './index'
 import { mergeWriteAnswer, takeBackRefusal } from './write_answer'
 // import json_diff from 'https://cdn.jsdelivr.net/npm/json-diff@1.0.6/+esm'
@@ -29,6 +30,8 @@ type DocumentResourceOptions<T extends Document> = {
 	enableAutoSave?: boolean
 	disableLocalStorage?: boolean
 	apiMethods?: Partial<ApiMethods>
+	/** The page says why the document did not load in place of it, so the failure is not toasted. */
+	showsLoadFailure?: boolean
 }
 
 export default function useDocumentResource<T extends Document>(
@@ -42,6 +45,7 @@ export default function useDocumentResource<T extends Document>(
 	const isLocal = ref(docname.value.startsWith('new-'))
 	const isLoading = ref(docname.value && !docname.value.startsWith('new-'))
 	const isLoaded = ref(false)
+	const loadFailure = ref<Refusal | 'failed'>()
 	const isSaving = ref(false)
 	const isDeleting = ref(false)
 	const autoSave = ref(options.enableAutoSave ?? false)
@@ -157,11 +161,15 @@ export default function useDocumentResource<T extends Document>(
 			doctype,
 			name: docname.value,
 		})
-			.catch(showErrorToast)
+			.catch((error) => {
+				loadFailure.value = refusalOf(error) ?? 'failed'
+				if (!options.showsLoadFailure) showErrorToast(error)
+			})
 			.finally(() => (isLoading.value = false))
 
 		if (!_doc) return
 
+		loadFailure.value = undefined
 		updateDocState(_doc)
 		await executeHooks(lifecycleHooks.afterLoad, [doc.value])
 		isLoading.value = false
@@ -276,7 +284,12 @@ export default function useDocumentResource<T extends Document>(
 		// })
 	}
 
-	loadDoc().then(setupLocalStorage).then(setupAutoSave)
+	loadDoc().then(() => {
+		// nothing was handed over, so there is nothing to keep or to save
+		if (loadFailure.value) return
+		setupLocalStorage()
+		setupAutoSave()
+	})
 	// setupRealtimeUpdates()
 
 	return reactive({
@@ -289,6 +302,7 @@ export default function useDocumentResource<T extends Document>(
 		loading: isLoading,
 		isloaded: isLoaded,
 		pending: isPending,
+		loadFailure,
 		saving: isSaving,
 		deleting: isDeleting,
 		autoSave: autoSave,

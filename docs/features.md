@@ -280,6 +280,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 |---|---|
 | workbook.create | A user creates a workbook from the list or the home page. |
 | workbook.open-tabs | A user opens a workbook and switches between its query, chart and dashboard tabs. |
+| workbook.not-found | A workbook that does not exist, that the reader may not open, or that fails to load says so in place of the workbook. |
 | workbook.rename | A user renames a workbook. |
 | workbook.save | A workbook saves and survives a reload. |
 | workbook.delete | A user deletes a workbook and its queries, charts and dashboards go with it. |
