@@ -942,7 +942,8 @@ def delete_preview_file(dashboard_name: str):
 
 def preview_versions(dashboards: list[str]) -> dict[str, str]:
     """A hash of what decides the rows each of `dashboards` shows: its owner,
-    whose rows a preview is drawn with, its charts, and every query they read."""
+    whose rows a preview is drawn with, its charts and their owners, and every
+    query they read."""
     owners = dict(
         frappe.get_all(
             "Insights Dashboard v3",
@@ -963,7 +964,7 @@ def preview_versions(dashboards: list[str]) -> dict[str, str]:
         for chart in frappe.get_all(
             "Insights Chart v3",
             filters={"name": ("in", list(set().union(*charts_of.values())))},
-            fields=["name", "query", "config", "run_as_owner"],
+            fields=["name", "owner", "query", "config", "run_as_owner"],
         )
     }
     operations = reachable_operations({chart.query for chart in charts.values()})
@@ -973,7 +974,13 @@ def preview_versions(dashboards: list[str]) -> dict[str, str]:
         if not chart:
             return [chart_name]
         queries = {chart.query, *transitive_closure(chart.query, operations_by_name=operations)}
-        return [chart_name, chart.config, chart.run_as_owner, {q: operations.get(q) for q in sorted(queries)}]
+        return [
+            chart_name,
+            chart.owner,
+            chart.config,
+            chart.run_as_owner,
+            {q: operations.get(q) for q in sorted(queries)},
+        ]
 
     return {
         name: hashlib.sha256(

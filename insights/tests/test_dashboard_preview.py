@@ -576,6 +576,19 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
             return next(row for row in get_dashboards(limit=0) if row.name == dashboard.name)
 
     # @feature dashboard.preview-same-rows
+    def test_a_preview_drawn_before_its_chart_moved_to_another_owner_shows_to_nobody(self):
+        """A chart that runs as its owner shows its new owner's rows."""
+        shared = self.board(run_as_owner=(True,))
+        self.share_with_role(shared)
+        self.with_preview(shared)
+        self.assertTrue(self.listed(shared).preview_image)
+
+        frappe.db.set_value(
+            DT.CHART, shared.linked_charts[0].chart, "owner", "Administrator", update_modified=False
+        )
+        self.assertIsNone(self.listed(shared).preview_image)
+
+    # @feature dashboard.preview-same-rows
     def test_a_preview_drawn_before_its_query_changed_shows_to_nobody(self):
         """It shows the rows of the charts it was drawn from, which only its
         owner could read."""
