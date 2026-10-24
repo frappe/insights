@@ -250,6 +250,20 @@ export function needsYou(item: UpgradeItem): boolean {
 }
 
 /**
+ * What a step's badge says. A step that only tells still counts its items until
+ * the reader has read them, so it says so rather than that nothing is left.
+ */
+export function stepBadge(
+	open: number,
+	kind: Group['kind'],
+): { theme: 'green' | 'amber' | 'gray'; label: string } {
+	if (!open) return { theme: 'green', label: __('Done') }
+	return kind === 'now'
+		? { theme: 'amber', label: __('Needs you now') }
+		: { theme: 'gray', label: __('To read') }
+}
+
+/**
  * What the sidebar card says: the items left while any is open, else the step
  * the wizard was left at, else that it is done.
  */

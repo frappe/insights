@@ -26,6 +26,7 @@ import {
 	pictureOf,
 	sentenceOf,
 	startIndex,
+	stepBadge,
 	type ItemAction,
 	type Row,
 	type Sentence,
@@ -66,12 +67,7 @@ const currentDone = computed(() => Boolean(current.value && isDone(current.value
 const picture = computed(
 	() => group.value?.picture ?? (current.value ? pictureOf(current.value.item) : undefined),
 )
-const badge = computed<{ theme: 'green' | 'amber' | 'gray'; label: string }>(() => {
-	if (!openCount.value) return { theme: 'green', label: __('Done') }
-	return group.value?.kind === 'now'
-		? { theme: 'amber', label: __('Needs you now') }
-		: { theme: 'gray', label: __('Nothing to do') }
-})
+const badge = computed(() => stepBadge(openCount.value, group.value?.kind ?? 'note'))
 const sentenceFor = (row: Row) => sentenceOf(row.item, session.user.email, session.user.locale)
 const sentence = computed(() => (current.value ? sentenceFor(current.value) : undefined))
 

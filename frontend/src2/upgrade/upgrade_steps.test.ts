@@ -4,6 +4,7 @@ import { renderToString } from 'vue/server-renderer'
 import type { UpgradeItem } from './upgrade'
 import {
 	cardDescription,
+	stepBadge,
 	keyAction,
 	nextOpenIndex,
 	pictureOf,
@@ -540,6 +541,15 @@ describe('the sidebar card', () => {
 	it('names the step only when no item is open', () => {
 		expect(cardDescription(0, { index: 1, count: 3 })).toBe('Step 2 of 3')
 		expect(cardDescription(0)).toBe('All done')
+	})
+})
+
+describe('the badge of a step', () => {
+	// @feature upgrade.wizard
+	it('says a step that only tells has items to read, until they are read', () => {
+		expect(stepBadge(3, 'note')).toEqual({ theme: 'gray', label: 'To read' })
+		expect(stepBadge(2, 'now')).toEqual({ theme: 'amber', label: 'Needs you now' })
+		expect(stepBadge(0, 'note')).toEqual({ theme: 'green', label: 'Done' })
 	})
 })
 
