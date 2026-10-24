@@ -87,7 +87,7 @@ function applyChanges() {
 		:title="__('Share Chart')"
 		:actions="[
 			{
-				label: __('Done'),
+				label: __('Save'),
 				variant: 'solid',
 				disabled: !hasChanged,
 				onClick: saveChanges,

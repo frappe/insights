@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Badge, toast, Tooltip } from 'frappe-ui'
+import { toast, Tooltip } from 'frappe-ui'
 import { computed, inject, ref } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import VisibilitySelector from '../components/VisibilitySelector.vue'
@@ -7,6 +7,7 @@ import { copy, copyToClipboard } from '../helpers'
 import session from '../session'
 import { Visibility } from '../types/workbook.types'
 import useUserStore from '../users/users'
+import ShareUserRow from '../workbook/ShareUserRow.vue'
 import { Dashboard } from './dashboard'
 import { __ } from '../translation'
 
@@ -50,6 +51,18 @@ async function saveChanges() {
 
 const selectedUserEmail = ref<string>('')
 const userStore = useUserStore()
+
+const owner = computed(() =>
+	dashboard.doc.owner === session.user.email
+		? {
+				full_name: session.user.full_name || session.user.email,
+				user_image: session.user.user_image,
+		  }
+		: {
+				full_name: userStore.getName(dashboard.doc.owner) || dashboard.doc.owner,
+				user_image: userStore.getImage(dashboard.doc.owner),
+		  },
+)
 function addSharedUser() {
 	if (!selectedUserEmail.value) return
 	if (!peopleWithAccess.value) peopleWithAccess.value = []
@@ -68,7 +81,7 @@ function addSharedUser() {
 		:title="__('Share Dashboard')"
 		:actions="[
 			{
-				label: __('Done'),
+				label: __('Save'),
 				variant: 'solid',
 				disabled: !hasChanged,
 				onClick: saveChanges,
@@ -119,16 +132,12 @@ function addSharedUser() {
 					</div>
 					<span class="mb-2 text-sm text-ink-gray-5">People with access</span>
 					<div class="flex flex-col gap-1 overflow-y-auto">
-						<div class="flex w-full items-center gap-2 py-1">
-							<Avatar size="xl" label="You" :image="session.user.user_image" />
-							<div class="flex flex-1 flex-col">
-								<div class="leading-5">You</div>
-								<div class="text-xs text-ink-gray-5">
-									{{ session.user.email }}
-								</div>
-							</div>
-							<Badge size="lg" theme="orange">Owner</Badge>
-						</div>
+						<ShareUserRow
+							:full-name="owner.full_name"
+							:email="dashboard.doc.owner"
+							:image="owner.user_image"
+							access="owner"
+						/>
 						<div
 							v-for="user in peopleWithAccess"
 							:key="user.email"

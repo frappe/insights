@@ -35,7 +35,7 @@ const widths = computed(() =>
 	<Button
 		v-if="!dashboard.editing && dashboard.doc.can_share"
 		variant="outline"
-		:label="__('Share')"
+		:label="__('Share Dashboard')"
 		@click="showShareDialog = true"
 	>
 		<template #prefix>

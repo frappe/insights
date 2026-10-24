@@ -360,9 +360,7 @@ test.describe('dashboard', () => {
 		await runChartAsOwner(adminApi, chart.name)
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
 
-		// The workbook header has its own Share button, and only the
-		// dashboard's one names itself through a label.
-		const shareButton = page.getByLabel('Share', { exact: true })
+		const shareButton = page.getByRole('button', { name: 'Share Dashboard' })
 		await expect(shareButton).toBeVisible()
 		await shareButton.click()
 
@@ -376,7 +374,7 @@ test.describe('dashboard', () => {
 		const written = page.waitForResponse((response) =>
 			(response.request().postData() || '').includes('update_access'),
 		)
-		await share.getByRole('button', { name: 'Done', exact: true }).click()
+		await share.getByRole('button', { name: 'Save', exact: true }).click()
 		await expect(page.getByText('Dashboard Access Updated')).toBeVisible()
 		await written
 
