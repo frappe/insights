@@ -63,7 +63,7 @@ function state(step: Step) {
 		size="5xl"
 		:keyboard-shortcut="false"
 	>
-		<template #title>{{ __('Insights 3.50') }}</template>
+		<template #title>{{ __('Insights v3.50') }}</template>
 		<template #description>{{ __('What is new, and what the upgrade left for you') }}</template>
 		<SettingsSidebar>
 			<div class="flex items-center gap-2 px-1.5 pb-1 pt-2">
@@ -71,7 +71,7 @@ function state(step: Step) {
 					<Sparkle class="size-4 text-ink-gray-8" stroke-width="1.5" />
 				</span>
 				<span class="text-base font-semibold text-ink-gray-9">{{
-					__('Insights 3.50')
+					__('Insights v3.50')
 				}}</span>
 			</div>
 			<template v-for="section in ['welcome', 'new', 'upgrade'] as const" :key="section">

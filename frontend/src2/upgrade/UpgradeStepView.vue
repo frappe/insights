@@ -234,16 +234,16 @@ function onKeydown(event: KeyboardEvent) {
 						<Sparkle class="size-6 text-ink-gray-8" stroke-width="1.5" />
 					</span>
 					<h2 class="mt-2 text-3xl font-semibold text-ink-gray-9">
-						{{ __('Welcome to Insights 3.50') }}
+						{{ __('Welcome to Insights v3.50') }}
 					</h2>
 					<p class="max-w-[460px] text-p-base text-ink-gray-6">
 						{{
 							hasUpgradeSteps
 								? __(
-										'This site now runs Insights 3.50. The next pages show what is new, then what the upgrade left for you.',
+										'This site now runs Insights v3.50. The next pages show what is new, then what the upgrade left for you.',
 								  )
 								: __(
-										'This site now runs Insights 3.50. The next pages show what is new.',
+										'This site now runs Insights v3.50. The next pages show what is new.',
 								  )
 						}}
 					</p>

@@ -205,7 +205,7 @@ def report_cycle(copy, source: str) -> None:
     add_item(
         "P21",
         f'"{data["query"]}" in "{data["workbook"]}": remove its source '
-        f'"{data["source"]}", which reads it back. It could not run in Insights before 3.50 either.',
+        f'"{data["source"]}", which reads it back. It could not run in Insights before v3.50 either.',
         reference=(QUERY, copy.name),
         user=None if owner == "Administrator" else owner,
         data=data,
