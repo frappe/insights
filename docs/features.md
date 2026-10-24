@@ -353,6 +353,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 
 | Slug | Feature |
 |---|---|
+| data-source.connect-admin-only | Only an admin is offered New Data Source, since only an admin may connect one. |
 | data-source.connect-mariadb | A user connects a MariaDB database with host, port, database, username and password. |
 | data-source.site-db-socket | The site's own database connects over the socket the site config names, as Frappe does. |
 | data-source.connect-postgres | A user connects a PostgreSQL database, naming a schema. |
