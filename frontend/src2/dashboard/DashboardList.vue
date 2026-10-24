@@ -278,8 +278,8 @@ watchEffect(() => {
 								/>
 							</template>
 						</Button>
-						<Dropdown class="relative" :options="dropdownOptions(dashboard)">
-							<Button variant="ghost" :label="__('More')">
+						<Dropdown :options="dropdownOptions(dashboard)">
+							<Button class="relative" variant="ghost" :label="__('More')">
 								<template #icon>
 									<MoreVertical
 										class="h-4 w-4 text-ink-gray-6"

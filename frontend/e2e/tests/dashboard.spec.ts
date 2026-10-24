@@ -440,6 +440,24 @@ test.describe('dashboard', () => {
 		await expect(charts(page).getByText('1,800')).toBeVisible()
 	})
 
+	// @feature dashboard.list-view
+	test('a user opens a dashboard row menu in the list and goes to its workbook', async ({
+		page,
+		workbookWithDashboard,
+	}) => {
+		const { workbook, dashboard } = workbookWithDashboard
+		await page.goto(`${INSIGHTS_PATH}/dashboards`)
+		await page.getByPlaceholder('Title', { exact: true }).fill(dashboard.title)
+
+		// The row is a link to the dashboard, laid over the row, and the menu
+		// button sits above it.
+		const more = page.getByRole('button', { name: 'More', exact: true })
+		await expect(more).toHaveCount(1)
+		await more.click()
+		await page.getByRole('menuitem', { name: 'Open Workbook' }).click()
+		await expect(page).toHaveURL(new RegExp(`/workbook/${workbook.name}$`))
+	})
+
 	// @feature dashboard.drag-chart-from-sidebar
 	test('a user drags a chart from the sidebar onto the grid', async ({
 		page,
