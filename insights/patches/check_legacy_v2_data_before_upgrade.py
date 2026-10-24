@@ -30,15 +30,15 @@ Your site used v2 dashboards in the last 30 days that are not migrated yet: {len
 
 Stay on your current Insights 3 release and migrate your v2 dashboards first. Then update to 3.50.
 
-- On Insights 3.13 or later: as an admin, open Insights, then Settings > Migrate from v2.
-- On an older release: update to 3.15.1 first. Self-hosted, check out the `v3.15.1` tag. On Frappe Cloud, contact support.
+- On Insights 3.13 or later: as an Insights Admin, open Insights, then Settings > Migrate from v2.
+- On an older release: update to 3.15.1 first. Self-hosted, check out the `v3.15.1` tag. On Frappe Cloud, raise a support ticket at https://frappe.io/support.
 - v2 queries outside a dashboard are not migrated. To keep one, add it to a v2 dashboard before you migrate.
 
 Once these dashboards are migrated, update again. This check passes then.
 
 Migration guide: https://docs.frappe.io/insights/articles/migrate-from-v2-to-v3
 
-For any questions or help with the migration, please join telegram group: https://t.me/frappeinsights or reach out to support: https://frappe.io/support
+For help with the migration, raise a support ticket at https://frappe.io/support.
 
 If you don't need your v2 work, set the site config below. It skips this check, and v2 data you have not migrated is not carried over:
 
