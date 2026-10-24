@@ -148,9 +148,11 @@ export function getErrorMessage(err: any) {
 	const sentence = err.messages?.filter((message: string) => message !== NO_SENTENCE).at(-1)
 	if (sentence) return asText(sentence)
 
-	// the exception line is not always last: DuckDB appends the offending SQL and a caret
+	// the exception line is not always last: DuckDB appends the offending SQL and a caret.
+	// It is found by the class raised, because a chained traceback lists its causes first
 	const lines: string[] = err.exc?.split('\n') ?? []
-	const excLine = lines.filter((line) => /^[\w.]+(Error|Exception): /.test(line)).at(-1)
+	const raised = err.exc_type || '\\w*(Error|Exception)'
+	const excLine = lines.filter((line) => new RegExp(`^([\\w]+\\.)*${raised}: `).test(line)).at(-1)
 	if (!excLine) return err.message || err.toString()
 	const message = excLine.split(': ').slice(1).join(': ')
 	const details = lines.slice(lines.lastIndexOf(excLine) + 1)
