@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-10-05 11:28\n"
+"PO-Revision-Date: 2026-10-20 13:32\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Polish\n"
 "MIME-Version: 1.0\n"
@@ -293,7 +293,7 @@ msgstr ""
 #. Label of the batch_size (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Batch Size"
-msgstr ""
+msgstr "Wielkość partii"
 
 #. Label of the before_import_script (Code) field in DocType 'Insights Table
 #. v3'
@@ -938,7 +938,7 @@ msgstr "E-mail"
 #. Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email Sent At"
-msgstr ""
+msgstr "Data wysłania e-maila"
 
 #: frontend/src2/query/components/FiltersSelector.vue:134
 msgid "Empty - Click 'Add Filter' to add a filter"
@@ -1805,7 +1805,7 @@ msgstr ""
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:59
 #: frontend/src2/charts/components/SankeyChartConfigForm.vue:70
 msgid "Left"
-msgstr "Lewo"
+msgstr "Opuścił"
 
 #. Label of the left_column (Data) field in DocType 'Insights Table Link v3'
 #: frontend/src2/query/components/JoinSelectorDialog.vue:280
@@ -2160,11 +2160,11 @@ msgstr ""
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Operations"
-msgstr ""
+msgstr "Operacje"
 
 #: frontend/src2/query/components/FormatRule.vue:416
 msgid "Operator"
-msgstr ""
+msgstr "Operator"
 
 #. Label of the options (JSON) field in DocType 'Insights Chart'
 #. Label of the options (JSON) field in DocType 'Insights Dashboard Item'
@@ -2178,11 +2178,11 @@ msgstr "Opcje"
 #. Label of the order_by (Select) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Order By"
-msgstr ""
+msgstr "Sortuj według"
 
 #: frontend/src2/settings/Settings.vue:20
 msgid "Organization"
-msgstr ""
+msgstr "Organizacja"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
@@ -2292,7 +2292,7 @@ msgstr ""
 #. Label of the preview_image (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Preview Image"
-msgstr ""
+msgstr "Obraz podglądu"
 
 #. Label of the primary_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
@@ -2992,7 +2992,7 @@ msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:30
 msgid "Team"
-msgstr ""
+msgstr "Zespół"
 
 #. Label of the team_members (Table) field in DocType 'Insights Team'
 #: insights/insights/doctype/insights_team/insights_team.json
@@ -3311,7 +3311,7 @@ msgstr ""
 #. Label of the variable_name (Data) field in DocType 'Insights Query Variable'
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
 msgid "Variable Name"
-msgstr ""
+msgstr "Nazwa zmiennej"
 
 #. Label of the variable_value (Password) field in DocType 'Insights Query
 #. Variable'
@@ -3327,7 +3327,7 @@ msgstr ""
 #: insights/insights/doctype/insights_query/insights_query.json
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Variables"
-msgstr ""
+msgstr "Zmienne"
 
 #: frontend/src2/components/VariablesDialog.vue:69
 msgid "Variables are used to store sensitive information such as API keys and credentials. They can be referenced and combined in your script just like any other variable. For eg."
