@@ -1111,10 +1111,9 @@ def _comparison_to_target(options: dict) -> bool:
     A comparison reads a period, and a fixed number or a Measure is a target.
     Without a target of its own, the reading takes the number as its target and
     prints the gap the comparison printed, under the caption it had. A reading
-    that already aims at a target keeps it. Its comparison is kept as
-    `retired_comparison`, which the card does not print and the form asks the
-    author to move to a second reading. A comparison naming no number printed
-    nothing, so it goes.
+    that already aims at a target keeps it, and its comparison is dropped: a
+    card that wants a target and a second fixed number is two cards. A
+    comparison naming no number printed nothing, so it goes too.
     """
     comparison = options.get("comparison")
     if not isinstance(comparison, dict) or comparison.get("source") not in ("constant", "measure"):
@@ -1126,7 +1125,6 @@ def _comparison_to_target(options: dict) -> bool:
         return True
 
     if named_number(options.get("target")):
-        options["retired_comparison"] = comparison
         return True
 
     target = {**against, "gap": "delta" if comparison.get("show") == "delta" else "change"}
