@@ -1,6 +1,7 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
+from datetime import datetime
 from unittest.mock import patch
 
 import frappe
@@ -771,6 +772,17 @@ class TestSchedule(AlertOverSeededTodos):
             self.make_alert(frequency="Cron", cron_format="0 0 12 * * ?")
 
         self.assertIn("0 0 12 * * ?", str(refusal.exception))
+
+    # @feature alerts.schedule
+    def test_an_alert_moved_off_cron_runs_on_its_frequency(self):
+        alert = self.make_alert(frequency="Cron", cron_format="*/5 * * * *")
+        alert.frequency = "Daily"
+        alert.save()
+        alert.reload()
+
+        self.assertFalse(alert.cron_format)
+        alert.last_execution = "2026-01-01 10:00:00"
+        self.assertEqual(alert.get_next_execution(), datetime(2026, 1, 2))
 
 
 class TestTelegram(AlertOverSeededTodos):

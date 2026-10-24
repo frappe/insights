@@ -328,7 +328,10 @@ class InsightsAlert(Document):
         return get_datetime_str(self.get_next_execution())
 
     def validate_schedule(self):
-        if self.frequency == "Cron" and not croniter.is_valid(self.cron_format or ""):
+        # the form hides the field off Cron, so a cron left behind would run unseen
+        if self.frequency != "Cron":
+            self.cron_format = None
+        elif not croniter.is_valid(self.cron_format or ""):
             frappe.throw(
                 _(
                     "{0} is not a cron the scheduler can read. Write five fields: minute, hour, day, month, weekday."
@@ -342,11 +345,9 @@ class InsightsAlert(Document):
             "Daily": "0 0 * * *",
             "Hourly": "0 * * * *",
         }
-        if not self.cron_format:
-            self.cron_format = CRON_MAP[self.frequency]
-
+        cron = self.cron_format if self.frequency == "Cron" else CRON_MAP[self.frequency]
         start_time = get_datetime(self.last_execution or datetime(2000, 1, 1))
-        return croniter(self.cron_format, start_time).get_next(datetime)
+        return croniter(cron, start_time).get_next(datetime)
 
     def is_event_due(self):
         if not self.last_execution:
