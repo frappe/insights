@@ -5,7 +5,12 @@ import { ExternalLink, Plus, Table2Icon } from 'lucide-vue-next'
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
 import { createHeaders } from '../helpers'
-import { carriedCurrency, numberFormatter, type NumberFormatter } from '../charts/number_format'
+import {
+	carriedCurrency,
+	numberFormatOf,
+	numberFormatter,
+	type NumberFormatter,
+} from '../charts/number_format'
 import { FIELDTYPES } from '../helpers/constants'
 import {
 	applyDateRule,
@@ -37,6 +42,7 @@ import {
 	SortDirection,
 	SortOrder,
 } from '../types/query.types'
+import { __ } from '../translation'
 import { RESULT_GRID_HOST } from './result_pane/result_grid'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
@@ -452,10 +458,13 @@ function getCellPaint(colName: string, val: any): CellPaint {
 // the one resolver answers it. A column is looked up by name, which is what the
 // Measure behind it is called. A cell reads its currency off its own row, and a
 // column total off every row it sums, so a total over rows in different
-// currencies prints bare. A row total belongs to no column and prints under the
-// table's own default.
+// currencies prints bare. A row total sums every number column, so it prints the
+// way they all do, and under the table's own default when they differ.
+const formatConfig = computed(() => ({
+	number_format: props.numberFormat,
+	number_formats: props.numberFormats,
+}))
 const cellFormatters = computed(() => {
-	const config = { number_format: props.numberFormat, number_formats: props.numberFormats }
 	const formats = props.columnFormats || {}
 	const rows = props.rows || []
 	const cache = new Map<string, NumberFormatter>()
@@ -465,7 +474,7 @@ const cellFormatters = computed(() => {
 		let format = cache.get(key)
 		if (!format) {
 			format = numberFormatter(
-				config,
+				formatConfig.value,
 				{ measure_name: columnName, format: formats[columnName] },
 				over,
 			)
@@ -476,6 +485,37 @@ const cellFormatters = computed(() => {
 })
 
 const defaultFormatter = computed(() => numberFormatter(props.numberFormat))
+
+// A row's total prints as its columns do, which depends only on the currencies
+// its row carries, so the answer is kept per set of currencies.
+const rowTotalFormatters = computed(() => {
+	const numberColumns = (props.columns || []).filter((col) => isNumberColumn(col.name))
+	const cache = new Map<string, NumberFormatter>()
+	return (row?: QueryResultRow): NumberFormatter => {
+		const over = row ? [row] : props.rows || []
+		const key = numberColumns.map((col) => carriedCurrency(over, col.name)).join('\0')
+		let format = cache.get(key)
+		if (!format) {
+			const printed = new Set(
+				numberColumns.map((col) =>
+					JSON.stringify(
+						numberFormatOf(
+							formatConfig.value,
+							{ measure_name: col.name, format: props.columnFormats?.[col.name] },
+							over,
+						),
+					),
+				),
+			)
+			format =
+				printed.size === 1
+					? cellFormatters.value(numberColumns[0].name, row)
+					: defaultFormatter.value
+			cache.set(key, format)
+		}
+		return format
+	}
+})
 
 function _formatNumber(value: any, columnName?: string, row?: QueryResultRow) {
 	const format = columnName ? cellFormatters.value(columnName, row) : defaultFormatter.value
@@ -612,7 +652,9 @@ function toggleNewColumn() {
 							class="h-8 border-b border-r px-3 text-right"
 							width="1px"
 						>
-							<div class="truncate pl-3 pr-20"></div>
+							<div class="truncate pl-3 text-sm-medium text-ink-gray-7">
+								{{ __('Total') }}
+							</div>
 						</td>
 					</tr>
 				</thead>
@@ -695,7 +737,7 @@ function toggleNewColumn() {
 							v-if="props.showRowTotals && totalPerRow"
 							class="tnum h-8 border-b border-r px-3 text-right font-bold"
 						>
-							{{ _formatNumber(totalPerRow[idx]) }}
+							{{ rowTotalFormatters(row)(totalPerRow[idx]) }}
 						</td>
 					</tr>
 
@@ -729,7 +771,7 @@ function toggleNewColumn() {
 							v-if="props.showRowTotals && totalColumnTotal"
 							class="tnum h-8 border-b border-r border-t px-3 text-right font-bold"
 						>
-							{{ _formatNumber(totalColumnTotal) }}
+							{{ rowTotalFormatters()(totalColumnTotal) }}
 						</td>
 					</tr>
 
