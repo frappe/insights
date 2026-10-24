@@ -958,7 +958,11 @@ describe('the fit a trend line draws', () => {
 })
 
 describe('a trend line', () => {
-	const tokens = { axisLabel: 'oklch(0.58 0 0)', backdrop: '#242424' } as ChartTokens
+	const tokens = {
+		axisLabel: 'oklch(0.58 0 0)',
+		dataLabel: 'oklch(0.683 0 0)',
+		backdrop: '#242424',
+	} as ChartTokens
 	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
 	const time = (date: string) => new Date(date).getTime()
 	const spec = (overrides: Partial<AxisChartSpec> = {}): AxisChartSpec => ({
@@ -1000,6 +1004,7 @@ describe('a trend line', () => {
 							show: true,
 							position: 'insideEndTop',
 							formatter: expect.any(Function),
+							color: 'oklch(0.683 0 0)',
 							fontSize: 11,
 							backgroundColor: 'color-mix(in srgb, #242424 80%, transparent)',
 							padding: [2, 4],
