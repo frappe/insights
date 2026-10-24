@@ -113,7 +113,7 @@ const noAccessTitle = __("You don't have access to this dashboard")
 			@drop="dashboard.builder?.drop($event)"
 		>
 			<div
-				v-if="!dashboard.items.length && dashboard.builder?.editing"
+				v-if="!dashboard.items.length && dashboard.builder"
 				class="flex h-full w-full flex-col items-center justify-center gap-3 text-center"
 			>
 				<div class="flex flex-col gap-1">

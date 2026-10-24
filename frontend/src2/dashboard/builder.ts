@@ -139,7 +139,11 @@ export function useDashboardBuilder(name: string, charts: WorkbookChart[]): Dash
 				event.dataTransfer.dropEffect = 'copy'
 			},
 			drop: dropChart,
-			pickCharts: () => (dashboard.pickingCharts = true),
+			// an empty dashboard offers this before editing starts
+			pickCharts: () => {
+				dashboard.editing = true
+				dashboard.pickingCharts = true
+			},
 		}),
 	}) as DashboardInBuilder
 }
