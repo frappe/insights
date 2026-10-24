@@ -37,6 +37,8 @@ insights.desk.chart_form = ({
 	};
 
 	function show(frm) {
+		// a chart is made in Insights, not from desk's quick entry of its doctype
+		frm.set_df_property("insights_chart", "only_select", 1);
 		const claimed = Boolean(frm.doc.insights_chart);
 		// desk's own `before_save` parses the filters, and the form never set them
 		if (claimed && !frm.doc.filters_json) frm.doc.filters_json = "[]";
