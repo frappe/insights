@@ -483,6 +483,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | upgrade.older-grid-read | A dashboard arranged before the grid row changed keeps the pixels it covered. |
 | upgrade.older-export-imports | A workbook exported before names became strings still imports, and one Insights before 3.50 exported lands on the new grid with a cell per Number reading. |
 | upgrade.duplicate-folder-titles | Folders of one type that shared a title in a workbook before titles were unique are numbered apart, the way a new folder is. |
+| upgrade.v2-block | Updating a site that used Insights v2 in the last 30 days stops while a v2 dashboard, or a v2 query outside any dashboard, it used is not migrated, and the message counts each and names the ways out. A site whose used v2 work is all migrated, or that sets `insights_allow_legacy_v2_upgrade`, updates. |
 | upgrade.users-welcomed | A user of Insights before 3.50 sees the upgrade wizard once after the upgrade, and a user new to Insights 3.50 never does. |
 | upgrade.attention-items | What the upgrade could not carry over waits as an item: an admin sees every item, anyone else only their own, open or closed, and either dismisses or reopens it. |
 | upgrade.attention-fix | An item's Fix applies its fix with the user's own permission on what the item names: it deletes a template copy. |
