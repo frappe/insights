@@ -179,7 +179,7 @@ function toggleAlert() {
 							type="text"
 							:label="__('Cron')"
 							v-model="alert.doc.cron_format"
-							:placeholder="__('e.g. 0 0 12 * * ?')"
+							:placeholder="__('e.g. 0 12 * * *')"
 						/>
 					</div>
 					<div class="flex flex-1 flex-col gap-3">

@@ -87,6 +87,21 @@ class TestWorkbookList(InsightsIntegrationTestCase):
         self.assertEqual(shared, [self.OTHERS])
         self.assertEqual(len(capped), 1)
 
+    # @feature workbook.list
+    def test_the_list_names_the_roles_a_sites_own_workbook_shows_its_dashboards_to(self):
+        dashboard = frappe.get_doc(DT.DASHBOARD, self.dashboard)
+        dashboard.visibility = "Roles"
+        dashboard.append("visible_to_roles", {"role": "Desk User"})
+        dashboard.save(ignore_permissions=True)
+
+        def roles():
+            with self.as_user(OWNER):
+                return next(w for w in get_workbooks() if w["name"] == self.own)["visible_to_roles"]
+
+        self.assertEqual(roles(), ["Desk User"])
+        dashboard.db_set("visibility", "Private")
+        self.assertEqual(roles(), [])
+
     # @feature workbook.home-recent
     def test_the_list_puts_the_workbook_modified_last_first(self):
         frappe.get_doc(DT.WORKBOOK, self.others).save(ignore_permissions=True)
@@ -198,6 +213,23 @@ class TestDashboardList(InsightsIntegrationTestCase):
         self.assertEqual(sorted(everyones), [self.OWN, self.OTHERS])
 
     # @feature dashboard.list
+    def test_the_dashboard_list_names_the_workbook_who_else_may_open_it_and_the_last_open(self):
+        with self.as_user(OWNER):
+            frappe.get_doc(DT.DASHBOARD, self.others).track_view()
+            listed = {row.name: row for row in get_dashboards()}
+
+        own, others = listed[self.own], listed[self.others]
+        self.assertEqual(own.workbook_title, f"{TITLE_PREFIX} Dash Workbook Mine")
+        self.assertEqual(own.shared_with, [])
+        self.assertIsNone(own.last_opened)
+        # a share on the dashboard opens it, not its workbook
+        self.assertIsNone(others.workbook_title)
+        self.assertEqual(others.shared_with, [OWNER])
+        self.assertIsNotNone(others.last_opened)
+        for row in (own, others):
+            self.assertFalse(row.shared_with_organization or row.visible_to_roles or row.is_public)
+
+    # @feature dashboard.list
     def test_the_list_puts_the_dashboard_opened_last_first(self):
         with self.as_user(OWNER):
             frappe.get_doc(DT.DASHBOARD, self.others).track_view()
@@ -238,14 +270,17 @@ class TestDashboardList(InsightsIntegrationTestCase):
         )
 
         with patch.object(
-            InsightsDashboardv3, "generate_dashboard_preview", return_value="/preview.png"
+            InsightsDashboardv3, "generate_dashboard_preview", return_value="/private/files/x.jpeg?ab12"
         ) as rendered:
             for user, dashboard, writes in ((OWNER, self.others, False), (OWNER, self.own, True)):
                 with self.subTest(user=user, dashboard=dashboard), self.as_user(user):
                     row = next(row for row in get_dashboards() if row["name"] == dashboard)
                     self.assertIs(row["can_write"], writes)
                     if writes:
-                        self.assertEqual(update_dashboard_preview(dashboard), "/preview.png")
+                        self.assertEqual(
+                            update_dashboard_preview(dashboard),
+                            f"/api/method/insights.api.view.get_dashboard_preview?dashboard={dashboard}&v=ab12",
+                        )
                     else:
                         with self.assertRaises(frappe.PermissionError):
                             update_dashboard_preview(dashboard)
@@ -261,7 +296,8 @@ class TestDashboardList(InsightsIntegrationTestCase):
         probed = create_test_dashboard(
             OTHER, self.other_workbook, chart=chart.name, title=f"{TITLE_PREFIX} Dashboard Probed"
         ).name
-        for doctype, name in ((DT.DASHBOARD, probed), (DT.CHART, chart.name), (DT.QUERY, query.name)):
+        # cleanups run last first, so the query goes after the chart that reads it
+        for doctype, name in ((DT.QUERY, query.name), (DT.CHART, chart.name), (DT.DASHBOARD, probed)):
             self.addCleanup(frappe.delete_doc, doctype, name, force=True, ignore_permissions=True)
         with as_user(OTHER):
             update_dashboard_access(probed, [OWNER])

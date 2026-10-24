@@ -21,6 +21,7 @@
 		</div>
 		<div>
 			<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
+			<UpgradeCard v-if="!isSidebarCollapsed" class="m-2" />
 			<SecurityUpdateCard v-if="!isSidebarCollapsed" class="m-2" />
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
@@ -42,11 +43,11 @@
 		</div>
 	</div>
 
-	<Settings v-model="showSettingsDialog" />
+	<Settings v-if="session.isAuthorized" v-model="showSettingsDialog" />
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { breakpointsTailwind, useBreakpoints, useStorage } from '@vueuse/core'
 import {
 	Book,
 	Database,
@@ -61,14 +62,30 @@ import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import DemoDataBanner from './DemoDataBanner.vue'
 import SecurityUpdateCard from './SecurityUpdateCard.vue'
+import UpgradeCard from '../upgrade/UpgradeCard.vue'
 import UserDropdown from './UserDropdown.vue'
 import { TrialBanner } from '@framework/ui/components/TrialBanner/index.ts'
 import { __ } from '../translation'
+import session from '../session'
 
-const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
+// Below the small breakpoint the open sidebar covers most of the page, so it
+// starts collapsed there, and toggling it does not change the stored choice
+const isNarrow = useBreakpoints(breakpointsTailwind).smaller('sm')
+const collapsedWhenWide = useStorage('insights:sidebarCollapsed', false)
+const collapsedWhenNarrow = ref(true)
+const isSidebarCollapsed = computed({
+	get: () => (isNarrow.value ? collapsedWhenNarrow.value : collapsedWhenWide.value),
+	set: (collapsed) => {
+		if (isNarrow.value) collapsedWhenNarrow.value = collapsed
+		else collapsedWhenWide.value = collapsed
+	},
+})
 const showSettingsDialog = ref(false)
 
-const settings = useSettings()
+// A reader without an Insights role reads dashboards and nothing else, so the
+// rest is neither shown nor fetched
+const builder = session.isAuthorized
+const settings = builder ? useSettings() : undefined
 const is_fc_site = window.is_fc_site
 
 const links = ref([
@@ -81,22 +98,25 @@ const links = ref([
 		label: __('Workbooks'),
 		icon: Book,
 		to: 'WorkbookList',
+		hidden: !builder,
 	},
 	{
 		label: __('Data Sources'),
 		icon: Database,
 		to: 'DataSourceList',
+		hidden: !builder,
 	},
 	{
 		label: __('Data Store'),
 		icon: DatabaseZap,
 		to: 'DataStoreList',
-		hidden: computed(() => !settings.doc.enable_data_store),
+		hidden: computed(() => !settings?.doc.enable_data_store),
 	},
 	{
 		label: __('Settings'),
 		icon: SettingsIcon,
 		onClick: () => (showSettingsDialog.value = true),
+		hidden: !builder,
 	},
 ])
 </script>

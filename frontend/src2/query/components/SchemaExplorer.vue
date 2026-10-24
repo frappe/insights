@@ -9,22 +9,12 @@ import {
 	TypeIcon,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-
-interface Column {
-	label: string
-	detail: string
-	type: string
-}
-
-interface TableSchema {
-	[key: string]: {
-		label?: string
-		columns: Column[]
-	}
-}
+import type { SourceSchema } from '../../data_source/data_source'
 
 interface Props {
-	schema: TableSchema
+	schema: SourceSchema
+	loading?: boolean
+	failed?: boolean
 }
 
 interface Emits {
@@ -72,7 +62,7 @@ const filteredSchema = computed(() => {
 	}
 
 	const query = searchQuery.value.toLowerCase()
-	const filtered: TableSchema = {}
+	const filtered: SourceSchema = {}
 
 	Object.entries(props.schema).forEach(([tableName, tableData]) => {
 		const tableMatches = tableName.toLowerCase().includes(query)
@@ -115,10 +105,20 @@ const filteredSchema = computed(() => {
 		</div>
 		<div class="flex-1 overflow-y-auto text-base">
 			<div
-				v-if="!Object.keys(schema).length"
+				v-if="loading"
+				class="flex items-center justify-center gap-2 py-4 text-sm text-ink-gray-4"
+			>
+				<LoadingIndicator class="size-3.5" />
+				{{ __('Loading tables…') }}
+			</div>
+			<div v-else-if="failed" class="py-4 text-center text-sm text-ink-gray-4">
+				{{ __('Could not load the tables') }}
+			</div>
+			<div
+				v-else-if="!Object.keys(schema).length"
 				class="py-4 text-center text-sm text-ink-gray-4"
 			>
-				Select a data source to explore tables
+				{{ __('Select a data source to explore tables') }}
 			</div>
 			<div
 				v-else-if="!Object.keys(filteredSchema).length"

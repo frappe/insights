@@ -8,9 +8,9 @@ endpoints are `frappe.whitelist(allow_guest=True)`. The permission controller
 decides who reads what through `visibility`; there is no role check here. A
 guest reads only `Public` content, through the same code path as everyone else.
 
-Every reference goes through `resolve_for_read`, which answers Not Found for a
-missing reference and a refused one alike. Nothing below checks the read again
-or catches its error, because either would reveal which case it was.
+Every reference goes through `resolve_for_read`. It answers Not Found for a
+reference that names nothing, and no access for one the reader may not read.
+Nothing below checks the read again.
 
 Responses include only what rendering needs. Operations, SQL and the queries
 behind a chart never leave the server: the client names the chart, and the
@@ -28,25 +28,45 @@ from insights.insights.doctype.insights_chart_v3.chart_drill import (
     drill_rows_range,
     drill_rows_values,
 )
-from insights.insights.doctype.insights_chart_v3.chart_query import config_errors
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
     can_filter_card,
     card_filter_source,
+    current_previews,
+    filter_default_value,
     route_filters,
 )
 from insights.not_permitted import answers_refusal
 from insights.permission_user import runs_as
-from insights.permissions import can_copy, can_export, can_read_rows, can_write
-from insights.resolver import CHART, DASHBOARD, may_read, not_found, resolve, resolve_for_read
+from insights.permissions import (
+    InsightsPermissions,
+    can_copy,
+    can_export,
+    can_read_rows,
+    can_write,
+    same_rows_for_every_reader,
+)
+from insights.resolver import (
+    CHART,
+    DASHBOARD,
+    dashboard_refusal,
+    may_read,
+    not_found,
+    resolve,
+    resolve_for_read,
+)
 
 QUERY = "Insights Query v3"
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
+@answers_refusal(dict)
 def get_dashboard(dashboard: str, surface: str | None = None):
     """A dashboard with what a View needs: its layout, and what the reader may do with it.
 
     `surface` names the page the View is on, for the `dashboard_viewed` event.
+
+    A dashboard the reader may read, but on which no chart would run for them,
+    answers only `not_permitted`, with the doctypes its charts need.
     """
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
     doc.track_view(surface)
@@ -59,7 +79,7 @@ def get_dashboard(dashboard: str, surface: str | None = None):
     # found", which is not a card state. Its docname would also reveal the
     # refused chart: in a standard workbook, a docname is a readable title.
     # `resolve_for_read` alone decides whether a dashboard with no readable
-    # chart is Not Found. It exempts writers.
+    # chart is refused. It exempts writers.
     charts = charts_on(items)
     readable = {chart.name for chart in charts}
 
@@ -84,6 +104,72 @@ def get_dashboard(dashboard: str, surface: str | None = None):
         # of them gets it
         "workbook": doc.workbook if writable or copyable else None,
     }
+
+
+@frappe.whitelist(methods=["POST"])
+def get_dashboards() -> list[dict]:
+    """The dashboards this user may open, by title, as the Dashboards list
+    draws its cards: what the app lists for a reader with no Insights role.
+
+    The grants decide, as they do for every View, so an admin gets only what
+    was granted to them. They get no workbook, which they cannot open, the
+    owner by name only, and not who else may open it.
+    """
+    from insights.api.dashboards import DASHBOARD_LIST_FIELDS, _enrich_dashboards
+
+    granted = InsightsPermissions().get_granted(DASHBOARD)
+    if not granted:
+        return []
+
+    dashboards = [
+        dashboard
+        for dashboard in frappe.get_all(
+            DASHBOARD,
+            filters={"name": ("in", granted)},
+            fields=[*DASHBOARD_LIST_FIELDS, "route"],
+            order_by="title asc",
+        )
+        if may_read(frappe.get_cached_doc(DASHBOARD, dashboard.name))
+        and dashboard_refusal(dashboard.name) is None
+    ]
+    _enrich_dashboards(dashboards)
+    for dashboard in dashboards:
+        dashboard.owner_name = frappe.utils.get_fullname(dashboard.pop("owner"))
+        for field in (
+            "workbook",
+            "workbook_title",
+            "shared_with",
+            "shared_with_organization",
+            "visible_to_roles",
+            "is_public",
+            "_liked_by",
+        ):
+            dashboard.pop(field, None)
+    return dashboards
+
+
+@frappe.whitelist(methods=["GET"])
+def get_dashboard_preview(dashboard: str):
+    """A dashboard's preview image, while every reader sees the same rows on it.
+
+    The file belongs to no document, so this is the only way to it
+    (`create_preview_file`). Sharing a dashboard takes its preview away at
+    once, here and in the list (`same_rows_for_every_reader`), and so does a
+    change to a chart or query on it (`current_previews`).
+    """
+    name = resolve_for_read(DASHBOARD, dashboard)
+    if name not in same_rows_for_every_reader([name]) or name not in current_previews([name]):
+        not_found()
+
+    preview_image = frappe.db.get_value(DASHBOARD, name, "preview_image")
+
+    file = frappe.get_doc("File", {"file_url": preview_image.partition("?")[0], "is_private": 1})
+    frappe.response.update(
+        type="download",
+        display_content_as="inline",
+        filename=file.file_name,
+        filecontent=file.get_content(),
+    )
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
@@ -168,7 +254,7 @@ def chart_answer(
     A chart with a missing required setting returns which one, as the Builder
     shows its author, and runs nothing.
     """
-    if errors := config_errors(doc.chart_type, doc.query, frappe.parse_json(doc.config or "{}")):
+    if errors := doc.setup_errors():
         return {"errors": errors}
 
     # present the chart before fetching rows. If a query is saved during the
@@ -517,7 +603,7 @@ def card_source(chart: str, dashboard: str | None, column: str):
     """The chart of a card filter, and the query and column the filter applies to.
 
     None when the column has no values to list. A column the card does not
-    show is Not Found, like any other reference the caller may not read.
+    show is Not Found.
     """
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
     query, column_name, card_filters = card_filter_source(doc.name, column)
@@ -534,8 +620,7 @@ def resolve_chart(chart: str, dashboard: str | None) -> str:
     A chart on a dashboard is read through the dashboard's visibility: the
     controller grants the dashboard's level to its charts, so the read check
     below is enough. The dashboard must resolve first, and the chart must be on
-    it. Otherwise the answer is Not Found, as for any other reference the
-    caller may not read.
+    it. A chart that is not on it is Not Found there.
     """
     if not dashboard:
         return resolve_for_read(CHART, chart)
@@ -595,14 +680,6 @@ def present_item(item: dict, readable: set[str]) -> dict:
         )
 
     return presented
-
-
-def filter_default_value(item: dict):
-    """A filter's default. `default_user_key` makes it the reader's own user
-    default, so a shipped dashboard opens on each reader's company."""
-    if key := item.get("default_user_key"):
-        return frappe.defaults.get_user_default(key)
-    return item.get("default_value")
 
 
 def charts_on(items: list[dict]) -> list:

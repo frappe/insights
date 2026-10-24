@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { QueryResult } from '../types/query.types'
-import { emptyResult, rawRowOf } from './helpers'
+import { emptyResult, formatResultRows, rawRowOf } from './helpers'
 
 function resultOf(rows: QueryResult['rows']): QueryResult {
 	return {
@@ -39,5 +39,22 @@ describe('the raw row behind a formatted one', () => {
 
 		expect(rawRowOf(result, result.formattedRows[0])).toBe(result.rows[0])
 		expect(rawRowOf(result, result.formattedRows[1])).toBe(result.rows[1])
+	})
+})
+
+describe('a date in a result row', () => {
+	// @feature query.execute
+	it('prints without the midnight the server sends with it', () => {
+		const result = {
+			...emptyResult(),
+			columns: [
+				{ name: 'posting_date', type: 'Date' },
+				{ name: 'creation', type: 'Datetime' },
+			],
+			rows: [{ posting_date: '2026-04-09 00:00:00', creation: '2026-04-09 10:30:00' }],
+		} as QueryResult
+		expect(formatResultRows(result, {})).toEqual([
+			{ posting_date: '2026-04-09', creation: '2026-04-09 10:30:00' },
+		])
 	})
 })

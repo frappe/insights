@@ -28,11 +28,14 @@ function cardAnswering(answer: Record<string, any>) {
 	return read
 }
 
-async function renderCard(answer: Record<string, any>) {
+async function renderCard(
+	answer: Record<string, any>,
+	props: Record<string, unknown> = { title: 'Revenue', reading: 'Revenue' },
+) {
 	const read = cardAnswering(answer)
 	await read.load()
 	const app = createSSRApp({
-		render: () => h(ChartBody, { chart: read, title: 'Revenue', reading: 'Revenue' }),
+		render: () => h(ChartBody, { chart: read, ...props }),
 	})
 	// The app registers frappe-ui components globally. This test does not, so it
 	// silences the warnings for unresolved components.
@@ -80,6 +83,32 @@ describe('a card whose rows the reader User Permissions narrowed', () => {
 		const html = await renderCard(rows)
 		expect(html).not.toContain('Filtered by your User Permissions')
 		expect(html).toContain('12,300')
+	})
+})
+
+const bordered = /data-slot="chart-card"[^>]*class="[^"]*\bborder\b/
+
+describe('a Number chart in a card the host draws', () => {
+	// @feature desk.number-card-island
+	it('draws the reading with no card or title of its own', async () => {
+		// What `ChartIsland` renders in a desk Number Card: no title, no reading.
+		const html = await renderCard(rows, { card: false })
+		expect(html).not.toMatch(bordered)
+		expect(html).not.toContain('>Revenue<')
+		expect(html).toContain('12,300')
+
+		expect(await renderCard(rows, {})).toMatch(bordered)
+	})
+
+	// @feature desk.number-card-island permissions.card-says-it-is-scoped
+	it('still says User Permissions narrowed the number, below it', async () => {
+		const html = await renderCard(
+			{ ...rows, user_permissions: [{ doctype: 'Territory', documents: ['Karnataka'] }] },
+			{ card: false },
+		)
+		expect(html).toMatch(/12,300.*aria-label="Filtered by your User Permissions/s)
+		// not on the empty title row, which stands on the host card's top edge
+		expect(html).not.toMatch(/class="([^"]* )?h-0[ "]/)
 	})
 })
 

@@ -26,6 +26,27 @@ function header(page: Page): Locator {
 const CSV = ['region,order_count', 'Andromeda,12', 'Cassiopeia,34', 'Perseus,56'].join('\n')
 
 test.describe('data-source', () => {
+	// @feature data-source.connect-admin-only
+	test('only an admin is offered a way to connect a data source', async ({
+		page,
+		viewerPage,
+	}) => {
+		// With team permissions on, the viewer reads no data source, so the list is
+		// its empty state, which offered the button too. Without, every site lists
+		// Site DB.
+		await viewerPage.goto(`${INSIGHTS_PATH}/data-source`)
+		await expect(
+			viewerPage
+				.getByText('No data sources.')
+				.or(viewerPage.getByText('Site DB', { exact: true })),
+		).toBeVisible()
+		await expect(viewerPage.getByRole('button', { name: 'New Data Source' })).toHaveCount(0)
+
+		await page.goto(`${INSIGHTS_PATH}/data-source`)
+		await header(page).getByRole('button', { name: 'New Data Source' }).click()
+		await expect(page.getByText('Connect to MariaDB database')).toBeVisible()
+	})
+
 	// @feature data-source.table-list data-source.table-preview data-source.list
 	test("a user browses a data source's table list and previews a table", async ({
 		page,

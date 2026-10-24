@@ -1,11 +1,16 @@
 import frappe
+from frappe.query_builder import Case
+from frappe.query_builder.functions import IfNull
 from frappe.utils import create_batch
+
+from insights.upgrade import add_item
 
 CHART = "Insights Chart v3"
 QUERY = "Insights Query v3"
 ALERT = "Insights Alert"
 REFERENCE = "Insights Query Reference"
 FOLDER = "Insights Folder"
+EXECUTION_LOG = "Insights Query Execution Log"
 FIELD = "data_query"
 
 BATCH = 500
@@ -53,11 +58,11 @@ def execute():
     and such a document is left where it is. Another is a chart whose `query`
     names it: no surface lists a cache in the query picker, so this should not
     happen, and the delete is permanent, so the chart's own field is read rather
-    than trusted. The last is an alert that may name it, set on the chart's rows
-    back when they were a query a user could pick. The query controller already
-    says an alert cannot outlive the query it watches, so the alert goes with
-    the document. It could not have fired again either way, since nothing has
-    maintained that document since the derivation moved.
+    than trusted. The last is an alert that names it, set on the chart's rows
+    back when they were a query a user could pick. The alert still fires on the
+    rows the document returns, so the document stays as a query of its own, and
+    the alert's owner is told it no longer follows the chart. A document kept
+    for any of these is no longer the chart's: its column is cleared.
 
     The rows are deleted in batches, not through `frappe.delete_doc`. A site can
     hold thousands of caches, and `delete_doc` enqueues a job per document. Those
@@ -93,19 +98,32 @@ def execute():
     )
     cached = [name for name in cached if name not in sourced]
 
+    repoint_charts_reading_their_own_cache()
     charted = (
         set(frappe.get_all(CHART, filters={"query": ("in", cached)}, pluck="query")) if cached else set()
     )
     cached = [name for name in cached if name not in charted]
+
+    alerts = (
+        frappe.get_all(ALERT, filters={"query": ("in", cached)}, fields=["name", "title", "query", "owner"])
+        if cached
+        else []
+    )
+    alerted = {alert.query for alert in alerts}
+    cached = [name for name in cached if name not in alerted]
+
+    for alert in alerts:
+        report_alert(alert)
+    title_after_charts(sourced | charted | alerted)
+    unlink_from_charts(sourced | charted | alerted)
     if not cached:
         return
 
-    alerts = frappe.get_all(ALERT, filters={"query": ("in", cached)}, fields=["name", "title"])
     folders = frappe.get_all(
         QUERY, filters={"name": ("in", cached), "folder": ("is", "set")}, pluck="folder", distinct=True
     )
 
-    delete_documents(ALERT, [alert.name for alert in alerts])
+    log_runs_under_chart_queries(cached)
     for batch in create_batch(cached, BATCH):
         frappe.db.delete(REFERENCE, {"query": ("in", batch)})
         frappe.db.delete(REFERENCE, {"ref_query": ("in", batch)})
@@ -117,8 +135,91 @@ def execute():
         print(f"  kept {name}: another query sources it")
     for name in sorted(charted):
         print(f"  kept {name}: a chart reads it")
-    for alert in alerts:
-        print(f"  deleted alert {alert.name} ({alert.title}) with its query")
+    for name in sorted(alerted):
+        print(f"  kept {name}: an alert watches it")
+
+
+def repoint_charts_reading_their_own_cache() -> None:
+    """Point a chart whose query is its own cache at the query the cache reads.
+
+    Such a chart showed the cache's rows. Derived from the cache, it would
+    apply its config a second time, to columns the first pass already
+    summarized. The cache is its source query with the chart's config applied,
+    so the chart derives the same rows from that source.
+    """
+    Chart = frappe.qb.DocType(CHART)
+    for chart, cache in (
+        frappe.qb.from_(Chart).select(Chart.name, Chart.query).where(Chart.query == Chart[FIELD]).run()
+    ):
+        operations = frappe.parse_json(frappe.db.get_value(QUERY, cache, "operations")) or []
+        table = (operations[0].get("table") or {}) if operations else {}
+        source = table.get("query_name") if table.get("type") == "query" else None
+        if source and source != cache and frappe.db.exists(QUERY, source):
+            frappe.db.set_value(CHART, chart, "query", source, update_modified=False)
+
+
+def log_runs_under_chart_queries(cached: list[str]) -> None:
+    """Move each cache's execution logs to its chart's query.
+
+    A chart's runs were logged under its cache. The data store's weekly cleanup
+    reads the logs to find the tables no query has read lately, and a log that
+    names a deleted query reads nothing. So without this, a stored table only
+    dashboards read is dropped on the first cleanup after the upgrade.
+    """
+    Chart = frappe.qb.DocType(CHART)
+    Log = frappe.qb.DocType(EXECUTION_LOG)
+    for batch in create_batch(cached, BATCH):
+        query_of = dict(
+            frappe.qb.from_(Chart)
+            .select(Chart[FIELD], Chart.query)
+            .where(Chart[FIELD].isin(batch) & (IfNull(Chart.query, "") != ""))
+            .run()
+        )
+        if not query_of:
+            continue
+        case = Case()
+        for cache, query in query_of.items():
+            case = case.when(Log.query == cache, query)
+        frappe.qb.update(Log).set(Log.query, case).where(Log.query.isin(list(query_of))).run()
+
+
+def title_after_charts(kept: set[str]) -> None:
+    """Give each kept cache with no title its chart's, so it is not a blank row
+    in the workbook's query list."""
+    for cache in (
+        frappe.get_all(
+            QUERY, filters={"name": ("in", sorted(kept)), "title": ("is", "not set")}, pluck="name"
+        )
+        if kept
+        else []
+    ):
+        frappe.db.set_value(QUERY, cache, "title", chart_title(cache) or cache, update_modified=False)
+
+
+def unlink_from_charts(kept: set[str]) -> None:
+    """Clear the column on the charts whose cache is kept, so the document is a
+    query of its own and a later run never takes it for a cache."""
+    Chart = frappe.qb.DocType(CHART)
+    for batch in create_batch(sorted(kept), BATCH):
+        frappe.qb.update(Chart).set(Chart[FIELD], None).where(Chart[FIELD].isin(batch)).run()
+
+
+def chart_title(cache: str) -> str | None:
+    """The title of the chart that cached its query in `cache`."""
+    Chart = frappe.qb.DocType(CHART)
+    titles = frappe.qb.from_(Chart).select(Chart.title).where(Chart[FIELD] == cache).limit(1).run(pluck=True)
+    return titles[0] if titles else None
+
+
+def report_alert(alert) -> None:
+    data = {"alert": alert.title, "chart": chart_title(alert.query) or alert.query}
+    add_item(
+        "J1",
+        f'"{data["alert"]}" on chart "{data["chart"]}"',
+        reference=(QUERY, alert.query),
+        user=None if alert.owner == "Administrator" else alert.owner,
+        data=data,
+    )
 
 
 def delete_documents(doctype: str, names: list[str]) -> None:

@@ -33,5 +33,5 @@ class InsightsQueryExecutionLog(Document):
 
 
 def on_doctype_update():
-    # Tables created before frappe 16 have no creation index, and clear_old_logs deletes by creation.
+    # Tables created before Frappe v16 have no creation index, and clear_old_logs deletes by creation.
     frappe.db.add_index("Insights Query Execution Log", ["creation"], index_name="creation")

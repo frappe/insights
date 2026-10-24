@@ -3,21 +3,22 @@
 // from it and runs them, and `chart_view` is where the rows come back.
 
 import { useDebouncedRefHistory } from '@vueuse/core'
+import { toast } from 'frappe-ui'
 import { computed, reactive, toRefs, watch } from 'vue'
 import { copyToClipboard, getUniqueId, safeJSONParse, wheneverChanges } from '../helpers'
 import { GranularityType } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
 import useQuery from '../query/query'
 import router from '../router'
-import { AXIS_CHARTS } from '../types/chart.types'
+import { __ } from '../translation'
 import { InsightsChartv3 } from '../types/workbook.types'
 import { getLinkedQueries } from '../query/linked_queries'
 import { invalidateChart, renameChartViews } from './chart_view'
 import {
 	configDimensions,
-	ensureConfigSlots,
 	normalizeChartConfig,
 	resetChartConfig,
+	switchChartType,
 } from './helpers'
 
 const charts = new Map<string, Chart>()
@@ -78,22 +79,32 @@ function makeChart(name: string) {
 		chart.doc.config = resetChartConfig(chart.doc.config, chart.doc.chart_type)
 	}
 
-	// when chart type changes from axis to non-axis or vice versa reset the config
 	watch(
 		() => chart.doc.chart_type,
 		(newType: string, oldType: string) => {
 			if (!newType || newType === oldType) return
-			const crossesAxisBoundary =
-				oldType && AXIS_CHARTS.includes(newType) !== AXIS_CHARTS.includes(oldType)
-			if (crossesAxisBoundary) {
-				resetConfig()
-			}
-			ensureConfigSlots(chart.doc.config, newType)
+			switchChartType(chart.doc.config, oldType, newType)
 		},
 	)
 
 	function copyChart() {
 		copyToClipboard(chart.call('export').then((data) => JSON.stringify(data, null, 2)))
+	}
+
+	async function showInDesk() {
+		// a browser blocks a tab opened once the request is back
+		const tab = window.open('', '_blank')
+		const shown = await chart.call('show_in_desk').catch((error: Error) => {
+			tab?.close()
+			throw error
+		})
+		if (tab) {
+			tab.location.href = shown.url
+			return
+		}
+		toast.success(__('Ready in Desk'), {
+			action: { label: __('Open'), onClick: () => window.open(shown.url, '_blank') },
+		})
 	}
 
 	const history = useDebouncedRefHistory(
@@ -121,7 +132,7 @@ function makeChart(name: string) {
 		getDependentQueryColumns,
 
 		copy: copyChart,
-		openInDesk: () => window.open(`/app/insights-chart-v3/${chart.doc.name}`, '_blank'),
+		showInDesk,
 
 		history,
 	})

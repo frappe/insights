@@ -25,8 +25,6 @@ defineProps<{
 	preview?: boolean
 	loading?: boolean
 	failure?: ChartFailure | null
-	/** The query returned no rows. See `ChartBody`. */
-	empty?: boolean
 	drillable?: boolean
 }>()
 
@@ -47,7 +45,6 @@ const emit = defineEmits<{
 				:preview="preview"
 				:loading="loading"
 				:failure="failure"
-				:empty="empty"
 				:drillable="drillable"
 				@card-click="emit('cardClick', $event)"
 				@retry="emit('retry')"

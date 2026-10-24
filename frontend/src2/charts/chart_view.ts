@@ -12,7 +12,7 @@ import { computed, reactive, ref, shallowRef, unref, type ComputedRef, type Ref 
 import { copy, getErrorMessage } from '../helpers'
 import { useResultExport } from '../helpers/result_export'
 import { stableStringify } from '../helpers/stable_stringify'
-import type { NotPermitted } from '../not_permitted'
+import { refusalOf, type NotPermitted, type Refusal } from '../not_permitted'
 import { __ } from '../translation'
 import session, { type Session } from '../session'
 import { isServerBusyError, scheduleQueryExecution } from '../query/execution_queue'
@@ -122,8 +122,8 @@ type ChartDataResponse = {
 	// an answer, not a failure: there is nothing to retry
 	not_permitted?: NotPermitted
 	user_permissions?: { doctype: string; documents: string[] }[]
-	// a team's Table Restriction, or a column blanked on the rows only desk
-	// allows, filtered these rows. Unlike `user_permissions`, it names nothing
+	// a team's Table Restriction filtered these rows. Unlike
+	// `user_permissions`, it names nothing
 	narrowed_by_permissions?: boolean
 	currency_symbols?: Session['site']['currency_symbols']
 	// the date this card's spans resolved against. A span is stored unresolved,
@@ -184,6 +184,10 @@ export type ChartSource = {
 		rendered: ChartViewDoc,
 	) => DrillRowsSource
 	drillable?: boolean
+	// the source reads a saved chart through the View, which answers a reference
+	// it cannot hand over with Not Found or No Access (`refusalOf`). The builder's
+	// errors are about the config, not about the reader
+	refusable?: boolean
 	// the reader's own sort, for a source whose endpoint takes one. Unset, the
 	// Chart runs in its own order
 	readerOrder?: Ref<OrderByArgs[] | undefined>
@@ -236,6 +240,9 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	const stale = ref(false)
 	const executing = ref(true)
 	const failed = ref(false)
+	// a failure the server gave as an answer: the chart is missing, or the reader
+	// may not read it. Retrying cannot change either
+	const refusal = ref<Refusal>()
 	const serverBusy = ref(false)
 	// a busy server has its own state, so it leaves this empty
 	const failure = ref('')
@@ -287,6 +294,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 
 		executing.value = true
 		failed.value = false
+		refusal.value = undefined
 		serverBusy.value = false
 		failure.value = ''
 		notPermitted.value = undefined
@@ -314,6 +322,8 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 				priority: executionPriority.value,
 			},
 		)
+		// eslint-disable-next-line no-restricted-syntax -- awaited below, unless the chart's own load fails first. Its failure is then the one the card shows, and this one would go unhandled
+		dataLoad.catch(() => {})
 
 		try {
 			const placeholder = await docLoad
@@ -411,6 +421,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 			// a repeat
 			lastRequestKey = undefined
 			serverBusy.value = isServerBusyError(error)
+			refusal.value = source.refusable ? refusalOf(error) : undefined
 			failure.value = serverBusy.value ? '' : getErrorMessage(error)
 			failed.value = true
 			clearChart()
@@ -495,6 +506,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		stale,
 		executing,
 		failed,
+		refusal,
 		serverBusy,
 		failure,
 		empty,
@@ -661,6 +673,7 @@ function makeSavedChartView(
 					format,
 				}),
 			readerOrder,
+			refusable: true,
 			// A drill reads rows, so a guest is not allowed it. The endpoint also
 			// refuses Guest.
 			drillable: session.isLoggedIn,

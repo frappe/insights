@@ -593,6 +593,8 @@ function trendLinesFor(
 				show: true,
 				position: 'insideEndTop',
 				formatter: () => label,
+				// echarts' default ink is near-black, unread on a dark plot
+				color: tokens?.dataLabel,
 				fontSize: DATA_LABEL_FONT_SIZE,
 				backgroundColor: tokens
 					? `color-mix(in srgb, ${tokens.backdrop} ${LABEL_PLATE_OPACITY}%, transparent)`

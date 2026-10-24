@@ -2194,13 +2194,13 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # so a reader with no role sees none of the owner's rows
         self.assertEqual(result["rows"], [])
 
-    # @feature permissions.denied-is-not-found
-    def test_an_outsider_is_answered_like_a_missing_reference(self):
+    # @feature permissions.denied-says-no-access
+    def test_an_outsider_is_told_they_have_no_access(self):
         _, chart, dashboard = self.make_content(visibility="Private")
 
         with as_user(OUTSIDER):
             for reference, on_dashboard in ((chart.name, None), (chart.name, dashboard.name)):
-                with self.assertRaises(frappe.DoesNotExistError):
+                with self.assertRaises(frappe.PermissionError):
                     get_drill_data(chart=reference, dashboard=on_dashboard, drill_stack=[rows_level()])
 
     # @feature shared.no-drill

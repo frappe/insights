@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { Button } from 'frappe-ui'
 import { computed, ref, type Component } from 'vue'
 import { downloadImage } from '../helpers'
 import { resolveHref } from '../helpers/navigation'
+import LoadFailure from '../components/LoadFailure.vue'
+import { refusalDetail } from '../not_permitted'
 import { __ } from '../translation'
 import type { BreakpointKey, Layout } from '../types/workbook.types'
 import { BASE_BREAKPOINT, BREAKPOINTS } from './grid_placement'
 import type { DashboardAction, DashboardView } from './view'
 
 // A dashboard's content on every page that shows one: the grid, with its filter
-// cells, and the loading, Not Found and error states.
+// cells, and the loading, Not Found, No Access and error states.
 //
 // It renders no header. Each page renders its own header above this. The SPA
 // page and the builder read the actions through a template ref, and the island
@@ -78,23 +81,23 @@ function exportImage() {
 	if (!scroller.value) return
 	return downloadImage(scroller.value, `${props.dashboard.title}.png`)
 }
+const noAccessTitle = __("You don't have access to this dashboard")
 </script>
 
 <template>
 	<div class="flex h-full w-full flex-col overflow-hidden">
-		<div
-			v-if="dashboard.notFound"
-			class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
-		>
-			{{ __('Dashboard not found') }}
-		</div>
-
-		<div
+		<LoadFailure v-if="dashboard.notFound" :title="__('Dashboard not found')" />
+		<LoadFailure
+			v-else-if="dashboard.noAccess"
+			:title="noAccessTitle"
+			:detail="
+				refusalDetail(dashboard.noAccess.doctypes, dashboard.noAccess.sharedWith ?? '')
+			"
+		/>
+		<LoadFailure
 			v-else-if="dashboard.failed"
-			class="flex w-full flex-1 items-center justify-center p-4 text-p-base text-ink-gray-5"
-		>
-			{{ __('Could not load the dashboard. Refresh to try again.') }}
-		</div>
+			:title="__('Could not load the dashboard. Refresh to try again.')"
+		/>
 
 		<div v-else-if="dashboard.loading" class="flex-1 p-4">
 			<div class="h-8 w-64 animate-pulse rounded-4 bg-surface-gray-2" />
@@ -110,7 +113,28 @@ function exportImage() {
 			@drop="dashboard.builder?.drop($event)"
 		>
 			<div
-				v-if="!dashboard.items.length"
+				v-if="!dashboard.items.length && dashboard.builder?.editing"
+				class="flex h-full w-full flex-col items-center justify-center gap-3 text-center"
+			>
+				<div class="flex flex-col gap-1">
+					<p class="text-base-medium text-ink-gray-8">{{ __('Add a chart') }}</p>
+					<p class="text-p-sm text-ink-gray-5">
+						{{
+							__(
+								"Pick one of the workbook's charts, or drag one in from the sidebar.",
+							)
+						}}
+					</p>
+				</div>
+				<Button
+					variant="solid"
+					icon-left="lucide-plus"
+					:label="__('Chart')"
+					@click="dashboard.builder.pickCharts()"
+				/>
+			</div>
+			<div
+				v-else-if="!dashboard.items.length"
 				class="flex h-full w-full items-center justify-center text-p-base text-ink-gray-5"
 			>
 				{{ __('This dashboard is empty') }}

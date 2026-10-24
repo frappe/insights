@@ -230,6 +230,17 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
         self.assertNotIn("rows", result)
 
     # @feature charts.missing-slot-message
+    def test_a_chart_on_a_query_with_no_operations_yet_says_so(self):
+        """The builder saves a new query after the chart beside it asks for rows."""
+        query, _ = self.make_content()
+        query.db_set("operations", "[]", update_modified=False)
+
+        result = self.preview(OWNER, chart_type="Table", query=query.name, config=table_config())
+
+        self.assertEqual(result["errors"], ["Query is empty"])
+        self.assertNotIn("rows", result)
+
+    # @feature charts.missing-slot-message
     def test_a_half_configured_chart_says_what_is_missing_to_a_reader_too(self):
         """A read-only collaborator gets the view's answer. A writer is told what
         is missing, so they are told too, whatever the chart runs as."""
@@ -677,10 +688,9 @@ class TestAuthoringAPI(InsightsIntegrationTestCase):
 
         # the name a preview runs under tells the engine which queries the
         # execution is already authorized for, so a name someone else's
-        # document holds is refused, whatever that document is. A chart the
-        # caller may not write gets Not Found, as in the view
-        for name, refusal in ((chart.name, frappe.DoesNotExistError), (query.name, frappe.PermissionError)):
-            with self.assertRaises(refusal):
+        # document holds is refused, whatever that document is
+        for name in (chart.name, query.name):
+            with self.assertRaises(frappe.PermissionError):
                 self.preview(
                     OUTSIDER,
                     chart_type="Table",

@@ -20,7 +20,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     get_table_stats,
 )
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import DT, as_user, create_test_workbook
+from insights.tests.factories import DT, as_user, create_test_workbook, create_user, delete_users
 from insights.tests.permissions_utils import (
     TEST_DS,
     USER_1,
@@ -32,6 +32,7 @@ from insights.tests.permissions_utils import (
     create_test_users,
 )
 
+SITE_DB = "Site DB"
 OWNER = USER_1
 OTHER = USER_2
 
@@ -285,3 +286,54 @@ class TestStatsReportTheLastImport(InsightsIntegrationTestCase):
         self.assertEqual(stats["last_import_rows"], 0)
         self.assertEqual(stats["last_import_duration"], 0)
         self.assertEqual(stats["total_syncs"], 0)
+
+
+class TestASiteTableCountIsForAdmins(InsightsIntegrationTestCase):
+    """Desk may narrow what a reader sees of a site table, or deny it, so its
+    full row count is not theirs to read."""
+
+    READER = "table_stats_site_reader@test.com"
+
+    @classmethod
+    def before_class(cls):
+        create_user(cls.READER, roles="Insights User")
+        cls.table = get_table_name(SITE_DB, "tabToDo")
+        if not frappe.db.exists(DT.TABLE, cls.table):
+            frappe.get_doc(
+                {"doctype": DT.TABLE, "data_source": SITE_DB, "table": "tabToDo", "label": "ToDo"}
+            ).insert(ignore_permissions=True)
+        frappe.db.set_value(DT.TABLE, cls.table, "estimated_row_count", 1500)
+        frappe.get_doc(
+            {
+                "doctype": "Insights Table Import Log",
+                "data_source": SITE_DB,
+                "table_name": "tabToDo",
+                "status": "Completed",
+                "rows_imported": 1500,
+            }
+        ).insert(ignore_permissions=True)
+
+    @classmethod
+    def after_class(cls):
+        delete_users(cls.READER)
+
+    def table_as(self, user):
+        with self.as_user(user):
+            doc = frappe.get_doc(DT.TABLE, self.table)
+            stats = doc.get_stats()
+            doc.apply_fieldlevel_read_permissions()
+        return stats, doc
+
+    # @feature data-source.table-stats
+    def test_a_reader_gets_no_count_of_a_site_table(self):
+        stats, doc = self.table_as(self.READER)
+
+        self.assertIsNone(stats["last_import_rows"])
+        self.assertIsNone(doc.get("estimated_row_count"))
+
+    # @feature data-source.table-stats
+    def test_an_admin_gets_the_count(self):
+        stats, doc = self.table_as("Administrator")
+
+        self.assertEqual(stats["last_import_rows"], 1500)
+        self.assertEqual(doc.estimated_row_count, 1500)

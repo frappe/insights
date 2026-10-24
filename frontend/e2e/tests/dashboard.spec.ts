@@ -79,7 +79,10 @@ test.describe('dashboard', () => {
 		await expect(page.getByRole('link', { name: 'Dashboard 1' })).toBeVisible()
 
 		await page.getByRole('button', { name: 'Edit', exact: true }).click()
-		await page.getByRole('button', { name: 'Chart', exact: true }).click()
+		// An empty dashboard offers Chart twice: in the toolbar, and under its
+		// "Add a chart" empty state, which comes second.
+		await expect(page.getByText('Add a chart', { exact: true })).toBeVisible()
+		await page.getByRole('button', { name: 'Chart', exact: true }).last().click()
 
 		// The selector searches the workbook's charts by title, and keeps only the
 		// ones that match.
@@ -437,6 +440,74 @@ test.describe('dashboard', () => {
 		await expect(charts(page).getByText('1,800')).toBeVisible()
 	})
 
+	// @feature dashboard.filter-links
+	test('a user links a filter to a chart listed below the editor fold', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const seeded = []
+		for (let index = 1; index <= 9; index++) {
+			seeded.push(
+				await createChart(adminApi, {
+					workbook: workbook.name,
+					query: query.name,
+					title: uniqueTitle(`Chart ${index}`),
+				}),
+			)
+		}
+		const last = seeded[seeded.length - 1]
+		const dashboard = await createDashboard(adminApi, {
+			workbook: workbook.name,
+			charts: seeded.map((chart) => chart.name),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
+
+		await page.getByRole('button', { name: 'Edit', exact: true }).click()
+		await page.getByRole('button', { name: 'Filter', exact: true }).click()
+		const editor = page.getByRole('dialog', { name: 'Edit Filter' })
+		await editor.getByLabel('Label').fill('Status')
+
+		// Nine charts list taller than the editor, so the list scrolls and the
+		// ninth comes to rest above the buttons rather than under them.
+		const lastRow = editor.getByText(last.title)
+		await lastRow.scrollIntoViewIfNeeded()
+		const row = await lastRow.boundingBox()
+		const save = await editor.getByRole('button', { name: 'Save', exact: true }).boundingBox()
+		expect(row!.y + row!.height).toBeLessThanOrEqual(save!.y)
+		// The switches follow the dashboard's charts in order, so the last is the ninth.
+		await editor.getByRole('switch').last().click()
+		await editor.getByPlaceholder('Select a column').click()
+		await page.getByRole('option', { name: 'order_status' }).click()
+		await editor.getByRole('button', { name: 'Save', exact: true }).click()
+		await expect(editor).toBeHidden()
+		await page.getByRole('button', { name: 'Done', exact: true }).click()
+
+		// The filter reads its values from the column of the chart it links.
+		await page.getByRole('button', { name: 'Status', exact: true }).click()
+		await expect(popover(page).getByText('delivered')).toBeVisible()
+	})
+
+	// @feature dashboard.list-view
+	test('a user opens a dashboard row menu in the list and goes to its workbook', async ({
+		page,
+		workbookWithDashboard,
+	}) => {
+		const { workbook, dashboard } = workbookWithDashboard
+		await page.goto(`${INSIGHTS_PATH}/dashboards`)
+		await page.getByPlaceholder('Title', { exact: true }).fill(dashboard.title)
+
+		// The row is a link to the dashboard, laid over the row, and the menu
+		// button sits above it.
+		const more = page.getByRole('button', { name: 'More', exact: true })
+		await expect(more).toHaveCount(1)
+		await more.click()
+		await page.getByRole('menuitem', { name: 'Open Workbook' }).click()
+		await expect(page).toHaveURL(new RegExp(`/workbook/${workbook.name}$`))
+	})
+
 	// @feature dashboard.drag-chart-from-sidebar
 	test('a user drags a chart from the sidebar onto the grid', async ({
 		page,
@@ -456,7 +527,7 @@ test.describe('dashboard', () => {
 		await expect(items(page)).toHaveCount(0)
 
 		// An empty dashboard shows no grid. Its empty state is inside the drop target.
-		const grid = page.getByText('This dashboard is empty')
+		const grid = page.getByText('Add a chart', { exact: true })
 		await page.getByRole('link', { name: chart.title }).dragTo(grid)
 
 		await expect(items(page).filter({ hasText: chart.title })).toHaveCount(1)

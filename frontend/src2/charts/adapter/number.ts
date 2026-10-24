@@ -1,4 +1,3 @@
-import { defineAsyncComponent } from 'vue'
 import type { NumberCardProgress, NumberCardProps, NumberCardSparkline } from 'frappe-ui/charts'
 import { ROW_HEIGHT } from '../../dashboard/grid_placement'
 import { toNumber } from '../../helpers'
@@ -13,9 +12,12 @@ import type {
 import type { Dimension, Measure, QueryResultRow } from '../../types/query.types'
 import { numberFormatOf, printNumber } from '../number_format'
 import { LAST_YEAR, periodOf, previousWindowLabel, windowShiftLabel } from '../window'
+import NumberCards from '../components/NumberCards.vue'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
-const NumberCards = defineAsyncComponent(() => import('../components/NumberCards.vue'))
+// Loaded with the page, unlike the other types. A Number Chart draws its own
+// loading card, so it mounts before its rows, and a lazy chunk queued behind
+// the dashboard's data requests left the cell blank until then.
 
 // A Number Chart has several Measures and v2's card is one reading, so a
 // reading is a card and the chart is the row of them. Two more things v2 will
@@ -54,23 +56,27 @@ export function adaptNumberChart(input: ChartAdapterInput): ChartFiller | undefi
 	// back from here — see `comparisonNumber`.
 	const current = rows[rows.length - 1]
 
-	// A dashboard cell names the one reading it shows. A surface that names none
-	// — the workbook editor — previews them all.
-	const shown = input.reading ? [input.reading] : numberReadings(config)
-	const cards = shown.map((reading) =>
-		cardFor(config, rows, reading, input.comparisonRows, input.sparklineResult?.rows),
-	)
+	// A dashboard cell names the one reading it shows. A surface whose host draws
+	// the card shows one too, the first: a reading with no title of its own can
+	// only be the one shown. A surface that names none — the workbook editor —
+	// previews them all.
+	const one = input.reading ?? (input.card === false ? numberReadings(config)[0] : undefined)
+	const shown = one ? [one] : numberReadings(config)
+	const cards = shown.map((reading) => ({
+		...cardFor(config, rows, reading, input.comparisonRows, input.sparklineResult?.rows),
+		card: input.card,
+	}))
 
 	// Nothing to drill into until there is a row behind the reading, and the card
 	// reads as clickable on the same answer: a pointer over an empty or failed
 	// card promised a dialog no click could open.
 	const drillable = (input.drillable ?? true) && Boolean(current)
 
-	// A surface that names no reading gets the cards at the size a cell gives
+	// A surface that shows every reading gets the cards at the size a cell gives
 	// them, so the preview is what the dashboard shows and not a guess at it.
 	const filler: ChartFiller = {
 		component: NumberCards,
-		props: { cards, preview: !input.reading, drillable },
+		props: { cards, preview: !one, drillable },
 	}
 	if (drillable) {
 		filler.drillDown = {
@@ -206,7 +212,10 @@ function readingOf(
 				card.deltaSuffix = '%'
 			}
 			const label = comparison.label || defaultComparisonLabel(comparison, config)
-			if (label) card.deltaCaption = label
+			// The card prints no figure for a missing change, and a bare caption
+			// reads as though the change were the caption itself.
+			const caption = card.delta === null ? ['—', label].filter(Boolean).join(' ') : label
+			if (caption) card.deltaCaption = caption
 			if (negativeIsBetter) card.negativeIsBetter = true
 		}
 	}

@@ -2,6 +2,7 @@
 import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
 import { Badge, Textarea } from 'frappe-ui'
 import { computed, onBeforeUnmount, provide, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import NumberInput from '../components/NumberInput.vue'
 import LazyTextInput from '../components/LazyTextInput.vue'
@@ -79,6 +80,16 @@ function downloadChart() {
 }
 
 const showShareDialog = ref(false)
+
+// A desk chart's form links here to change who sees the chart. `can_share`
+// arrives with the loaded document, which the dialog's draft starts from. The
+// query stays: the workbook keys its view by the full path, so dropping it would
+// remount the builder and close the dialog.
+if (useRoute().query.share) {
+	waitUntil(() => Boolean(chart.isloaded)).then(() => {
+		showShareDialog.value = Boolean(chart.doc.can_share)
+	})
+}
 </script>
 
 <template>

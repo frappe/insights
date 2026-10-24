@@ -33,6 +33,7 @@ import {
 import { showErrorToast } from '../helpers'
 import type { FilterType, GranularityType } from '../helpers/constants'
 import { navigate } from '../helpers/navigation'
+import { refusalOf, type NotPermitted, type Refusable } from '../not_permitted'
 import { stableStringify } from '../helpers/stable_stringify'
 import type { NumberChartConfig } from '../types/chart.types'
 import type { FilterOperator, FilterValue } from '../types/query.types'
@@ -223,6 +224,8 @@ export type DashboardBuilderActions = {
 	// a chart dragged in from the workbook's sidebar
 	dragOver: (event: DragEvent) => void
 	drop: (event: DragEvent) => void
+	// opens the picker of the workbook's charts
+	pickCharts: () => void
 }
 
 /**
@@ -237,8 +240,12 @@ export type DashboardBuilderActions = {
  */
 export type DashboardView = {
 	loading: boolean
-	// the dashboard is missing, or the reader may not read it. Both are Not Found
+	// the reference names no dashboard
 	notFound: boolean
+	// the reader may not read the dashboard. `sharedWith` is the server's line
+	// naming the roles it is shared with. `doctypes` names what its charts read
+	// when the reader may read the dashboard but none of its charts' data
+	noAccess?: NotPermitted & { sharedWith?: string }
 	// the request failed for another reason, so a retry may succeed
 	failed: boolean
 	name: string
@@ -390,6 +397,7 @@ function makeDashboardPage(
 	const state = reactive({
 		loading: true,
 		notFound: false,
+		noAccess: undefined as DashboardView['noAccess'],
 		failed: false,
 		name: '',
 		title: '',
@@ -538,9 +546,11 @@ function makeDashboardPage(
 		fetchDashboard(reference, surface)
 			.then((doc) => {
 				if (token !== fetches) return
-				opened = true
 				state.notFound = false
 				state.failed = false
+				state.noAccess = doc.not_permitted
+				if (doc.not_permitted) return
+				opened = true
 				state.name = doc.name
 				state.title = doc.title
 				state.items = doc.items
@@ -558,8 +568,19 @@ function makeDashboardPage(
 			.catch((error) => {
 				if (token !== fetches) return
 				opened = false
-				state.notFound = error?.exc_type === 'DoesNotExistError'
-				state.failed = !state.notFound
+				const refusal = refusalOf(error)
+				state.notFound = refusal === 'notFound'
+				state.noAccess =
+					refusal === 'noAccess'
+						? {
+								doctypes: [],
+								sharedWith:
+									error.exc_type === 'SharedWithRoles'
+										? error.messages?.at(-1)
+										: undefined,
+						  }
+						: undefined
+				state.failed = !refusal
 			})
 			.finally(() => {
 				if (token !== fetches) return
@@ -571,6 +592,7 @@ function makeDashboardPage(
 	const view = reactive({
 		loading: computed(() => state.loading),
 		notFound: computed(() => state.notFound),
+		noAccess: computed(() => state.noAccess),
 		failed: computed(() => state.failed),
 		name: computed(() => state.name),
 		title: computed(() => state.title),
@@ -637,7 +659,10 @@ function makeDashboardPage(
 /** Which page a dashboard is viewed on, as the `dashboard_viewed` event names it. */
 export type DashboardSurface = 'dashboards' | 'shared' | 'desk'
 
-function fetchDashboard(dashboard: string, surface: DashboardSurface): Promise<DashboardViewDoc> {
+function fetchDashboard(
+	dashboard: string,
+	surface: DashboardSurface,
+): Promise<Refusable<DashboardViewDoc>> {
 	return call('insights.api.view.get_dashboard', { dashboard, surface })
 }
 

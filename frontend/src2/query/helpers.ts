@@ -178,6 +178,9 @@ export function formatResultRows(result: QueryResult, granularityByColumn: Recor
 			if (FIELDTYPES.DATE.includes(column.type) && getGranularity(column.name)) {
 				const granularity = getGranularity(column.name) as GranularityType
 				formattedRow[column.name] = getFormattedDate(row[column.name], granularity)
+			} else if (column.type === 'Date' && typeof row[column.name] === 'string') {
+				// the server sends a date as a timestamp at midnight
+				formattedRow[column.name] = row[column.name].slice(0, 10)
 			}
 
 			if (

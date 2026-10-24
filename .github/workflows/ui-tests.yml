@@ -35,7 +35,7 @@ jobs:
       SITE_URL: http://insights.test:8000
       DB_ROOT_PASSWORD: root
       ADMIN_PASSWORD: frappe
-      FRAPPE_BRANCH: develop
+      FRAPPE_BRANCH: version-16
 
     services:
       mariadb:

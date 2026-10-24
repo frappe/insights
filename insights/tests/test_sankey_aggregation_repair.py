@@ -111,16 +111,18 @@ class TestSankeyAggregationRepair(InsightsIntegrationTestCase):
                 self.assertEqual(self.config_of(chart), config)
 
     # @feature charts.sankey-source-target-value
-    def test_a_count_over_a_column_of_no_stated_type_is_left_alone(self):
-        """The premise is a column that is already a `COUNT(*)`, and a config that
-        does not say cannot be read as meeting it."""
+    def test_a_count_over_a_column_of_no_stated_type_is_repaired(self):
+        """The Sankey drew the column's own values as widths, so a column that drew
+        is a number, whatever the config states."""
         config = sankey_config("count", "count_of_value")
         config["value_column"].pop("data_type")
         chart = self.create_chart("Sankey", config)
 
         repair()
 
-        self.assertEqual(self.config_of(chart), config)
+        repaired = value_column("sum", "sum_of_value")
+        repaired.pop("data_type")
+        self.assertEqual(self.config_of(chart)["value_column"], repaired)
 
     # @feature charts.sankey-source-target-value
     def test_a_summing_sankey_is_left_alone(self):

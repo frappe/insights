@@ -522,21 +522,136 @@ class AWorkbookFileIncludesItsMembersAtTheTop(InsightsIntegrationTestCase):
     def test_a_pasted_file_is_a_workbook_in_either_shape(self):
         """`workbook_file.ts` `pastedWorkbook` asks this of every JSON object a
         user pastes on the workbook list, before it asks to import it. The
-        released version's Copy JSON writes the wrapped shape, as the sample file
-        this app ships does."""
+        released version's Copy JSON writes the wrapped shape."""
         from insights.api.workbooks import is_workbook_file
 
-        with open(frappe.get_app_path("insights", "setup", "sample_workbook.json")) as f:
-            shipped = f.read()
+        wrapped = {
+            "version": "1.0",
+            "type": "Workbook",
+            "name": "10",
+            "doc": {"name": "10"},
+            "dependencies": {},
+        }
 
         with as_user(OWNER):
             chart = frappe.get_doc(DT.CHART, self.chart).export()
 
         with as_user(IMPORTER):
             self.assertTrue(is_workbook_file(self.file))
-            self.assertTrue(is_workbook_file(shipped))
+            self.assertTrue(is_workbook_file(wrapped))
             self.assertFalse(is_workbook_file(chart))
             self.assertFalse(is_workbook_file({"type": "Query", "name": self.query}))
+
+    def imported_cells(self, wrap: bool) -> dict:
+        """Import the file with a text cell and a two-reading Number chart, and
+        answer each cell's box by its reading or type."""
+        number = "number format chart"
+        charts = {
+            **self.file["charts"],
+            number: {
+                "name": number,
+                "title": number,
+                "chart_type": "Number",
+                "query": self.query,
+                "config": {
+                    "number_columns": [{"measure_name": "first"}, {"measure_name": "second"}],
+                    "number_column_options": [{}, {}],
+                },
+            },
+        }
+        items = [
+            {"type": "text", "text": "hi", "layout": {"i": "t", "x": 0, "y": 2, "w": 4, "h": 3}},
+            {"type": "chart", "chart": number, "layout": {"i": "n", "x": 4, "y": 0, "w": 8, "h": 2}},
+        ]
+        dashboards = {
+            name: {**dashboard, "items": frappe.as_json(items)}
+            for name, dashboard in self.file["dashboards"].items()
+        }
+        members = {"folders": [], "queries": self.file["queries"], "charts": charts, "dashboards": dashboards}
+        file = (
+            {
+                "type": "Workbook",
+                "name": self.workbook,
+                "doc": {"title": "grid copy"},
+                "dependencies": members,
+            }
+            if wrap
+            else {"doctype": DT.WORKBOOK, "name": self.workbook, "title": "grid copy", **members}
+        )
+
+        with as_user(IMPORTER):
+            imported = import_workbook(file)
+        self.made_workbooks.append(imported["workbook"])
+
+        (dashboard,) = [imported["names"][name] for name in dashboards]
+        cells = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard, "items"))
+        return {
+            cell.get("reading") or cell["type"]: (cell["layout"]["y"], cell["layout"]["h"]) for cell in cells
+        }
+
+    # @feature upgrade.older-export-imports
+    def test_a_file_insights_v3_exported_lands_on_the_new_grid(self):
+        """Insights before v3.50 exported the wrapped shape, with rows 52px tall and a Number
+        chart's readings in one cell. A dashboard the site already had was moved
+        by `resize_dashboard_cells` and `split_number_cells`; a file is moved on import."""
+        self.assertEqual(self.imported_cells(wrap=True), {"text": (5, 8), "first": (0, 4), "second": (0, 4)})
+        self.assertEqual(self.imported_cells(wrap=False), {"text": (2, 3), "chart": (0, 2)})
+
+    # @feature upgrade.older-export-imports
+    def test_a_file_insights_v3_exported_draws_as_the_same_workbook_upgraded_in_place(self):
+        """The patches change what Insights before v3.50 assumed on load into what Insights v3.50
+        reads. A file Insights before v3.50 exported gets the same changes on import."""
+        (chart_name,) = self.file["charts"]
+        bar = {**self.file["charts"][chart_name], "chart_type": "Bar", "config": {"y_axis": {"series": []}}}
+        (dashboard_name,) = self.file["dashboards"]
+        items = [
+            {
+                "id": "range",
+                "type": "filter",
+                "filter_name": "Created",
+                "filter_type": "Date",
+                "default_operator": "between",
+                "default_value": "2021-01-01,2021-12-31",
+            }
+        ]
+        (query_name,) = self.file["queries"]
+        expression = {"type": "expression", "expression": "t2.source"}
+        query = {**self.file["queries"][query_name]}
+        query["operations"] = [
+            *frappe.parse_json(query["operations"]),
+            {"type": "mutate", "expression": expression},
+        ]
+        wrapped = {
+            "type": "Workbook",
+            "name": self.file["name"],
+            "doc": {"title": "insights v3 copy"},
+            "dependencies": {
+                "folders": [],
+                "queries": {query_name: query},
+                "charts": {chart_name: bar},
+                "dashboards": {
+                    dashboard_name: {
+                        **self.file["dashboards"][dashboard_name],
+                        "items": frappe.as_json(items),
+                    }
+                },
+            },
+        }
+
+        with as_user(IMPORTER):
+            imported = import_workbook(wrapped)
+        self.made_workbooks.append(imported["workbook"])
+
+        config = frappe.parse_json(frappe.db.get_value(DT.CHART, imported["names"][chart_name], "config"))
+        self.assertTrue(config["y_axis"]["stack"])
+        (cell,) = frappe.parse_json(
+            frappe.db.get_value(DT.DASHBOARD, imported["names"][dashboard_name], "items")
+        )
+        self.assertNotIn("default_value", cell)
+        operations = frappe.parse_json(
+            frappe.db.get_value(DT.QUERY, imported["names"][query_name], "operations")
+        )
+        self.assertEqual(operations[-1]["expression"]["expression"], "t2['source']")
 
     # @feature standard.file-format
     def test_a_file_in_the_wrapped_shape_still_imports(self):

@@ -179,7 +179,7 @@ The page an island mounts into. The host owns everything around the island: the 
 _Avoid_: container, parent app, shell
 
 **Claim**:
-The link that makes Insights render a desk document. Insights adds one Custom Field to each desk doctype it renders (`Dashboard`, `Dashboard Chart`). When the field is set, an `onload` handler puts the island's name in `__onload.island`. Without that key, desk renders the document itself (`insights/desk.py`). A claim decides who renders the document, never who may read it.
+The link that makes Insights render a desk document. Insights adds one Custom Field to each desk doctype it renders (`Dashboard`, `Dashboard Chart`, `Number Card`). When the field is set, an `onload` handler puts the island's name in `__onload.island`. Without that key, desk renders the document itself (`insights/desk.py`). A claim decides who renders the document. Who may read it is the desk document's own permission, except on a document Show in Desk makes, which only the chart's readers see. A user sets it on an existing desk document in its form, or gets a new one from Show in Desk on a chart (`show_in_desk`).
 _Avoid_: renderer, override, takeover
 
 **Action**:
@@ -213,15 +213,19 @@ A dashboard's human-readable key, for its URL. It is made from the title only wh
 _Avoid_: slug, permalink
 
 **Not Found**:
-The one answer a View gives both for content that does not exist and for content the reader may not read. `resolve_for_read` raises `frappe.DoesNotExistError` with `Not Found` in both cases. No code above it checks read again or catches the error, because either would reveal which case it is.
-_Avoid_: not available, unavailable, forbidden, a separate denied state
+The answer a View gives for a reference that names nothing. `resolve_for_read` raises `frappe.DoesNotExistError` with `Not Found`.
+_Avoid_: not available, unavailable
+
+**No Access**:
+The answer a View gives for content the reader may not read: "You don't have access to this dashboard" or "this chart". `resolve_for_read` raises `frappe.PermissionError`. The reader learns that the content exists, and nothing else about it, except the roles a dashboard is shared with when they hold none of them. A dashboard on which every chart is **Not Permitted** is No Access too, and names the doctypes its charts need, except to a user who may write it.
+_Avoid_: forbidden, denied, hidden, Not Found (for content that exists)
 
 **Not Permitted**:
-A chart the reader may open but whose data they may not read. It reads a site-DB table or permlevel column that neither their desk permissions nor a team grant allows. It does not run. Its card stays in place and names the doctypes the reader needs. The word is Frappe's, from the `PermissionError` a query raises for one unreadable table. The reader may already open the chart, so this message reveals nothing. **Not Found** is different: it hides whether the content exists. A dashboard on which every chart is Not Permitted answers Not Found, except to a user who may write it.
-_Avoid_: denied, no access, hidden, no data (no data is a true zero)
+A chart the reader may open but whose data they may not read. It reads a site-DB table or permlevel column that their desk permissions do not allow. A team grant does not change that. It does not run. Its card stays in place and names the doctypes the reader needs. The word is Frappe's, from the `PermissionError` a query raises for one unreadable table. The reader may already open the chart, so this message reveals nothing.
+_Avoid_: denied, hidden, no data (no data is a true zero), No Access (that is about the content, not its data)
 
 **Held back**:
-A permlevel column the reader may not read, which a build removes from the table's columns. The chart keeps running while nothing in it names the column. An operation, an expression or SQL that names the column makes the chart **Not Permitted**. A held-back column still counts toward the shape of the result, so a join names its output columns as it would for the author (`not_permitted.hold_back`, `held_back_columns`, `held_back_key`). A column the author removed or renamed is dropped (`dropped_by_writer`), not held back.
+A permlevel column the reader may not read, or a field desk shows them masked, which a build removes from the table's columns. The chart keeps running while nothing in it names the column. An operation, an expression or SQL that names the column makes the chart **Not Permitted**. A held-back column still counts toward the shape of the result, so a join names its output columns as it would for the author (`not_permitted.hold_back`, `held_back_columns`, `held_back_key`). A column the author removed or renamed is dropped (`dropped_by_writer`), not held back.
 _Avoid_: lost, dropped (for permlevel)
 
 ### Sharing & governance
@@ -246,7 +250,7 @@ The user whose permissions filter the rows an execution returns, when the caller
 _Avoid_: data authority, permission mode, impersonation, viewer
 
 **Team**:
-A named group of users that grants access to resources (data sources, tables). On site data, a team grant adds to what desk permissions allow and never reduces it. On other data, it is the only access.
+A named group of users that grants access to resources (data sources, tables). On site data, a team grant and its Table Restrictions do nothing: desk permissions alone decide. On other data, it is the only access.
 
 **Resource Permission**:
 A grant tying a team to one specific resource.

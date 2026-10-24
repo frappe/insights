@@ -32,6 +32,7 @@ import {
 	derivedPlacement,
 	GRID_COLUMNS,
 	layoutRank,
+	placeNewFilter,
 	sameBox,
 	writePlacement,
 } from './grid_placement'
@@ -88,6 +89,8 @@ function makeDashboard(name: string) {
 
 	const editing = ref(false)
 	const editingItemIndex = ref<number>()
+	// the chart picker is open. The edit actions and an empty grid both open it
+	const pickingCharts = ref(false)
 
 	// Which breakpoint's layout the author is arranging. Every edit session starts
 	// at the widest, because that is the layout every item has and the one the
@@ -161,7 +164,8 @@ function makeDashboard(name: string) {
 				{
 					type: 'chart',
 					chart: chart.name,
-					layout: { i: getUniqueId(), x: 0, y, w: 10, h: 20 },
+					// a row of its own: a chart dropped beside another is read squeezed
+					layout: { i: getUniqueId(), x: 0, y, w: GRID_COLUMNS, h: 20 },
 				},
 			]
 		}
@@ -265,49 +269,15 @@ function makeDashboard(name: string) {
 				h: FILTER_ROWS,
 			},
 		}
-		dashboard.doc.items.push(newFilter)
-		positionNewFilter(newFilter)
-		editingItemIndex.value = dashboard.doc.items.length - 1
-	}
-
-	function positionNewFilter(newFilter: WorkbookDashboardItem) {
 		const items = dashboard.doc.items
-		const existingFilters = items.filter((item) => item.type === 'filter' && item !== newFilter)
-
-		if (existingFilters.length === 0) {
-			newFilter.layout.x = 0
-			newFilter.layout.y = 0
-			return
-		}
-
-		const topRowY = Math.min(...existingFilters.map((item) => item.layout.y))
-		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
-		const rightmostX = Math.max(
-			...topRowFilters.map((item) => item.layout.x + (item.layout.w || FILTER_WIDTH)),
-			0,
+		placeNewFilter(
+			newFilter.layout,
+			items.filter((item) => item.type === 'filter').map((item) => item.layout),
+			items.filter((item) => item.type !== 'filter').map((item) => item.layout),
+			FILTER_ROWS,
 		)
-
-		if (rightmostX + newFilter.layout.w <= GRID_COLUMNS) {
-			newFilter.layout.x = rightmostX
-			newFilter.layout.y = topRowY
-		} else {
-			newFilter.layout.x = 0
-			newFilter.layout.y = 0
-
-			existingFilters.forEach((item) => {
-				item.layout.y += FILTER_ROWS
-			})
-
-			const otherItems = items.filter((item) => item.type !== 'filter')
-			if (otherItems.length > 0) {
-				const minOtherY = Math.min(...otherItems.map((item) => item.layout.y))
-				if (minOtherY <= FILTER_ROWS) {
-					otherItems.forEach((item) => {
-						item.layout.y = Math.max(0, item.layout.y + FILTER_ROWS)
-					})
-				}
-			}
-		}
+		items.push(newFilter)
+		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
 	function removeItem(index: number) {
@@ -597,7 +567,13 @@ function makeDashboard(name: string) {
 	// belongs to the document, and the owner is here to check it. A default fills
 	// only a filter that has no state yet.
 	waitUntil(() => dashboard.isloaded).then(() => {
-		const defaults = defaultFilterStates(dashboard.doc.items)
+		const userDefaults = dashboard.doc.user_defaults || {}
+		const items = dashboard.doc.items.map((item) =>
+			item.type == 'filter' && item.filter_name in userDefaults
+				? { ...item, default_value: userDefaults[item.filter_name] }
+				: item,
+		)
+		const defaults = defaultFilterStates(items)
 		Object.entries(defaults).forEach(([filter_name, state]) => {
 			if (filter_name in filterStates.value) return
 			filterStates.value[filter_name] = state
@@ -609,6 +585,7 @@ function makeDashboard(name: string) {
 
 		editing,
 		editingItemIndex,
+		pickingCharts,
 		isEditingItem,
 		finishEditing,
 		discardEditing,

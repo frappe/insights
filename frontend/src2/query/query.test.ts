@@ -1,18 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { createSSRApp, h, nextTick } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import type { AdhocFilters } from '../types/query.types'
 
 const calls = vi.hoisted(() => [] as any[])
+const server = vi.hoisted(() => ({ refusal: null as Error | null, toasts: [] as string[] }))
 
 vi.mock('frappe-ui', async (importOriginal) => ({
 	...(await importOriginal<object>()),
+	toast: { error: (message: string) => server.toasts.push(message) },
 	call: (method: string, args: any) => {
 		calls.push({ method, args })
+		if (server.refusal) return Promise.reject(server.refusal)
 		return Promise.resolve({ message: {} })
 	},
 }))
 
-import { makeAdhocQuery } from './query'
+import ChartQuerySelector from '../charts/components/ChartQuerySelector.vue'
+import useQuery, { makeAdhocQuery } from './query'
 
 // The total is fetched under a query, and adhoc filters are one of the
 // query's two halves. A count left standing over a narrowed result states a
@@ -76,6 +81,99 @@ function executionsSent() {
 
 beforeEach(() => {
 	calls.length = 0
+	server.refusal = null
+	server.toasts.length = 0
+})
+
+describe('a run the server refuses', () => {
+	// @feature query.execute-error
+	it('states the refusal once, in the result pane', async () => {
+		const query = makeAdhocQuery()
+		query.setSource(ordersTable)
+		const sentence = 'Operation 1 (sql): Failed to parse the SQL query'
+		server.refusal = Object.assign(new Error('/api/method/run_doc_method QueryRefused'), {
+			messages: [sentence],
+		})
+
+		await query.execute()
+
+		expect(query.executionError).toBe(sentence)
+		expect(server.toasts).toEqual([])
+	})
+
+	// @feature query.row-count
+	it('answers a Load Count it refuses with the reason', async () => {
+		const query = makeAdhocQuery()
+		query.setSource(ordersTable)
+		await query.execute()
+		const sentence = 'Counting the rows timed out'
+		server.refusal = Object.assign(new Error('/api/method/run_doc_method QueryTimeout'), {
+			messages: [sentence],
+		})
+
+		await query.fetchResultCount()
+
+		expect(server.toasts).toEqual([sentence])
+		expect(query.result.totalRowCount).toBe(0)
+	})
+
+	// @feature query.execute-error
+	it("is told beside a chart's query picker, where no result pane shows it", async () => {
+		const sentence = 'Operation 1 (sql): Failed to parse the SQL query'
+		useQuery('query-failing').executionError = sentence
+		const app = createSSRApp({
+			render: () =>
+				h(ChartQuerySelector, {
+					modelValue: 'query-failing',
+					queries: [{ label: 'Failing', value: 'query-failing' }],
+				}),
+		})
+		app.component('Combobox', { render: () => h('div') })
+		app.config.globalProperties.__ = (text: string) => text
+		app.config.warnHandler = () => {}
+
+		expect(await renderToString(app)).toContain(sentence)
+	})
+
+	// @feature query.execute-error
+	it('says the server stayed busy, rather than that the query found nothing', async () => {
+		vi.useFakeTimers()
+		try {
+			const query = makeAdhocQuery()
+			query.setSource(ordersTable)
+			const sentence = 'The server is busy. Try again in a moment.'
+			server.refusal = Object.assign(
+				new Error('/api/method/run_doc_method ServiceUnavailableError'),
+				{
+					status: 503,
+					exc_type: 'ServiceUnavailableError',
+					messages: [sentence],
+				},
+			)
+
+			const run = query.execute()
+			await vi.runAllTimersAsync()
+			await run
+
+			expect(query.executionError).toBe(sentence)
+			expect(server.toasts).toEqual([])
+		} finally {
+			vi.useRealTimers()
+		}
+	})
+})
+
+describe('a script the author runs', () => {
+	// @feature query.script
+	it('runs as the editor holds it, though the pause that writes it has not passed', async () => {
+		const query = makeAdhocQuery()
+		query.setCode({ code: "results = [{'n': 1}]" })
+
+		await query.runCode({ code: "results = [{'m': 2}]" })
+
+		const run = calls.find((c) => c.args.method === 'execute')
+		expect(run.args.docs.operations).toEqual([{ type: 'code', code: "results = [{'m': 2}]" }])
+	})
 })
 
 describe('the page of rows a reader is reading', () => {

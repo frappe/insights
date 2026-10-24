@@ -1,7 +1,7 @@
 ---
 name: insights-workbook-cli
 version: 3
-description: Deprecated, use the frappe-insights skill instead. Create, read, update and delete Frappe Insights workbooks — queries, charts and dashboards — on a stock Insights 4 (develop) site through the frappectl CLI. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted.
+description: Deprecated, use the frappe-insights skill instead. Create, read, update and delete Frappe Insights workbooks — queries, charts and dashboards — on a stock Insights v3.50 or later site through the frappectl CLI. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted.
 ---
 
 # Insights workbooks over frappectl
@@ -10,7 +10,7 @@ description: Deprecated, use the frappe-insights skill instead. Create, read, up
 
 You author workbook content and push it to a live Insights site with `frappectl`. This file is the procedure. `reference/` is the contract.
 
-This skill needs nothing installed on the site. It supports Insights 4 (develop) sites only. Section 1 checks the version.
+This skill needs nothing installed on the site. It supports Insights v3.50 and later only. Section 1 checks the version.
 
 ## Before you start
 
@@ -70,7 +70,7 @@ You act as the profile's user, and you see what that user sees. `get_workbooks` 
 
 ### Read the site's version too, not only its data
 
-Read `get_app_version` before anything else. It returns a string such as `"4.0.0-dev"` or `"3.14.1"`. **If the major version is below 4, stop.** Tell the user this skill supports only Insights develop sites. An older site accepts payloads it does not understand and reports no error: it ignores unknown chart config keys, `import_workbook` returns only a name, and `json_value` is missing. The workbook then looks built and is wrong.
+Read `get_app_version` before anything else. It returns a string such as `"3.50.0-dev"` or `"3.14.1"`. **If its major and minor version are below v3.50, stop.** Tell the user this skill supports only Insights v3.50 and later. An older site accepts payloads it does not understand and reports no error: it ignores unknown chart config keys, `import_workbook` returns only a name, and `json_value` is missing. The workbook then looks built and is wrong.
 
 A develop site can still be older than this file, so an endpoint this file names may not be there. Before you depend on one, call it once with no arguments:
 
@@ -228,7 +228,7 @@ Without the endpoint you get the same documents, in more calls, with no snippet 
 frappectl -s $SITE method call insights.api.ai.lineage.describe_query -F query=<name>
 ```
 
-`upstream` holds every query it reads, through every hop, and the tables at the end, each with `stored`, `row_limit` and `sync_from`. `downstream` holds the queries built on it, the charts on those, the dashboards that show those charts, and the `filter_links` that name one of those queries. It is permission filtered, so a query you cannot read answers "not found". `downstream` comes from an index a background job rebuilds after each save, so a query saved a moment ago may be missing from it. `upstream` is read from the operations and is always current. Without the endpoint, `doc get` each query in the chain and run the `like` searches above for its name.
+`upstream` holds every query it reads, through every hop, and the tables at the end, each with `stored`, `row_limit` and `sync_from`. `downstream` holds the queries built on it, the charts on those, the dashboards that show those charts, and the `filter_links` that name one of those queries. It is permission filtered, so a query you cannot read answers "not found". `downstream` comes from an index that each save of a query rewrites. `upstream` is read from the operations. Without the endpoint, `doc get` each query in the chain and run the `like` searches above for its name.
 
 **Then search the JSON.** It reaches column names, expression text, filter values and measure names. A definition lives there even when no title says so:
 
@@ -544,7 +544,7 @@ Confirmed against the Insights `develop` code. Do not assume anything outside th
 | Purpose | Command |
 |---|---|
 | Who am I, and on which site | `auth whoami` |
-| Insights version | `method call insights.api.get_app_version` — stop below 4 |
+| Insights version | `method call insights.api.get_app_version` — stop below v3.50 |
 | List workbooks | `method call insights.api.workbooks.get_workbooks` (`search_term`, `limit`, `sources`: any of `created`, `shared`, `others`; `filters`: `[field, operator, value]` over workbook columns or `query`, `chart`, `dashboard`, `data_source`, `table_name`) |
 | List data sources | `method call insights.api.data_sources.get_all_data_sources` |
 | Search tables, all sources | `method call insights.api.data_sources.get_data_source_tables` (`search_term`, `limit`; omit `data_source` to search every source) |

@@ -9,11 +9,11 @@ def execute():
     content an org-wide share let every signed-in user read moves to
     `visibility = "Everyone"` and the share row goes.
 
-    Every org-wide row goes, whatever flags it has. The permission query
-    reads none of them for these two doctypes any more, so a row left behind
-    would grant nothing at all - read included - while looking like a grant.
-    Write and share have no level to move to: no level grants either, and the
-    workbook is where a collaborator is named.
+    A read-only org-wide row goes. The permission query reads none of them for
+    these two doctypes any more, so a row left behind would grant nothing at
+    all while looking like a grant. A row that also gives write or share is
+    left for `reshape_member_shares`, which removes it and tells an admin: no
+    level grants either, and the workbook is where a collaborator is named.
     """
     for doctype in VISIBILITY_DOCTYPES:
         shares = frappe.get_all(
@@ -29,4 +29,4 @@ def execute():
             if visibility_level(visibility) < visibility_level(EVERYONE):
                 frappe.db.set_value(doctype, name, "visibility", EVERYONE, update_modified=False)
 
-        frappe.db.delete("DocShare", {"share_doctype": doctype, "everyone": 1})
+        frappe.db.delete("DocShare", {"share_doctype": doctype, "everyone": 1, "write": 0, "share": 0})

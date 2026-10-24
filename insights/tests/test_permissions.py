@@ -1,13 +1,16 @@
 import frappe
 import frappe.share
+import ibis
 from frappe.permissions import update_permission_property
 
+from insights import user_permissions
 from insights.api.alerts import get_alerts
 from insights.api.user import USER_FIELDS, get_users, user_lookup_allowed
 from insights.api.workbooks import get_share_permissions, update_share_permissions
 from insights.decorators import insights_whitelist
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
+from insights.insights.doctype.insights_team.insights_team import apply_table_restrictions
 from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
 from insights.permissions import PERMISSION_DOCTYPES
 from insights.tests.base import InsightsIntegrationTestCase
@@ -801,13 +804,22 @@ class TestInsightsPermissions(InsightsIntegrationTestCase):
                 for doctype in sorted(shareable)
             ],
         )
-        # USER_3 reads the query through the chart. Only the workbook gives read on an alert.
+        # USER_3 keeps every flag through a share of the workbook, the only way to them now
+        self.assertEqual(
+            frappe.get_all(
+                "DocShare",
+                filters={"share_doctype": DT.WORKBOOK, "share_name": workbook.name},
+                fields=["user", "read", "write", "share"],
+            ),
+            [{"user": USER_3, "read": 1, "write": 1, "share": 1}],
+        )
         for doctype, name in members:
-            expected = nothing if doctype in ("Insights Folder", "Insights Alert") else read_only
-            self.assertEqual(grants(USER_3, doctype, name), expected, doctype)
+            self.assertEqual(
+                grants(USER_3, doctype, name), {"read": True, "write": True, "share": True}, doctype
+            )
             self.assertEqual(grants(USER_2, doctype, name), nothing, doctype)
         with self.as_user(USER_3):
-            self.assertEqual(get_alerts(query.name), [])
+            self.assertEqual([row.name for row in get_alerts(query.name)], [alert.name])
 
         with self.as_user(USER_1):
             frappe.share.add(DT.WORKBOOK, workbook.name, user=USER_2, read=1, write=1, share=1, notify=0)
@@ -1085,18 +1097,22 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
     """A team's grant can have an expression that limits the rows the grant gives.
 
     The restriction rides `Insights Resource Permission.table_restrictions` and is
-    applied where every table read funnels through, so it reaches a query, a
-    preview and a chart alike. An admin is not restricted.
+    applied where every read of a source funnels through, so it reaches a query,
+    a preview and a chart alike. An admin is not restricted. On the site
+    database desk alone decides the rows, so no restriction applies there.
     """
 
     SITE_DB = "Site DB"
     TABLE = "tabToDo"
     PREFIX = "Row Restriction Test"
+    STATUSES = ("Open", "Open", "Closed")
 
     @classmethod
     def before_class(cls):
         cleanup_test_fixtures()
         create_test_users()
+        create_test_data_sources()
+        create_test_tables()
         cls.settings_was = {
             "enable_permissions": frappe.db.get_single_value(DT.SETTINGS, "enable_permissions"),
         }
@@ -1121,7 +1137,7 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
                     "description": f"{cls.PREFIX} {status} {i}",
                     "status": status,
                     # Each reader gets their own todos, which desk permissions
-                    # allow in full. So only the team's row filter limits the rest.
+                    # allow in full, closed ones included.
                     "allocated_to": user,
                     "assigned_by": "Administrator",
                 }
@@ -1129,23 +1145,16 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
             .insert(ignore_permissions=True)
             .name
             for user in (USER_1, ADMIN)
-            for status, i in (("Open", 1), ("Open", 2), ("Closed", 3))
+            for i, status in enumerate(cls.STATUSES, start=1)
         ]
 
-        create_test_team(
-            "team1",
-            [USER_1],
-            grants=[(DT.DATA_SOURCE, cls.SITE_DB)],
-        )
+        create_test_team("team1", [USER_1], grants=[(DT.DATA_SOURCE, cls.SITE_DB)])
         team = frappe.get_doc(DT.TEAM, "team1")
-        team.append(
-            "team_permissions",
-            {
-                "resource_type": DT.TABLE,
-                "resource_name": cls.table_row,
-                "table_restrictions": "status == 'Open'",
-            },
-        )
+        for table in (cls.table_row, TEST_TABLE1):
+            team.append(
+                "team_permissions",
+                {"resource_type": DT.TABLE, "resource_name": table, "table_restrictions": "status == 'Open'"},
+            )
         team.save(ignore_permissions=True)
         clear_team_cache()
 
@@ -1160,11 +1169,18 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
 
     def before_test(self):
         clear_team_cache()
+        user_permissions.forget()
 
     def after_test(self):
         clear_team_cache()
 
     def statuses_read_by(self, user):
+        """The statuses of the rows of `table1` of the external source that `user` reads."""
+        rows = ibis.memtable({"name": ["a", "b", "c"], "status": list(self.STATUSES)})
+        read = apply_table_restrictions(rows, TEST_DS, "table1", user=user)
+        return sorted(read.execute()["status"])
+
+    def site_statuses_read_by(self, user):
         """The statuses this suite's own todos come back with, for `user`."""
         workbook = create_test_workbook(user, title=f"Row Restriction Workbook {user}")
         query = create_test_query(
@@ -1192,12 +1208,32 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
             rows = execute_test_query(query.name)["rows"]
         return sorted(row["status"] for row in rows)
 
-    # @feature permissions.table-row-restriction
-    def test_a_teams_row_restriction_cuts_only_the_rows_its_grant_adds(self):
-        """Desk permissions allow the reader's own todos, closed ones included.
-        The grant adds the other reader's open todos, never their closed one."""
-        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Open", "Open", "Open", "Open"])
+    # @feature permissions.table-row-restriction permissions.card-says-it-is-scoped
+    def test_a_teams_row_restriction_cuts_the_rows_its_grant_gives(self):
+        """The card of the user the restriction cut says so. Nobody else's does."""
+        self.assertEqual(self.statuses_read_by(USER_1), ["Open", "Open"])
+        self.assertTrue(user_permissions.scope(USER_1)["narrowed_by_permissions"])
+
         self.assertEqual(self.statuses_read_by(ADMIN), ["Closed", "Open", "Open"])
+        self.assertEqual(user_permissions.scope(ADMIN), {})
+
+    # @feature permissions.table-row-restriction upgrade.older-restrictions-read
+    def test_a_restriction_written_with_ibis_underscore_reads_the_column(self):
+        """Insights before v3.50 never ran `_.status`, and Insights v3.50 read `_` as the
+        translation function, so every query on the table failed."""
+        from insights.patches.drop_underscore_from_table_restrictions import execute
+
+        frappe.db.set_value(
+            "Insights Resource Permission",
+            {"parent": "team1", "resource_name": TEST_TABLE1},
+            "table_restrictions",
+            "_.status == 'Open'",
+        )
+
+        execute()
+        clear_team_cache()
+
+        self.assertEqual(self.statuses_read_by(USER_1), ["Open", "Open"])
 
     # @feature permissions.table-row-restriction
     def test_one_teams_grant_never_narrows_anothers(self):
@@ -1205,25 +1241,32 @@ class TestTableRowRestriction(InsightsIntegrationTestCase):
         lets the reader read the rows its own restriction allows. A grant with no restriction
         allows the whole table."""
         team = self.second_team("status == 'Closed'")
-        # only the second team allows the other reader's closed todo
-        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Closed", "Open", "Open", "Open", "Open"])
+        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Open", "Open"])
 
         team.team_permissions[-1].table_restrictions = "status == 'Nothing'"
         team.save(ignore_permissions=True)
         clear_team_cache()
-        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Open", "Open", "Open", "Open"])
+        self.assertEqual(self.statuses_read_by(USER_1), ["Open", "Open"])
 
         team.team_permissions[-1].table_restrictions = None
         team.save(ignore_permissions=True)
         clear_team_cache()
-        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Closed", "Open", "Open", "Open", "Open"])
+        self.assertEqual(self.statuses_read_by(USER_1), ["Closed", "Open", "Open"])
+
+    # @feature permissions.table-row-restriction permissions.site-user-permissions
+    def test_a_teams_row_restriction_changes_no_site_row(self):
+        """Desk permissions allow each reader their own todos, closed ones
+        included. The restriction cuts none of them, and the grant adds none of
+        the other reader's."""
+        self.assertEqual(self.site_statuses_read_by(USER_1), ["Closed", "Open", "Open"])
+        self.assertEqual(self.site_statuses_read_by(ADMIN), ["Closed", "Open", "Open"])
 
     def second_team(self, restriction):
-        team = create_test_team("team2", [USER_1], grants=[(DT.DATA_SOURCE, self.SITE_DB)])
+        team = create_test_team("team2", [USER_1], grants=[(DT.DATA_SOURCE, TEST_DS)])
         self.addCleanup(frappe.delete_doc, DT.TEAM, team.name, force=True, ignore_permissions=True)
         team.append(
             "team_permissions",
-            {"resource_type": DT.TABLE, "resource_name": self.table_row, "table_restrictions": restriction},
+            {"resource_type": DT.TABLE, "resource_name": TEST_TABLE1, "table_restrictions": restriction},
         )
         team.save(ignore_permissions=True)
         clear_team_cache()

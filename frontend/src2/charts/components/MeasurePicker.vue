@@ -2,7 +2,7 @@
 import { TextInput, Tooltip } from 'frappe-ui'
 import { __ } from '../../translation'
 import { Check, ChevronLeft, Edit, Plus, Settings, XIcon } from 'lucide-vue-next'
-import { computed, h, ref } from 'vue'
+import { computed, h, nextTick, ref } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { dialogs } from '../../helpers/confirm_dialog'
 import { FIELDTYPES } from '../../helpers/constants'
@@ -229,13 +229,22 @@ const filteredColumnOptions = computed(() => {
 	return columnOptions.value.filter((option) => option.label.toLowerCase().includes(query))
 })
 
-// a currency code is text, so only text columns are listed
-const currencyColumnOptions = computed(() => [
-	{ label: __('Site currency'), value: '' },
-	...props.columnOptions
-		.filter((column) => FIELDTYPES.TEXT.includes(column.data_type))
-		.map((column) => ({ label: column.label, value: column.value })),
-])
+// a currency code is text, so only text columns are listed. A shipped measure may
+// name a linked document's field instead, `Company:company:default_currency`,
+// which no column offers, so it is listed as it is written.
+const currencyColumnOptions = computed(() => {
+	const options = [
+		{ label: __('Site currency'), value: '' },
+		...props.columnOptions
+			.filter((column) => FIELDTYPES.TEXT.includes(column.data_type))
+			.map((column) => ({ label: column.label, value: column.value })),
+	]
+	const current = measure.value.currency_column
+	if (current && !options.some((option) => option.value === current)) {
+		options.push({ label: current, value: current })
+	}
+	return options
+})
 
 function getAggregationLabel(aggregation: AggregationType | '') {
 	if (!aggregation) return undefined
@@ -265,6 +274,11 @@ function rename(event: Event) {
 	const input = event.target as HTMLInputElement
 	if (input.value.trim()) measure.value.measure_name = input.value
 	else input.value = measure.value.measure_name
+}
+
+// The column list opens on its search, so the author can type a column's name.
+const vFocus = {
+	mounted: (el: HTMLElement) => nextTick(() => el.querySelector('input')?.focus()),
 }
 
 function handleRemove() {
@@ -343,7 +357,10 @@ function handleRemove() {
 								</template>
 
 								<template v-else>
-									<div class="sticky top-0 z-10 bg-surface-base space-y-1 p-1">
+									<div
+										v-focus
+										class="sticky top-0 z-10 bg-surface-base space-y-1 p-1"
+									>
 										<TextInput
 											v-model="searchQuery"
 											:placeholder="__('Search...')"
