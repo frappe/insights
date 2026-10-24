@@ -14,7 +14,9 @@ import type {
 	AxisChartType,
 	ChartConfig,
 	NumberComparison,
+	NumberComparisonShow,
 	NumberFormat,
+	NumberTarget,
 	ReferenceLine,
 	Series,
 } from '../../types/chart.types'
@@ -536,7 +538,11 @@ type NumberValueSpec = {
 	targetValue?: number
 	/** Aims the reading at the `<name>_target` column `target` fills. */
 	targetColumn?: boolean
-	/** The one number the reading is compared with. Naming none compares nothing. */
+	/** Prints the gap to the target in the delta row, as the target's `gap`. */
+	targetGap?: NumberComparisonShow
+	/** The caption of that gap, as the target's `label`. */
+	targetLabel?: string
+	/** The one period the reading is compared with. Naming none compares nothing. */
 	comparison?: NumberComparison
 	/** The target column's data, one number per period. */
 	target?: (number | null)[]
@@ -593,10 +599,7 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 			...(value.shorten !== undefined ? { shorten_numbers: value.shorten } : {}),
 			...(value.color ? { color: value.color } : {}),
 			...(value.negativeIsBetter ? { negative_is_better: true } : {}),
-			...(value.targetValue !== undefined ? { target: { value: value.targetValue } } : {}),
-			...(value.targetColumn
-				? { target: { measure: toMeasure(`${value.name}_target`) } }
-				: {}),
+			...(targetOf(value) ? { target: targetOf(value) } : {}),
 			...(value.comparison ? { comparison: value.comparison } : {}),
 			...(value.info ? { info: value.info } : {}),
 			...(value.progress ? { progress: true } : {}),
@@ -644,6 +647,22 @@ export function numberChart(spec: NumberChartSpec): ChartAdapterInput {
 		...(spec.sparklineSeries
 			? { sparklineResult: sparklineResultOf(spec.sparklineSeries, period) }
 			: {}),
+	}
+}
+
+/** The target a value spec names, with how its gap prints, or none. */
+function targetOf(value: NumberValueSpec): NumberTarget | undefined {
+	const aim =
+		value.targetValue !== undefined
+			? { value: value.targetValue }
+			: value.targetColumn
+			  ? { measure: toMeasure(`${value.name}_target`) }
+			  : undefined
+	if (!aim) return undefined
+	return {
+		...aim,
+		...(value.targetGap ? { gap: value.targetGap } : {}),
+		...(value.targetLabel ? { label: value.targetLabel } : {}),
 	}
 }
 
