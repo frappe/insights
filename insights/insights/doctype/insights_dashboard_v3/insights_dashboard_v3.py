@@ -288,12 +288,7 @@ class InsightsDashboardv3(Document):
         # lands without a preview. Generate the initial one here when it has content.
         if frappe.flags.in_patch or not frappe.parse_json(self.items):
             return
-        frappe.enqueue_doc(
-            doctype=self.doctype,
-            name=self.name,
-            method="generate_dashboard_preview",
-            enqueue_after_commit=True,
-        )
+        self.enqueue_preview("generate_dashboard_preview")
 
     def before_save(self):
         self.set_route()
@@ -505,14 +500,24 @@ class InsightsDashboardv3(Document):
             return
 
         prev_doc = self.get_doc_before_save()
-        frappe.enqueue_doc(
-            doctype=self.doctype,
-            name=self.name,
-            method="update_dashboard_preview",
-            new_doc=self.as_dict(),
-            prev_doc=prev_doc.as_dict(),
-            enqueue_after_commit=True,
-        )
+        self.enqueue_preview("update_dashboard_preview", new_doc=self.as_dict(), prev_doc=prev_doc.as_dict())
+
+    def enqueue_preview(self, method, **kwargs):
+        """Enqueue a preview job, unless the job queue is full.
+
+        A preview is only a picture of the dashboard, so a full queue costs the
+        picture and never the save. Frappe refuses a full queue with
+        `QueueOverloaded`, or with `PermissionError` for a user who is not a
+        System Manager, raised while it looks up the System Health Report the
+        refusal links to. The refusal's message goes with it.
+        """
+        messages = len(frappe.local.message_log)
+        try:
+            frappe.enqueue_doc(
+                doctype=self.doctype, name=self.name, method=method, enqueue_after_commit=True, **kwargs
+            )
+        except (frappe.QueueOverloaded, frappe.PermissionError):
+            del frappe.local.message_log[messages:]
 
     def update_dashboard_preview(self, new_doc, prev_doc):
         new_doc = frappe.parse_json(new_doc)

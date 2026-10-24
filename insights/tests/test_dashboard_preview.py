@@ -654,6 +654,63 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
         self.assertFalse(frappe.db.exists("File", {"file_url": file_url}))
 
 
+class TestASaveOutlivesAFullJobQueue(InsightsIntegrationTestCase):
+    """A preview is made after the save, by a job. A job queue too full to take
+    that job costs the preview, never the save.
+
+    Frappe refuses an enqueue on a full queue with `QueueOverloaded`. For a user
+    who is not a System Manager, the refusal itself fails with `PermissionError`
+    while it looks up the System Health Report, so both are covered.
+    """
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        cls.workbook = create_test_workbook(OWNER, title="Full Queue Workbook").name
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
+        delete_users(OWNER)
+
+    def queue_full(self):
+        return patch.dict(frappe.local.conf, {"max_queued_jobs": -(10**9)})
+
+    # @feature dashboard.save-without-preview
+    def test_a_dashboard_saves_its_items_while_the_job_queue_is_full(self):
+        dashboard = create_test_dashboard(OWNER, self.workbook, title="Full Queue Dashboard")
+        text = {"type": "text", "text": "Saved anyway", "layout": {"i": "t1", "x": 0, "y": 0, "w": 4, "h": 2}}
+
+        for user in (OWNER, "Administrator"):
+            with self.subTest(user=user), as_user(user), self.queue_full():
+                frappe.clear_messages()
+                doc = frappe.get_doc(DT.DASHBOARD, dashboard.name)
+                doc.items = [{**text, "text": f"Saved by {user}"}]
+                doc.save()
+
+                stored = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "items"))
+                self.assertEqual([item["text"] for item in stored], [f"Saved by {user}"])
+                self.assertEqual(frappe.local.message_log, [])
+
+    # @feature dashboard.save-without-preview
+    def test_a_dashboard_inserted_with_items_is_kept_while_the_job_queue_is_full(self):
+        with self.queue_full():
+            dashboard = create_test_dashboard(
+                OWNER,
+                self.workbook,
+                title="Full Queue Import",
+                items=[
+                    {
+                        "type": "text",
+                        "text": "Imported",
+                        "layout": {"i": "t1", "x": 0, "y": 0, "w": 4, "h": 2},
+                    }
+                ],
+            )
+
+        self.assertTrue(frappe.db.exists(DT.DASHBOARD, dashboard.name))
+
+
 def version_of(dashboard) -> str:
     from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import preview_versions
 
