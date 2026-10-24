@@ -19,13 +19,13 @@ import { useDashboardView } from './dashboards'
 
 describe('the Dashboards view', () => {
 	// @feature dashboard.list-view
-	it('opens as a grid, and each user keeps their own pick', async () => {
-		expect(useDashboardView().value).toBe('grid')
-		useDashboardView().value = 'list'
-		await nextTick()
+	it('opens as a list, and each user keeps their own pick', async () => {
 		expect(useDashboardView().value).toBe('list')
+		useDashboardView().value = 'grid'
+		await nextTick()
+		expect(useDashboardView().value).toBe('grid')
 
 		session.user.email = 'bob@x.com'
-		expect(useDashboardView().value).toBe('grid')
+		expect(useDashboardView().value).toBe('list')
 	})
 })

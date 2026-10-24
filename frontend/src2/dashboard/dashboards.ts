@@ -62,7 +62,7 @@ export type DashboardView = 'grid' | 'list'
 export function useDashboardView() {
 	return useStorage<DashboardView>(
 		`insights:dashboard-view:${session.user.email}`,
-		'grid',
+		'list',
 		localStorage,
 	)
 }
