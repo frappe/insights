@@ -25,7 +25,8 @@ const itemClasses =
 	'select-none rounded-4 border-0 text-base text-ink-gray-9 transition-colors duration-100 ease-out data-[disabled]:text-ink-gray-4 data-[highlighted]:bg-surface-alpha-gray-2 data-[state=checked]:bg-surface-gray-3 data-[highlighted]:data-[state=checked]:bg-surface-gray-4'
 
 // ItemListRow.vue's layout and its `sm` scale
-const rowClasses = 'group flex w-full items-center gap-2 rounded-4 min-h-7 px-2 py-1.5 text-base'
+const rowClasses =
+	'group flex w-full items-center gap-2 rounded-4 min-h-7 shrink-0 px-2 py-1.5 text-base'
 
 /** a reka-owned row's value is reka's, so the tick reads back as `data-state` */
 function valueOf(item: ListItem) {
