@@ -33,7 +33,7 @@ export type PictureName =
 /** What a feature page needs of the reader: the server says whether they have it. */
 export type Can = { readStandardDashboards: boolean; showInDesk: boolean; share: boolean }
 
-/** One thing a reader upgrading to Insights 3.50 gains, on a page of its own. */
+/** One thing a reader upgrading to Insights v3.50 gains, on a page of its own. */
 export type Feature = {
 	id: string
 	label: string
@@ -44,7 +44,7 @@ export type Feature = {
 	needs?: keyof Can
 }
 
-// What a reader upgrading to Insights 3.50 gains, most visible first. Sharing has a
+// What a reader upgrading to Insights v3.50 gains, most visible first. Sharing has a
 // page of its own design, before and now, and leads into the upgrade steps.
 export const features = translatedTable<Feature[]>(() => [
 	{

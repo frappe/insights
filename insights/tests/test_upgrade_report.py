@@ -1,7 +1,7 @@
-"""What the upgrade from Insights before 3.50 leaves for an admin or an author to do.
+"""What the upgrade from Insights before v3.50 leaves for an admin or an author to do.
 
 See `insights/patches/report_upgrade_items.py`. Each test sets up the state
-Insights before 3.50 left and the earlier patches made, runs one report, and reads the
+Insights before v3.50 left and the earlier patches made, runs one report, and reads the
 items it wrote.
 """
 
@@ -214,7 +214,7 @@ class TestUpgradeReport(InsightsIntegrationTestCase):
         self.assertEqual(items("Q13"), [])
 
     # @feature upgrade.left-to-do-reported
-    def test_a_site_that_was_not_on_insights_3_gets_no_report(self):
+    def test_a_site_that_was_not_on_insights_v3_gets_no_report(self):
         frappe.db.set_single_value(DT.SETTINGS, "fiscal_year_start", None)
 
         with patch.object(report, "is_upgrade_migrate", return_value=False):

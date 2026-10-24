@@ -1,6 +1,6 @@
 """List who reads site data differently now that desk alone decides it.
 
-Insights before 3.50 let a reader into a site table through a team, then filtered the
+Insights before v3.50 let a reader into a site table through a team, then filtered the
 rows by desk permissions unless Apply User Permissions was off, and narrowed
 them further by the team's Table Restriction. Now desk decides alone, so:
 
@@ -48,7 +48,7 @@ def execute():
 
 
 def site_data_findings() -> frappe._dict:
-    """Who reads site data differently on this site than Insights before 3.50 let them.
+    """Who reads site data differently on this site than Insights before v3.50 let them.
 
     `users` has one entry per reader: `unreadable`, the doctypes a team let
     them into that desk does not let them read, and `narrowed`, the doctypes
@@ -57,7 +57,7 @@ def site_data_findings() -> frappe._dict:
     `restrictions` that stopped applying and the `users` they applied to.
 
     Read Apply User Permissions before `retire_site_apply_user_permissions`
-    deletes it. A missing row means off, as Insights before 3.50 read it.
+    deletes it. A missing row means off, as Insights before v3.50 read it.
     """
     from insights.insights.doctype.insights_team.insights_team import clear_cache
 
@@ -104,7 +104,7 @@ def used_site_tables(site_sources: list[str]) -> dict[str, str]:
 
 
 def insights_users() -> list[str]:
-    """The enabled users who could open Insights before 3.50. Administrator reads every doctype."""
+    """The enabled users who could open Insights before v3.50. Administrator reads every doctype."""
     holders = frappe.get_all(
         "Has Role",
         filters={"parenttype": "User", "role": ("in", INSIGHTS_ROLES)},
@@ -120,7 +120,7 @@ def insights_users() -> list[str]:
 
 
 def reached_tables(user: str, used: dict[str, str]) -> list[str]:
-    """The used site tables Insights before 3.50 let `user` into: every table with team
+    """The used site tables Insights before v3.50 let `user` into: every table with team
     permissions off or for an admin, else the tables their teams grant."""
     from insights.insights.doctype.insights_team.insights_team import get_allowed_resources_for_user
 

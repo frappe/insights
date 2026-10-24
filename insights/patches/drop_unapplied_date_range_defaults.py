@@ -6,11 +6,11 @@ DASHBOARD = "Insights Dashboard v3"
 
 
 def execute():
-    """Remove the date range defaults Insights before 3.50 stored as text and never applied.
+    """Remove the date range defaults Insights before v3.50 stored as text and never applied.
 
-    Editors from 3.7 to 3.11 stored a `between` default as `"from,to"`. Insights before 3.50
+    Editors from v3.7 to v3.11 stored a `between` default as `"from,to"`. Insights before v3.50
     showed the range in the filter but applied only a pair of dates, so the
-    dashboard opened on every date. Insights 3.50 applies the default and reads the
+    dashboard opened on every date. Insights v3.50 applies the default and reads the
     text's first two characters as the range, so the cards open empty or fail.
     Removing it keeps the rows the dashboard showed. Splitting it would apply a
     range nobody saw applied, which is often years old by now. The owner is told

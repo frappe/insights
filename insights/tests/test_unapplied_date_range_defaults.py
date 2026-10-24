@@ -1,4 +1,4 @@
-"""The date range defaults Insights before 3.50 stored as text and never applied.
+"""The date range defaults Insights before v3.50 stored as text and never applied.
 
 See `insights/patches/drop_unapplied_date_range_defaults.py`.
 """
@@ -71,7 +71,7 @@ class TestUnappliedDateRangeDefaults(InsightsIntegrationTestCase):
         )
 
     # @feature upgrade.dashboard-filters-apply-as-before
-    def test_a_default_insights_3_applied_is_kept(self):
+    def test_a_default_insights_v3_applied_is_kept(self):
         filters, _ = self.filters_after_the_patch(
             date_filter("Posted", "between", ["2024-01-01", "2024-01-31"]),
             date_filter("Recent", "within", "Last 12 months"),

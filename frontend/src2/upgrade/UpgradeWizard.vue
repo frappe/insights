@@ -15,7 +15,7 @@ import upgrade from './upgrade'
 import UpgradeStepView from './UpgradeStepView.vue'
 import type { Step } from './upgrade_steps'
 
-// The upgrade to Insights 3.50, one step at a time: a welcome, each thing that is
+// The upgrade to Insights v3.50, one step at a time: a welcome, each thing that is
 // new, then each group of items that needs the reader. It opens once by
 // itself; the sidebar card resumes it where the reader left it.
 watch(

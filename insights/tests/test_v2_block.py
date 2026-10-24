@@ -9,8 +9,8 @@ from insights.patches import check_legacy_v2_data_before_upgrade as v2_block
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import create_test_dashboard, create_test_workbook
 
-# 3.50 ships no v2 doctypes, so the test makes the tables a site upgraded from
-# 3.15 still holds, with only the columns the check reads
+# v3.50 ships no v2 doctypes, so the test makes the tables a site upgraded from
+# v3.15 still holds, with only the columns the check reads
 V2_TABLES = {
     v2_block.V2_QUERY: "name varchar(140) primary key",
     v2_block.V2_DASHBOARD: "name varchar(140) primary key",

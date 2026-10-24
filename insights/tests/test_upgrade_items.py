@@ -1,4 +1,4 @@
-"""The upgrade from Insights before 3.50: who is welcomed, and what reaches whom.
+"""The upgrade from Insights before v3.50: who is welcomed, and what reaches whom.
 
 See `insights/upgrade.py`. The patches that add items come later; these tests
 add their own.
@@ -65,7 +65,7 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
             return get_user_info()
 
     # @feature upgrade.users-welcomed
-    def test_a_user_of_insights_3_is_welcomed_once_and_a_newcomer_never(self):
+    def test_a_user_of_insights_v3_is_welcomed_once_and_a_newcomer_never(self):
         mark_upgrade_unseen()
         create_user(NEWCOMER, roles="Insights User")
 
@@ -79,7 +79,7 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertTrue(self.user_info(BOB)["upgrade_unseen"])
 
     # @feature upgrade.users-welcomed
-    def test_only_a_site_upgrading_from_a_release_before_3_50_welcomes_its_users(self):
+    def test_only_a_site_upgrading_from_a_release_before_v3_50_welcomes_its_users(self):
         row = {"parent": "Installed Applications", "app_name": "insights"}
         for version, branch, welcomed in (
             ("3.14.2", "version-3", True),

@@ -86,7 +86,7 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
     # @feature upgrade.public-links-keep-rows
     def test_a_link_on_rows_desk_filters_per_reader_tells_its_owner_readers_see_the_owners_rows(self):
-        """A signed-in reader saw their own ToDo rows in Insights before 3.50, and sees the
+        """A signed-in reader saw their own ToDo rows in Insights before v3.50, and sees the
         owner's once the chart runs as its owner."""
         self.published()
 
@@ -202,7 +202,7 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
     # @feature upgrade.public-links-keep-rows
     def test_a_dashboard_row_naming_a_deleted_chart_is_skipped(self):
-        """Insights before 3.50 left such a row after a forced delete. It reaches no chart."""
+        """Insights before v3.50 left such a row after a forced delete. It reaches no chart."""
         self.published()
         frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
         frappe.get_doc(

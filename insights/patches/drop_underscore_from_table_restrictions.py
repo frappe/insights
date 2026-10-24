@@ -9,8 +9,8 @@ def execute():
     """Write a Table Restriction's `_.column` as `column`.
 
     A restriction names the table's columns by name, as the team form's
-    example does. `_.company` is ibis's spelling, which Insights before 3.50 never ran
-    (`_` was not defined there) and Insights 3.50 reads as the translation
+    example does. `_.company` is ibis's spelling, which Insights before v3.50 never ran
+    (`_` was not defined there) and Insights v3.50 reads as the translation
     function, so every query on the table failed. The author meant the column.
     """
     for row in frappe.get_all(

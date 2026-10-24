@@ -406,7 +406,7 @@ class TestChartConfigNormalizationPatch(InsightsIntegrationTestCase):
 
 
 def drawn(chart_type, config):
-    """The config as Insights 3.50 draws what Insights before 3.50 drew, and what could not be kept."""
+    """The config as Insights v3.50 draws what Insights before v3.50 drew, and what could not be kept."""
     config = copy.deepcopy(config)
     found = draw_as_insights_3(config, chart_type, "Card")
     return config, found
@@ -424,10 +424,10 @@ def number_card(date_column=None, window=None, **options):
     return config
 
 
-class TestDrawnAsInsights3(InsightsIntegrationTestCase):
-    """The one-time step that writes what Insights before 3.50 assumed when it drew a chart."""
+class TestDrawnAsInsightsV3(InsightsIntegrationTestCase):
+    """The one-time step that writes what Insights before v3.50 assumed when it drew a chart."""
 
-    SAVEPOINT = "test_drawn_as_insights_3"
+    SAVEPOINT = "test_drawn_as_insights_v3"
 
     # @feature upgrade.charts-draw-as-before
     def test_a_bar_that_stated_no_stack_stacks_and_one_that_did_keeps_it(self):

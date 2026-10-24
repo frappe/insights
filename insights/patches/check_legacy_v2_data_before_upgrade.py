@@ -63,7 +63,7 @@ def unmigrated_v2_dashboards() -> list[str]:
     That migrator moves only dashboards, so a query outside every dashboard
     cannot block.
 
-    Plain SQL, because the v2 doctypes are gone from 3.50 and only their tables
+    Plain SQL, because the v2 doctypes are gone from v3.50 and only their tables
     remain.
     """
     cutoff = frappe.utils.add_to_date(frappe.utils.now(), days=-USED_WITHIN_DAYS)

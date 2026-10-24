@@ -1,4 +1,4 @@
-"""What the upgrade to Insights 3.50 could not carry over, and who used an earlier release.
+"""What the upgrade to Insights v3.50 could not carry over, and who used an earlier release.
 
 A patch that cannot carry something over records it with `add_item`. The
 upgrade dialog lists the items, and opens once for each user who used an
@@ -13,7 +13,7 @@ ITEM = "Insights Upgrade Item"
 SEEN_VERSION = "insights_seen_version"
 INSIGHTS_ROLES = ("Insights User", "Insights Admin")
 WORKBOOK = "Insights Workbook"
-# The template folders before 3.50, and the standard workbook that replaces each
+# The template folders before v3.50, and the standard workbook that replaces each
 TEMPLATE_WORKBOOKS = {"accounting": "accounts", "purchasing": "buying", "sales": "selling", "stock": "stock"}
 # a template import inserts its documents in one request
 IMPORT_SECONDS = 300
@@ -49,7 +49,7 @@ def add_item(
 
 
 def is_upgrade_migrate() -> bool:
-    """Whether this migrate is the upgrade from a release before 3.50.
+    """Whether this migrate is the upgrade from a release before v3.50.
 
     Read during patches: frappe writes the new version into Installed
     Application after them. A develop build said 3.x for a while, and never ran
@@ -66,7 +66,7 @@ def is_upgrade_migrate() -> bool:
     try:
         version = Version.coerce(row.app_version or "")
     except ValueError:
-        return False  # nosemgrep - a version that does not parse names no release before 3.50
+        return False  # nosemgrep - a version that does not parse names no release before v3.50
     return (version.major, version.minor) < (3, 50)
 
 
@@ -125,7 +125,7 @@ def template_copies(template: str | None = None) -> list[frappe._dict]:
     """The workbooks made from an old Insights template, or from `template`
     (`app/folder`), oldest first.
 
-    Insights before 3.50 recorded the template in `from_template`, and earlier releases
+    Insights before v3.50 recorded the template in `from_template`, and earlier releases
     only its folder. The field is gone, and its column stays.
     """
     if not frappe.db.has_column(WORKBOOK, "from_template"):
@@ -153,7 +153,7 @@ def is_untouched(workbook: str) -> bool:
     """Whether every query, chart and dashboard of `workbook` is as the template
     import made it: made in one go, and not changed since.
 
-    The checksum before 3.50 read its export, which the patches have changed.
+    The checksum before v3.50 read its export, which the patches have changed.
     A patch that saved a document makes it look changed, which only means no
     delete is offered.
     """

@@ -11,18 +11,18 @@ from insights.upgrade import add_item
 
 QUERY = "Insights Query v3"
 CHART = "Insights Chart v3"
-# The names Insights 3.50 refuses after an attribute that a table does not define,
-# so on Insights before 3.50 `t2.source` read the column. The others are table methods.
+# The names Insights v3.50 refuses after an attribute that a table does not define,
+# so on Insights before v3.50 `t2.source` read the column. The others are table methods.
 COLUMN_READS = frozenset({"source", "con", "raw_sql", "release"})
-# Insights before 3.50 refused `get_backend` too, so an expression naming it never ran
+# Insights before v3.50 refused `get_backend` too, so an expression naming it never ran
 NEWLY_REFUSED = (BACKEND_ATTRIBUTE_NAMES | RUN_ATTRIBUTE_NAMES) - {"get_backend"}
 
 
 def execute():
     """Read a column named like a backend attribute as `t['name']`.
 
-    Insights 3.50 refuses `t2.source` in an expression, because `source` and the
-    names beside it lead from a table to its connection. Insights before 3.50 read it as
+    Insights v3.50 refuses `t2.source` in an expression, because `source` and the
+    names beside it lead from a table to its connection. Insights before v3.50 read it as
     the column, as in CRM's Lead `source`. The item form reads the same column
     and is never refused. The rest of the text is left as the author wrote it.
 
