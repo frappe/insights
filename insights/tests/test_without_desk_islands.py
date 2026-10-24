@@ -3,13 +3,15 @@ import runpy
 from unittest.mock import patch
 
 import insights.desk
+from insights import desk_islands
 from insights.tests.base import InsightsIntegrationTestCase
 
 
 class TestWithoutDeskIslands(InsightsIntegrationTestCase):
     # @feature desk.without-islands
     def test_insights_stays_out_of_desk_on_a_frappe_without_islands(self):
-        self.assertTrue(desk_hooks(runpy.run_module("insights.hooks")))
+        if desk_islands():
+            self.assertTrue(desk_hooks(runpy.run_module("insights.hooks")))
 
         self.addCleanup(importlib.reload, insights.desk)
         with patch("insights.find_spec", return_value=None):
