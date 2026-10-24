@@ -96,10 +96,25 @@ describe('a run the server refuses', () => {
 		})
 
 		await query.execute()
-		await query.fetchResultCount()
 
 		expect(query.executionError).toBe(sentence)
 		expect(server.toasts).toEqual([])
+	})
+
+	// @feature query.row-count
+	it('answers a Load Count it refuses with the reason', async () => {
+		const query = makeAdhocQuery()
+		query.setSource(ordersTable)
+		await query.execute()
+		const sentence = 'Counting the rows timed out'
+		server.refusal = Object.assign(new Error('/api/method/run_doc_method QueryTimeout'), {
+			messages: [sentence],
+		})
+
+		await query.fetchResultCount()
+
+		expect(server.toasts).toEqual([sentence])
+		expect(query.result.totalRowCount).toBe(0)
 	})
 
 	// @feature query.execute-error

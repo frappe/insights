@@ -302,14 +302,11 @@ export function makeQuery(name: string) {
 		fetchingCount.value = true
 		return (
 			scheduleQueryExecution(() =>
-				query.call(
-					'get_count',
-					{
-						active_operation_idx: activeOperationIdx.value,
-						adhoc_filters: adhocFilters.value,
-					},
-					{ showError: false },
-				),
+				// Load Count is the reader's own click, and nothing else answers it
+				query.call('get_count', {
+					active_operation_idx: activeOperationIdx.value,
+					adhoc_filters: adhocFilters.value,
+				}),
 			)
 				.then((count: number) => {
 					result.value.totalRowCount = count || 0
