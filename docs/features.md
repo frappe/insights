@@ -452,6 +452,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | alerts.webhook | An alert posts a versioned payload to a webhook, token in the header, rows capped and the cap declared. |
 | alerts.webhook-address-policy | A webhook reaches only a public https address, never a private or loopback one, even through rebinding or a proxy. |
 | alerts.telegram | An alert sends to Telegram. |
+| alerts.schedule | An alert runs on its frequency, or on a cron expression the save checks the scheduler can read. |
 | alerts.test-send | A user sends an alert once as a test. |
 | alerts.enable | A user enables or disables an alert, and the alert runs with the rows of whoever enabled it. |
 | alerts.failed-run-recorded | A failed delivery records its run so it is not retried every tick. |

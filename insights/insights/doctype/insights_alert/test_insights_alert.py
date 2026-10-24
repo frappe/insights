@@ -765,6 +765,13 @@ class TestSchedule(AlertOverSeededTodos):
         every_minute.last_execution = add_to_date(now_datetime(), minutes=2)
         self.assertFalse(every_minute.is_event_due())
 
+    # @feature alerts.schedule
+    def test_a_cron_the_scheduler_cannot_read_refuses_the_save(self):
+        with self.assertRaises(frappe.ValidationError) as refusal:
+            self.make_alert(frequency="Cron", cron_format="0 0 12 * * ?")
+
+        self.assertIn("0 0 12 * * ?", str(refusal.exception))
+
 
 class TestTelegram(AlertOverSeededTodos):
     """Telegram is an external service, so the bot is where the test stops."""

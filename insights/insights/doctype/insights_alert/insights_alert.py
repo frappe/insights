@@ -64,6 +64,7 @@ class InsightsAlert(Document):
 
     def validate(self):
         self.check_trusted_code()
+        self.validate_schedule()
         if self.disabled:
             return
 
@@ -325,6 +326,14 @@ class InsightsAlert(Document):
     @property
     def next_execution(self):
         return get_datetime_str(self.get_next_execution())
+
+    def validate_schedule(self):
+        if self.frequency == "Cron" and not croniter.is_valid(self.cron_format or ""):
+            frappe.throw(
+                _(
+                    "{0} is not a cron the scheduler can read. Write five fields: minute, hour, day, month, weekday."
+                ).format(self.cron_format)
+            )
 
     def get_next_execution(self):
         CRON_MAP = {
