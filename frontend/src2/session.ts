@@ -46,6 +46,8 @@ type SiteInfo = {
 	currency: string | null
 	// starts with the site currency; each result adds its codes
 	currency_symbols: Record<string, Currency>
+	/** System Settings' places for every amount, as Desk prints them. Unset, the number format states them. */
+	currency_precision: number | null
 	/** The two properties `docs/telemetry.md` puts on every event. */
 	app_version: string
 	entry: string
@@ -58,6 +60,7 @@ const emptySite: SiteInfo = {
 	week_starts_on: 'Monday',
 	fiscal_year_start: '1995-04-01',
 	currency: null,
+	currency_precision: null,
 	currency_symbols: {},
 	app_version: '',
 	entry: '',

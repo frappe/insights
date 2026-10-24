@@ -120,6 +120,13 @@ class TestCurrencyInfo(InsightsIntegrationTestCase):
             self.assertEqual(get_site_info()["currency_symbols"]["USD"]["symbol"], "$")
             self.assertEqual(get_site_info()["number_format"], "#,##,###.##")
 
+    # @feature charts.currency-decimals
+    def test_the_site_says_how_many_places_an_amount_prints_as_desk_does(self):
+        frappe.db.set_default("currency_precision", "0")
+        self.assertEqual(get_site_info()["currency_precision"], 0)
+        frappe.db.set_default("currency_precision", "")
+        self.assertIsNone(get_site_info()["currency_precision"])
+
     # @feature charts.measure-unit
     def test_the_client_can_reach_it_the_way_it_calls_it(self):
         # frappe-ui's `call` posts. An endpoint declared GET-only answers it

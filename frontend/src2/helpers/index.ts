@@ -236,6 +236,8 @@ export type FormatUnits = {
 	prefix: string
 	suffix: string
 	frappe_number_format?: string
+	// the places an amount prints when nothing states its own
+	decimals?: number
 }
 
 const NO_UNITS: FormatUnits = { scale: 1, prefix: '', suffix: '' }
@@ -251,11 +253,27 @@ export function getFormatUnits(format?: DataFormat, code?: string | null): Forma
 	const resolved = code === undefined ? session.site?.currency : code
 	const currency = resolved ? session.site?.currency_symbols?.[resolved] : undefined
 	if (!currency) return NO_UNITS
-	const units = { ...NO_UNITS, frappe_number_format: currency.number_format }
+	const units = {
+		...NO_UNITS,
+		frappe_number_format: currency.number_format,
+		decimals:
+			session.site?.currency_precision ??
+			numberFormatPlaces(currency.number_format || session.site?.number_format),
+	}
 	if (!currency.symbol) return units
 	return currency.symbol_on_right
 		? { ...units, suffix: ` ${currency.symbol}` }
 		: { ...units, prefix: `${currency.symbol} ` }
+}
+
+// Desk's `get_number_format_info`: the digits after the format's decimal mark.
+const NO_DECIMAL_MARK = ['#.###', '#,###']
+const COMMA_DECIMAL_MARK = ['#.###,##', '# ###,##']
+function numberFormatPlaces(format?: string) {
+	if (!format) return 2
+	if (NO_DECIMAL_MARK.includes(format)) return 0
+	const mark = COMMA_DECIMAL_MARK.includes(format) ? ',' : '.'
+	return format.split(mark)[1]?.length ?? 0
 }
 
 export function guessPrecision(number: number) {

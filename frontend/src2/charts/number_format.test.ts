@@ -12,6 +12,7 @@ import {
 import { adaptChart } from './adapter'
 import type { ChartAdapterInput } from './adapter/types'
 import {
+	axisFormatter,
 	defaultDecimals,
 	printNumber,
 	numberFormatOf,
@@ -57,10 +58,10 @@ describe("what the Measure's own format says", () => {
 		session.site.currency_symbols = {
 			INR: { symbol: '₹', symbol_on_right: false, number_format: '' },
 		}
-		expect(numberFormatter(null, measure('revenue', 'currency'))(1200)).toBe('₹ 1,200')
+		expect(numberFormatter(null, measure('revenue', 'currency'))(1200)).toBe('₹ 1,200.00')
 
 		session.site.currency_symbols.INR.symbol_on_right = true
-		expect(numberFormatter(null, measure('revenue', 'currency'))(1200)).toBe('1,200 ₹')
+		expect(numberFormatter(null, measure('revenue', 'currency'))(1200)).toBe('1,200.00 ₹')
 
 		session.site.currency = null
 		session.site.currency_symbols = {}
@@ -75,13 +76,13 @@ describe("what the Measure's own format says", () => {
 		}
 		const revenue = measure('revenue', 'currency')
 		const dirhams = [{ revenue: 1200, revenue__currency: 'AED' }]
-		expect(numberFormatter(null, revenue, dirhams)(1200)).toBe('1,200 د.إ')
+		expect(numberFormatter(null, revenue, dirhams)(1200)).toBe('1,200.00 د.إ')
 
 		const mixed = [...dirhams, { revenue: 1200, revenue__currency: 'INR' }]
 		expect(numberFormatter(null, revenue, mixed)(1200)).toBe('1,200')
 
 		const withoutCurrency = [{ revenue: 1200 }]
-		expect(numberFormatter(null, revenue, withoutCurrency)(1200)).toBe('₹ 1,200')
+		expect(numberFormatter(null, revenue, withoutCurrency)(1200)).toBe('₹ 1,200.00')
 
 		session.site.currency = null
 		session.site.currency_symbols = {}
@@ -296,5 +297,71 @@ describe.each(plotted)('the %s chart', (_type, input, where) => {
 		const format = where === 'yAxis' ? filler.props.yAxis?.format : filler.props.format
 		expect(typeof format).toBe('function')
 		expect(format(1234567)).toBe('1,234,567')
+	})
+})
+
+describe('the places an amount prints', () => {
+	afterEach(() => {
+		session.site.number_format = ''
+		session.site.currency = null
+		session.site.currency_symbols = {}
+		session.site.currency_precision = null
+	})
+
+	// @feature charts.currency-decimals
+	it("prints the places of the currency's number format, as Desk does", () => {
+		session.site.number_format = '#,##,###.##'
+		session.site.currency = 'INR'
+		session.site.currency_symbols = {
+			INR: { symbol: '₹', symbol_on_right: false, number_format: '#,##,###.##' },
+			KWD: { symbol: 'KD', symbol_on_right: false, number_format: '#,###.###' },
+			JPY: { symbol: '¥', symbol_on_right: false, number_format: '#,###' },
+		}
+		const revenue = measure('revenue', 'currency')
+		const rowsIn = (code: string) => [{ revenue: 1, revenue__currency: code }]
+
+		expect(numberFormatter(null, revenue)(6254980.1)).toBe('₹ 62,54,980.10')
+		expect(numberFormatter(null, revenue)(5272090)).toBe('₹ 52,72,090.00')
+		expect(numberFormatter(null, revenue, rowsIn('KWD'))(12.5)).toBe('KD 12.500')
+		expect(numberFormatter(null, revenue, rowsIn('JPY'))(1200.4)).toBe('¥ 1,200')
+	})
+
+	// @feature charts.currency-decimals
+	it("prints the site's currency precision over the format's, and the author's over both", () => {
+		session.site.currency = 'INR'
+		session.site.currency_symbols = {
+			INR: { symbol: '₹', symbol_on_right: false, number_format: '#,###.##' },
+		}
+		const revenue = measure('revenue', 'currency')
+		session.site.currency_precision = 3
+		expect(numberFormatter(null, revenue)(12.5)).toBe('₹ 12.500')
+		expect(numberFormatter({ number_format: { decimals: 1 } }, revenue)(12.5)).toBe('₹ 12.5')
+		expect(numberFormatter({ number_format: { shorten: true } }, revenue)(1250000)).toBe(
+			'₹ 1.3M',
+		)
+	})
+
+	// @feature charts.currency-decimals
+	it('prints none where the site states zero places', () => {
+		session.site.currency = 'INR'
+		session.site.currency_symbols = {
+			INR: { symbol: '₹', symbol_on_right: false, number_format: '#,###.##' },
+		}
+		session.site.currency_precision = 0
+		expect(numberFormatter(null, measure('revenue', 'currency'))(12.5)).toBe('₹ 13')
+	})
+
+	// @feature charts.currency-decimals
+	it("keeps an axis's round ticks free of the currency's places", () => {
+		session.site.currency = 'INR'
+		session.site.currency_symbols = {
+			INR: { symbol: '₹', symbol_on_right: false, number_format: '#,###.##' },
+		}
+		expect(axisFormatter(null, measure('revenue', 'currency'))(200000)).toBe('₹ 200,000')
+	})
+
+	// @feature charts.currency-decimals
+	it('leaves a plain number its own places', () => {
+		expect(numberFormatter()(6254980.1)).toBe('6,254,980.1')
 	})
 })

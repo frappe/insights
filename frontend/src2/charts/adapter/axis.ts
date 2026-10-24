@@ -27,7 +27,7 @@ import type {
 } from '../../types/chart.types'
 import type { Dimension, QueryResultRow } from '../../types/query.types'
 import { hasBarsOnBothAxes } from '../helpers'
-import { numberFormatter, type NumberFormatter } from '../number_format'
+import { axisFormatter, numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // Bar, Line and Row. One family, because they differ in two values: the mark an
@@ -118,12 +118,12 @@ function adaptAxisChart(
 	// One formatter per axis, not per series: v2 prints a value against the axis
 	// it is read on, and an axis has one scale. The first series plotted on it
 	// says how that scale reads.
-	const primary = numberFormatter(config, measureOn(config, 'Left'), input.result.rows)
+	const primary = axisFormatter(config, measureOn(config, 'Left'), input.result.rows)
 	props.yAxis = valueAxisFor(y_axis, stacking === 'normalized', primary)
 
 	const rightMeasure = measureOn(config, 'Right')
 	const secondary = rightMeasure
-		? numberFormatter(config, rightMeasure, input.result.rows)
+		? axisFormatter(config, rightMeasure, input.result.rows)
 		: undefined
 	if (secondary) props.y2Axis = { format: secondary }
 

@@ -90,6 +90,7 @@ def get_site_info():
         # through the server's own fallback, so an unset field does not put the
         # two calendars a quarter apart
         "fiscal_year_start": get_fiscal_year_start_date().isoformat(),
+        "currency_precision": frappe.utils.get_currency_precision(),
         **get_currency_info(),
     }
 
