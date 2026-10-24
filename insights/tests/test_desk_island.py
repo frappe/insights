@@ -513,9 +513,53 @@ class TestDeskIsland(InsightsIntegrationTestCase):
         with as_user(reader):
             self.assertEqual(
                 get_form_chart(chart.name),
-                {"title": "Desk Island Test Form", "workbook": self.dashboard.workbook, "can_share": False},
+                {
+                    "title": "Desk Island Test Form",
+                    "workbook": self.dashboard.workbook,
+                    "can_share": False,
+                    "label": "Desk Island Test Form",
+                },
             )
         self.assertTrue(get_form_chart(chart.name)["can_share"])
+
+    # @feature desk.show-in-desk
+    def test_show_in_desk_labels_a_card_with_the_reading_it_shows(self):
+        readings = {"number_columns": [{"measure_name": "Revenue"}, {"measure_name": "Outstanding"}]}
+        several = create_test_chart(
+            OWNER,
+            self.dashboard.workbook,
+            title="Desk Island Test KPIs",
+            chart_type="Number",
+            config=readings,
+        )
+        one = create_test_chart(
+            OWNER,
+            self.dashboard.workbook,
+            title="Desk Island Test Revenue",
+            chart_type="Number",
+            config={"number_columns": readings["number_columns"][:1]},
+        )
+
+        def label(chart):
+            return frappe.db.get_value("Number Card", chart.show_in_desk()["name"], "label")
+
+        self.assertEqual(label(several), "Desk Island Test KPIs: Revenue")
+        self.assertEqual(label(one), "Desk Island Test Revenue")
+
+    # @feature desk.pick-chart
+    def test_a_desk_form_is_told_the_name_show_in_desk_would_give(self):
+        chart = create_test_chart(OWNER, self.dashboard.workbook, title="Desk Island Test Named")
+        chart.show_in_desk()
+        card = create_test_chart(
+            OWNER,
+            self.dashboard.workbook,
+            title="Desk Island Test Named KPIs",
+            chart_type="Number",
+            config={"number_columns": [{"measure_name": "Revenue"}, {"measure_name": "Count"}]},
+        )
+
+        self.assertEqual(get_form_chart(chart.name)["label"], "Desk Island Test Named-1")
+        self.assertEqual(get_form_chart(card.name)["label"], "Desk Island Test Named KPIs: Revenue")
 
     # @feature desk.show-in-desk
     def test_show_in_desk_makes_a_dashboard_chart_that_shows_the_chart(self):

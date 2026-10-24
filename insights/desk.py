@@ -58,6 +58,7 @@ DESK_ISLANDS = {
         "label": "Insights Chart",
         "options": "Insights Chart v3",
         "insert_after": "chart_name",
+        "label_field": "chart_name",
         "folder": "dashboard_chart",
         "island": "insights.chart",
         "prop": "chart",
@@ -69,6 +70,7 @@ DESK_ISLANDS = {
         "label": "Insights Chart",
         "options": "Insights Chart v3",
         "insert_after": "label",
+        "label_field": "label",
         "folder": "number_card",
         "island": "insights.chart",
         "prop": "chart",
@@ -119,13 +121,8 @@ def show_in_desk(chart) -> dict:
     fieldname = DESK_ISLANDS[doctype]["fieldname"]
     name = next(iter(frappe.get_list(doctype, filters={fieldname: chart.name}, pluck="name", limit=1)), None)
     if not name:
-        title = chart.title or chart.name
-        label = (
-            {"label": title}
-            if doctype == "Number Card"
-            else {"chart_name": append_number_if_name_exists(doctype, title, "chart_name")}
-        )
-        doc = frappe.get_doc({"doctype": doctype, fieldname: chart.name, **label})
+        label_field = DESK_ISLANDS[doctype]["label_field"]
+        doc = frappe.get_doc({"doctype": doctype, fieldname: chart.name, label_field: desk_label(chart)})
         name = doc.insert().name
     return {"doctype": doctype, "name": name, "url": get_url_to_form(doctype, name)}
 
@@ -146,7 +143,28 @@ def get_form_chart(chart: str) -> dict | None:
     doc = frappe.get_doc(doctype, chart)
     if not may_read(doc):
         return None
-    return {"title": doc.title, "workbook": doc.workbook, "can_share": can_share(doc)}
+    return {
+        "title": doc.title,
+        "workbook": doc.workbook,
+        "can_share": can_share(doc),
+        "label": desk_label(doc),
+    }
+
+
+def desk_label(chart) -> str:
+    """What the desk document that shows `chart` is called, by Show in Desk or
+    the form a user picks the chart in.
+
+    A Number Card shows a Number chart's first reading alone, so a chart of several
+    names the reading beside its title. A Dashboard Chart's name is its docname,
+    so a second chart of one title gets a number.
+    """
+    title = chart.title or chart.name
+    if desk_doctype(chart) == "Number Card":
+        config = frappe.parse_json(chart.config) or {}
+        readings = [column.get("measure_name") for column in config.get("number_columns") or []]
+        return f"{title}: {readings[0]}" if len(readings) > 1 and readings[0] else title
+    return append_number_if_name_exists("Dashboard Chart", title, "chart_name")
 
 
 def desk_doctype(chart) -> str:

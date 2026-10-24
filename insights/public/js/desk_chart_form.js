@@ -10,11 +10,18 @@ const LAYOUT_FIELDTYPES = ["Section Break", "Column Break", "Tab Break"];
 /**
  * The form events for `doctype`.
  *
- * `keep` lists the fields that still mean something for an Insights chart.
- * `props` are the island's props beside the chart. `chart_types` narrows the
- * picker to the charts that suit the doctype.
+ * `keep` lists the fields that still mean something for an Insights chart, and
+ * `label_field` is the one of them that names the document. `props` are the
+ * island's props beside the chart. `chart_types` narrows the picker to the
+ * charts that suit the doctype.
  */
-insights.desk.chart_form = ({ keep, props, chart_types, height }) => {
+insights.desk.chart_form = ({
+	keep,
+	label_field,
+	props,
+	chart_types,
+	height,
+}) => {
 	// Desk's own wording is about desk's permissions. For an Insights chart,
 	// Is Public only lists it in other users' pickers, and the Insights chart's
 	// sharing decides who sees it.
@@ -107,7 +114,16 @@ insights.desk.chart_form = ({ keep, props, chart_types, height }) => {
 			});
 	}
 
-	function describe(frm, chart, { title, workbook, can_share }) {
+	function describe(frm, chart, { title, workbook, can_share, label }) {
+		// a new document is named as Show in Desk would name it, unless its
+		// author typed a name of their own
+		const typed =
+			frm.doc[label_field] && frm.doc[label_field] !== frm.insights_label;
+		if (frm.is_new() && label && !typed) {
+			frm.insights_label = label;
+			frm.set_value(label_field, label);
+		}
+
 		const url = `${frappe.boot.insights_path}/workbook/${encodeURIComponent(
 			workbook,
 		)}/chart/${encodeURIComponent(chart)}`;
