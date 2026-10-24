@@ -61,6 +61,7 @@ const result = {
 	})),
 } as any
 
+// read inside the card, so a trend line's label plate takes the card's color
 const root = ref<HTMLElement>()
 const { tokens } = useChartTokens(root)
 
@@ -120,9 +121,11 @@ onMounted(() => refused?.load())
 
 <template>
 	<ChartChrome v-if="refused" :chart="refused" readonly class="text-start" />
-	<div v-else ref="root" class="h-full w-full text-start">
+	<div v-else class="h-full w-full text-start">
 		<ChartCard class="h-full border-outline-gray-2 [--chart-card-inset:1rem]">
-			<component :is="filler.component" v-if="filler" v-bind="filler.props" />
+			<div ref="root" class="h-full w-full">
+				<component :is="filler.component" v-if="filler" v-bind="filler.props" />
+			</div>
 		</ChartCard>
 	</div>
 </template>
