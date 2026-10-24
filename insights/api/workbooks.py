@@ -1,84 +1,63 @@
+import re
+
 import frappe
 from frappe import _
+from frappe.utils import cint
 
+from insights import standard
+from insights.api.list_filters import (
+    get_content_filters,
+    get_last_opened,
+    get_shares,
+    get_source_filters,
+    match_operations,
+    match_records,
+)
 from insights.decorators import insights_whitelist
-from insights.permissions import get_insights_users
+from insights.permissions import validate_shareable_users
 from insights.telemetry import capture_share_granted
 from insights.utils import DocShare
 
-
-def validate_shareable_users(emails):
-    """A workbook is shareable with Insights users only.
-
-    The picker cannot always show the person being named - an address typed by
-    a user who may not look anyone up still has to land somewhere real.
-    """
-    if not emails:
-        return
-
-    # Administrator owns the workbooks a template import creates and so stays on
-    # the share list whenever one of them is re-shared
-    shareable = get_insights_users() | {"Administrator"}
-    unknown = sorted(set(emails) - shareable)
-    if unknown:
-        frappe.throw(
-            _("Cannot share with {0} - they are not an Insights user").format(", ".join(unknown)),
-            title=_("Not an Insights user"),
-        )
+# Filters the list's filter control declares beyond the workbook's own columns
+WORKBOOK_FILTERS = {
+    "name": match_records("Insights Workbook", "name"),
+    "query": match_records("Insights Query v3", "workbook"),
+    "chart": match_records("Insights Chart v3", "workbook"),
+    "dashboard": match_records("Insights Dashboard v3", "workbook"),
+    "data_source": match_operations("data_source", "workbook"),
+    "table_name": match_operations("table_name", "workbook"),
+}
 
 
 @insights_whitelist()
 def get_workbooks(
     search_term: str | None = None,
     limit: int = 100,
-    scope: str | None = None,
+    sources: list | None = None,
+    filters: list | None = None,
 ):
-    """Return workbooks accessible to the current user.
+    """Return workbooks from the chosen sources, last modified first.
 
-    scope:
-        "owned"  -> only workbooks owned by the current user
-        "shared" -> only workbooks owned by someone else (still permission filtered)
-        None     -> all accessible workbooks
+    sources: any of "created" (owned by the user), "shared" (given to the user
+    by someone else) and "others" (neither; only an admin reads any). Defaults
+    to created and shared.
     """
-    filters = {}
-    if scope == "owned":
-        filters["owner"] = frappe.session.user
-    elif scope == "shared":
-        filters["owner"] = ["!=", frappe.session.user]
-
-    or_filters = {"title": ["like", f"%{search_term}%"]} if search_term else None
+    list_filters = get_content_filters(filters or [], WORKBOOK_FILTERS)
+    list_filters += get_source_filters("Insights Workbook", sources)
 
     workbooks = frappe.get_list(
         "Insights Workbook",
-        filters=filters,
-        or_filters=or_filters,
-        fields=[
-            "name",
-            "title",
-            "owner",
-            "creation",
-            "modified",
-        ],
+        filters=list_filters,
+        or_filters={"title": ["like", f"%{search_term}%"]} if search_term else None,
+        fields=["name", "title", "owner", "creation", "modified"],
+        order_by="modified desc",
         limit=limit,
     )
-    # FIX: figure out how to use frappe.qb while respecting permissions
-    # TODO: use frappe.qb to get the view count
-    workbook_names = [workbook["name"] for workbook in workbooks]
-    workbook_views = frappe.get_all(
-        "View Log",
-        filters={
-            "reference_doctype": "Insights Workbook",
-            "reference_name": ["in", workbook_names],
-        },
-        fields=["reference_name", "name"],
-    )
-    for workbook in workbooks:
-        views = [view for view in workbook_views if view["reference_name"] == workbook["name"]]
-        workbook["views"] = len(views)
 
+    workbook_names = [workbook["name"] for workbook in workbooks]
     # batch the share lookups into two grouped queries instead of ~2 per
     # workbook (avoids an N+1 over the whole list)
-    org_shared, shared_users = _workbook_shares(workbook_names)
+    org_shared, shared_users = get_shares("Insights Workbook", workbook_names)
     for workbook in workbooks:
         name = workbook["name"]
         if name in org_shared:
@@ -86,44 +65,63 @@ def get_workbooks(
             continue
         workbook["shared_with"] = [user for user in shared_users.get(name, []) if user != workbook["owner"]]
 
+    data_sources = _workbook_data_sources(workbook_names)
+    last_opened = get_last_opened("Insights Workbook", workbook_names)
+    apps = standard.shipping_apps(workbook_names)
+    roles = _dashboard_roles(workbook_names)
+    for workbook in workbooks:
+        workbook["data_sources"] = data_sources.get(workbook["name"], [])
+        workbook["last_opened"] = last_opened.get(workbook["name"])
+        app = apps.get(workbook["name"])
+        workbook["shipped_by"] = app and standard.app_title(app)
+        workbook["shipped_by_logo"] = app and standard.app_logo_url(app)
+        workbook["visible_to_roles"] = roles.get(workbook["name"], [])
+
     return workbooks
 
 
-def _workbook_shares(names: list[str]) -> tuple[set, dict]:
-    """Return (org-shared workbook names, {workbook name -> [users it's read-shared with]}).
+def _dashboard_roles(workbooks: list[str]) -> dict[str, list[str]]:
+    """The roles the dashboards of each workbook show to.
 
-    Two queries for the whole list instead of an exists-check + fetch per workbook.
+    An app shares its workbook through these, not through the workbook's shares.
+    A dashboard keeps its roles when its visibility moves off Roles, and they
+    then show it to nobody.
     """
-    if not names:
-        return set(), {}
-
-    org_shared = set(
-        frappe.get_all(
-            "DocShare",
-            filters={
-                "share_doctype": "Insights Workbook",
-                "share_name": ["in", names],
-                "everyone": 1,
-                "read": 1,
-            },
-            pluck="share_name",
+    if not workbooks:
+        return {}
+    Dashboard = frappe.qb.DocType("Insights Dashboard v3")
+    HasRole = frappe.qb.DocType("Has Role")
+    rows = (
+        frappe.qb.from_(HasRole)
+        .join(Dashboard)
+        .on(HasRole.parent == Dashboard.name)
+        .select(Dashboard.workbook, HasRole.role)
+        .where(
+            (HasRole.parenttype == "Insights Dashboard v3")
+            & (HasRole.parentfield == "visible_to_roles")
+            & (Dashboard.visibility == "Roles")
+            & Dashboard.workbook.isin(workbooks)
         )
+        .distinct()
+        .orderby(HasRole.role)
+        .run(as_dict=True)
     )
-
-    shared_users: dict[str, list] = {}
-    rows = frappe.get_all(
-        "DocShare",
-        filters={
-            "share_doctype": "Insights Workbook",
-            "share_name": ["in", names],
-            "read": 1,
-        },
-        fields=["share_name", "user"],
-    )
+    roles: dict[str, list[str]] = {}
     for row in rows:
-        shared_users.setdefault(row["share_name"], []).append(row["user"])
+        roles.setdefault(row.workbook, []).append(row.role)
+    return roles
 
-    return org_shared, shared_users
+
+def _workbook_data_sources(names: list[str]) -> dict[str, list[str]]:
+    """Data sources each workbook's queries read, most used first."""
+    counts: dict[str, dict[str, int]] = {}
+    for query in frappe.get_all(
+        "Insights Query v3", filters={"workbook": ["in", names]}, fields=["workbook", "operations"]
+    ):
+        for source in re.findall(r'"data_source": "([^"]+)"', query.operations or ""):
+            sources = counts.setdefault(query.workbook, {})
+            sources[source] = sources.get(source, 0) + 1
+    return {name: sorted(sources, key=sources.get, reverse=True) for name, sources in counts.items()}
 
 
 @insights_whitelist()
@@ -131,6 +129,22 @@ def import_workbook(workbook: dict | str):
     from insights.insights.doctype.insights_workbook.insights_workbook import import_workbook
 
     return import_workbook(workbook)
+
+
+@insights_whitelist()
+def is_workbook_file(workbook: dict | str):
+    """Whether a pasted file is an importable workbook."""
+    from insights.insights.doctype.insights_workbook.insights_workbook import is_workbook_file
+
+    return is_workbook_file(workbook)
+
+
+@insights_whitelist(role="Insights Admin")
+def get_export_modules():
+    """Modules the "Export to app…" dialog can export a workbook into."""
+    from insights import standard
+
+    return standard.export_modules()
 
 
 @insights_whitelist()
@@ -203,11 +217,22 @@ def update_share_permissions(
             "share_doctype": "Insights Workbook",
             "share_name": workbook_name,
         },
-        fields=["name", "user", "everyone"],
+        fields=["name", "user", "everyone", "read", "write"],
     )
 
     allowed_users = {permission["user"] for permission in user_permissions}
-    validate_shareable_users(allowed_users)
+    # The dialog posts back every share it showed, so validate only a new
+    # person or a raised access level. Otherwise a kept share with someone who
+    # has left Insights would block every later save. A removed person keeps a
+    # row with no access, so giving access back counts as raising it.
+    held = {share.user: access_level(share) for share in existing_shares if share.user}
+    validate_shareable_users(
+        {
+            permission["user"]
+            for permission in user_permissions
+            if access_level(permission) > held.get(permission["user"], 0)
+        }
+    )
     for share in existing_shares:
         if share.user and share.user not in allowed_users:
             frappe.delete_doc("DocShare", share.name, ignore_permissions=True)
@@ -244,6 +269,14 @@ def update_share_permissions(
         capture_share_granted("workbook", "user", len(newly_shared))
     if organization_access and not shared_with_organization:
         capture_share_granted("workbook", "org", 1)
+
+
+def access_level(share) -> int:
+    """0 for none, 1 for view, 2 for edit. The dialog posts edit as write
+    without read, and a removed person as neither."""
+    if cint(share.get("write")):
+        return 2
+    return 1 if cint(share.get("read")) else 0
 
 
 # folder Management APIs

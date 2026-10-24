@@ -1,9 +1,11 @@
+import calendar
 import datetime
 import operator
-from contextlib import suppress
-from typing import ClassVar
+from contextlib import contextmanager, suppress
+from typing import ClassVar, NamedTuple
 
 import frappe
+import ibis
 from frappe.utils.data import (
     add_to_date,
     get_date_str,
@@ -19,6 +21,8 @@ from frappe.utils.data import (
 from sqlalchemy import Column, select, table
 from sqlalchemy import column as sa_column
 from sqlalchemy.sql import and_, case, distinct, func, or_, text
+
+from insights.exceptions import QueryRefused
 
 DATE_TYPES = ("Date", "Datetime")
 
@@ -158,8 +162,7 @@ class Functions:
         if function == "sum_if":
             return func.sum(case((args[0], args[1]), else_=0))
         if function == "between":
-            dates = add_start_and_end_time([args[1], args[2]])
-            return args[0].between(*dates)
+            return within_days(args[0], args[1], args[2])
         if function == "replace":
             return func.replace(args[0], args[1], args[2])
         if function == "substring":
@@ -228,30 +231,62 @@ class Functions:
 
 
 def handle_timespan(column, timespan):
+    return within_days(column, *resolve_timespan(timespan))
+
+
+def resolve_timespan(timespan) -> tuple[datetime.date, datetime.date]:
+    """The dates a `within` value covers, as (start, end).
+
+    A filter tests one span and a span number card groups by several, so both
+    read a span the same way.
+    """
+    return get_window(*read_timespan(timespan))
+
+
+def reading_day():
+    """The day a span resolves against: today, or the day `read_on` pinned."""
+    return getattr(frappe.local, "insights_reading_day", None) or nowdate()
+
+
+@contextmanager
+def read_on(day: str | None):
+    """Resolve every span in the block against `day`.
+
+    A drill cuts rows for the day its card was read. Its spans sit in the
+    chart's operations, in the dashboard's filters and in the source query, and
+    each resolves where it is built, so the day is the request's and not any one
+    operation's.
+    """
+    previous = getattr(frappe.local, "insights_reading_day", None)
+    frappe.local.insights_reading_day = day or previous
+    try:
+        yield
+    finally:
+        frappe.local.insights_reading_day = previous
+
+
+def read_timespan(timespan) -> tuple[str, datetime.date | None]:
+    """The span a `within` filter names, and the date to resolve it against.
+
+    A filter written before periods names the span alone, as a string or as the
+    words of one, and resolves against `reading_day`. A period also pins the anchor, and
+    a comparison span moves it, so both arrive beside the span.
+    """
     if isinstance(timespan, list):
-        timespan = " ".join(timespan)
-    include_current = "(include current)" in timespan.lower()
-
-    timespan = timespan.lower()
-    timespan = timespan.replace("(include current)", "").strip()
-    timespan = timespan[:-1] if timespan.endswith("s") else timespan  # "last 7 day"
-
-    units = [
-        "day",
-        "week",
-        "month",
-        "quarter",
-        "year",
-        "fiscal year",
-    ]
-    if not any(timespan.endswith(unit) for unit in units):
-        raise Exception(f"Invalid timespan unit - {timespan}")
-
-    dates = get_date_range(timespan, include_current=include_current)
-    if not dates:
+        # the column header seeds the count as a number, so the words are not all
+        # strings
+        return " ".join(str(word) for word in timespan), None
+    if isinstance(timespan, str):
+        return timespan, None
+    if not isinstance(timespan, dict) or not timespan.get("span"):
         raise Exception(f"Invalid timespan {timespan}")
-    dates_str = add_start_and_end_time(dates)
-    return column.between(*dates_str)
+
+    anchor = getdate(timespan.get("anchor") or reading_day())
+    shift = timespan.get("shift") or {}
+    if shift.get("unit"):
+        anchor = shift_anchor(anchor, shift["unit"], shift.get("count") or 0)
+
+    return timespan["span"], anchor
 
 
 def get_descendants(node, tree, include_self=False):
@@ -262,6 +297,17 @@ def get_descendants(node, tree, include_self=False):
         if not include_self
         else (select(Tree.c.name).where(Tree.c.lft >= lft_rgt.c.lft).where(Tree.c.rgt <= lft_rgt.c.rgt))
     )
+
+
+DATE_UNITS = (
+    "day",
+    "week",
+    "month",
+    "quarter",
+    "year",
+    "fiscal year",
+    "fiscal quarter",
+)
 
 
 WEEKDAYS = [
@@ -289,8 +335,8 @@ def get_last_day_of_week(date):
     return get_first_day_of_week(date) + datetime.timedelta(days=6)
 
 
-def get_current_date_range(unit):
-    today = nowdate()
+def get_current_date_range(unit, anchor=None):
+    today = anchor or nowdate()
     if unit == "day":
         today_date = getdate(today)
         return [today_date, today_date]
@@ -303,65 +349,104 @@ def get_current_date_range(unit):
     if unit == "year":
         return [get_year_start(today), get_year_ending(today)]
     if unit == "fiscal year":
-        return [get_fy_start(today), get_fiscal_year_ending(today)]
+        return get_fiscal_period(today, 12)
+    if unit == "fiscal quarter":
+        return get_fiscal_period(today, 3)
 
 
 def get_fiscal_year_start_date():
     fiscal_year_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
-    if not fiscal_year_start or get_date_str(fiscal_year_start) == "0001-01-01":
-        return getdate("1995-04-01")
-    return getdate(fiscal_year_start)
+    # frappe returns an unset date field as 0001-01-01, not None
+    if fiscal_year_start and get_date_str(fiscal_year_start) != "0001-01-01":
+        return getdate(fiscal_year_start)
+    return get_erpnext_fiscal_year_start() or getdate("1995-04-01")
 
 
-def get_fy_start(date):
+def get_erpnext_fiscal_year_start():
+    if not frappe.db.table_exists("Fiscal Year"):
+        return None
+
+    today = getdate()
+    return frappe.db.get_value(
+        "Fiscal Year",
+        {"disabled": 0, "year_start_date": ("<=", today), "year_end_date": (">=", today)},
+        "year_start_date",
+        order_by="year_start_date desc",
+    )
+
+
+def get_fiscal_period(date, months, shift=0):
+    """The fiscal year (12 months) or quarter (3) `date` falls in, or the one
+    `shift` periods away, as [start, end].
+
+    Periods start on the configured fiscal start day, every `months` months from
+    it; in a month shorter than that day, on its last day. So a period is moved
+    by counting periods, never by adding months to a start.
+    """
     fy_start = get_fiscal_year_start_date()
-    dt = getdate(date)  # eg. 2019-01-01
-    if dt.month < fy_start.month:
-        return getdate(f"{dt.year - 1}-{fy_start.month}-{fy_start.day}")  # eg. 2018-04-01
-    return getdate(f"{dt.year}-{fy_start.month}-{fy_start.day}")  # eg. 2019-04-01
+    dt = getdate(date)
+    months_in = dt.year * 12 + dt.month - fy_start.month
+    if dt.day < _fiscal_day(dt.year, dt.month, fy_start.day):
+        months_in -= 1
+    start = fy_start.month - 1 + months_in - months_in % months + shift * months
+
+    def nth_month(index):
+        year, month = divmod(index, 12)
+        return datetime.date(year, month + 1, _fiscal_day(year, month + 1, fy_start.day))
+
+    return [nth_month(start), nth_month(start + months) - datetime.timedelta(days=1)]
 
 
-def get_fiscal_year_ending(date):
-    fy_start = get_fiscal_year_start_date()
-    fy_end = add_to_date(fy_start, years=1, days=-1)
-    dt = getdate(date)  # eg. 2019-04-01
-    if dt.month < fy_start.month:
-        return getdate(f"{dt.year}-{fy_end.month}-{fy_end.day}")  # eg. 2018-03-31
-    return getdate(f"{dt.year + 1}-{fy_end.month}-{fy_end.day}")  # eg. 2019-03-31
+def _fiscal_day(year, month, day):
+    return min(day, calendar.monthrange(year, month)[1])
 
 
-def get_directional_date_range(direction, unit, number_of_unit):
+def get_directional_date_range(direction, unit, number_of_unit, anchor=None):
+    """The N whole periods on one side of the anchor's own period.
+
+    The anchor's period is never one of them: the span starts at the period next
+    to it and runs N periods outwards. So one end is one period away and the
+    other is N, and the direction says which of the two opens the range:
+    backwards the N-th period opens it, forwards it closes it.
+    """
     dates = []
-    today = nowdate()
+    today = anchor or nowdate()
+    opens, closes = (number_of_unit, 1) if direction < 0 else (1, number_of_unit)
+    start, end = direction * opens, direction * closes
     if unit == "day":
         dates = [
-            add_to_date(today, days=direction * number_of_unit),
-            add_to_date(today, days=direction),
+            add_to_date(today, days=start),
+            add_to_date(today, days=end),
         ]
     if unit == "week":
         dates = [
-            get_first_day_of_week(add_to_date(today, days=direction * 7 * number_of_unit)),
-            get_last_day_of_week(add_to_date(today, days=direction * 7)),
+            get_first_day_of_week(add_to_date(today, days=start * 7)),
+            get_last_day_of_week(add_to_date(today, days=end * 7)),
         ]
     if unit == "month":
         dates = [
-            get_first_day(add_to_date(today, months=direction * number_of_unit)),
-            get_last_day(add_to_date(today, months=direction)),
+            get_first_day(add_to_date(today, months=start)),
+            get_last_day(add_to_date(today, months=end)),
         ]
     if unit == "quarter":
         dates = [
-            get_quarter_start(add_to_date(today, months=direction * 3 * number_of_unit)),
-            get_quarter_ending(add_to_date(today, months=direction * 3)),
+            get_quarter_start(add_to_date(today, months=start * 3)),
+            get_quarter_ending(add_to_date(today, months=end * 3)),
         ]
     if unit == "year":
         dates = [
-            get_year_start(add_to_date(today, years=direction * number_of_unit)),
-            get_year_ending(add_to_date(today, years=direction)),
+            get_year_start(add_to_date(today, years=start)),
+            get_year_ending(add_to_date(today, years=end)),
         ]
     if unit == "fiscal year":
         dates = [
-            get_fy_start(add_to_date(today, years=direction * number_of_unit)),
-            get_fiscal_year_ending(add_to_date(today, years=direction)),
+            get_fiscal_period(today, 12, start)[0],
+            get_fiscal_period(today, 12, end)[1],
+        ]
+    if unit == "fiscal quarter":
+        dates = [
+            get_fiscal_period(today, 3, start)[0],
+            get_fiscal_period(today, 3, end)[1],
         ]
 
     if isinstance(dates[0], str):
@@ -369,48 +454,211 @@ def get_directional_date_range(direction, unit, number_of_unit):
     if isinstance(dates[1], str):
         dates[1] = getdate(dates[1])
 
-    if dates[0] > dates[1]:
-        dates.reverse()
     return dates
 
 
-def get_date_range(timespan, include_current=False):
-    # timespan = "last 7 days" or "next 3 months"
-    time_direction = timespan.lower().split(" ")[0]  # "last" or "next" or "current"
-    # "day", "week", "month", "quarter", "year", "fiscal year"
-    if "fiscal year" in timespan.lower():
-        unit = "fiscal year"
-    else:
-        unit = timespan.lower().split(" ")[-1]
+class Span(NamedTuple):
+    """A relative span, read.
 
-    if time_direction == "current":
-        return get_current_date_range(unit)
+    `shape` is one of "to date", "current", "last", "next". `count` is how many
+    whole periods a "last" or "next" span covers, one otherwise.
+    """
 
-    number_of_unit = int(timespan.split(" ")[1])  # 7, 3, etc
-
-    if time_direction == "last" or time_direction == "next":
-        time_direction = -1 if time_direction == "last" else 1
-
-        dates = get_directional_date_range(time_direction, unit, number_of_unit)
-
-        if include_current:
-            current_dates = get_current_date_range(unit)
-            dates[0] = min(dates[0], current_dates[0])
-            dates[1] = max(dates[1], current_dates[1])
-
-        return dates
+    shape: str
+    unit: str
+    count: int
+    include_current: bool
 
 
-def add_start_and_end_time(dates):
+def parse_span(span: str) -> Span | None:
+    """The grammar, read once.
+
+        <unit> to date          the period so far, up to the anchor
+        current <unit>          the whole period the anchor falls in
+        last <N> <unit>s        N whole periods behind the current one
+        next <N> <unit>s        N whole periods ahead of it
+        … (include current)     extends a "last" or "next" span over the current
+
+    A "last" or "next" span that names no count covers one period: "last month"
+    reads as "last 1 month".
+
+    One parser for this runtime. The browser reads the same grammar, in
+    `frontend/src2/helpers/span_grammar.ts`, which is also where the grammar is
+    written down. A span it writes is a span this runs.
+    """
+    if not isinstance(span, str):
+        return None
+
+    rest = " ".join(span.lower().split())
+    include_current = "(include current)" in rest
+    rest = rest.replace("(include current)", "").strip()
+
+    if rest.endswith("to date"):
+        # A count and "to date" cannot both be said: the period so far is one
+        # period, so "last 7 days to date" names nothing.
+        unit = _span_unit_word(rest[: -len("to date")])
+        return Span("to date", unit, 1, False) if unit else None
+
+    words = rest.split(" ")
+    head, tail = words[0], words[1:]
+
+    if head == "current":
+        unit = _span_unit_word(" ".join(tail))
+        return Span("current", unit, 1, False) if unit else None
+
+    if head not in ("last", "next"):
+        return None
+
+    counted = tail and tail[0].isdigit()
+    count = max(1, int(tail[0])) if counted else 1
+    unit = _span_unit_word(" ".join(tail[1:] if counted else tail))
+    return Span(head, unit, count, include_current) if unit else None
+
+
+def _span_unit_word(words: str) -> str | None:
+    unit = words.strip()
+    unit = unit[:-1] if unit.endswith("s") else unit
+    return unit if unit in DATE_UNITS else None
+
+
+def get_date_range(timespan, include_current=False, anchor=None):
+    """The days a span covers. `timespan` is "last 7 days", "next 3 months", …
+
+    `include_current` is here for a caller that says it beside the span rather
+    than inside it. A span with "(include current)" says it for itself.
+    """
+    parsed = parse_span(timespan)
+    if not parsed:
+        return None
+    return _date_range(parsed, anchor, include_current=include_current)
+
+
+def _date_range(span: Span, anchor=None, include_current=False):
+    if span.shape == "current":
+        return get_current_date_range(span.unit, anchor)
+
+    if span.shape not in ("last", "next"):
+        return None
+
+    direction = -1 if span.shape == "last" else 1
+    dates = get_directional_date_range(direction, span.unit, span.count, anchor)
+
+    if include_current or span.include_current:
+        current_dates = get_current_date_range(span.unit, anchor)
+        dates[0] = min(dates[0], current_dates[0])
+        dates[1] = max(dates[1], current_dates[1])
+
+    return dates
+
+
+def span_unit(span: str) -> str:
+    """The unit a span names ("month", "fiscal year"), read out of the string.
+
+    A caller that needs the unit without resolving the dates asks here rather
+    than reading the string again.
+    """
+    parsed = parse_span(span)
+    return parsed.unit if parsed else ""
+
+
+def get_window(span: str, anchor: datetime.date | None = None) -> tuple[datetime.date, datetime.date]:
+    """The dates a span names, as (start, end).
+
+    Accepts every span `get_date_range` accepts, plus "<unit> to date", which
+    ends at the anchor instead of at the end of the period. `anchor` defaults to
+    `reading_day`.
+    """
+    anchor = getdate(anchor or reading_day())
+
+    parsed = parse_span(span)
+    if not parsed:
+        raise Exception(f"Invalid timespan {span}")
+
+    if parsed.shape == "to date":
+        start = get_current_date_range(parsed.unit, anchor)[0]
+        return (getdate(start), anchor)
+
+    dates = _date_range(parsed, anchor)
     if not dates:
-        return dates
+        raise Exception(f"Invalid timespan {span}")
+    return (getdate(dates[0]), getdate(dates[1]))
 
-    dates[0] = getdate(dates[0])
-    dates[1] = getdate(dates[1])
-    dates[0] = dates[0].strftime("%Y-%m-%d 00:00:00")
-    dates[1] = dates[1].strftime("%Y-%m-%d 23:59:59")
 
-    return dates
+def shift_anchor(anchor: datetime.date, unit: str, count: int) -> datetime.date:
+    """The anchor moved `count` units.
+
+    "The same span a year ago" is `get_window(span, shift_anchor(anchor,
+    "year", -1))`. The span is recomputed from the moved anchor, never shifted
+    at its endpoints. That is what keeps a to-date span to-date, and it lands a
+    leap day or a month end on the nearest real date with no case for either.
+    """
+    anchor = getdate(anchor)
+    unit = unit.lower()
+
+    if unit == "day":
+        return getdate(add_to_date(anchor, days=count))
+    if unit == "week":
+        return getdate(add_to_date(anchor, days=7 * count))
+    if unit == "month":
+        return getdate(add_to_date(anchor, months=count))
+    if unit == "quarter":
+        return getdate(add_to_date(anchor, months=3 * count))
+    if unit == "year":
+        return getdate(add_to_date(anchor, years=count))
+    if unit in ("fiscal quarter", "fiscal year"):
+        # the same day of the period, kept inside the moved period: a start day
+        # a shorter month moved would otherwise land in the period beside it
+        months = 3 if unit == "fiscal quarter" else 12
+        start, end = get_fiscal_period(anchor, months, count)
+        return min(max(getdate(add_to_date(anchor, months=months * count)), start), end)
+
+    raise Exception(f"Invalid shift unit - {unit}")
+
+
+def midnight(day):
+    return datetime.datetime.combine(day, datetime.time())
+
+
+def is_calendar(column):
+    return column.type().is_date() or column.type().is_timestamp()
+
+
+def typed_instant(column, instant: datetime.datetime):
+    """`instant` as a literal of the column's own type, its zone included.
+
+    Each engine reads text its own way: SQLite compares a date as text, so
+    '2026-08-05' sorts before '2026-08-05 00:00:00', and SQL Server parses text
+    by the login's date format. BigQuery compares no TIMESTAMP with a DATETIME.
+    """
+    if column.type().is_date():
+        return instant.date()
+    return ibis.literal(instant, type=column.type())
+
+
+def day_bounds(column, first, last):
+    """The column, the start of day `first` and the start of the day after `last`.
+
+    A column that holds dates as text is compared as text, against bare dates:
+    ISO text sorts as the dates it spells, and a cast fails the whole query on
+    one value that is not a date.
+    """
+    if column.type().is_time():
+        frappe.throw(
+            frappe._("{0} is a Time column and names no day, so no span can filter it").format(
+                column.get_name()
+            ),
+            QueryRefused,
+        )
+    start = midnight(getdate(first))
+    end = midnight(getdate(last) + datetime.timedelta(days=1))
+    if not is_calendar(column):
+        return column, start.date().isoformat(), end.date().isoformat()
+    return column, typed_instant(column, start), typed_instant(column, end)
+
+
+def within_days(column, first, last):
+    column, start, end = day_bounds(column, first, last)
+    return (column >= start) & (column < end)
 
 
 class BinaryOperations:

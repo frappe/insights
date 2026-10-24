@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
-import { BarChartConfig, XAxis, YAxisBar } from '../../types/chart.types'
+import { computed } from 'vue'
+import { BarChartConfig, Series, YAxisBar } from '../../types/chart.types'
 import { ColumnOption, DimensionOption } from '../../types/query.types'
+import { takesTrendLine } from '../adapter/axis'
+import { hasBarsOnBothAxes } from '../helpers'
+import ReferenceLinesConfig from './ReferenceLinesConfig.vue'
 import SplitByConfig from './SplitByConfig.vue'
+import TooltipConfig from './TooltipConfig.vue'
 import XAxisConfig from './XAxisConfig.vue'
 import YAxisConfig from './YAxisConfig.vue'
 
 const props = defineProps<{
+	chartType: string
 	dimensions: DimensionOption[]
 	columnOptions: ColumnOption[]
 }>()
@@ -20,43 +25,51 @@ const config = defineModel<BarChartConfig>({
 	}),
 })
 
-const hasAxisSplit = computed(() => {
-	return (
-		config.value.y_axis.series?.find((s) => s.align === 'Right') &&
-		config.value.y_axis.series?.find((s) => s.align === 'Left')
-	)
-})
+// The flags stay as saved, and the adapter ignores them while bars sit on both
+// axes, so the switches show what is plotted rather than what is saved.
+const barsOnBothAxes = computed(() =>
+	hasBarsOnBothAxes(config.value.y_axis.series, 'bar', props.chartType === 'Row'),
+)
 
-watchEffect(() => {
-	if (!config.value.x_axis) {
-		config.value.x_axis = {} as XAxis
-	}
-	if (!config.value.y_axis) {
-		config.value.y_axis = {} as YAxisBar
-	}
-	if (config.value.y_axis?.stack === undefined) {
-		config.value.y_axis.stack = true
-	}
-	if (hasAxisSplit.value) {
-		config.value.y_axis.stack = false
-	}
-})
+function offersTrendLine(series: Series) {
+	return takesTrendLine(config.value, series, 'bar', props.chartType === 'Row')
+}
 </script>
 
 <template>
 	<XAxisConfig v-model="config.x_axis" :dimensions="props.dimensions"></XAxisConfig>
 
-	<YAxisConfig v-model="config.y_axis" :column-options="props.columnOptions">
+	<YAxisConfig
+		v-model="config.y_axis"
+		:column-options="props.columnOptions"
+		:config="config"
+		:takes-trend-line="offersTrendLine"
+	>
 		<template #y-axis-settings="{ y_axis }">
-			<Toggle label="Stack" v-model="(y_axis as YAxisBar).stack" :disabled="hasAxisSplit" />
 			<Toggle
-				label="Overlap"
-				v-model="(y_axis as YAxisBar).overlap"
-				:disabled="hasAxisSplit"
+				:label="__('Stack')"
+				:model-value="barsOnBothAxes ? false : (y_axis as YAxisBar).stack"
+				@update:model-value="(y_axis as YAxisBar).stack = Boolean($event)"
+				:disabled="barsOnBothAxes"
 			/>
-			<Toggle label="Normalize" v-model="(y_axis as YAxisBar).normalize" />
+			<Toggle
+				:label="__('Overlap')"
+				:model-value="barsOnBothAxes ? false : (y_axis as YAxisBar).overlap"
+				@update:model-value="(y_axis as YAxisBar).overlap = Boolean($event)"
+				:disabled="barsOnBothAxes"
+			/>
+			<Toggle
+				:label="__('Normalize')"
+				:model-value="barsOnBothAxes ? false : (y_axis as YAxisBar).normalize"
+				@update:model-value="(y_axis as YAxisBar).normalize = Boolean($event)"
+				:disabled="barsOnBothAxes"
+			/>
 		</template>
 	</YAxisConfig>
 
 	<SplitByConfig v-model="config.split_by" :dimensions="props.dimensions" />
+
+	<TooltipConfig v-model="config" :column-options="props.columnOptions" />
+
+	<ReferenceLinesConfig v-model="config" />
 </template>

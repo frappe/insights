@@ -20,7 +20,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     get_table_stats,
 )
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import DT, as_user, create_test_workbook
+from insights.tests.factories import DT, as_user, create_test_workbook, create_user, delete_users
 from insights.tests.permissions_utils import (
     TEST_DS,
     USER_1,
@@ -32,6 +32,7 @@ from insights.tests.permissions_utils import (
     create_test_users,
 )
 
+SITE_DB = "Site DB"
 OWNER = USER_1
 OTHER = USER_2
 
@@ -106,17 +107,21 @@ class StatsNameReadableQueriesOnly:
             stats = frappe.get_doc(DT.TABLE, self.table).get_stats()
         return [q["name"] for q in stats["referencing_queries"]]
 
+    # @feature data-source.table-stats
     def test_a_query_in_another_workbook_is_not_readable(self):
         """The baseline the rule below is measured against."""
         with self.as_user(OTHER):
             self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=self.owner_query))
 
+    # @feature data-source.table-stats
     def test_the_stats_name_your_own_query(self):
         self.assertIn(self.other_query, self.referencing_queries(OTHER))
 
+    # @feature data-source.table-stats
     def test_the_stats_do_not_name_a_query_you_cannot_read(self):
         self.assertNotIn(self.owner_query, self.referencing_queries(OTHER))
 
+    # @feature data-source.table-stats
     def test_a_pair_that_disagrees_with_the_name_is_refused(self):
         """The name is built from the pair, so the two naming different tables is
         not a request that can be answered."""
@@ -131,12 +136,14 @@ class StatsNameReadableQueriesOnly:
                 },
             )
 
+    # @feature data-source.table-stats
     def test_a_body_that_omits_the_pair_is_refused(self):
         """`get_table_name` concatenates the two, so a missing one has to be
         refused before it is read, not raise `TypeError` inside the hash."""
         with self.as_user(OTHER), self.assertRaises(frappe.ValidationError):
             run_doc_method("get_stats", docs={"doctype": DT.TABLE, "name": self.table})
 
+    # @feature data-source.table-stats
     def test_the_stats_answer_when_the_pair_agrees(self):
         """The path the client actually takes."""
         with self.as_user(OTHER):
@@ -154,6 +161,7 @@ class StatsNameReadableQueriesOnly:
         self.assertIn(self.other_query, names)
         self.assertNotIn(self.query_on_other_table, names)
 
+    # @feature data-source.table-stats
     def test_an_administrator_still_sees_every_query(self):
         """Narrowing is per caller, not a smaller report for everyone."""
         names = self.referencing_queries("Administrator")
@@ -235,6 +243,7 @@ class TestStatsReportTheLastImport(InsightsIntegrationTestCase):
     def stats(self):
         return get_table_stats(IMPORT_DS, IMPORT_TABLE)
 
+    # @feature data-source.table-stats
     def test_a_completed_log_reports_its_rows_and_duration(self):
         self.log_import("Completed", rows=1500, seconds=42)
 
@@ -242,6 +251,7 @@ class TestStatsReportTheLastImport(InsightsIntegrationTestCase):
         self.assertEqual(stats["last_import_rows"], 1500)
         self.assertEqual(stats["last_import_duration"], 42)
 
+    # @feature data-source.table-stats
     def test_the_newest_completed_log_wins(self):
         self.log_import("Completed", rows=100, seconds=5, days_ago=3)
         self.log_import("Completed", rows=900, seconds=11)
@@ -250,6 +260,7 @@ class TestStatsReportTheLastImport(InsightsIntegrationTestCase):
         self.assertEqual(stats["last_import_rows"], 900)
         self.assertEqual(stats["last_import_duration"], 11)
 
+    # @feature data-source.table-stats
     def test_a_later_failure_does_not_replace_the_last_import(self):
         """The last import is the last one that finished, not the last attempt."""
         self.log_import("Completed", rows=700, seconds=9, days_ago=1)
@@ -259,6 +270,7 @@ class TestStatsReportTheLastImport(InsightsIntegrationTestCase):
         self.assertEqual(stats["last_import_rows"], 700)
         self.assertEqual(stats["last_import_duration"], 9)
 
+    # @feature data-source.table-stats
     def test_the_stats_count_every_attempt_and_the_failures(self):
         self.log_import("Completed", rows=700, seconds=9, days_ago=1)
         self.log_import("Failed", rows=0, seconds=2)
@@ -268,8 +280,60 @@ class TestStatsReportTheLastImport(InsightsIntegrationTestCase):
         self.assertEqual(stats["total_sync_time"], 11)
         self.assertEqual(stats["failed_syncs"], 1)
 
+    # @feature data-source.table-stats
     def test_no_log_reports_an_empty_last_import(self):
         stats = self.stats()
         self.assertEqual(stats["last_import_rows"], 0)
         self.assertEqual(stats["last_import_duration"], 0)
         self.assertEqual(stats["total_syncs"], 0)
+
+
+class TestASiteTableCountIsForAdmins(InsightsIntegrationTestCase):
+    """Desk may narrow what a reader sees of a site table, or deny it, so its
+    full row count is not theirs to read."""
+
+    READER = "table_stats_site_reader@test.com"
+
+    @classmethod
+    def before_class(cls):
+        create_user(cls.READER, roles="Insights User")
+        cls.table = get_table_name(SITE_DB, "tabToDo")
+        if not frappe.db.exists(DT.TABLE, cls.table):
+            frappe.get_doc(
+                {"doctype": DT.TABLE, "data_source": SITE_DB, "table": "tabToDo", "label": "ToDo"}
+            ).insert(ignore_permissions=True)
+        frappe.db.set_value(DT.TABLE, cls.table, "estimated_row_count", 1500)
+        frappe.get_doc(
+            {
+                "doctype": "Insights Table Import Log",
+                "data_source": SITE_DB,
+                "table_name": "tabToDo",
+                "status": "Completed",
+                "rows_imported": 1500,
+            }
+        ).insert(ignore_permissions=True)
+
+    @classmethod
+    def after_class(cls):
+        delete_users(cls.READER)
+
+    def table_as(self, user):
+        with self.as_user(user):
+            doc = frappe.get_doc(DT.TABLE, self.table)
+            stats = doc.get_stats()
+            doc.apply_fieldlevel_read_permissions()
+        return stats, doc
+
+    # @feature data-source.table-stats
+    def test_a_reader_gets_no_count_of_a_site_table(self):
+        stats, doc = self.table_as(self.READER)
+
+        self.assertIsNone(stats["last_import_rows"])
+        self.assertIsNone(doc.get("estimated_row_count"))
+
+    # @feature data-source.table-stats
+    def test_an_admin_gets_the_count(self):
+        stats, doc = self.table_as("Administrator")
+
+        self.assertEqual(stats["last_import_rows"], 1500)
+        self.assertEqual(doc.estimated_row_count, 1500)

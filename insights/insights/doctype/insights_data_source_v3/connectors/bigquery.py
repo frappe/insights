@@ -3,6 +3,13 @@
 
 import frappe
 import ibis
+from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
+
+from .compilers import StarExceptDropColumns
+
+
+class InsightsBigQueryCompiler(StarExceptDropColumns, BigQueryCompiler):
+    pass
 
 
 def get_bigquery_connection(data_source):
@@ -15,12 +22,12 @@ def get_bigquery_connection(data_source):
     except ImportError:
         raise ImportError("Please install google-auth to use BigQuery as a data source")
 
-    credentials = service_account.Credentials.from_service_account_info(
-        frappe.parse_json(credentials)
-    )
+    credentials = service_account.Credentials.from_service_account_info(frappe.parse_json(credentials))
 
-    return ibis.bigquery.connect(
+    db = ibis.bigquery.connect(
         project_id=project_id,
         dataset_id=dataset_id,
         credentials=credentials,
     )
+    db.compiler = InsightsBigQueryCompiler()
+    return db

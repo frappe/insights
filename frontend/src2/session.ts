@@ -10,34 +10,58 @@ type SessionUser = {
 	is_admin: boolean
 	is_user: boolean
 	can_download: boolean
-	country: string
+	/** Whether this user may add or change Trusted code. */
+	can_write_trusted_code: boolean
 	locale: string
-	is_v2_instance: boolean
-	default_version: 'v3' | 'v2' | ''
 	has_desk_access?: boolean
 	has_demo_data: boolean
-	fiscal_year_start: string
+	/** Whether the site has a workbook of its own, not one an app ships. */
+	has_workbooks: boolean
+	/** Whether the user used Insights before v3.50 and has not yet closed the upgrade dialog. */
+	upgrade_unseen: boolean
+	/** Whether the user owns a workbook, so the upgrade wizard explains how sharing changed. */
+	owns_workbooks?: boolean
+	/** Open upgrade items the user works through. */
+	upgrade_item_count: number
+	/** Whether the user works through every open upgrade item, not only their own. */
+	is_upgrade_admin?: boolean
+	/** Whether the user may open a dashboard an app ships. */
+	reads_standard_dashboards?: boolean
+	/** Whether the user may create the desk document Show in Desk makes for a chart. */
+	can_show_in_desk?: boolean
 }
 
 // Settings of the site, not of whoever is reading it. A guest opening a public
 // dashboard gets these and nothing else, so a shared chart prints its amounts
 // the same way the workbook does.
-type CurrencySymbol = { symbol: string; symbol_on_right: boolean }
+type Currency = { symbol: string; symbol_on_right: boolean; number_format: string }
 type SiteInfo = {
+	/** Frappe's number format for a plain number, such as `#,###.##`. */
+	number_format: string
+	/** The day a week is counted from, as `Insights Settings` names it. */
+	week_starts_on: string
+	/** The date a fiscal year starts on: `Insights Settings`, else ERPNext's current Fiscal Year. */
+	fiscal_year_start: string
 	// stands in for a measure that names no currency column
 	currency: string | null
 	// starts with the site currency; each result adds its codes
-	currency_symbols: Record<string, CurrencySymbol>
+	currency_symbols: Record<string, Currency>
 	/** The two properties `docs/telemetry.md` puts on every event. */
 	app_version: string
 	entry: string
+	/** Whether the site is in developer mode. Exporting a workbook to an app needs it. */
+	developer_mode: boolean
 }
 
 const emptySite: SiteInfo = {
+	number_format: '',
+	week_starts_on: 'Monday',
+	fiscal_year_start: '1995-04-01',
 	currency: null,
 	currency_symbols: {},
 	app_version: '',
 	entry: '',
+	developer_mode: false,
 }
 
 const emptyUser: SessionUser = {
@@ -49,12 +73,12 @@ const emptyUser: SessionUser = {
 	is_admin: false,
 	is_user: false,
 	can_download: true,
-	country: '',
+	can_write_trusted_code: false,
 	locale: 'en-US',
-	is_v2_instance: false,
-	default_version: '',
 	has_demo_data: false,
-	fiscal_year_start: '01-04-2020',
+	has_workbooks: false,
+	upgrade_unseen: false,
+	upgrade_item_count: 0,
 }
 
 const session = reactive({
@@ -66,7 +90,6 @@ const session = reactive({
 	initialize,
 	fetchSessionInfo,
 	fetchSiteInfo,
-	updateDefaultVersion,
 	login,
 	logout,
 	resetSession,
@@ -93,21 +116,22 @@ async function fetchSessionInfo() {
 		...userInfo,
 		is_admin: Boolean(userInfo.is_admin),
 		is_user: Boolean(userInfo.is_user),
-		is_v2_instance: Boolean(userInfo.is_v2_instance),
 		has_desk_access: Boolean(userInfo.has_desk_access),
 		has_demo_data: Boolean(userInfo.has_demo_data),
+		has_workbooks: Boolean(userInfo.has_workbooks),
 		can_download: Boolean(userInfo.can_download),
+		can_write_trusted_code: Boolean(userInfo.can_write_trusted_code),
+		upgrade_unseen: Boolean(userInfo.upgrade_unseen),
+		owns_workbooks: Boolean(userInfo.owns_workbooks),
+		is_upgrade_admin: Boolean(userInfo.is_upgrade_admin),
+		reads_standard_dashboards: Boolean(userInfo.reads_standard_dashboards),
+		can_show_in_desk: Boolean(userInfo.can_show_in_desk),
 	})
 }
 
 async function fetchSiteInfo() {
 	const siteInfo: SiteInfo = await call('insights.api.get_site_info')
 	Object.assign(session.site, siteInfo)
-}
-
-function updateDefaultVersion(version: SessionUser['default_version']) {
-	session.user.default_version = version
-	return call('insights.api.update_default_version', { version })
 }
 
 async function login(email: string, password: string) {

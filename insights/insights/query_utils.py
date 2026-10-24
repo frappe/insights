@@ -1,26 +1,31 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import re
+from collections.abc import Callable
+
 import frappe
 import sqlglot as sg
+import sqlparse
+
+
+def runs_stored_procedure(raw_sql: str) -> bool:
+    """Whether a SQL query calls a stored procedure. A procedure runs as written,
+    so the reader's permissions do not limit the tables it reads."""
+    return sqlparse.format(raw_sql, strip_comments=True).strip().lower().startswith("exec")
 
 
 def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> list[frappe._dict]:
     try:
-        parsed = sg.parse_one(raw_sql, dialect=dialect)
+        parsed = sg.parse_one(sqlparse.format(raw_sql, strip_comments=True), dialect=dialect)
     except Exception:
-        # If parsing fails, we return an empty list to avoid blocking the user from saving their query.
-        # In the future, we may want to log these exceptions to help improve our SQL parsing capabilities.
-        return []
-
-    cte_aliases = {cte_exp.alias_or_name for cte_exp in parsed.find_all(sg.exp.CTE) if cte_exp.alias_or_name}
+        return []  # nosemgrep - an unparseable query runs nothing, so it reads no table
 
     table_refs = []
     seen_refs = set()
-    for table_exp in parsed.find_all(sg.exp.Table):
+    for table_exp in real_table_refs(parsed):
         table_name = table_exp.name
-        # a CTE name has no schema, so a qualified reference is always a real table
-        if not table_name or (not table_exp.db and table_name in cte_aliases):
+        if not table_name:
             continue
 
         table_ref = frappe._dict(
@@ -37,6 +42,37 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
         table_refs.append(table_ref)
 
     return table_refs
+
+
+def fold_identifiers(raw_sql: str, dialect: sg.Dialect | None) -> str:
+    """`raw_sql` with every unquoted name of a table lowercased, as PostgreSQL reads it,
+    so `Sales.Orders` names the table listed as `sales.orders`.
+
+    Only the names that identify a table: tables, schemas, their aliases and
+    column qualifiers. An output column keeps its spelling, which the Data Store
+    returns as written. Only PostgreSQL: DuckDB lowercases quoted names too, which
+    would lose a table created as `"Orders"`.
+    """
+    if dialect != "postgres":
+        return raw_sql
+
+    try:
+        parsed = sg.parse_one(raw_sql, dialect=dialect)
+    except Exception:
+        return raw_sql  # nosemgrep - the database reports a query it cannot parse
+
+    names = [
+        node.args.get(part)
+        for node in parsed.find_all(sg.exp.Table, sg.exp.TableAlias, sg.exp.Column)
+        for part in (
+            ("table", "db", "catalog") if isinstance(node, sg.exp.Column) else ("this", "db", "catalog")
+        )
+    ]
+    for name in names:
+        if isinstance(name, sg.exp.Identifier) and not name.quoted:
+            name.set("this", name.this.lower())
+
+    return parsed.sql(dialect=dialect)
 
 
 def alias_qualified_tables(raw_sql: str, dialect: sg.Dialect | None) -> str:
@@ -56,8 +92,7 @@ def alias_qualified_tables(raw_sql: str, dialect: sg.Dialect | None) -> str:
     except Exception:
         return raw_sql  # nosemgrep - the database reports a query it cannot parse
 
-    # a CTE name has no schema, so a qualified table is always a real one
-    tables = [table for table in parsed.find_all(sg.exp.Table) if table.db and not table.alias]
+    tables = [table for table in real_table_refs(parsed) if table.db and not table.alias]
     if not tables:
         return raw_sql
 
@@ -197,6 +232,97 @@ def table_reference(table_exp: sg.exp.Table) -> str:
     return f"{table_exp.db}.{table_exp.name}" if table_exp.db else table_exp.name
 
 
+def real_table_refs(parsed: sg.Expression) -> list[sg.exp.Table]:
+    """Every table reference in a statement that names a real table. The
+    permission check and the rewrite that replaces each reference both use it.
+
+    A CTE hides a table name only inside its own query block. A subquery
+    aliased with a table's name hides it for that one source. sqlglot's scope
+    walk handles both, keyed by the reference's alias. If sqlglot cannot build
+    scopes for a statement, every reference counts as real, which restricts
+    more, never less.
+    """
+    from sqlglot.optimizer.scope import build_scope
+
+    root = build_scope(parsed)
+    if root is None:
+        return list(parsed.find_all(sg.exp.Table))
+
+    # a scope does not list the first table of an aliased `(a JOIN b) AS g`, so
+    # start from every reference and drop the ones that name a CTE visible in
+    # their innermost scope. A CTE name has no schema, so a qualified reference
+    # is always a real table
+    scopes = {id(scope.expression): scope for scope in root.traverse()}
+
+    def is_cte(table):
+        if table.db:
+            return False
+        node = table
+        while id(node) not in scopes:
+            node = node.parent
+            if node is None:
+                return False
+        return table.name in scopes[id(node)].cte_sources
+
+    return [table for table in parsed.find_all(sg.exp.Table) if not is_cte(table)]
+
+
+# functions that run a query given as a string, or read a file or another database
+UNBOUND_READ_FUNCTION = re.compile(
+    # DuckDB
+    r"query|query_table|(postgres|mysql|sqlite)_(query|execute)|\w+_attach"
+    r"|read_\w+|\w+_scan\w*|glob|sniff_csv|parquet_\w+|iceberg_\w+"
+    # Postgres, with the tablefunc, dblink, adminpack and pageinspect extensions
+    r"|(query|table|cursor|schema|database)_to_xml\w*|ts_stat|ts_rewrite|crosstab\d*|connectby"
+    r"|dblink\w*|pg_read_\w+|pg_ls_\w+|pg_stat_file|pg_file_\w+|pg_logdir_ls|lo_\w+|get_raw_page"
+    # MariaDB, SQLite, ClickHouse, MSSQL
+    r"|load_file|load_extension|readfile|file|joinget\w*|dictget\w*"
+    r"|openrowset|openquery|opendatasource",
+    re.IGNORECASE,
+)
+
+
+# table functions that make rows from their arguments alone, as sqlglot types
+# them, and by name where a dialect leaves them untyped
+ROW_FUNCTIONS = (sg.exp.GenerateSeries, sg.exp.ExplodingGenerateSeries, sg.exp.JSONTable, sg.exp.Unnest)
+ROW_FUNCTION_NAME = re.compile(
+    r"generate_series|range|unnest|json_table|json_tree"
+    r"|jsonb?_(each|each_text|array_elements|array_elements_text|to_recordset)",
+    re.IGNORECASE,
+)
+
+
+def unbound_reads(parsed: sg.Expression) -> list[str]:
+    """What `parsed` reads without naming a table, so no binding can replace it.
+
+    A FROM source such as DuckDB's `query_table('tabUser')`, or a function such
+    as Postgres' `query_to_xml('select ...')`, reads a table the binding never
+    sees. A FROM source that makes rows from its arguments, such as
+    `generate_series`, reads none.
+    """
+    sources = [
+        table.this.sql()
+        for table in parsed.find_all(sg.exp.Table)
+        if not isinstance(table.this, sg.exp.Identifier) and not makes_rows(table.this)
+    ]
+    functions = [
+        name
+        for func in parsed.find_all(sg.exp.Func)
+        if UNBOUND_READ_FUNCTION.fullmatch(name := function_name(func))
+    ]
+    return sources + functions
+
+
+def function_name(func: sg.exp.Func) -> str:
+    return func.name if isinstance(func, sg.exp.Anonymous) else func.sql_name()
+
+
+def makes_rows(source: sg.Expression) -> bool:
+    return isinstance(source, ROW_FUNCTIONS) or (
+        isinstance(source, sg.exp.Anonymous) and bool(ROW_FUNCTION_NAME.fullmatch(source.name))
+    )
+
+
 def extract_query_deps_from_operations(operations: list) -> list[str]:
     """Extract all referenced query names from a list of operations."""
     return [
@@ -211,6 +337,22 @@ def extract_query_deps_from_operations(operations: list) -> list[str]:
 def referenced_queries(operations) -> set[str]:
     """The query names `operations` references, from a stored or parsed value."""
     return set(extract_query_deps_from_operations(frappe.parse_json(operations) or []))
+
+
+def check_source_workbook(workbook: str | None, source: str) -> None:
+    """A query may only use queries of its own workbook as sources.
+
+    Datasets share queries across workbooks, not references. A source with no
+    row is not checked here; the build reports it as not found.
+    """
+    from insights.exceptions import QueryRefused
+
+    row = frappe.db.get_value("Insights Query v3", source, ["name", "workbook"], as_dict=True)
+    if not row or row.workbook == workbook:
+        return
+
+    # the message names no query, because the caller may not be allowed to read it
+    frappe.throw(frappe._("A query of another workbook cannot be a source here"), QueryRefused)
 
 
 def extract_table_deps_from_operations(operations: list) -> list[dict]:
@@ -253,7 +395,7 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
             "Insights Data Source v3", ds
         )
         dialect = db_type_to_sqlglot_dialect(data_source.database_type) if data_source else None
-        for ref in extract_sql_table_refs(raw_sql, dialect=dialect):
+        for ref in extract_sql_table_refs(fold_identifiers(raw_sql, dialect), dialect=dialect):
             # a schema the data source does not read names no table; the run refuses it
             table_name = data_source.sql_table_name(ref.name, ref.db) if data_source else ref.name
             key = (ds, table_name)
@@ -267,7 +409,7 @@ def extract_table_deps_from_sql_operations(operations: list) -> list[dict]:
 def table_references(operations) -> list[dict]:
     """The (data_source, table_name) pairs `operations` reads.
 
-    A builder operation names its table outright. A native SQL operation carries
+    A builder operation names its table outright. A native SQL operation has
     it in the SQL, so it has to be parsed out.
     """
     ops = frappe.parse_json(operations) or []
@@ -284,34 +426,44 @@ def table_references(operations) -> list[dict]:
 
 
 def sync_query_references(query_name: str, operations) -> None:
-    """Rebuild edge rows for *query_name* in Insights Query Reference.
+    """Make the edge rows of *query_name* in Insights Query Reference match the
+    tables and queries its operations read.
 
-    Deletes all existing outgoing edges for this query then inserts fresh
-    rows for every table and query reference found in operations.
+    Only the rows that changed are written, and each is deleted by name. A delete
+    by `query` would lock the gaps of that index, and two saves of neighbouring
+    queries would deadlock on them (#1147).
     """
     from frappe.model.document import bulk_insert
 
     ops = frappe.parse_json(operations) or []
+    wanted = {("Table", ref["data_source"], ref["table_name"], None) for ref in table_references(ops)}
+    wanted |= {("Query", None, None, dep) for dep in extract_query_deps_from_operations(ops)}
+
+    stale = []
+    for row in frappe.get_all(
+        "Insights Query Reference",
+        filters={"query": query_name},
+        fields=["name", "ref_type", "data_source", "table_name", "ref_query"],
+    ):
+        key = (row.ref_type, row.data_source or None, row.table_name or None, row.ref_query or None)
+        if key in wanted:
+            wanted.discard(key)
+        else:
+            stale.append(row.name)
+
+    if stale:
+        frappe.db.delete("Insights Query Reference", {"name": ["in", stale]})
 
     docs = []
-    for tbl in table_references(ops):
+    for ref_type, data_source, table_name, ref_query in sorted(wanted, key=str):
         ref = frappe.new_doc("Insights Query Reference")
         ref.name = frappe.generate_hash(length=10)
         ref.query = query_name
-        ref.ref_type = "Table"
-        ref.data_source = tbl["data_source"]
-        ref.table_name = tbl["table_name"]
+        ref.ref_type = ref_type
+        ref.data_source = data_source
+        ref.table_name = table_name
+        ref.ref_query = ref_query
         docs.append(ref)
-
-    for dep_query in extract_query_deps_from_operations(ops):
-        ref = frappe.new_doc("Insights Query Reference")
-        ref.name = frappe.generate_hash(length=10)
-        ref.query = query_name
-        ref.ref_type = "Query"
-        ref.ref_query = dep_query
-        docs.append(ref)
-
-    frappe.db.delete("Insights Query Reference", {"query": query_name})
     if docs:
         bulk_insert("Insights Query Reference", docs)
 
@@ -327,21 +479,68 @@ def query_operations(query_name: str, operations_by_name: dict[str, list] | None
     return frappe.db.get_value("Insights Query v3", query_name, "operations")
 
 
+def reachable_operations(queries) -> dict[str, list | None]:
+    """The stored operations of `queries` and of every query they read, by name.
+
+    One read per hop, for a caller that walks many queries. A name with no row
+    maps to None.
+    """
+    found: dict[str, list | None] = {}
+    frontier = {name for name in queries if name}
+    while frontier:
+        rows = frappe.get_all(
+            "Insights Query v3", filters={"name": ("in", list(frontier))}, fields=["name", "operations"]
+        )
+        found.update(dict.fromkeys(frontier))
+        found.update({row.name: row.operations for row in rows})
+        frontier = {name for row in rows for name in referenced_queries(row.operations)} - found.keys()
+    return found
+
+
 def get_direct_dependencies(query_name: str, operations_by_name: dict[str, list] | None = None) -> list[str]:
     """Return the query names this query directly depends on.
 
     Read from the query's own `operations`, not from `Insights Query Reference`.
-    A forward edge is already in the row, and the edge table is rebuilt by a
-    background job that runs after the save commits, so it lags every write.
+    A forward edge is already in the row.
 
-    Only the edge table answers the reverse question - who references this query.
-    `get_lineage_graph` and `get_last_execution_per_table` still read it forwards,
-    where a report that lags one job is the whole point of the index.
+    Only the edge table answers the reverse question - who references this query -
+    so `downstream_queries` reads it. `get_lineage_graph` and
+    `get_last_execution_per_table` still read it forwards, as reports over every
+    query.
     """
     if not query_name:
         return []
 
     return list(referenced_queries(query_operations(query_name, operations_by_name)))
+
+
+def downstream_queries(start: str, readable: Callable[[set[str]], set[str]]) -> list[str]:
+    """The queries that read `start` through every hop, nearest first.
+
+    `readable` narrows each hop before the walk goes on, so a caller that may
+    not read a query is not walked through it either.
+    """
+    seen = {start}
+    frontier = {start}
+    found = []
+    while frontier:
+        reached = (
+            set(
+                frappe.get_all(
+                    "Insights Query Reference",
+                    filters={"ref_type": "Query", "ref_query": ["in", list(frontier)]},
+                    pluck="query",
+                    distinct=True,
+                )
+            )
+            - seen
+        )
+        if reached:
+            reached = readable(reached)
+        seen |= reached
+        found.extend(sorted(reached))
+        frontier = reached
+    return found
 
 
 def transitive_closure(

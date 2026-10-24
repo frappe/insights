@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { IconPicker } from 'frappe-ui/icons'
-import { computed, inject, reactive, ref } from 'vue'
-import useChart from '../charts/chart'
+import FilterIconPicker from './FilterIconPicker.vue'
+import { computed, inject, reactive, ref, watch } from 'vue'
 import useQuery from '../query/query'
 import { copy } from '../helpers'
 import { FIELDTYPES } from '../helpers/constants'
@@ -11,13 +10,13 @@ import {
 	getValueSelectorType,
 	normalizeDateRange,
 } from '../query/components/filter_utils'
-import NumberFilterPicker from '../query/components/NumberFilterPicker.vue'
+import NumberRangeInput from '../query/components/NumberRangeInput.vue'
 import RelativeDatePicker from '../query/components/RelativeDatePicker.vue'
 import { ColumnOption, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
-import { Dashboard } from './dashboard'
+import { Dashboard, parseFilterLink } from './dashboard'
 import { __ } from '../translation'
-import { Switch, Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
+import { Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -27,7 +26,14 @@ if (!filter.links) {
 	filter.links = {}
 }
 
-const tabIndex = ref(0)
+// The server replaces the default with the reader's `default_user_key`, which a
+// shipped workbook sets. A default the author picks here must not be replaced.
+watch(
+	() => [filter.default_operator, filter.default_value],
+	() => delete filter.default_user_key,
+)
+
+const activeTab = ref('setup')
 const tabs = [
 	{
 		label: __('Setup'),
@@ -39,36 +45,30 @@ const tabs = [
 	},
 ]
 
-const charts = computed(() => {
-	return dashboard.doc.items
-		.filter((i) => i.type === 'chart')
-		.map((i) => i.chart)
-		.filter(Boolean)
-})
+// Once each: several cells can show readings of one Number chart, and a filter
+// lands on the chart, not on the cell.
+const charts = computed(() => dashboard.linkedCharts().filter(Boolean))
 
-const queries = computed(() => {
-	return charts.value
-		.map((c) => useChart(c).getDependentQueries())
-		.flat()
-		.filter((q, i, self) => self.findIndex((qq) => qq === q) === i)
-		.filter(Boolean) as string[]
-})
-
+// The stores come from the dashboard's own map, which resolves one per chart the
+// grid names. A store registers a resource, a watcher and a history when it is
+// made, so it cannot be made in a computed.
 const linkOptions = computed(() => {
-	return charts.value.map((c) => {
-		const chart = useChart(c)
-		const dependentColumns = chart.getDependentQueryColumns().map((group) => {
+	return charts.value
+		.map((name) => dashboard.chartsByName[name])
+		.filter(Boolean)
+		.map((chart) => {
+			const dependentColumns = chart.getDependentQueryColumns().map((group) => {
+				return {
+					group: group.group,
+					options: disableColumnOptions(group.options),
+				}
+			})
 			return {
-				...group,
-				items: disableColumnOptions(group.items),
+				name: chart.doc.name,
+				title: chart.doc.title,
+				columns: dependentColumns,
 			}
 		})
-		return {
-			name: chart.doc.name,
-			title: chart.doc.title,
-			columns: dependentColumns,
-		}
-	})
 })
 
 const enabledLinks = computed(() => Object.keys(filter.links))
@@ -131,7 +131,7 @@ const sourceColumn = computed(() => {
 	const firstChart = Object.keys(filter.links)[0]
 	if (!firstChart) return
 	const linkedColumn = filter.links[firstChart]
-	return dashboard.getColumnFromFilterLink(linkedColumn)
+	return parseFilterLink(linkedColumn)
 })
 
 function defaultValuesProvider(search: string) {
@@ -154,32 +154,31 @@ const editDisabled = computed(() => {
 
 function saveEdit() {
 	Object.assign(props.item, filter)
+	dashboard.editingItemIndex = undefined
 }
 </script>
 
 <template>
 	<Dialog
-		:modelValue="dashboard.isEditingItem(props.item)"
-		@update:modelValue="!$event ? (dashboard.editingItemIndex = undefined) : true"
-		:options="{
-			title: __('Edit Filter'),
-			actions: [
-				{
-					label: __('Save'),
-					variant: 'solid',
-					disabled: editDisabled,
-					onClick: saveEdit,
-				},
-				{
-					label: __('Cancel'),
-					onClick: () => (dashboard.editingItemIndex = undefined),
-				},
-			],
-		}"
+		:open="dashboard.isEditingItem(props.item)"
+		@update:open="!$event ? (dashboard.editingItemIndex = undefined) : true"
+		:title="__('Edit Filter')"
+		:actions="[
+			{
+				label: __('Save'),
+				variant: 'solid',
+				disabled: editDisabled,
+				onClick: saveEdit,
+			},
+			{
+				label: __('Cancel'),
+				onClick: () => (dashboard.editingItemIndex = undefined),
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="flex flex-col min-h-[20rem] max-h-[20rem]">
-				<Tabs v-model="tabIndex" :tabs="tabs" class="-mt-6">
+				<Tabs v-model="activeTab" :tabs="tabs" class="-mt-6">
 					<template #tab-panel="{ tab }">
 						<div v-if="tab.value === 'setup'" class="flex flex-col gap-4 pt-2">
 							<div class="flex items-end gap-1.5 p-1">
@@ -203,30 +202,31 @@ function saveEdit() {
 								<label class="text-xs text-ink-gray-5">{{
 									__('Linked Charts')
 								}}</label>
-								<div
-									v-for="link in linkOptions"
-									:key="link.name"
-									class="flex h-8 w-full items-center gap-2"
-								>
-									<Switch
-										size="sm"
-										:modelValue="enabledLinks.includes(link.name)"
-										@update:modelValue="toggleLink(link.name)"
-									></Switch>
-									<p class="flex-1 truncate text-base">{{ link.title }}</p>
+								<div class="flex max-h-40 flex-col gap-1 overflow-y-auto">
 									<div
-										v-if="enabledLinks.includes(link.name)"
-										class="ml-auto flex-shrink-0"
+										v-for="link in linkOptions"
+										:key="link.name"
+										class="flex h-8 w-full flex-shrink-0 items-center gap-2"
 									>
-										<Autocomplete
-											class="min-w-[10rem]"
-											:placeholder="__('Select a column')"
-											:options="link.columns"
-											:modelValue="filter.links[link.name]"
-											@update:modelValue="
-												filter.links[link.name] = $event.value
-											"
+										<Toggle
+											:modelValue="enabledLinks.includes(link.name)"
+											@update:modelValue="toggleLink(link.name)"
 										/>
+										<p class="flex-1 truncate text-base">{{ link.title }}</p>
+										<div
+											v-if="enabledLinks.includes(link.name)"
+											class="ml-auto flex-shrink-0"
+										>
+											<Combobox
+												class="min-w-[10rem]"
+												:placeholder="__('Select a column')"
+												:options="link.columns"
+												:modelValue="filter.links[link.name]"
+												@update:modelValue="
+													filter.links[link.name] = $event
+												"
+											/>
+										</div>
 									</div>
 								</div>
 							</div>
@@ -236,7 +236,7 @@ function saveEdit() {
 								<label class="block text-xs text-ink-gray-5">{{
 									__('Filter Icon')
 								}}</label>
-								<IconPicker v-model="filter.icon" />
+								<FilterIconPicker v-model="filter.icon" />
 							</div>
 							<div
 								v-if="filter.filter_type"
@@ -254,14 +254,15 @@ function saveEdit() {
 										{{ __('Clear') }}
 									</button>
 								</div>
-								<NumberFilterPicker
+								<NumberRangeInput
 									v-if="filter.filter_type === 'Number'"
 									v-model:operator="filter.default_operator"
 									v-model:value="filter.default_value as number"
 								/>
 								<template v-else>
-									<div class="flex gap-2 items-start">
+									<div class="flex flex-wrap gap-2 items-start">
 										<FormControl
+											class="w-32 flex-shrink-0"
 											type="select"
 											:placeholder="__('Select operator...')"
 											:modelValue="filter.default_operator"
@@ -280,14 +281,13 @@ function saveEdit() {
 													defaultValueSelectorType === 'date_range'
 												"
 												class="flex-1"
-												:range="true"
-												v-model="dateRangeVal as string[]"
+												v-model="dateRangeVal as [string, string]"
 											/>
 											<RelativeDatePicker
 												v-else-if="
 													defaultValueSelectorType === 'relative_date'
 												"
-												class="flex-1"
+												class="min-w-[15rem] flex-1"
 												v-model="filter.default_value as string"
 											/>
 											<div

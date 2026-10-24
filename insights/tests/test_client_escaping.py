@@ -1,10 +1,12 @@
 """The client renders what the server sent, and it renders it as text.
 
-A toast message is a server error line, and a server error repeats input the
-caller never chose — a column name, a table name, a title somebody else wrote.
+A server message repeats input the caller never chose — a column name, a table
+name, a title somebody else wrote.
 
-The app has no JavaScript test runner. A source check is a poorer test than a
-rendered one, and it is what keeps the rule from being undone by a later edit.
+What is left here is the desk form, which is plain JavaScript no test runner
+reaches. A source check is a poorer test than a rendered one, and it is what
+keeps that one rule from being undone by a later edit. The app's own client is
+under `frontend/`, where vitest runs.
 """
 
 import re
@@ -18,11 +20,20 @@ APP = Path(insights.__file__).parent.parent
 
 
 class TestErrorToastRendersText(UnitTestCase):
-    """The toast renders what the server sent, so it renders it as text."""
+    """The toast shows the server's error as text.
 
+    frappe-ui renders the toast, so the app owns only the call: the error goes
+    in as the message, and nothing in the helper turns it into markup.
+    """
+
+    # @feature permissions.error-is-text
     def test_the_toast_renders_no_html(self):
-        toast = (APP / "frontend/src2/components/Toast.vue").read_text()
-        self.assertNotIn("v-html", toast)
+        helpers = (APP / "frontend/src2/helpers/index.ts").read_text()
+        # Collapsed, so a reformat that rewraps the call cannot fail the rule.
+        collapsed = re.sub(r"\s+", " ", helpers)
+        self.assertIn("toast.error(getErrorMessage(err))", collapsed)
+        for markup in ("v-html", "innerHTML", "insertAdjacentHTML"):
+            self.assertNotIn(markup, helpers)
 
 
 class TestDeskFormEscapesTheTableLabel(UnitTestCase):
@@ -32,6 +43,7 @@ class TestDeskFormEscapesTheTableLabel(UnitTestCase):
     `frappe.confirm` and a dialog title append what it produces as HTML.
     """
 
+    # @feature data-source.table-label-is-text
     def test_every_read_of_the_label_is_escaped(self):
         form = (APP / "insights/insights/doctype/insights_table_v3/insights_table_v3.js").read_text()
         # Collapsed, so a reformat that rewraps the call cannot fail the rule.

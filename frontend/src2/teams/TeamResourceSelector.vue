@@ -238,7 +238,7 @@ function getVisibleTableLimit(dataSource: string) {
 		class="flex flex-col pr-2"
 		:data-source="data_source.name"
 	>
-		<div class="sticky top-0 z-10 flex items-center gap-2 bg-white py-1.5">
+		<div class="sticky top-0 z-10 flex items-center gap-2 bg-surface-base py-1.5">
 			<FormControl
 				type="checkbox"
 				:modelValue="isDataSourceSelected(data_source.name)"
@@ -254,15 +254,15 @@ function getVisibleTableLimit(dataSource: string) {
 					</p>
 					<p
 						v-if="selectedTables[data_source.name]?.length"
-						class="text-p-xs text-gray-700"
+						class="text-p-xs text-ink-gray-6"
 					>
 						({{ selectedTables[data_source.name]?.length }} selected)
 					</p>
 				</div>
-				<hr class="flex-1 border-gray-200" />
+				<hr class="flex-1 border-outline-gray-1" />
 				<component
 					:is="expandedDataSource === data_source.name ? ChevronDown : ChevronRight"
-					class="h-4 w-4 flex-shrink-0 text-gray-600"
+					class="h-4 w-4 flex-shrink-0 text-ink-gray-5"
 					stroke-width="1.5"
 				/>
 			</div>
@@ -278,10 +278,10 @@ function getVisibleTableLimit(dataSource: string) {
 				autocomplete="off"
 			>
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-600" stroke-width="1.5" />
+					<SearchIcon class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
 				</template>
 				<template #suffix>
-					<LoadingIndicator v-if="tableStore.loading" class="h-4 w-4 text-gray-600" />
+					<LoadingIndicator v-if="tableStore.loading" class="h-4 w-4 text-ink-gray-5" />
 				</template>
 			</FormControl>
 			<div
@@ -316,7 +316,7 @@ function getVisibleTableLimit(dataSource: string) {
 									expandedTable === table.name ||
 									tableRestrictions[table.name]
 								"
-								class="invisible cursor-pointer text-xs leading-5 text-gray-600 transition-all hover:underline group-hover:visible"
+								class="invisible cursor-pointer text-xs leading-5 text-ink-gray-5 transition-all hover:underline group-hover:visible"
 								:class="
 									expandedTable === table.name || tableRestrictions[table.name]
 										? '!visible'
@@ -349,7 +349,7 @@ function getVisibleTableLimit(dataSource: string) {
 				v-if="expandedDataSourceTables.length > getVisibleTableLimit(data_source.name)"
 				class="flex items-center gap-2"
 			>
-				<p class="text-xs text-gray-600">
+				<p class="text-xs text-ink-gray-5">
 					Showing {{ getVisibleTableLimit(data_source.name) }} of
 					{{ expandedDataSourceTables.length }} tables
 				</p>
@@ -357,7 +357,7 @@ function getVisibleTableLimit(dataSource: string) {
 					Load 50 More
 				</Button>
 			</div>
-			<div v-if="!expandedDataSourceTables.length" class="text-xs text-gray-600">
+			<div v-if="!expandedDataSourceTables.length" class="text-xs text-ink-gray-5">
 				No tables found
 			</div>
 		</div>

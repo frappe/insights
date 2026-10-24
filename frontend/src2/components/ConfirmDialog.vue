@@ -1,7 +1,7 @@
 <template>
-	<Dialog v-model="show" :options="{ title: title }">
-		<template #body-content>
-			<p class="text-p-base text-gray-700" v-if="message">
+	<Dialog v-model:open="show" :title="title">
+		<template #default>
+			<p class="text-p-base text-ink-gray-6" v-if="message">
 				{{ message }}
 			</p>
 			<div class="space-y-4">

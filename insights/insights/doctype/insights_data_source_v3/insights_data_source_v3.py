@@ -91,6 +91,9 @@ class InsightsDataSourceDocument:
             capture("data_source_created", type=self.source_type, ssl=bool(self.use_ssl))
 
     def on_update(self):
+        # db_set loads the saved row as the doc before save, which hides a change
+        credentials_changed = self.has_credentials_changed()
+
         if self.type == "REST API":
             self.db_set(
                 {
@@ -111,14 +114,18 @@ class InsightsDataSourceDocument:
 
             return
 
-        credentials_changed = self.has_credentials_changed()
-        if not self.is_site_db and credentials_changed and self.database_type in ["MariaDB", "PostgreSQL"]:
-            self.db_set("is_frappe_db", is_frappe_db(self))
-
         self.status = "Active" if self.test_connection() else "Inactive"
         self.db_set("status", self.status)
 
-        if self.status == "Active" and credentials_changed:
+        if (
+            self.status == "Active"
+            and credentials_changed
+            and self.database_type in ["MariaDB", "PostgreSQL"]
+        ):
+            self.db_set("is_frappe_db", is_frappe_db(self))
+
+        # a REST API source's tables come from its imports, which Update Tables lists
+        if self.status == "Active" and credentials_changed and self.type != "REST API":
             self.update_table_list()
 
     def has_credentials_changed(self):
@@ -296,7 +303,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             try:
                 db.raw_sql(f"SET MAX_STATEMENT_TIME={get_max_execution_time()}")
             except Exception:
-                pass
+                pass  # nosemgrep - MySQL has no such variable, so its queries run without a time limit
 
         insights.db_connections[self.name] = db
         return db
@@ -362,7 +369,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         return schemas or ["public"]
 
     def qualify_table_names(self) -> bool:
-        """Whether table names should carry a `<schema>.` prefix.
+        """Whether table names should have a `<schema>.` prefix.
 
         Only useful when the data source spans more than one schema — with a single schema
         there is nothing to disambiguate and the prefix just leaks into the UI and breaks the
@@ -384,7 +391,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         """Resolve `(schema, table)` for a postgres table name — inverse of `format_table_name`.
 
         Names are only qualified when the data source spans multiple schemas, but names
-        stored before that was the case may still carry the prefix — so accept both.
+        stored before that was the case may still have the prefix — so accept both.
         """
         schemas = self.get_postgres_schemas()
         # a schema name may itself have a dot
