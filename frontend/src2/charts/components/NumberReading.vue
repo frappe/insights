@@ -62,6 +62,15 @@ const retryable = computed(
 const drillable = computed(() => props.drillable !== false && !props.card.missing)
 // The host draws the card and its label. See `ChartAdapterInput`.
 const cardless = computed(() => props.card.card === false)
+
+// The card cuts a number wider than itself, so the number is set at the size
+// that fits its printed length into the card, and never above the card's own.
+// 0.62em is about the width of one of Inter's tabular digits.
+const readingLength = computed(() => {
+	const { value, format, prefix, suffix } = props.card
+	if (typeof value !== 'number') return 0
+	return `${prefix ?? ''}${format ? format(value) : value}${suffix ?? ''}`.length
+})
 </script>
 
 <template>
@@ -70,10 +79,14 @@ const cardless = computed(() => props.card.card === false)
 	<div
 		class="min-w-0"
 		:class="[
-			preview ? 'shrink-0 basis-[calc(20%-0.8rem)]' : 'flex-1',
+			preview ? 'min-w-[11rem] shrink-0 basis-[calc(20%-0.8rem)]' : 'flex-1',
 			drillable ? 'cursor-pointer' : undefined,
 		]"
-		:style="preview ? { height: `${card.height}px` } : undefined"
+		:style="{
+			containerType: 'inline-size',
+			'--reading-length': readingLength,
+			...(preview ? { height: `${card.height}px` } : {}),
+		}"
 		:title="card.title"
 		@click="drillable && emit('cardClick', { column: card.column })"
 	>
@@ -89,7 +102,7 @@ const cardless = computed(() => props.card.card === false)
 			:class="
 				cardless
 					? '-mt-1.5 [&_.text-3xl-semibold]:text-xl-semibold [&_.text-sm]:text-p-base [&_.text-sm-medium]:text-p-base-medium'
-					: 'h-full !py-2'
+					: 'h-full !py-2 [&_.text-3xl-semibold]:[font-size:min(1.5rem,calc((100cqi_-_2rem)_/_(var(--reading-length)_*_0.62)))]'
 			"
 			:title="cardless ? '' : reading.title"
 			:loading="props.loading && !card.missing"

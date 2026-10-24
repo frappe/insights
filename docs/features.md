@@ -246,6 +246,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.breakpoints | A user arranges the grid per width; a narrow grid stacks cells the author never arranged and keeps the ones they did. |
 | dashboard.cell-height-rule | A Number cell takes the height its reading needs: a delta row when compared, a bar when it shows progress, a sparkline band when trended. |
 | dashboard.number-cell-per-reading | A Number chart on a dashboard is one cell per reading, each showing only the reading it names. |
+| dashboard.number-card-fits | A Number card prints its whole reading: a long number is set smaller in a narrow card, and a preview's cards wrap rather than shrink past the width a reading needs. |
 | dashboard.filter-add | A user adds a dashboard filter with a label and a type. |
 | dashboard.filter-links | A user links a dashboard filter to a chart's column and the chart refilters; an unlinked chart is left alone. |
 | dashboard.filter-values | A dashboard filter lists the distinct values, or the number range, of the column it links. |

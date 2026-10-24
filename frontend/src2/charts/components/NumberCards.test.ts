@@ -66,6 +66,22 @@ describe('a Number reading with no value', () => {
 		const html = rendered.replace(/<!--[\s\S]*?-->/g, '')
 		expect(html).toContain('No data')
 		// in place of the number line, not under it
-		expect(html).not.toContain('text-3xl-semibold')
+		expect(html).not.toMatch(/ text-3xl-semibold tabular-nums/)
+	})
+})
+
+describe('a Number reading in a narrow card', () => {
+	// @feature dashboard.number-card-fits
+	it('sizes its number to the card, by how long it prints', async () => {
+		const long = { ...revenue, value: 6254980.1, prefix: '₹ ', format: () => '62,54,980.10' }
+		const html = await cards({ cards: [long] })
+
+		expect(html).toMatch(/container-type:\s*inline-size/)
+		expect(html).toMatch(/--reading-length:\s*14/)
+	})
+
+	// @feature dashboard.number-card-fits
+	it('gives every reading of a preview the room to print', async () => {
+		expect(await cards({ preview: true })).toMatch(/min-w-\[/)
 	})
 })
