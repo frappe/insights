@@ -274,7 +274,7 @@ function onKeydown(event: KeyboardEvent) {
 					<div class="text-xs font-semibold text-ink-gray-5">{{ __('Before') }}</div>
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">
-							{{ __('Before 3.50, you shared each chart or dashboard on its own,') }}
+							{{ __('Before, you shared each chart or dashboard on its own,') }}
 						</span>
 						{{ __('and could let people edit it.') }}
 					</p>
