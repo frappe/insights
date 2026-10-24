@@ -4,8 +4,7 @@ import { Wand2 } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { useShortcut } from '../../composables/useShortcut'
-import useDataSourceStore from '../../data_source/data_source'
-import { wheneverChanges } from '../../helpers'
+import { useSourceSchema } from '../../data_source/data_source'
 import { __ } from '../../translation'
 import { Query } from '../query'
 import ResultPane from '../../components/result_pane/ResultPane.vue'
@@ -71,37 +70,23 @@ function insertTextIntoEditor(text: string) {
 	}
 }
 
-const dataSourceSchema = ref<Record<string, any>>({})
-const dataSourceStore = useDataSourceStore()
-wheneverChanges(
-	data_source,
-	() => {
-		if (!data_source.value) {
-			dataSourceSchema.value = {}
-			return
-		}
-		dataSourceStore.getSchema(data_source.value).then((schema: any) => {
-			dataSourceSchema.value = schema
-		})
-	},
-	{ immediate: true },
-)
+const sourceSchema = useSourceSchema(data_source)
 const completions = computed(() => {
-	if (!Object.keys(dataSourceSchema.value).length)
+	if (!Object.keys(sourceSchema.schema).length)
 		return {
 			schema: {},
 			tables: [],
 		}
 
 	const schema: Record<string, any> = {}
-	Object.entries(dataSourceSchema.value).forEach(([table, tableData]) => {
+	Object.entries(sourceSchema.schema).forEach(([table, tableData]) => {
 		schema[table] = tableData.columns.map((column: any) => ({
 			label: column.label,
 			detail: column.type,
 		}))
 	})
 
-	const tables = Object.entries(dataSourceSchema.value).map(([table, tableData]) => ({
+	const tables = Object.entries(sourceSchema.schema).map(([table, tableData]) => ({
 		label: table,
 		detail: tableData.label,
 	}))
@@ -174,7 +159,12 @@ const stale = computed(() => {
 			<QueryInfo />
 
 			<!-- Schema Explorer -->
-			<SchemaExplorer :schema="dataSourceSchema" @insert-text="insertTextIntoEditor" />
+			<SchemaExplorer
+				:schema="sourceSchema.schema"
+				:loading="sourceSchema.loading"
+				:failed="sourceSchema.failed"
+				@insert-text="insertTextIntoEditor"
+			/>
 		</div>
 	</div>
 </template>
