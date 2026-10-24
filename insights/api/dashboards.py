@@ -216,7 +216,7 @@ def dashboard_view_counts(names: list[str], since: str | None = None) -> dict[st
 
 @insights_whitelist(methods=["POST"])
 def update_dashboard_preview(dashboard_name: str):
-    """Regenerate the preview image from the caller's rows.
+    """Regenerate the preview image from its owner's rows.
 
     Every reader of the dashboard list sees this image, so only an editor may
     regenerate it. A save regenerates it too.
