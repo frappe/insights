@@ -1,25 +1,31 @@
 <script setup lang="ts">
-import { useTimeAgo } from '@vueuse/core'
-import { Braces, Bug, MoreHorizontal, Play } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { BookOpen, Braces, Bug, Play } from 'lucide-vue-next'
+import { h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
-import ContentEditable from '../../components/ContentEditable.vue'
 import VariablesDialog from '../../components/VariablesDialog.vue'
+import ResultPane from '../../components/result_pane/ResultPane.vue'
 import { attachRealtimeListener, wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { __ } from '../../translation'
 import { Query } from '../query'
+import QueryActions from './QueryActions.vue'
 import QueryDataTable from './QueryDataTable.vue'
+import QueryHeader from './QueryHeader.vue'
 
 const query = inject<Query>('query')!
+const $find = ref<HTMLElement>()
 query.autoExecute = false
-query.execute()
+query.ensureResult()
 
 const operation = query.getCodeOperation()
 const code = ref(operation ? operation.code : '')
 wheneverChanges(code, () => query.setCode({ code: code.value }), { debounce: 500 })
 
-const placeholder_script = `# Write your script here`
+function run(force = false) {
+	query.runCode({ code: code.value }, force)
+}
+
+const placeholder_script = `# assign rows to \`results\`, e.g. results = frappe.db.get_all("ToDo", fields=["name", "status"])`
 
 const showLogs = ref(false)
 const scriptLogs = ref<string[]>([])
@@ -29,6 +35,21 @@ attachRealtimeListener('insights_script_log', (data: any) => {
 	}
 })
 
+// the error is written to the logs, so a failed run has to open the panel
+// holding it - otherwise the script author is told nothing at all
+wheneverChanges(
+	() => query.executionError,
+	(error) => {
+		if (error) showLogs.value = true
+	},
+)
+
+const DOCS_URL = 'https://docs.frappe.io/insights/querying/script-query-api'
+
+function openDocs() {
+	window.open(DOCS_URL, '_blank', 'noopener')
+}
+
 const showVariablesDialog = ref(false)
 const localVariables = ref<any[]>([])
 
@@ -37,31 +58,46 @@ function openVariablesDialog() {
 	showVariablesDialog.value = true
 }
 
+const icon = (component: any) =>
+	h(component, { class: 'h-3.5 w-3.5 text-ink-gray-6', strokeWidth: 1.5 })
+
+const extraActions = () => [
+	{ label: __('Force Run'), icon: icon(Play), onClick: () => run(true) },
+	{ label: __('Variables'), icon: icon(Braces), onClick: openVariablesDialog },
+	{ label: __('Logs'), icon: icon(Bug), onClick: () => (showLogs.value = !showLogs.value) },
+	{ label: __('Docs'), icon: icon(BookOpen), onClick: openDocs },
+]
+
 function handleSaveVariables(variables: any[]) {
 	query
 		.updateVariables(variables)
 		.then(() => {
 			showVariablesDialog.value = false
 		})
-		.catch((error) => {})
+		// eslint-disable-next-line no-restricted-syntax -- `updateVariables` has already told the author what went wrong and rethrown. The dialog stays open over the values it could not save.
+		.catch(() => {})
 }
 </script>
 
 <template>
-	<div class="flex flex-1 flex-col gap-4 overflow-hidden p-4">
-		<div class="relative flex h-[55%] w-full flex-col rounded border">
-			<div class="flex flex-shrink-0 items-center gap-1 border-b p-1">
-				<ContentEditable
-					class="flex h-7 cursor-text items-center justify-center rounded bg-white px-2 text-base leading-7 text-gray-800 focus-visible:ring-1 focus-visible:ring-gray-600"
-					:modelValue="query.doc.title"
-					@returned="query.doc.title = $event"
-					@blur="query.doc.title = $event"
-					placeholder="Untitled Dashboard"
-				></ContentEditable>
-			</div>
+	<div class="flex flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
+		<QueryHeader>
+			<QueryActions
+				:on-execute="() => run()"
+				:extra-actions="extraActions"
+				:stale="query.isStale"
+			/>
+		</QueryHeader>
+
+		<div class="relative flex h-[55%] w-full flex-col overflow-hidden rounded-4 border">
 			<div class="flex flex-1 overflow-hidden">
 				<div class="flex-1">
-					<Code v-model="code" language="python" :placeholder="placeholder_script" />
+					<Code
+						v-model="code"
+						language="python"
+						:placeholder="placeholder_script"
+						:read-only="!session.user.can_write_trusted_code"
+					/>
 				</div>
 
 				<transition
@@ -76,64 +112,33 @@ function handleSaveVariables(variables: any[]) {
 				>
 					<div
 						v-if="showLogs"
-						class="flex h-full w-[30rem] flex-shrink-0 flex-col overflow-hidden bg-gray-50 p-3"
+						class="flex h-full w-[30rem] flex-shrink-0 flex-col overflow-hidden bg-surface-gray-1 p-3"
 					>
-						<div class="font-mono text-sm uppercase text-gray-600">
+						<div class="font-mono text-sm uppercase text-ink-gray-5">
 							{{ __('Logs') }}
 						</div>
 						<div class="mt-2 flex w-full flex-col gap-2 overflow-y-auto font-mono">
 							<div v-for="(log, index) in scriptLogs" :key="index" class="flex gap-2">
-								<div class="text-gray-400">[{{ index + 1 }}]</div>
-								<div class="text-gray-500">{{ log }}</div>
+								<div class="text-ink-gray-3">[{{ index + 1 }}]</div>
+								<div class="text-ink-gray-4">{{ log }}</div>
 							</div>
 						</div>
 					</div>
 				</transition>
 			</div>
-			<div class="flex flex-shrink-0 gap-1 border-t p-1">
-				<Button @click="() => query.execute()" :label="__('Run')">
-					<template #prefix>
-						<Play class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-					</template>
-				</Button>
-				<Dropdown
-					:button="{ icon: MoreHorizontal }"
-					:options="[
-						{
-							label: __('Force Run'),
-							icon: Play,
-							onClick: () => query.execute(true),
-						},
-						{
-							label: __('Variables'),
-							icon: Braces,
-							onClick: openVariablesDialog,
-						},
-						{
-							label: __('Logs'),
-							icon: Bug,
-							onClick: () => (showLogs = !showLogs),
-						},
-					]"
+		</div>
+
+		<div ref="$find" class="flex flex-shrink-0"></div>
+		<ResultPane :query="query" :stale="query.isStale" :find-target="$find">
+			<template #grid="{ rows, currentPage, pageSize }">
+				<QueryDataTable
+					:query="query"
+					:rows="rows"
+					:current-page="currentPage"
+					:page-size="pageSize"
 				/>
-			</div>
-		</div>
-
-		<div
-			v-show="query.result.executedSQL"
-			class="tnum flex flex-shrink-0 items-center gap-2 text-sm text-gray-600"
-		>
-			<div class="h-2 w-2 rounded-full bg-green-500"></div>
-			<div class="flex items-center gap-1">
-				<span v-if="query.result.timeTaken == -1"> {{ __('Fetched from cache') }} </span>
-				<span v-else> {{ __('Fetched in {0}s', String(query.result.timeTaken)) }} </span>
-				<span> {{ useTimeAgo(query.result.lastExecutedAt).value }} </span>
-			</div>
-		</div>
-
-		<div class="relative flex w-full flex-1 flex-col overflow-hidden rounded border">
-			<QueryDataTable :query="query" :enable-alerts="true" />
-		</div>
+			</template>
+		</ResultPane>
 	</div>
 	<VariablesDialog
 		v-model:show="showVariablesDialog"

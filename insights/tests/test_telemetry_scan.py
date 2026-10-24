@@ -1,7 +1,7 @@
 """The daily scan reports what the site holds, without naming anything custom.
 
-Three events carry the whole answer. Each has to stay inside Pulse's size cap,
-even on a site with far more tables than a list may carry. The row estimates
+Three events hold the whole answer. Each has to stay inside Pulse's size cap,
+even on a site with far more tables than a list may hold. The row estimates
 behind the fit numbers come from a catalog read the scan owns. A source that
 will not answer costs its own tables, never the send.
 """
@@ -139,7 +139,7 @@ class TestSiteScan(InsightsIntegrationTestCase):
         for event, kwargs in sent.items():
             # the daily job is the gate. An interval would drop a tick that runs early
             self.assertNotIn("interval", kwargs, event)
-            self.assertTrue(kwargs, f"{event} carries no properties")
+            self.assertTrue(kwargs, f"{event} has no properties")
 
     # @feature telemetry.site-scan
     def test_a_site_with_telemetry_off_is_asked_nothing(self):

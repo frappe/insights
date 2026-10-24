@@ -1,0 +1,55 @@
+# Insights — agent instructions
+
+Frappe BI app. Backend: Python (Frappe framework) in `insights/`. Frontend: Vue 3 +
+frappe-ui in `frontend/src2/`, built with Vite.
+
+## Orientation
+
+- `insights/api/` — whitelisted API endpoints (thin; logic lives in doctype classes)
+- `insights/insights/doctype/` — doctypes; the `_v3` suffix on most of them is
+  historical, not a variant marker (`Insights Workbook` and a few others have none)
+- `frontend/src2/` — the whole UI, one folder per area (`workbook/`, `query/`,
+  `charts/`, `dashboard/`, `data_source/`, `data_store/`)
+- `frontend/src2/types/` — the domain types; read `query.types.ts` before touching
+  query logic
+- Query engine: operations JSON → ibis → SQL, against the source or the DuckDB data
+  store (`insights_data_source_v3/data_warehouse.py`, `ibis_utils.py`)
+- `skills/` — the skills this app ships for other agents to use against a live
+  site (`frappe-insights`). They document the API contract, so a change to
+  what a whitelisted method returns is a change to them
+- `CONTEXT.md` — the glossary; use its terms in code, tickets, and commits
+
+## Working here
+
+- Bench: run `bench` commands from the bench root, not from this app directory
+- Sites: test against a local development site with Insights installed
+- Branches: `develop` is the default branch; pull requests target
+  `frappe/insights`
+- Frontend dev server: `cd frontend && yarn dev`. Build UI on frappe-ui components
+  and semantic tokens (`text-ink-*`, `bg-surface-*`, `border-outline-*`); no raw
+  buttons or hardcoded colors. When frappe-ui has no component for it, build one
+  that matches the taste of its frappe-ui neighbors
+- Run the bench's pre-commit hooks before committing
+- Semgrep runs at the pre-push stage: install it once with `pre-commit install --hook-type pre-push`, or run `pre-commit run semgrep --hook-stage pre-push --from-ref upstream/develop --to-ref HEAD` before a push
+
+## Agent skills
+
+### Issue tracker
+
+Markdown under `docs/projects/<effort>/` — a decision map plus one ticket per question. `docs/projects` is an untracked symlink to `~/frappe/workshop/efforts/insights/`. Of an effort, only its ADRs are committed to this repo. GitHub Issues on `frappe/insights` is the public queue, not this tracker. See `docs/agents/issue-tracker.md`.
+
+### Tests
+
+Three layers, one feature list. Every test names a row of `docs/features.md` in a
+`@feature` directive; CI regenerates `docs/coverage.md` from them. See
+`docs/agents/testing.md`.
+
+### Tests
+
+Three layers, one feature list. Every test names a row of `docs/features.md` in a
+`@feature` directive; CI regenerates `docs/coverage.md` from them. See
+`docs/agents/testing.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` at the root + `docs/adr/`. See `docs/agents/domain.md`.

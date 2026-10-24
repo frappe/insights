@@ -57,16 +57,19 @@ class TestConnectionErrorReporting(InsightsIntegrationTestCase):
                 doc._get_ibis_backend()
         return frappe.message_log[-1].get("message")
 
+    # @feature data-source.connection-error-detail
     def test_an_insights_user_reads_no_driver_detail(self):
         message = self.connect_as(USER)
         self.assertNotIn(SECRET, message)
         self.assertNotIn("warehouse.internal", message)
         self.assertIn("Unreachable Source", message)
 
+    # @feature data-source.connection-error-detail
     def test_a_guest_reads_no_driver_detail(self):
         message = self.connect_as("Guest")
         self.assertNotIn(SECRET, message)
         self.assertNotIn("warehouse.internal", message)
 
+    # @feature data-source.connection-error-detail
     def test_whoever_may_edit_the_source_reads_the_driver_detail(self):
         self.assertIn(SECRET, self.connect_as(ADMIN))

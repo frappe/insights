@@ -50,7 +50,7 @@ def execute():
             new_doc.creation = add_to_date(workbook.creation, seconds=i)
             new_doc.modified_by = workbook.modified_by
             new_doc.owner = workbook.owner
-            new_doc.before_save()
+            new_doc.run_method("before_save")
             new_doc.db_insert()
             query_name_to_doc[query["name"]] = new_doc
 

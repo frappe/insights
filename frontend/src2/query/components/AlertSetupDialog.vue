@@ -1,10 +1,11 @@
 <script setup lang="tsx">
-import { Textarea } from 'frappe-ui'
+import { Textarea, toast } from 'frappe-ui'
 import { computed, reactive, unref } from 'vue'
-import Checkbox from '../../components/Checkbox.vue'
+import Toggle from '../../components/Toggle.vue'
 import { waitUntil, wheneverChanges } from '../../helpers'
-import { createToast } from '../../helpers/toasts'
+import session from '../../session'
 import { __ } from '../../translation'
+import useUserStore from '../../users/users'
 import useAlertStore from '../alert'
 import { Query } from '../query'
 import ExpressionEditor from './ExpressionEditor.vue'
@@ -41,6 +42,29 @@ wheneverChanges(
 	{ deep: true },
 )
 
+const userStore = useUserStore()
+// Saving a new or disabled alert enables it. An alert runs as the user who
+// enabled it.
+const runsAs = computed(() => {
+	const enabler = alert.islocal || alert.doc.disabled ? '' : alert.doc.permission_user
+	if (!enabler || enabler === session.user.email) {
+		return __('Runs as you, so it sends the rows you can see.')
+	}
+	return __(
+		'Runs as {0}, so it sends the rows they can see.',
+		userStore.getName(enabler) || enabler,
+	)
+})
+
+const webhookError = computed(() => {
+	if (alert.doc.channel !== 'Webhook') return ''
+	const url = alert.doc.webhook_url?.trim()
+	if (!url) return __('Webhook URL is required')
+	if (!url.startsWith('https://')) return __('Webhook URL must use https://')
+	if (!alert.doc.webhook_token) return __('Token is required')
+	return ''
+})
+
 const isValidAlert = computed(() => {
 	if (!alert.doc.title) return false
 	if (!alert.doc.frequency) return false
@@ -48,6 +72,7 @@ const isValidAlert = computed(() => {
 	if (!alert.doc.channel) return false
 	if (alert.doc.channel === 'Email' && !alert.doc.recipients) return false
 	if (alert.doc.channel === 'Telegram' && !alert.doc.telegram_chat_id) return false
+	if (webhookError.value) return false
 	if (alert.doc.custom_condition && !alert.doc.condition) return false
 	if (!alert.doc.custom_condition && !filterCondition.left) return false
 	if (!alert.doc.custom_condition && !filterCondition.operator) return false
@@ -66,12 +91,10 @@ function updateAlert() {
 	}
 	alert.doc.disabled = 0
 	return alert.save().then(() => {
-		createToast({
-			title: isNew ? __('Alert Created') : __('Alert Updated'),
-			message: isNew
+		toast.success(isNew ? __('Alert Created') : __('Alert Updated'), {
+			description: isNew
 				? __(`Alert "{0}" has been created.`, alert.doc.title)
 				: __(`Alert "{0}" has been updated.`, alert.doc.title),
-			variant: 'success',
 		})
 		show.value = false
 	})
@@ -83,10 +106,8 @@ function testSendAlert() {
 		alert.doc.query = props.query.doc.name
 	}
 	return alert.call('test_alert').then(() => {
-		createToast({
-			title: __('Alert Sent'),
-			message: __(`Alert "{0}" has been sent.`, alert.doc.title),
-			variant: 'success',
+		toast.success(__('Alert Sent'), {
+			description: __(`Alert "{0}" has been sent.`, alert.doc.title),
 		})
 	})
 }
@@ -94,12 +115,10 @@ function testSendAlert() {
 function toggleAlert() {
 	alert.doc.disabled = alert.doc.disabled ? 0 : 1
 	return alert.save().then(() => {
-		createToast({
-			title: alert.doc.disabled ? __('Alert Disabled') : __('Alert Enabled'),
-			message: alert.doc.disabled
+		toast.success(alert.doc.disabled ? __('Alert Disabled') : __('Alert Enabled'), {
+			description: alert.doc.disabled
 				? __(`Alert "{0}" has been disabled.`, alert.doc.title)
 				: __(`Alert "{0}" has been enabled.`, alert.doc.title),
-			variant: 'success',
 		})
 	})
 }
@@ -107,35 +126,33 @@ function toggleAlert() {
 
 <template>
 	<Dialog
-		v-model="show"
-		:disableOutsideClickToClose="alert.isdirty || alert.islocal"
-		:options="{
-			title: __('Setup Alert'),
-			size: '2xl',
-			actions: [
-				{
-					label: __('Send Test Alert'),
-					disabled: !isValidAlert || alert.loading || alert.saving,
-					loading: alert.loading,
-					onClick: testSendAlert,
-				},
-				{
-					label: alert.doc.disabled ? __('Enable Alert') : __('Disable Alert'),
-					disabled: alert.loading || alert.saving,
-					loading: alert.loading,
-					onClick: toggleAlert,
-				},
-				{
-					label: alert.islocal ? __('Create Alert') : __('Update Alert'),
-					variant: 'solid',
-					disabled: !isValidAlert || !alert.isdirty || alert.saving || alert.loading,
-					loading: alert.saving,
-					onClick: updateAlert,
-				},
-			],
-		}"
+		v-model:open="show"
+		:dismissible="!(alert.isdirty || alert.islocal)"
+		:title="__('Setup Alert')"
+		size="2xl"
+		:actions="[
+			{
+				label: __('Send Test Alert'),
+				disabled: !isValidAlert || alert.loading || alert.saving,
+				loading: alert.loading,
+				onClick: testSendAlert,
+			},
+			{
+				label: alert.doc.disabled ? __('Enable Alert') : __('Disable Alert'),
+				disabled: alert.loading || alert.saving,
+				loading: alert.loading,
+				onClick: toggleAlert,
+			},
+			{
+				label: alert.islocal ? __('Create Alert') : __('Update Alert'),
+				variant: 'solid',
+				disabled: !isValidAlert || !alert.isdirty || alert.saving || alert.loading,
+				loading: alert.saving,
+				onClick: updateAlert,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="flex flex-col gap-3 text-base">
 				<div class="flex gap-4">
 					<div class="flex flex-1 flex-col gap-3">
@@ -162,7 +179,7 @@ function toggleAlert() {
 							type="text"
 							:label="__('Cron')"
 							v-model="alert.doc.cron_format"
-							:placeholder="__('e.g. 0 0 12 * * ?')"
+							:placeholder="__('e.g. 0 12 * * *')"
 						/>
 					</div>
 					<div class="flex flex-1 flex-col gap-3">
@@ -172,6 +189,7 @@ function toggleAlert() {
 							v-model="alert.doc.channel"
 							:options="[
 								{ label: __('Email'), value: 'Email' },
+								{ label: __('Webhook'), value: 'Webhook' },
 								// { label: 'Telegram', value: 'Telegram' },
 							]"
 						/>
@@ -189,6 +207,23 @@ function toggleAlert() {
 							v-model="alert.doc.telegram_chat_id"
 							:placeholder="__('e.g. 123456789')"
 						/>
+						<template v-if="alert.doc.channel === 'Webhook'">
+							<div class="flex flex-col gap-1.5">
+								<FormControl
+									type="text"
+									:label="__('Webhook URL')"
+									v-model="alert.doc.webhook_url"
+									:placeholder="__('e.g. https://example.com/hooks/insights')"
+								/>
+								<ErrorMessage v-if="webhookError" :message="webhookError" />
+							</div>
+							<FormControl
+								type="password"
+								:label="__('Token')"
+								v-model="alert.doc.webhook_token"
+								:placeholder="__('Sent as an Authorization: Bearer header')"
+							/>
+						</template>
 					</div>
 				</div>
 
@@ -226,7 +261,7 @@ function toggleAlert() {
 							:column-options="props.query.result.columnOptions"
 						/>
 					</div>
-					<Checkbox
+					<Toggle
 						class="mt-1.5"
 						:label="__('Use Custom Condition')"
 						v-model="alert.doc.custom_condition"
@@ -246,7 +281,7 @@ Thanks,
 						`"
 					/>
 
-					<div class="mt-2 text-p-sm text-gray-600">
+					<div class="mt-2 text-p-sm text-ink-gray-5">
 						{{
 							__(
 								'You can use markdown to format the message. Use double asterisks (**) for bold text. You can use the following fields in the message:',
@@ -263,6 +298,8 @@ Thanks,
 						/>
 					</div>
 				</div>
+
+				<p class="text-p-sm text-ink-gray-5">{{ runsAs }}</p>
 			</div>
 		</template>
 	</Dialog>

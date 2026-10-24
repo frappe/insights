@@ -64,6 +64,7 @@ class TestUploadedFileImports(InsightsIntegrationTestCase):
 
         self.assertEqual(rows, expected_rows)
 
+    # @feature data-source.upload-file
     def test_import_csv_data_imports_private_csv_upload(self):
         rows = [
             {"id": 1, "name": "Alpha"},
@@ -77,6 +78,7 @@ class TestUploadedFileImports(InsightsIntegrationTestCase):
 
         self._assert_imported_rows(table_name, rows)
 
+    # @feature data-source.upload-file
     def test_import_csv_data_imports_private_excel_upload(self):
         rows = [
             {"id": 1, "name": "Gamma"},

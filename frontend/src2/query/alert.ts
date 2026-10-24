@@ -8,7 +8,7 @@ export type InsightsAlert = {
 	doctype: 'Insights Alert'
 	disabled: 0 | 1
 	title: string
-	channel: 'Telegram' | 'Email'
+	channel: 'Telegram' | 'Email' | 'Webhook'
 	query: string
 	frequency: 'Hourly' | 'Daily' | 'Weekly' | 'Monthly' | 'Cron'
 	cron_format: string
@@ -16,6 +16,9 @@ export type InsightsAlert = {
 	next_execution: string
 	telegram_chat_id: string
 	recipients: string
+	webhook_url: string
+	// Stored in __Auth; the server hands back a masked value it ignores on save.
+	webhook_token: string
 	condition: string
 	custom_condition: 0 | 1
 	message: string
@@ -24,6 +27,8 @@ export type InsightsAlert = {
 	created_from_now: string
 	modified_from_now: string
 	owner: string
+	// who the alert runs as: whoever last enabled it
+	permission_user: string
 	name: string
 }
 
@@ -42,6 +47,12 @@ async function loadAlerts(query: string) {
 	return alerts.value
 }
 
+// A list row with a `disabled` field is inert in frappe-ui's ListView, so the
+// alert's own field would make a disabled alert impossible to open and enable
+export function alertRows(alerts: InsightsAlert[]) {
+	return alerts.map(({ disabled, ...alert }) => ({ ...alert, enabled: !disabled }))
+}
+
 const EMPTY_ALERT: InsightsAlert = {
 	doctype: 'Insights Alert',
 	name: '',
@@ -55,6 +66,8 @@ const EMPTY_ALERT: InsightsAlert = {
 	next_execution: '',
 	telegram_chat_id: '',
 	recipients: '',
+	webhook_url: '',
+	webhook_token: '',
 	condition: '',
 	custom_condition: 0,
 	message: '',
@@ -63,6 +76,7 @@ const EMPTY_ALERT: InsightsAlert = {
 	created_from_now: '',
 	modified_from_now: '',
 	owner: '',
+	permission_user: '',
 }
 
 function getAlert(name: string) {
