@@ -153,9 +153,6 @@ function setDateColumn(dimension?: Dimension) {
 										:measure="item"
 										:target="getNumberOption(index, 'target') as any"
 										:comparison="getNumberOption(index, 'comparison') as any"
-										:retired-comparison="
-											getNumberOption(index, 'retired_comparison') as any
-										"
 										:progress="getNumberOption(index, 'progress') as any"
 										:progress-color="
 											getNumberOption(index, 'progress_color') as any
@@ -166,9 +163,6 @@ function setDateColumn(dimension?: Dimension) {
 										@update:target="setNumberOption(index, 'target', $event)"
 										@update:comparison="
 											setNumberOption(index, 'comparison', $event)
-										"
-										@update:retired-comparison="
-											setNumberOption(index, 'retired_comparison', $event)
 										"
 										@update:progress="
 											setNumberOption(index, 'progress', $event)

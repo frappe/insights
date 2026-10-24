@@ -8,7 +8,6 @@ import type {
 	NumberChartConfig,
 	NumberComparison,
 	NumberComparisonShow,
-	NumberRetiredComparison,
 	NumberTarget,
 } from '../../types/chart.types'
 import type { ColumnOption, Dimension, Measure } from '../../types/query.types'
@@ -35,7 +34,6 @@ const props = defineProps<{
 const emit = defineEmits({ 'dialog-open': () => true })
 const target = defineModel<NumberTarget | undefined>('target')
 const comparison = defineModel<NumberComparison | undefined>('comparison')
-const retiredComparison = defineModel<NumberRetiredComparison | undefined>('retiredComparison')
 const progress = defineModel<boolean | undefined>('progress')
 const progressColor = defineModel<string | undefined>('progressColor')
 /** Flips the delta row's colors, so it sits with the comparison. */
@@ -121,17 +119,6 @@ function setGap(gap: string) {
 	}
 	target.value = next
 }
-
-/**
- * What the retired comparison measured against, as the author would type it
- * into a target: the raw number, or the Measure's name.
- */
-const retiredAgainst = computed(() => {
-	const retired = retiredComparison.value
-	if (!retired) return ''
-	if (retired.source === 'measure') return retired.measure?.measure_name || ''
-	return typeof retired.value === 'number' ? String(retired.value) : ''
-})
 
 const comparisonSource = computed(() => comparison.value?.source || 'none')
 
@@ -238,18 +225,6 @@ function blankMeasure(): Measure {
 				@update:modelValue="setComparisonSource($event)"
 			/>
 		</InlineFormControlLabel>
-
-		<div v-if="retiredComparison" class="flex flex-col items-start gap-1.5">
-			<p class="text-p-xs text-ink-gray-5">
-				{{
-					__(
-						'This reading was also compared with {0}. A comparison reads only a period now, so the card no longer shows it. To keep it, add a second reading with {0} as its target.',
-						retiredAgainst,
-					)
-				}}
-			</p>
-			<Button size="sm" :label="__('Dismiss')" @click="retiredComparison = undefined" />
-		</div>
 
 		<template v-if="comparison">
 			<InlineFormControlLabel :label="__('Show')">

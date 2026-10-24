@@ -213,19 +213,6 @@ export type NumberComparison = {
 	/** What to call it, e.g. `vs last month`. Defaults from the source. */
 	label?: string
 }
-/**
- * A comparison with a fixed number or a Measure, saved beside a target of the
- * reading's own before a comparison read only a period. The card prints
- * nothing for it. It is kept so the form can ask the author to move it to a
- * second reading, rather than dropping it unseen.
- */
-export type NumberRetiredComparison = {
-	source: 'constant' | 'measure'
-	value?: number
-	measure?: Measure
-	show?: NumberComparisonShow
-	label?: string
-}
 export type NumberComparisonShow = 'change' | 'delta'
 
 /**
@@ -300,8 +287,6 @@ export type NumberColumnOptions = {
 	target?: NumberTarget
 	/** The one period the reading is compared with. Naming none compares nothing. */
 	comparison?: NumberComparison
-	/** See `NumberRetiredComparison`. Removed once the author has dealt with it. */
-	retired_comparison?: NumberRetiredComparison
 	/**
 	 * A bar under the card for how far the reading has come: towards its target,
 	 * or towards 100% for a percent Measure. A reading with neither gets none.
