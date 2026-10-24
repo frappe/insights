@@ -223,6 +223,7 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
     # @feature upgrade.attention-fix
     def test_fix_needs_the_users_own_permission_on_what_it_names(self):
         workbook = create_test_workbook(BOB, title=f"{PREFIX} Bobs")
+        create_test_chart(BOB, workbook.name)
         add_item(
             "W2",
             "This copy duplicates a standard workbook.",
@@ -238,19 +239,43 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertTrue(frappe.db.exists(DT.WORKBOOK, workbook.name))
         self.assertEqual(frappe.db.get_value(ITEM, item, "status"), "Open")
 
-    # @feature upgrade.attention-fix
-    def test_fix_deletes_a_template_copy(self):
-        workbook = create_test_workbook("Administrator", title=f"{PREFIX} Template Copy")
+    def add_template_copy(self, title):
+        workbook = create_test_workbook("Administrator", title=f"{PREFIX} {title}")
+        chart = create_test_chart("Administrator", workbook.name)
         add_item(
             "W2",
             "This copy duplicates a standard workbook.",
             reference=(DT.WORKBOOK, workbook.name),
             action="delete_workbook",
         )
+        return workbook, chart
+
+    # @feature upgrade.attention-fix
+    def test_fix_deletes_a_template_copy(self):
+        workbook, _ = self.add_template_copy("Template Copy")
 
         fix_upgrade_item(frappe.db.get_value(ITEM, {"code": "W2"}))
 
         self.assertFalse(frappe.db.exists(DT.WORKBOOK, workbook.name))
+
+    # @feature upgrade.attention-fix
+    def test_a_template_copy_changed_since_the_upgrade_is_not_deleted(self):
+        workbook, chart = self.add_template_copy("Changed Copy")
+        frappe.db.set_value(
+            DT.CHART,
+            chart.name,
+            "modified",
+            frappe.utils.add_to_date(chart.creation, hours=1),
+            update_modified=False,
+        )
+        item = frappe.db.get_value(ITEM, {"code": "W2"})
+
+        [shown] = get_upgrade_items()
+        self.assertIsNone(shown.action)
+        self.assertFalse(shown.can_fix)
+        with self.assertRaisesRegex(frappe.ValidationError, "changed this copy"):
+            fix_upgrade_item(item)
+        self.assertTrue(frappe.db.exists(DT.WORKBOOK, workbook.name))
 
     # @feature upgrade.wizard
     def test_the_apps_that_ship_workbooks_come_with_their_title_and_logo(self):

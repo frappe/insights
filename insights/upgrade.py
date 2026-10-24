@@ -15,6 +15,8 @@ INSIGHTS_ROLES = ("Insights User", "Insights Admin")
 WORKBOOK = "Insights Workbook"
 # The template folders before 3.50, and the standard workbook that replaces each
 TEMPLATE_WORKBOOKS = {"accounting": "accounts", "purchasing": "buying", "sales": "selling", "stock": "stock"}
+# a template import inserts its documents in one request
+IMPORT_SECONDS = 300
 
 
 def add_item(
@@ -111,6 +113,14 @@ def get_item(name: str):
     return frappe.get_doc(ITEM, name)
 
 
+def current_action(item) -> str | None:
+    """The fix the item offers now. The upgrade offered to delete a copy it saw
+    unchanged, and someone may have changed it since."""
+    if item.action == "delete_workbook" and not is_untouched(item.reference_name):
+        return None
+    return item.action
+
+
 def template_copies(template: str | None = None) -> list[frappe._dict]:
     """The workbooks made from an old Insights template, or from `template`
     (`app/folder`), oldest first.
@@ -137,3 +147,22 @@ def template_copies(template: str | None = None) -> list[frappe._dict]:
 def standard_workbook_of(template: str) -> str | None:
     """The standard workbook that replaces the old Insights template `template`."""
     return TEMPLATE_WORKBOOKS.get(template.rpartition("/")[2])
+
+
+def is_untouched(workbook: str) -> bool:
+    """Whether every query, chart and dashboard of `workbook` is as the template
+    import made it: made in one go, and not changed since.
+
+    The checksum before 3.50 read its export, which the patches have changed.
+    A patch that saved a document makes it look changed, which only means no
+    delete is offered.
+    """
+    times = [
+        (row.creation, row.modified)
+        for doctype in ("Insights Query v3", "Insights Chart v3", "Insights Dashboard v3")
+        for row in frappe.get_all(doctype, filters={"workbook": workbook}, fields=["creation", "modified"])
+    ]
+    if not times:
+        return False
+    first = min(creation for creation, _ in times)
+    return all((modified - first).total_seconds() <= IMPORT_SECONDS for _, modified in times)

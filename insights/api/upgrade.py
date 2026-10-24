@@ -5,6 +5,7 @@ from insights.decorators import insights_whitelist
 from insights.upgrade import (
     ITEM,
     WORKBOOK,
+    current_action,
     get_item,
     item_filters,
     mark_seen,
@@ -43,6 +44,7 @@ def get_upgrade_items():
         item.data = frappe.parse_json(item.data) or {}
     people = names_of_users({value for item in items for value in strings_in(item.data)})
     for item in items:
+        item.action = current_action(item)
         item.workbook = reference_workbook(item)
         item.form_url = form_url(item)
         item.can_fix = can_fix(item)
@@ -142,9 +144,11 @@ def reopen_upgrade_items(names: list[str]) -> list[str]:
 def fix_upgrade_item(name: str):
     """Apply the item's fix with the session user's own permission on its reference."""
     item = get_item(name)
-    if item.action == "delete_workbook":
+    if current_action(item) == "delete_workbook":
         # checks the session user may delete the workbook
         frappe.delete_doc("Insights Workbook", item.reference_name)
+    elif item.action == "delete_workbook":
+        frappe.throw(frappe._("Someone changed this copy since the upgrade, so it is not deleted."))
     else:
         frappe.throw(frappe._("This item has no fix to apply."))
     # a save would check the reference, which the fix may have deleted

@@ -9,7 +9,13 @@ import os
 import frappe
 from frappe.utils import get_date_str
 
-from insights.upgrade import add_item, is_upgrade_migrate, standard_workbook_of, template_copies
+from insights.upgrade import (
+    add_item,
+    is_untouched,
+    is_upgrade_migrate,
+    standard_workbook_of,
+    template_copies,
+)
 
 WORKBOOK = "Insights Workbook"
 QUERY = "Insights Query v3"
@@ -21,8 +27,6 @@ TEAM = "Insights Team"
 SETTINGS = "Insights Settings"
 # the globals an import job's script runs with besides the sandbox's
 IMPORT_JOB_NAMES = ("client", "table", "state", "secrets", "log")
-# a template import inserts its documents in one request
-IMPORT_SECONDS = 300
 # why a chart cannot run as its owner, by reason
 OWNER_CANNOT_RUN = {
     "disabled": "is disabled",
@@ -213,25 +217,6 @@ def shipped_by(standard, name: str) -> dict | None:
                 "app": app_title[0] if app_title else app,
             }
     return None
-
-
-def is_untouched(workbook: str) -> bool:
-    """Whether every query, chart and dashboard of `workbook` is as the template
-    import made it: made in one go, and not changed since.
-
-    The checksum before 3.50 read its export, which the patches have changed.
-    A patch that saved a document makes it look changed, which only means no
-    delete is offered.
-    """
-    times = [
-        (row.creation, row.modified)
-        for doctype in (QUERY, CHART, DASHBOARD)
-        for row in frappe.get_all(doctype, filters={"workbook": workbook}, fields=["creation", "modified"])
-    ]
-    if not times:
-        return False
-    first = min(creation for creation, _ in times)
-    return all((modified - first).total_seconds() <= IMPORT_SECONDS for _, modified in times)
 
 
 def report_blank_fiscal_year_start():
