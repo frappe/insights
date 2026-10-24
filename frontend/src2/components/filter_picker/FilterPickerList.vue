@@ -77,6 +77,13 @@ function keyOf(item: ListItem, stage: string) {
 		<ComboboxViewport class="flex max-h-80 flex-col overflow-auto p-1">
 			<template v-for="item in items" :key="keyOf(item, stage)">
 				<div v-if="item.separated" class="-mx-1 my-1 border-t border-outline-gray-1" />
+				<!-- frappe-ui Combobox's group label -->
+				<div
+					v-if="item.group"
+					class="flex h-7 shrink-0 items-center px-2 text-sm-medium leading-tighter text-ink-gray-4"
+				>
+					{{ item.group }}
+				</div>
 				<ComboboxItem
 					:value="valueOf(item)"
 					:data-row-key="item.key"
@@ -125,6 +132,11 @@ function keyOf(item: ListItem, stage: string) {
 						:title="item.note"
 						>{{ item.note }}</span
 					>
+					<ChevronRight
+						v-if="item.next"
+						class="ms-auto size-4 shrink-0 text-ink-gray-5"
+						stroke-width="1.5"
+					/>
 					<!-- frappe-ui's Select and Combobox mark the chosen row this way -->
 					<ComboboxItemIndicator
 						v-if="!item.tick"

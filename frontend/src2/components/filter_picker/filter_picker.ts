@@ -204,6 +204,10 @@ export type ListItem = {
 	separated?: boolean
 	/** a › button at the end that opens the row's own list */
 	opens?: boolean
+	/** a › at the end: picking the row opens the next stage */
+	next?: boolean
+	/** a heading above the row, the first of its group */
+	group?: string
 	filter?: Filter
 }
 
@@ -379,7 +383,7 @@ export function spanLabel(span: string): string {
 	return form.includeCurrent ? `${label} ${__('(include current)')}` : label
 }
 
-/** The directions the `Relative…` row opens onto. */
+/** The directions the `Relative` row opens onto. */
 export const relativeDirections = translatedTable<Array<{ key: SpanDirection; label: string }>>(
 	() => [
 		{ key: 'last', label: __('Last') },
@@ -390,16 +394,20 @@ export const relativeDirections = translatedTable<Array<{ key: SpanDirection; la
 
 /** The unit rows the last stage of a relative span lists, the count folded in. */
 export function unitRows(form: RelativeForm): Array<{ label: string; span: string }> {
-	return SPAN_UNITS.map((unit) => ({
-		label: form.direction === 'current' ? unitLabels()[unit][0] : unitWords(unit, form.count),
-		span: spanOf({ ...form, unit }),
-	}))
+	return SPAN_UNITS.map((unit) => {
+		const words =
+			form.direction === 'current' ? unitLabels()[unit][0] : unitWords(unit, form.count)
+		return {
+			label: words.charAt(0).toUpperCase() + words.slice(1),
+			span: spanOf({ ...form, unit }),
+		}
+	})
 }
 
 /** The one row the `within` stage lists past its presets. */
 export const relativeRow = translatedTable<{ key: string; label: string }>(() => ({
 	key: 'relative',
-	label: __('Relative…'),
+	label: __('Relative'),
 }))
 
 /**
@@ -414,9 +422,9 @@ export type Period = { unit: PeriodUnit; start: string }
 /** The lists the date stage opens onto. A year opens onto its own quarters. */
 export type PeriodList = 'year' | 'fiscal year' | 'month'
 export const periodLists = translatedTable<Array<{ unit: PeriodList; label: string }>>(() => [
-	{ unit: 'year', label: __('Year…') },
-	{ unit: 'fiscal year', label: __('Fiscal year…') },
-	{ unit: 'month', label: __('Month…') },
+	{ unit: 'year', label: __('Year') },
+	{ unit: 'fiscal year', label: __('Fiscal year') },
+	{ unit: 'month', label: __('Month') },
 ])
 
 export const QUARTER_OF: Record<'year' | 'fiscal year', PeriodUnit> = {

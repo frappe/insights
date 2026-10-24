@@ -529,7 +529,7 @@ const rows = computed<ListItem[]>(() => {
 	// a time of day has no periods
 	const lists: ListItem[] = (column.value?.type === 'Time' ? [] : periodLists())
 		.filter((list) => matches(list.label))
-		.map((list) => ({ key: `list:${list.unit}`, label: list.label }))
+		.map((list) => ({ key: `list:${list.unit}`, label: list.label, next: true }))
 	const presets = datePresets()
 		.filter((p) => matches(p.label))
 		.map((p) => ({
@@ -537,9 +537,21 @@ const rows = computed<ListItem[]>(() => {
 			label: p.label,
 		}))
 	const row = relativeRow()
-	const relativeRows: ListItem[] = matches(row.label) ? [{ key: row.key, label: row.label }] : []
-	return [...use, ...presets, ...lists, ...relativeRows]
+	const relativeRows: ListItem[] = matches(row.label)
+		? [{ key: row.key, label: row.label, next: true }]
+		: []
+	return [
+		...use,
+		...grouped(presets, __('Presets')),
+		...grouped(lists, __('Periods')),
+		...grouped(relativeRows, __('Custom')),
+	]
 })
+
+/** The rows under one heading: the first carries it, so a search that hides the group hides its heading. */
+function grouped(rows: ListItem[], group: string): ListItem[] {
+	return rows.map((row, i) => (i ? row : { ...row, group }))
+}
 
 const emptyText = computed(() => {
 	if (stage.value === 'column') return __('No columns found')
