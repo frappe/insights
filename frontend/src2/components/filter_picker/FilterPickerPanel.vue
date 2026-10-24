@@ -522,17 +522,14 @@ const rows = computed<ListItem[]>(() => {
 			  }))
 	}
 
-	// The period lists, wherever a range is picked: under the presets, and above
-	// the range calendar a date filter opens on.
+	// dates: the input and the highlighted grid already read the draft, so only a
+	// typed period gets a row
+	if (calendar.value === 'range') return typedPeriod.value ? use : []
+	if (calendar.value) return []
 	// a time of day has no periods
 	const lists: ListItem[] = (column.value?.type === 'Time' ? [] : periodLists())
 		.filter((list) => matches(list.label))
 		.map((list) => ({ key: `list:${list.unit}`, label: list.label }))
-
-	// dates: the input and the highlighted grid already read the draft, so only a
-	// typed period gets a row
-	if (calendar.value === 'range') return typedPeriod.value ? [...use, ...lists] : lists
-	if (calendar.value) return []
 	const presets = datePresets()
 		.filter((p) => matches(p.label))
 		.map((p) => ({
