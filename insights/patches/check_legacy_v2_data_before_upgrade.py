@@ -17,8 +17,8 @@ def execute():
     if frappe.conf.get("insights_allow_legacy_v2_upgrade"):
         return
 
-    dashboards, queries = unmigrated_v2_work()
-    if not dashboards and not queries:
+    dashboards = unmigrated_v2_dashboards()
+    if not dashboards:
         return
 
     message = f"""
@@ -26,15 +26,15 @@ def execute():
 
 Insights 3.50 no longer contains v2 or the v2 migrator. New features and bug fixes for v2 have already stopped.
 
-Your site used v2 in the last 30 days, and some of what it used is not migrated yet. v2 dashboards: {len(dashboards)}. v2 queries outside any dashboard: {len(queries)}. To prevent data loss, the update to Insights 3.50 has been blocked until you take action.
+Your site used v2 dashboards in the last 30 days that are not migrated yet: {len(dashboards)}. To prevent data loss, the update to Insights 3.50 has been blocked until you take action.
 
-Stay on your current Insights 3 release and migrate your v2 queries and dashboards first. Then update to 3.50.
+Stay on your current Insights 3 release and migrate your v2 dashboards first. Then update to 3.50.
 
 - On Insights 3.13 or later: as an admin, open Insights, then Settings > Migrate from v2.
 - On an older release: update to 3.15.1 first. Self-hosted, check out the `v3.15.1` tag. On Frappe Cloud, contact support.
-- The migrator moves dashboards only. For a query outside any dashboard, add it to a v2 dashboard and migrate that dashboard, or rebuild it in v3 and set the site config below.
+- v2 queries outside a dashboard are not migrated. To keep one, add it to a v2 dashboard before you migrate.
 
-Once everything used in v2 is migrated, update again. This check passes then.
+Once these dashboards are migrated, update again. This check passes then.
 
 Migration guide: https://docs.frappe.io/insights/articles/migrate-from-v2-to-v3
 
@@ -54,15 +54,14 @@ If you don't need your v2 work, set the site config below. It skips this check, 
     sys.exit(1)
 
 
-def unmigrated_v2_work() -> tuple[list[str], list[str]]:
-    """The v2 dashboards and the v2 queries outside any dashboard that were used
-    recently and are not migrated.
+def unmigrated_v2_dashboards() -> list[str]:
+    """The v2 dashboards that were used recently and are not migrated.
 
-    A v2 query is used when it ran: v2 logs each run with its data source, and
-    v3 logs none. A dashboard is migrated once an Insights Dashboard v3 holds its
-    name in `old_name`, as v3.15.1's migrator records it. That migrator moves
-    only dashboards, so a query outside every dashboard counts until a v3 query
-    holds its name.
+    A dashboard is used when one of its queries ran: v2 logs each run with its
+    data source, and v3 logs none. A dashboard is migrated once an Insights
+    Dashboard v3 holds its name in `old_name`, as v3.15.1's migrator records it.
+    That migrator moves only dashboards, so a query outside every dashboard
+    cannot block.
 
     Plain SQL, because the v2 doctypes are gone from 3.50 and only their tables
     remain.
@@ -86,7 +85,7 @@ def unmigrated_v2_work() -> tuple[list[str], list[str]]:
         else set()
     )
     if not used:
-        return [], []
+        return []
 
     read_by = defaultdict(set)
     if frappe.db.table_exists(V2_DASHBOARD_ITEM):
@@ -110,13 +109,7 @@ def unmigrated_v2_work() -> tuple[list[str], list[str]]:
         if reading
         else set()
     )
-    alone = {query for query in used if not read_by[query]}
-    copied = (
-        set(frappe.get_all("Insights Query v3", filters={"old_name": ["in", list(alone)]}, pluck="old_name"))
-        if alone
-        else set()
-    )
-    return sorted(reading - migrated), sorted(alone - copied)
+    return sorted(reading - migrated)
 
 
 def item_options(item) -> dict:

@@ -7,7 +7,7 @@ import frappe
 
 from insights.patches import check_legacy_v2_data_before_upgrade as v2_block
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import create_test_dashboard, create_test_query, create_test_workbook
+from insights.tests.factories import create_test_dashboard, create_test_workbook
 
 # 3.50 ships no v2 doctypes, so the test makes the tables a site upgraded from
 # 3.15 still holds, with only the columns the check reads
@@ -66,17 +66,15 @@ class TestV2Block(InsightsIntegrationTestCase):
         with contextlib.redirect_stdout(out), self.assertRaises(SystemExit):
             v2_block.execute()
 
-        self.assertEqual(v2_block.unmigrated_v2_work(), (["v2-board"], ["v2-alone"]))
-        self.assertIn("v2 dashboards: 1. v2 queries outside any dashboard: 1.", out.getvalue())
+        self.assertEqual(v2_block.unmigrated_v2_dashboards(), ["v2-board"])
+        self.assertIn("not migrated yet: 1.", out.getvalue())
 
     # @feature upgrade.v2-block
-    def test_a_site_that_migrated_everything_it_used_updates(self):
+    def test_a_site_that_migrated_its_dashboards_updates_with_a_query_outside_them(self):
         self.seed()
         workbook = create_test_workbook("Administrator")
         dashboard = create_test_dashboard("Administrator", workbook.name)
-        query = create_test_query("Administrator", workbook.name)
         frappe.db.set_value("Insights Dashboard v3", dashboard.name, "old_name", "v2-board")
-        frappe.db.set_value("Insights Query v3", query.name, "old_name", "v2-alone")
 
         self.assertEqual(self.run_block(), "")
 
