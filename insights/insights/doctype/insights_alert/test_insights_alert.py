@@ -184,6 +184,47 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
         )
 
 
+class AStoredCronTheSchedulerCannotRead(InsightsIntegrationTestCase):
+    """Insights before v3.50 suggested a Quartz cron, so a saved alert can hold
+    one. `send_alerts` rolls back what it catches, so the fixtures are committed."""
+
+    @classmethod
+    def before_class(cls):
+        cls.workbook = create_test_workbook("Administrator")
+        query = create_test_query("Administrator", cls.workbook.name)
+        cls.alert = frappe.get_doc(
+            doctype="Insights Alert",
+            title="Quartz noon",
+            channel="Webhook",
+            query=query.name,
+            frequency="Cron",
+            cron_format="0 12 * * *",
+            condition="q['status'] == 'Open'",
+            custom_condition=1,
+            message="{{ rows }}",
+            webhook_url="https://example.com/hooks/insights",
+            webhook_token="sekret-token",
+        ).insert()
+        frappe.db.set_value("Insights Alert", cls.alert.name, "cron_format", "0 0 12 * * ?")
+        frappe.db.commit()  # nosemgrep
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc("Insights Alert", cls.alert.name, force=True)
+        frappe.delete_doc("Insights Workbook", cls.workbook.name, force=True)
+        frappe.db.commit()  # nosemgrep
+
+    # @feature alerts.schedule
+    def test_stops_the_alert_and_tells_the_owner_once(self):
+        with patch("frappe.sendmail") as sendmail:
+            send_alerts()
+            send_alerts()
+
+        self.assertEqual(frappe.db.get_value("Insights Alert", self.alert.name, "disabled"), 1)
+        self.assertEqual(sendmail.call_count, 1)
+        self.assertIn("0 0 12 * * ?", sendmail.call_args.kwargs["message"])
+
+
 class ATickRunsEveryAlert(InsightsIntegrationTestCase):
     """`send_alerts` runs every four minutes. Handling a failed alert also
     writes and commits. If that fails, the alerts after it must still run in
@@ -772,6 +813,16 @@ class TestSchedule(AlertOverSeededTodos):
             self.make_alert(frequency="Cron", cron_format="0 0 12 * * ?")
 
         self.assertIn("0 0 12 * * ?", str(refusal.exception))
+
+    # @feature alerts.schedule
+    def test_an_alert_holding_a_cron_the_scheduler_cannot_read_opens_and_disables(self):
+        alert = self.make_alert(frequency="Cron", cron_format="0 12 * * *")
+        alert.db_set("cron_format", "0 0 12 * * ?")
+
+        alert.reload()
+        self.assertIsNone(alert.as_dict()["next_execution"])
+        alert.disabled = 1
+        alert.save()
 
     # @feature alerts.schedule
     def test_an_alert_moved_off_cron_runs_on_its_frequency(self):

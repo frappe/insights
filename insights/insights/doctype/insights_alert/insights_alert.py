@@ -36,6 +36,18 @@ class SendRefused(frappe.PermissionError):
     """The user an alert runs as may not send it. A scheduled run then disables the alert."""
 
 
+class CronUnreadable(frappe.ValidationError):
+    """The alert's cron is not one the scheduler can read. A scheduled run then disables the alert."""
+
+
+CRON_OF_FREQUENCY = {
+    "Monthly": "0 0 1 * *",
+    "Weekly": "0 0 * * 0",
+    "Daily": "0 0 * * *",
+    "Hourly": "0 * * * *",
+}
+
+
 class InsightsAlert(Document):
     # begin: auto-generated types
     # This code is auto-generated. Do not modify anything in this block.
@@ -64,9 +76,13 @@ class InsightsAlert(Document):
 
     def validate(self):
         self.check_trusted_code()
-        self.validate_schedule()
+        # the form hides the field off Cron, so a cron left behind would run unseen
+        if self.frequency != "Cron":
+            self.cron_format = None
         if self.disabled:
             return
+
+        self.cron()
 
         if self.query:
             self.has_query_permission()
@@ -325,36 +341,31 @@ class InsightsAlert(Document):
 
     @property
     def next_execution(self):
-        return get_datetime_str(self.get_next_execution())
+        try:
+            return get_datetime_str(self.get_next_execution())
+        except CronUnreadable:
+            return None  # nosemgrep - read whenever the document is, so the form still opens to fix the cron
 
-    def validate_schedule(self):
-        # the form hides the field off Cron, so a cron left behind would run unseen
+    def cron(self):
         if self.frequency != "Cron":
-            self.cron_format = None
-        elif not croniter.is_valid(self.cron_format or ""):
+            return CRON_OF_FREQUENCY[self.frequency]
+        if not croniter.is_valid(self.cron_format or ""):
             frappe.throw(
                 _(
                     "{0} is not a cron the scheduler can read. Write five fields: minute, hour, day, month, weekday."
-                ).format(self.cron_format)
+                ).format(self.cron_format),
+                CronUnreadable,
             )
+        return self.cron_format
 
     def get_next_execution(self):
-        CRON_MAP = {
-            "Monthly": "0 0 1 * *",
-            "Weekly": "0 0 * * 0",
-            "Daily": "0 0 * * *",
-            "Hourly": "0 * * * *",
-        }
-        cron = self.cron_format if self.frequency == "Cron" else CRON_MAP[self.frequency]
         start_time = get_datetime(self.last_execution or datetime(2000, 1, 1))
-        return croniter(cron, start_time).get_next(datetime)
+        return croniter(self.cron(), start_time).get_next(datetime)
 
     def is_event_due(self):
-        if not self.last_execution:
-            return True
-
+        # read first, so an alert that never ran stops on an unreadable cron too
         next_execution = self.get_next_execution()
-        return next_execution <= now_datetime()
+        return not self.last_execution or next_execution <= now_datetime()
 
     @frappe.whitelist(methods=["POST"])
     def test_alert(self):
@@ -382,7 +393,7 @@ def run_alert(alert):
             with permission_user(alert.permission_user):
                 alert_doc.send_alert()
         frappe.db.commit()
-    except SendRefused as refusal:
+    except (SendRefused, CronUnreadable) as refusal:
         frappe.db.rollback()
         stop(alert.name, str(refusal))
     except Exception:
