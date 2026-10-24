@@ -47,6 +47,12 @@ async function loadAlerts(query: string) {
 	return alerts.value
 }
 
+// A list row with a `disabled` field is inert in frappe-ui's ListView, so the
+// alert's own field would make a disabled alert impossible to open and enable
+export function alertRows(alerts: InsightsAlert[]) {
+	return alerts.map(({ disabled, ...alert }) => ({ ...alert, enabled: !disabled }))
+}
+
 const EMPTY_ALERT: InsightsAlert = {
 	doctype: 'Insights Alert',
 	name: '',
