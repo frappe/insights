@@ -329,12 +329,15 @@ describe('an item sentence', () => {
 	// @feature upgrade.item-sentences
 	it('asks for what lets a public chart run as its owner again', () => {
 		const chart = { chart: 'Public revenue', owner: BOB }
-		const disabled = sentenceOf(item('a', 'P12', { ...chart, reason: 'disabled' }), DAVE)
+		const disabled = sentenceOf(
+			item('a', 'P12', { ...chart, reason: 'disabled' }, { form_url: '/desk/user/bob' }),
+			DAVE,
+		)
 		expect(text(disabled.todo)).toBe('Enable Bob so guests see it again.')
 		expect(disabled.action).toEqual({
 			kind: 'form',
 			label: 'Open Bob’s user',
-			url: '/desk/user/bob%40fixture.test',
+			url: '/desk/user/bob',
 		})
 		const noRole = sentenceOf(item('b', 'P12', { ...chart, reason: 'no_insights_role' }), DAVE)
 		expect(text(noRole.todo)).toBe('Give Bob an Insights role so guests see it again.')
@@ -493,6 +496,36 @@ describe('an item sentence', () => {
 			label: 'Open workbook sharing',
 			route: { name: 'Workbook', params: { workbook_name: '25' }, query: { share: '1' } },
 		})
+	})
+})
+
+describe('a desk link in an item', () => {
+	// @feature upgrade.desk-links
+	it('is offered only where the server names the page, for a reader who may make the fix there', () => {
+		const items = (form_url: string | null) => [
+			item('a', 'P17', { user: BOB, doctypes: ['Customer'] }, { form_url }),
+			item(
+				'b',
+				'P17',
+				{
+					team: 'North',
+					members: [BOB],
+					restrictions: [{ doctype: 'Customer', field: 'territory', value: 'North' }],
+				},
+				{ form_url },
+			),
+			item(
+				'c',
+				'P12',
+				{ chart: 'Public revenue', owner: BOB, reason: 'disabled' },
+				{ form_url },
+			),
+		]
+		const offered = items('/desk/x').map((each) => sentenceOf(each, DAVE).action?.label)
+		expect(offered).toEqual(['Open Bob’s roles', 'Open User Permissions', 'Open Bob’s user'])
+
+		const withheld = items(null).map((each) => sentenceOf(each, DAVE).action)
+		expect(withheld).toEqual([undefined, undefined, undefined])
 	})
 })
 

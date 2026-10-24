@@ -83,14 +83,36 @@ def names_of_users(values: set[str]) -> dict[str, dict]:
 
 
 def form_url(item) -> str | None:
-    """The desk form of a reference the app has no page for, such as a user."""
+    """The desk page where the item's fix is made, if the session user may make it there."""
+    data = item.data
+    if item.code == "P17" and data.get("team"):
+        # a team's row rule is now a User Permission
+        if frappe.has_permission("User Permission", "create"):
+            return frappe.utils.get_url("/desk/user-permission")
+        return None
+    if item.code == "P12" and data.get("reason") in ("disabled", "no_insights_role"):
+        return user_form(data.get("owner"))
     if (
         item.workbook
         or not item.reference_name
         or not frappe.db.exists(item.reference_doctype, item.reference_name)
     ):
         return None
+    if item.reference_doctype == "User":
+        return user_form(item.reference_name)
+    if not frappe.has_permission(item.reference_doctype, "read", doc=item.reference_name):
+        return None
     return frappe.utils.get_url_to_form(item.reference_doctype, item.reference_name)
+
+
+def user_form(user: str | None) -> str | None:
+    """A user's form, where their roles are set, for whoever may set them: desk
+    shows the roles only to those who may write the User fields above level 0."""
+    if not user or not frappe.db.exists("User", user):
+        return None
+    if not any(level >= 1 for level in frappe.get_meta("User").get_permlevel_access("write")):
+        return None
+    return frappe.utils.get_url_to_form("User", user)
 
 
 def can_fix(item) -> bool:

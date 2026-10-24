@@ -34,6 +34,8 @@ BOB = "upgrade_bob@test.com"
 NEWCOMER = "upgrade_newcomer@test.com"
 # a desk user with no Insights role, who uses Insights to read dashboards only
 READER = "upgrade_reader@test.com"
+# an Insights Admin who is not a System Manager, as dave is on upgrade.v16
+INSIGHTS_ADMIN = "upgrade_insights_admin@test.com"
 PREFIX = "Upgrade Items Test"
 
 
@@ -45,12 +47,13 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         create_user(ALICE, first_name="Alice", last_name="Moss", roles="Insights User")
         create_user(BOB, first_name="Bob", last_name="Lane", roles="Insights User")
         create_user(READER, first_name="Rae", last_name="Reader", roles="Report Manager")
+        create_user(INSIGHTS_ADMIN, first_name="Ida", roles="Insights Admin")
 
     @classmethod
     def after_class(cls):
         for name in frappe.get_all(DT.WORKBOOK, filters={"title": ("like", f"{PREFIX}%")}, pluck="name"):
             frappe.delete_doc(DT.WORKBOOK, name, force=True, ignore_permissions=True)
-        delete_users(ALICE, BOB, NEWCOMER, READER)
+        delete_users(ALICE, BOB, NEWCOMER, READER, INSIGHTS_ADMIN)
 
     def before_test(self):
         frappe.db.delete(ITEM)
@@ -99,6 +102,30 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
                 mark_v3_users_patch.execute()
 
                 self.assertEqual(self.user_info(ALICE)["upgrade_unseen"], welcomed)
+
+    # @feature upgrade.desk-links
+    def test_a_desk_link_is_offered_only_to_whoever_may_make_the_fix_there(self):
+        add_item("P17", "Bob lost rows.", reference=("User", BOB), data={"user": BOB, "doctypes": ["ToDo"]})
+        team = frappe.get_all("Insights Team", pluck="name", limit=1)[0]
+        add_item(
+            "P17",
+            "The team's rule is gone.",
+            reference=("Insights Team", team),
+            data={"team": team, "members": [BOB], "restrictions": []},
+        )
+        add_item("P12", "Guests see nothing.", data={"chart": "Revenue", "owner": BOB, "reason": "disabled"})
+
+        def links(user):
+            with self.as_user(user):
+                return {
+                    (item.code, bool(item.data.get("team"))): item.form_url for item in get_upgrade_items()
+                }
+
+        offered = links("Administrator")
+        self.assertIn("/user/", offered[("P17", False)])
+        self.assertTrue(offered[("P17", True)].endswith("/user-permission"))
+        self.assertIn("/user/", offered[("P12", False)])
+        self.assertEqual(set(links(INSIGHTS_ADMIN).values()), {None})
 
     # @feature upgrade.attention-items
     def test_an_admin_sees_every_item_and_a_user_only_their_own_closed_ones_too(self):

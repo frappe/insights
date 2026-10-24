@@ -506,10 +506,6 @@ function formAction(item: UpgradeItem, label: string): ItemAction | undefined {
 	return item.form_url ? { kind: 'form', label, url: item.form_url } : undefined
 }
 
-function userForm(user: string, label: string): ItemAction {
-	return { kind: 'form', label, url: `/desk/user/${encodeURIComponent(user)}` }
-}
-
 function workbookSharing(item: UpgradeItem, label: string): ItemAction | undefined {
 	if (!item.workbook) return undefined
 	return {
@@ -619,11 +615,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 					joined(limits),
 				),
 				todo: say(__('Set a User Permission in desk instead.')),
-				action: {
-					kind: 'form',
-					label: __('Open User Permissions'),
-					url: '/desk/user-permission',
-				},
+				action: formAction(item, __('Open User Permissions')),
 			}
 		}
 	},
@@ -672,8 +664,8 @@ const SENTENCES: Partial<Record<string, Build>> = {
 					d.reason === 'disabled'
 						? say(__('Enable {0} so guests see it again.'), ownerName)
 						: say(__('Give {0} an Insights role so guests see it again.'), ownerName),
-				action: userForm(
-					d.owner,
+				action: formAction(
+					item,
 					d.owner === people.me
 						? __('Open your user')
 						: __('Open {0}’s user', people.name(d.owner)),
