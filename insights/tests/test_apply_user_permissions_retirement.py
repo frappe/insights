@@ -242,7 +242,7 @@ class TestSiteDataFindings(InsightsIntegrationTestCase):
             {"user": READER, "doctypes": ["Deleted Document"], "narrowed": []},
         )
 
-        # the app has no page for a user or a team, so Open goes to the desk form
+        # the fix is made in desk: a role on the user's form, a User Permission for the team's rule
         listed = {item.reference_name: item for item in get_upgrade_items()}
         self.assertIn("/desk/user/", listed[READER].form_url)
-        self.assertIn("/desk/insights-team/", listed[self.team].form_url)
+        self.assertTrue(listed[self.team].form_url.endswith("/desk/user-permission"))
