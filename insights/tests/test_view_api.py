@@ -12,6 +12,7 @@ from insights.api.view import (
     get_dashboards,
     get_filter_values,
 )
+from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import preview_versions
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.not_permitted import NotPermitted
 from insights.permission_user import permission_user, permission_user_for
@@ -1029,7 +1030,12 @@ class TestViewAPI(InsightsIntegrationTestCase):
         _, _, listed = self.make_content(visibility="Everyone", title="View API Card Dashboard")
         _, _, public = self.make_content(visibility="Public", title="View API Public Card Dashboard")
         for dashboard in (listed, public):
-            frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", "/private/files/x.jpeg?ab12")
+            frappe.db.set_value(
+                DT.DASHBOARD,
+                dashboard.name,
+                "preview_image",
+                f"/private/files/x.jpeg?{preview_versions([dashboard.name])[dashboard.name]}",
+            )
 
         with as_user(DESK_USER):
             cards = {dashboard.name: dashboard for dashboard in get_dashboards()}
@@ -1043,7 +1049,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         self.assertIsNone(card.preview_image)
         self.assertEqual(
             cards[public.name].preview_image,
-            f"/api/method/insights.api.view.get_dashboard_preview?dashboard={public.name}&v=ab12",
+            f"/api/method/insights.api.view.get_dashboard_preview?dashboard={public.name}&v={preview_versions([public.name])[public.name]}",
         )
 
     # @feature permissions.denied-says-no-access

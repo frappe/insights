@@ -9,7 +9,11 @@ from insights.api.list_filters import (
     match_records,
 )
 from insights.decorators import insights_whitelist
-from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import preview_refusal, preview_url
+from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
+    current_previews,
+    preview_refusal,
+    preview_url,
+)
 from insights.insights.query_utils import source_tables
 from insights.permissions import can_write, dashboard_readers, same_rows_for_every_reader
 
@@ -166,6 +170,7 @@ def _enrich_dashboards(dashboards):
     user = frappe.session.user
     readers = dashboard_readers(names)
     same_rows = same_rows_for_every_reader(names, readers)
+    current = current_previews(list(same_rows))
     for dashboard in dashboards:
         app = apps.get(dashboard.workbook)
         dashboard["shipped_by"] = app and standard.app_title(app)
@@ -180,9 +185,7 @@ def _enrich_dashboards(dashboards):
         # a preview shows the rows of whoever it was rendered for
         dashboard["same_rows_for_every_reader"] = dashboard.name in same_rows
         dashboard["preview_image"] = (
-            preview_url(dashboard.name, dashboard.preview_image)
-            if dashboard["same_rows_for_every_reader"]
-            else None
+            preview_url(dashboard.name, dashboard.preview_image) if dashboard.name in current else None
         )
         dashboard["views"] = view_counts.get(str(dashboard.name), 0)
         dashboard["is_favourite"] = bool(dashboard._liked_by) and user in frappe.as_json(dashboard._liked_by)

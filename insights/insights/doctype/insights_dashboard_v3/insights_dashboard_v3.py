@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import hashlib
 import re
 from collections.abc import Callable
 from urllib.parse import urlencode
@@ -19,7 +20,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     result_column,
 )
-from insights.insights.query_utils import transitive_closure
+from insights.insights.query_utils import reachable_operations, transitive_closure
 from insights.not_permitted import answers_refusal, refused_doctypes
 from insights.permission_user import runs_as
 from insights.permissions import same_rows_for_every_reader
@@ -526,6 +527,7 @@ class InsightsDashboardv3(Document):
         if preview_refusal(self):
             return None
 
+        version = preview_versions([self.name])[self.name]
         with generate_preview_key(self.name, self.owner) as key:
             preview = get_page_preview(
                 # The browser runs on the server and passes a preview key, so
@@ -539,9 +541,8 @@ class InsightsDashboardv3(Document):
                     "X-Insights-Preview-Key": key,
                 },
             )
-            file_url = create_preview_file(preview, self.name)
-            random_hash = frappe.generate_hash()[0:4]
-            file_url = f"{file_url}?{random_hash}"
+            # the random part makes each render a new URL, so a browser does not show a cached one
+            file_url = f"{create_preview_file(preview, self.name)}?{version}.{frappe.generate_hash()[:4]}"
             self.db_set("preview_image", file_url)
             return file_url
 
@@ -937,6 +938,68 @@ def delete_preview_file(dashboard_name: str):
         "File", filters={"file_name": f"{dashboard_name}{PREVIEW_FILE_SUFFIX}", "is_private": 1}, pluck="name"
     ):
         frappe.delete_doc("File", file, ignore_permissions=True)
+
+
+def preview_versions(dashboards: list[str]) -> dict[str, str]:
+    """A hash of what decides the rows each of `dashboards` shows: its owner,
+    whose rows a preview is drawn with, its charts, and every query they read."""
+    owners = dict(
+        frappe.get_all(
+            "Insights Dashboard v3",
+            filters={"name": ("in", dashboards)},
+            fields=["name", "owner"],
+            as_list=True,
+        )
+    )
+    charts_of: dict[str, set[str]] = {}
+    for row in frappe.get_all(
+        "Insights Dashboard Chart v3",
+        filters={"parenttype": "Insights Dashboard v3", "parent": ("in", dashboards)},
+        fields=["parent", "chart"],
+    ):
+        charts_of.setdefault(row.parent, set()).add(row.chart)
+    charts = {
+        chart.name: chart
+        for chart in frappe.get_all(
+            "Insights Chart v3",
+            filters={"name": ("in", list(set().union(*charts_of.values())))},
+            fields=["name", "query", "config", "run_as_owner"],
+        )
+    }
+    operations = reachable_operations({chart.query for chart in charts.values()})
+
+    def state(chart_name: str) -> list:
+        chart = charts.get(chart_name)
+        if not chart:
+            return [chart_name]
+        queries = {chart.query, *transitive_closure(chart.query, operations_by_name=operations)}
+        return [chart_name, chart.config, chart.run_as_owner, {q: operations.get(q) for q in sorted(queries)}]
+
+    return {
+        name: hashlib.sha256(
+            frappe.as_json(
+                [owners.get(name), *(state(chart) for chart in sorted(charts_of.get(name, ())))]
+            ).encode()
+        ).hexdigest()[:16]
+        for name in dashboards
+    }
+
+
+def current_previews(dashboards: list[str]) -> set[str]:
+    """The `dashboards` whose preview was drawn from the charts and queries
+    they have now. A chart may since read other rows than the image shows."""
+    if not dashboards:
+        return set()
+    versions = preview_versions(dashboards)
+    return {
+        dashboard.name
+        for dashboard in frappe.get_all(
+            "Insights Dashboard v3",
+            filters={"name": ("in", dashboards), "preview_image": ("is", "set")},
+            fields=["name", "preview_image"],
+        )
+        if dashboard.preview_image.partition("?")[2].partition(".")[0] == versions[dashboard.name]
+    }
 
 
 def preview_url(dashboard_name: str, preview_image: str | None) -> str | None:

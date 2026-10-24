@@ -31,6 +31,7 @@ from insights.insights.doctype.insights_chart_v3.chart_drill import (
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
     can_filter_card,
     card_filter_source,
+    current_previews,
     filter_default_value,
     route_filters,
 )
@@ -153,12 +154,14 @@ def get_dashboard_preview(dashboard: str):
 
     The file belongs to no document, so this is the only way to it
     (`create_preview_file`). Sharing a dashboard takes its preview away at
-    once, here and in the list (`same_rows_for_every_reader`).
+    once, here and in the list (`same_rows_for_every_reader`), and so does a
+    change to a chart or query on it (`current_previews`).
     """
     name = resolve_for_read(DASHBOARD, dashboard)
-    preview_image = frappe.db.get_value(DASHBOARD, name, "preview_image")
-    if not preview_image or name not in same_rows_for_every_reader([name]):
+    if name not in same_rows_for_every_reader([name]) or name not in current_previews([name]):
         not_found()
+
+    preview_image = frappe.db.get_value(DASHBOARD, name, "preview_image")
 
     file = frappe.get_doc("File", {"file_url": preview_image.partition("?")[0], "is_private": 1})
     frappe.response.update(

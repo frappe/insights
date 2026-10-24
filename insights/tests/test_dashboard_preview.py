@@ -463,21 +463,26 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
         shared = self.board()
         self.share_with_role(shared)
         for dashboard in (private, shared):
-            frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", "/private/files/x.jpeg?ab12")
+            frappe.db.set_value(
+                DT.DASHBOARD,
+                dashboard.name,
+                "preview_image",
+                f"/private/files/x.jpeg?{version_of(dashboard)}",
+            )
 
         with as_user(OWNER):
             listed = {row.name: row for row in get_dashboards(limit=0)}
 
         self.assertEqual(
             listed[private.name].preview_image,
-            f"/api/method/insights.api.view.get_dashboard_preview?dashboard={private.name}&v=ab12",
+            f"/api/method/insights.api.view.get_dashboard_preview?dashboard={private.name}&v={version_of(private)}",
         )
         self.assertTrue(listed[private.name].same_rows_for_every_reader)
         self.assertIsNone(listed[shared.name].preview_image)
         self.assertFalse(listed[shared.name].same_rows_for_every_reader)
 
     def with_preview(self, dashboard) -> str:
-        """Give `dashboard` a rendered preview, and return its file's URL."""
+        """Give `dashboard` a preview rendered from what it shows now, and return its file's URL."""
         from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
             create_preview_file,
         )
@@ -486,7 +491,9 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
         Image.new("RGB", (2, 2)).save(image, "JPEG")
         file_url = create_preview_file(image.getvalue(), dashboard.name)
         self.addCleanup(remove_file_on_disk, file_url)
-        frappe.db.set_value(DT.DASHBOARD, dashboard.name, "preview_image", f"{file_url}?ab12")
+        frappe.db.set_value(
+            DT.DASHBOARD, dashboard.name, "preview_image", f"{file_url}?{version_of(dashboard)}"
+        )
         return file_url
 
     def fetch(self, dashboard, user=READER) -> bytes:
@@ -548,6 +555,41 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
         with self.assertRaises(frappe.DoesNotExistError):
             self.fetch(shared)
 
+    # @feature dashboard.preview-image
+    def test_a_render_shows_until_a_chart_on_it_changes(self):
+        dashboard = self.board()
+        image = io.BytesIO()
+        Image.new("RGB", (2, 2)).save(image, "JPEG")
+        with patch(
+            "insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3.get_page_preview",
+            return_value=image.getvalue(),
+        ):
+            file_url = frappe.get_doc(DT.DASHBOARD, dashboard.name).generate_dashboard_preview()
+        self.addCleanup(remove_file_on_disk, file_url.partition("?")[0])
+        self.assertTrue(self.listed(dashboard).preview_image)
+
+        frappe.db.set_value(DT.CHART, dashboard.linked_charts[0].chart, "config", frappe.as_json({"x": 1}))
+        self.assertIsNone(self.listed(dashboard).preview_image)
+
+    def listed(self, dashboard, user=OWNER):
+        with as_user(user):
+            return next(row for row in get_dashboards(limit=0) if row.name == dashboard.name)
+
+    # @feature dashboard.preview-same-rows
+    def test_a_preview_drawn_before_its_query_changed_shows_to_nobody(self):
+        """It shows the rows of the charts it was drawn from, which only its
+        owner could read."""
+        dashboard = self.board()
+        self.with_preview(dashboard)
+        query = frappe.db.get_value(DT.CHART, dashboard.linked_charts[0].chart, "query")
+        frappe.db.set_value(DT.QUERY, query, "operations", frappe.as_json(read(EXTERNAL, "orders")))
+        frappe.db.set_value(DT.DASHBOARD, dashboard.name, "visibility", "Everyone")
+        self.assertTrue(self.holds_for(dashboard, READER))
+
+        self.assertIsNone(self.listed(dashboard, READER).preview_image)
+        with self.assertRaises(frappe.DoesNotExistError):
+            self.fetch(dashboard)
+
     # @feature dashboard.preview-same-rows
     def test_a_user_who_cannot_open_the_dashboard_cannot_fetch_its_preview(self):
         private = self.board()
@@ -586,7 +628,8 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
 
         self.assertFalse(self.downloads(file_url))
         self.assertEqual(
-            frappe.db.get_value(DT.DASHBOARD, dashboard.name, "preview_image"), f"{file_url}?ab12"
+            frappe.db.get_value(DT.DASHBOARD, dashboard.name, "preview_image"),
+            f"{file_url}?{version_of(dashboard)}",
         )
         self.assertIsNone(frappe.db.get_value(DT.DASHBOARD, copy.name, "preview_image"))
 
@@ -596,6 +639,12 @@ class TestSameRowsForEveryReader(InsightsIntegrationTestCase):
         file_url = self.with_preview(dashboard)
         frappe.delete_doc(DT.DASHBOARD, dashboard.name, force=True, ignore_permissions=True)
         self.assertFalse(frappe.db.exists("File", {"file_url": file_url}))
+
+
+def version_of(dashboard) -> str:
+    from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import preview_versions
+
+    return preview_versions([dashboard.name])[dashboard.name]
 
 
 def read(data_source, table):
