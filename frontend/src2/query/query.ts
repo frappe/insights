@@ -19,7 +19,7 @@ import useDocumentResource from '../helpers/resource'
 import { useResultExport } from '../helpers/result_export'
 import { __ } from '../translation'
 import session from '../session'
-import { isServerBusyError, scheduleQueryExecution } from './execution_queue'
+import { scheduleQueryExecution } from './execution_queue'
 import {
 	AdhocFilters,
 	CodeArgs,
@@ -156,7 +156,6 @@ export function makeQuery(name: string) {
 		return query.doc.operations[activeEditIndex.value]
 	})
 
-	const isServerBusy = ref(false)
 	const executionError = ref('')
 	const result = ref(emptyResult())
 	const executing = ref(false)
@@ -203,7 +202,6 @@ export function makeQuery(name: string) {
 			await waitUntil(() => query.isloaded)
 		}
 
-		isServerBusy.value = false
 		executionError.value = ''
 
 		if (page_size) {
@@ -227,13 +225,17 @@ export function makeQuery(name: string) {
 		const isStale = () => token !== currentExecutionToken
 		return scheduleQueryExecution(
 			() =>
-				query.call('execute', {
-					active_operation_idx: activeOperationIdx.value,
-					adhoc_filters: adhocFilters.value,
-					force: Boolean(force),
-					page: currentPage.value,
-					page_size: pageSize.value,
-				}),
+				query.call(
+					'execute',
+					{
+						active_operation_idx: activeOperationIdx.value,
+						adhoc_filters: adhocFilters.value,
+						force: Boolean(force),
+						page: currentPage.value,
+						page_size: pageSize.value,
+					},
+					{ showError: false },
+				),
 			{ isStale, priority: executionPriority.value },
 		)
 			.then((response: any) => {
@@ -269,10 +271,9 @@ export function makeQuery(name: string) {
 			})
 			.catch((err) => {
 				if (isStale()) return
-				isServerBusy.value = isServerBusyError(err)
 				// a failed run used to clear the table and say nothing, so the
 				// message has to survive the reset for the editor to show it
-				executionError.value = isServerBusy.value ? '' : getErrorMessage(err)
+				executionError.value = getErrorMessage(err)
 				result.value = emptyResult()
 			})
 			.finally(() => {
@@ -301,10 +302,14 @@ export function makeQuery(name: string) {
 		fetchingCount.value = true
 		return (
 			scheduleQueryExecution(() =>
-				query.call('get_count', {
-					active_operation_idx: activeOperationIdx.value,
-					adhoc_filters: adhocFilters.value,
-				}),
+				query.call(
+					'get_count',
+					{
+						active_operation_idx: activeOperationIdx.value,
+						adhoc_filters: adhocFilters.value,
+					},
+					{ showError: false },
+				),
 			)
 				.then((count: number) => {
 					result.value.totalRowCount = count || 0
@@ -838,7 +843,6 @@ export function makeQuery(name: string) {
 		executing,
 		isStale,
 		fetchingCount,
-		isServerBusy,
 		executionError,
 		result,
 
