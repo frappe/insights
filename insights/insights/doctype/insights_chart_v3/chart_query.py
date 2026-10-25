@@ -1267,6 +1267,18 @@ def _name_dimensions(config: dict) -> None:
             dimension["dimension_name"] = dimension["column_name"]
 
 
+def number_readings(config: dict | None) -> list[str]:
+    """The ids of the readings a Number chart states, in its order, as a cell
+    names them and `numberReadings` in `charts/adapter/number.ts` reads them.
+    One saved without an id goes by its Measure's name, the id
+    `_identify_readings` gives it. Two under one id are one reading."""
+    columns = (config or {}).get("number_columns")
+    if not isinstance(columns, list):
+        return []
+    ids = (c.get("id") or c["measure_name"] for c in columns if isinstance(c, dict) and c.get("measure_name"))
+    return list(dict.fromkeys(ids))
+
+
 def _identify_readings(config: dict) -> None:
     """A Number card's reading, and the id a dashboard cell names it by.
 

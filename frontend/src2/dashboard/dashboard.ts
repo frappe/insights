@@ -253,6 +253,57 @@ function makeDashboard(name: string) {
 		{ immediate: true },
 	)
 
+	// A Number chart's save gives a reading it added a cell on every dashboard
+	// that shows it, and takes a removed one's cell (`keep_reading_cells`). This
+	// store read the grid before that save, so it reads it again. Mid-edit, Done
+	// saves the whole grid, so the author's grid takes the stored cells of those
+	// charts instead: added ones join, dropped ones leave, the rest keep their place.
+	async function takeStoredCells(charts: string[]) {
+		const stored: { items: string | WorkbookDashboardItem[] } = await call(
+			'insights.api.get_doc',
+			{
+				doctype: 'Insights Dashboard v3',
+				name: dashboard.doc.name,
+			},
+		)
+		const storedItems: WorkbookDashboardItem[] =
+			typeof stored.items === 'string' ? safeJSONParse(stored.items) || [] : stored.items
+		const ofCharts = (item: WorkbookDashboardItem) =>
+			item.type === 'chart' && charts.includes(item.chart)
+		const ids = (items: WorkbookDashboardItem[]) =>
+			new Set(items.filter(ofCharts).map((item) => item.layout.i))
+		const storedIds = ids(storedItems)
+		const localIds = ids(dashboard.doc.items)
+		dashboard.doc.items = [
+			...dashboard.doc.items.filter(
+				(item) => !ofCharts(item) || storedIds.has(item.layout.i),
+			),
+			...storedItems.filter((item) => ofCharts(item) && !localIds.has(item.layout.i)),
+		]
+	}
+
+	const savedReadings = new Map<string, string>()
+	watch(
+		() =>
+			Object.values(chartsByName.value)
+				.filter((chart) => chart.isloaded && chart.originalDoc.chart_type === 'Number')
+				.map((chart) => [
+					chart.originalDoc.name,
+					numberReadings(chart.originalDoc.config as NumberChartConfig).join(','),
+				]),
+		(charts) => {
+			const changed: string[] = []
+			for (const [name, readings] of charts) {
+				if (savedReadings.has(name) && savedReadings.get(name) !== readings)
+					changed.push(name)
+				savedReadings.set(name, readings)
+			}
+			if (!changed.length) return
+			if (editing.value) takeStoredCells(changed).catch(showErrorToast)
+			else dashboard.load()
+		},
+	)
+
 	/**
 	 * Grid rules for each cell beyond its layout, from `cellRulesFor`. The builder
 	 * derives them from the chart stores it already holds.

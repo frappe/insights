@@ -36,6 +36,8 @@ DEFAULT_CELL = {"chart": (10, 20), "text": (10, 5), "filter": (4, 2)}
 # A Number chart's one card with no comparison, as `numberCardRows` sizes it. The
 # grid sets the height from the chart's config when it renders.
 NUMBER_CELL = (4, 4)
+# the grid's width, as `GRID_COLUMNS` in `grid_placement.ts`
+GRID_COLUMNS = 20
 
 # Which page the view came from, as `docs/telemetry.md` names them.
 VIEW_SURFACES = {"workbook", "shared", "dashboards", "desk"}
@@ -644,6 +646,61 @@ def is_grid_number(value) -> bool:
 def layout_bottom(layout: dict) -> int:
     y, h = layout.get("y"), layout.get("h")
     return y + h if is_grid_number(y) and is_grid_number(h) else 0
+
+
+def follow_readings(items: list, chart: str, was: list[str], now: list[str]) -> bool:
+    """Give each reading `chart` gained since `was` a cell, and drop the cells
+    of those it lost, in place. Whether `items` changed.
+
+    A cell that names no reading shows the first one. A new cell goes beside
+    the chart's last cell while the row has room, else `place_unplaced_items`
+    puts it under every cell. The chart keeps one cell, naming no reading,
+    when it loses every reading its cells showed.
+    """
+    cells = [item for item in items if item.get("type") == "chart" and item.get("chart") == chart]
+    if not cells:
+        return False
+
+    def shows(cell: dict, readings: list[str]) -> str | None:
+        return cell.get("reading") or (readings[0] if readings else None)
+
+    changed = False
+    for cell in [cell for cell in cells if shows(cell, was) and shows(cell, was) not in now]:
+        if len(cells) > 1:
+            cells.remove(cell)
+            items.remove(cell)
+        else:
+            cell.pop("reading", None)
+        changed = True
+
+    on_board = {shows(cell, now) for cell in cells}
+    w, h = NUMBER_CELL
+    last = max(
+        (cell.get("layout") or {} for cell in cells),
+        key=lambda layout: (layout.get("y", 0), layout.get("x", 0)),
+    )
+    for reading in now:
+        if reading in was or reading in on_board:
+            continue
+        cell = {"type": "chart", "chart": chart, "reading": reading}
+        beside = {"x": last.get("x", 0) + last.get("w", 0), "y": last.get("y", 0), "w": w, "h": h}
+        if beside["x"] + w <= GRID_COLUMNS and not any(
+            overlaps(beside, item.get("layout") or {}) for item in items
+        ):
+            cell["layout"] = last = beside
+        items.append(cell)
+        on_board.add(reading)
+        changed = True
+    return changed
+
+
+def overlaps(a: dict, b: dict) -> bool:
+    return (
+        a["x"] < b.get("x", 0) + b.get("w", 0)
+        and a["x"] + a["w"] > b.get("x", 0)
+        and a["y"] < b.get("y", 0) + b.get("h", 0)
+        and a["y"] + a["h"] > b.get("y", 0)
+    )
 
 
 def filter_not_available():
