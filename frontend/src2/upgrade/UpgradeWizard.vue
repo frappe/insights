@@ -17,11 +17,11 @@ import type { Step } from './upgrade_steps'
 
 // The upgrade to Insights v3.50, one step at a time: a welcome, each thing that is
 // new, then each group of items that needs the reader. It opens by itself on
-// each visit until Finish or Skip; the sidebar card resumes it where the reader
-// left it.
+// each visit until Finish or Skip, except in a tab it opened a link in; the
+// sidebar card resumes it where the reader left it.
 watch(
-	() => session.initialized && session.user.upgrade_unseen,
-	(upgraded) => upgraded && upgrade.open(),
+	() => session.initialized && upgrade.opensByItself(),
+	(opens) => opens && upgrade.open(),
 	{ immediate: true },
 )
 

@@ -18,7 +18,7 @@ import { confirmDialog } from '../helpers/confirm_dialog'
 import session from '../session'
 import { __ } from '../translation'
 import UpgradePicture from './pictures/UpgradePicture.vue'
-import upgrade from './upgrade'
+import upgrade, { linkFromWizard } from './upgrade'
 import UpgradeSentence from './UpgradeSentence.vue'
 import {
 	keyAction,
@@ -133,7 +133,8 @@ function openAction(action: ItemAction, row: Row) {
 		return
 	}
 	// a new tab, so the wizard stays where the reader is
-	const url = action.kind === 'form' ? action.url : router.resolve(action.route).href
+	const url =
+		action.kind === 'form' ? action.url : router.resolve(linkFromWizard(action.route)).href
 	window.open(url, '_blank', 'noopener')
 }
 

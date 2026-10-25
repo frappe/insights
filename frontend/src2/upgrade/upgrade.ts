@@ -105,6 +105,21 @@ async function load() {
 	}
 }
 
+// Marks a page the wizard opened in a new tab, so the wizard does not open over it there.
+const FROM_WIZARD = 'from_upgrade'
+
+export function linkFromWizard<T extends { query?: Record<string, any> }>(route: T): T {
+	return { ...route, query: { ...route.query, [FROM_WIZARD]: '1' } }
+}
+
+/** Whether the wizard opens by itself on this page: until Finish or Skip, except over a page it opened. */
+function opensByItself() {
+	return (
+		Boolean(session.user.upgrade_unseen) &&
+		!new URLSearchParams(window.location.search).has(FROM_WIZARD)
+	)
+}
+
 function open() {
 	showWizard.value = true
 	progressStore().value.started = true
@@ -193,6 +208,7 @@ const upgrade = reactive({
 	progress: computed(() => progressStore().value),
 	isDone,
 	load,
+	opensByItself,
 	open,
 	close,
 	goTo,

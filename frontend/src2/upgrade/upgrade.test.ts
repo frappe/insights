@@ -165,4 +165,25 @@ describe('the upgrade wizard', () => {
 		expect(session.user.upgrade_unseen).toBe(false)
 		expect(call).toHaveBeenCalledWith('insights.api.upgrade.mark_upgrade_seen')
 	})
+
+	// @feature upgrade.users-welcomed
+	it('does not open by itself over a page it opened in a new tab', async () => {
+		const upgrade = await wizard([])
+		session.user.upgrade_unseen = true
+		const { linkFromWizard } = await import('./upgrade')
+
+		const route = linkFromWizard({ name: 'Workbook', query: { share: '1' } })
+		expect(route.query).toEqual({ share: '1', from_upgrade: '1' })
+
+		const at = (search: string) => {
+			vi.stubGlobal('window', { location: { search } })
+			return upgrade.opensByItself()
+		}
+		expect(at('?share=1&from_upgrade=1')).toBe(false)
+		expect(at('?share=1')).toBe(true)
+		session.user.upgrade_unseen = false
+		expect(at('')).toBe(false)
+		// unstubbing every global would take the hoisted localStorage too
+		vi.stubGlobal('window', undefined)
+	})
 })
