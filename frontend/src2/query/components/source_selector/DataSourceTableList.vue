@@ -17,9 +17,18 @@ const tableStore = useTableStore()
 const selectedTable = defineModel<TableArgs>('selectedTable')
 
 const tableSearchQuery = ref(selectedTable.value?.table_name || '')
+// The first request waits out the debounce too, so the picker starts out loading.
+const loading = ref(true)
+let latest: Promise<unknown> | undefined
 wheneverChanges(
 	() => [tableSearchQuery.value, props.data_source],
-	() => tableStore.getTables(props.data_source, tableSearchQuery.value),
+	() => {
+		loading.value = true
+		const request = tableStore.getTables(props.data_source, tableSearchQuery.value)
+		latest = request
+		const settle = () => latest === request && (loading.value = false)
+		request.then(settle, settle)
+	},
 	{ debounce: 300, immediate: true },
 )
 
@@ -48,6 +57,13 @@ const listColumns = [
 ]
 
 const emptyState = computed(() => {
+	// No list yet is not an empty list: a sync offered now would re-read every table.
+	if (loading.value) {
+		return {
+			title: __('Loading tables…'),
+			description: '',
+		}
+	}
 	if (tableStore.updatingDataSourceTables) {
 		return {
 			title: __('Refreshing Tables'),
