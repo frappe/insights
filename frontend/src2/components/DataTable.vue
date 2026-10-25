@@ -594,7 +594,7 @@ function toggleNewColumn() {
 							class="h-8 border-b border-r px-3 text-right"
 							width="1px"
 						>
-							<div class="truncate pl-3 text-sm-medium text-ink-gray-7">
+							<div class="whitespace-nowrap pl-3 text-sm-medium text-ink-gray-7">
 								{{ __('Total') }}
 							</div>
 						</td>
@@ -677,7 +677,7 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals && totalPerRow"
-							class="tnum h-8 border-b border-r px-3 text-right font-bold"
+							class="tnum h-8 whitespace-nowrap border-b border-r px-3 text-right font-bold"
 						>
 							{{ numberFormats.rowTotal.value(row)(totalPerRow[idx]) }}
 						</td>
@@ -711,7 +711,7 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="tnum h-8 border-b border-r border-t px-3 text-right font-bold"
+							class="tnum h-8 whitespace-nowrap border-b border-r border-t px-3 text-right font-bold"
 						>
 							{{ numberFormats.rowTotal.value()(totalColumnTotal) }}
 						</td>

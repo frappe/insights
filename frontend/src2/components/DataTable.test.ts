@@ -66,4 +66,20 @@ describe('the row totals column', () => {
 
 		expect(html).toMatch(/>\s*120\s*</)
 	})
+
+	// @feature charts.table-totals
+	it('keeps a total and its currency on one line, under a whole header', async () => {
+		const html = await grid({
+			columns: amounts,
+			rows: [{ Revenue: 100, Outstanding: 20 }],
+			columnFormats: formats,
+			showRowTotals: true,
+		})
+
+		const header = html.match(/<td[^>]*>\s*<div[^>]*>\s*Total\s*<\/div>/)![0]
+		expect(header).not.toContain('truncate')
+		expect(header).toContain('whitespace-nowrap')
+		const total = html.match(/<td[^>]*>[^<]*120[^<]*<\/td>/)![0]
+		expect(total).toContain('whitespace-nowrap')
+	})
 })
