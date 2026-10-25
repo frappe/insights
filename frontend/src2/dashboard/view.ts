@@ -186,8 +186,9 @@ export const FILTER_ROWS = Math.ceil((FILTER.trigger + FILTER.cellPadding) / ROW
 /**
  * Grid rules for each cell, beyond its stored layout.
  *
- * A Number cell's height follows the card of its reading. The owner sets only
- * the width, and the height follows later config changes. Two Number cells fit
+ * A Number cell's height follows the card of its reading, or the tallest card
+ * in its row. The owner sets only the width, and the height follows later
+ * config changes. Two Number cells fit
  * in one narrow row; every other cell takes a full row. A filter cell has one
  * fixed height and takes its row alone, so no card fills the space beside the
  * filters.
@@ -201,6 +202,8 @@ export function cellRulesFor(
 	chartFor: (chart: string) => { chart_type?: string; config?: object } | undefined | null,
 ): CellRules {
 	const rules: CellRules = {}
+	// Number cells by the row they start on, so a row of them ends level
+	const numberRows = new Map<number, string[]>()
 	for (const item of items) {
 		if (item.type === 'filter') {
 			rules[item.layout.i] = { height: FILTER_ROWS, exclusiveRow: true }
@@ -213,7 +216,13 @@ export function cellRulesFor(
 			height: numberCardRows(chart.config as NumberChartConfig, item.reading),
 			halfWidth: true,
 		}
+		const row = numberRows.get(item.layout.y) || []
+		numberRows.set(item.layout.y, [...row, item.layout.i])
 	}
+	numberRows.forEach((cells) => {
+		const height = Math.max(...cells.map((i) => rules[i].height!))
+		cells.forEach((i) => (rules[i].height = height))
+	})
 	return rules
 }
 

@@ -66,7 +66,7 @@ vi.stubGlobal('localStorage', {
 import useChart from '../charts/chart'
 import useDashboard from './dashboard'
 import { nextTick, ref } from 'vue'
-import { useDashboardView, watchFilterDefault } from './view'
+import { cellRulesFor, useDashboardView, watchFilterDefault } from './view'
 
 const layout = { i: '1', x: 0, y: 0, w: 20, h: 8 }
 
@@ -439,5 +439,35 @@ describe('an edit session the author discards', () => {
 		} finally {
 			vi.useRealTimers()
 		}
+	})
+})
+
+describe('Number cells in one row', () => {
+	const number = (comparison: boolean) => ({
+		chart_type: 'Number',
+		config: {
+			number_columns: [{ column_name: 'amount', measure_name: 'Amount', aggregation: 'sum' }],
+			number_column_options: [comparison ? { comparison: { source: 'last year' } } : {}],
+		},
+	})
+	const charts: Record<string, any> = {
+		compared: number(true),
+		plain: number(false),
+		below: number(false),
+	}
+	const cell = (chart: string, x: number, y: number) =>
+		({ type: 'chart', chart, layout: { i: chart, x, y, w: 7, h: 4 } }) as any
+
+	// @feature dashboard.cell-height-rule
+	it('take the height of the tallest, so the row ends level', () => {
+		const rules = cellRulesFor(
+			[cell('compared', 0, 3), cell('plain', 7, 3), cell('below', 0, 8)],
+			(chart) => charts[chart],
+		)
+
+		expect(rules.compared.height).toBe(5)
+		expect(rules.plain.height).toBe(5)
+		// a row of its own keeps the height its reading needs
+		expect(rules.below.height).toBe(4)
 	})
 })
