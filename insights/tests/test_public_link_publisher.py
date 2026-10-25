@@ -231,3 +231,54 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
 
         self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), PUBLISHER)
         self.assertTrue(frappe.has_permission(DT.WORKBOOK, "write", doc=self.workbook, user=PREVIOUS_OWNER))
+
+    def published_on_a_table_only_admins_read(self, chart_owner: str, publisher: str):
+        """Publishes the chart, owned by `chart_owner`, on `publisher`'s dashboard,
+        with a query on Role, which an Insights User may not read in desk."""
+        operations = [
+            {"type": "source", "table": {"type": "table", "data_source": "Site DB", "table_name": "tabRole"}}
+        ]
+        frappe.db.set_value(DT.QUERY, self.query, "operations", frappe.as_json(operations))
+        frappe.db.set_value(DT.CHART, self.chart, "owner", chart_owner, update_modified=False)
+        self.published()
+        frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", publisher)
+
+        self.run_patch_without_the_column()
+
+    # @feature upgrade.public-links-keep-rows
+    def test_a_link_whose_owner_cannot_read_its_table_tells_its_owner_readers_see_not_permitted(self):
+        """The chart runs as its owner, and desk does not let the owner read Role."""
+        self.published_on_a_table_only_admins_read(PREVIOUS_OWNER, PREVIOUS_OWNER)
+
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "P10", "reference_name": self.chart}, ["message", "data"]
+        )
+        self.assertIn("can't read Role", message)
+        self.assertEqual(
+            frappe.parse_json(data),
+            {
+                "chart": f"{PREFIX} Chart",
+                "owner": PREVIOUS_OWNER,
+                "reason": "unreadable",
+                "doctypes": ["Role"],
+            },
+        )
+
+    # @feature upgrade.public-links-keep-rows
+    def test_a_link_moved_to_a_publisher_who_cannot_read_its_table_says_readers_see_not_permitted(self):
+        self.published_on_a_table_only_admins_read(OWNER, PUBLISHER)
+
+        self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), PUBLISHER)
+        items = frappe.get_all(
+            ITEM, filters={"code": "P11", "reference_name": self.chart}, fields=["message", "data"]
+        )
+        self.assertEqual(len(items), 2)
+        for item in items:
+            self.assertIn("can't read Role", item.message)
+            self.assertEqual(frappe.parse_json(item.data)["doctypes"], ["Role"])
+        # the publisher's note can't give them a role, so the admins are asked too
+        data = frappe.db.get_value(ITEM, {"code": "P10", "reference_name": self.chart}, "data")
+        self.assertEqual(
+            frappe.parse_json(data),
+            {"chart": f"{PREFIX} Chart", "owner": PUBLISHER, "reason": "unreadable", "doctypes": ["Role"]},
+        )

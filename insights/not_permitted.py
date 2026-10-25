@@ -144,6 +144,27 @@ def site_table_doctypes(data_source: str, table_name: str, user: str) -> list[st
         return []  # nosemgrep - a table without a doctype names no doctype to grant
 
 
+def query_refusal(query: str, user: str) -> list[str] | None:
+    """None when `user` may read every table `query` reads, its sources'
+    included. Otherwise the doctypes they would need read on, which is empty
+    off the site database. `refused_doctypes` answers the same per chart."""
+    from insights.insights.doctype.insights_team.insights_team import check_table_permission
+    from insights.insights.query_utils import table_references, transitive_closure
+
+    operations = frappe.get_all(
+        "Insights Query v3", filters={"name": ("in", [query, *transitive_closure(query)])}, pluck="operations"
+    )
+    refused = {
+        (ref["data_source"], ref["table_name"])
+        for pipeline in operations
+        for ref in table_references(pipeline)
+        if not check_table_permission(ref["data_source"], ref["table_name"], user=user, raise_error=False)
+    }
+    if not refused:
+        return None
+    return sorted({doctype for table in refused for doctype in site_table_doctypes(*table, user)})
+
+
 def refused_doctypes(dashboard: str, user: str | None = None) -> list[str] | None:
     """None when a chart on `dashboard` would run for `user`. Otherwise the
     doctypes they would need read on, which is empty when they may read none

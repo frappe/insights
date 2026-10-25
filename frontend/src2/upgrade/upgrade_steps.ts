@@ -641,6 +641,19 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		}
 	},
 	P10(item, d, people) {
+		if (d.reason === 'unreadable') {
+			return {
+				text: say(
+					__(
+						'The {0} runs as {1}, who can’t read {2}, so everyone who opens it sees Not Permitted.',
+					),
+					titled('chart', d.chart),
+					em(person(people, d.owner)),
+					tablesOf(d.doctypes),
+				),
+				...giveReadAccess(item, people, d.owner, d.doctypes),
+			}
+		}
 		const rows =
 			d.reason === 'script' || !d.table
 				? em(__('{0} rows', possessive(people, d.owner)))
@@ -877,6 +890,23 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				action: routeTo(item, __('Open chart')),
 			}
 		}
+		if (d.doctypes) {
+			const access = giveReadAccess(item, people, d.publisher, d.doctypes)
+			return {
+				text: say(
+					__(
+						'The {0} now belongs to {1}, who published it, instead of {2}. {3} can’t read {4}, so its readers see Not Permitted.',
+					),
+					titled('chart', d.chart),
+					em(person(people, d.publisher)),
+					em(person(people, d.owner)),
+					em(person(people, d.publisher, true)),
+					tablesOf(d.doctypes),
+				),
+				todo: access.todo,
+				action: access.action ?? routeTo(item, __('Open chart')),
+			}
+		}
 		return {
 			text: say(
 				__(
@@ -999,6 +1029,35 @@ const SENTENCES: Partial<Record<string, Build>> = {
 			action: routeTo(item, __('Open chart')),
 		}
 	},
+}
+
+/** The doctypes a chart's tables need, or its tables when none names a doctype. */
+function tablesOf(doctypes: string[] = []): Part {
+	return doctypes.length ? em(listOf(doctypes.map(documents), 3)) : { text: __('its tables') }
+}
+
+/**
+ * What lets a chart that runs as `user` run again: a desk role that reads its
+ * doctypes, which the Access step asks for too.
+ */
+function giveReadAccess(
+	item: UpgradeItem,
+	people: People,
+	user: string,
+	doctypes: string[] = [],
+): Pick<Sentence, 'todo' | 'action'> {
+	// a table off the site database needs a team grant, which no role gives
+	if (!doctypes.length) return { action: routeTo(item, __('Open chart')) }
+	const self = user === people.me
+	return {
+		todo: self
+			? say(__('Give yourself a desk role that can read them.'))
+			: say(__('Give {0} a desk role that can read them.'), { text: people.name(user) }),
+		action: formAction(
+			item,
+			self ? __('Open your roles') : __('Open {0}’s roles', people.name(user)),
+		),
+	}
 }
 
 function memberKinds(kind: string) {

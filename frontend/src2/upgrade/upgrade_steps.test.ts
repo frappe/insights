@@ -232,6 +232,60 @@ describe('an item sentence', () => {
 	})
 
 	// @feature upgrade.item-sentences
+	it('says readers of a public chart see Not Permitted when it runs as someone who can’t read it', () => {
+		const form = { form_url: '/desk/user/alice' }
+		const owner = sentenceOf(
+			item(
+				'a',
+				'P10',
+				{ chart: 'Trend', owner: ALICE, reason: 'unreadable', doctypes: ['Sales Invoice'] },
+				form,
+			),
+			DAVE,
+		)
+		expect(text(owner.text)).toBe(
+			'The Trend chart runs as Alice, who can’t read Sales Invoices, so everyone who opens it sees Not Permitted.',
+		)
+		expect(text(owner.todo)).toBe('Give Alice a desk role that can read them.')
+		expect(owner.action).toEqual({
+			kind: 'form',
+			label: 'Open Alice’s roles',
+			url: '/desk/user/alice',
+		})
+
+		const moved = sentenceOf(
+			item('b', 'P11', {
+				chart: 'Site rows',
+				publisher: BOB,
+				owner: ALICE,
+				doctypes: ['Sales Invoice'],
+			}),
+			ALICE,
+		)
+		expect(text(moved.text)).toBe(
+			'The Site rows chart now belongs to Bob, who published it, instead of you. Bob can’t read Sales Invoices, so its readers see Not Permitted.',
+		)
+		// a table off the site database needs a team grant, not a role
+		const team = sentenceOf(
+			item(
+				'c',
+				'P10',
+				{ chart: 'Trend', owner: ALICE, reason: 'unreadable', doctypes: [] },
+				{
+					...form,
+					workbook: '9',
+					reference_doctype: 'Insights Chart v3',
+					reference_name: 'c1',
+				},
+			),
+			DAVE,
+		)
+		expect(text(team.text)).toContain('who can’t read its tables')
+		expect(team.todo).toBeUndefined()
+		expect(team.action).toMatchObject({ kind: 'route', label: 'Open chart' })
+	})
+
+	// @feature upgrade.item-sentences
 	it('lists three doctypes and counts the rest', () => {
 		const many = item('a', 'P17', {
 			user: DAVE,

@@ -44,7 +44,10 @@ def execute():
         elif frappe.db.get_value("User", publisher, "enabled"):
             frappe.db.set_value(CHART, chart, {"owner": publisher, "run_as_owner": 1}, update_modified=False)
             keep_edit(chart, owner)
-            report(chart, owner, publisher, moved=True)
+            unreadable = unreadable_by(chart, publisher)
+            report(chart, owner, publisher, moved=True, unreadable=unreadable)
+            if unreadable is not None:
+                report_unreadable(chart, publisher, unreadable)
         else:
             report(chart, owner, publisher, moved=False)
 
@@ -68,11 +71,28 @@ def keep_edit(chart: str, previous_owner: str) -> None:
         share_workbook(workbook, previous_owner, write=1)
 
 
-def report(chart: str, owner: str, publisher: str, moved: bool) -> None:
+def unreadable_by(chart: str, user: str) -> list[str] | None:
+    """The doctypes `user` would need read on for `chart` to run as them, or
+    None when it runs. A chart that runs as someone who can't read its tables
+    shows every reader Not Permitted."""
+    from insights.not_permitted import query_refusal
+
+    query = frappe.db.get_value(CHART, chart, "query")
+    return query_refusal(query, user) if query else None
+
+
+def cannot_read(user: str, doctypes: list[str]) -> str:
+    return f"{user} can't read {', '.join(doctypes) or 'its tables'}, so readers see Not Permitted"
+
+
+def report(chart: str, owner: str, publisher: str, moved: bool, unreadable: list[str] | None = None) -> None:
     title = frappe.db.get_value(CHART, chart, "title") or chart
     if moved:
         data = {"chart": title, "publisher": publisher, "owner": owner}
         message = f'"{title}": now owned by {publisher}, who published it, instead of {owner}'
+        if unreadable is not None:
+            data["doctypes"] = unreadable
+            message += f". {cannot_read(publisher, unreadable)}"
         users = (owner, publisher)
     else:
         data = {"chart": title, "publisher": publisher, "publisher_disabled": True}
@@ -98,7 +118,12 @@ READER_ROWS = {
 
 def report_reader_rows(chart: str, owner: str) -> None:
     """A signed-in reader saw their own rows of a public chart in Insights before v3.50.
-    Run as owner shows every reader the owner's rows."""
+    Run as owner shows every reader the owner's rows, or Not Permitted when the
+    owner can't read them."""
+    unreadable = unreadable_by(chart, owner)
+    if unreadable is not None:
+        report_unreadable(chart, owner, unreadable)
+        return
     query, config, title = frappe.db.get_value(CHART, chart, ["query", "config", "title"])
     why = why_rows_follow_reader(query, config)
     if not why:
@@ -110,6 +135,19 @@ def report_reader_rows(chart: str, owner: str) -> None:
         reference=(CHART, chart),
         user=None if owner == "Administrator" else owner,
         data=data,
+    )
+
+
+def report_unreadable(chart: str, owner: str, doctypes: list[str]) -> None:
+    """The chart now runs as `owner`, who can't read its tables, so every reader
+    sees Not Permitted. The owner and the admins are told what to grant."""
+    title = frappe.db.get_value(CHART, chart, "title") or chart
+    add_item(
+        "P10",
+        f'"{title}": {cannot_read(owner, doctypes)}',
+        reference=(CHART, chart),
+        user=None if owner == "Administrator" else owner,
+        data={"chart": title, "owner": owner, "reason": "unreadable", "doctypes": doctypes},
     )
 
 

@@ -92,6 +92,11 @@ def form_url(item) -> str | None:
         return None
     if item.code == "P12" and data.get("reason") in ("disabled", "no_insights_role"):
         return user_form(data.get("owner"))
+    # a public chart that runs as someone whom a role would let read its tables
+    if item.code == "P10" and data.get("reason") == "unreadable" and data.get("doctypes"):
+        return user_form(data.get("owner"))
+    if item.code == "P11" and data.get("doctypes"):
+        return user_form(data.get("publisher"))
     if (
         item.workbook
         or not item.reference_name
