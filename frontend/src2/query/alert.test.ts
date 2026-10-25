@@ -8,7 +8,7 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 	call: () => Promise.resolve(stored),
 }))
 
-import useAlertStore from './alert'
+import useAlertStore, { cronRefusal } from './alert'
 import QueryAlertsDialog from './components/QueryAlertsDialog.vue'
 
 const alert = (title: string, disabled: 0 | 1) => ({
@@ -51,5 +51,20 @@ describe('the alerts of a query', () => {
 		expect(html).toContain('Cron email')
 		expect(html).toContain('Disabled')
 		expect(html).not.toContain('aria-disabled="true"')
+	})
+})
+
+describe('a cron the scheduler cannot read', () => {
+	// @feature alerts.schedule
+	it("is told by the server's sentence, and no other failure reads as one", () => {
+		const refusal = {
+			exc_type: 'CronUnreadable',
+			messages: ['0 0 12 * * ? is not a cron the scheduler can read.'],
+		}
+		expect(cronRefusal(refusal)).toBe('0 0 12 * * ? is not a cron the scheduler can read.')
+		expect(
+			cronRefusal({ exc_type: 'ValidationError', messages: ['Recipients'] }),
+		).toBeUndefined()
+		expect(cronRefusal(new Error('offline'))).toBeUndefined()
 	})
 })
