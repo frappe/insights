@@ -1,5 +1,6 @@
 <script setup lang="tsx">
-import { Avatar, Breadcrumbs, ListView } from 'frappe-ui'
+import { Avatar, Breadcrumbs } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { copy } from '../helpers'
@@ -58,8 +59,8 @@ const listOptions = ref({
 			showEditTeamDialog.value = true
 		},
 		emptyState: {
-			title: __('No teams.'),
-			description: __('No teams to display.'),
+			title: __('No teams'),
+			description: __('A team gives its members access to data sources and tables.'),
 			button: session.user.is_admin
 				? {
 						label: __('Create Team'),
@@ -99,7 +100,7 @@ document.title = 'Teams | Insights'
 		<div class="flex gap-2 overflow-visible py-1">
 			<FormControl :placeholder="__('Search')" v-model="searchQuery" :debounce="300">
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" />
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
 		</div>

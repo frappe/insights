@@ -1,38 +1,32 @@
 <template>
-	<div class="flex h-screen w-screen overflow-hidden bg-white text-base antialiased">
-		<div v-if="!hideSidebar" class="h-full border-r bg-gray-50">
+	<div class="flex h-screen w-screen overflow-hidden bg-surface-base text-base antialiased">
+		<div v-if="!hideSidebar" class="h-full border-r bg-surface-gray-1">
 			<AppSidebar />
 		</div>
 
 		<div class="flex h-full flex-1 flex-col overflow-auto">
-			<Suspense>
-				<RouterView />
-			</Suspense>
+			<RouterView />
 		</div>
 
 		<template>
 			<component v-for="dialog in dialogs" :is="dialog" :key="dialog.id" />
 		</template>
 
-		<Toaster
-			position="bottom-right"
-			:expand="true"
-			:close-button="true"
-			:toast-options="{ duration: 4000 }"
-		/>
+		<UpgradeWizard v-if="session.isAuthorized && !isGuestView" />
+
+		<ToastProvider />
 	</div>
 </template>
 
 <script setup lang="ts">
+import { ToastProvider, toast } from 'frappe-ui'
 import { computed, ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
-import { Toaster } from 'vue-sonner'
 import AppSidebar from './components/AppSidebar.vue'
+import UpgradeWizard from './upgrade/UpgradeWizard.vue'
 import { dialogs } from './helpers/confirm_dialog'
-import { attachRealtimeListener, waitUntil } from './helpers/index.ts'
-import { createToast } from './helpers/toasts.ts'
+import { attachRealtimeListener } from './helpers/index.ts'
 import session from './session'
-import router from '@/router.ts'
 
 const route = useRoute()
 const hideSidebar = ref(true)
@@ -43,13 +37,19 @@ watchEffect(() => {
 
 const isGuestView = computed(() => route.meta.isGuestView || !session.isLoggedIn)
 
+const notifiers = {
+	success: toast.success,
+	error: toast.error,
+	warning: toast.warning,
+	info: toast.info,
+}
+
 attachRealtimeListener('insights_notification', (data: any) => {
 	if (data.user == session.user.email) {
-		createToast({
-			title: data.title || data.message,
-			message: data.title ? data.message : '',
-			variant: data.type,
-			duration: data.duration ? data.duration * 1000 : 4000,
+		const notify = notifiers[data.type as keyof typeof notifiers] || toast.message
+		notify(data.title || data.message, {
+			description: data.title ? data.message : undefined,
+			duration: data.duration ? data.duration * 1000 : undefined,
 		})
 	}
 })

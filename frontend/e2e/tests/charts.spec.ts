@@ -1,0 +1,790 @@
+import type { Locator, Page } from '@playwright/test'
+import { expect, test } from '../fixtures'
+import { INSIGHTS_PATH } from '../helpers/auth'
+import {
+	createChart,
+	createQuery,
+	uniqueTitle,
+	type ChartConfig,
+	type Dimension,
+	type Measure,
+} from '../helpers/insights'
+
+/**
+ * A section of the chart config sidebar.
+ *
+ * locator: every section holds controls that read "Select a column", so a name
+ * alone reaches several of them. A section's own heading is the only thing that
+ * tells its controls apart, and the heading is a plain button holding a `<p>`.
+ */
+function section(page: Page, title: string): Locator {
+	return page.locator(`div.flex.flex-col:has(> button > div > p:text-is("${title}"))`)
+}
+
+/**
+ * The chart itself, and nothing else on the page.
+ *
+ * locator: echarts writes `_echarts_instance_` on the element it renders into.
+ * The result preview under the chart builder repeats every category label, so
+ * an unscoped getByText would reach both.
+ */
+function chartOf(page: Page): Locator {
+	return page.locator('[_echarts_instance_]')
+}
+
+/**
+ * The chart card's own contents: the chart and the legend, and nothing of the
+ * page around it.
+ *
+ * locator: a chart that renders plain HTML — a Number card, a Funnel — has no
+ * echarts node to name, and the result preview under the builder repeats every
+ * label the chart renders. `ChartBody` is the one element that holds the chart
+ * alone, whatever the type.
+ */
+function cardOf(page: Page): Locator {
+	return page.getByTestId('chart')
+}
+
+/**
+ * The chart's legend.
+ *
+ * locator: the legend is HTML beside the chart, not part of the echarts node,
+ * so a series name is reached here and never inside the chart.
+ */
+function legendOf(page: Page): Locator {
+	return page.locator('[data-slot="chart-legend"]')
+}
+
+/**
+ * The rows of the result preview under the chart.
+ *
+ * locator: `<thead>` uses `<td>`, and `<tbody>` ends with a cell-less spacer
+ * row, so role=row over-counts. `:has(td)` keeps only real data rows.
+ */
+function previewRows(page: Page): Locator {
+	return page.locator('tbody tr:has(td)')
+}
+
+/**
+ * Hold the first `set_value` for `doctype` open until `release` is called, and
+ * record the title every such write sent. An edit made between `started`
+ * and `release` lands while that write is in flight.
+ *
+ * A chart title also rewrites its Workbook, so the doctype filter is what keeps
+ * the record to the Chart's own writes.
+ */
+function holdFirstWrite(page: Page, doctype: string) {
+	let release = () => {}
+	let markStarted = () => {}
+	const held = new Promise<void>((resolve) => (release = resolve))
+	const started = new Promise<void>((resolve) => (markStarted = resolve))
+	const titles: string[] = []
+
+	const routed = page.route('**/api/method/frappe.client.set_value', async (route) => {
+		const body = route.request().postDataJSON()
+		if (body?.doctype !== doctype) {
+			return route.continue()
+		}
+		titles.push(String(body.fieldname?.title))
+		if (titles.length === 1) {
+			markStarted()
+			await held
+		}
+		await route.continue()
+	})
+
+	return { routed, started, release, titles }
+}
+
+const COUNT_OF_ROWS: Measure = {
+	measure_name: 'count_of_rows',
+	column_name: 'count',
+	data_type: 'Integer',
+	aggregation: 'count',
+}
+
+const ORDER_STATUS: Dimension = {
+	dimension_name: 'order_status',
+	column_name: 'order_status',
+	data_type: 'String',
+}
+
+function purchaseDate(granularity: string): Dimension {
+	return {
+		dimension_name: 'order_purchase_timestamp',
+		column_name: 'order_purchase_timestamp',
+		data_type: 'Datetime',
+		granularity,
+	}
+}
+
+/** The smallest Bar chart configuration: a row count split by one dimension. */
+function barConfig(dimension: Dimension, extra: ChartConfig = {}): ChartConfig {
+	return {
+		x_axis: { dimension },
+		y_axis: { series: [{ measure: COUNT_OF_ROWS }] },
+		...extra,
+	}
+}
+
+test.describe('charts', () => {
+	// @feature charts.type-bar charts.x-axis
+	test('a user creates a Bar chart with one dimension and one measure', async ({
+		page,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/query/${query.name}`)
+		await expect(page.getByRole('cell', { name: 'order_status' })).toBeVisible()
+
+		await page.getByRole('button', { name: 'Add Charts' }).click()
+
+		await page.getByRole('button', { name: 'Bar', exact: true }).click()
+
+		const xAxis = section(page, 'X Axis')
+		await xAxis.getByRole('button', { name: 'Select a column' }).click()
+		await page.getByRole('option', { name: 'order_status' }).click()
+
+		const yAxis = section(page, 'Y Axis')
+		await yAxis.getByRole('button', { name: 'Select a column' }).click()
+		// "Unique Count of..." holds the same words, so match the whole string.
+		await page.getByText('Count of...', { exact: true }).click()
+		const measureDialog = page.getByRole('dialog', { name: 'Select a column' })
+		await measureDialog.getByText('order_id', { exact: true }).click()
+
+		const chart = chartOf(page)
+
+		// The chart renders as SVG, so a category label is a real <text> node.
+		// Category order changes between runs, so nothing here depends on it.
+		await expect(chart.getByText('delivered')).toBeVisible()
+		await expect(chart.getByText('canceled')).toBeVisible()
+		// The measure is the count of orders, and 1,778 of the 2,000 are
+		// delivered, so the value axis runs to a 1,800 tick.
+		await expect(chart.getByText('1,800')).toBeVisible()
+	})
+
+	// @feature charts.type-number
+	test('a user creates a Number chart and sees the value', async ({
+		page,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/query/${query.name}`)
+		await expect(page.getByRole('cell', { name: 'order_status' })).toBeVisible()
+
+		await page.getByRole('button', { name: 'Add Charts' }).click()
+		await page.getByRole('button', { name: 'Number', exact: true }).click()
+
+		// A new Number chart opens with one empty reading. The Options section is
+		// where the readings live; the Date section below it holds a picker that
+		// reads "Select a column" too.
+		const options = section(page, 'Options')
+		await options.getByRole('button', { name: 'Select a column' }).click()
+		await page.getByText('Count of...', { exact: true }).click()
+		const measureDialog = page.getByRole('dialog', { name: 'Select a column' })
+		await measureDialog.getByText('order_id', { exact: true }).click()
+
+		// A Number chart renders plain HTML, not echarts, so `ChartBody` is what
+		// holds it alone.
+		const numberChart = cardOf(page)
+		await expect(numberChart.getByText('count_of_order_id')).toBeVisible()
+		// All 2,000 demo orders have an order_id, and a card spells its value
+		// out in full unless the flow turns short numbers on.
+		await expect(numberChart.getByText('2,000')).toBeVisible()
+	})
+
+	// @feature charts.type-table charts.table-rows-columns-values
+	test('a user creates a Table chart with rows, columns and values', async ({
+		page,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/query/${query.name}`)
+		await expect(page.getByRole('cell', { name: 'order_status' })).toBeVisible()
+
+		await page.getByRole('button', { name: 'Add Charts' }).click()
+		await page.getByRole('button', { name: 'Table', exact: true }).click()
+
+		await section(page, 'Rows').getByRole('button', { name: 'Select a column' }).click()
+		await page.getByRole('option', { name: 'order_purchase_timestamp' }).click()
+
+		await section(page, 'Values').getByRole('button', { name: 'Select a column' }).click()
+		await page.getByText('Count of...', { exact: true }).click()
+		const measureDialog = page.getByRole('dialog', { name: 'Select a column' })
+		await measureDialog.getByText('order_id', { exact: true }).click()
+
+		await section(page, 'Columns').getByRole('button', { name: 'Select a column' }).click()
+		await page.getByRole('option', { name: 'order_status' }).click()
+
+		// A Table chart renders the only table on the page, because the builder
+		// drops its result preview for this type. The column dimension pivots the
+		// measure into one column per order status, and the row dimension reads
+		// at its month grain, which is the default for a date.
+		await expect(page.getByRole('cell', { name: 'September, 2016' })).toBeVisible()
+		await expect(page.getByRole('cell', { name: 'delivered' })).toBeVisible()
+		await expect(page.getByRole('cell', { name: 'canceled' })).toBeVisible()
+	})
+
+	// @feature charts.type-donut
+	test('a user creates a Donut chart', async ({ page, demoDataSource, workbookWithQuery }) => {
+		const { workbook, query } = workbookWithQuery
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/query/${query.name}`)
+		await expect(page.getByRole('cell', { name: 'order_status' })).toBeVisible()
+
+		await page.getByRole('button', { name: 'Add Charts' }).click()
+		await page.getByRole('button', { name: 'Donut', exact: true }).click()
+
+		// locator: the Label and Value controls both read "Select a column". The
+		// text above each one names it, and neither is a `<label for>`, so
+		// getByLabel cannot reach the button.
+		const labelPicker = page.locator('div:has(> label:text-is("Label"))')
+		await labelPicker.getByRole('button', { name: 'Select a column' }).click()
+		await page.getByRole('option', { name: 'order_status' }).click()
+
+		const valuePicker = page.locator('div:has(> div:text-is("Value"))')
+		await valuePicker.getByRole('button', { name: 'Select a column' }).click()
+		await page.getByText('Count of...', { exact: true }).click()
+		const measureDialog = page.getByRole('dialog', { name: 'Select a column' })
+		await measureDialog.getByText('order_id', { exact: true }).click()
+
+		// A Donut legend spells the share out beside the segment name. 1,778 of the
+		// 2,000 orders are delivered, which rounds to 89%, and 85 are shipped, 4%.
+		// Neither share is close to a rounding tie. Every legend entry is a
+		// toggle, so its accessible name says what a press would do.
+		const legend = legendOf(page)
+		await expect(legend.getByRole('button', { name: 'Hide delivered' })).toContainText('89%')
+		await expect(legend.getByRole('button', { name: 'Hide shipped' })).toContainText('4%')
+	})
+
+	// @feature charts.switch-type-keeps-config
+	test('a user changes chart type and config survives where it can', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS, {
+				filters: {
+					logical_operator: 'And',
+					filters: [
+						{
+							column: { type: 'column', column_name: 'order_status' },
+							operator: '!=',
+							value: 'unavailable',
+						},
+					],
+				},
+				limit: 42,
+			}),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		const rendered = chartOf(page)
+		await expect(rendered.getByText('delivered')).toBeVisible()
+		await expect(rendered.getByText('1,800')).toBeVisible()
+
+		// Bar and Line are both axis charts, so the axis config is kept whole
+		// and the new chart plots the same categories and the same value scale.
+		await page.getByRole('button', { name: 'Line', exact: true }).click()
+		await expect(rendered.getByText('delivered')).toBeVisible()
+		await expect(rendered.getByText('1,800')).toBeVisible()
+
+		// Donut is not an axis chart, so crossing that boundary drops the axis
+		// config and leaves the chart with nothing to plot. The card says which
+		// slots the new type needs filled, in place of the chart.
+		await page.getByRole('button', { name: 'Donut', exact: true }).click()
+		await expect(cardOf(page).getByText('Label column is required')).toBeVisible()
+		await expect(cardOf(page).getByText('Value column is required')).toBeVisible()
+
+		// The filter and the limit sit outside the type-specific config, so they
+		// survive every switch. The count beside the heading is part of its name.
+		await page.getByRole('button', { name: 'Filters 1' }).click()
+		await expect(
+			page.getByRole('button', { name: 'order_status != unavailable' }),
+		).toBeVisible()
+
+		await page.getByRole('button', { name: 'Limit', exact: true }).click()
+		await expect(section(page, 'Limit').getByRole('spinbutton')).toHaveValue('42')
+	})
+
+	// @feature charts.dimension-grain charts.preview-table-grain
+	test('a user sets a date dimension granularity to month', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(purchaseDate('year')),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		// The demo orders run from 2016 to 2018, so a yearly grain gives three
+		// rows and a value axis that reaches 1,000.
+		await expect(page.getByRole('cell', { name: '2016', exact: true })).toBeVisible()
+		await expect(chartOf(page).getByText('1,000')).toBeVisible()
+
+		const xAxis = section(page, 'X Axis')
+		// locator: the settings button beside the column picker is icon-only and
+		// has no accessible name. It is the only direct button child of the
+		// picker's row, which is what names it here.
+		await xAxis.locator('div.flex.items-end > button').click()
+		// locator: the popover pairs a plain `<span>` with each control, so
+		// nothing has an accessible name. The row holding the "Granularity"
+		// text is what names its select.
+		await page
+			.locator('div.flex:has(> span:text-is("Granularity"))')
+			.getByRole('combobox')
+			.click()
+		await page.getByRole('option', { name: 'Month', exact: true }).click()
+
+		// A month grain reads as "September, 2016", and the largest month holds
+		// fewer than 100 orders, so the 1,000 tick is gone.
+		await expect(page.getByRole('cell', { name: 'September, 2016' })).toBeVisible()
+		await expect(page.getByRole('cell', { name: '2016', exact: true })).toHaveCount(0)
+		await expect(chartOf(page).getByText('1,000')).toHaveCount(0)
+
+		// The preview table's own date menu writes the same grain the gear does.
+		// locator: a header cell is a <td data-column-name>. Its two buttons are
+		// icon-only and have no accessible name, so position inside the cell is
+		// the only handle. The last one is the date menu.
+		await page.locator('td[data-column-name="order_purchase_timestamp"] button').last().click()
+		// "Fiscal Year" holds the same word, so match the whole string.
+		await page.getByRole('menuitem', { name: 'Year', exact: true }).click()
+
+		// Back to three rows, and the value axis reaches 1,000 again.
+		await expect(page.getByRole('cell', { name: '2016', exact: true })).toBeVisible()
+		await expect(page.getByRole('cell', { name: '2017', exact: true })).toBeVisible()
+		await expect(page.getByRole('cell', { name: '2018', exact: true })).toBeVisible()
+		await expect(page.getByRole('cell', { name: 'September, 2016' })).toHaveCount(0)
+		await expect(chartOf(page).getByText('1,000')).toBeVisible()
+	})
+
+	// @feature charts.split-by
+	test('a user adds a split-by and sees series', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(purchaseDate('year')),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		const rendered = chartOf(page)
+		await expect(rendered.getByText('2017')).toBeVisible()
+		await expect(rendered.getByText('delivered')).toHaveCount(0)
+
+		await section(page, 'Split Series').getByRole('button', { name: 'Select a column' }).click()
+		await page.getByRole('option', { name: 'order_status' }).click()
+
+		// The split turns one count into one series per order status, and each
+		// series reaches the legend as an entry of its own. The legend titles a
+		// series name it was given in lower case.
+		const legend = legendOf(page)
+		await expect(legend.getByRole('button', { name: 'Hide Delivered' })).toBeVisible()
+		await expect(legend.getByRole('button', { name: 'Hide Canceled' })).toBeVisible()
+		await expect(legend.getByRole('button', { name: 'Hide Unavailable' })).toBeVisible()
+	})
+
+	// @feature charts.y-axis-series charts.measure-aggregation
+	test('a user adds a second measure', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		const rendered = chartOf(page)
+		await expect(rendered.getByText('delivered')).toBeVisible()
+		// One series shows no legend, so neither measure name is on the chart yet.
+		await expect(legendOf(page)).toHaveCount(0)
+
+		const yAxis = section(page, 'Y Axis')
+		await yAxis.getByRole('button', { name: '+ Add series' }).click()
+		await yAxis.getByRole('button', { name: 'Select a column' }).click()
+		await page.getByText('Unique count of...', { exact: true }).click()
+		const measureDialog = page.getByRole('dialog', { name: 'Select a column' })
+		await measureDialog.getByText('customer_id', { exact: true }).click()
+
+		// Two series show a legend, one entry per measure.
+		const legend = legendOf(page)
+		await expect(legend.getByRole('button', { name: 'Hide Count Of Rows' })).toBeVisible()
+		await expect(
+			legend.getByRole('button', { name: 'Hide Count Distinct Of Customer Id' }),
+		).toBeVisible()
+	})
+
+	// @feature charts.y-axis-series
+	test('a user adds a measure to a chart with no series', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS, { y_axis: { series: [] } }),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		const yAxis = section(page, 'Y Axis')
+		await yAxis.getByRole('button', { name: '+ Add series' }).click()
+		await yAxis.getByRole('button', { name: 'Select a column' }).click()
+		await page.getByText('Unique count of...', { exact: true }).click()
+		const measureDialog = page.getByRole('dialog', { name: 'Select a column' })
+		await measureDialog.getByText('customer_id', { exact: true }).click()
+
+		await expect(yAxis.getByRole('button', { name: 'Select a column' })).toHaveCount(0)
+	})
+
+	// @feature charts.sort charts.preview-table-sort
+	test('a user sorts a chart and flips it to descending', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+		await expect(previewRows(page)).toHaveCount(6)
+
+		// A chart sorts by the measure's name, not by the column it counts.
+		await page.getByRole('button', { name: 'Sort', exact: true }).click()
+		await page.getByRole('button', { name: 'Add Sort' }).click()
+		await page.getByRole('option', { name: 'count_of_rows' }).click()
+
+		// A new sort starts ascending, so the rarest status leads. 16 of the
+		// 2,000 demo orders are unavailable.
+		await expect(previewRows(page).first()).toContainText('unavailable')
+
+		await section(page, 'Sort').getByRole('button', { name: 'Toggle sort direction' }).click()
+
+		// Descending puts the most common status first. 1,778 orders are
+		// delivered. The flip lands inside the save the sort above started, so
+		// this asserts that the save answer keeps it.
+		await expect(previewRows(page).first()).toContainText('delivered')
+
+		// The preview table's header writes the same sort the section does, so
+		// the section is emptied first and the header asked to fill it again.
+		// locator: the X that drops a sort rule is an icon-only Button with no
+		// accessible name. Its lucide icon class names it inside the section.
+		await section(page, 'Sort').locator('button:has(svg.lucide-x)').click()
+		await expect(
+			section(page, 'Sort').getByRole('button', { name: 'count_of_rows' }),
+		).toHaveCount(0)
+
+		// locator: a header cell is a <td data-column-name>, and the sort menu
+		// inside it is icon-only with no accessible name.
+		await page.locator('td[data-column-name="count_of_rows"] button').click()
+		await page.getByRole('menuitem', { name: 'Sort Ascending' }).click()
+
+		// Ascending puts the rarest status first: 16 of the 2,000 demo orders are
+		// unavailable. The section reads the rule the header wrote.
+		await expect(previewRows(page).first()).toContainText('unavailable')
+		await expect(
+			section(page, 'Sort').getByRole('button', { name: 'count_of_rows' }),
+		).toBeVisible()
+	})
+
+	// @feature charts.filter
+	test('a user filters a chart independent of its query', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		const rendered = chartOf(page)
+		await expect(rendered.getByText('delivered')).toBeVisible()
+
+		await page.getByRole('button', { name: 'Filters', exact: true }).click()
+		await page.getByRole('button', { name: 'Add Filter' }).click()
+		const filterDialog = page.getByRole('dialog', { name: 'Filter' })
+		await filterDialog.getByRole('button', { name: 'Add Filter' }).click()
+		await filterDialog.getByRole('combobox', { name: 'Column' }).fill('order_status')
+		await page.getByRole('option', { name: 'order_status' }).click()
+		// The default operator for a text column is "is", which lists the
+		// distinct values of the column.
+		await filterDialog.getByRole('button', { name: 'Value' }).click()
+		await page.getByRole('option', { name: 'canceled' }).click()
+		await page.keyboard.press('Escape')
+		await filterDialog.getByRole('button', { name: 'Apply Filters' }).click()
+
+		// `canceled` is a category of the unfiltered chart too, so it says nothing
+		// about the filter. Only `delivered` leaving proves it applied, and the
+		// chart keeps showing the old categories until the new result arrives.
+		// That is a second query execution, which outlasts the default timeout
+		// when five workers share the site.
+		await expect(rendered.getByText('delivered')).toHaveCount(0, { timeout: 30_000 })
+		await expect(rendered.getByText('canceled')).toBeVisible()
+
+		// The filter belongs to the Chart, so the Query it reads keeps every row.
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/query/${query.name}`)
+		await expect(page.getByRole('cell', { name: 'delivered' })).not.toHaveCount(0)
+	})
+
+	// @feature charts.type-line
+	test('a user creates a Line chart', async ({ page, demoDataSource, workbookWithQuery }) => {
+		const { workbook, query } = workbookWithQuery
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/query/${query.name}`)
+		await expect(page.getByRole('cell', { name: 'order_status' })).toBeVisible()
+
+		await page.getByRole('button', { name: 'Add Charts' }).click()
+		await page.getByRole('button', { name: 'Line', exact: true }).click()
+
+		await section(page, 'X Axis').getByRole('button', { name: 'Select a column' }).click()
+		await page.getByRole('option', { name: 'order_purchase_timestamp' }).click()
+
+		await section(page, 'Y Axis').getByRole('button', { name: 'Select a column' }).click()
+		await page.getByText('Count of...', { exact: true }).click()
+		const measureDialog = page.getByRole('dialog', { name: 'Select a column' })
+		await measureDialog.getByText('order_id', { exact: true }).click()
+
+		// A date x-axis shows a time scale. The demo orders run into 2018, and a
+		// month grain keeps every month under 100 orders.
+		const chart = chartOf(page)
+		await expect(chart.getByText('2017')).toBeVisible()
+		await expect(chart.getByText('2018')).toBeVisible()
+		await expect(chart.getByText('100')).toBeVisible()
+	})
+
+	// @feature charts.drill-rows charts.drill-rows-filter
+	test('a user drills down from a chart into rows', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		// The chart has a filter so that it plots one bar. Category order is
+		// not stable between runs, so a chart of every status has no bar this
+		// flow could name.
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS, {
+				filters: {
+					logical_operator: 'And',
+					filters: [
+						{
+							column: { type: 'column', column_name: 'order_status' },
+							operator: '=',
+							value: 'canceled',
+						},
+					],
+				},
+			}),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		const rendered = chartOf(page)
+		await expect(rendered.getByText('canceled')).toBeVisible()
+
+		// locator: a bar is a filled `<path>`. Every other path in an echarts SVG
+		// is an axis line or a split line, and those have `fill="none"`.
+		await rendered.locator('path[fill]:not([fill="none"])').click()
+
+		// A click shows two drills: the rows behind the bar, or a
+		// breakdown by another dimension. 53 of the 2,000 demo orders are
+		// canceled.
+		await page.getByRole('button', { name: 'View rows' }).click()
+
+		const drillDown = page.getByRole('dialog')
+		await expect(drillDown.locator('tbody tr:has(td)')).toHaveCount(53)
+		await expect(drillDown.getByRole('cell', { name: 'canceled' })).not.toHaveCount(0)
+
+		// The reader's own rules fold into the ad-hoc query behind these rows.
+		// The cut is already `order_status = canceled`, so a rule that excludes
+		// it leaves the level with nothing, and Clear brings the rows back.
+		const filterButton = drillDown.getByRole('button', { name: 'Filter', exact: true })
+		await filterButton.click()
+		await page.getByRole('option', { name: 'order_status' }).click()
+		await page.getByRole('option', { name: 'is not', exact: true }).click()
+		await page.getByRole('option', { name: 'canceled' }).click()
+		// A value list commits when the panel closes, and the trigger is what
+		// closes it.
+		await filterButton.click()
+
+		// A result with no rows renders no table at all, headers included, so what
+		// the level shows is the empty state and the rule that emptied it.
+		await expect(drillDown.locator('tbody tr:has(td)')).toHaveCount(0)
+		await expect(drillDown.getByText('No data to display.')).toBeVisible()
+		// The picker counts the rules it holds beside its own name, and lets the user
+		// drop them. Its `:label` is its accessible name, so the count is read off
+		// the text it renders.
+		await expect(filterButton).toContainText('1')
+		await expect(drillDown.getByRole('button', { name: 'Clear filters' })).toBeVisible()
+
+		await drillDown.getByRole('button', { name: 'Clear filters' }).click()
+		await expect(drillDown.locator('tbody tr:has(td)')).toHaveCount(53)
+		await expect(drillDown.getByRole('cell', { name: 'canceled' })).not.toHaveCount(0)
+	})
+
+	// @feature charts.number-comparison charts.number-sparkline
+	test('a number card shows a comparison and a sparkline', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Number',
+			config: {
+				number_columns: [COUNT_OF_ROWS],
+				number_column_options: [],
+				date_column: purchaseDate('month'),
+				comparison: true,
+				sparkline: true,
+			},
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+
+		// A Number chart renders plain HTML, not echarts, so `ChartBody` is what
+		// holds it alone.
+		const card = cardOf(page)
+		// A card reads the last date in the result, and compares it against the
+		// one before. The demo orders end with 74 in October 2018, against 85 in
+		// September.
+		await expect(card.getByText('count_of_rows')).toBeVisible()
+		await expect(card.getByText('74', { exact: true })).toBeVisible()
+		// locator: the drop reads as an arrow, which is an icon and has no
+		// text. The share beside it is the size of the drop, unsigned.
+		await expect(card.locator('.lucide-arrow-down-left')).toBeVisible()
+		await expect(card.getByText('12.94%')).toBeVisible()
+		await expect(card.getByText('vs previous month')).toBeVisible()
+
+		// The sparkline is plotted in the card itself, not as a chart of its own:
+		// one filled area under a line, down to the card's bottom edge.
+		await expect(cardOf(page).locator('svg path[fill]:not([fill="none"])')).not.toHaveCount(0)
+	})
+
+	// @feature charts.rename-while-saving charts.title
+	test('a user renames a chart while it saves and the newer name wins', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithQuery,
+	}) => {
+		const { workbook, query } = workbookWithQuery
+		const chart = await createChart(adminApi, {
+			workbook: workbook.name,
+			query: query.name,
+			chartType: 'Bar',
+			config: barConfig(ORDER_STATUS),
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+		await expect(chartOf(page).getByText('delivered')).toBeVisible()
+
+		const hold = holdFirstWrite(page, 'Insights Chart v3')
+		await hold.routed
+
+		// locator: the workbook navbar holds a second textbox, and "Untitled
+		// Workbook" contains "title" as a substring, so the match must be exact.
+		const title = page.getByRole('textbox', { name: 'Title', exact: true })
+		const first = `${chart.title} one`
+		const second = `${chart.title} two`
+
+		// The editor commits on Enter and saves 1.5 seconds later.
+		await title.fill(first)
+		await title.press('Enter')
+		await hold.started
+
+		// The second name is typed while the first write is still open.
+		await title.fill(second)
+		await title.press('Enter')
+		hold.release()
+
+		// The write in flight keeps the newer name instead of replacing it, and
+		// a second write sends that name to the server. Two writes, no storm.
+		await expect.poll(() => hold.titles).toEqual([first, second])
+
+		await page.reload()
+		await expect(page.getByRole('textbox', { name: 'Title', exact: true })).toHaveValue(second)
+		await expect(page.getByRole('link', { name: second })).toBeVisible()
+	})
+
+	// @feature charts.query-picker
+	test('a user points a chart at another query and it re-renders from it', async ({
+		page,
+		adminApi,
+		demoDataSource,
+		workbookWithChart,
+	}) => {
+		const { workbook, chart } = workbookWithChart
+		const items = await createQuery(adminApi, {
+			workbook: workbook.name,
+			title: uniqueTitle('Order Items'),
+			dataSource: demoDataSource,
+			table: 'orderitems',
+		})
+		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
+		await expect(chartOf(page).getByText('delivered')).toBeVisible()
+
+		// locator: the Query picker is a combobox under an inline label that is
+		// a plain span, not a `<label for>`, so getByLabel cannot reach it. The
+		// row holding the word "Query" is what names its control, and frappe-ui
+		// marks the control's trigger.
+		await page.locator('div:has(> span:text-is("Query")) [data-slot="trigger"]').click()
+		await page.getByRole('option', { name: items.title }).click()
+
+		// The builder re-reads its columns from the new query, so the X Axis
+		// picker lists that table's columns and none of the old ones.
+		const xAxis = section(page, 'X Axis')
+		await xAxis.getByRole('button', { name: 'order_status' }).click()
+		await expect(page.getByRole('option', { name: 'seller_id' })).toBeVisible()
+		await expect(page.getByRole('option', { name: 'order_status' })).toHaveCount(0)
+		await page.getByRole('option', { name: 'seller_id' }).click()
+
+		// The chart counts the 4,881 order items by seller, so the preview reads
+		// seller ids and the old categories are gone from the chart.
+		await expect(page.getByRole('cell', { name: /^SELL-/ })).not.toHaveCount(0)
+		await expect(chartOf(page).getByText('delivered')).toHaveCount(0)
+	})
+})

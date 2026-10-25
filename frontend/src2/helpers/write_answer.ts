@@ -1,0 +1,70 @@
+import { isEqual } from 'es-toolkit'
+import { copy } from './index'
+
+/**
+ * The document to hold after a write, given the three things that describe it.
+ *
+ * A write's answer is a receipt: it repeats what the write sent. Only what it
+ * says differently is news — `modified`, a field the server computed, a field
+ * this client may not write. So a field is taken from the answer when the answer
+ * differs from what was sent, and kept otherwise.
+ *
+ * Kept means the object itself, not an equal copy. The server sorts the keys of
+ * every JSON field it stores, so an answer holding the same config comes back
+ * holding it in a different order. Anything below that reads the config as a
+ * string (a memo key, a request signature) reads that as an edit and acts on
+ * it.
+ *
+ * @param current what is on screen now, without the framework's own fields
+ * @param answer the document the server sent back, already transformed
+ * @param sent the deep clone the write sent
+ */
+export function mergeWriteAnswer<T extends Record<string, any>>(
+	current: Record<string, any>,
+	answer: T,
+	sent: Record<string, any>,
+): T {
+	for (const field of Object.keys(current)) {
+		// An `undefined` value is dropped by `copy`, so keeping one here would
+		// make the document dirty forever. Let the answer win.
+		const held = copy(current[field])
+		if (held === undefined) continue
+
+		// The field moved after the write left, so the newer value wins.
+		if (!isEqual(held, sent[field])) {
+			;(answer as any)[field] = current[field]
+			continue
+		}
+
+		// The answer only repeats what the write sent, so nothing here is
+		// news. Keep what is already on screen.
+		if (isEqual(copy(answer[field]), sent[field])) {
+			;(answer as any)[field] = current[field]
+		}
+	}
+
+	return answer
+}
+
+/**
+ * The document to hold after the server rejected a write. The reverse of
+ * `mergeWriteAnswer`.
+ *
+ * A field goes back to the server's value only if it still holds the value the
+ * rejected write sent. If the author changed it while the write was in flight,
+ * the new value was not rejected, so it stays.
+ *
+ * @param current what is on screen now, without the framework's own fields
+ * @param original the document the server last sent back
+ * @param sent the deep clone the rejected write sent
+ */
+export function takeBackRefusal(
+	current: Record<string, any>,
+	original: Record<string, any>,
+	sent: Record<string, any>,
+) {
+	for (const field of Object.keys(sent)) {
+		if (isEqual(copy(current[field]), sent[field])) current[field] = copy(original[field])
+	}
+	return current
+}

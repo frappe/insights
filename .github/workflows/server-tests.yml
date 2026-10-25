@@ -25,7 +25,7 @@ jobs:
       SITE_NAME: test_site
       DB_ROOT_PASSWORD: root
       ADMIN_PASSWORD: admin
-      FRAPPE_BRANCH: develop
+      FRAPPE_BRANCH: version-16
 
     services:
       mariadb:
@@ -104,6 +104,8 @@ jobs:
           bench config set-common-config -c server_script_enabled 1
           bench new-site --db-root-password "$DB_ROOT_PASSWORD" --admin-password "$ADMIN_PASSWORD" "$SITE_NAME"
           bench --site "$SITE_NAME" install-app insights
+          # yarn caches every frappe-ui commit as 1.0.2, so Frappe would reuse Insights' pin
+          yarn cache clean frappe-ui
           bench build
         env:
           CI: "Yes"

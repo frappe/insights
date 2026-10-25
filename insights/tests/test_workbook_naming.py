@@ -1,4 +1,4 @@
-"""A workbook exported before the naming change carries a numeric name.
+"""A workbook exported before the naming change has a numeric name.
 
 `Insights Workbook` used to be named by `autoincrement`, so a fixture written on an
 older site holds `"name": 12`. The column is varchar now, and `validate_name` throws
@@ -12,6 +12,7 @@ from insights.tests.base import InsightsIntegrationTestCase
 
 
 class TestWorkbookNaming(InsightsIntegrationTestCase):
+    # @feature upgrade.older-export-imports
     def test_numeric_name_is_stored_as_string(self):
         frappe.flags.in_import = True
         try:

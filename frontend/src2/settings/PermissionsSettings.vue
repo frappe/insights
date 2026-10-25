@@ -1,10 +1,11 @@
 <script setup lang="tsx">
 import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
-import { Avatar, ListView } from 'frappe-ui'
+import { Avatar } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import Checkbox from '../components/Checkbox.vue'
+import NumberInput from '../components/NumberInput.vue'
 import { copy } from '../helpers'
 import session from '../session'
 import CreateTeamDialog from '../teams/CreateTeamDialog.vue'
@@ -60,8 +61,8 @@ const listOptions = ref({
 			showEditTeamDialog.value = true
 		},
 		emptyState: {
-			title: __('No teams.'),
-			description: __('No teams to display.'),
+			title: __('No teams'),
+			description: __('A team gives its members access to data sources and tables.'),
 			button: session.user.is_admin
 				? {
 						label: __('Create Team'),
@@ -80,7 +81,7 @@ const editTeam = ref<Team | null>(null)
 
 <template>
 	<div class="flex w-full flex-col gap-6 overflow-y-scroll p-8 px-10">
-		<h1 class="text-xl font-semibold">Permissions</h1>
+		<h1 class="text-2xl-semibold">Permissions</h1>
 
 		<SettingItem
 			label="Enable"
@@ -90,20 +91,20 @@ const editTeam = ref<Team | null>(null)
 		</SettingItem>
 
 		<SettingItem
-			label="Apply User Permissions"
-			description="Apply restrictions based on roles and user permissions defined on this site. Only applicable for site data source."
-		>
-			<Toggle v-model="settings.doc.apply_user_permissions" />
-		</SettingItem>
-
-		<SettingItem
 			label="Allow Data Download"
 			description="Allow users to download query results as CSV or Excel. A user can download only if both this toggle is on and its export permission is granted on the query. When disabled, only admins can download data."
 		>
 			<Toggle v-model="settings.doc.allow_download" />
 		</SettingItem>
 
-		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
+		<SettingItem
+			label="Export Row Limit"
+			description="Maximum number of rows in a CSV or Excel download. Set to 0 for no limit. Default is 1,00,000"
+		>
+			<NumberInput v-model="settings.doc.max_export_rows" class="w-28" />
+		</SettingItem>
+
+		<div class="flex w-full flex-col gap-3">
 			<SettingItem
 				label="Teams"
 				description="Create teams to group users and manage permissions."
@@ -116,11 +117,11 @@ const editTeam = ref<Team | null>(null)
 					@click="showCreateTeamDialog = true"
 				>
 					<template #prefix>
-						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</SettingItem>
-			<ListView class="h-full" v-bind="listOptions"> </ListView>
+			<ListView v-bind="listOptions"> </ListView>
 		</div>
 	</div>
 

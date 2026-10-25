@@ -1,215 +1,63 @@
 <script setup lang="ts">
-import { useStorage, useWindowSize } from '@vueuse/core'
-import { Edit3, RefreshCcw, Share2 } from 'lucide-vue-next'
-import { computed, provide, ref, watchEffect } from 'vue'
+import { ref } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
-import { downloadImage, safeJSONParse, waitUntil } from '../helpers'
-import { WorkbookChart, WorkbookQuery } from '../types/workbook.types'
-import useDashboard from './dashboard'
-import DashboardChartSelectorDialog from './DashboardChartSelectorDialog.vue'
-import DashboardItem from './DashboardItem.vue'
-import DashboardShareDialog from './DashboardShareDialog.vue'
-import VueGridLayout from './VueGridLayout.vue'
 import { __ } from '../translation'
+import type { WorkbookChart } from '../types/workbook.types'
+import { useDashboardBuilder } from './builder'
+import useDashboard from './dashboard'
+import DashboardActions from './DashboardActions.vue'
+import DashboardBody from './DashboardBody.vue'
+import DashboardEditActions from './DashboardEditActions.vue'
+import DashboardItem from './DashboardItem.vue'
+import EditableGridLayout from './EditableGridLayout.vue'
 
+// A dashboard in its workbook. It adds one thing to what other pages show: the
+// workbook's charts, which the owner can place on the dashboard.
+//
+// It renders its own header instead of mounting `DashboardPage`. The workbook's
+// navbar is already above it. A second header with a border under it would look
+// like two stacked navbars, so only the title sits here.
 const props = defineProps<{
 	dashboard_name: string
 	charts: WorkbookChart[]
-	queries: WorkbookQuery[]
 }>()
 
-const dashboard = useDashboard(props.dashboard_name)
-provide('dashboard', dashboard)
+const dashboard = useDashboardBuilder(props.dashboard_name, props.charts)
+const store = useDashboard(props.dashboard_name)
 
-const { width } = useWindowSize()
-const isMobile = computed(() => width.value < 1058)
-
-watchEffect(() => {
-	if (dashboard.editing || isMobile.value) {
-		dashboard.autoSave = false
-	} else {
-		dashboard.autoSave = true
-	}
-})
-
-await waitUntil(() => dashboard.isloaded)
-
-const showChartSelectorDialog = ref(false)
-
-function onDragOver(event: DragEvent) {
-	if (!event.dataTransfer) return
-	event.preventDefault()
-	event.dataTransfer.dropEffect = 'copy'
-}
-function onDrop(event: DragEvent) {
-	if (!event.dataTransfer) return
-	event.preventDefault()
-	const data = safeJSONParse(event.dataTransfer.getData('text/plain'))
-	const chartName = data.item.name
-	const chart = props.charts.find((c) => c.name === chartName)
-	if (!chart) return
-	if (!dashboard.editing) {
-		dashboard.editing = true
-	}
-	dashboard.addChart([chart], 'drag')
+function rename(title: string) {
+	store.doc.title = title
 }
 
-const showShareDialog = ref(false)
-
-const verticalCompact = useStorage('dashboard_vertical_compact', true)
-
-const dashboardContainer = ref<HTMLElement | null>(null)
-async function downloadDashboardImage() {
-	if (!dashboardContainer.value) return
-	await downloadImage(dashboardContainer.value, `${dashboard.doc.title}.png`)
-}
+// `DashboardEditActions` sits beside the dashboard's actions, not among them,
+// because only the builder has edit actions.
+const body = ref<InstanceType<typeof DashboardBody>>()
 </script>
 
 <template>
-	<div class="relative flex h-full w-full overflow-hidden bg-gray-50">
-		<div class="relative flex h-full w-full flex-col overflow-hidden">
-			<div class="flex items-center justify-between p-4 pb-3">
-				<ContentEditable
-					class="cursor-text rounded-sm text-lg font-semibold !text-gray-800 focus:ring-2 focus:ring-gray-700 focus:ring-offset-4"
-					:modelValue="dashboard.doc.title"
-					@returned="dashboard.doc.title = $event"
-					@blur="dashboard.doc.title = $event"
-					placeholder="Untitled Dashboard"
-				></ContentEditable>
-				<div class="flex gap-2">
-					<Button
-						v-if="!dashboard.editing"
-						variant="outline"
-						@click="() => dashboard.refresh(true)"
-						label="Refresh"
-					>
-						<template #prefix>
-							<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-						</template>
-					</Button>
-					<Button
-						v-if="!dashboard.editing && !dashboard.doc.read_only"
-						variant="outline"
-						@click="showShareDialog = true"
-						label="Share"
-					>
-						<template #prefix>
-							<Share2 class="h-4 text-gray-700" stroke-width="1.5" />
-						</template>
-					</Button>
-					<Button
-						v-if="!dashboard.editing"
-						variant="outline"
-						@click="dashboard.editing = true"
-						label="Edit"
-					>
-						<template #prefix>
-							<Edit3 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-						</template>
-					</Button>
-					<Button
-						v-if="dashboard.editing"
-						variant="outline"
-						icon-left="plus"
-						@click="showChartSelectorDialog = true"
-					>
-						Chart
-					</Button>
-					<Button
-						v-if="dashboard.editing"
-						variant="outline"
-						icon-left="plus"
-						@click="() => dashboard.addFilter()"
-					>
-						Filter
-					</Button>
-					<Button
-						v-if="dashboard.editing"
-						variant="outline"
-						icon-left="plus"
-						@click="() => dashboard.addText()"
-					>
-						Text
-					</Button>
-					<Button
-						v-if="dashboard.editing"
-						variant="solid"
-						icon-left="check"
-						@click="
-							() => {
-								dashboard.save()
-								dashboard.editing = false
-							}
-						"
-					>
-						Done
-					</Button>
-					<Dropdown
-						:button="{ icon: 'more-horizontal', variant: 'outline' }"
-						:options="[
-							{
-								label: __('Force Refresh'),
-								icon: RefreshCcw,
-								onClick: () => dashboard.refresh(true),
-							},
-							{
-								label: __('Export as PNG'),
-								variant: 'outline',
-								icon: 'download',
-								onClick: downloadDashboardImage,
-							},
-							dashboard.editing
-								? {
-										label: __('Compact Layout'),
-										icon: verticalCompact ? 'check-square' : 'square',
-										onClick: () => (verticalCompact = !verticalCompact),
-								  }
-								: null,
-							dashboard.editing
-								? {
-										label: __('Reset Layout'),
-										icon: 'refresh-ccw',
-										onClick: () => (
-											dashboard.discard(), (dashboard.editing = false)
-										),
-								  }
-								: null,
-						]"
-					/>
-				</div>
-			</div>
-			<div
-				ref="dashboardContainer"
-				class="flex-1 overflow-y-auto p-2 pt-0"
-				@dragover="onDragOver"
-				@drop="onDrop"
-			>
-				<VueGridLayout
-					v-if="dashboard.doc.items.length > 0"
-					class="h-fit w-full"
-					:class="[dashboard.editing ? 'mb-[20rem] !select-none' : '']"
-					:cols="20"
-					:disabled="!dashboard.editing"
-					:verticalCompact="verticalCompact"
-					:modelValue="dashboard.doc.items.map((item) => item.layout)"
-					@update:modelValue="
-						(newLayout) => {
-							if (!newLayout) return
-							dashboard.doc.items.forEach((item, idx) => {
-								item.layout = newLayout[idx]
-							})
-						}
-					"
-				>
-					<template #item="{ index }">
-						<DashboardItem :index="index" :item="dashboard.doc.items[index]" />
-					</template>
-				</VueGridLayout>
+	<div class="flex h-full w-full flex-col overflow-hidden">
+		<!-- the first card's own 8px inset completes the query view's 12px gap -->
+		<div class="flex h-7 flex-shrink-0 items-center justify-between gap-2 mx-4 mt-3 mb-1">
+			<ContentEditable
+				class="-ml-2 cursor-text text-lg-semibold !text-ink-gray-7"
+				:modelValue="dashboard.title"
+				@returned="rename"
+				@blur="rename"
+				:placeholder="__('Untitled Dashboard')"
+			/>
+
+			<div v-if="!dashboard.loading" class="flex flex-shrink-0 items-center gap-2">
+				<DashboardEditActions />
+				<DashboardActions :actions="body?.actions || []" />
 			</div>
 		</div>
+
+		<DashboardBody
+			ref="body"
+			class="min-h-0 flex-1"
+			:dashboard="dashboard"
+			:grid="EditableGridLayout"
+			:cell="DashboardItem"
+		/>
 	</div>
-
-	<DashboardChartSelectorDialog v-model="showChartSelectorDialog" :chartOptions="props.charts" />
-
-	<DashboardShareDialog v-if="showShareDialog" v-model="showShareDialog" />
 </template>

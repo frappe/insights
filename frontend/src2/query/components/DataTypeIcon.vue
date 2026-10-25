@@ -42,5 +42,5 @@ const icon = computed(() => {
 </script>
 
 <template>
-	<component :is="icon" class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+	<component :is="icon" class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 </template>
