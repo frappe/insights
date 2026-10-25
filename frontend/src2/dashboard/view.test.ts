@@ -258,6 +258,31 @@ describe('a filter with a default that the reader cleared', () => {
 	})
 })
 
+describe("an empty card's Reset filters", () => {
+	// @feature charts.reset-filters dashboard.filter-default
+	it("takes the filters back to the board's defaults, and stays hidden while they are there", async () => {
+		const withDefault = dashboardAnswer('Bar')
+		Object.assign(withDefault.items[1], { default_operator: '=', default_value: 'north' })
+		answer.dashboard = withDefault
+		const view = await opened('reset-to-default')
+		expect(view.filtered('chart-1')).toBe(false)
+
+		view.setFilter('region', { operator: '=', value: 'south' })
+		expect(view.filtered('chart-1')).toBe(true)
+		view.resetCardFilters('chart-1')
+		expect(view.filters).toEqual({ region: { operator: '=', value: 'north' } })
+		expect(view.filtered('chart-1')).toBe(false)
+
+		// cleared by hand, the default is back after a reset and after a reload
+		view.setFilter('region')
+		expect(view.filtered('chart-1')).toBe(true)
+		view.resetCardFilters('chart-1')
+		view.refresh()
+		await settled()
+		expect(view.filters).toEqual({ region: { operator: '=', value: 'north' } })
+	})
+})
+
 describe('a filter whose default arrives after the reader moved another filter', () => {
 	// The default may be one the owner adds, or the reader's user default once
 	// it is set. Both reach the View as the item's default.

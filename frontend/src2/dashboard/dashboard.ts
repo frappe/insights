@@ -3,11 +3,7 @@ import { call } from 'frappe-ui'
 import { computed, effectScope, reactive, ref, shallowRef, toRefs, watch, watchEffect } from 'vue'
 import { numberCardRows, numberReadings } from '../charts/adapter/number'
 import useChart, { type Chart } from '../charts/chart'
-import {
-	FILTER_TYPE_KINDS,
-	operatorOf,
-	type Filter,
-} from '../components/filter_picker/filter_picker'
+import { type Filter } from '../components/filter_picker/filter_picker'
 import useChartPreview, { type ChartPreviewContext } from '../charts/chart_preview'
 import { type DashboardFilterContext } from '../charts/chart_view'
 import { getUniqueId, safeJSONParse, showErrorToast, waitUntil } from '../helpers'
@@ -37,7 +33,14 @@ import {
 	sameBox,
 	writePlacement,
 } from './grid_placement'
-import { cellRulesFor, defaultFilterStates, FILTER_ROWS, invalidateDashboard } from './view'
+import {
+	cellRulesFor,
+	defaultFilterStates,
+	FILTER_ROWS,
+	filtersOffDefault,
+	invalidateDashboard,
+	withDefaults,
+} from './view'
 import type { GranularityType } from '../helpers/constants'
 
 /**
@@ -122,6 +125,16 @@ function makeDashboard(name: string) {
 	})
 
 	const filterStates = ref<FilterValues>({})
+	// a reader's user default stands in for the owner's
+	const filterDefaults = computed(() => {
+		const userDefaults = dashboard.doc.user_defaults || {}
+		const items = dashboard.doc.items.map((item) =>
+			item.type == 'filter' && item.filter_name in userDefaults
+				? { ...item, default_value: userDefaults[item.filter_name] }
+				: item,
+		)
+		return defaultFilterStates(items)
+	})
 
 	// What a reader filtered one card down to, per chart. It is a filter the
 	// reader owns and the document never holds: not saved with the dashboard, and
@@ -434,47 +447,34 @@ function makeDashboard(name: string) {
 		applyFilter(filter_name)
 	}
 
-	/**
-	 * Whether a filter says enough to narrow anything, which is the rule the
-	 * server states in `_filter_is_set`: an operator, and a value where the
-	 * operator asks for one.
-	 */
-	function isFilterSet(item: WorkbookDashboardFilter): boolean {
-		const state = filterStates.value[item.filter_name]
-		if (!state?.operator) return false
-
-		const kind = FILTER_TYPE_KINDS[item.filter_type]
-		const needsValue = operatorOf(kind, state.operator)?.needsValue ?? true
-		return !needsValue || ![undefined, null, ''].includes(state.value as any)
-	}
-
-	/** The saved filters that reach one card and are currently set. */
-	function filtersOn(chart_name: string): WorkbookDashboardFilter[] {
-		return dashboard.doc.items
-			.filter((item) => item.type === 'filter')
-			.map((item) => item as WorkbookDashboardFilter)
-			.filter((item) => Boolean(item.links?.[chart_name]) && isFilterSet(item))
+	function filtersOffDefaultOn(chart_name: string): string[] {
+		const reaching = dashboard.doc.items.filter(
+			(item) =>
+				item.type === 'filter' && (item as WorkbookDashboardFilter).links?.[chart_name],
+		) as WorkbookDashboardFilter[]
+		return filtersOffDefault(reaching, filterStates.value, filterDefaults.value)
 	}
 
 	/**
 	 * Whether this card's rows are narrowed by something the reader can undo:
-	 * the grid's own filters that reach it, and the filter the reader put on the
-	 * card. What the author filtered the chart by is the chart, not a filter.
+	 * the grid's own filters that reach it, moved off their defaults, and the
+	 * filter the reader put on the card. What the author filtered the chart by is
+	 * the chart, not a filter.
 	 */
 	function cardIsFiltered(chart_name: string): boolean {
-		return Boolean(filtersOn(chart_name).length || cardFiltersOn(chart_name).length)
+		return Boolean(filtersOffDefaultOn(chart_name).length || cardFiltersOn(chart_name).length)
 	}
 
-	/** Everything `cardIsFiltered` counts, taken off. */
+	/** Everything `cardIsFiltered` counts, taken back to its default. */
 	function resetCardFilters(chart_name: string) {
-		const cleared = filtersOn(chart_name)
-		cleared.forEach((item) => delete filterStates.value[item.filter_name])
+		const moved = filtersOffDefaultOn(chart_name)
+		filterStates.value = withDefaults(filterStates.value, filterDefaults.value, moved)
 		delete cardFilters.value[chart_name]
-		// A grid filter links several cards, so unsetting one from this card is a
+		// A grid filter links several cards, so resetting one from this card is a
 		// change to every card it reaches — the same act as answering it, run the
 		// same way. The card's own filter reaches nothing else, which is what the
 		// last line is for.
-		cleared.forEach((item) => applyFilter(item.filter_name))
+		moved.forEach(applyFilter)
 		refreshChart(chart_name)
 	}
 
@@ -580,14 +580,7 @@ function makeDashboard(name: string) {
 	// belongs to the document, and the owner is here to check it. A default fills
 	// only a filter that has no state yet.
 	waitUntil(() => dashboard.isloaded).then(() => {
-		const userDefaults = dashboard.doc.user_defaults || {}
-		const items = dashboard.doc.items.map((item) =>
-			item.type == 'filter' && item.filter_name in userDefaults
-				? { ...item, default_value: userDefaults[item.filter_name] }
-				: item,
-		)
-		const defaults = defaultFilterStates(items)
-		Object.entries(defaults).forEach(([filter_name, state]) => {
+		Object.entries(filterDefaults.value).forEach(([filter_name, state]) => {
 			if (filter_name in filterStates.value) return
 			filterStates.value[filter_name] = state
 		})

@@ -43,7 +43,7 @@ import type {
 	Layout,
 	WorkbookDashboardItemLayout,
 } from '../types/workbook.types'
-import { readFilters, writeFilters } from './filter_storage'
+import { forgetFilters, readFilters, writeFilters } from './filter_storage'
 import { layoutRank, ROW_HEIGHT, type CellRules } from './grid_placement'
 
 export type DashboardViewItem = WorkbookDashboardItemLayout & {
@@ -110,6 +110,43 @@ export function defaultFilterStates(items: FilterDefaults[]): FilterValues {
 		states[item.filter_name] = { operator, value: item.default_value }
 	})
 	return states
+}
+
+/**
+ * Whether a filter's state narrows anything: an operator, and a value where the
+ * operator asks for one. The server applies the same rule in `_filter_is_set`.
+ */
+export function filterNarrows(filter_type: FilterType | undefined, state?: FilterState) {
+	if (!state?.operator || !filter_type) return false
+	const kind = FILTER_TYPE_KINDS[filter_type]
+	const needsValue = operatorOf(kind, state.operator)?.needsValue ?? true
+	return !needsValue || ![undefined, null, ''].includes(state.value as any)
+}
+
+/** The filters among `items` that narrow other than their defaults do. */
+export function filtersOffDefault(
+	items: FilterDefaults[],
+	states: FilterValues,
+	defaults: FilterValues,
+): string[] {
+	return items
+		.filter((item) => item.type === 'filter' && item.filter_name)
+		.filter((item) => {
+			const state = states[item.filter_name!]
+			const narrows = filterNarrows(item.filter_type, state) ? state : null
+			return stableStringify(narrows) !== stableStringify(defaults[item.filter_name!] ?? null)
+		})
+		.map((item) => item.filter_name!)
+}
+
+/** `states` with each named filter back at its default, or unset where it has none. */
+export function withDefaults(states: FilterValues, defaults: FilterValues, names: string[]) {
+	const reset = { ...states }
+	names.forEach((name) => {
+		if (defaults[name]) reset[name] = defaults[name]
+		else delete reset[name]
+	})
+	return reset
 }
 
 /**
@@ -275,10 +312,10 @@ export type DashboardView = {
 		granularity?: GranularityType,
 	) => Promise<string[]>
 	cardRange: (chart: string, column: string) => Promise<[number, number] | undefined>
-	// whether a dashboard filter or a card filter narrows this card, so an empty
-	// card can say why
+	// whether a dashboard filter moved off its default or a card filter narrows
+	// this card, so an empty card can say why
 	filtered: (chart: string) => boolean
-	// clear every filter that `filtered` counts
+	// take every filter that `filtered` counts back to its default
 	resetCardFilters: (chart: string) => void
 	// Keyed by chart, not by cell. Several cells can show one chart (a Number
 	// chart has one cell per reading), and they share one read.
@@ -404,6 +441,7 @@ function makeDashboardPage(
 		items: [] as DashboardViewItem[],
 		verticalCompact: true,
 		filters: {} as FilterValues,
+		defaults: {} as FilterValues,
 		cardFilters: {} as Record<string, Filter[]>,
 		builderRoute: undefined as string | undefined,
 		// set only when the reader may edit. Chart routes use it
@@ -510,21 +548,22 @@ function makeDashboardPage(
 		reads.get(chart)?.load()
 	}
 
+	function filtersOffDefaultOn(chart: string) {
+		const reaching = state.items.filter((item) => item.charts?.includes(chart))
+		return filtersOffDefault(reaching, state.filters, state.defaults)
+	}
+
 	function filtered(chart: string) {
-		return Boolean(Object.keys(filtersFor(chart)).length || state.cardFilters[chart]?.length)
+		return Boolean(filtersOffDefaultOn(chart).length || state.cardFilters[chart]?.length)
 	}
 
 	function resetCardFilters(chart: string) {
-		const reaching = Object.keys(filtersFor(chart))
-		const kept = { ...state.filters }
-		reaching.forEach((filter_name) => delete kept[filter_name])
+		const moved = filtersOffDefaultOn(chart)
 		const { [chart]: _, ...cardFilters } = state.cardFilters
-		state.filters = kept
+		state.filters = withDefaults(state.filters, state.defaults, moved)
 		state.cardFilters = cardFilters
-		writeFilters(
-			state.name,
-			Object.fromEntries(reaching.map((filter_name) => [filter_name, null])),
-		)
+		// forgotten, not stored as the default, so a default the owner changes later applies
+		forgetFilters(state.name, moved)
 		// a dashboard filter applies to other cards too. Each one skips its load if
 		// its request is unchanged
 		rerun()
@@ -556,7 +595,8 @@ function makeDashboardPage(
 				state.items = doc.items
 				state.verticalCompact = doc.vertical_compact_layout
 				// the reader's last choice overrides the owner's defaults
-				state.filters = readFilters(doc.name, defaultFilterStates(doc.items))
+				state.defaults = defaultFilterStates(doc.items)
+				state.filters = readFilters(doc.name, state.defaults)
 				const editable = doc.can_write && doc.workbook
 				state.builderRoute = editable
 					? `/workbook/${doc.workbook}/dashboard/${doc.name}`

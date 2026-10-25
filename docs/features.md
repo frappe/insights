@@ -211,7 +211,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.copy-paste | A user copies a chart as JSON and pastes it into a workbook with its query. |
 | charts.expand | A user opens a chart full-size. |
 | charts.retry | A user retries a chart or a reading after a failed run. |
-| charts.reset-filters | A user clears a card's own filters and the grid filters reaching it in one step. |
+| charts.reset-filters | A user clears a card's own filters and takes the grid filters reaching it back to their defaults in one step. |
 | charts.rename-while-saving | A user renames a chart while it saves and the newer name wins. |
 | charts.drill-rows | A user clicks a segment and views the rows behind it, ranked by the clicked measure. |
 | charts.drill-changed-chart | A drill from a card whose chart changed after the card loaded says so, instead of drilling into the chart as it is now. |
