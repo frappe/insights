@@ -13,7 +13,11 @@ import { showErrorToast, wheneverChanges } from '../helpers'
 import session from '../session'
 import { __ } from '../translation'
 import DashboardCard from './DashboardCard.vue'
-import useDashboardStore, { DashboardListItem, useDashboardView } from './dashboards'
+import useDashboardStore, {
+	canOpenWorkbook,
+	DashboardListItem,
+	useDashboardView,
+} from './dashboards'
 
 const store = useDashboardStore()
 const router = useRouter()
@@ -116,11 +120,15 @@ const builderOptions = (dashboard: DashboardListItem) => [
 		icon: 'lucide-star',
 		onClick: () => toggleFavorite(dashboard),
 	},
-	{
-		label: __('Open Workbook'),
-		icon: 'lucide-external-link',
-		onClick: () => router.push(`/workbook/${dashboard.workbook}`),
-	},
+	...(canOpenWorkbook(dashboard)
+		? [
+				{
+					label: __('Open Workbook'),
+					icon: 'lucide-external-link',
+					onClick: () => router.push(`/workbook/${dashboard.workbook}`),
+				},
+		  ]
+		: []),
 	...(dashboard.can_write && dashboard.same_rows_for_every_reader
 		? [
 				{

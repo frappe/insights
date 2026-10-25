@@ -44,6 +44,11 @@ export type DashboardListItem = {
 	can_write: boolean
 }
 
+/** The server names the workbook only to a caller who may read it. */
+export function canOpenWorkbook(dashboard: Pick<DashboardListItem, 'workbook' | 'workbook_title'>) {
+	return Boolean(dashboard.workbook && dashboard.workbook_title != null)
+}
+
 const dashboards = ref<DashboardListItem[]>([])
 
 const loading = ref(false)

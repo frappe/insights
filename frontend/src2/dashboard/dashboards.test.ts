@@ -15,7 +15,7 @@ vi.hoisted(() => {
 const session = vi.hoisted(() => ({ user: { email: 'ann@x.com' }, isAuthorized: true }))
 vi.mock('../session', () => ({ default: session }))
 
-import { useDashboardView } from './dashboards'
+import { canOpenWorkbook, useDashboardView } from './dashboards'
 
 describe('the Dashboards view', () => {
 	// @feature dashboard.list-view
@@ -27,5 +27,16 @@ describe('the Dashboards view', () => {
 
 		session.user.email = 'bob@x.com'
 		expect(useDashboardView().value).toBe('list')
+	})
+})
+
+describe("a dashboard's workbook", () => {
+	// @feature dashboard.list
+	it('opens from the list only for a caller the server named it to', () => {
+		expect(canOpenWorkbook({ workbook: 'wb-1', workbook_title: 'Sales' })).toBe(true)
+		// a shipped board shared to the caller, whose workbook they may not read
+		expect(canOpenWorkbook({ workbook: 'wb-2', workbook_title: null })).toBe(false)
+		// a reader without an Insights role is sent neither
+		expect(canOpenWorkbook({})).toBe(false)
 	})
 })
