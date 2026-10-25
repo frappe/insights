@@ -21,7 +21,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     result_column,
 )
 from insights.insights.query_utils import reachable_operations, transitive_closure
-from insights.not_permitted import answers_refusal, refused_doctypes
+from insights.not_permitted import answers_refusal, refused_doctypes, roles_without_read
 from insights.permission_user import runs_as
 from insights.permissions import same_rows_for_every_reader
 from insights.preview_key import generate_preview_key
@@ -570,6 +570,17 @@ class InsightsDashboardv3(Document):
             .where((DocShare.read == 1) | (DocShare.write == 1))
             .run(as_dict=True)
         )
+
+    @frappe.whitelist()
+    def get_roles_without_read(self, roles: list[str]) -> dict[str, list[str]]:
+        """Which of `roles` can't read the doctypes this dashboard's charts read,
+        and what each needs. The share dialog warns of them before it saves:
+        a role that reads nothing on the dashboard gets No Access."""
+        if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
+            frappe.throw(
+                frappe._("You do not have permission to share this dashboard"), frappe.PermissionError
+            )
+        return roles_without_read(self.name, frappe.parse_json(roles) or [])
 
     @frappe.whitelist()
     def update_access(self, data: dict | str):

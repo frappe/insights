@@ -411,6 +411,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | permissions.request-body-not-trusted | Access is decided against the stored document, never against claims in the request. |
 | permissions.authoring-needs-role | Only a user with an Insights role previews or drills an unsaved config, and only over queries they can read. |
 | permissions.denied-says-no-access | Content a reader may not read answers No Access, and a reference that names nothing answers Not Found. A dashboard on which no chart would run for its reader answers No Access with the doctypes its charts need. |
+| permissions.roles-without-read | Saving a dashboard shared with roles first names each chosen role that can't read the doctypes its charts read, and what it needs; a second Save saves anyway. The user picker points to sharing by role for users it does not list. |
 | permissions.no-access-names-roles | A dashboard a signed-in reader may not read names the roles it is shared with when they hold none of them, so they know which role to ask an admin for. |
 | permissions.not-permitted-chart | A chart whose reader may not read a table, a permlevel column or a masked field it uses does not run, and its card names the doctypes it needs. |
 | permissions.no-access-when-nothing-is-permitted | A dashboard on which every chart is Not Permitted answers No Access to a reader, naming the doctypes its charts need. A dashboard with some permitted charts, or one the caller may write, opens with all its charts. |

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { toast, Tooltip } from 'frappe-ui'
-import { computed, inject, ref } from 'vue'
+import { Alert, toast, Tooltip } from 'frappe-ui'
+import { computed, inject, ref, watch } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import VisibilitySelector from '../components/VisibilitySelector.vue'
 import { copy, copyToClipboard } from '../helpers'
@@ -9,6 +9,7 @@ import { Visibility } from '../types/workbook.types'
 import useUserStore from '../users/users'
 import ShareUserRow from '../workbook/ShareUserRow.vue'
 import { Dashboard } from './dashboard'
+import { rolesWithoutReadLines, type RolesWithoutRead } from './roles_without_read'
 import { __ } from '../translation'
 
 const show = defineModel()
@@ -38,7 +39,32 @@ const hasChanged = computed(() => {
 	return JSON.stringify(prev) !== JSON.stringify(next)
 })
 
+// The chosen roles that can't read what the dashboard's charts read. Save
+// names them once, and the next Save saves anyway.
+const rolesWithoutRead = ref<RolesWithoutRead>()
+watch([visibility, visibleToRoles], () => (rolesWithoutRead.value = undefined), { deep: true })
+const warning = computed(() => rolesWithoutReadLines(rolesWithoutRead.value || {}))
+
+// the roles this Save adds: those already saved were checked when they were
+const addedRoles = computed(() => {
+	if (visibility.value !== 'Roles') return []
+	const saved =
+		dashboard.doc.visibility === 'Roles'
+			? (dashboard.doc.visible_to_roles || []).map((r) => r.role)
+			: []
+	return visibleToRoles.value.filter((role) => !saved.includes(role))
+})
+
 async function saveChanges() {
+	if (!rolesWithoutRead.value && addedRoles.value.length) {
+		// a check that failed has shown its error, and saves nothing unchecked
+		const answer = await dashboard
+			.call('get_roles_without_read', { roles: addedRoles.value })
+			.catch(() => undefined)
+		if (!answer) return
+		rolesWithoutRead.value = answer
+		if (warning.value.length) return
+	}
 	dashboard.doc.visibility = visibility.value
 	dashboard.doc.visible_to_roles = visibleToRoles.value.map((role) => ({ role }))
 	await dashboard.save()
@@ -81,7 +107,7 @@ function addSharedUser() {
 		:title="__('Share Dashboard')"
 		:actions="[
 			{
-				label: __('Save'),
+				label: warning.length ? __('Save anyway') : __('Save'),
 				variant: 'solid',
 				disabled: !hasChanged,
 				onClick: saveChanges,
@@ -111,6 +137,17 @@ function addSharedUser() {
 					}}
 				</p>
 
+				<Alert
+					v-if="warning.length"
+					theme="amber"
+					:title="warning.join(' ')"
+					:description="
+						__(
+							'People with only these roles see Not Permitted in place of the charts that read them.',
+						)
+					"
+				/>
+
 				<hr class="my-1 border-t border-outline-gray-1" />
 
 				<div class="flex flex-col">
@@ -120,6 +157,7 @@ function addSharedUser() {
 								v-model="selectedUserEmail"
 								placeholder="Search by name or email"
 								:hide-users="peopleWithAccess.map((u) => u.email)"
+								shares-with-roles
 							/>
 						</div>
 						<Button

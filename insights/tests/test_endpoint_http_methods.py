@@ -98,6 +98,7 @@ ENDPOINTS_ACCEPTING_GET = [
     "insights.insights.doctype.insights_chart_v3.insights_chart_v3.InsightsChartv3.published_reach",
     "insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3.InsightsDashboardv3.get_distinct_column_values",
     "insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3.InsightsDashboardv3.get_filter_column_range",
+    "insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3.InsightsDashboardv3.get_roles_without_read",
     "insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3.InsightsDashboardv3.track_view",
     "insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3.InsightsDashboardv3.update_access",
     "insights.insights.doctype.insights_data_source_v3.ibis.utils.get_code_completions",

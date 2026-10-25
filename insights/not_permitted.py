@@ -108,28 +108,85 @@ def answers_refusal(empty):
     return decorate
 
 
-def unreadable_doctypes(table_name: str, user: str | None = None) -> list[str]:
+def unreadable_doctypes(table_name: str, user: str | None = None, reads=None) -> list[str]:
     """The doctypes `user` would need read on to read `table_name`. Empty if none.
 
     A child table has no permissions of its own. It needs read on one of its
     parents, so every parent is named, and any one of them is enough.
+
+    `reads` answers whether a doctype is readable in place of desk's check for
+    `user`, as `role_reads` does for a role.
     """
     from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_parents
 
+    reads = reads or (lambda doctype: frappe.has_permission(doctype, "read", user=user))
     doctype = table_name.removeprefix("tab")
     if not frappe.get_meta(doctype).istable:
-        return [] if frappe.has_permission(doctype, "read", user=user) else [doctype]
+        return [] if reads(doctype) else [doctype]
 
     parents = get_parents(doctype)
-    if any(frappe.has_permission(parent, "read", user=user) for parent in parents):
+    if any(reads(parent) for parent in parents):
         return []
     return sorted(parents) or [doctype]
 
 
-def site_table_doctypes(data_source: str, table_name: str, user: str) -> list[str]:
+# the roles desk gives every signed-in desk user besides their own
+EVERY_DESK_USERS_ROLES = ("All", "Guest", "Desk User")
+
+
+def role_reads(role: str):
+    """Whether a reader who holds only `role` may read a doctype, by its role
+    permissions at level 0, as `frappe.has_permission` reads them."""
+    held = {role, *EVERY_DESK_USERS_ROLES}
+    return lambda doctype: any(
+        perm.read and perm.role in held and not perm.permlevel
+        for perm in frappe.get_meta(doctype).permissions
+    )
+
+
+def roles_without_read(dashboard: str, roles: list[str]) -> dict[str, list[str]]:
+    """The doctypes each of `roles` would need read on for every chart on
+    `dashboard` to run for a reader who holds only that role. A role that
+    reads them all is left out.
+
+    A chart that runs as its owner needs nothing of its reader. Off the site
+    database a role grants nothing on its own, and a team may still grant its
+    holders a table, so only desk's doctypes are named.
+    """
+    from insights.insights.query_utils import table_references, transitive_closure
+    from insights.permission_user import declared_owner
+
+    charts = frappe.get_all(
+        "Insights Dashboard Chart v3",
+        filters={"parent": dashboard, "parenttype": "Insights Dashboard v3"},
+        pluck="chart",
+    )
+    tables = set()
+    for chart in frappe.get_all(
+        "Insights Chart v3", filters={"name": ("in", charts or [""])}, fields=["name", "query"]
+    ):
+        if not chart.query or declared_owner(frappe._dict(doctype="Insights Chart v3", name=chart.name)):
+            continue
+        queries = [chart.query, *transitive_closure(chart.query)]
+        for operations in frappe.get_all(
+            "Insights Query v3", filters={"name": ("in", queries)}, pluck="operations"
+        ):
+            tables.update((ref["data_source"], ref["table_name"]) for ref in table_references(operations))
+
+    needed = {}
+    for role in roles:
+        reads = role_reads(role)
+        if doctypes := sorted(
+            {doctype for table in tables for doctype in site_table_doctypes(*table, reads=reads)}
+        ):
+            needed[role] = doctypes
+    return needed
+
+
+def site_table_doctypes(data_source: str, table_name: str, user: str | None = None, reads=None) -> list[str]:
     """The doctypes `user` would need read on to read a table. Empty off the
     site database, where no doctype grants a table, and for a table that has
-    no doctype."""
+    no doctype. `reads` is as for `unreadable_doctypes`."""
     from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
         is_site_db,
         strip_schema_prefix,
@@ -139,7 +196,7 @@ def site_table_doctypes(data_source: str, table_name: str, user: str) -> list[st
     if not is_site_db(data_source) or table == "tabSingles":
         return []
     try:
-        return unreadable_doctypes(table, user)
+        return unreadable_doctypes(table, user, reads)
     except frappe.DoesNotExistError:
         return []  # nosemgrep - a table without a doctype names no doctype to grant
 

@@ -1101,6 +1101,16 @@ class ADashboardWithNothingPermittedSaysNoAccess(ContentOverATableTheReaderCanno
 
         self.assertEqual(answer, {"not_permitted": {"doctypes": ["Deleted Document"]}})
 
+    # @feature permissions.roles-without-read
+    def test_sharing_a_dashboard_names_each_role_that_cannot_read_its_charts(self):
+        """A role that reads ToDo but not Deleted Document sees one card Not Permitted."""
+        dashboard = frappe.get_doc(DT.DASHBOARD, self.partly_board)
+
+        self.assertEqual(
+            dashboard.get_roles_without_read(["Insights User", "System Manager"]),
+            {"Insights User": ["Deleted Document"]},
+        )
+
     # @feature permissions.share-dashboard permissions.no-access-when-nothing-is-permitted
     def test_a_dashboard_shared_with_a_user_shows_its_charts_under_their_own_permissions(self):
         """A share on a dashboard reaches its charts. Their data stays the

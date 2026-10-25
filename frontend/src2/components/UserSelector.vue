@@ -11,6 +11,8 @@ const props = defineProps<{
 	// only for pickers whose server side rejects an address that belongs to
 	// nobody - otherwise a typo becomes a silent grant
 	allowCustomEmail?: boolean
+	// the dialog can share with a role, which reaches users the picker never lists
+	sharesWithRoles?: boolean
 }>()
 const selectedUserEmail = defineModel<string>()
 
@@ -59,13 +61,19 @@ const emptyText = computed(() =>
 
 // the picker lists Insights users only, so a colleague missing from it is
 // usually one without an Insights role
-const footerText = computed(() =>
-	props.allowCustomEmail
-		? __(
-				'Only users with an Insights role are listed. Type a full email address to share with anyone else.',
-		  )
-		: __('Only users with an Insights role are listed.'),
-)
+const footerText = computed(() => {
+	if (props.allowCustomEmail) {
+		return __(
+			'Only users with an Insights role are listed. Type a full email address to share with anyone else.',
+		)
+	}
+	if (props.sharesWithRoles) {
+		return __(
+			'Only users with an Insights role are listed. To reach desk users, pick Anyone with a selected role above.',
+		)
+	}
+	return __('Only users with an Insights role are listed.')
+})
 </script>
 
 <template>
