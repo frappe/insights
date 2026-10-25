@@ -16,6 +16,7 @@ import { tableLabel } from '../data_source/data_source'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
+import { stableStringify } from '../helpers/stable_stringify'
 import { useResultExport } from '../helpers/result_export'
 import { __ } from '../translation'
 import session from '../session'
@@ -757,28 +758,28 @@ export function makeQuery(name: string) {
 		})
 	}
 
+	// Only the steps, as text with sorted keys, so a save's reply with the same
+	// steps adds no entry, and neither does looking at an earlier step. An undo or
+	// redo shows the whole pipeline.
 	const history = useDebouncedRefHistory(
-		// @ts-ignore
 		computed({
-			get() {
-				return {
-					doc: query.doc,
-					activeOperationIdx: activeOperationIdx.value,
-					activeEditIndex: activeEditIndex.value,
-				}
-			},
-			set(value) {
-				Object.assign(query.doc, value.doc)
-				activeOperationIdx.value = value.activeOperationIdx
-				activeEditIndex.value = value.activeEditIndex
+			get: () => stableStringify(query.doc.operations),
+			set(value: string) {
+				query.doc.operations = JSON.parse(value)
+				activeOperationIdx.value = query.doc.operations.length - 1
 			},
 		}),
 		{
-			deep: true,
 			capacity: 100,
 			debounce: 500,
 		},
 	)
+	// The history starts before the document loads, and undoing to that start
+	// would empty the pipeline
+	query.onAfterLoad(() => {
+		history.commit()
+		history.clear()
+	})
 
 	const importingTables = ref(false)
 	async function refreshStoredTables() {

@@ -4,7 +4,11 @@ import { renderToString } from 'vue/server-renderer'
 import type { AdhocFilters } from '../types/query.types'
 
 const calls = vi.hoisted(() => [] as any[])
-const server = vi.hoisted(() => ({ refusal: null as Error | null, toasts: [] as string[] }))
+const server = vi.hoisted(() => ({
+	refusal: null as Error | null,
+	toasts: [] as string[],
+	doc: null as any,
+}))
 
 vi.mock('frappe-ui', async (importOriginal) => ({
 	...(await importOriginal<object>()),
@@ -12,12 +16,14 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 	call: (method: string, args: any) => {
 		calls.push({ method, args })
 		if (server.refusal) return Promise.reject(server.refusal)
+		if (method === 'insights.api.get_doc' && server.doc) return Promise.resolve(server.doc)
 		return Promise.resolve({ message: {} })
 	},
 }))
 
 import ChartQuerySelector from '../charts/components/ChartQuerySelector.vue'
-import useQuery, { makeAdhocQuery } from './query'
+import useQuery, { makeAdhocQuery, makeQuery } from './query'
+import { stableStringify } from '../helpers/stable_stringify'
 
 // The total is fetched under a query, and adhoc filters are one of the
 // query's two halves. A count left standing over a narrowed result states a
@@ -236,5 +242,69 @@ describe('an author stepping back through the pipeline', () => {
 		query.setActiveEditIndex(1)
 		expect(query.canUndo()).toBe(false)
 		expect(query.canRedo()).toBe(false)
+	})
+
+	// @feature query.undo-redo
+	it('takes back one step per press, whatever the saves in between replaced', async () => {
+		const query = makeAdhocQuery()
+		query.setSource(ordersTable)
+		await nextTick()
+		vi.advanceTimersByTime(500)
+		query.addFilterGroup({
+			logical_operator: 'And',
+			filters: [
+				{
+					column: { type: 'column', column_name: 'order_status' },
+					operator: '=',
+					value: 'canceled',
+				},
+			],
+		})
+		await nextTick()
+		vi.advanceTimersByTime(500)
+
+		// a save's reply: the same pipeline under a new timestamp, its keys sorted
+		// as the server stores JSON
+		const reply = (modified: string) =>
+			({
+				...query.doc,
+				modified,
+				operations: JSON.parse(stableStringify(query.doc.operations)),
+			}) as typeof query.doc
+		query.doc = reply('2026-10-25 10:00:00')
+		await nextTick()
+		vi.advanceTimersByTime(500)
+		// looking at an earlier step changes no step
+		query.setActiveOperation(0)
+		await nextTick()
+		vi.advanceTimersByTime(500)
+
+		query.history.undo()
+		expect(query.doc.operations.map((o) => o.type)).toEqual(['source'])
+
+		query.doc = reply('2026-10-25 10:00:01')
+		await nextTick()
+		vi.advanceTimersByTime(500)
+
+		query.history.redo()
+		expect(query.doc.operations.map((o) => o.type)).toEqual(['source', 'filter_group'])
+	})
+
+	// @feature query.undo-redo
+	it('has nothing to undo in a saved query just opened', async () => {
+		server.doc = {
+			doctype: 'Insights Query v3',
+			name: 'saved-query',
+			operations: JSON.stringify([{ type: 'source', table: ordersTable }]),
+		}
+		const query = makeQuery('saved-query')
+		await query.load()
+		server.doc = null
+		await nextTick()
+		vi.advanceTimersByTime(500)
+
+		query.history.undo()
+
+		expect(query.doc.operations.map((o) => o.type)).toEqual(['source'])
 	})
 })
