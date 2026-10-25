@@ -1,0 +1,204 @@
+<script setup lang="ts">
+import { Button } from 'frappe-ui'
+import { NumberCard } from 'frappe-ui/charts'
+import { InfoIcon, RefreshCcw } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { __ } from '../../translation'
+import type { NumberCardClickEvent, NumberCardEntry } from '../adapter/number'
+import type { ChartFailure } from '../adapter/types'
+import ChartStateMessage from './ChartStateMessage.vue'
+import TitleMark from './TitleMark.vue'
+
+// One reading of a Number Chart. Nothing here decorates: it fills its space and
+// reports a click.
+//
+// The reading is a card of frappe-ui's, rendered with its own surface, which is why
+// the filler tells the chrome to render none: a card inside a card would border
+// the reading twice.
+//
+// The card is the chart's only surface, so it renders every state: a skeleton
+// while the query runs, a dash when it returns nothing, the failure and the
+// retry when it fails. A reader who sees a titled card and a dash has been told
+// which reading is missing, which a message floating on the page never said.
+const props = defineProps<{
+	card: NumberCardEntry
+	/** Stand at cell size rather than fill the cell. See `NumberCards`. */
+	preview?: boolean
+	loading?: boolean
+	failure?: ChartFailure | null
+	drillable?: boolean
+}>()
+
+const emit = defineEmits<{
+	// eslint-disable-next-line no-unused-vars
+	cardClick: [event: NumberCardClickEvent]
+	retry: []
+}>()
+
+// `column` is what a drill names, `missing` stands in for the reading it names,
+// `height` is the row's to apply, and `info` goes behind the mark, so none of
+// them is something the card is handed.
+const reading = computed(() => {
+	// eslint-disable-next-line no-unused-vars
+	const { column, missing, height, info, ...card } = props.card
+	return card
+})
+
+// A cell naming a reading the chart no longer states is the card's own failure,
+// and the only one nothing can be done about: the query still runs, and running
+// it again will not bring the Measure back. So the message stands without the
+// retry beside it, and it is the author who removes the cell.
+const failure = computed<ChartFailure | null>(() =>
+	props.card.missing ? { headline: __('Reading not found') } : props.failure || null,
+)
+// A refusal is not a failed run: the reader cannot change their own
+// permissions, so the card shows it with no retry.
+const retryable = computed(
+	() => Boolean(props.failure) && !props.card.missing && props.failure?.kind !== 'notPermitted',
+)
+// A reading a drill can be asked about: the card has a reading to name, and the
+// source behind it supports drills. A public link's source does not, so the
+// card there is not shown as something to click.
+const drillable = computed(() => props.drillable !== false && !props.card.missing)
+// The host draws the card and its label. See `ChartAdapterInput`.
+const cardless = computed(() => props.card.card === false)
+
+// The card cuts a number wider than itself, so the number is set at the size
+// that fits its printed length into the card, and never above the card's own.
+// 0.62em is about the width of one of Inter's tabular digits.
+const readingLength = computed(() => {
+	const { value, format, prefix, suffix } = props.card
+	if (typeof value !== 'number') return 0
+	return `${prefix ?? ''}${format ? format(value) : value}${suffix ?? ''}`.length
+})
+</script>
+
+<template>
+	<!-- `NumberCard` cuts its title to one line and shows no tooltip for it, so the
+	     whole card shows the title on hover -->
+	<div
+		class="min-w-0"
+		:class="[
+			preview ? 'min-w-[11rem] shrink-0 basis-[calc(20%-0.8rem)]' : 'flex-1',
+			drillable ? 'cursor-pointer' : undefined,
+		]"
+		:style="{
+			containerType: 'inline-size',
+			'--reading-length': readingLength,
+			...(preview ? { height: `${card.height}px` } : {}),
+		}"
+		:title="card.title"
+		@click="drillable && emit('cardClick', { column: card.column })"
+	>
+		<!-- Card-less, the card's title row stays as an empty row, and `-mt-1.5`
+		     takes back the gap under it so the number starts where the host's
+		     own number would. The number and its comparison take the size of the
+		     host's own: `text-3xl-semibold` is the class `NumberCard` prints its
+		     value and loading line in, `text-sm` its comparison row. The host
+		     sizes its body to the card, so the card takes no `h-full`: against
+		     that height it would cut the `-mt-1.5` off its last row. -->
+		<NumberCard
+			v-bind="reading"
+			:class="
+				cardless
+					? '-mt-1.5 [&_.text-3xl-semibold]:text-xl-semibold [&_.text-sm]:text-p-base [&_.text-sm-medium]:text-p-base-medium'
+					: 'h-full !py-2 [&_.text-3xl-semibold]:[font-size:min(1.5rem,calc((100cqi_-_2rem)_/_(var(--reading-length)_*_0.62)))]'
+			"
+			:title="cardless ? '' : reading.title"
+			:loading="props.loading && !card.missing"
+			:error="failure?.headline"
+		>
+			<!-- The state every other chart type is given by the chrome around its
+			     plot. A card is its own chrome, so it says it here, in the words
+			     the chrome says it in. One line, in place of the number: a card
+			     with no comparison is a line shorter than the card's own dash
+			     and caption under it. -->
+			<template v-if="!card.missing" #empty>
+				<p class="text-p-base text-ink-gray-5">{{ __('No data') }}</p>
+			</template>
+
+			<!-- No reason under it: the cell's height is the card's own and any
+			     taller block is a block the card cuts in half, so the whole of it
+			     waits on hover. -->
+			<!-- Card-less, the title row is empty and sits on the host card's top
+			     edge, which cuts what stands in it. There is no number beside a
+			     failure, so the retry stands beside the message. -->
+			<template v-if="failure" #error>
+				<div v-if="cardless" class="flex min-w-0 items-center gap-1.5">
+					<ChartStateMessage :failure="failure" />
+					<Button
+						v-if="retryable"
+						variant="ghost"
+						size="xs"
+						:title="__('Retry')"
+						@click.stop="emit('retry')"
+					>
+						<template #icon>
+							<RefreshCcw class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+						</template>
+					</Button>
+				</div>
+				<ChartStateMessage v-else :failure="failure" />
+			</template>
+
+			<!-- An empty `title` ends the card's: a mark's own tooltip is what shows
+			     when the reader points at it. -->
+			<template v-if="!cardless && (card.info || $slots['title-suffix'])" #title-suffix>
+				<span class="flex items-center gap-1.5" title="">
+					<TitleMark v-if="card.info" :icon="InfoIcon" :label="__('Info')">
+						<div class="whitespace-pre-line">{{ card.info }}</div>
+					</TitleMark>
+					<slot name="title-suffix" />
+				</span>
+			</template>
+
+			<!-- Card-less, the marks follow the comparison instead, for the same
+			     reason as the retry. The caption is `NumberCard`'s own. -->
+			<template
+				v-if="cardless && (card.info || $slots['title-suffix'])"
+				#caption="{ caption }"
+			>
+				<span v-if="caption" :title="caption" class="truncate text-ink-gray-5">
+					{{ caption }}
+				</span>
+				<span class="flex shrink-0 items-center gap-1.5" title="">
+					<TitleMark v-if="card.info" :icon="InfoIcon" :label="__('Info')">
+						<div class="whitespace-pre-line">{{ card.info }}</div>
+					</TitleMark>
+					<slot name="title-suffix" />
+				</span>
+			</template>
+
+			<!-- The retry sits in the title row, which has zero height, so the
+			     action costs the message none of the card. It is the smallest
+			     control in the library for the same reason: one taller than the
+			     title's line stands outside the row and reads as though the card is
+			     padded less at the top. `-me-1.5` gives back the button's own
+			     inset, so it is the glyph and not its hit box that stands the
+			     card's own distance from the edge. -->
+			<template v-if="(retryable && !cardless) || $slots.actions" #actions>
+				<!-- The host's own acts, beside the card's. A click on one of them
+				     is not a click on the reading, so it stops here rather than
+				     opening a drill. See `NumberCards`. They come before the retry
+				     because a host may hide them until hover, and a hidden act still
+				     takes its width. -->
+				<span class="flex items-center last:-me-1.5" @click.stop>
+					<slot name="actions" />
+				</span>
+
+				<Button
+					v-if="retryable && !cardless"
+					class="-me-1.5"
+					variant="ghost"
+					size="xs"
+					:title="__('Retry')"
+					@click.stop="emit('retry')"
+				>
+					<template #icon>
+						<RefreshCcw class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />
+					</template>
+				</Button>
+			</template>
+		</NumberCard>
+	</div>
+</template>

@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 200
+          fetch-depth: 0
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -39,16 +39,45 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      # `@framework/ui` links to `../../frappe/ui`.
+      - name: Check out frappe's UI package
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/frappe/frappe ../frappe
+          git -C ../frappe sparse-checkout set ui
+
+      - name: Install frontend dependencies
+        run: yarn --cwd frontend install --frozen-lockfile
+
       - name: Install and Run Pre-commit
         uses: pre-commit/action@v3.0.1
         with:
           extra_args: --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.event.pull_request.head.sha }}
 
-      - name: Download Semgrep rules
-        run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
-
-      - name: Download semgrep
-        run: pip install semgrep
+      - name: Check feature coverage
+        run: python insights/tests/features.py check
 
       - name: Run Semgrep rules
-        run: semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
+        run: pre-commit run semgrep --hook-stage pre-push --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.event.pull_request.head.sha }}
+
+  deps-vulnerable-check:
+    name: 'Vulnerable Dependency Check'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install and run pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit --desc on .

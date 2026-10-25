@@ -11,13 +11,17 @@ import sqlglot
 import sqlglot.expressions as sqlglot_exp
 import sqlparse
 from frappe.model.document import Document
+from frappe.utils.password import delete_all_passwords_for
 from ibis import _
 
+from insights import standard
 from insights.decorators import insights_whitelist
-from insights.exceptions import QueryRefused
+from insights.exceptions import QueryRefused, UnknownColumn
+from insights.insights.doctype.insights_data_source_v3.ibis.functions import _apply_granularity
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
     IbisQueryBuilder,
+    clamp,
     execute_ibis_query,
     get_columns_from_schema,
     is_carried_currency_column,
@@ -25,6 +29,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 )
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import source_type
 from insights.insights.query_utils import (
+    check_source_workbook,
     extract_query_deps_from_operations,
     find_cycle,
     get_direct_dependencies,
@@ -32,7 +37,17 @@ from insights.insights.query_utils import (
     source_tables,
     sync_query_references,
 )
-from insights.utils import as_text, deep_convert_dict_to_dict, get_currency_symbols
+from insights.not_permitted import answers_refusal
+from insights.utils import (
+    as_text,
+    deep_convert_dict_to_dict,
+    get_currencies,
+    refuse_delete_while_linked,
+)
+
+MAX_PROFILE_VALUES = 1_000
+
+PERIOD_GRAINS = ("year", "fiscal_year", "quarter", "fiscal_quarter", "month")
 
 
 class InsightsQueryv3(Document):
@@ -52,6 +67,7 @@ class InsightsQueryv3(Document):
         is_builder_query: DF.Check
         is_native_query: DF.Check
         is_script_query: DF.Check
+        kept_for_desk: DF.Check
         old_name: DF.Data | None
         operations: DF.JSON | None
         sort_order: DF.Int
@@ -67,11 +83,23 @@ class InsightsQueryv3(Document):
         return super().get_valid_dict(*args, **kwargs)
 
     def as_dict(self, *args, **kwargs):
+        from insights.permissions import can_write
+
         d = super().as_dict(*args, **kwargs)
-        d.read_only = not self.has_permission("write")
+        d.read_only = not can_write(self)
         return d
 
+    def before_rename(self, old_name, new_name, merge=False):
+        standard.guard_member(self)
+
+    def after_rename(self, old_name, new_name, merge=False):
+        standard.export_member(self)
+
     def on_trash(self):
+        standard.guard_member(self)
+        if not (self.flags.force_delete or standard.deleted_with_workbook(self)):
+            refuse_delete_while_linked(self, taken=("Insights Alert", "Insights Query Reference"))
+
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
 
@@ -83,22 +111,33 @@ class InsightsQueryv3(Document):
         if self.folder:
             self.cleanup_empty_folder(self.folder)
 
+    def after_delete(self):
+        standard.export_member(self)
+        delete_variable_secrets(self.variables)
+
     def validate(self):
+        from insights.permissions import check_trusted_code_author
+
+        standard.guard_member(self)
+        before = self.get_doc_before_save()
+        check_trusted_code_author([(self.title, self.operations, before and before.operations)])
         self._validate_no_circular_dependency()
         self._validate_referenced_queries()
 
     def _validate_referenced_queries(self):
-        """A query may only reference a query its author can read.
+        """A query may only reference a query of its own workbook that its author can read.
 
-        Only a newly added reference is checked, so an existing one stays saveable
-        by anyone who may already read this query.
+        Read access is checked for a newly added reference only, so an existing
+        one stays saveable by anyone who may already read this query.
         """
         from insights.permissions import check_referenced_query_access
 
         before = self.get_doc_before_save()
         existing = referenced_queries(before.operations) if before else set()
-        for dep in referenced_queries(self.operations) - existing:
-            check_referenced_query_access(dep)
+        for dep in referenced_queries(self.operations):
+            if dep not in existing:
+                check_referenced_query_access(dep)
+            check_source_workbook(self.workbook, dep)
 
     def _validate_no_circular_dependency(self):
         """Raise an error if the current operations would create a circular query reference."""
@@ -119,13 +158,12 @@ class InsightsQueryv3(Document):
             )
 
     def on_update(self):
-        frappe.enqueue(
-            sync_query_references,
-            query_name=self.name,
-            operations=self.operations,
-            enqueue_after_commit=True,
-            now=bool(frappe.flags.in_test),
-        )
+        standard.export_member(self)
+        before = self.get_doc_before_save()
+        if before:
+            kept = {variable.name for variable in self.variables}
+            delete_variable_secrets([variable for variable in before.variables if variable.name not in kept])
+        sync_query_references(self.name, self.operations)
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
@@ -148,21 +186,42 @@ class InsightsQueryv3(Document):
         """Collect all leaf table references from this query and its transitive dependencies.
 
         Which tables a query reads is a forward question, so each row answers its
-        own. The edge table lags every write, and this runs right after a save.
+        own.
         """
         return source_tables(self.name, self.operations)
 
-    def build(self, active_operation_idx=None, use_live_connection=None):
+    @property
+    def execution_reference(self):
+        """The query an execution log made by this document names.
+
+        A chart runs through a query document that is never saved, so the log
+        would name a query nobody can look up. It points at the source query
+        instead, the one with reference rows, which is how the data store learns
+        that a table is still being read.
+        """
+        return self.flags.execution_reference or self.name
+
+    def build(
+        self, active_operation_idx=None, use_live_connection=None, force=False, import_if_not_exists=True
+    ):
+        return self.get_builder(active_operation_idx, use_live_connection, force, import_if_not_exists).query
+
+    def get_builder(
+        self, active_operation_idx=None, use_live_connection=None, force=False, import_if_not_exists=True
+    ) -> IbisQueryBuilder:
+        """The builder after building this query. A caller that names a column
+        needs it, because `get_column` refuses a held-back name."""
         builder = IbisQueryBuilder(self, active_operation_idx)
         builder.use_live_connection = (
             use_live_connection if use_live_connection is not None else self.use_live_connection
         )
-        ibis_query = builder.build()
-
-        if ibis_query is None:
+        # a script runs while the query is built, so only the builder can skip its cache
+        builder.force = force
+        builder.import_if_not_exists = import_if_not_exists
+        if builder.build() is None:
             frappe.throw(frappe._("Failed to build query"), QueryRefused)
 
-        return ibis_query
+        return builder
 
     @property
     def interface(self):
@@ -205,15 +264,16 @@ class InsightsQueryv3(Document):
         Nothing else about it leaves the site: the SQL, the message and the names
         of columns and tables all stay here.
         """
-        from insights.telemetry import capture, error_kind
+        from insights.telemetry import caller, capture, error_kind
 
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - telemetry never fails the run it reports on
             capture(
                 "query_failed",
                 interface=self.interface,
                 error_kind=error_kind(exc),
                 data_store=not self.use_live_connection,
                 source_type=self.source_type,
+                caller=caller(),
             )
 
     @frappe.whitelist()
@@ -224,15 +284,22 @@ class InsightsQueryv3(Document):
         force: bool = False,
         page: int = 1,
         page_size: int = 100,
+        import_if_not_exists: bool = True,
     ):
         """Run this query and answer with its rows.
 
         Every surface's run arrives here: the builder, the SQL and script
         editors, and the query a chart mints from its config. So this method
         reports a failure once, and the failure travels on unchanged.
+
+        A Data Store run of a table not stored yet reads an empty table and
+        queues its import. Without `import_if_not_exists` it raises
+        `TableNotStored` instead.
         """
         try:
-            return self._run(active_operation_idx, adhoc_filters, force, page, page_size)
+            return self._run(
+                active_operation_idx, adhoc_filters, force, page, page_size, import_if_not_exists
+            )
         except Exception as e:
             self.capture_failure(e)
             raise
@@ -244,9 +311,12 @@ class InsightsQueryv3(Document):
         force: bool = False,
         page: int = 1,
         page_size: int = 100,
+        import_if_not_exists: bool = True,
     ):
         with set_adhoc_filters(adhoc_filters):
-            ibis_query = self.build(active_operation_idx)
+            ibis_query = self.build(
+                active_operation_idx, force=force, import_if_not_exists=import_if_not_exists
+            )
 
         results, time_taken = execute_ibis_query(
             ibis_query,
@@ -255,7 +325,7 @@ class InsightsQueryv3(Document):
             force=force,
             cache_expiry=60 * 10,
             reference_doctype=self.doctype,
-            reference_name=self.name,
+            reference_name=self.execution_reference,
         )
         results = results.to_dict(orient="records")
 
@@ -265,7 +335,7 @@ class InsightsQueryv3(Document):
         codes = {row[name] for name in carried for row in results}
 
         sql = None
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - a display hint; without it the result reads as not aggregated
             for op in frappe.parse_json(self.operations) or []:
                 if op.get("type") == "sql" and op.get("raw_sql"):
                     sql = op.get("raw_sql")
@@ -275,7 +345,7 @@ class InsightsQueryv3(Document):
             "sql": ibis.to_sql(ibis_query),
             "columns": columns,
             "rows": results,
-            "currency_symbols": get_currency_symbols(codes),
+            "currency_symbols": get_currencies(codes),
             "time_taken": time_taken,
             "is_aggregated_sql": _sql_has_group_by(sql) if sql else False,
         }
@@ -289,15 +359,37 @@ class InsightsQueryv3(Document):
 
     @insights_whitelist()
     def get_count(self, active_operation_idx: int | None = None, adhoc_filters: dict | None = None):
+        """The authoring client's endpoint for `count_rows`.
+
+        The `Insights User` role belongs to the endpoint a client reaches, not to
+        the computation behind it: a surface that settled its own read before it
+        counts anything calls the plain method instead.
+        """
+        return self.count_rows(active_operation_idx, adhoc_filters)
+
+    def count_rows(
+        self,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+        force: bool = False,
+    ):
+        """How many rows the query has, which is `execute`'s other half.
+
+        `force` for the same reason `execute` takes one: the count and the rows
+        are one answer, and they hash to different cache keys, so a caller that
+        forces the rows and not the count can print a page of fresh rows under a
+        stale total.
+        """
         with set_adhoc_filters(adhoc_filters):
-            ibis_query = self.build(active_operation_idx)
+            ibis_query = self.build(active_operation_idx, force=force)
 
         count_query = ibis_query.aggregate(count=_.count())
         count_results, _time_taken = execute_ibis_query(
             count_query,
+            force=force,
             cache_expiry=60 * 5,
             reference_doctype=self.doctype,
-            reference_name=self.name,
+            reference_name=self.execution_reference,
         )
         total_count = count_results.values[0][0]
         return int(total_count)
@@ -306,27 +398,25 @@ class InsightsQueryv3(Document):
     def download_results(
         self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
     ):
-        from insights.insights.doctype.insights_team.insights_team import is_admin
+        """Download this query's rows as a file, if `can_export` allows it. A
+        View's drill download checks the same."""
+        from insights.permissions import can_export
 
-        if not is_admin(frappe.session.user) and not frappe.db.get_single_value(
-            "Insights Settings", "allow_download"
-        ):
+        if not can_export(self):
             frappe.throw(
-                "You are not allowed to download data. Contact your administrator.",
+                frappe._("You are not allowed to download this data. Contact your administrator."),
                 frappe.PermissionError,
             )
 
-        if not is_admin(frappe.session.user) and not (
-            frappe.has_permission(self.doctype, ptype="export")
-            and frappe.has_permission(self.doctype, ptype="read", doc=self)
-        ):
-            frappe.throw(
-                frappe._(
-                    "Your role does not have the export permission for queries. Contact your administrator."
-                ),
-                frappe.PermissionError,
-            )
+        return self.export_rows(format, active_operation_idx, adhoc_filters)
 
+    def export_rows(
+        self, format: str = "csv", active_operation_idx: int | None = None, adhoc_filters: dict | None = None
+    ):
+        """This query's rows as the text of a file, capped at the site's `max_export_rows`.
+
+        Checks no permission; the caller checks `can_export`.
+        """
         with set_adhoc_filters(adhoc_filters):
             ibis_query = self.build(active_operation_idx)
 
@@ -344,8 +434,9 @@ class InsightsQueryv3(Document):
         if decimal_casts:
             ibis_query = ibis_query.mutate(**decimal_casts)
 
-        if hasattr(ibis_query, "limit"):
-            ibis_query = ibis_query.limit(100_000)
+        max_export_rows = frappe.db.get_single_value("Insights Settings", "max_export_rows")
+        if max_export_rows and hasattr(ibis_query, "limit"):
+            ibis_query = ibis_query.limit(max_export_rows)
 
         results, _ = execute_ibis_query(
             ibis_query,
@@ -365,6 +456,7 @@ class InsightsQueryv3(Document):
             return results.to_csv(index=False)
 
     @insights_whitelist()
+    @answers_refusal(list)
     def get_distinct_column_values(
         self,
         column_name: str,
@@ -372,38 +464,217 @@ class InsightsQueryv3(Document):
         search_term: str | None = None,
         limit: int = 20,
         adhoc_filters: dict | None = None,
+        granularity: str | None = None,
     ):
-        with set_adhoc_filters(adhoc_filters):
-            ibis_query = self.build(active_operation_idx)
-
-        values_query = (
-            ibis_query.select(column_name)
-            .filter(
-                getattr(_, column_name).notnull()
-                if not search_term
-                else getattr(_, column_name).ilike(f"%{search_term}%")
-            )
-            .distinct()
-            .head(limit)
+        """The Builder's endpoint for `distinct_column_values`, checked like
+        `get_count`. It answers a refusal as a View's picker does."""
+        return self.distinct_column_values(
+            column_name, active_operation_idx, search_term, limit, adhoc_filters, granularity
         )
+
+    def distinct_column_values(
+        self,
+        column_name: str,
+        active_operation_idx: int | None = None,
+        search_term: str | None = None,
+        limit: int = 20,
+        adhoc_filters: dict | None = None,
+        granularity: str | None = None,
+    ):
+        """The values a picker lists for `column_name`. With `granularity`, the
+        periods it has rows in instead, as each period's first day, newest first.
+        A date picker lists those and labels them itself, so `search_term` does
+        not narrow them, and `limit` is lifted to 500, so a long year list never
+        offers a year whose quarters were cut off."""
+        with set_adhoc_filters(adhoc_filters):
+            builder = self.get_builder(active_operation_idx)
+        column_name = builder.get_column(column_name).get_name()
+
+        if granularity:
+            if granularity not in PERIOD_GRAINS:
+                frappe.throw(
+                    frappe._("A date filter lists periods by {0}, not {1}").format(
+                        ", ".join(PERIOD_GRAINS), granularity
+                    ),
+                    QueryRefused,
+                )
+            if not (
+                builder.query[column_name].type().is_date()
+                or builder.query[column_name].type().is_timestamp()
+            ):
+                frappe.throw(frappe._("Only a Date or Datetime column has periods"), QueryRefused)
+            # far fewer distinct days than rows to move to their period
+            days = builder.query.select(column_name).filter(_[column_name].notnull()).distinct()
+            values_query = (
+                days.select(_apply_granularity(days[column_name], granularity))
+                .distinct()
+                .order_by(ibis.desc(column_name))
+                .head(max(limit, 500))
+            )
+        else:
+            values_query = (
+                builder.query.select(column_name)
+                .filter(
+                    _[column_name].notnull() if not search_term else _[column_name].ilike(f"%{search_term}%")
+                )
+                .distinct()
+                .head(limit)
+            )
         result, _time_taken = execute_ibis_query(
             values_query,
-            cache_expiry=24 * 60 * 60,
+            # periods follow new rows as charts do, other values change rarely
+            cache_expiry=60 * 10 if granularity else 24 * 60 * 60,
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
         return result[column_name].tolist()
 
     @insights_whitelist()
+    @answers_refusal(lambda: None)
+    def get_column_range(
+        self,
+        column_name: str,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+    ):
+        """The authoring client's endpoint for `column_range`, gated like `get_count`."""
+        return self.column_range(column_name, active_operation_idx, adhoc_filters)
+
+    def column_range(
+        self,
+        column_name: str,
+        active_operation_idx: int | None = None,
+        adhoc_filters: dict | None = None,
+    ) -> list | None:
+        """The smallest and largest a numeric column goes, as [min, max].
+
+        What a number filter lists to pick from. A fixed list of round numbers
+        lists 1,000 for a column of percentages and nothing at all for a column
+        of revenues, so the column is asked instead.
+        """
+        with set_adhoc_filters(adhoc_filters):
+            builder = self.get_builder(active_operation_idx)
+
+        column = builder.get_column(column_name)
+        range_query = builder.query.aggregate(min=column.min(), max=column.max())
+        result, _time_taken = execute_ibis_query(
+            range_query,
+            cache_expiry=24 * 60 * 60,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
+        )
+        # `tolist` for the reason `distinct_column_values` ends with it: a frame
+        # hands back the column's own scalar type, and an integer column's is one
+        # the response cannot serialize. A float column's subclasses `float`, so
+        # the whole feature works on prices and fails on quantities.
+        low, high = result["min"].tolist()[0], result["max"].tolist()[0]
+        if low is None or high is None:
+            return None
+        return [low, high]
+
+    @insights_whitelist()
+    def profile_column(
+        self, column_name: str, by: str | None = None, limit: int = 20, force: bool = False
+    ) -> dict:
+        """What the values of `column_name` look like, for an agent that is still asking questions.
+
+        Answers the row count, the null count, the distinct count, the smallest
+        and largest value, and the `limit` most frequent values with their share
+        of all rows. With `by`, it also answers `coverage`: the share of rows with
+        a value in `column_name`, for each of the `limit` most frequent values of `by`.
+
+        It accepts GET, so it never imports: a Data Store table that is not
+        stored refuses it with `TableNotStored`.
+        """
+        builder = self.get_builder(force=force, import_if_not_exists=False)
+        limit = clamp(limit, 1, MAX_PROFILE_VALUES)
+
+        def column(name):
+            # `get_column` also answers a stored name that drifted, such as the one
+            # column ending in `_<name>`. A name the agent typed is exact
+            resolved = builder.get_column(name)
+            if resolved.get_name() != name:
+                frappe.throw(frappe._("Column {0} does not exist in the table").format(name), UnknownColumn)
+            return resolved
+
+        selected = {"value": column(column_name)}
+        if by:
+            selected["group"] = column(by)
+        table = builder.query.select(**selected)
+
+        [summary] = self.run_records(
+            table.aggregate(
+                row_count=_.count(),
+                null_count=_.count() - table.value.count(),
+                distinct_count=table.value.nunique(),
+                min=table.value.min(),
+                max=table.value.max(),
+            ),
+            force,
+        )
+        row_count = summary["row_count"]
+
+        top_values = self.run_records(
+            table.filter(table.value.notnull())
+            .group_by("value")
+            .aggregate(count=_.count())
+            .order_by([ibis.desc("count"), "value"])
+            .limit(limit),
+            force,
+        )
+        profile = {
+            "column": column_name,
+            **summary,
+            "top_values": [
+                {"value": row["value"], "count": row["count"], "share": share(row["count"], row_count)}
+                for row in top_values
+            ],
+        }
+        if not by:
+            return profile
+
+        coverage = self.run_records(
+            table.group_by("group")
+            .aggregate(row_count=_.count(), non_null_count=table.value.count())
+            .order_by([ibis.desc("row_count"), "group"])
+            .limit(limit),
+            force,
+        )
+        profile["by"] = by
+        profile["coverage"] = [
+            {
+                "value": row["group"],
+                "row_count": row["row_count"],
+                "non_null_count": row["non_null_count"],
+                "share": share(row["non_null_count"], row["row_count"]),
+            }
+            for row in coverage
+        ]
+        return profile
+
+    def run_records(self, query, force: bool) -> list[dict]:
+        results, _time_taken = execute_ibis_query(
+            query,
+            paginate=False,
+            force=force,
+            cache_expiry=60 * 10,
+            reference_doctype=self.doctype,
+            reference_name=self.execution_reference,
+        )
+        return results.to_dict(orient="records")
+
+    @insights_whitelist()
+    @answers_refusal(list)
     def get_columns_for_selection(self, active_operation_idx: int | None = None):
         ibis_query = self.build(active_operation_idx)
         return [c for c in get_columns_from_schema(ibis_query.schema()) if not c.get("hidden")]
 
     def evaluate_alert_expression(self, expression):
-        builder = IbisQueryBuilder(self)
-        ibis_query = builder.build()
+        # force the build, as the alert message's rows and count do. `cache=False`
+        # below skips only the SQL cache, not a script's cached output
+        builder = self.get_builder(force=True)
         filter_expression = builder.evaluate_expression(expression)
-        ibis_query = ibis_query.filter(filter_expression)
+        ibis_query = builder.query.filter(filter_expression)
         ibis_query = ibis_query.limit(1)
         results, _ = execute_ibis_query(
             ibis_query,
@@ -481,9 +752,20 @@ class InsightsQueryv3(Document):
         return {"message": f"Importing {imported_count} table(s) to data store", "count": imported_count}
 
 
+def share(part, whole) -> float | None:
+    return part / whole if whole else None
+
+
+def delete_variable_secrets(variables) -> None:
+    """Delete the stored values of `variables`. frappe deletes the secrets of a
+    deleted document, but never those of a child row, on delete or on save."""
+    for variable in variables:
+        delete_all_passwords_for(variable.doctype, variable.name)
+
+
 def _sql_has_group_by(sql: str) -> bool:
     """Return True if SQL contains a GROUP BY
-    anywhere in its AST (including CTEs and subqueries that feed the outer SELECT).
+    anywhere in its AST (including CTEs and subqueries that the outer SELECT reads).
 
     Uses sqlglot to parse the SQL so that GROUP BY inside string literals or
     comments is correctly ignored. Falls back to False on any parse error.
@@ -499,7 +781,7 @@ def _sql_has_group_by(sql: str) -> bool:
             if stmt is not None and stmt.find(sqlglot_exp.Group) is not None:
                 return True
     except Exception:
-        pass
+        pass  # nosemgrep - SQL that does not parse is read as having no GROUP BY
     return False
 
 
@@ -507,7 +789,7 @@ def already_in_workbook(query_name, workbook) -> bool:
     """Whether `query_name` is a query the target workbook already holds.
 
     A reference that resolves here needs no copy, and the copy would be a second
-    row for one query. The file cannot answer this: it carries the exporting
+    row for one query. The file cannot answer this: it keeps the exporting
     site's workbook name, and `autoname` makes those a bare counter, so every
     site has a workbook "1". Ask the row.
     """
@@ -530,9 +812,15 @@ def import_query(query, workbook, id_map=None):
     from insights.insights.doctype.insights_workbook.insights_workbook import (
         _rewrite_query_references,
     )
+    from insights.permissions import check_trusted_code_author
 
     query = frappe.parse_json(query)
     query = deep_convert_dict_to_dict(query)
+
+    if id_map is None:
+        check_trusted_code_author(
+            [(q.doc.title, q.doc.operations, None) for q in imported_queries(query, workbook)]
+        )
 
     id_map = {} if id_map is None else id_map
     for name, dependency in ((query.get("dependencies") or {}).get("queries") or {}).items():
@@ -559,6 +847,14 @@ def import_query(query, workbook, id_map=None):
     new_query.insert()
 
     return new_query.name
+
+
+def imported_queries(query, workbook):
+    """`query` and every query its file includes that `import_query` copies into `workbook`."""
+    yield query
+    for name, dependency in ((query.get("dependencies") or {}).get("queries") or {}).items():
+        if not already_in_workbook(name, workbook):
+            yield from imported_queries(dependency, workbook)
 
 
 @contextmanager

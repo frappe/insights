@@ -1,10 +1,9 @@
 import { useTimeAgo } from '@vueuse/core'
 import { __ } from '../translation'
-import { call } from 'frappe-ui'
+import { call, toast } from 'frappe-ui'
 import { reactive, ref } from 'vue'
 import { showErrorToast } from '../helpers'
 import { confirmDialog } from '../helpers/confirm_dialog'
-import { createToast } from '../helpers/toasts'
 
 export type TeamMember = {
 	user: string
@@ -53,10 +52,7 @@ async function createTeam(team_name: string) {
 	return call('insights.api.user.create_team', { team_name })
 		.then(() => {
 			getTeams()
-			createToast({
-				message: __('Team created'),
-				variant: 'success',
-			})
+			toast.success(__('Team created'))
 		})
 		.catch((e: Error) => {
 			showErrorToast(e)
@@ -77,10 +73,7 @@ function deleteTeam(team_name: string) {
 				call('insights.api.user.delete_team', { team_name })
 					.then(() => {
 						getTeams()
-						createToast({
-							message: __('Team deleted'),
-							variant: 'success',
-						})
+						toast.success(__('Team deleted'))
 						resolve()
 					})
 					.catch((e: Error) => {
@@ -101,10 +94,7 @@ async function updateTeam(team: Team) {
 	return call('insights.api.user.update_team', { team })
 		.then(() => {
 			getTeams()
-			createToast({
-				message: __('Team updated'),
-				variant: 'success',
-			})
+			toast.success(__('Team updated'))
 		})
 		.catch((e: Error) => {
 			showErrorToast(e)
@@ -134,7 +124,6 @@ export default function useTeamStore() {
 		deleteTeam,
 	})
 }
-
 
 function getResourceTypeLabel(resource_type: string) {
 	if (resource_type === 'Insights Data Source v3') {

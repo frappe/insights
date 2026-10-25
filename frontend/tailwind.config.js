@@ -1,14 +1,38 @@
 import containerQueries from '@tailwindcss/container-queries'
-import frappeUIPreset from 'frappe-ui/tailwind'
+import frappeUIPreset, { content as frappeUIContent } from 'frappe-ui/tailwind'
 
 export default {
 	presets: [frappeUIPreset],
+	// A dashboard action names its icon as data (`pencil`), and the surface that
+	// draws it prefixes the class at run time. The scan never sees that literal,
+	// so the names the action list uses are declared here. A name missing from
+	// this list draws no icon, and nothing reports it.
+	safelist: [
+		'lucide-refresh-cw',
+		'lucide-refresh-ccw',
+		'lucide-download',
+		'lucide-pencil',
+		'lucide-check-square',
+		'lucide-square',
+	],
 	content: [
 		'./index.html',
-		'./src/**/*.{vue,js,ts,jsx,tsx}',
 		'./src2/**/*.{vue,js,ts,jsx,tsx}',
-		'./node_modules/frappe-ui/src/components/**/*.{vue,js,ts,jsx,tsx}',
-		'../node_modules/frappe-ui/src/components/**/*.{vue,js,ts,jsx,tsx}',
+		// frappe-ui says which of its own files emit classes. A hand-kept list
+		// here rots every time a family moves, and it rots silently: a class that
+		// is never scanned is not an error, it is a component that quietly draws
+		// wrong. Two have already been lost that way — the chart card's corner,
+		// and the list's grid.
+		...frappeUIContent,
+		// ListView is parked in `frappe-ui/experimental`, which that list leaves
+		// out on purpose: experimental carries no stability promise, so it is not
+		// part of the content contract. Insights depends on it anyway — the root
+		// export is gone and this is the only ListView there is — so it scans it
+		// itself. Remove this when the list moves to `frappe-ui/list`.
+		'./node_modules/frappe-ui/experimental/ListView/**/*.{vue,js,ts,jsx,tsx}',
+		'../node_modules/frappe-ui/experimental/ListView/**/*.{vue,js,ts,jsx,tsx}',
+		// @framework/ui ships no content list of its own.
+		'../../frappe/ui/src/**/*.{vue,js,ts,jsx,tsx}',
 	],
 	theme: {
 		container: {

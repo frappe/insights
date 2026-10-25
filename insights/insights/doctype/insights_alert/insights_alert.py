@@ -1,10 +1,12 @@
 # Copyright (c) 2023, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
+import html
 import re
 from datetime import datetime
 
 import frappe
 import pandas as pd
+import requests
 import telegram
 from croniter import croniter
 from frappe import _
@@ -12,11 +14,38 @@ from frappe.model.document import Document
 from frappe.utils import escape_html, get_url, validate_email_address
 from frappe.utils.data import get_datetime, get_datetime_str, now_datetime
 
+from insights.http import post_to_public_url, validate_public_url
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import FRAPPE_ERRORS
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     db_connections,
 )
-from insights.permission_user import permission_user
+from insights.permission_user import get_permission_user, may_run_as, permission_user
+from insights.permissions import workbook_of
 from insights.utils import deep_convert_dict_to_dict
+
+# The payload is a contract with somebody else's code. Version it, so it can
+# change without breaking every receiver that already parses it.
+WEBHOOK_PAYLOAD_VERSION = 1
+
+# A query with no ceiling on its rows must not become a mail or a POST with no
+# ceiling on its body. `count` still reports the real total.
+ALERT_MAX_ROWS = 100
+
+
+class SendRefused(frappe.PermissionError):
+    """The user an alert runs as may not send it. A scheduled run then disables the alert."""
+
+
+class CronUnreadable(frappe.ValidationError):
+    """The alert's cron is not one the scheduler can read. A scheduled run then disables the alert."""
+
+
+CRON_OF_FREQUENCY = {
+    "Monthly": "0 0 1 * *",
+    "Weekly": "0 0 * * 0",
+    "Daily": "0 0 * * *",
+    "Hourly": "0 * * * *",
+}
 
 
 class InsightsAlert(Document):
@@ -28,7 +57,7 @@ class InsightsAlert(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
-        channel: DF.Literal["Email", "Telegram"]
+        channel: DF.Literal["Email", "Telegram", "Webhook"]
         condition: DF.Code
         cron_format: DF.Data | None
         custom_condition: DF.Check
@@ -36,17 +65,24 @@ class InsightsAlert(Document):
         frequency: DF.Literal["Hourly", "Daily", "Weekly", "Monthly", "Cron"]
         last_execution: DF.Datetime | None
         message: DF.MarkdownEditor | None
-        next_execution: DF.Datetime | None
         permission_user: DF.Link | None
         query: DF.Link
         recipients: DF.SmallText | None
         telegram_chat_id: DF.Data | None
         title: DF.Data
+        webhook_token: DF.Password | None
+        webhook_url: DF.Data | None
     # end: auto-generated types
 
     def validate(self):
+        self.check_trusted_code()
+        # the form hides the field off Cron, so a cron left behind would run unseen
+        if self.frequency != "Cron":
+            self.cron_format = None
         if self.disabled:
             return
+
+        self.cron()
 
         if self.query:
             self.has_query_permission()
@@ -54,10 +90,16 @@ class InsightsAlert(Document):
         if self.channel == "Email":
             self.get_recipients()
 
+        if self.channel == "Webhook":
+            self.validate_webhook()
+
         try:
             self.evaluate_condition()
+        except FRAPPE_ERRORS:
+            # the engine told its cause and the expression already
+            raise
         except Exception as e:
-            frappe.throw(f"Invalid condition: {e}")
+            frappe.throw(html.escape(f"{type(e).__name__}: {e}. Expression: {self.condition}", quote=False))
 
         self.set_permission_user()
 
@@ -82,22 +124,72 @@ class InsightsAlert(Document):
         if self.is_new() or self.has_value_changed("disabled"):
             self.permission_user = frappe.session.user
 
+    def validate_webhook(self):
+        if not self.webhook_url:
+            frappe.throw(_("Webhook URL is required for a webhook alert"))
+        if not self.webhook_token:
+            frappe.throw(_("Webhook token is required for a webhook alert"))
+        # Only what the URL says, not where it resolves. Resolving here would
+        # put a name lookup inside the save transaction and still prove nothing
+        # about send time. "Send test" is the button that answers that.
+        validate_public_url(self.webhook_url)
+
     def has_query_permission(self):
-        if not frappe.has_permission("Insights Query v3", "read", self.query):
-            frappe.throw("You do not have permission to access this query")
+        """Whether the user this alert runs as may read its query.
+
+        Checked on save for whoever saves, and on every send for whoever enabled
+        it. A share revoked or access lowered since the save must stop the next mail.
+        """
+        from insights.permissions import can_read_referenced_query
+
+        if not can_read_referenced_query(self.query):
+            frappe.throw(_("You do not have permission to access this query"), frappe.PermissionError)
+
+    def check_sender_may_download(self):
+        """A send mails the query's rows, so whoever sends it by hand must be
+        allowed to download them. The scheduler's session is Administrator, so a
+        scheduled run is not checked here, and alerts already running keep running."""
+        from insights.permissions import can_export
+
+        if not can_export(frappe.get_doc("Insights Query v3", self.query)):
+            frappe.throw(_("You may not download this query's rows, so you may not send them."), SendRefused)
 
     @frappe.whitelist(methods=["POST"])
     def send_alert(self, force: bool = False):
+        # Sending mails the author's recipients, so read access is not enough,
+        # and `run_doc_method` and the desk form check only read. Check the user
+        # the alert runs as, because the scheduler's session is Administrator.
+        # Check the document, not its name: an unsaved alert has no row to load,
+        # so its query's workbook decides.
+        runs_as = get_permission_user()
+        if not may_run_as(self.doctype, self, runs_as):
+            if not frappe.db.get_value("User", runs_as, "enabled"):
+                frappe.throw(_("{0}, who this alert runs as, is disabled.").format(runs_as), SendRefused)
+            workbook = workbook_of(self)
+            frappe.throw(
+                _("{0}, who this alert runs as, may not edit the workbook {1}.").format(
+                    runs_as, frappe.db.get_value("Insights Workbook", workbook, "title") or workbook
+                ),
+                SendRefused,
+            )
+        self.has_query_permission()
+        self.check_sender_may_download()
+
         results = self.evaluate_condition()
         if not results and not force:
             return
 
-        message = self.evaluate_message()
+        # Built once: the context runs the query, and a webhook alert sends the
+        # rendered message and the rows behind it.
+        context = self.get_message_context()
+        message = self.evaluate_message(context)
 
         if self.channel == "Email":
             self.send_email_alert(message)
         if self.channel == "Telegram":
             self.send_telegram_alert(message)
+        if self.channel == "Webhook":
+            self.send_webhook_alert(message, context)
 
         self.db_set("last_execution", now_datetime(), update_modified=False)
 
@@ -105,16 +197,53 @@ class InsightsAlert(Document):
         tg = TelegramAlert(self.telegram_chat_id)
         tg.send(message)
 
-    def get_author_email(self):
-        """The address a reply reaches.
+    def send_webhook_alert(self, message, context):
+        """POST the alert to the configured endpoint. The token travels in an
+        Authorization header rather than the URI, which would put it in the
+        receiver's access logs."""
+        payload = {
+            "version": WEBHOOK_PAYLOAD_VERSION,
+            "event": "insights_alert",
+            "message": message,
+            "context": {
+                "alert": context["alert"]["title"],
+                "query": context["query"]["title"],
+                "count": context["count"],
+                "rows": context["rows"][:ALERT_MAX_ROWS],
+                "truncated": context["count"] > ALERT_MAX_ROWS,
+                "triggered_at": get_datetime_str(now_datetime()),
+            },
+        }
 
-        `owner` is a User name, which is an address for an account created from
-        an invite and the literal "Administrator" for the admin. `sendmail`
-        refuses a reply_to it cannot parse, so an author it cannot resolve
-        leaves the mail without one rather than unsent.
-        """
-        email = frappe.db.get_value("User", self.owner, "email")
-        return email if email and validate_email_address(email) else None
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.get_password('webhook_token')}",
+        }
+
+        try:
+            # frappe.as_json, not requests' json=: query rows hold datetimes
+            # and Decimals that the plain encoder refuses.
+            response = post_to_public_url(
+                self.webhook_url,
+                data=frappe.as_json(payload),
+                headers=headers,
+            )
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            frappe.throw(
+                _("The webhook at {0} returned {1}").format(self.webhook_url, e.response.status_code)
+            )
+        except requests.RequestException as e:
+            # No log_error here: `send_alerts` logs, and the interactive caller
+            # reads the message. An OutboundRequestRefused already says what it
+            # refused, so it goes up untouched.
+            frappe.throw(
+                _("Could not deliver the alert to {0} ({1})").format(self.webhook_url, type(e).__name__)
+            )
+
+    def get_author_email(self):
+        """The reply-to address, or None. A mail without a reply-to is better than no mail."""
+        return email_of(self.owner)
 
     def send_email_alert(self, message):
         """Mail the alert, marked as one.
@@ -131,18 +260,27 @@ class InsightsAlert(Document):
             now=True,
         )
 
+    def check_trusted_code(self):
+        """Compare the condition with the stored alert's, not with the one the last
+        save saw. A send runs the condition from the request body, saved or not."""
+        from insights.permissions import check_trusted_code_author
+
+        stored = frappe.db.get_value(self.doctype, self.name, "condition") if self.name else None
+        check_trusted_code_author([(self.title, {"expression": self.condition}, {"expression": stored})])
+
     def evaluate_condition(self):
+        self.check_trusted_code()
         doc = frappe.get_doc("Insights Query v3", self.query)
         with db_connections():
             return doc.evaluate_alert_expression(self.condition)
 
-    def evaluate_message(self):
+    def evaluate_message(self, context):
         rows_pattern = r"{{\s*rows\s*}}"
         message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
 
-        context = self.get_message_context()
         message_md = render_template_restricted(message_md, context)
-        if self.channel == "Telegram":
+        # A webhook consumer wants the text, not the styled email body.
+        if self.channel in ("Telegram", "Webhook"):
             return message_md
 
         message_html = frappe.utils.md_to_html(message_md)
@@ -159,17 +297,21 @@ class InsightsAlert(Document):
         )
 
     def get_message_context(self):
+        # Read fresh, like the condition that fired. A cached page and a cached
+        # count expire at different times, so they may not match it or each other.
         doc = frappe.get_doc("Insights Query v3", self.query)
         with db_connections():
-            data = doc.execute()
+            rows = doc.execute(page_size=ALERT_MAX_ROWS, force=True)["rows"]
+            count = doc.count_rows(force=True)
 
-        rows = data["rows"]
         datatable = pd.DataFrame(rows).to_html(index=False)
+        if count > len(rows):
+            datatable += "<p>{}</p>".format(_("The first {0} of {1} rows").format(len(rows), count))
         datatable = f"<div class='datatable-container'>{datatable}</div>"
         return deep_convert_dict_to_dict(
             {
                 "rows": rows,
-                "count": len(rows),
+                "count": count,
                 "query": {
                     "title": doc.title,
                 },
@@ -199,27 +341,31 @@ class InsightsAlert(Document):
 
     @property
     def next_execution(self):
-        return get_datetime_str(self.get_next_execution())
+        try:
+            return get_datetime_str(self.get_next_execution())
+        except CronUnreadable:
+            return None  # nosemgrep - read whenever the document is, so the form still opens to fix the cron
+
+    def cron(self):
+        if self.frequency != "Cron":
+            return CRON_OF_FREQUENCY[self.frequency]
+        if not croniter.is_valid(self.cron_format or ""):
+            frappe.throw(
+                _(
+                    "{0} is not a cron the scheduler can read. Write five fields: minute, hour, day, month, weekday."
+                ).format(self.cron_format),
+                CronUnreadable,
+            )
+        return self.cron_format
 
     def get_next_execution(self):
-        CRON_MAP = {
-            "Monthly": "0 0 1 * *",
-            "Weekly": "0 0 * * 0",
-            "Daily": "0 0 * * *",
-            "Hourly": "0 * * * *",
-        }
-        if not self.cron_format:
-            self.cron_format = CRON_MAP[self.frequency]
-
         start_time = get_datetime(self.last_execution or datetime(2000, 1, 1))
-        return croniter(self.cron_format, start_time).get_next(datetime)
+        return croniter(self.cron(), start_time).get_next(datetime)
 
     def is_event_due(self):
-        if not self.last_execution:
-            return True
-
+        # read first, so an alert that never ran stops on an unreadable cron too
         next_execution = self.get_next_execution()
-        return next_execution <= now_datetime()
+        return not self.last_execution or next_execution <= now_datetime()
 
     @frappe.whitelist(methods=["POST"])
     def test_alert(self):
@@ -229,17 +375,118 @@ class InsightsAlert(Document):
 def send_alerts():
     alerts = frappe.get_all("Insights Alert", filters={"disabled": 0}, fields=["name", "permission_user"])
     for alert in alerts:
+        # Handling a failed run also writes and commits. If that fails, the
+        # alerts after it must still run in this window.
         try:
-            alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
-            if alert_doc.is_event_due():
-                # the scheduler runs as Administrator, so without this the alert
-                # would read every row of every table it names
-                with permission_user(alert.permission_user):
-                    alert_doc.send_alert()
-            frappe.db.commit()
+            run_alert(alert)
         except Exception:
             frappe.db.rollback()
-            frappe.log_error(title=f"Failed to send alert: {alert.name}")
+            frappe.log_error(title=f"Failed to record the failed run of alert: {alert.name}")
+
+
+def run_alert(alert):
+    try:
+        alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
+        if alert_doc.is_event_due():
+            # the scheduler runs as Administrator, so without this the alert
+            # would read every row of every table it names
+            with permission_user(alert.permission_user):
+                alert_doc.send_alert()
+        frappe.db.commit()
+    except (SendRefused, CronUnreadable) as refusal:
+        frappe.db.rollback()
+        stop(alert.name, str(refusal))
+    except Exception:
+        frappe.db.rollback()
+        frappe.log_error(title=f"Failed to send alert: {alert.name}")
+        record_execution(alert.name)
+        tell_owner_it_failed(alert.name)
+
+
+def record_execution(name: str):
+    """Mark an alert as run, whether or not it delivered.
+
+    `last_execution` is the cron's start point, so leaving it unset after a
+    failure makes the alert due again on the next four-minute tick. A webhook
+    pointed at an endpoint that is down would be retried forever, several
+    hundred times a day, against somebody else's server. The alert ran. The
+    next attempt belongs in the next scheduled window.
+
+    This runs after the rollback above, so it needs its own commit.
+    """
+    frappe.db.set_value("Insights Alert", name, "last_execution", now_datetime(), update_modified=False)
+    # The caller rolled back the failed alert. Without a commit of its own this
+    # write goes out with the next one, or with nothing at all.
+    frappe.db.commit()  # nosemgrep
+
+
+def stop(name: str, cause: str):
+    """Disable an alert that its enabler may no longer send, and tell the workbook's owner why.
+
+    Every later window would fail the same way. So it stays disabled until
+    someone enables it, and that person becomes the user it runs as. The
+    alert's owner is often the enabler, who may be disabled or removed, so the
+    workbook's owner gets the mail.
+    """
+    frappe.db.set_value("Insights Alert", name, "disabled", 1)
+    # the caller rolled back, so this write needs a commit of its own
+    frappe.db.commit()  # nosemgrep
+
+    try:
+        alert = frappe.get_doc("Insights Alert", name)
+        owner = email_of(frappe.db.get_value("Insights Workbook", workbook_of(alert), "owner"))
+        if not owner:
+            return
+        frappe.sendmail(
+            recipients=[owner],
+            subject=_("Insights Alert stopped: {0}").format(alert.title),
+            message=_(
+                "The alert {0} has stopped and is now disabled. {1} Enable it again to run it as yourself."
+            ).format(escape_html(alert.title), escape_html(cause)),
+            now=True,
+        )
+    except Exception:
+        frappe.log_error(title=f"Failed to tell the workbook owner that alert {name} stopped")
+
+
+def email_of(user: str | None) -> str | None:
+    """The address a mail to `user` reaches.
+
+    A User name is an email address for an account created from an invite, and
+    the literal "Administrator" for the admin. `sendmail` refuses an address it
+    cannot parse, so an unresolved user gets None and the mail still sends.
+    """
+    email = user and frappe.db.get_value("User", user, "email")
+    return email if email and validate_email_address(email) else None
+
+
+def tell_owner_it_failed(name: str):
+    """Mail the alert's owner that a scheduled run failed.
+
+    Nobody watches a scheduled run. An alert that stops sending looks the same
+    as one whose condition was never met. The next attempt is the next
+    scheduled window, so this sends at most one mail per window.
+
+    The mail says that the run failed, not why. The scheduler's session is
+    Administrator, so the error was written for someone who may configure the
+    data source. A driver error names the host and the account. The error
+    stays in the Error Log.
+    """
+    try:
+        alert = frappe.get_doc("Insights Alert", name)
+        owner = alert.get_author_email()
+        if not owner:
+            return
+        frappe.sendmail(
+            recipients=[owner],
+            subject=_("Insights Alert failed: {0}").format(alert.title),
+            message=_(
+                "The alert {0} could not run. It will try again at its next scheduled time. Ask your administrator for the error."
+            ).format(escape_html(alert.title)),
+            now=True,
+        )
+    except Exception:
+        frappe.log_error(title=f"Failed to tell the owner of alert {name} that it failed")
 
 
 class TelegramAlert:

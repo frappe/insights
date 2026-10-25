@@ -9,33 +9,11 @@ import pandas as pd
 from frappe.model.base_document import BaseDocument
 from frappe.website.page_renderers.template_page import TemplatePage
 
+from insights.hooks import insights_path
 
-class ResultColumn:
-    label: str
-    type: str | list[str]
-    options: dict = {}  # noqa: RUF012
 
-    @staticmethod
-    def from_args(label, type="String", options=None) -> "ResultColumn":
-        return frappe._dict(
-            {
-                "label": label or "Unnamed",
-                "type": type or "String",
-                "options": options or {},
-            }
-        )
-
-    @classmethod
-    def from_dict(cls, data: dict) -> "ResultColumn":
-        return frappe._dict(
-            label=data.get("alias") or data.get("label") or "Unnamed",
-            type=data.get("type") or "String",
-            options=data.get("format_option") or data.get("options") or data.get("format_options"),
-        )
-
-    @classmethod
-    def from_dicts(cls, data: list[dict]) -> list["ResultColumn"]:
-        return [cls.from_dict(d) for d in data]
+def get_app_url(path: str = "") -> str:
+    return f"/{insights_path}{path}"
 
 
 class DoctypeBase(BaseDocument):
@@ -80,26 +58,6 @@ class DoctypeBase(BaseDocument):
         return frappe.delete_doc(cls.doctype, name)
 
 
-class InsightsChart(DoctypeBase):
-    doctype = "Insights Chart"
-
-
-class InsightsTable(DoctypeBase):
-    doctype = "Insights Table"
-
-
-class InsightsQuery(DoctypeBase):
-    doctype = "Insights Query"
-
-
-class InsightsDataSource(DoctypeBase):
-    doctype = "Insights Data Source"
-
-
-class InsightsQueryResult(DoctypeBase):
-    doctype = "Insights Query Result"
-
-
 class InsightsDataSourcev3(DoctypeBase):
     doctype = "Insights Data Source v3"
 
@@ -136,6 +94,26 @@ def deep_convert_dict_to_dict(d):
         return new_list
 
     return d
+
+
+def refuse_delete_while_linked(doc, taken: tuple[str, ...]) -> None:
+    """Refuse a delete frappe's link check will refuse, before `on_trash` changes anything.
+
+    frappe asks after `on_trash`, and a refusal there leaves every change the
+    hook made to whoever commits next. `taken` names the doctypes the hook
+    deletes or rewrites itself, so their links never refuse.
+    """
+    from frappe.model.delete_doc import (
+        get_dynamic_linked_docs,
+        get_linked_docs,
+        raise_link_exists_exception,
+    )
+
+    for link in (*get_linked_docs(doc), *get_dynamic_linked_docs(doc)):
+        if link["reference_doctype"] not in taken:
+            raise_link_exists_exception(
+                doc, link["reference_doctype"], link["reference_docname"], link.get("at_position", "")
+            )
 
 
 def create_execution_log(sql, time_taken=0, query_name=None, data_store=False):
@@ -192,10 +170,10 @@ def anonymize_data(df, columns_to_anonymize, prefix_by_column=None):
     return df
 
 
-# A leading control character can carry a formula past an importer that trims
+# A leading control character can pass a formula past an importer that trims
 # before it parses, so it counts as a trigger. `@`, `+` and `-` also start
 # ordinary data — a handle, a phone number, a text-column negative — so they are
-# quoted only when the value carries the characters a formula needs to call.
+# quoted only when the value has the characters a formula needs to call.
 FORMULA_TRIGGERS = ("=", "\t", "\r", "\n")
 AMBIGUOUS_STARTS = ("@", "+", "-")
 CALL_CHARACTERS = frozenset("|!()")
@@ -241,9 +219,8 @@ class InsightsPageRenderer(TemplatePage):
             path = self.path
 
         embed_urls = [
-            "/insights_v2/public",
-            "/insights/public",
-            "/insights/shared",
+            get_app_url("/public"),
+            get_app_url("/shared"),
         ]
         if not any(path.startswith(url) for url in embed_urls):
             return False
@@ -266,26 +243,35 @@ class InsightsPageRenderer(TemplatePage):
         self.headers["Content-Security-Policy"] = f"frame-ancestors 'self' {allowed_origins}"
 
 
-def get_currency_symbols(codes) -> dict:
-    """The symbol for each currency code.
+def get_currencies(codes) -> dict:
+    """The symbol and number format of each currency code.
 
     Codes arrive with each result, so nothing is sent ahead. A code with no Currency
     row, or with no symbol, prints as the code, the way fmt_money does.
-    `hide_currency_symbol` empties every symbol.
+    `hide_currency_symbol` empties every symbol. A currency's number format is sent
+    only under `use_number_format_from_currency`, the flag Desk reads it under.
     """
     codes = {code for code in codes if code}
-    if not codes or frappe.utils.cint(frappe.defaults.get_global_default("hide_currency_symbol")):
+    if not codes:
         return {}
 
+    hide_symbol = frappe.utils.cint(frappe.defaults.get_global_default("hide_currency_symbol"))
+    use_currency_format = frappe.utils.cint(
+        frappe.db.get_single_value("System Settings", "use_number_format_from_currency")
+    )
     # one read: a measure pointed at the wrong column names as many codes as rows
     rows = frappe.db.get_all(
-        "Currency", filters={"name": ("in", list(codes))}, fields=["name", "symbol", "symbol_on_right"]
+        "Currency",
+        filters={"name": ("in", list(codes))},
+        fields=["name", "symbol", "symbol_on_right", "number_format"],
     )
     known = {row.name: row for row in rows}
+    empty = frappe._dict()
     return {
         code: {
-            "symbol": (known[code].symbol if code in known else None) or code,
-            "symbol_on_right": bool(known[code].symbol_on_right) if code in known else False,
+            "symbol": "" if hide_symbol else known.get(code, empty).symbol or code,
+            "symbol_on_right": bool(known.get(code, empty).symbol_on_right),
+            "number_format": (use_currency_format and known.get(code, empty).number_format) or "",
         }
         for code in codes
     }

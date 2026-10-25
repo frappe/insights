@@ -1,6 +1,6 @@
 """The exceptions a run raises, and the only thing `error_kind` reads.
 
-A refusal carries a message for the user and a class for the code. The message
+A refusal includes a message for the user and a class for the code. The message
 is translated and reworded. The class is what `insights.telemetry.error_kind`
 maps to the closed list in `docs/telemetry.md`.
 """
@@ -10,6 +10,10 @@ import frappe
 
 class QueryRefused(frappe.ValidationError):
     """The engine will not run this query."""
+
+
+class TableNotStored(QueryRefused):
+    """A run that may not import reads a table the Data Store does not hold."""
 
 
 class UnknownColumn(frappe.ValidationError):

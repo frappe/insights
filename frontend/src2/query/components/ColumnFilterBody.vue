@@ -107,10 +107,10 @@ function confirmFilter() {
 		/>
 
 		<div class="flex justify-end gap-1">
-			<Button @click="emit('close')" icon="x"></Button>
+			<Button @click="emit('close')" icon="lucide-x"></Button>
 			<Button
 				variant="solid"
-				icon="check"
+				icon="lucide-check"
 				:disabled="!isValidFilter"
 				@click="confirmFilter()"
 			>

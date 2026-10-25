@@ -1,8 +1,8 @@
 <template>
 	<component
 		:is="to ? 'router-link' : 'div'"
-		class="flex h-7 cursor-pointer items-center rounded text-gray-800 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-gray-400"
-		:class="isActive ? 'bg-white shadow-sm' : 'hover:bg-gray-100'"
+		class="flex h-7 cursor-pointer items-center rounded-4 text-ink-gray-7 duration-300 ease-in-out focus:outline-none focus:transition-none focus-visible:rounded-4 focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+		:class="isActive ? 'bg-surface-elevation-2 shadow-sm' : 'hover:bg-surface-gray-2'"
 		v-bind="{
 			to: to ? { name: to } : null,
 			onClick: to ? null : handleClick,
@@ -12,12 +12,12 @@
 			class="flex items-center overflow-hidden duration-300 ease-in-out"
 			:class="isCollapsed ? 'p-1' : 'px-2 py-1'"
 		>
-			<Tooltip :text="label" placement="right">
+			<Tooltip :text="label" side="right">
 				<slot name="icon">
 					<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
 						<component
 							:is="icon"
-							class="h-4.5 w-4.5 text-gray-700"
+							class="h-4.5 w-4.5 text-ink-gray-6"
 							stroke-width="1.5"
 						/>
 					</span>

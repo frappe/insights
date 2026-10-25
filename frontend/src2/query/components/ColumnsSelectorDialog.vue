@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronDown, SearchIcon } from 'lucide-vue-next'
+import { SearchIcon } from 'lucide-vue-next'
 import { computed, inject, ref, watchEffect } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { ColumnOption, QueryResultColumn, SelectArgs } from '../../types/query.types'
@@ -23,11 +23,14 @@ const columnOptions = ref<ColumnOption[]>([])
 query.getColumnsForSelection().then((cols) => (columnOptions.value = cols))
 
 const columns = ref<HTMLElement | null>(null)
-function addColumns(options: ColumnOption[]) {
-	selectedColumns.value = options.map((o) => ({
-		name: o.value,
-		type: o.data_type,
-	}))
+function addColumns(values: string[]) {
+	selectedColumns.value = values
+		.map((v) => columnOptions.value.find((o) => o.value === v))
+		.filter((o): o is ColumnOption => Boolean(o))
+		.map((o) => ({
+			name: o.value,
+			type: o.data_type,
+		}))
 
 	setTimeout(() => {
 		columns.value?.scrollTo({
@@ -56,49 +59,38 @@ function confirmSelection() {
 
 <template>
 	<Dialog
-		v-model="showDialog"
-		:options="{
-			size: 'sm',
-			title: __('Select Columns'),
-			actions: [
-				{
-					label: __('Confirm'),
-					variant: 'solid',
-					disabled: confirmDisabled,
-					onClick: confirmSelection,
-				},
-				{
-					label: __('Cancel'),
-					onClick: () => (showDialog = false),
-				},
-			],
-		}"
+		v-model:open="showDialog"
+		size="sm"
+		:title="__('Select Columns')"
+		:actions="[
+			{
+				label: __('Confirm'),
+				variant: 'solid',
+				disabled: confirmDisabled,
+				onClick: confirmSelection,
+			},
+			{
+				label: __('Cancel'),
+				onClick: () => (showDialog = false),
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="-mb-7 flex h-[22rem] flex-col p-0.5 text-base">
-				<Autocomplete
-					class="flex-shrink-0"
-					:multiple="true"
+				<MultiSelect
+					class="w-full flex-shrink-0"
 					:options="columnOptions"
 					:placeholder="__('Add column')"
 					:modelValue="selectedColumns.map((c) => c.name)"
 					@update:modelValue="addColumns"
 				>
-					<template #target="{ togglePopover }">
-						<Button class="w-full !justify-start" @click="togglePopover">
-							<template #prefix>
-								<SearchIcon class="h-4 w-4 text-gray-500" stroke-width="1.5" />
-							</template>
-							<span class="flex-1 text-gray-500">{{ __('Add column') }}</span>
-							<template #suffix>
-								<ChevronDown
-									class="ml-auto h-4 w-4 text-gray-500"
-									stroke-width="1.5"
-								/>
-							</template>
-						</Button>
+					<template #prefix>
+						<SearchIcon class="h-4 w-4 text-ink-gray-4" stroke-width="1.5" />
 					</template>
-				</Autocomplete>
+					<template #summary>
+						<span class="text-ink-gray-4">{{ __('Add column') }}</span>
+					</template>
+				</MultiSelect>
 
 				<div ref="columns" class="relative mt-4 flex-1 overflow-y-scroll">
 					<DraggableList
@@ -116,7 +108,7 @@ function confirmSelection() {
 					</DraggableList>
 				</div>
 
-				<p class="flex-shrink-0 bg-white pt-1.5 text-sm text-gray-500">
+				<p class="flex-shrink-0 bg-surface-base pt-1.5 text-sm text-ink-gray-4">
 					{{ __('{0} columns selected', String(selectedColumns.length)) }}
 				</p>
 			</div>

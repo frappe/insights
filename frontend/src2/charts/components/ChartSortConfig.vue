@@ -3,6 +3,7 @@ import { Plus, SortAscIcon, SortDescIcon, X } from 'lucide-vue-next'
 import { computed } from 'vue'
 import DraggableList from '../../components/DraggableList.vue'
 import { column } from '../../query/helpers'
+import { __ } from '../../translation'
 import { ColumnOption, OrderByArgs } from '../../types/query.types'
 
 const props = defineProps<{ columnOptions: ColumnOption[] }>()
@@ -59,43 +60,46 @@ function moveSortColumn(from: number, to: number) {
 			@sort="moveSortColumn"
 		>
 			<template #item="{ item, index }">
-				<div class="flex rounded">
+				<div class="flex rounded-4">
 					<Button
 						class="flex-shrink-0 rounded-r-none border-r"
+						:aria-label="__('Toggle sort direction')"
 						@click="toggleSortDirection(index)"
 					>
 						<template #icon>
 							<SortAscIcon
 								v-if="item.direction == 'asc'"
-								class="h-4 w-4 text-gray-700"
+								class="h-4 w-4 text-ink-gray-6"
 								stroke-width="1.5"
 							/>
-							<SortDescIcon v-else class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							<SortDescIcon
+								v-else
+								class="h-4 w-4 text-ink-gray-6"
+								stroke-width="1.5"
+							/>
 						</template>
 					</Button>
-					<div class="flex-1 overflow-hidden">
-						<Autocomplete
-							:showFooter="true"
+					<div class="min-w-0 flex-1">
+						<Combobox
 							:options="props.columnOptions"
 							:modelValue="item.value"
-							@update:modelValue="updateSortColumn(index, $event.value)"
+							@update:modelValue="updateSortColumn(index, $event)"
 						>
-							<template #target="{ togglePopover }">
+							<template #trigger>
 								<Button
 									class="w-full !justify-start rounded-none [&>span]:truncate"
-									@click="togglePopover"
 								>
 									{{ item.column.column_name }}
 								</Button>
 							</template>
-						</Autocomplete>
+						</Combobox>
 					</div>
 					<Button
 						class="flex-shrink-0 rounded-l-none border-l"
 						@click="removeSortColumn(index)"
 					>
 						<template #icon>
-							<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
 					</Button>
 				</div>
@@ -103,18 +107,15 @@ function moveSortColumn(from: number, to: number) {
 		</DraggableList>
 
 		<!-- add sort button -->
-		<Autocomplete
-			:options="props.columnOptions"
-			@update:modelValue="addSortColumn($event.value)"
-		>
-			<template #target="{ togglePopover }">
-				<Button class="w-full" @click="togglePopover">
+		<Combobox :options="props.columnOptions" @update:modelValue="addSortColumn($event)">
+			<template #trigger>
+				<Button class="w-full">
 					<template #prefix>
-						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 					Add Sort
 				</Button>
 			</template>
-		</Autocomplete>
+		</Combobox>
 	</div>
 </template>

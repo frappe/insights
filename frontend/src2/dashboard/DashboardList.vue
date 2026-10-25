@@ -1,52 +1,92 @@
-<script setup lang="tsx">
-import { useStorage } from '@vueuse/core'
-import { Breadcrumbs, TabButtons } from 'frappe-ui'
-import { SearchIcon } from 'lucide-vue-next'
-import { computed, ref, watchEffect } from 'vue'
+<script setup lang="ts">
+import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
+import { QuickFilter } from '@framework/ui/QuickFilter'
+import { Breadcrumbs, MultiSelect, TabButtons } from 'frappe-ui'
+import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
+import { LayoutGrid, List as ListIcon, MoreVertical, SearchIcon, Star } from 'lucide-vue-next'
+import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
+import { AccessSource, useAccessSources } from '../components/access'
+import AccessLabel from '../components/AccessLabel.vue'
+import OwnerAvatar from '../components/OwnerAvatar.vue'
 import { showErrorToast, wheneverChanges } from '../helpers'
+import session from '../session'
 import { __ } from '../translation'
 import DashboardCard from './DashboardCard.vue'
-import useDashboardStore, { DashboardListItem } from './dashboards'
+import useDashboardStore, {
+	canOpenWorkbook,
+	DashboardListItem,
+	useDashboardView,
+} from './dashboards'
 
 const store = useDashboardStore()
 const router = useRouter()
 
-const searchQuery = ref('')
+const {
+	options: sourceOptions,
+	selected: selectedSources,
+	shown: shownSources,
+	sources,
+} = useAccessSources('insights:dashboard-access')
 
-type DashboardFilter = 'all' | 'recents' | 'favorites' | 'created' | 'shared'
-
-const filterTabs: { label: string; value: DashboardFilter }[] = [
-	{ label: __('All'), value: 'all' },
-	{ label: __('Recents'), value: 'recents' },
-	{ label: __('Favorites'), value: 'favorites' },
-	{ label: __('Created'), value: 'created' },
-	{ label: __('Shared'), value: 'shared' },
+const filters = toRef(store, 'filters')
+const wireFilters = computed(() => serializeFilters(filters.value))
+// resolved by `get_dashboards`: a record field matches the picked document.
+// `name` is the Title field, so the quick filter types a title and flips to a
+// dashboard pick.
+const field = (fieldname: string, label: string, fieldtype: string, options?: string) =>
+	({ fieldname, value: fieldname, label, fieldtype, options }) as FilterField
+const titleField = field('name', __('Title'), 'Link', 'Insights Dashboard v3')
+const workbookField = field('workbook', __('Workbook'), 'Link', 'Insights Workbook')
+const quickFields = [titleField, workbookField]
+const filterFields = [
+	titleField,
+	workbookField,
+	field('chart', __('Chart'), 'Link', 'Insights Chart v3'),
+	field('data_source', __('Data Source'), 'Link', 'Insights Data Source v3'),
+	'owner',
+	'modified',
 ]
 
-// persist the chosen filter locally so it survives reloads
-const filter = useStorage<DashboardFilter>('insights:dashboard-filter', 'all')
+// A reader without an Insights role gets every dashboard they may open at
+// once, and none of the controls that call the builder's endpoints: filters,
+// access sources, favorites and the card menu. They search by title here.
+const isReader = !session.isAuthorized
 
-// "Load more" grows the page size and refetches (recents is capped server-side)
+const view = useDashboardView()
+const views = [
+	{ value: 'grid', icon: LayoutGrid, label: __('Grid') },
+	{ value: 'list', icon: ListIcon, label: __('List') },
+]
+// a reader cannot open the workbook or list who else may open a dashboard
+const listColumns = isReader
+	? ['minmax(0,1fr)', '8rem', '8rem']
+	: ['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem', '4.5rem']
+const titleSearch = ref('')
+const listed = computed(() => {
+	if (!isReader) return store.dashboards
+	const term = titleSearch.value.toLowerCase()
+	return store.dashboards.filter((d) => d.title.toLowerCase().includes(term))
+})
+
+// "Load more" grows the page size and refetches
 const PAGE_SIZE = 20
 const limit = ref(PAGE_SIZE)
-const hasMore = computed(() => filter.value !== 'recents' && store.dashboards.length >= limit.value)
+// favourites always come back whole, so only the rest count against the page
+const otherDashboards = computed(() => listed.value.filter((d) => !d.is_favourite))
+const hasMore = computed(() => !isReader && otherDashboards.value.length >= limit.value)
+const groups = computed(() =>
+	[
+		{ label: __('Favorites'), dashboards: listed.value.filter((d) => d.is_favourite) },
+		{ label: __('Recent'), dashboards: otherDashboards.value },
+	].filter((group) => group.dashboards.length),
+)
 
-async function refresh() {
-	if (filter.value === 'recents') {
-		store.fetchRecentDashboards(searchQuery.value)
-		return
-	}
-	store.fetchDashboards({
-		search_term: searchQuery.value,
-		favorites: filter.value === 'favorites',
-		scope:
-			filter.value === 'created' ? 'owned' : filter.value === 'shared' ? 'shared' : undefined,
-		limit: limit.value,
-	})
+function refresh() {
+	store.fetchDashboards(limit.value, sources.value, wireFilters.value)
 }
 
-// reset pagination for a new query (filter/search change)
+// reset pagination for a new query (source or filter change)
 function reload() {
 	limit.value = PAGE_SIZE
 	refresh()
@@ -57,72 +97,57 @@ function loadMore() {
 	refresh()
 }
 
-const emptyState = computed(() => {
-	switch (filter.value) {
-		case 'favorites':
-			return {
-				title: __('No Favorites'),
-				subtitle: __('Mark a dashboard as favorite to see it here.'),
-			}
-		case 'recents':
-			return {
-				title: __('No Recents'),
-				subtitle: __('Dashboards you open will show up here.'),
-			}
-		case 'created':
-			return {
-				title: __('Nothing here'),
-				subtitle: __("You haven't created any dashboards yet."),
-			}
-		case 'shared':
-			return {
-				title: __('Nothing here'),
-				subtitle: __('Dashboards shared with you will show up here.'),
-			}
-		default:
-			return {
-				title: __('Nothing here'),
-				subtitle: __('No dashboards to display.'),
-			}
-	}
-})
+const isNarrowed = computed(() => wireFilters.value.length > 0 || Boolean(titleSearch.value))
 
-// reset on filter change so a slow fetch can't keep showing the previous lens's
-// dashboards; search keeps previous data (no flicker)
+// reset on a source change so a slow fetch can't keep showing the previous
+// sources' dashboards; a filter change keeps previous data (no flicker)
 wheneverChanges(
-	() => filter.value,
+	() => sources.value,
 	() => {
 		store.dashboards = []
 		reload()
 	},
 	{ immediate: true },
 )
-wheneverChanges(searchQuery, reload, { debounce: 300 })
+if (!isReader) wheneverChanges(wireFilters, reload, { debounce: 300 })
 
-const dropdownOptions = (dashboard: DashboardListItem) => [
+const dropdownOptions = (dashboard: DashboardListItem) =>
+	isReader ? [] : builderOptions(dashboard)
+
+const builderOptions = (dashboard: DashboardListItem) => [
 	{
-		label: __('Open Workbook'),
-		icon: 'external-link',
-		onClick: () => router.push(`/workbook/${dashboard.workbook}`),
+		label: dashboard.is_favourite ? __('Remove from favorites') : __('Add to favorites'),
+		icon: 'lucide-star',
+		onClick: () => toggleFavorite(dashboard),
 	},
-	{
-		label: __('Refresh Preview'),
-		icon: 'refresh-cw',
-		loading: store.updatingPreviewImage,
-		onClick: () => store.updatePreviewImage(dashboard.name),
-	},
+	...(canOpenWorkbook(dashboard)
+		? [
+				{
+					label: __('Open Workbook'),
+					icon: 'lucide-external-link',
+					onClick: () => router.push(`/workbook/${dashboard.workbook}`),
+				},
+		  ]
+		: []),
+	...(dashboard.can_write && dashboard.same_rows_for_every_reader
+		? [
+				{
+					label: __('Refresh Preview'),
+					icon: 'lucide-refresh-cw',
+					loading: store.updatingPreviewImage,
+					onClick: () => store.updatePreviewImage(dashboard.name),
+				},
+		  ]
+		: []),
 ]
 
 const toggleFavorite = (dashboard: DashboardListItem) => {
-	// optimistic: flip the icon locally instead of refetching the whole list
+	// flip the star at once; the refetch then moves the card between sections
 	const next = !dashboard.is_favourite
 	dashboard.is_favourite = next
 	store
 		.toggleLike(dashboard.name, next)
-		.then(() => {
-			// in the favorites lens an un-favorited card should drop out, so refetch
-			if (filter.value === 'favorites') refresh()
-		})
+		.then(refresh)
 		.catch((error: Error) => {
 			dashboard.is_favourite = !next // revert on failure
 			showErrorToast(error, false)
@@ -142,33 +167,156 @@ watchEffect(() => {
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 py-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
 			<FormControl
-				class="w-64"
-				:placeholder="__('Search by title')"
-				v-model="searchQuery"
+				v-if="isReader"
+				:placeholder="__('Search by Title')"
+				v-model="titleSearch"
 				:debounce="300"
-				autocomplete="off"
 			>
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" />
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
-			<TabButtons :buttons="filterTabs" v-model="filter" />
+			<div v-else class="flex min-w-0 flex-1 items-center gap-2">
+				<QuickFilter
+					class="min-w-0"
+					doctype="Insights Dashboard v3"
+					:fields="quickFields"
+					v-model:filters="filters"
+				/>
+				<MultiSelect
+					class="w-40 shrink-0"
+					variant="subtle"
+					:placeholder="__('Access')"
+					:options="sourceOptions"
+					:modelValue="shownSources"
+					@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
+				/>
+				<Filter
+					doctype="Insights Dashboard v3"
+					align="start"
+					:fields="filterFields"
+					v-model="filters"
+				/>
+			</div>
+			<TabButtons v-model="view" :options="views" />
 		</div>
 
 		<div class="h-full w-full">
-			<div
-				v-if="store.dashboards.length"
-				class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+			<List
+				v-if="listed.length && view === 'list'"
+				class="-mx-3 list-row-px-3"
+				:columns="listColumns"
+				:row-height="40"
 			>
-				<DashboardCard
-					v-for="dashboard in store.dashboards"
+				<ListHeader class="sticky top-0 z-10 bg-surface-base">
+					<ListHeaderCell>{{ __('Title') }}</ListHeaderCell>
+					<template v-if="!isReader">
+						<ListHeaderCell>{{ __('Workbook') }}</ListHeaderCell>
+						<ListHeaderCell>{{ __('Access') }}</ListHeaderCell>
+					</template>
+					<ListHeaderCell>{{ __('Opened') }}</ListHeaderCell>
+					<ListHeaderCell>{{ __('Modified') }}</ListHeaderCell>
+					<ListHeaderCell v-if="!isReader" />
+				</ListHeader>
+				<ListRow
+					v-for="dashboard in listed"
 					:key="dashboard.name"
-					:dashboard="dashboard"
-					:dropdown-options="dropdownOptions(dashboard)"
-					:preview-loading="store.updatingPreviewImage[dashboard.name]"
-					@toggle-favorite="toggleFavorite(dashboard)"
-					@update-preview="store.updatePreviewImage(dashboard.name)"
-				/>
+					class="group/row active:bg-surface-gray-2 sm:rounded-[10px] sm:hover:bg-surface-gray-1"
+				>
+					<ListCell>
+						<RouterLink
+							:to="`/dashboards/${dashboard.name}`"
+							class="absolute inset-0 sm:rounded-[10px]"
+							:aria-label="dashboard.title"
+						/>
+						<OwnerAvatar
+							:owner="dashboard.owner"
+							:owner-name="dashboard.owner_name"
+							:shipped-by="dashboard.shipped_by"
+							:shipped-by-logo="dashboard.shipped_by_logo"
+						/>
+						<span class="ml-3 truncate text-base text-ink-gray-8">
+							{{ dashboard.title }}
+						</span>
+					</ListCell>
+					<template v-if="!isReader">
+						<ListCell>
+							<span class="truncate text-base text-ink-gray-6">
+								{{ dashboard.workbook_title }}
+							</span>
+						</ListCell>
+						<ListCell>
+							<AccessLabel :item="dashboard" />
+						</ListCell>
+					</template>
+					<ListCell>
+						<span class="truncate text-base text-ink-gray-6">
+							{{ dashboard.last_opened_from_now }}
+						</span>
+					</ListCell>
+					<ListCell>
+						<span class="truncate text-base text-ink-gray-6">
+							{{ dashboard.modified_from_now }}
+						</span>
+					</ListCell>
+					<ListCell v-if="!isReader" class="justify-end">
+						<Button
+							class="relative"
+							:class="
+								dashboard.is_favourite
+									? ''
+									: 'opacity-0 focus-visible:opacity-100 group-hover/row:opacity-100'
+							"
+							variant="ghost"
+							:label="
+								dashboard.is_favourite
+									? __('Remove from favorites')
+									: __('Add to favorites')
+							"
+							@click="toggleFavorite(dashboard)"
+						>
+							<template #icon>
+								<Star
+									class="h-4 w-4"
+									:class="
+										dashboard.is_favourite
+											? 'fill-ink-amber-4 text-ink-amber-4'
+											: 'text-ink-gray-5'
+									"
+								/>
+							</template>
+						</Button>
+						<Dropdown :options="dropdownOptions(dashboard)">
+							<Button class="relative" variant="ghost" :label="__('More')">
+								<template #icon>
+									<MoreVertical
+										class="h-4 w-4 text-ink-gray-6"
+										stroke-width="1.5"
+									/>
+								</template>
+							</Button>
+						</Dropdown>
+					</ListCell>
+				</ListRow>
+			</List>
+
+			<div v-else-if="listed.length" class="flex flex-col gap-12">
+				<section v-for="group in groups" :key="group.label" class="flex flex-col gap-4">
+					<div v-if="groups.length > 1" class="text-base-medium text-ink-gray-6">
+						{{ group.label }}
+					</div>
+					<div
+						class="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+					>
+						<DashboardCard
+							v-for="dashboard in group.dashboards"
+							:key="dashboard.name"
+							:dashboard="dashboard"
+							:dropdown-options="dropdownOptions(dashboard)"
+							@toggle-favorite="toggleFavorite(dashboard)"
+						/>
+					</div>
+				</section>
 			</div>
 
 			<!-- load more -->
@@ -178,11 +326,33 @@ watchEffect(() => {
 
 			<!-- empty (hidden while a fetch is in flight so it doesn't flash on tab switch) -->
 			<div
-				v-if="!store.dashboards.length && !store.loading"
+				v-if="!listed.length && !store.loading"
 				class="flex h-full w-full flex-col items-center justify-center text-base"
 			>
-				<div class="text-xl font-medium">{{ emptyState.title }}</div>
-				<div class="mt-1 text-base text-gray-600">{{ emptyState.subtitle }}</div>
+				<div class="text-2xl-medium">
+					{{
+						isNarrowed
+							? __('No dashboards found')
+							: isReader
+							  ? __("You don't have access to any dashboards")
+							  : __('No dashboards')
+					}}
+				</div>
+				<div class="mt-1 text-base text-ink-gray-5">
+					{{
+						isNarrowed
+							? __('Try a different filter.')
+							: isReader
+							  ? __('Ask an administrator to share a dashboard with you.')
+							  : __('Dashboards you create or are shared with you show up here.')
+					}}
+				</div>
+				<Button
+					v-if="isReader && !isNarrowed && session.user.has_desk_access"
+					class="mt-3"
+					:label="__('Open Desk')"
+					href="/desk"
+				/>
 			</div>
 		</div>
 	</div>

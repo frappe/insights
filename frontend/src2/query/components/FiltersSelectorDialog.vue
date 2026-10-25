@@ -16,12 +16,13 @@ const showDialog = defineModel()
 
 <template>
 	<Dialog
-		v-model="showDialog"
-		:disableOutsideClickToClose="true"
-		:options="{ size: '2xl', title: __('Filter') }"
+		v-model:open="showDialog"
+		:dismissible="false"
+		:title="__('Filter')"
+		size="2xl"
 		@close="showDialog = false"
 	>
-		<template #body-content>
+		<template #default>
 			<FiltersSelector
 				:filterGroup="props.filterGroup"
 				:columnOptions="props.columnOptions"
