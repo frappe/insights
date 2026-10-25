@@ -3,7 +3,7 @@ import { Alert, toast, Tooltip } from 'frappe-ui'
 import { computed, inject, ref, watch } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import VisibilitySelector from '../components/VisibilitySelector.vue'
-import { copy, copyToClipboard } from '../helpers'
+import { copy, copyToClipboard, showErrorToast } from '../helpers'
 import session from '../session'
 import { Visibility } from '../types/workbook.types'
 import useUserStore from '../users/users'
@@ -57,12 +57,17 @@ const addedRoles = computed(() => {
 
 async function saveChanges() {
 	if (!rolesWithoutRead.value && addedRoles.value.length) {
-		// a check that failed has shown its error, and saves nothing unchecked
-		const answer = await dashboard
-			.call('get_roles_without_read', { roles: addedRoles.value })
-			.catch(() => undefined)
-		if (!answer) return
-		rolesWithoutRead.value = answer
+		try {
+			rolesWithoutRead.value = await dashboard.call(
+				'get_roles_without_read',
+				{ roles: addedRoles.value },
+				{ showError: false },
+			)
+		} catch (error) {
+			// a check that failed saves nothing unchecked
+			showErrorToast(error as Error)
+			return
+		}
 		if (warning.value.length) return
 	}
 	dashboard.doc.visibility = visibility.value
