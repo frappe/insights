@@ -7,6 +7,7 @@ import { type Filter } from '../components/filter_picker/filter_picker'
 import useChartPreview, { type ChartPreviewContext } from '../charts/chart_preview'
 import { type DashboardFilterContext } from '../charts/chart_view'
 import { getUniqueId, safeJSONParse, showErrorToast, waitUntil } from '../helpers'
+import { withStoredCells } from './stored_cells'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { __ } from '../translation'
 import useDocumentResource from '../helpers/resource'
@@ -257,7 +258,7 @@ function makeDashboard(name: string) {
 	// that shows it, and takes a removed one's cell (`keep_reading_cells`). This
 	// store read the grid before that save, so it reads it again. Mid-edit, Done
 	// saves the whole grid, so the author's grid takes the stored cells of those
-	// charts instead: added ones join, dropped ones leave, the rest keep their place.
+	// charts instead (`withStoredCells`).
 	async function takeStoredCells(charts: string[]) {
 		const stored: { items: string | WorkbookDashboardItem[] } = await call(
 			'insights.api.get_doc',
@@ -268,18 +269,7 @@ function makeDashboard(name: string) {
 		)
 		const storedItems: WorkbookDashboardItem[] =
 			typeof stored.items === 'string' ? safeJSONParse(stored.items) || [] : stored.items
-		const ofCharts = (item: WorkbookDashboardItem) =>
-			item.type === 'chart' && charts.includes(item.chart)
-		const ids = (items: WorkbookDashboardItem[]) =>
-			new Set(items.filter(ofCharts).map((item) => item.layout.i))
-		const storedIds = ids(storedItems)
-		const localIds = ids(dashboard.doc.items)
-		dashboard.doc.items = [
-			...dashboard.doc.items.filter(
-				(item) => !ofCharts(item) || storedIds.has(item.layout.i),
-			),
-			...storedItems.filter((item) => ofCharts(item) && !localIds.has(item.layout.i)),
-		]
+		dashboard.doc.items = withStoredCells(dashboard.doc.items, storedItems, charts)
 	}
 
 	const savedReadings = new Map<string, string>()
