@@ -227,11 +227,19 @@ export const groups = translatedTable<Group[]>(() => [
 	},
 ])
 
-// The Good to know step of someone who isn't an admin, when it holds more than
-// moved charts: their own items outside the groups.
+// The Good to know step when it holds more than moved charts: the reader's items
+// outside the groups. An admin's also hold those addressed to no one, such as
+// changes to Administrator's work, so they are not all the admin's own.
 const yourNotes = translatedTable<Pick<Group, 'title' | 'lead'>>(() => ({
 	title: __('A few changes to what you made'),
 	lead: [__('The upgrade changed some of your work,'), __('and each change says what it means.')],
+}))
+const adminNotes = translatedTable<Pick<Group, 'title' | 'lead'>>(() => ({
+	title: __('A few more changes'),
+	lead: [
+		__('The upgrade changed some work no other step covers,'),
+		__('and each change says what it means.'),
+	],
 }))
 
 // Items outside the groups that tell of something failing until someone acts: a script or
@@ -297,12 +305,11 @@ export function rowsOf(items: UpgradeItem[]): Row[] {
 }
 
 /**
- * The wizard's steps for this reader. A step with nothing in it is left out.
- *
- * A note only tells, so it stays for the person it is addressed to: an admin
- * gets no step for another user's note. Someone who isn't an admin finds their
- * own items outside the groups in Good to know. An admin finds those changes in
- * the release notes.
+ * The wizard's steps for this reader. A step with nothing in it is left out,
+ * and items outside the groups go to Good to know. Every item lands in one row,
+ * so the sidebar card counts what the server counts. The server sends only the
+ * items the reader works through: an admin gets no note addressed to someone
+ * else (`item_filters`).
  */
 export function wizardSteps(
 	items: UpgradeItem[],
@@ -315,19 +322,13 @@ export function wizardSteps(
 	const inSteps = new Set(groups().flatMap((group) => group.codes))
 	for (const group of groups()) {
 		const codes =
-			group.kind === 'note' && !options.admin
+			group.kind === 'note'
 				? [
 						...group.codes,
 						...items.map((item) => item.code).filter((code) => !inSteps.has(code)),
 				  ]
 				: group.codes
-		const rows = rowsOf(
-			items.filter(
-				(item) =>
-					codes.includes(item.code) &&
-					(group.kind !== 'note' || !item.user || item.user === options.me),
-			),
-		)
+		const rows = rowsOf(items.filter((item) => codes.includes(item.code)))
 		if (!rows.length) continue
 		const mixed = rows.some((row) => !group.codes.includes(row.item.code))
 		// a step asks for the reader when any of its items does
@@ -338,7 +339,13 @@ export function wizardSteps(
 			section: 'upgrade',
 			group: mixed
 				? // each item shows its own group's picture, if it has one
-				  { ...group, ...yourNotes(), codes, kind, picture: undefined }
+				  {
+						...group,
+						...(options.admin ? adminNotes() : yourNotes()),
+						codes,
+						kind,
+						picture: undefined,
+				  }
 				: { ...group, kind },
 			rows,
 		})

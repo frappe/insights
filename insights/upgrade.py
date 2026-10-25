@@ -99,10 +99,25 @@ def is_upgrade_admin(user: str | None = None) -> bool:
     return bool({"Insights Admin", "System Manager"} & set(frappe.get_roles(user or frappe.session.user)))
 
 
+# Codes that tell only the user they are addressed to: a note, or a failure of
+# their own script or import. An admin works through every other item.
+NOTE_CODES = ("P11", "P20", "P21", "J1", "J4", "Q1", "Q5", "C4", "N5")
+
+
 def item_filters(user: str | None = None) -> dict:
-    """The items `user` works through: an admin every item, anyone else their own."""
+    """The items `user` works through: their own, and for an admin every other
+    item but a note addressed to someone else, which stays for them to read."""
     user = user or frappe.session.user
-    return {} if is_upgrade_admin(user) else {"user": user}
+    if not is_upgrade_admin(user):
+        return {"user": user}
+    Item = frappe.qb.DocType(ITEM)
+    names = (
+        frappe.qb.from_(Item)
+        .select(Item.name)
+        .where(Item.user.isnull() | (Item.user == "") | (Item.user == user) | Item.code.notin(NOTE_CODES))
+        .run(pluck=True)
+    )
+    return {"name": ("in", names or [""])}
 
 
 def get_item(name: str):

@@ -104,19 +104,33 @@ describe('the wizard steps', () => {
 	})
 
 	// @feature upgrade.wizard
-	it('leave a note to the person it is addressed to', () => {
-		const data = { chart: 'Bob published, script rows', publisher: BOB, owner: ALICE }
-		const notes = [
-			item('to-alice', 'P11', data, { user: ALICE }),
-			item('to-bob', 'P11', data, { user: BOB }),
+	it('put every item the reader works through in one row, so the card counts what the server does', () => {
+		const items = [
+			item('a', 'P17', { user: BOB, doctypes: ['Sales Invoice'] }),
+			item('b', 'P10', { chart: 'Trend', owner: ALICE, reason: 'script' }, { user: ALICE }),
+			item('c', 'P21', { query: 'Origin', workbook: 'Sales', variables: ['api_token'] }),
+			item('d', 'P11', { chart: 'KPIs', publisher: DAVE, owner: ALICE }, { user: DAVE }),
 		]
-		const ids = (me: string) =>
-			wizardSteps(notes, { can: can(true), admin: me === DAVE, me }).map((step) => step.id)
-		expect(ids(DAVE)).toEqual(['welcome', 'charts', 'drill', 'sharing', 'roles'])
-		const toAlice = wizardSteps(notes, { can: can(true), admin: false, me: ALICE }).find(
-			(step) => step.id === 'notes',
-		)!
-		expect('rows' in toAlice && toAlice.rows.map((row) => row.names)).toEqual([['to-alice']])
+		const steps = wizardSteps(items, { can: can(true), admin: true, me: DAVE })
+		const names = steps.flatMap((step) =>
+			'rows' in step ? step.rows.flatMap((row) => row.names) : [],
+		)
+		expect(names.sort()).toEqual(['a', 'b', 'c', 'd'])
+	})
+})
+
+describe('the wizard steps of an admin', () => {
+	// @feature upgrade.wizard
+	it('hold the items outside the groups that are addressed to no one, as Administrator’s work is', () => {
+		const items = [
+			item('secret', 'P21', { query: 'Origin', workbook: 'Sales', variables: ['api_token'] }),
+			item('cache', 'J1', { alert: 'Watch a cache', chart: 'Trend' }),
+		]
+		const steps = wizardSteps(items, { can: can(true), admin: true, me: DAVE })
+		const notes = steps.find((step) => step.id === 'notes')!
+		expect('rows' in notes && notes.rows.map((row) => row.item.code)).toEqual(['P21', 'J1'])
+		expect('group' in notes && notes.group.kind).toBe('now')
+		expect('group' in notes && notes.group.title).toBe('A few more changes')
 	})
 })
 

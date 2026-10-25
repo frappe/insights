@@ -128,22 +128,24 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertEqual(set(links(INSIGHTS_ADMIN).values()), {None})
 
     # @feature upgrade.attention-items
-    def test_an_admin_sees_every_item_and_a_user_only_their_own_closed_ones_too(self):
+    def test_an_admin_works_through_all_but_another_users_note_and_a_user_their_own_closed_ones_too(self):
         add_item("Q13", "Set Fiscal Year Start to pin it.", action="open_settings")
         add_item("P20", "Only admins can edit this script now.", user=ALICE)
         add_item("P20", "Only admins can edit this script now.", user=BOB)
         frappe.db.set_value(ITEM, {"user": BOB}, "status", "Dismissed")
+        add_item("P10", "Readers see Alice's rows.", user=ALICE, data={"chart": "Trend", "owner": ALICE})
 
         with self.as_user(ALICE):
             self.assertEqual(
-                [(i.code, i.user, i.status) for i in get_upgrade_items()], [("P20", ALICE, "Open")]
+                [(i.code, i.user, i.status) for i in get_upgrade_items()],
+                [("P10", ALICE, "Open"), ("P20", ALICE, "Open")],
             )
-        self.assertEqual(self.user_info(ALICE)["upgrade_item_count"], 1)
+        self.assertEqual(self.user_info(ALICE)["upgrade_item_count"], 2)
         with self.as_user(BOB):
             self.assertEqual([(i.user, i.status) for i in get_upgrade_items()], [(BOB, "Dismissed")])
         self.assertEqual(self.user_info(BOB)["upgrade_item_count"], 0)
-        self.assertEqual(len(get_upgrade_items()), 3)
-        # counts only what is left to do
+        # a note stays for the user it tells, so the admin's card counts what the wizard shows
+        self.assertEqual([(i.code, i.user) for i in get_upgrade_items()], [("P10", ALICE), ("Q13", None)])
         self.assertEqual(self.user_info("Administrator")["upgrade_item_count"], 2)
 
     # @feature upgrade.attention-items
@@ -158,18 +160,15 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
             BOB: {"full_name": "Bob Lane", "first_name": "Bob"},
         }
 
-        items = get_upgrade_items()
-
         self.assertEqual(
-            [(i.code, i.user, i.data, i.people) for i in items],
-            [
-                ("P11", BOB, data, people),
-                ("P11", ALICE, data, people),
-                ("P3", None, {"workbook": "Sales", "users": [ALICE, "Nobody"]}, {ALICE: people[ALICE]}),
-            ],
+            [(i.code, i.user, i.data, i.people) for i in get_upgrade_items()],
+            [("P3", None, {"workbook": "Sales", "users": [ALICE, "Nobody"]}, {ALICE: people[ALICE]})],
         )
-        with self.as_user(ALICE):
-            self.assertEqual([(i.data, i.people) for i in get_upgrade_items()], [(data, people)])
+        for user in (ALICE, BOB):
+            with self.as_user(user):
+                self.assertEqual(
+                    [(i.user, i.data, i.people) for i in get_upgrade_items()], [(user, data, people)]
+                )
 
     # @feature upgrade.attention-items
     def test_an_item_without_data_has_none_to_show(self):
@@ -178,12 +177,12 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertEqual([(i.data, i.people) for i in get_upgrade_items()], [({}, {})])
 
     # @feature upgrade.attention-items
-    def test_a_system_manager_sees_every_item_as_desk_shows_them(self):
-        add_item("P20", "Only admins can edit this script now.", user=ALICE)
+    def test_a_system_manager_works_through_other_users_items_as_desk_shows_them(self):
+        add_item("P10", "Readers see Alice's rows.", user=ALICE, data={"chart": "Trend", "owner": ALICE})
         frappe.get_doc(DT.USER, BOB).add_roles("System Manager")
 
         with self.as_user(BOB):
-            self.assertEqual([(i.code, i.user) for i in get_upgrade_items()], [("P20", ALICE)])
+            self.assertEqual([(i.code, i.user) for i in get_upgrade_items()], [("P10", ALICE)])
         # the wizard lays out its steps by the same rule
         self.assertTrue(self.user_info(BOB)["is_upgrade_admin"])
         self.assertFalse(self.user_info(ALICE)["is_upgrade_admin"])
