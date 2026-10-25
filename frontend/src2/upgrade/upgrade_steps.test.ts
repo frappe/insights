@@ -10,6 +10,7 @@ import {
 	pictureOf,
 	sentenceOf,
 	featuresFor,
+	groups,
 	PICTURES,
 	type PictureName,
 	startIndex,
@@ -283,6 +284,13 @@ describe('an item sentence', () => {
 		expect(text(team.text)).toContain('who can’t read its tables')
 		expect(team.todo).toBeUndefined()
 		expect(team.action).toMatchObject({ kind: 'route', label: 'Open chart' })
+	})
+
+	// @feature upgrade.item-sentences
+	it('titles the Public charts step by what holds for each of its items', () => {
+		const step = groups().find((group) => group.id === 'public')!
+		expect(step.title).toBe('Public charts run as their owner')
+		expect(step.lead.join(' ')).not.toContain('owner’s rows')
 	})
 
 	// @feature upgrade.item-sentences

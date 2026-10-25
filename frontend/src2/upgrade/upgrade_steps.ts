@@ -158,10 +158,10 @@ export const groups = translatedTable<Group[]>(() => [
 		label: __('Public charts'),
 		kind: 'now',
 		codes: ['P10', 'P12'],
-		title: __("Public charts show their owner's rows"),
+		title: __('Public charts run as their owner'),
 		lead: [
 			__('Public charts now run as their owner,'),
-			__('so everyone who opens one sees the owner’s rows.'),
+			__('so everyone who opens one sees what the owner can read.'),
 		],
 		picture: 'runAsOwner',
 	},
