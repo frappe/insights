@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-10-05 11:28\n"
+"PO-Revision-Date: 2026-10-26 09:34\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Vietnamese\n"
 "MIME-Version: 1.0\n"
@@ -938,7 +938,7 @@ msgstr "Email"
 #. Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email Sent At"
-msgstr ""
+msgstr "Đã gửi email lúc"
 
 #: frontend/src2/query/components/FiltersSelector.vue:134
 msgid "Empty - Click 'Add Filter' to add a filter"
@@ -2115,7 +2115,7 @@ msgstr ""
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "None"
-msgstr ""
+msgstr "Không"
 
 #. Label of the notebook (Link) field in DocType 'Insights Notebook Page'
 #: insights/insights/doctype/insights_notebook_page/insights_notebook_page.json
@@ -2292,7 +2292,7 @@ msgstr ""
 #. Label of the preview_image (Data) field in DocType 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Preview Image"
-msgstr ""
+msgstr "Hình ảnh xem trước"
 
 #. Label of the primary_key (Data) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json

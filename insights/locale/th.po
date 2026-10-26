@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-10-05 11:28\n"
+"PO-Revision-Date: 2026-10-26 09:34\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Thai\n"
 "MIME-Version: 1.0\n"
@@ -21,34 +21,34 @@ msgstr ""
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:1"
-msgstr ""
+msgstr "1:1"
 
 #. Option for the 'Cardinality' (Select) field in DocType 'Insights Table Link'
 #: insights/insights/doctype/insights_table_link/insights_table_link.json
 msgid "1:N"
-msgstr ""
+msgstr "1:N"
 
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.py:35
 msgid "A folder cannot be its own parent"
-msgstr ""
+msgstr "โฟลเดอร์ไม่สามารถเป็นโฟลเดอร์แม่ของตัวเองได้"
 
 #. Label of the api_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Configuration"
-msgstr ""
+msgstr "กำหนดค่า API"
 
 #. Option for the 'Authentication Type' (Select) field in DocType 'Insights
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Key / Bearer Token"
-msgstr ""
+msgstr "API Key / Bearer Token"
 
 #. Label of the api_password (Password) field in DocType 'Insights Data Source
 #. v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Password"
-msgstr ""
+msgstr "รหัสผ่าน API"
 
 #. Label of the api_token (Password) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
@@ -58,11 +58,11 @@ msgstr "API Tokens"
 #. Label of the api_username (Data) field in DocType 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "API Username"
-msgstr ""
+msgstr "ชื่อผู้ใช้ API"
 
 #: frontend/src2/query/components/FormatRule.vue:203
 msgid "Above average"
-msgstr ""
+msgstr "สูงกว่าค่าเฉลี่ย"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights User Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
@@ -82,7 +82,7 @@ msgstr "บัญชี"
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Action if table exists"
-msgstr ""
+msgstr "ดำเนินการหากตารางมีอยู่"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
@@ -100,7 +100,7 @@ msgstr "เพิ่ม"
 #: frontend/src2/data_source/ConnectMariaDBDialog.vue:106
 #: frontend/src2/data_source/ConnectPostgreSQLDialog.vue:114
 msgid "Add Data Source"
-msgstr ""
+msgstr "เพิ่มแหล่งข้อมูล"
 
 #: frontend/src2/query/components/FiltersSelector.vue:137
 msgid "Add Filter"
@@ -108,15 +108,15 @@ msgstr "เพิ่มตัวกรอง"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:62
 msgid "Add New Column"
-msgstr ""
+msgstr "เพิ่มคอลัมน์ใหม่"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:132
 msgid "Add Operation"
-msgstr ""
+msgstr "เพิ่มการดำเนินการ"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:63
 msgid "Add a new column based on existing columns"
-msgstr ""
+msgstr "เพิ่มคอลัมน์ใหม่โดยอิงจากคอลัมน์ที่มีอยู่แล้ว"
 
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:83
 #: frontend/src2/query/components/ColumnsSelectorDialog.vue:92
@@ -131,45 +131,45 @@ msgstr "ผู้ดูแลระบบ"
 #. Label of the aggregation (Data) field in DocType 'Insights Query Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation"
-msgstr ""
+msgstr "การรวมกลุ่ม"
 
 #. Label of the aggregation_condition (Code) field in DocType 'Insights Query
 #. Column'
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
 msgid "Aggregation Condition"
-msgstr ""
+msgstr "เงื่อนไขการรวมกลุ่ม"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:70
 msgid "Alert Created"
-msgstr ""
+msgstr "สร้างการแจ้งเตือนแล้ว"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:98
 msgid "Alert Disabled"
-msgstr ""
+msgstr "ปิดใช้งานการแจ้งเตือน"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:98
 msgid "Alert Enabled"
-msgstr ""
+msgstr "เปิดใช้งานการแจ้งเตือน"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:144
 msgid "Alert Name"
-msgstr ""
+msgstr "ชื่อการแจ้งเตือน"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:87
 msgid "Alert Sent"
-msgstr ""
+msgstr "ส่งการแจ้งเตือนแล้ว"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:70
 msgid "Alert Updated"
-msgstr ""
+msgstr "แจ้งเตือนได้รับการอัปเดตแล้ว"
 
 #: insights/insights/doctype/insights_alert/insights_alert.js:12
 msgid "Alert sent"
-msgstr ""
+msgstr "ส่งการแจ้งเตือนแล้ว"
 
 #: frontend/src2/query/components/QueryAlertsDialog.vue:95
 msgid "Alerts"
-msgstr ""
+msgstr "แจ้งเตือน"
 
 #: frontend/src2/dashboard/DashboardList.vue:26
 #: frontend/src2/workbook/WorkbookList.vue:43
@@ -179,22 +179,22 @@ msgstr "ทั้งหมด"
 #. Label of the allow_download (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Data Download"
-msgstr ""
+msgstr "อนุญาตให้ดาวน์โหลดข้อมูล"
 
 #. Label of the allow_subquery (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allow Subquery"
-msgstr ""
+msgstr "อนุญาตให้ใช้ Subquery"
 
 #. Label of the allow_imports (Check) field in DocType 'Insights Data Source'
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
 msgid "Allow Table Import"
-msgstr ""
+msgstr "อนุญาตการนำเข้าตาราง"
 
 #. Label of the allowed_origins (Data) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Allowed Origins"
-msgstr ""
+msgstr "แหล่งกำเนิดที่อนุญาต"
 
 #: frontend/src2/query/components/FormatRule.vue:161
 msgid "Amber"
@@ -207,17 +207,17 @@ msgstr "แก้ไขจาก"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:110
 msgid "Anyone in the organization can view"
-msgstr ""
+msgstr "ทุกคนในองค์กรสามารถดูได้"
 
 #: frontend/src2/dashboard/DashboardShareDialog.vue:106
 msgid "Anyone with the link can view"
-msgstr ""
+msgstr "ใครก็ตามที่มีลิงก์สามารถดูได้"
 
 #. Option for the 'Action if table exists' (Select) field in DocType 'Insights
 #. Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Append"
-msgstr ""
+msgstr "ผนวก"
 
 #. Option for the 'Sync Strategy' (Select) field in DocType 'Insights Table v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
@@ -244,15 +244,15 @@ msgstr "ใช้ตัวกรอง"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Apply User Permissions"
-msgstr ""
+msgstr "ใช้สิทธิ์ผู้ใช้"
 
 #: frontend/src2/query/components/AddOperationPopover.vue:81
 msgid "Apply a custom operation using python script"
-msgstr ""
+msgstr "ใช้สคริปต์ Python เพื่อดำเนินการตามคำสั่งที่กำหนดเอง"
 
 #: frontend/src2/components/UserDropdown.vue:131
 msgid "Are you sure you want to log out?"
-msgstr ""
+msgstr "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?"
 
 #: frontend/src2/components/UserDropdown.vue:81
 msgid "Are you sure you want to login to your Frappe Cloud dashboard?"
@@ -262,18 +262,18 @@ msgstr "คุณแน่ใจหรือไม่ว่าต้องกา
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Authentication Type"
-msgstr ""
+msgstr "ประเภทการตรวจสอบสิทธิ์"
 
 #. Label of the auto_execute_query (Check) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Auto Execute Query"
-msgstr ""
+msgstr "เรียกใช้ Query อัตโนมัติ"
 
 #. Description of the 'Vertical Compact Layout' (Check) field in DocType
 #. 'Insights Dashboard v3'
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Automatically arrange cards vertically to fill empty spaces"
-msgstr ""
+msgstr "จัดเรียงการ์ดในแนวตั้งโดยอัตโนมัติเพื่อเติมเต็มช่องว่าง"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:138
 msgid "Average of..."
@@ -288,7 +288,7 @@ msgstr "URL ฐาน"
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Basic Authentication"
-msgstr ""
+msgstr "การตรวจสอบสิทธิ์ขั้นพื้นฐาน"
 
 #. Label of the batch_size (Int) field in DocType 'Insights Table Import Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
@@ -299,41 +299,41 @@ msgstr "ขนาดแบทช์"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Before Import Script"
-msgstr ""
+msgstr "ก่อนนำเข้าสคริปต์"
 
 #: frontend/src2/query/components/FormatRule.vue:204
 msgid "Below average"
-msgstr ""
+msgstr "ต่ำกว่าค่าเฉลี่ย"
 
 #. Option for the 'Database Type' (Select) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery"
-msgstr ""
+msgstr "BigQuery"
 
 #. Label of the bigquery_configuration_section (Section Break) field in DocType
 #. 'Insights Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Configuration"
-msgstr ""
+msgstr "การกำหนดค่า BigQuery"
 
 #. Label of the bigquery_dataset_id (Data) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Dataset ID"
-msgstr ""
+msgstr "BigQuery Dataset ID"
 
 #. Label of the bigquery_project_id (Data) field in DocType 'Insights Data
 #. Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Project ID"
-msgstr ""
+msgstr "BigQuery Project ID"
 
 #. Label of the bigquery_service_account_key (JSON) field in DocType 'Insights
 #. Data Source v3'
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "BigQuery Service Account Key (JSON)"
-msgstr ""
+msgstr "BigQuery Service Account Key (JSON)"
 
 #: frontend/src2/charts/components/DonutChartConfigForm.vue:58
 msgid "Bottom"
@@ -341,7 +341,7 @@ msgstr "ด้านล่าง"
 
 #: frontend/src2/query/components/FormatRule.vue:202
 msgid "Bottom N percent"
-msgstr ""
+msgstr "เปอร์เซ็นต์ล่างสุด"
 
 #: frontend/src2/query/components/FormatRule.vue:200
 msgid "Bottom N values"

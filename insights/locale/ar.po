@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-10-05 11:28\n"
+"PO-Revision-Date: 2026-10-26 09:34\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Arabic\n"
 "MIME-Version: 1.0\n"
@@ -938,7 +938,7 @@ msgstr "البريد الإلكتروني"
 #. Invitation'
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email Sent At"
-msgstr ""
+msgstr "أرسل البريد الإلكتروني إلى"
 
 #: frontend/src2/query/components/FiltersSelector.vue:134
 msgid "Empty - Click 'Add Filter' to add a filter"
