@@ -27,6 +27,7 @@ import insights
 from insights.exceptions import TableNotStored
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     IMPORT_WRITE_LOCK_TIMEOUT,
+    MEMORY_LIMIT_CONFIG_KEY,
     WRITE_LOCK_TIMEOUT,
     local_duckdb_write_connection,
     local_duckdb_write_lock,
@@ -62,6 +63,7 @@ MIN_CHUNK_MEMORY = 8
 # committing a wide table at a 1 GB limit took 1.1 GB with two threads and
 # 1.6 GB with eight. So a commit gets two threads and a share of the import's
 # limit, and no less than COMMIT_MIN_MEMORY (MB): at 42 MB a small table failed.
+# A site that sets its own DuckDB limit keeps it.
 COMMIT_THREADS = 2
 COMMIT_MEMORY_SHARE = 2 / 3
 COMMIT_MIN_MEMORY = 128
@@ -272,7 +274,7 @@ class WarehouseTableWriter:
             with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
                 self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
 
-                if self.memory_limit:
+                if self.memory_limit and not frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY):
                     memory = max(int(self.memory_limit * COMMIT_MEMORY_SHARE), COMMIT_MIN_MEMORY)
                     db.raw_sql(f"SET memory_limit = '{memory}MB'")
                     db.raw_sql(f"SET threads = {COMMIT_THREADS}")
@@ -713,6 +715,9 @@ class WarehouseTableImporter:
             return
         with suppress(Exception):  # nosemgrep - only MariaDB knows the variable, and only MariaDB set a limit
             backend.raw_sql("SET MAX_STATEMENT_TIME=0")
+        if backend.name == "mysql":
+            # a batch streams while its chunks are written, and the server waits on each
+            backend.raw_sql(f"SET SESSION net_write_timeout = {IMPORT_TIMEOUT}")
 
     def prepare_remote_table(self) -> Expr:
         self.remote_table = self.table.get_remote_table()
