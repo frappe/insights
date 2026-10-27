@@ -7,27 +7,15 @@ on:
       - version-3
       - develop
 
-jobs:
-  commit-lint:
-    name: Semantic Commits
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 200
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          check-latest: true
-      - name: Check commit titles
-        run: |
-          npm install @commitlint/cli @commitlint/config-conventional
-          npx commitlint --verbose --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+concurrency:
+  group: lint-${{ github.event.number }}
+  cancel-in-progress: true
 
+jobs:
+  # One job, not one per check: each job takes a runner from the frappe org's shared pool.
   linter:
     name: 'Frappe Linter'
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v5
@@ -61,10 +49,28 @@ jobs:
           extra_args: --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.event.pull_request.head.sha }}
 
       - name: Check feature coverage
+        if: ${{ !cancelled() }}
         run: python insights/tests/features.py check
 
       - name: Run Semgrep rules
+        if: ${{ !cancelled() }}
         run: pre-commit run semgrep --hook-stage pre-push --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.event.pull_request.head.sha }}
+
+      # `frontend/e2e/AGENTS.md` tells an agent that lint refuses a sleep, a
+      # conditional and `test.only`. This is what makes that true.
+      - name: Lint the suite
+        if: ${{ !cancelled() }}
+        run: yarn --cwd frontend lint:e2e
+
+      - name: Lint the app
+        if: ${{ !cancelled() }}
+        run: yarn --cwd frontend lint
+
+      - name: Check commit titles
+        if: ${{ !cancelled() }}
+        run: |
+          npm install --no-save @commitlint/cli @commitlint/config-conventional
+          npx commitlint --verbose --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
 
   deps-vulnerable-check:
     name: 'Vulnerable Dependency Check'
