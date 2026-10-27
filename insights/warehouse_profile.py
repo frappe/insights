@@ -1,32 +1,19 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-"""Profile what the warehouse's DuckDB actually spends on a query.
+"""Replay the slowest logged data store queries and report what each one cost.
 
-Replays SQL that already ran — taken from `Insights Query Execution Log` — against
-the warehouse read-only, one query at a time, and records where the time and the
-memory went:
+Each replay runs `EXPLAIN ANALYZE` on its own read-only warehouse connection, and
+samples `duckdb_memory()` while the query is in flight. A snapshot taken after
+the query returns shows what was left over, not what the peak was made of.
 
-- DuckDB's own profile tree, with per-operator timing and cardinality
-- `system_peak_buffer_memory` and `system_peak_temp_dir_size` for the run
-- `duckdb_memory()` sampled *while the query is in flight*, which is the only way
-  to see which operator held the memory. A snapshot taken after the query has
-  returned shows what was left over, not what the peak was made of
-- `cpu_time` against `latency`, whose ratio is how many cores the query took
+From the bench:
 
-Nothing here is whitelisted: it reads arbitrary logged SQL and reports plans, so
-it is an operator's tool, run from the bench root, off-peak:
+    bench --site <site> execute insights.warehouse_profile.run --kwargs "{'limit': 10}"
 
-    bench --site insights.frappe.io execute \\
-        insights.warehouse_profile.run --kwargs "{'limit': 10}"
-
-`concurrency` replays the same statement N times at once, which is what a
-dashboard does to the warehouse and what a one-at-a-time profile cannot show:
-
-    bench --site insights.frappe.io execute \\
-        insights.warehouse_profile.run --kwargs "{'limit': 3, 'concurrency': 4}"
-
-Each run writes a JSON report to the site's private files and prints a summary.
+`concurrency` replays a statement N times at once, as a dashboard does.
+`insights.api.data_store.profile_warehouse` queues the same run as a job. Either
+way the report is a private File.
 """
 
 import json
@@ -35,11 +22,10 @@ import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager, suppress
+from contextlib import suppress
 from typing import Any
 
 import frappe
-from frappe.utils import get_files_path
 
 import insights
 
@@ -65,15 +51,15 @@ SAMPLE_INTERVAL = 0.05
 DEFAULT_MAX_SECONDS = 180
 
 
-def build_report(
+def run(
     limit: int = 10,
     since_days: int = 7,
     min_time: float = 1.0,
     concurrency: int = 1,
     max_seconds: int = DEFAULT_MAX_SECONDS,
-    budget: float | None = None,
-) -> dict[str, Any]:
-    """Profile the slowest logged warehouse queries and answer with the report.
+    file_name: str | None = None,
+) -> str:
+    """Profile the slowest logged data store queries and save the report as a private File.
 
     Args:
         limit: How many of the slowest distinct queries to replay.
@@ -81,50 +67,67 @@ def build_report(
         min_time: Ignore anything that already runs faster than this, in seconds.
         concurrency: Replay each statement this many times at once.
         max_seconds: Cancel a replay that runs longer than this.
-        budget: Stop starting new replays once this many seconds have passed.
-            A caller that holds a web worker must pass one. `not_profiled` then
-            names what was left, for the next call to pick up.
+        file_name: The report's file name. `enqueue` picks it, to answer with it.
+
+    Returns:
+        The name of the File that holds the report.
     """
-    queries = slowest_logged(limit, since_days, min_time)
-    if not queries:
-        frappe.throw(f"No data store queries slower than {min_time}s in the last {since_days} days")
+    db = insights.warehouse.get_connection()
+    try:
+        settings = read_settings(db.con)
+    finally:
+        db.disconnect()
 
-    deadline = time.monotonic() + budget if budget else None
-    profiled, skipped = [], []
-    for query in queries:
-        if deadline and time.monotonic() >= deadline:
-            skipped.append(query["query"])
-            continue
-        profiled.append(_replay(query, concurrency, max_seconds))
-
-    return {
+    report = {
         "generated_at": frappe.utils.now(),
         "site": frappe.local.site,
-        "settings": read_settings(),
+        "settings": settings,
         "concurrency": concurrency,
-        "queries": profiled,
-        "not_profiled": skipped,
+        "queries": [
+            _replay(query, concurrency, max_seconds) for query in slowest_logged(limit, since_days, min_time)
+        ],
     }
+    file = frappe.get_doc(
+        {
+            "doctype": "File",
+            "file_name": file_name or report_file_name(),
+            "is_private": 1,
+            "content": json.dumps(report, indent=2, default=str),
+        }
+    ).insert(ignore_permissions=True)
+    print(summarize(report))
+    print(f"\nFull report: {file.get_full_path()}")
+    return file.name
 
 
-def run(
+def enqueue(
     limit: int = 10,
     since_days: int = 7,
     min_time: float = 1.0,
     concurrency: int = 1,
     max_seconds: int = DEFAULT_MAX_SECONDS,
-    out: str | None = None,
 ) -> str:
-    """Profile from the bench, print a summary and write the report to a file.
+    """Queue `run` on the long queue and answer with the file name its report will have."""
+    file_name = report_file_name()
+    frappe.enqueue(
+        "insights.warehouse_profile.run",
+        queue="long",
+        # concurrent copies run side by side, so each query costs at most `max_seconds`
+        timeout=limit * max_seconds + 60,
+        limit=limit,
+        since_days=since_days,
+        min_time=min_time,
+        concurrency=concurrency,
+        max_seconds=max_seconds,
+        file_name=file_name,
+    )
+    return file_name
 
-    Returns the path the report was written to. `insights.api.data_store` runs
-    the same profile over the API, for a caller with no shell on the host.
-    """
-    report = build_report(limit, since_days, min_time, concurrency, max_seconds)
-    path = _write_report(report, out)
-    print(summarize(report))
-    print(f"\nFull report: {path}")
-    return path
+
+def report_file_name() -> str:
+    return (
+        f"warehouse_profile_{frappe.utils.now_datetime():%Y%m%d_%H%M%S}_{frappe.generate_hash(length=6)}.json"
+    )
 
 
 def slowest_logged(limit: int, since_days: int, min_time: float) -> list[dict]:
@@ -136,22 +139,23 @@ def slowest_logged(limit: int, since_days: int, min_time: float) -> list[dict]:
         JOIN (
             SELECT query, MAX(time_taken) AS worst
             FROM `tabInsights Query Execution Log`
-            WHERE data_store = 1 AND creation > NOW() - INTERVAL %(days)s DAY
+            WHERE data_store = 1 AND query IS NOT NULL
+                AND creation > NOW() - INTERVAL %(days)s DAY
             GROUP BY query
             HAVING worst >= %(min_time)s
             ORDER BY worst DESC
             LIMIT %(limit)s
         ) w ON w.query = l.query AND w.worst = l.time_taken
         GROUP BY l.query
+        ORDER BY l.time_taken DESC
         """,
         {"days": since_days, "min_time": min_time, "limit": limit},
         as_dict=True,
     )
 
 
-def read_settings() -> dict[str, Any]:
-    """The DuckDB settings this warehouse connection actually runs under."""
-    con = insights.warehouse.db.con
+def read_settings(con) -> dict[str, Any]:
+    """The DuckDB settings a warehouse connection runs under."""
     settings = {}
     for name in PROFILED_SETTINGS:
         with suppress(Exception):  # nosemgrep - a setting this build does not have is simply absent
@@ -187,17 +191,26 @@ def sql_shape(sql: str) -> dict[str, int]:
     }
 
 
+def memory_by_tag(con) -> dict[str, tuple[int, int]]:
+    """What the DuckDB instance holds, per tag: memory and temporary storage, in bytes."""
+    rows = con.execute(
+        "SELECT tag, memory_usage_bytes, temporary_storage_bytes FROM duckdb_memory()"
+    ).fetchall()
+    return {tag: (memory, temporary) for tag, memory, temporary in rows}
+
+
 class MemorySampler(threading.Thread):
     """Polls `duckdb_memory()` on a sibling cursor while a query runs.
 
-    Sibling cursors share the buffer manager with the connection they came from,
-    so this reports the instance's usage, not the thread's. It keeps the single
-    highest total it sees and the per-tag breakdown from that moment.
+    Sibling cursors share the buffer manager, so this reports the instance's
+    usage, not the thread's. It keeps the highest total above `baseline` it sees,
+    and the per-tag breakdown from that moment.
     """
 
-    def __init__(self, con, interval: float = SAMPLE_INTERVAL):
+    def __init__(self, con, baseline: dict[str, tuple[int, int]], interval: float = SAMPLE_INTERVAL):
         super().__init__(daemon=True)
         self.cursor = con.cursor()
+        self.baseline = baseline
         self.interval = interval
         self.stop_event = threading.Event()
         self.peak_bytes = 0
@@ -212,20 +225,22 @@ class MemorySampler(threading.Thread):
             self.stop_event.wait(self.interval)
 
     def _sample(self) -> None:
-        rows = self.cursor.execute(
-            "SELECT tag, memory_usage_bytes, temporary_storage_bytes FROM duckdb_memory()"
-        ).fetchall()
+        growth = {
+            tag: (memory - self.baseline.get(tag, (0, 0))[0], temporary - self.baseline.get(tag, (0, 0))[1])
+            for tag, (memory, temporary) in memory_by_tag(self.cursor).items()
+        }
         self.samples += 1
-        total = sum(row[1] for row in rows)
+        total = sum(memory for memory, _ in growth.values())
         if total <= self.peak_bytes:
             return
         self.peak_bytes = total
-        self.peak_by_tag = {row[0]: row[1] for row in rows if row[1]}
-        self.peak_temp_bytes = sum(row[2] for row in rows)
+        self.peak_by_tag = {tag: memory for tag, (memory, _) in growth.items() if memory > 0}
+        self.peak_temp_bytes = sum(temporary for _, temporary in growth.values())
 
     def stop(self) -> dict[str, Any]:
         self.stop_event.set()
         self.join(timeout=5)
+        self.cursor.close()
         return {
             "sampled_peak_bytes": self.peak_bytes,
             "sampled_peak_by_tag": self.peak_by_tag,
@@ -234,68 +249,41 @@ class MemorySampler(threading.Thread):
         }
 
 
-@contextmanager
-def profiling(con):
-    """Turn DuckDB's JSON profiler on for the block, and off again after.
-
-    The profile is read back from `EXPLAIN ANALYZE`'s own result rather than
-    `profiling_output`. The warehouse opens read-only with
-    `enable_external_access = false`, and asking that connection to write a
-    profile file does not fail cleanly — DuckDB 1.4 dereferences a null pointer
-    and takes the query with it.
-    """
-    try:
-        con.execute("SET enable_profiling='json'")
-        con.execute("SET profiling_mode='standard'")
-        yield
-    finally:
-        with suppress(Exception):  # nosemgrep - the shared connection left profiling is the real risk
-            con.execute("PRAGMA disable_profiling")
-
-
-def profile_sql(
-    sql: str,
-    max_seconds: int = DEFAULT_MAX_SECONDS,
-    connection=None,
-) -> dict[str, Any]:
-    """Run one statement read-only and report where its time and memory went.
+def profile_sql(con, sql: str, baseline: dict, max_seconds: int = DEFAULT_MAX_SECONDS) -> dict[str, Any]:
+    """Run one statement on `con` and report where its time and memory went.
 
     `EXPLAIN ANALYZE` runs the query for real and returns the plan with
-    per-operator timings, without handing the rows back to Python — so what is
-    measured is DuckDB's work, not pandas'.
+    per-operator timings, without handing the rows back to Python, so what is
+    measured is DuckDB's work, not pandas'. It reads the profile from its own
+    result rather than `profiling_output`: asking a connection without external
+    access to write a profile file makes DuckDB 1.4 dereference a null pointer.
 
     Args:
+        con: A warehouse connection of this replay's own.
         sql: The statement to replay.
+        baseline: `memory_by_tag` before the replay, which the memory peak is above.
         max_seconds: Cancel the query once it has run this long.
-        connection: The warehouse connection to open a cursor on. A concurrent
-            replay must pass one: `insights.warehouse` reads `frappe.local`,
-            which is thread-local and empty in a worker thread.
     """
-    con = (connection or insights.warehouse.db.con).cursor()
-    sampler = MemorySampler(con)
-    watchdog = _interrupt_after(con, max_seconds)
+    con.execute("SET enable_profiling = 'json'")
+    con.execute("SET profiling_mode = 'standard'")
+    sampler = MemorySampler(con, baseline)
+    watchdog = threading.Timer(max_seconds, con.interrupt)
+    watchdog.daemon = True
     profile, error = None, None
 
-    with profiling(con):
-        sampler.start()
-        started = time.monotonic()
-        try:
-            rows = con.execute(f"EXPLAIN ANALYZE {sql.strip().rstrip(';')}").fetchall()
-            profile = json.loads(rows[0][-1])
-        except Exception as e:
-            error = str(e).splitlines()[0][:500]
-        wall = round(time.monotonic() - started, 3)
+    sampler.start()
+    watchdog.start()
+    started = time.monotonic()
+    try:
+        rows = con.execute(f"EXPLAIN ANALYZE {sql.strip().rstrip(';')}").fetchall()
+        profile = json.loads(rows[0][-1])
+    except Exception as e:
+        error = str(e).splitlines()[0][:500]
+    finally:
+        watchdog.cancel()
+    wall = round(time.monotonic() - started, 3)
 
-    watchdog.cancel()
     return {"wall_seconds": wall, "error": error, **sampler.stop(), **_read_profile(profile)}
-
-
-def _interrupt_after(con, seconds: int) -> threading.Timer:
-    """Cancel the query on this connection once it has had long enough."""
-    timer = threading.Timer(seconds, con.interrupt)
-    timer.daemon = True
-    timer.start()
-    return timer
 
 
 def _read_profile(profile: dict | None) -> dict[str, Any]:
@@ -351,33 +339,30 @@ def _operator_detail(node: dict) -> str:
 
 
 def _replay(logged: dict, concurrency: int, max_seconds: int) -> dict[str, Any]:
-    """Profile one logged statement, alone or against copies of itself."""
+    """Profile one logged statement, alone or against copies of itself.
+
+    Each copy runs on a connection of its own, opened through the warehouse so
+    it has the settings a dashboard query has, and closed after so that the
+    next replay starts on an empty buffer and writers can open the file between
+    replays. A worker thread has no `frappe.local`, so the connections are opened
+    here.
+    """
     entry = {
         "query": logged["query"],
         "logged_seconds": logged["time_taken"],
         "shape": sql_shape(logged["sql"]),
     }
-    connection = insights.warehouse.db.con
-    if concurrency <= 1:
-        entry["runs"] = [profile_sql(logged["sql"], max_seconds, connection)]
-        return entry
-
-    with ThreadPoolExecutor(max_workers=concurrency) as pool:
-        futures = [
-            pool.submit(profile_sql, logged["sql"], max_seconds, connection) for _ in range(concurrency)
-        ]
-        entry["runs"] = [f.result() for f in futures]
+    dbs = [insights.warehouse.get_connection() for _ in range(concurrency)]
+    try:
+        baseline = memory_by_tag(dbs[0].con)
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            entry["runs"] = list(
+                pool.map(lambda db: profile_sql(db.con, logged["sql"], baseline, max_seconds), dbs)
+            )
+    finally:
+        for db in dbs:
+            db.disconnect()
     return entry
-
-
-def _write_report(report: dict, out: str | None) -> str:
-    path = out or os.path.join(
-        get_files_path(is_private=1), f"warehouse_profile_{frappe.utils.now_datetime():%Y%m%d_%H%M%S}.json"
-    )
-    path = os.path.abspath(path)
-    with open(path, "w") as f:  # nosemgrep - only the bench command writes, where its operator says
-        json.dump(report, f, indent=2, default=str)
-    return path
 
 
 def summarize(report: dict) -> str:
