@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # The nightly run has seven installs. Each takes a runner from the frappe
+      # org's shared pool, so take at most three at once.
+      max-parallel: 3
       matrix:
         # A pull request leaves insights_branch empty, so checkout takes the PR's own code.
         # main is Insights v2, which never targeted Frappe v16. develop builds against the
