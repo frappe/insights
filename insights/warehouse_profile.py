@@ -30,6 +30,9 @@ from typing import Any
 import frappe
 from duckdb import IOException
 from frappe import _
+from frappe.query_builder import Order
+from frappe.query_builder.functions import Max
+from frappe.utils import add_days, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
 from frappe.utils.file_lock import LockTimeoutError
 from frappe.utils.synchronization import filelock
@@ -77,7 +80,8 @@ def run(
     """Profile the slowest logged data store queries into a private File.
 
     The report is rewritten after every replay, so a run that is killed still
-    leaves what it measured, and its `status` says it did not finish.
+    leaves what it measured. Its `status` then stays `Running`, and its
+    `updated_at` stops moving.
 
     Args:
         limit: How many of the slowest distinct queries to replay.
@@ -167,7 +171,7 @@ def create_report_file():
     return frappe.get_doc(
         {
             "doctype": "File",
-            "file_name": f"warehouse_profile_{frappe.utils.now_datetime():%Y%m%d_%H%M%S}.json",
+            "file_name": f"warehouse_profile_{now_datetime():%Y%m%d_%H%M%S}.json",
             "is_private": 1,
             # File shares one stored copy among equal contents, so the first must be unique
             "content": json.dumps({"status": "Queued", "queued_at": frappe.utils.now()}),
@@ -176,33 +180,35 @@ def create_report_file():
 
 
 def write_report(file, report: dict) -> None:
+    report["updated_at"] = frappe.utils.now()
     file.save_file(content=json.dumps(report, indent=2, default=str), overwrite=True)
     file.save(ignore_permissions=True)
     frappe.db.commit()  # nosemgrep - a killed job must leave the report as far as it got
 
 
 def slowest_logged(limit: int, since_days: int, min_time: float) -> list[dict]:
-    """The slowest logged data store queries, one row per distinct query."""
-    return frappe.db.sql(
-        """
-        SELECT l.query, l.`sql`, l.time_taken
-        FROM `tabInsights Query Execution Log` l
-        JOIN (
-            SELECT query, MAX(time_taken) AS worst
-            FROM `tabInsights Query Execution Log`
-            WHERE data_store = 1 AND query IS NOT NULL
-                AND creation > NOW() - INTERVAL %(days)s DAY
-            GROUP BY query
-            HAVING worst >= %(min_time)s
-            ORDER BY worst DESC
-            LIMIT %(limit)s
-        ) w ON w.query = l.query AND w.worst = l.time_taken
-        GROUP BY l.query
-        ORDER BY l.time_taken DESC
-        """,
-        {"days": since_days, "min_time": min_time, "limit": limit},
-        as_dict=True,
+    """The slowest logged data store queries, one row per distinct query, slowest first."""
+    Log = frappe.qb.DocType("Insights Query Execution Log")
+    worst = Max(Log.time_taken)
+    slowest = (
+        frappe.qb.from_(Log)
+        .select(Log.query, worst.as_("time_taken"))
+        .where(
+            (Log.data_store == 1)
+            & Log.query.isnotnull()
+            & (Log.creation > add_days(now_datetime(), -since_days))
+        )
+        .groupby(Log.query)
+        .having(worst >= min_time)
+        .orderby(worst, order=Order.desc)
+        .limit(limit)
+        .run(as_dict=True)
     )
+    for row in slowest:
+        row["sql"] = frappe.db.get_value(
+            "Insights Query Execution Log", {"query": row.query, "time_taken": row.time_taken}, "sql"
+        )
+    return slowest
 
 
 def read_settings(con) -> dict[str, Any]:

@@ -21,7 +21,15 @@ QUERY = "warehouse-profile-test"
 # holds the file as an import's commit does.
 HOLD_WRITE_LOCK = """
 import sys, time, duckdb
-con = duckdb.connect(sys.argv[1])
+deadline = time.monotonic() + 30
+while True:
+    try:
+        con = duckdb.connect(sys.argv[1])
+        break
+    except duckdb.IOException:
+        if time.monotonic() > deadline:
+            raise
+        time.sleep(0.1)
 print("held", flush=True)
 time.sleep(float(sys.argv[2]))
 con.close()
