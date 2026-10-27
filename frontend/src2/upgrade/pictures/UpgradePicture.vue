@@ -216,18 +216,6 @@ const runsAsOwner = ref(true)
 			/>
 		</DialogPicture>
 
-		<DialogPicture
-			v-else-if="props.name === 'chartOwner'"
-			class="w-[28rem]"
-			:title="__('Share Chart')"
-		>
-			<ShareUserRow
-				:full-name="props.person.full_name"
-				:email="props.person.email"
-				access="owner"
-			/>
-		</DialogPicture>
-
 		<div v-else-if="props.name === 'numberCards'" class="flex flex-col items-start gap-3">
 			<Button variant="outline" class="text-sm">
 				<template #prefix>

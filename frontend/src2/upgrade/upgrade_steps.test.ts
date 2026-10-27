@@ -16,6 +16,7 @@ import {
 	groups,
 	sections,
 	PICTURES,
+	SENTENCES,
 	type PictureName,
 	startIndex,
 	stepIndexOf,
@@ -228,20 +229,32 @@ describe('the wizard steps of someone who is not an admin', () => {
 	// @feature upgrade.wizard
 	it('hold their own items outside the groups in Good to know', () => {
 		const items = [
-			item(
-				'gone',
-				'P11',
-				{ chart: 'KPIs', publisher: BOB, publisher_disabled: true },
-				{ user: ALICE },
-			),
+			item('dates', 'N5', { chart: 'Revenue', column: 'Posting Date' }, { user: ALICE }),
 			item('script', 'P20', { title: 'Script rows', author: ALICE }, { user: ALICE }),
 		]
 		const steps = wizardSteps(items, { can: can(true), admin: false, me: ALICE })
 		const notes = steps.find((step) => step.id === 'notes')!
-		expect('rows' in notes && notes.rows.map((row) => row.item.code)).toEqual(['P11', 'P20'])
+		expect('rows' in notes && notes.rows.map((row) => row.item.code)).toEqual(['N5', 'P20'])
 		expect('group' in notes && notes.group.title).toBe('A few changes to what you made')
 		expect('group' in notes && notes.group.picture).toBeUndefined()
-		expect(items.map(pictureOf)).toEqual(['chartOwner', undefined])
+		expect(items.map(pictureOf)).toEqual([undefined, undefined])
+	})
+
+	// @feature upgrade.wizard
+	it('ask them to turn on Run as owner for their chart whose publisher is disabled', () => {
+		const unpublished = item(
+			'gone',
+			'P11',
+			{ chart: 'KPIs', publisher: BOB, publisher_disabled: true },
+			{ user: ALICE },
+		)
+		const steps = wizardSteps([unpublished], { can: can(true), admin: false, me: ALICE })
+		const publicCharts = steps.find((step) => step.id === 'public')!
+		expect('group' in publicCharts && publicCharts.group.kind).toBe('now')
+		// Run as owner shows the owner's rows, not the ones the publisher saw
+		expect(text(sentenceOf(unpublished, ALICE).todo)).toBe(
+			'To show guests what you can read, turn on Run as owner in its sharing.',
+		)
 	})
 
 	// @feature upgrade.wizard
@@ -257,12 +270,6 @@ describe('the wizard steps of someone who is not an admin', () => {
 			'now',
 		)
 		expect(kind([item('import', 'J4', { title: 'Nightly', names: ['sleep'] })])).toBe('now')
-		const unpublished = item('gone', 'P11', {
-			chart: 'KPIs',
-			publisher: BOB,
-			publisher_disabled: true,
-		})
-		expect(kind([unpublished])).toBe('now')
 	})
 })
 
@@ -346,9 +353,16 @@ describe('an item sentence', () => {
 				},
 			],
 		]
+		// a new code without a case here would go unchecked
+		expect(new Set(items.map(([code]) => code))).toEqual(new Set(Object.keys(SENTENCES)))
 		for (const [code, data] of items) {
 			for (const reader of [DAVE, ALICE]) {
-				expect(text(sentenceOf(item('a', code, data), reader).todo), code).not.toBe('')
+				for (const form of [{}, { form_url: '/desk/user/bob' }]) {
+					expect(
+						text(sentenceOf(item('a', code, data, form), reader).todo),
+						code,
+					).not.toBe('')
+				}
 			}
 		}
 	})
@@ -434,7 +448,12 @@ describe('an item sentence', () => {
 			'You can’t see charts on Customers any more, and see only the rows desk gives you of Sales Invoices.',
 		)
 
-		const narrowed = item('b', 'P17', { user: BOB, doctypes: [], narrowed: ['Sales Invoice'] })
+		const narrowed = item(
+			'b',
+			'P17',
+			{ user: BOB, doctypes: [], narrowed: ['Sales Invoice'] },
+			{ form_url: '/desk/user/bob' },
+		)
 		expect(text(sentenceOf(narrowed, DAVE).text)).toBe(
 			'Bob now sees only the rows desk gives them of Sales Invoices.',
 		)
@@ -443,6 +462,10 @@ describe('an item sentence', () => {
 		)
 		expect(text(sentenceOf(narrowed, DAVE).todo)).toBe(
 			'If Bob needs more rows, give them a desk role or User Permission that does.',
+		)
+		// an admin who may not set roles asks one who may
+		expect(text(sentenceOf({ ...narrowed, form_url: null }, DAVE).todo)).toBe(
+			'If Bob needs more rows, ask a System Manager for a desk role or User Permission that gives them.',
 		)
 	})
 

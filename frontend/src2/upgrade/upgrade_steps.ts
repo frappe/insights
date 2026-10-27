@@ -27,7 +27,6 @@ export const PICTURES = [
 	'shareNow',
 	'runAsOwner',
 	'workbookAccess',
-	'chartOwner',
 	'numberCards',
 ] as const
 
@@ -167,7 +166,7 @@ export const groups = translatedTable<Group[]>(() => [
 		id: 'public',
 		label: __('Public Charts'),
 		kind: 'now',
-		codes: ['P10', 'P12'],
+		codes: ['P10', 'P12', 'P11'],
 		title: __('Public charts run as their owner'),
 		lead: [
 			__('Public charts now run as their owner,'),
@@ -227,19 +226,15 @@ export const groups = translatedTable<Group[]>(() => [
 		id: 'notes',
 		label: __('Good to Know'),
 		kind: 'note',
-		codes: ['P11'],
-		title: __('Some public charts show guests nothing'),
-		lead: [
-			__('A public chart runs as the person who published it,'),
-			__('and these were published by someone now disabled.'),
-		],
-		picture: 'chartOwner',
+		codes: [],
+		// its rows are all outside the groups, so it shows these words or adminNotes
+		...yourNotes(),
 	},
 ])
 
-// The Good to Know step when it holds more than public charts: the reader's items
-// outside the groups. An admin's also hold those addressed to no one, such as
-// changes to Administrator's work, so they are not all the admin's own.
+// The Good to Know step: the reader's items outside the groups. An admin's also hold
+// those addressed to no one, such as changes to Administrator's work, so they are not
+// all the admin's own.
 const yourNotes = translatedTable<Pick<Group, 'title' | 'lead'>>(() => ({
 	title: __('A few changes to what you made'),
 	lead: [__('The upgrade changed some of your work,'), __('and each change says what it means.')],
@@ -253,8 +248,8 @@ const adminNotes = translatedTable<Pick<Group, 'title' | 'lead'>>(() => ({
 }))
 
 // Items outside the groups that tell of something failing until someone acts: a script or
-// import that will fail, a script without its secret, a public chart guests see nothing of.
-const FAILURES = new Set(['P21', 'Q1', 'J4', 'Q5', 'P11'])
+// import that will fail, a script without its secret.
+const FAILURES = new Set(['P21', 'Q1', 'J4', 'Q5'])
 
 /** Whether an item needs its reader: its group asks for a decision, or it tells of a failure. */
 export function needsYou(item: UpgradeItem): boolean {
@@ -569,7 +564,7 @@ type Build = (
 	locale: string,
 ) => Sentence | undefined
 
-const SENTENCES: Partial<Record<string, Build>> = {
+export const SENTENCES: Partial<Record<string, Build>> = {
 	P17(item, d, people) {
 		if (d.user) {
 			const unreadable = listOf((d.doctypes ?? []).map(documents), 3)
@@ -615,14 +610,21 @@ const SENTENCES: Partial<Record<string, Build>> = {
 									'If you need more rows, ask for a desk role or User Permission that gives them.',
 								),
 						  )
-						: say(
-								__(
-									'If {0} needs more rows, give them a desk role or User Permission that does.',
-								),
-								{
-									text: people.name(d.user),
-								},
-						  )
+						: !item.form_url
+						  ? say(
+									__(
+										'If {0} needs more rows, ask a System Manager for a desk role or User Permission that gives them.',
+									),
+									{ text: people.name(d.user) },
+						    )
+						  : say(
+									__(
+										'If {0} needs more rows, give them a desk role or User Permission that does.',
+									),
+									{
+										text: people.name(d.user),
+									},
+						    )
 					: askForRole(item, people, d.user, d.doctypes),
 				action: formAction(
 					item,
@@ -925,7 +927,8 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				titled('chart', d.chart),
 				em(person(people, d.publisher)),
 			),
-			todo: say(__('Turn on Run as owner in its sharing so guests see it again.')),
+			// the reader is its owner: P11 is a note addressed to them
+			todo: say(__('To show guests what you can read, turn on Run as owner in its sharing.')),
 			action: routeTo(item, __('Open sharing'), { share: '1' }),
 		}
 	},
