@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 import duckdb
 import frappe
 import ibis
-from duckdb import IOException
+from duckdb import ConnectionException, IOException
 from frappe.utils import get_files_path
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
@@ -23,12 +23,18 @@ from .compilers import StarExceptDropColumns
 # mid-request must therefore wait the readers out instead of failing on the
 # first attempt.
 #
+# A reader in another process holds the file's lock. A reader in another thread of
+# this process, as in a runner that serves requests and jobs in one process, holds
+# DuckDB's shared instance open read-only instead, and a write open fails on its
+# configuration. The writer waits out both.
+#
 # How long it may wait is the caller's business, not the file's. A writer serving
 # a click must not hold a web worker while readers come and go, so the default
 # stays short. A writer in a background job can afford to sit it out, and asks.
 WRITE_LOCK_TIMEOUT = 30
 IMPORT_WRITE_LOCK_TIMEOUT = 5 * 60
 WRITE_LOCK_RETRY_INTERVAL = 1
+READER_HELD_ERRORS = ("Could not set lock", "different configuration than existing connections")
 
 # DuckDB defaults to 80% of host RAM, which on a shared host is more than is
 # free: a warehouse compaction got OOM-killed. Under a cap it spills to
@@ -119,8 +125,8 @@ def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
     while True:
         try:
             return connect_duckdb(path, read_only=False)
-        except IOException as e:
-            if "Could not set lock" not in str(e) or time.monotonic() >= deadline:
+        except (IOException, ConnectionException) as e:
+            if not any(error in str(e) for error in READER_HELD_ERRORS) or time.monotonic() >= deadline:
                 raise
             if not waited:
                 waited = True
