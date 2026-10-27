@@ -8,8 +8,8 @@ frappe-ui in `frontend/src2/`, built with Vite.
 - `insights/api/` — whitelisted API endpoints (thin; logic lives in doctype classes).
   Most use `@insights_whitelist()` in `insights/decorators.py`; it adds a role check
 - `insights/insights/doctype/` — doctypes; the `_v3` suffix on the core ones (query,
-  chart, dashboard, data source, table) is historical, not a variant marker. Newer
-  doctypes, such as `Insights Workbook`, have none
+  chart, dashboard, data source, table) is historical, not a variant marker. Others,
+  such as `Insights Workbook` and `Insights Team`, have none
 - `frontend/src2/` — the whole UI, one folder per area (`workbook/`, `query/`,
   `charts/`, `dashboard/`, `data_source/`, `data_store/`)
 - `frontend/src2/types/` — the domain types
@@ -34,10 +34,11 @@ frappe-ui in `frontend/src2/`, built with Vite.
 
 - Before you touch query logic, read `frontend/src2/types/query.types.ts`
 - Before you install, build, lint, run the dev server, commit or push, read
-  `docs/agents/development.md`: the frontend installs only inside a bench
+  `docs/agents/development.md`: the frontend needs frappe's `ui` beside this app
 - Before you write or run a test, read `docs/agents/testing.md`: the site needs
   `allow_tests`, and tests write data, so use a site you can throw away
 - Before you write a browser test, also read `frontend/e2e/AGENTS.md`
-- Before you name a concept or record a decision, read `docs/agents/domain.md`
+- Before you change an area, read its ADRs in `docs/adr/`; before you name a concept or
+  record a decision, read `docs/agents/domain.md`
 - Before you review a change, read the criteria in `docs/agents/code-review/`, which
   `/iris-code-review` uses; skip what `insights.md` lists under "Do not flag"

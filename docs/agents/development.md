@@ -4,7 +4,7 @@ How to install, build, lint, commit and push in this repository. Running and wri
 
 ## Install
 
-- `frontend/package.json` links `@framework/ui` to `../../frappe/ui`, so the frontend installs only inside a bench, with the frappe app beside this one. A clone outside a bench cannot `yarn install`; the lint workflow clones frappe's `ui` into `../frappe` first for the same reason.
+- `frontend/package.json` links `@framework/ui` to `../../frappe/ui`, so the frontend installs only with frappe's `ui` at `../frappe/ui`: inside a bench, or in a clone where you put it there, as the lint workflow does.
 
 ## Build and lint
 
