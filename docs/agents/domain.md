@@ -7,13 +7,11 @@ How the engineering skills should consume this repo's domain documentation when 
 - **`CONTEXT.md`** at the repo root — the glossary.
 - **`docs/adr/`** — the ADRs that touch the area you are about to work in.
 
-Do not suggest writing an ADR upfront. The `/domain-modeling` skill (reached via
-`/grill-with-docs` and `/improve-codebase-architecture`) writes them when a term
-or a decision actually gets resolved.
+Do not suggest writing an ADR upfront. Write one when a term or a decision actually gets resolved.
 
 ## Most work produces no ADR
 
-The `/domain-modeling` test decides, and all three must hold: the decision is
+One test decides, and all three must hold: the decision is
 hard to reverse, it is surprising without context, and it is the result of a
 real trade-off. Two or three out of three is a no.
 
@@ -54,7 +52,7 @@ change with the code:
 - `docs/adr/` — the decisions
 - `docs/agents/` — these conventions
 
-**Effort** documents describe how one piece of work got done. They live under `docs/projects/<effort-slug>/`, which is a symlink to a directory outside the repo. See `issue-tracker.md` for the close-out.
+**Effort** documents describe how one piece of work got done: plans, tickets, research. They are not committed to this repo.
 
 Never move an effort document into `docs/adr/` to keep it alive. Distill the
 decision and let the rest go.
@@ -63,7 +61,7 @@ decision and let the rest go.
 
 When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
 
-If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
+If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (add the term to `CONTEXT.md` in the same change).
 
 To name a new concept, say what it is in the words the host platform already uses. Never use a metaphor. See `docs/adr/name-things-in-the-hosts-words.md`.
 
