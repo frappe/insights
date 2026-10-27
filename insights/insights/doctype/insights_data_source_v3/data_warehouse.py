@@ -1052,6 +1052,8 @@ def execute_warehouse_table_import(data_source: str, table_name: str):
     try:
         importer.start_import()
     finally:
+        # with two places, a night's imports would each wait up to a 4-minute
+        # scheduler tick for a free one, about an hour in all on a large site
         start_next_imports()
 
 
