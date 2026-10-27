@@ -6,10 +6,9 @@ on:
       - main
       - version-3
       - develop
+    # pip-audit reads only the Python dependencies.
     paths:
       - 'pyproject.toml'
-      - '**/package.json'
-      - '**/yarn.lock'
   workflow_dispatch:
   schedule:
     # A new advisory can hit dependencies no PR touched. Monday 03:00 UTC.
