@@ -29,8 +29,9 @@ def execute():
     reads other rows than the publisher, the publisher becomes the owner, so
     the link keeps serving the rows it served. The publisher chose to publish
     those rows, and `validate_run_as_owner` lets only the owner share them.
-    The previous owner and the publisher are told only when the publisher can't
-    read the chart's tables, as readers then see Not Permitted. A disabled publisher can run nothing, so that
+    Nobody is told of the move itself: when the publisher can't read the
+    chart's tables, the item that says readers see Not Permitted goes to the
+    publisher and the admins. A disabled publisher can run nothing, so that
     chart is left running as its reader, and its owner is told.
     """
     for chart, publisher in publicly_reachable_charts().items():
@@ -45,13 +46,12 @@ def execute():
         elif frappe.db.get_value("User", publisher, "enabled"):
             frappe.db.set_value(CHART, chart, {"owner": publisher, "run_as_owner": 1}, update_modified=False)
             keep_edit(chart, owner)
-            # readers keep their rows and the previous owner keeps edit, so a move
-            # is told only when the publisher can't read the chart's tables
+            # readers keep their rows and the previous owner keeps edit, so only a
+            # publisher who can't read the chart's tables leaves something to do
             if (unreadable := unreadable_by(chart, publisher)) is not None:
-                report(chart, owner, publisher, moved=True, unreadable=unreadable)
                 report_unreadable(chart, publisher, unreadable)
         else:
-            report(chart, owner, publisher, moved=False)
+            report_disabled_publisher(chart, owner, publisher)
 
 
 def keep_edit(chart: str, previous_owner: str) -> None:
@@ -87,27 +87,15 @@ def cannot_read(user: str, doctypes: list[str]) -> str:
     return f"{user} can't read {', '.join(doctypes) or 'its tables'}, so readers see Not Permitted"
 
 
-def report(chart: str, owner: str, publisher: str, moved: bool, unreadable: list[str] | None = None) -> None:
+def report_disabled_publisher(chart: str, owner: str, publisher: str) -> None:
     title = frappe.db.get_value(CHART, chart, "title") or chart
-    if moved:
-        data = {"chart": title, "publisher": publisher, "owner": owner}
-        message = f'"{title}": now owned by {publisher}, who published it, instead of {owner}'
-        if unreadable is not None:
-            data["doctypes"] = unreadable
-            message += f". {cannot_read(publisher, unreadable)}"
-        users = (owner, publisher)
-    else:
-        data = {"chart": title, "publisher": publisher, "publisher_disabled": True}
-        message = f'"{title}": {publisher}, who published it, is disabled, so guests see nothing'
-        users = (owner,)
-    for user in users:
-        add_item(
-            "P11",
-            message,
-            reference=(CHART, chart),
-            user=None if user == "Administrator" else user,
-            data=data,
-        )
+    add_item(
+        "P11",
+        f'"{title}": {publisher}, who published it, is disabled, so guests see nothing',
+        reference=(CHART, chart),
+        user=None if owner == "Administrator" else owner,
+        data={"chart": title, "publisher": publisher, "publisher_disabled": True},
+    )
 
 
 # why a public chart may give each reader other rows, by `why_rows_follow_reader`'s reason

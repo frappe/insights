@@ -18,8 +18,7 @@ def execute():
     workbook can. One who cannot would stop a running alert, so it runs as the
     workbook's owner when the owner reads the same rows: the enabler chose its
     recipients, and the owner's rows are not theirs to send. Otherwise it is
-    reported before it stops. A moved alert is not reported: it sends what it
-    sent, and an admin has nothing to do about it.
+    reported before it stops.
     """
     for alert in frappe.get_all(
         ALERT,
@@ -32,15 +31,15 @@ def execute():
 
         workbook = workbook_of(frappe._dict(alert, doctype=ALERT))
         owner = workbook and frappe.db.get_value(WORKBOOK, workbook, "owner")
-        message, data = move_or_report(alert, enabler, owner)
-        # a moved alert sends the same rows to the same people: nothing to act on
-        if data["outcome"] != "moved":
+        if stops := move_or_report(alert, enabler, owner):
+            message, data = stops
             add_item("P19", message, reference=(ALERT, alert.name), data=data)
 
 
-def move_or_report(alert, enabler: str | None, owner: str | None) -> tuple[str, dict]:
+def move_or_report(alert, enabler: str | None, owner: str | None) -> tuple[str, dict] | None:
     """Move the alert to `owner` where that keeps its rows. Answers the item's
-    message and data, which say which happened."""
+    message and data when it will stop instead, and None when it moved: it
+    sends the same rows to the same people, so there is nothing to act on."""
     data = {"alert": alert.title, "enabler": enabler or None, "owner": owner or None}
     title = data["alert"]
     if not enabler:
@@ -63,7 +62,3 @@ def move_or_report(alert, enabler: str | None, owner: str | None) -> tuple[str, 
         )
 
     frappe.db.set_value(ALERT, alert.name, "permission_user", owner, update_modified=False)
-    return (
-        f'"{title}" now runs as {owner}, who owns the workbook, in place of {enabler}, with the same rows',
-        {**data, "outcome": "moved"},
-    )

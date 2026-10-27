@@ -258,14 +258,8 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
         self.published_on_a_table_only_admins_read(OWNER, PUBLISHER)
 
         self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), PUBLISHER)
-        items = frappe.get_all(
-            ITEM, filters={"code": "P11", "reference_name": self.chart}, fields=["message", "data"]
-        )
-        self.assertEqual(len(items), 2)
-        for item in items:
-            self.assertIn("can't read Role", item.message)
-            self.assertEqual(frappe.parse_json(item.data)["doctypes"], ["Role"])
-        # the publisher's note can't give them a role, so the admins are asked too
+        # one item, to the publisher and the admins, who can grant the role
+        self.assertFalse(frappe.db.exists(ITEM, {"code": "P11", "reference_name": self.chart}))
         data = frappe.db.get_value(ITEM, {"code": "P10", "reference_name": self.chart}, "data")
         self.assertEqual(
             frappe.parse_json(data),
