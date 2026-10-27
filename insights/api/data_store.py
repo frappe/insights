@@ -3,7 +3,7 @@ from datetime import datetime
 import frappe
 from croniter import croniter
 from frappe.query_builder.functions import Max
-from frappe.utils import add_to_date, now_datetime
+from frappe.utils import add_to_date, now, now_datetime
 
 import insights
 from insights.decorators import insights_whitelist
@@ -134,5 +134,11 @@ def update_failed_sync_status():
     if not logs:
         return
 
-    for log in logs:
-        frappe.db.set_value("Insights Table Import Log", log, "status", "Failed")
+    for name in logs:
+        log = frappe.get_doc("Insights Table Import Log", name)
+        log.status = "Failed"
+        # a killed worker runs no handler, so the log would not say why it failed
+        log.log_output(
+            f"[{now()}] The import stopped without finishing: its worker was killed or restarted, "
+            "for example when the server ran out of memory."
+        )

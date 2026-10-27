@@ -414,6 +414,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.import-row-limit | An admin caps how many rows an import copies. |
 | data-store.sync-schedule | An admin sets a cron schedule on a stored table, and the table is imported when the schedule is due, counted from its last import. |
 | data-store.import-concurrency | A site imports at most two due tables at once and starts the next as one ends; an import whose worker died frees its place after the job timeout. |
+| data-store.killed-import-reason | An import whose worker was killed is marked failed, and its log says the worker stopped without finishing. |
 | data-store.list | An admin browses the stored tables and searches them by name. |
 | data-store.import-atomic | A failed import leaves the stored table as it was and no other table behind. |
 | data-store.import-cursor | An incremental import's cursor describes what is in the store, not what a run intended. |

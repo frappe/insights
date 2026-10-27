@@ -19,7 +19,7 @@ from frappe.utils import add_to_date
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
-from insights.api.data_store import sync_tables
+from insights.api.data_store import sync_tables, update_failed_sync_status
 from insights.insights.doctype.insights_data_source_v3.connectors import duckdb as duckdb_connector
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     connect_duckdb,
@@ -470,6 +470,19 @@ class TestSyncSchedule(InsightsIntegrationTestCase):
                 with self.assertRaises(RuntimeError):
                     execute_warehouse_table_import("Site DB", self.OTHER_TABLE)
         self.assertEqual(tables, [self.TABLE])
+
+    # @feature data-store.killed-import-reason
+    def test_an_import_whose_worker_was_killed_fails_and_says_why(self):
+        self.start_import(minutes_ago=0, status="In Progress")
+        log = frappe.get_last_doc("Insights Table Import Log", {"table_name": self.TABLE})
+        # a killed worker leaves its log In Progress, and the hourly check looks an hour back
+        log.db_set("creation", self.HALF_PAST, update_modified=False)
+
+        update_failed_sync_status()
+
+        log.reload()
+        self.assertEqual(log.status, "Failed")
+        self.assertIn("worker was killed or restarted", log.output)
 
 
 class TestImportRowLimit(InsightsIntegrationTestCase):
