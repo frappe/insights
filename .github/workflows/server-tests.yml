@@ -2,6 +2,7 @@ name: Server
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     # Later patterns override earlier ones. Server tests read the island entries
     # from assets.json, and some read `.ts` sources: translatable labels, the
     # filter picker's operators, client escaping.
@@ -26,7 +27,32 @@ permissions:
   contents: read
 
 jobs:
+  changed:
+    # A scheduled run on a develop that has not moved since the last green one
+    # would repeat that run. One API call here is cheaper than the bench.
+    name: New commits
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          workflow=$(basename "${GITHUB_WORKFLOW_REF%@*}")
+          last=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?event=schedule&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""')
+          echo "Last green scheduled run: ${last:-none}. Now: $GITHUB_SHA."
+          echo "run=$([ "$last" = "$GITHUB_SHA" ] && echo false || echo true)" >> "$GITHUB_OUTPUT"
+
   tests:
+    needs: changed
+    # `!cancelled()` so the tests run when `changed` is skipped, as it is off schedule.
+    if: >-
+      !cancelled() && needs.changed.outputs.run != 'false' &&
+      !(github.event_name == 'pull_request' && github.event.pull_request.draft)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
