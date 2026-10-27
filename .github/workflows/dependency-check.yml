@@ -1,0 +1,40 @@
+name: Dependencies
+
+on:
+  pull_request:
+    branches:
+      - main
+      - version-3
+      - develop
+    paths:
+      - 'pyproject.toml'
+      - '**/package.json'
+      - '**/yarn.lock'
+  workflow_dispatch:
+  schedule:
+    # A new advisory can hit dependencies no PR touched. Monday 03:00 UTC.
+    - cron: '0 3 * * 1'
+
+concurrency:
+  group: dependencies-${{ github.event.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deps-vulnerable-check:
+    name: 'Vulnerable Dependency Check'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install and run pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit --desc on .
