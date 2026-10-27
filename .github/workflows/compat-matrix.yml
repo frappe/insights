@@ -245,7 +245,8 @@ jobs:
   report-failure:
     name: Report failure
     needs: install-matrix
-    if: ${{ failure() && github.event_name == 'schedule' }}
+    # `failure()` alone also counts a failed `changed` job, with no install to report.
+    if: ${{ failure() && needs.install-matrix.result == 'failure' && github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
