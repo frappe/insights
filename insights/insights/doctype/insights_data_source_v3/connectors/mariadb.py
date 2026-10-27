@@ -2,10 +2,18 @@
 # For license information, please see license.txt
 
 import warnings
+from collections.abc import Iterator
 from functools import wraps
 
 import ibis
 import MySQLdb
+import MySQLdb.cursors
+import pandas as pd
+import pyarrow as pa
+from ibis.backends.mysql import Backend as MySQLBackend
+from ibis.backends.mysql.converter import MySQLPandasData
+from ibis.expr.schema import Schema
+from ibis.expr.types import Table
 
 from .ssl import ca_certificate_file
 
@@ -54,3 +62,31 @@ def get_mariadb_connection(data_source):
                 MySQLdb.connect(unix_socket=data_source.unix_socket, autocommit=True, **connect_args)
             )
         return ibis.mysql.connect(host=data_source.host, port=data_source.port, **connect_args)
+
+
+def read_pyarrow_batches(db: MySQLBackend, query: Table, chunk_size: int) -> pa.RecordBatchReader:
+    """Read a query a chunk of rows at a time.
+
+    ibis's own reader buffers the whole result in the client, then copies it
+    into Python rows, pandas and Arrow at once. An unbuffered cursor holds only
+    a chunk; each chunk is converted as ibis converts the whole result. ibis
+    streams PostgreSQL this way since https://github.com/ibis-project/ibis/issues/10938,
+    but not MySQL; when it does, this copy can go.
+    """
+    schema = query.schema()
+    return pa.RecordBatchReader.from_batches(
+        schema.to_pyarrow(), _fetch_chunks(db, query, schema, chunk_size)
+    )
+
+
+def _fetch_chunks(
+    db: MySQLBackend, query: Table, schema: Schema, chunk_size: int
+) -> Iterator[pa.RecordBatch]:
+    arrow_schema = schema.to_pyarrow()
+    db._run_pre_execute_hooks(query)
+    with db.con.cursor(MySQLdb.cursors.SSCursor) as cursor:
+        cursor.execute(db.compile(query))
+        while rows := cursor.fetchmany(chunk_size):
+            frame = pd.DataFrame.from_records(rows, columns=schema.names, coerce_float=True)
+            frame = MySQLPandasData.convert_table(frame, schema)
+            yield pa.RecordBatch.from_pandas(frame, schema=arrow_schema, preserve_index=False)
