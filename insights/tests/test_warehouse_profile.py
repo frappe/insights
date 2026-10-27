@@ -15,9 +15,8 @@ ANALYST = "warehouse-profile-analyst@test.com"
 QUERY = "warehouse-profile-test"
 
 
-def run_now(method, queue, timeout, job_id, deduplicate, **kwargs):
+def run_now(method, queue, timeout, job_id, deduplicate, enqueue_after_commit, **kwargs):
     frappe.get_attr(method)(**kwargs)
-    return frappe._dict(id=job_id)
 
 
 class WarehouseProfile(InsightsIntegrationTestCase):
@@ -45,14 +44,15 @@ class WarehouseProfile(InsightsIntegrationTestCase):
     # @feature data-store.profile-warehouse
     def test_an_admin_profiles_the_slowest_data_store_query_into_a_private_file(self):
         with self.as_user(ADMIN), patch("frappe.enqueue", side_effect=run_now):
-            file_name = profile_warehouse(limit=1, min_time=self.logged_seconds)["file_name"]
+            file_url = profile_warehouse(limit=1, min_time=self.logged_seconds)
 
-        file = frappe.get_doc("File", {"file_name": file_name})
+        file = frappe.get_doc("File", {"file_url": file_url})
         self.addCleanup(file.delete, ignore_permissions=True)
         report = json.loads(file.get_content())
 
         self.assertTrue(file.is_private)
         self.assertEqual(file.owner, ADMIN)
+        self.assertEqual(report["status"], "Done")
         [entry] = report["queries"]
         self.assertEqual(entry["query"], QUERY)
         [run] = entry["runs"]

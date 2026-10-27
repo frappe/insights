@@ -15,7 +15,7 @@ From the bench:
 copies run in one process and share one DuckDB instance, its threads and its
 memory limit, where web workers in separate processes each have their own.
 `insights.api.data_store.profile_warehouse` queues the same run as a job. Either
-way the report is a private File.
+way the report is a private File, rewritten after every replay.
 """
 
 import json
@@ -30,6 +30,8 @@ from typing import Any
 import frappe
 from duckdb import IOException
 from frappe import _
+from frappe.utils.background_jobs import is_job_enqueued
+from frappe.utils.file_lock import LockTimeoutError
 from frappe.utils.synchronization import filelock
 
 import insights
@@ -70,47 +72,54 @@ def run(
     min_time: float = 1.0,
     concurrency: int = 1,
     max_seconds: int = DEFAULT_MAX_SECONDS,
-    file_name: str | None = None,
+    file: str | None = None,
 ) -> str:
-    """Profile the slowest logged data store queries and save the report as a private File.
+    """Profile the slowest logged data store queries into a private File.
+
+    The report is rewritten after every replay, so a run that is killed still
+    leaves what it measured, and its `status` says it did not finish.
 
     Args:
         limit: How many of the slowest distinct queries to replay.
         since_days: How far back to read the execution log.
         min_time: Ignore anything that already runs faster than this, in seconds.
         concurrency: Replay each statement this many times at once.
-        max_seconds: Cancel a replay that runs longer than this.
-        file_name: The report's file name. `enqueue` picks it, to answer with it.
+        max_seconds: Cancel a replay that runs longer than this, and give up
+            waiting for a writer to release the file after as long.
+        file: The name of the File to write the report to. `enqueue` creates it,
+            to answer with its URL.
 
     Returns:
-        The file name of the private File that holds the report.
+        The URL of the File that holds the report.
     """
+    file = frappe.get_doc("File", file) if file else create_report_file()
     report = {
         "generated_at": frappe.utils.now(),
         "site": frappe.local.site,
         "concurrency": concurrency,
+        "status": "Running",
         "error": None,
         "queries": [],
     }
-    # the report is the only answer the caller gets, so a failed run still saves one
+    write_report(file, report)
     try:
         with filelock(PROFILE_LOCK, timeout=0):
             for query in slowest_logged(limit, since_days, min_time):
                 report["queries"].append(_replay(query, concurrency, max_seconds))
+                write_report(file, report)
+        report["status"] = "Done"
+    except LockTimeoutError:
+        report["status"], report["error"] = "Failed", "Another warehouse profile is running"
     except Exception as e:
-        report["error"] = str(e).splitlines()[0][:500] if str(e) else type(e).__name__
+        report["status"], report["error"] = (
+            "Failed",
+            str(e).splitlines()[0][:500] if str(e) else type(e).__name__,
+        )
 
-    file = frappe.get_doc(
-        {
-            "doctype": "File",
-            "file_name": file_name or report_file_name(),
-            "is_private": 1,
-            "content": json.dumps(report, indent=2, default=str),
-        }
-    ).insert(ignore_permissions=True)
+    write_report(file, report)
     print(summarize(report))
     print(f"\nFull report: {file.get_full_path()}")
-    return file.file_name
+    return file.file_url
 
 
 def enqueue(
@@ -119,41 +128,54 @@ def enqueue(
     min_time: float = 1.0,
     concurrency: int = 1,
     max_seconds: int = DEFAULT_MAX_SECONDS,
-) -> dict[str, str]:
+) -> str:
     """Queue `run` on the long queue, one profile at a time.
 
     Returns:
-        The job's id and the file name its report will have.
+        The URL of the private File the job writes its report to. Its `status`
+        is `Queued` until the job starts.
     """
+    if is_job_enqueued(PROFILE_LOCK):
+        frappe.throw(_("A warehouse profile is already queued or running"))
     if not slowest_logged(limit, since_days, min_time):
         frappe.throw(
             _("No data store queries slower than {0}s in the last {1} days").format(min_time, since_days)
         )
 
-    file_name = report_file_name()
-    job = frappe.enqueue(
+    file = create_report_file()
+    frappe.enqueue(
         "insights.warehouse_profile.run",
         queue="long",
         job_id=PROFILE_LOCK,
         deduplicate=True,
-        # concurrent copies run side by side, so each query costs at most `max_seconds`
-        timeout=limit * (max_seconds + WRITER_PAUSE) + 60,
+        enqueue_after_commit=True,
+        # a replay waits up to `max_seconds` for a writer, then runs up to as long;
+        # concurrent copies run side by side
+        timeout=limit * (2 * max_seconds + WRITER_PAUSE) + 60,
         limit=limit,
         since_days=since_days,
         min_time=min_time,
         concurrency=concurrency,
         max_seconds=max_seconds,
-        file_name=file_name,
+        file=file.name,
     )
-    if not job:
-        frappe.throw(_("A warehouse profile is already queued or running"))
-    return {"job_id": job.id, "file_name": file_name}
+    return file.file_url
 
 
-def report_file_name() -> str:
-    return (
-        f"warehouse_profile_{frappe.utils.now_datetime():%Y%m%d_%H%M%S}_{frappe.generate_hash(length=6)}.json"
-    )
+def create_report_file():
+    return frappe.get_doc(
+        {
+            "doctype": "File",
+            "file_name": f"warehouse_profile_{frappe.utils.now_datetime():%Y%m%d_%H%M%S}.json",
+            "is_private": 1,
+            "content": json.dumps({"status": "Queued"}),
+        }
+    ).insert(ignore_permissions=True)
+
+
+def write_report(file, report: dict) -> None:
+    with open(file.get_full_path(), "w") as f:  # nosemgrep - the File's own path, which it created
+        json.dump(report, f, indent=2, default=str)
 
 
 def slowest_logged(limit: int, since_days: int, min_time: float) -> list[dict]:
@@ -380,22 +402,34 @@ def _replay(logged: dict, concurrency: int, max_seconds: int) -> dict[str, Any]:
         "runs": [],
     }
     dbs = []
+    deadline = time.monotonic() + max_seconds
     try:
         while len(dbs) < concurrency:
-            dbs.append(insights.warehouse.get_connection())
+            dbs.append(_open_warehouse(deadline))
         entry["settings"] = read_settings(dbs[0].con)
         baseline = memory_by_tag(dbs[0].con)
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             entry["runs"] = list(
                 pool.map(lambda db: profile_sql(db.con, logged["sql"], baseline, max_seconds), dbs)
             )
-    except IOException as e:  # a writer holds the file, as an import does while it commits
+    except IOException as e:  # a writer held the file past the deadline
         entry["error"] = str(e).splitlines()[0][:500]
     finally:
         for db in dbs:
             db.disconnect()
         time.sleep(WRITER_PAUSE)
     return entry
+
+
+def _open_warehouse(deadline: float):
+    """Open the warehouse read-only, waiting out a writer, as an import's commit, until `deadline`."""
+    while True:
+        try:
+            return insights.warehouse.get_connection()
+        except IOException as e:
+            if "Could not set lock" not in str(e) or time.monotonic() >= deadline:
+                raise
+            time.sleep(WRITE_LOCK_RETRY_INTERVAL)
 
 
 def summarize(report: dict) -> str:
