@@ -115,7 +115,12 @@ describe('the wizard steps', () => {
 			item('a', 'P17', { user: BOB, doctypes: ['Sales Invoice'] }),
 			item('b', 'P10', { chart: 'Trend', owner: ALICE, reason: 'script' }, { user: ALICE }),
 			item('c', 'P21', { query: 'Origin', workbook: 'Sales', variables: ['api_token'] }),
-			item('d', 'P11', { chart: 'KPIs', publisher: DAVE, owner: ALICE }, { user: DAVE }),
+			item(
+				'd',
+				'P11',
+				{ chart: 'KPIs', publisher: DAVE, publisher_disabled: true },
+				{ user: ALICE },
+			),
 		]
 		const steps = wizardSteps(items, { can: can(true), admin: true, me: DAVE })
 		const names = steps.flatMap((step) =>
@@ -223,7 +228,12 @@ describe('the wizard steps of someone who is not an admin', () => {
 	// @feature upgrade.wizard
 	it('hold their own items outside the groups in Good to know', () => {
 		const items = [
-			item('moved', 'P11', { chart: 'KPIs', publisher: BOB, owner: ALICE }, { user: ALICE }),
+			item(
+				'gone',
+				'P11',
+				{ chart: 'KPIs', publisher: BOB, publisher_disabled: true },
+				{ user: ALICE },
+			),
 			item('script', 'P20', { title: 'Script rows', author: ALICE }, { user: ALICE }),
 		]
 		const steps = wizardSteps(items, { can: can(true), admin: false, me: ALICE })
@@ -241,14 +251,17 @@ describe('the wizard steps of someone who is not an admin', () => {
 			const notes = steps.find((step) => step.id === 'notes')!
 			return 'group' in notes && notes.group.kind
 		}
-		const moved = item('moved', 'P11', { chart: 'KPIs', publisher: BOB, owner: ALICE })
 		const script = item('script', 'P20', { title: 'Script rows', author: ALICE })
-		expect(kind([moved, script])).toBe('note')
-		expect(kind([moved, item('fails', 'Q1', { title: 'Raw rows', names: ['sleep'] })])).toBe(
+		expect(kind([script])).toBe('note')
+		expect(kind([script, item('fails', 'Q1', { title: 'Raw rows', names: ['sleep'] })])).toBe(
 			'now',
 		)
 		expect(kind([item('import', 'J4', { title: 'Nightly', names: ['sleep'] })])).toBe('now')
-		const unpublished = item('gone', 'P11', { ...moved.data, publisher_disabled: true })
+		const unpublished = item('gone', 'P11', {
+			chart: 'KPIs',
+			publisher: BOB,
+			publisher_disabled: true,
+		})
 		expect(kind([unpublished])).toBe('now')
 	})
 })
@@ -297,7 +310,6 @@ describe('an item sentence', () => {
 			['N6', { chart: 'Revenue' }],
 			['Q13', { start: '2024-04-01' }],
 			['P11', { chart: 'Trend', publisher: BOB, publisher_disabled: true }],
-			['P11', { chart: 'Trend', publisher: BOB, owner: ALICE, doctypes: ['Item'] }],
 			['P21', { query: 'Origin', workbook: 'Sales', variables: ['api_token'] }],
 			['P21', { cycle: true, query: 'A', workbook: 'Sales', source: 'B' }],
 			['W2', { workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' }],
@@ -342,18 +354,6 @@ describe('an item sentence', () => {
 			url: '/desk/user/alice',
 		})
 
-		const moved = sentenceOf(
-			item('b', 'P11', {
-				chart: 'Site rows',
-				publisher: BOB,
-				owner: ALICE,
-				doctypes: ['Sales Invoice'],
-			}),
-			ALICE,
-		)
-		expect(text(moved.text)).toBe(
-			'The chart Site rows now belongs to Bob, who published it, instead of you. Bob can’t read Sales Invoices, so its readers see Not Permitted.',
-		)
 		// a table off the site database needs a team grant, not a role
 		const team = sentenceOf(
 			item(

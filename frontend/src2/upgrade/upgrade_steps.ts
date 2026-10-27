@@ -228,16 +228,16 @@ export const groups = translatedTable<Group[]>(() => [
 		label: __('Good to Know'),
 		kind: 'note',
 		codes: ['P11'],
-		title: __('Public charts moved to who published them'),
+		title: __('Some public charts show guests nothing'),
 		lead: [
-			__('Each now belongs to the person who published it,'),
-			__('so its readers keep seeing the same rows.'),
+			__('A public chart runs as the person who published it,'),
+			__('and these were published by someone now disabled.'),
 		],
 		picture: 'chartOwner',
 	},
 ])
 
-// The Good to know step when it holds more than moved charts: the reader's items
+// The Good to Know step when it holds more than public charts: the reader's items
 // outside the groups. An admin's also hold those addressed to no one, such as
 // changes to Administrator's work, so they are not all the admin's own.
 const yourNotes = translatedTable<Pick<Group, 'title' | 'lead'>>(() => ({
@@ -253,17 +253,12 @@ const adminNotes = translatedTable<Pick<Group, 'title' | 'lead'>>(() => ({
 }))
 
 // Items outside the groups that tell of something failing until someone acts: a script or
-// import that will fail, a script without its secret.
-const FAILURES = new Set(['P21', 'Q1', 'J4', 'Q5'])
+// import that will fail, a script without its secret, a public chart guests see nothing of.
+const FAILURES = new Set(['P21', 'Q1', 'J4', 'Q5', 'P11'])
 
-/**
- * Whether an item needs its reader: its group asks for a decision, or it tells
- * of a failure, as a moved chart whose publisher is disabled does.
- */
+/** Whether an item needs its reader: its group asks for a decision, or it tells of a failure. */
 export function needsYou(item: UpgradeItem): boolean {
-	if (FAILURES.has(item.code) || (item.code === 'P11' && item.data?.publisher_disabled)) {
-		return true
-	}
+	if (FAILURES.has(item.code)) return true
 	return groups().some((group) => group.kind === 'now' && group.codes.includes(item.code))
 }
 
@@ -316,7 +311,7 @@ export function rowsOf(items: UpgradeItem[]): Row[] {
 
 /**
  * The wizard's steps for this reader. A step with nothing in it is left out,
- * and items outside the groups go to Good to know. Every item lands in one row,
+ * and items outside the groups go to Good to Know. Every item lands in one row,
  * so the sidebar card counts what the server counts. The server sends only the
  * items the reader works through: an admin gets no note addressed to someone
  * else (`item_filters`).
@@ -690,9 +685,10 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				titled('chart', d.chart),
 				rows,
 			),
+			// turning Run as owner off would show guests nothing again
 			todo: say(
 				__(
-					'If each reader should see their own rows, turn off Run as owner in its sharing.',
+					'If not everyone who opens it should see those rows, narrow who can open it in its sharing.',
 				),
 			),
 			action: routeTo(item, __('Open sharing'), { share: '1' }),
@@ -925,35 +921,16 @@ const SENTENCES: Partial<Record<string, Build>> = {
 					: undefined,
 		}
 	},
+	// the patch tells of a public chart only when its publisher is disabled
 	P11(item, d, people) {
-		if (d.publisher_disabled) {
-			return {
-				text: say(
-					__('The {0} was published by {1}, who is disabled, so guests see nothing.'),
-					titled('chart', d.chart),
-					em(person(people, d.publisher)),
-				),
-				todo: say(__('Turn on Run as owner in its sharing so guests see it again.')),
-				action: routeTo(item, __('Open sharing'), { share: '1' }),
-			}
-		}
-		// a move is told only when its new owner can't read its tables
-		if (d.doctypes) {
-			const access = giveReadAccess(item, people, d.publisher, d.doctypes)
-			return {
-				text: say(
-					__(
-						'The {0} now belongs to {1}, who published it, instead of {2}. {3} can’t read {4}, so its readers see Not Permitted.',
-					),
-					titled('chart', d.chart),
-					em(person(people, d.publisher)),
-					em(person(people, d.owner)),
-					em(person(people, d.publisher, true)),
-					tablesOf(d.doctypes),
-				),
-				todo: access.todo,
-				action: access.action ?? routeTo(item, __('Open chart')),
-			}
+		return {
+			text: say(
+				__('The {0} was published by {1}, who is disabled, so guests see nothing.'),
+				titled('chart', d.chart),
+				em(person(people, d.publisher)),
+			),
+			todo: say(__('Turn on Run as owner in its sharing so guests see it again.')),
+			action: routeTo(item, __('Open sharing'), { share: '1' }),
 		}
 	},
 	P21(item, d) {
