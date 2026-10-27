@@ -191,8 +191,8 @@ class InsightsAlert(Document):
         }
 
         headers = {"Content-Type": "application/json"}
-        if token := self.get_password("webhook_token", raise_exception=False):
-            headers["Authorization"] = f"Bearer {token}"
+        if self.webhook_token:
+            headers["Authorization"] = f"Bearer {self.get_password('webhook_token')}"
 
         try:
             # frappe.as_json, not requests' json=: query rows hold datetimes
