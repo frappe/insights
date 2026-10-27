@@ -249,9 +249,7 @@ def profiling(con):
         con.execute("SET profiling_mode='standard'")
         yield
     finally:
-        with suppress(
-            Exception
-        ):  # nosemgrep - the connection is shared; leaving it profiling is the real risk
+        with suppress(Exception):  # nosemgrep - leaving a shared connection profiling is the real risk
             con.execute("PRAGMA disable_profiling")
 
 
