@@ -375,7 +375,7 @@ def _write_report(report: dict, out: str | None) -> str:
         get_files_path(is_private=1), f"warehouse_profile_{frappe.utils.now_datetime():%Y%m%d_%H%M%S}.json"
     )
     path = os.path.abspath(path)
-    with open(path, "w") as f:
+    with open(path, "w") as f:  # nosemgrep - only the bench command writes, where its operator says
         json.dump(report, f, indent=2, default=str)
     return path
 
@@ -385,8 +385,10 @@ def summarize(report: dict) -> str:
     lines = [
         f"DuckDB settings: {report['settings']}",
         "",
-        f"{'query':<22}{'logged':>8}{'wall':>8}{'optime':>8}{'peakRAM':>10}{'spill':>9}"
-        f"{'ops':>6}{'SQL kB':>8}{'unions':>8}",
+        (  # nosemgrep - one header line, split to fit
+            f"{'query':<22}{'logged':>8}{'wall':>8}{'optime':>8}{'peakRAM':>10}{'spill':>9}"
+            f"{'ops':>6}{'SQL kB':>8}{'unions':>8}"
+        ),
         "-" * 90,
     ]
     for entry in report["queries"]:
