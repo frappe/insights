@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { KeyboardShortcut } from 'frappe-ui'
+import { KeyboardShortcut, Popover } from 'frappe-ui'
 import {
 	ArrowLeft,
 	ArrowRight,
@@ -8,7 +8,6 @@ import {
 	ChevronRight,
 	ExternalLink,
 	Info,
-	Sparkle,
 	Undo2,
 	X,
 } from 'lucide-vue-next'
@@ -227,9 +226,7 @@ function onKeydown(event: KeyboardEvent) {
 		<div ref="body" class="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto px-8 pb-5 pt-6">
 			<template v-if="props.step.id === 'welcome'">
 				<div class="flex grow flex-col items-center justify-center gap-3 text-center">
-					<span class="grid size-12 place-items-center rounded-7 bg-surface-gray-2">
-						<Sparkle class="size-6 text-ink-gray-8" stroke-width="1.5" />
-					</span>
+					<img src="../assets/insights-logo-new.svg" alt="" class="size-12 rounded-7" />
 					<h2 class="mt-2 text-3xl font-semibold text-ink-gray-9">
 						{{ __('Welcome to Insights v3.50') }}
 					</h2>
@@ -245,30 +242,13 @@ function onKeydown(event: KeyboardEvent) {
 						}}
 					</p>
 				</div>
-				<div class="flex items-center gap-2 text-p-sm text-ink-gray-6">
-					<Info class="size-4 shrink-0 text-ink-gray-5" stroke-width="1.5" />
-					<span>
-						{{
-							__(
-								'A few numbers change because earlier releases computed them wrongly.',
-							)
-						}}
-						<a
-							:href="RELEASE_NOTES"
-							target="_blank"
-							rel="noopener"
-							class="text-ink-gray-8 underline hover:text-ink-gray-9"
-							>{{ __('Release notes') }}</a
-						>
-					</span>
-				</div>
 			</template>
 
 			<!-- Sharing: before on top, now below -->
 			<template v-else-if="props.step.id === 'sharing' && feature">
 				<h2 class="text-3xl font-semibold text-ink-gray-9">{{ feature.title }}</h2>
 				<div class="flex grow flex-col gap-2.5">
-					<div class="text-xs font-semibold text-ink-gray-5">{{ __('Before') }}</div>
+					<div><Badge size="md" :label="__('Before')" /></div>
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">
 							{{ __('Before, you shared each chart or dashboard on its own,') }}
@@ -282,7 +262,7 @@ function onKeydown(event: KeyboardEvent) {
 					</div>
 				</div>
 				<div class="mt-1 flex grow flex-col gap-2.5">
-					<div class="text-xs font-semibold text-ink-gray-9">{{ __('Now') }}</div>
+					<div><Badge size="md" theme="blue" :label="__('Now')" /></div>
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">{{ feature.lead[0] }}</span>
 						{{ feature.lead[1] }}
@@ -297,7 +277,28 @@ function onKeydown(event: KeyboardEvent) {
 
 			<!-- A feature: what the reader gets, then the screen it is on -->
 			<template v-else-if="feature">
-				<h2 class="text-3xl font-semibold text-ink-gray-9">{{ feature.title }}</h2>
+				<div class="flex items-center gap-1.5">
+					<h2 class="text-3xl font-semibold text-ink-gray-9">{{ feature.title }}</h2>
+					<Popover v-if="feature.info" side="bottom" align="start">
+						<template #trigger>
+							<Button variant="ghost" :aria-label="__('About this release')">
+								<template #icon>
+									<Info class="size-4 text-ink-gray-5" stroke-width="1.5" />
+								</template>
+							</Button>
+						</template>
+						<div class="flex w-72 flex-col gap-2 p-3 text-p-sm text-ink-gray-7">
+							<p>{{ feature.info }}</p>
+							<a
+								:href="RELEASE_NOTES"
+								target="_blank"
+								rel="noopener"
+								class="text-ink-gray-8 underline hover:text-ink-gray-9"
+								>{{ __('Release notes') }}</a
+							>
+						</div>
+					</Popover>
+				</div>
 				<p class="-mt-1.5 max-w-[620px] text-p-base text-ink-gray-5">
 					<span class="font-semibold text-ink-gray-9">{{ feature.lead[0] }}</span>
 					{{ feature.lead[1] }}

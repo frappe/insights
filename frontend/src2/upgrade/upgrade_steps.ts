@@ -43,6 +43,8 @@ export type Feature = {
 	title: string
 	/** What the reader gets: a bold lead clause, then the detail. */
 	lead: [string, string]
+	/** An aside the title's info button opens, with a link to the release notes. */
+	info?: string
 	picture?: PictureName
 	needs?: keyof Can
 }
@@ -58,11 +60,12 @@ export const features = translatedTable<Feature[]>(() => [
 			__('Every chart is redrawn on frappe-ui charts,'),
 			__('with dark mode, a Heatmap, trend lines and Number cards that track a target.'),
 		],
+		info: __('A few numbers change because earlier releases computed them wrongly.'),
 		picture: 'charts',
 	},
 	{
 		id: 'drill',
-		label: __('Rows behind a chart'),
+		label: __('Drill Downs'),
 		title: __('Click a chart for its rows'),
 		lead: [
 			__('Click any bar to see the rows behind it,'),
@@ -72,7 +75,7 @@ export const features = translatedTable<Feature[]>(() => [
 	},
 	{
 		id: 'standard',
-		label: __('ERPNext and Frappe HR'),
+		label: __('App Dashboards'),
 		title: __('Dashboards from ERPNext and Frappe HR'),
 		lead: [
 			__('Selling, Stock, Accounts, Payroll and more come ready to use.'),
@@ -83,7 +86,7 @@ export const features = translatedTable<Feature[]>(() => [
 	},
 	{
 		id: 'desk',
-		label: __('Charts in desk'),
+		label: __('Desk Charts'),
 		title: __('Charts on desk workspaces'),
 		lead: [
 			__('Pick Show in Desk on a chart'),
@@ -104,7 +107,7 @@ export const features = translatedTable<Feature[]>(() => [
 	},
 	{
 		id: 'roles',
-		label: __('Desk roles'),
+		label: __('Desk Roles'),
 		title: __('Share dashboards with desk roles'),
 		lead: [
 			__('Anyone with those roles can open the dashboard,'),
@@ -132,6 +135,13 @@ export type Group = {
 	picture?: PictureName
 }
 
+/** The headings the nav groups the steps under; the welcome has none. */
+export const sections = translatedTable<Record<Step['section'], string | undefined>>(() => ({
+	welcome: undefined,
+	new: __("What's New"),
+	upgrade: __('Your Upgrade'),
+}))
+
 export type Step =
 	| { id: 'welcome'; label: string; section: 'welcome' }
 	| { id: string; label: string; section: 'new'; feature: Feature }
@@ -155,7 +165,7 @@ export const groups = translatedTable<Group[]>(() => [
 	},
 	{
 		id: 'public',
-		label: __('Public charts'),
+		label: __('Public Charts'),
 		kind: 'now',
 		codes: ['P10', 'P12'],
 		title: __('Public charts run as their owner'),
@@ -167,7 +177,7 @@ export const groups = translatedTable<Group[]>(() => [
 	},
 	{
 		id: 'workbooks',
-		label: __('Workbook access'),
+		label: __('Workbook Access'),
 		kind: 'now',
 		codes: ['P7', 'P3', 'P4'],
 		title: __('Some people can open or edit more, or less'),
@@ -203,7 +213,7 @@ export const groups = translatedTable<Group[]>(() => [
 	},
 	{
 		id: 'copies',
-		label: __('Template copies'),
+		label: __('Template Copies'),
 		kind: 'now',
 		codes: ['W2'],
 		title: __('Some workbooks are copies of a shipped dashboard'),
@@ -215,7 +225,7 @@ export const groups = translatedTable<Group[]>(() => [
 	},
 	{
 		id: 'notes',
-		label: __('Good to know'),
+		label: __('Good to Know'),
 		kind: 'note',
 		codes: ['P11'],
 		title: __('Public charts moved to who published them'),
@@ -429,17 +439,20 @@ type Kind =
 	| 'alert'
 	| 'import job'
 
-/** A name and what it is: **Sales** workbook. */
+/**
+ * What a name is, then the name: workbook **Sales**. The kind leads, so a title
+ * that reads like a sentence does not swallow it.
+ */
 function titled(kind: Kind, title: string): Part[] {
 	const template = {
-		workbook: __('{0} workbook'),
-		chart: __('{0} chart'),
-		'number card': __('{0} number card'),
-		dashboard: __('{0} dashboard'),
-		query: __('{0} query'),
-		script: __('{0} script'),
-		alert: __('{0} alert'),
-		'import job': __('{0} import job'),
+		workbook: __('workbook {0}'),
+		chart: __('chart {0}'),
+		'number card': __('number card {0}'),
+		dashboard: __('dashboard {0}'),
+		query: __('query {0}'),
+		script: __('script {0}'),
+		alert: __('alert {0}'),
+		'import job': __('import job {0}'),
 	}[kind]
 	return say(template, em(title))
 }
@@ -601,7 +614,20 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				text,
 				// a role lets them read a doctype again; rows desk narrows are its rule to keep
 				todo: !unreadable
-					? undefined
+					? self
+						? say(
+								__(
+									'If you need more rows, ask for a desk role or User Permission that gives them.',
+								),
+						  )
+						: say(
+								__(
+									'If {0} needs more rows, give them a desk role or User Permission that does.',
+								),
+								{
+									text: people.name(d.user),
+								},
+						  )
 					: self
 					  ? say(__('Give yourself a desk role that can read them.'))
 					  : say(__('Give {0} a desk role that can read them.'), {
@@ -663,6 +689,11 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				__('Everyone who opens the {0} now sees {1}, not their own.'),
 				titled('chart', d.chart),
 				rows,
+			),
+			todo: say(
+				__(
+					'If each reader should see their own rows, turn off Run as owner in its sharing.',
+				),
 			),
 			action: routeTo(item, __('Open sharing'), { share: '1' }),
 		}
@@ -749,18 +780,34 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				),
 			)
 		}
-		return { text, action: workbookSharing(item, __('Open workbook sharing')) }
+		return {
+			text,
+			todo: removed.length
+				? say(__('Share the workbook with whoever still needs them.'))
+				: say(__('Remove anyone from its sharing who should not open all of it.')),
+			action: workbookSharing(item, __('Open workbook sharing')),
+		}
 	},
 	P3(item, d, people) {
 		const users: string[] = d.users ?? []
 		const one = users.length === 1
 		return {
 			text: say(
-				__('{0} made something in the {1}, so {2} can now edit the whole workbook.'),
+				one
+					? __('{0} can now edit the whole {1}, because they made something in it.')
+					: __('{0} can now edit the whole {1}, because each made something in it.'),
 				em(names(people, users, true)),
 				titled('workbook', d.workbook),
-				{ text: one ? person(people, users[0]) : __('they') },
 			),
+			todo: one
+				? say(__('If {0} should only read it, change their access in its sharing.'), {
+						text: person(people, users[0]),
+				  })
+				: say(
+						__(
+							'If any of them should only read it, change their access in its sharing.',
+						),
+				  ),
 			action: workbookSharing(item, __('Open workbook sharing')),
 		}
 	},
@@ -791,6 +838,12 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				em(listOf(teams)),
 				{ text: users.length === 1 ? person(people, users[0]) : __('they') },
 			),
+			todo:
+				users.length === 1
+					? say(__('Share the workbook with {0} to edit, if they still need to.'), {
+							text: person(people, users[0]),
+					  })
+					: say(__('Share the workbook to edit with whoever still needs to.')),
 			action: workbookSharing(
 				item,
 				users.length === 1
@@ -801,31 +854,23 @@ const SENTENCES: Partial<Record<string, Build>> = {
 	},
 	P19(item, d, people) {
 		const alert = titled('alert', d.alert)
-		let text: Part[]
-		if (d.outcome === 'moved') {
-			text = say(
-				__('The {0} now runs as {1}, who owns its workbook, in place of {2}.'),
-				alert,
-				em(person(people, d.owner)),
-				em(person(people, d.enabler)),
-			)
-		} else if (d.outcome === 'no_user') {
-			text = say(__('The {0} has no one to run as, so it will stop.'), alert)
-		} else {
-			text = say(
+		if (!d.enabler) {
+			return {
+				text: say(__('The {0} has no one to run as, so it will stop.'), alert),
+				// turning an alert on makes it run as whoever turned it on
+				todo: say(__('Turn it off and on again as someone who can edit its workbook.')),
+				action: workbookSharing(item, __('Open workbook sharing')),
+			}
+		}
+		return {
+			text: say(
 				__('The {0} will stop, because {1} can’t edit its workbook.'),
 				alert,
 				em(person(people, d.enabler)),
-			)
-		}
-		return {
-			text,
-			todo:
-				d.outcome === 'moved' || !d.enabler
-					? undefined
-					: say(__('Share the workbook with {0} to edit.'), {
-							text: person(people, d.enabler),
-					  }),
+			),
+			todo: say(__('Share the workbook with {0} to edit.'), {
+				text: person(people, d.enabler),
+			}),
 			action: workbookSharing(item, __('Open workbook sharing')),
 		}
 	},
@@ -863,6 +908,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				titled('number card', d.chart),
 				em(d.column),
 			),
+			todo: say(__('Pick another period if it should show more than a day.')),
 			action: routeTo(item, __('Open chart')),
 		}
 	},
@@ -887,9 +933,11 @@ const SENTENCES: Partial<Record<string, Build>> = {
 					titled('chart', d.chart),
 					em(person(people, d.publisher)),
 				),
-				action: routeTo(item, __('Open chart')),
+				todo: say(__('Turn on Run as owner in its sharing so guests see it again.')),
+				action: routeTo(item, __('Open sharing'), { share: '1' }),
 			}
 		}
+		// a move is told only when its new owner can't read its tables
 		if (d.doctypes) {
 			const access = giveReadAccess(item, people, d.publisher, d.doctypes)
 			return {
@@ -907,41 +955,28 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				action: access.action ?? routeTo(item, __('Open chart')),
 			}
 		}
-		return {
-			text: say(
-				__(
-					'The {0} now belongs to {1}, who published it, instead of {2}. Its readers see the same rows as before.',
-				),
-				titled('chart', d.chart),
-				em(person(people, d.publisher)),
-				em(person(people, d.owner)),
-			),
-			action: routeTo(item, __('Open chart')),
-		}
 	},
 	P21(item, d) {
 		if (d.cycle) {
 			return {
 				text: say(
-					__(
-						'The {0} in the {1} reads the {2}, which reads it back. Remove that source.',
-					),
+					__('The {0} in the {1} reads the {2}, which reads it back.'),
 					titled('query', d.query),
 					titled('workbook', d.workbook),
 					titled('query', d.source),
 				),
+				todo: say(__('Remove that source from one of them.')),
 				action: routeTo(item, __('Open query')),
 			}
 		}
 		return {
 			text: say(
-				__(
-					'The {0} was copied into the {1} without its secret {2}. It won’t run until someone enters it.',
-				),
+				__('The {0} was copied into the {1} without its secret {2}, so it won’t run.'),
 				titled('script', d.query),
 				titled('workbook', d.workbook),
 				em(listOf(d.variables ?? [])),
 			),
+			todo: say(__('Enter {0} in the script again.'), em(listOf(d.variables ?? []))),
 			action: routeTo(item, __('Open query')),
 		}
 	},
@@ -983,6 +1018,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				em(possessive(people, d.author)),
 				titled(kind, d.title),
 			),
+			todo: say(__('Ask an Insights Admin when it needs a change.')),
 			action: routeTo(
 				item,
 				item.reference_doctype === 'Insights Chart v3'
@@ -991,16 +1027,6 @@ const SENTENCES: Partial<Record<string, Build>> = {
 					  ? __('Open alert')
 					  : __('Open query'),
 			),
-		}
-	},
-	J1(item, d) {
-		return {
-			text: say(
-				__('The {0} checks a saved copy of the {1}. Changes to the chart don’t reach it.'),
-				titled('alert', d.alert),
-				titled('chart', d.chart),
-			),
-			action: routeTo(item, __('Open query')),
 		}
 	},
 	Q1: refusedNames,
@@ -1022,10 +1048,11 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		)
 		return {
 			text: say(
-				__('On the {0}, {1}. Check it still looks right.'),
+				__('On the {0}, {1}.'),
 				titled('chart', d.chart),
 				parts.flatMap((part, index) => (index ? [{ text: '; ' }, ...part] : part)),
 			),
+			todo: say(__('Check the chart still reads right.')),
 			action: routeTo(item, __('Open chart')),
 		}
 	},
@@ -1047,7 +1074,14 @@ function giveReadAccess(
 	doctypes: string[] = [],
 ): Pick<Sentence, 'todo' | 'action'> {
 	// a table off the site database needs a team grant, which no role gives
-	if (!doctypes.length) return { action: routeTo(item, __('Open chart')) }
+	if (!doctypes.length) {
+		return {
+			todo: say(__('Give {0} its tables through an Insights team.'), {
+				text: person(people, user),
+			}),
+			action: routeTo(item, __('Open chart')),
+		}
+	}
 	const self = user === people.me
 	return {
 		todo: self
@@ -1067,15 +1101,14 @@ function memberKinds(kind: string) {
 function refusedNames(item: UpgradeItem, d: Record<string, any>): Sentence {
 	return {
 		text: say(
-			__(
-				'The {0} uses {1}, which Insights v3.50 doesn’t allow. It will fail until they are removed.',
-			),
+			__('The {0} uses {1}, which Insights v3.50 doesn’t allow, so it fails.'),
 			titled(
 				item.code === 'J4' ? 'import job' : item.code === 'Q5' ? d.kind : 'script',
 				d.title,
 			),
 			em(listOf(d.names ?? [])),
 		),
+		todo: say(__('Remove {0} from it.'), em(listOf(d.names ?? []))),
 		action: routeTo(item, __('Open it')) ?? formAction(item, __('Open it')),
 	}
 }

@@ -7,13 +7,13 @@ import {
 	SettingsPanel,
 	SettingsSidebar,
 } from 'frappe-ui'
-import { Check, Sparkle } from 'lucide-vue-next'
+import { Check } from 'lucide-vue-next'
 import { computed, watch } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
 import upgrade from './upgrade'
 import UpgradeStepView from './UpgradeStepView.vue'
-import type { Step } from './upgrade_steps'
+import { sections, type Step } from './upgrade_steps'
 
 // The upgrade to Insights v3.50, one step at a time: a welcome, each thing that is
 // new, then each group of items that needs the reader. It opens by itself on
@@ -36,12 +36,6 @@ const tab = computed({
 	get: () => step.value?.id,
 	set: (id) => id && upgrade.goTo(String(id)),
 })
-
-const sectionLabels = {
-	welcome: undefined,
-	new: __("What's new"),
-	upgrade: __('Your upgrade'),
-}
 
 const openCount = (step: Step) =>
 	'rows' in step ? step.rows.filter((row) => !row.names.every(upgrade.isDone)).length : 0
@@ -68,9 +62,7 @@ function state(step: Step) {
 		<template #description>{{ __('What is new, and what the upgrade left for you') }}</template>
 		<SettingsSidebar>
 			<div class="flex items-center gap-2 px-1.5 pb-1 pt-2">
-				<span class="grid size-[26px] place-items-center rounded-4 bg-surface-gray-2">
-					<Sparkle class="size-4 text-ink-gray-8" stroke-width="1.5" />
-				</span>
+				<img src="../assets/insights-logo-new.svg" alt="" class="size-[26px] rounded-4" />
 				<span class="text-base font-semibold text-ink-gray-9">{{
 					__('Insights v3.50')
 				}}</span>
@@ -78,7 +70,7 @@ function state(step: Step) {
 			<template v-for="section in ['welcome', 'new', 'upgrade'] as const" :key="section">
 				<SettingsNavGroup
 					v-if="steps.some((s) => s.section === section)"
-					:label="sectionLabels[section]"
+					:label="sections()[section]"
 				>
 					<SettingsNavItem
 						v-for="item in steps.filter((s) => s.section === section)"

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import { Button } from 'frappe-ui'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
+import { __ } from '../translation'
 import type { UpgradeItem } from './upgrade'
 import {
 	cardDescription,
@@ -9,8 +11,10 @@ import {
 	nextOpenIndex,
 	pictureOf,
 	sentenceOf,
+	features,
 	featuresFor,
 	groups,
+	sections,
 	PICTURES,
 	type PictureName,
 	startIndex,
@@ -19,6 +23,7 @@ import {
 	type Part,
 } from './upgrade_steps'
 import UpgradePicture from './pictures/UpgradePicture.vue'
+import UpgradeStepView from './UpgradeStepView.vue'
 
 // a picture's sample rows name the apps that ship dashboards, which only a site knows
 vi.mock('frappe-ui', async (importOriginal) => ({
@@ -125,13 +130,52 @@ describe('the wizard steps of an admin', () => {
 	it('hold the items outside the groups that are addressed to no one, as Administrator’s work is', () => {
 		const items = [
 			item('secret', 'P21', { query: 'Origin', workbook: 'Sales', variables: ['api_token'] }),
-			item('cache', 'J1', { alert: 'Watch a cache', chart: 'Trend' }),
+			item('script', 'Q1', { title: 'Script rows', names: ['os'] }),
 		]
 		const steps = wizardSteps(items, { can: can(true), admin: true, me: DAVE })
 		const notes = steps.find((step) => step.id === 'notes')!
-		expect('rows' in notes && notes.rows.map((row) => row.item.code)).toEqual(['P21', 'J1'])
+		expect('rows' in notes && notes.rows.map((row) => row.item.code)).toEqual(['P21', 'Q1'])
 		expect('group' in notes && notes.group.kind).toBe('now')
 		expect('group' in notes && notes.group.title).toBe('A few more changes')
+	})
+})
+
+describe('the nav', () => {
+	// @feature upgrade.wizard
+	it('labels every step and heading in Title Case', () => {
+		const labels = [
+			...Object.values(sections()).filter(Boolean),
+			...features().map((feature) => feature.label),
+			...groups().map((group) => group.label),
+		]
+		const minor = new Set(['a', 'and', 'in', 'of', 'or', 'the', 'to'])
+		for (const label of labels) {
+			const words = label!.split(' ')
+			const lower = words.filter((word, at) =>
+				at > 0 && minor.has(word) ? false : word[0] !== word[0].toUpperCase(),
+			)
+			expect(lower, label).toEqual([])
+		}
+	})
+})
+
+describe('the Sharing page', () => {
+	// @feature upgrade.wizard
+	it('marks its before and now as badges', async () => {
+		const feature = features().find((feature) => feature.id === 'sharing')!
+		const app = createSSRApp({
+			render: () =>
+				h(UpgradeStepView, { step: { id: 'sharing', label: '', section: 'new', feature } }),
+		})
+		app.component('Badge', (props: { label: string }) => h('mark', props.label))
+		app.component('Button', Button)
+		app.config.globalProperties.__ = __
+		app.config.warnHandler = () => {}
+		const html = await renderToString(app)
+		expect([...html.matchAll(/<mark[^>]*>(.*?)<\/mark>/g)].map((match) => match[1])).toEqual([
+			'Before',
+			'Now',
+		])
 	})
 })
 
@@ -224,12 +268,56 @@ describe('an item sentence', () => {
 	})
 
 	// @feature upgrade.item-sentences
-	it('names both sides of a moved chart', () => {
-		const moved = item('a', 'P11', { chart: 'Script rows', publisher: BOB, owner: ALICE })
-		expect(text(sentenceOf(moved, DAVE).text)).toBe(
-			'The Script rows chart now belongs to Bob, who published it, instead of Alice. Its readers see the same rows as before.',
-		)
-		expect(names(sentenceOf(moved, ALICE).text)).toEqual(['Script rows', 'Bob', 'you'])
+	it('ends every item in what its reader does about it', () => {
+		const items: [string, Record<string, any>][] = [
+			['P17', { user: BOB, doctypes: ['Customer'] }],
+			['P17', { user: BOB, doctypes: [], narrowed: ['Sales Invoice'] }],
+			['P17', { team: 'Sales team', members: [BOB], restrictions: [] }],
+			['P10', { chart: 'Trend', owner: ALICE, reason: 'unreadable', doctypes: ['Item'] }],
+			['P10', { chart: 'Trend', owner: ALICE, reason: 'unreadable', doctypes: [] }],
+			['P10', { chart: 'Trend', owner: ALICE, reason: 'script' }],
+			['P12', { chart: 'Trend', owner: ALICE, reason: 'cannot_edit' }],
+			['P7', { workbook: 'Sales', users: [BOB], shared: ['chart'], removed: [] }],
+			[
+				'P7',
+				{
+					workbook: 'Sales',
+					users: [],
+					shared: [],
+					removed: [{ kind: 'chart', title: 'Revenue', write: true }],
+				},
+			],
+			['P3', { workbook: 'Sales', users: [BOB] }],
+			['P4', { workbook: 'Sales', users: [BOB], teams: ['Sales team'], items: ['Revenue'] }],
+			['P19', { alert: 'Low stock', outcome: 'no_user' }],
+			['P19', { alert: 'Low stock', outcome: 'no_editor', enabler: BOB }],
+			['K1', { dashboard: 'Sales', start: '2024-01-01', end: '2024-03-31' }],
+			['N4', { chart: 'Revenue' }],
+			['N5', { chart: 'Revenue', column: 'Posting Date' }],
+			['N6', { chart: 'Revenue' }],
+			['Q13', { start: '2024-04-01' }],
+			['P11', { chart: 'Trend', publisher: BOB, publisher_disabled: true }],
+			['P11', { chart: 'Trend', publisher: BOB, owner: ALICE, doctypes: ['Item'] }],
+			['P21', { query: 'Origin', workbook: 'Sales', variables: ['api_token'] }],
+			['P21', { cycle: true, query: 'A', workbook: 'Sales', source: 'B' }],
+			['W2', { workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' }],
+			['P20', { title: 'Script rows', author: ALICE }],
+			['Q1', { title: 'Script rows', names: ['os'] }],
+			['J4', { title: 'Sync', names: ['os'] }],
+			['Q5', { title: 'Margin', kind: 'chart', names: ['execute'] }],
+			[
+				'C4',
+				{
+					chart: 'Revenue',
+					lines: [{ statistic: 'average', removed: true, measure: null }],
+				},
+			],
+		]
+		for (const [code, data] of items) {
+			for (const reader of [DAVE, ALICE]) {
+				expect(text(sentenceOf(item('a', code, data), reader).todo), code).not.toBe('')
+			}
+		}
 	})
 
 	// @feature upgrade.item-sentences
@@ -245,7 +333,7 @@ describe('an item sentence', () => {
 			DAVE,
 		)
 		expect(text(owner.text)).toBe(
-			'The Trend chart runs as Alice, who can’t read Sales Invoices, so everyone who opens it sees Not Permitted.',
+			'The chart Trend runs as Alice, who can’t read Sales Invoices, so everyone who opens it sees Not Permitted.',
 		)
 		expect(text(owner.todo)).toBe('Give Alice a desk role that can read them.')
 		expect(owner.action).toEqual({
@@ -264,7 +352,7 @@ describe('an item sentence', () => {
 			ALICE,
 		)
 		expect(text(moved.text)).toBe(
-			'The Site rows chart now belongs to Bob, who published it, instead of you. Bob can’t read Sales Invoices, so its readers see Not Permitted.',
+			'The chart Site rows now belongs to Bob, who published it, instead of you. Bob can’t read Sales Invoices, so its readers see Not Permitted.',
 		)
 		// a table off the site database needs a team grant, not a role
 		const team = sentenceOf(
@@ -282,7 +370,7 @@ describe('an item sentence', () => {
 			DAVE,
 		)
 		expect(text(team.text)).toContain('who can’t read its tables')
-		expect(team.todo).toBeUndefined()
+		expect(text(team.todo)).toBe('Give Alice its tables through an Insights team.')
 		expect(team.action).toMatchObject({ kind: 'route', label: 'Open chart' })
 	})
 
@@ -325,7 +413,9 @@ describe('an item sentence', () => {
 		expect(text(sentenceOf(narrowed, BOB).text)).toBe(
 			'You now see only the rows desk gives you of Sales Invoices.',
 		)
-		expect(sentenceOf(narrowed, DAVE).todo).toBeUndefined()
+		expect(text(sentenceOf(narrowed, DAVE).todo)).toBe(
+			'If Bob needs more rows, give them a desk role or User Permission that does.',
+		)
 	})
 
 	// @feature upgrade.item-sentences
@@ -386,7 +476,10 @@ describe('an item sentence', () => {
 			removed: [{ kind: 'chart', title: 'Revenue', write: true }],
 		})
 		expect(text(sentenceOf(one, DAVE).text)).toBe(
-			'Everyone could edit the Revenue chart. That share is gone, so only people the Sales workbook is shared with can open it.',
+			'Everyone could edit the chart Revenue. That share is gone, so only people the workbook Sales is shared with can open it.',
+		)
+		expect(text(sentenceOf(one, DAVE).todo)).toBe(
+			'Share the workbook with whoever still needs them.',
 		)
 		const both = item('b', 'P7', {
 			workbook: 'Sales',
@@ -398,8 +491,8 @@ describe('an item sentence', () => {
 			],
 		})
 		expect(text(sentenceOf(both, DAVE).text)).toBe(
-			'Alice and Bob can now open the whole Sales workbook, as some of its charts and dashboards were shared with them. ' +
-				'Everyone could edit the Revenue chart and open the Overview dashboard. Those shares are gone, so only people the Sales workbook is shared with can open them.',
+			'Alice and Bob can now open the whole workbook Sales, as some of its charts and dashboards were shared with them. ' +
+				'Everyone could edit the chart Revenue and open the dashboard Overview. Those shares are gone, so only people the workbook Sales is shared with can open them.',
 		)
 	})
 
@@ -438,30 +531,24 @@ describe('an item sentence', () => {
 		expect(sentenceOf(item('a', 'P20', data, onChart), DAVE).action?.label).toBe('Open chart')
 		expect(sentenceOf(item('b', 'P20', data, onAlert), DAVE).action?.label).toBe('Open alert')
 		expect(text(sentenceOf(item('c', 'P20', data), DAVE).text)).toBe(
-			'Only admins can edit Alice’s Script rows script now. It still runs.',
+			'Only admins can edit Alice’s script Script rows now. It still runs.',
 		)
 	})
 
 	// @feature upgrade.item-sentences
-	it('says who an alert runs as now, or why it will stop', () => {
+	it('says why an alert will stop', () => {
 		const alert = { alert: 'Low stock' }
-		const moved = sentenceOf(
-			item('a', 'P19', { ...alert, outcome: 'moved', owner: ALICE, enabler: BOB }),
-			DAVE,
+		const noUser = sentenceOf(item('b', 'P19', { ...alert, outcome: 'no_user' }), DAVE)
+		expect(text(noUser.text)).toBe('The alert Low stock has no one to run as, so it will stop.')
+		expect(text(noUser.todo)).toBe(
+			'Turn it off and on again as someone who can edit its workbook.',
 		)
-		expect(text(moved.text)).toBe(
-			'The Low stock alert now runs as Alice, who owns its workbook, in place of Bob.',
-		)
-		expect(moved.todo).toBeUndefined()
-		expect(
-			text(sentenceOf(item('b', 'P19', { ...alert, outcome: 'no_user' }), DAVE).text),
-		).toBe('The Low stock alert has no one to run as, so it will stop.')
 		const stops = sentenceOf(
 			item('c', 'P19', { ...alert, outcome: 'stops', enabler: BOB }),
 			DAVE,
 		)
 		expect(text(stops.text)).toBe(
-			'The Low stock alert will stop, because Bob can’t edit its workbook.',
+			'The alert Low stock will stop, because Bob can’t edit its workbook.',
 		)
 		expect(text(stops.todo)).toBe('Share the workbook with Bob to edit.')
 	})
@@ -472,19 +559,19 @@ describe('an item sentence', () => {
 			[
 				'K1',
 				{ dashboard: 'Sales', start: '2024-01-01', end: '2024-03-31' },
-				'The Sales dashboard lost its default date range (2024-01-01 – 2024-03-31), which earlier releases showed but never applied.',
+				'The dashboard Sales lost its default date range (2024-01-01 – 2024-03-31), which earlier releases showed but never applied.',
 				'Set it again if you want it.',
 			],
 			[
 				'N4',
 				{ chart: 'Revenue' },
-				'The Revenue number card lost its currency sign.',
+				'The number card Revenue lost its currency sign.',
 				'Add the sign to the card’s suffix.',
 			],
 			[
 				'N6',
 				{ chart: 'Revenue' },
-				'The Revenue number card now shows a total of all rows.',
+				'The number card Revenue now shows a total of all rows.',
 				'Pick a Date column to show a period.',
 			],
 			[
@@ -508,10 +595,10 @@ describe('an item sentence', () => {
 		const copy = { workbook: 'Sales Performance', standard: 'Selling', app: 'ERPNext' }
 		const changed = sentenceOf(item('c', 'W2', copy, { workbook: 'wb' }), DAVE)
 		expect(text(changed.text)).toBe(
-			'The Sales Performance workbook is a copy of an old Insights template. ERPNext’s Selling workbook replaces it and gets updates.',
+			'The workbook Sales Performance is a copy of an old Insights template. ERPNext’s workbook Selling replaces it and gets updates.',
 		)
 		expect(text(changed.todo)).toBe(
-			'Move what you changed to the Selling workbook, then delete the copy.',
+			'Move what you changed to the workbook Selling, then delete the copy.',
 		)
 		expect(changed.action).toMatchObject({ kind: 'route', label: 'Open workbook' })
 		const untouched = sentenceOf(item('d', 'W2', copy, { action: 'delete_workbook' }), DAVE)
@@ -525,22 +612,17 @@ describe('an item sentence', () => {
 			[
 				'N5',
 				{ chart: 'Revenue', column: 'Posting Date' },
-				'The Revenue number card now shows the total of the latest day of Posting Date.',
-			],
-			[
-				'J1',
-				{ alert: 'Watch a cache', chart: 'Revenue' },
-				'The Watch a cache alert checks a saved copy of the Revenue chart. Changes to the chart don’t reach it.',
+				'The number card Revenue now shows the total of the latest day of Posting Date.',
 			],
 			[
 				'P21',
 				{ query: 'Origin script', workbook: 'Reader', variables: ['api_token'] },
-				'The Origin script script was copied into the Reader workbook without its secret api_token. It won’t run until someone enters it.',
+				'The script Origin script was copied into the workbook Reader without its secret api_token, so it won’t run.',
 			],
 			[
 				'P21',
 				{ cycle: true, query: 'A', workbook: 'Sales', source: 'B' },
-				'The A query in the Sales workbook reads the B query, which reads it back. Remove that source.',
+				'The query A in the workbook Sales reads the query B, which reads it back.',
 			],
 		]
 		for (const [code, data, said] of cases) {
