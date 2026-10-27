@@ -93,9 +93,6 @@ def run(
         The name of the File that holds the report.
     """
     file = frappe.get_doc("File", file) if file else create_report_file()
-    # two requests at once both pass the queued check, and rq runs the one job id twice
-    if json.loads(file.get_content()).get("status") != "Queued":
-        return file.name
     report = {
         "generated_at": frappe.utils.now(),
         "site": frappe.local.site,
@@ -138,30 +135,31 @@ def enqueue(
         The name of the private File the job writes its report to. Its
         `status` is `Queued` until the job starts.
     """
-    if is_job_enqueued(PROFILE_LOCK):
-        frappe.throw(_("A warehouse profile is already queued or running"))
     if not slowest_logged(limit, since_days, min_time):
         frappe.throw(
             _("No data store queries slower than {0}s in the last {1} days").format(min_time, since_days)
         )
 
-    file = create_report_file()
-    frappe.enqueue(
-        "insights.warehouse_profile.run",
-        queue="long",
-        job_id=PROFILE_LOCK,
-        deduplicate=True,
-        enqueue_after_commit=True,
-        # a replay waits up to `max_seconds` for a writer, then runs up to as long;
-        # concurrent copies run side by side
-        timeout=limit * (2 * max_seconds + WRITER_PAUSE) + 60,
-        limit=limit,
-        since_days=since_days,
-        min_time=min_time,
-        concurrency=concurrency,
-        max_seconds=max_seconds,
-        file=file.name,
-    )
+    # two requests at once would both find no job queued
+    with filelock(f"{PROFILE_LOCK}_enqueue", timeout=5):
+        if is_job_enqueued(PROFILE_LOCK):
+            frappe.throw(_("A warehouse profile is already queued or running"))
+        file = create_report_file()
+        frappe.db.commit()  # nosemgrep - the job reads the File, and the next request must see the job
+        frappe.enqueue(
+            "insights.warehouse_profile.run",
+            queue="long",
+            job_id=PROFILE_LOCK,
+            # a replay waits up to `max_seconds` for a writer, then runs up to as long;
+            # concurrent copies run side by side
+            timeout=limit * (2 * max_seconds + WRITER_PAUSE) + 60,
+            limit=limit,
+            since_days=since_days,
+            min_time=min_time,
+            concurrency=concurrency,
+            max_seconds=max_seconds,
+            file=file.name,
+        )
     return file.name
 
 

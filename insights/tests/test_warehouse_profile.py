@@ -28,7 +28,7 @@ con.close()
 """
 
 
-def run_now(method, queue, timeout, job_id, deduplicate, enqueue_after_commit, **kwargs):
+def run_now(method, queue, timeout, job_id, **kwargs):
     frappe.get_attr(method)(**kwargs)
 
 
@@ -99,7 +99,7 @@ class WarehouseProfile(InsightsIntegrationTestCase):
             text=True,
         )
         self.addCleanup(writer.wait)
-        writer.stdout.readline()
+        self.assertEqual(writer.stdout.readline(), "held\n")
 
         [entry] = json.loads(self.profile().get_content())["queries"]
         self.assertIsNone(entry["error"])
