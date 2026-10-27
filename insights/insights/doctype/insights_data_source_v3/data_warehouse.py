@@ -13,7 +13,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
-from duckdb import CatalogException, DependencyException
+from duckdb import CatalogException, DependencyException, OutOfMemoryException
 from frappe.query_builder.functions import IfNull, Max, Min
 from frappe.utils import add_days, get_datetime, get_files_path, now, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
@@ -59,12 +59,13 @@ IMPORT_TIMEOUT = 30 * 60
 # large ones, so a chunk is no smaller than MIN_CHUNK_MEMORY (MB).
 CHUNKS_PER_BATCH = 10
 MIN_CHUNK_MEMORY = 8
-# DuckDB's memory runs past its limit, by about 85 MB and a buffer per thread:
-# committing a wide table at a 1 GB limit took 1.1 GB with two threads and
-# 1.6 GB with eight. So a commit gets two threads and a share of the import's
-# limit, and no less than COMMIT_MIN_MEMORY (MB): at 42 MB a small table failed.
-# A site that sets its own DuckDB limit keeps it.
-COMMIT_THREADS = 2
+# DuckDB's memory runs past its limit, by about 85 MB and a buffer per thread
+# and column: committing 46 columns at a 1 GB limit took 1.1 GB with two threads
+# and 1.6 GB with eight, and 304 columns fit 341 MB only with one thread. So a
+# commit gets one thread and a share of the import's limit, no less than
+# COMMIT_MIN_MEMORY (MB). One that still runs out runs again under DuckDB's own
+# limit, and a site that sets its own DuckDB limit keeps it.
+COMMIT_THREADS = 1
 COMMIT_MEMORY_SHARE = 2 / 3
 COMMIT_MIN_MEMORY = 128
 
@@ -269,47 +270,61 @@ class WarehouseTableWriter:
         # Arrow keeps the memory the batches freed for its next ones, which DuckDB cannot use
         pa.default_memory_pool().release_unused()
 
-        total_rows = 0
+        memory = self.commit_memory()
         try:
-            with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
-                self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
-
-                if self.memory_limit and not frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY):
-                    memory = max(int(self.memory_limit * COMMIT_MEMORY_SHARE), COMMIT_MIN_MEMORY)
-                    db.raw_sql(f"SET memory_limit = '{memory}MB'")
-                    db.raw_sql(f"SET threads = {COMMIT_THREADS}")
-
-                with suppress(CatalogException):
-                    db.create_database(self.database)
-
-                db.raw_sql(f"USE '{self.database}'")
-
-                self._log(f"Switched to '{self.database}' database")
-
-                parquet_glob = str(self._temp_dir / "*.parquet")
-                merged = db.read_parquet(parquet_glob)
-
-                with transaction(db):
-                    if self._table_exists(db) and self.mode in ("append", "upsert"):
-                        self._add_missing_columns(db, merged)
-                        self._delete_from_bookmark(db)
-                        if self.mode == "append":
-                            db.insert(self.table_name, merged)
-                        elif self.mode == "upsert":
-                            self._upsert(db, merged)
-                    else:
-                        db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
-
-                self._log("Commit completed.")
-
-                total_rows = merged.count().execute()
-                total_rows = int(total_rows)
-
+            try:
+                total_rows = self._commit(memory)
+            except OutOfMemoryException:
+                if memory is None:
+                    raise
+                self._log(
+                    f"The commit needs more than {memory} MB, committing again under DuckDB's own limit"
+                )
+                total_rows = self._commit(None)
             self._committed = True
         finally:
             self._cleanup_temp_dir()
 
         return total_rows
+
+    def commit_memory(self) -> int | None:
+        """MB DuckDB may use to commit, or None to keep its own limit."""
+        if not self.memory_limit or frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY):
+            return None
+        return max(int(self.memory_limit * COMMIT_MEMORY_SHARE), COMMIT_MIN_MEMORY)
+
+    def _commit(self, memory: int | None) -> int:
+        with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
+            self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
+
+            if memory:
+                db.raw_sql(f"SET memory_limit = '{memory}MB'")
+                db.raw_sql(f"SET threads = {COMMIT_THREADS}")
+
+            with suppress(CatalogException):
+                db.create_database(self.database)
+
+            db.raw_sql(f"USE '{self.database}'")
+
+            self._log(f"Switched to '{self.database}' database")
+
+            parquet_glob = str(self._temp_dir / "*.parquet")
+            merged = db.read_parquet(parquet_glob)
+            rows = int(merged.count().execute())
+
+            with transaction(db):
+                if self._table_exists(db) and self.mode in ("append", "upsert"):
+                    self._add_missing_columns(db, merged)
+                    self._delete_from_bookmark(db)
+                    if self.mode == "append":
+                        db.insert(self.table_name, merged)
+                    elif self.mode == "upsert":
+                        self._upsert(db, merged)
+                else:
+                    db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
+
+            self._log("Commit completed.")
+            return rows
 
     def _table_exists(self, db: DuckDBBackend) -> bool:
         return self.table_name in db.list_tables()

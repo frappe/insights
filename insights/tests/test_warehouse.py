@@ -921,6 +921,29 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.assertEqual(self.stored_names(), ["a", "b", "c", "d", "e"])
 
     # @feature data-store.import-table
+    def test_a_commit_that_runs_out_of_the_imports_memory_runs_again_under_duckdbs_own(self):
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+        insert = DuckDBBackend.insert
+        limits = []
+
+        # after the rows at the bookmark are deleted, so the rollback has work to undo
+        def out_of_memory_once(db, *args, **kwargs):
+            limits.append(db.raw_sql("SELECT current_setting('memory_limit')").fetchone()[0])
+            if len(limits) == 1:
+                raise duckdb.OutOfMemoryException("Out of Memory Error: could not allocate block")
+            return insert(db, *args, **kwargs)
+
+        with (
+            patch.dict(frappe.conf, {"insights_duckdb_memory_limit": None}),
+            patch.object(DuckDBBackend, "insert", autospec=True, side_effect=out_of_memory_once),
+        ):
+            self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
+        self.assertEqual(len(limits), 2)
+        self.assertNotEqual(limits[0], limits[1])
+
+    # @feature data-store.import-table
     def test_a_column_empty_in_one_batch_keeps_its_source_type(self):
         frappe.db.set_value("Insights Table v3", self.table_doc, "sync_mode", "Full")
         rows = pa.table(
