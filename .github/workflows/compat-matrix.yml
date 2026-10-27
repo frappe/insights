@@ -2,8 +2,8 @@ name: Frappe Compatibility Matrix
 
 on:
   schedule:
-    # Daily at 02:00 AM UTC
-    - cron: '0 2 * * *'
+    # Every other day at 02:00 UTC. `*/2` restarts on the 1st, so a month can end with two runs in a row.
+    - cron: '0 2 */2 * *'
   workflow_dispatch:
   # Every release is a push to version-3, so the PRs that feed it must install on both Frappe versions
   pull_request:
@@ -17,7 +17,30 @@ permissions:
   contents: read
 
 jobs:
+  changed:
+    # A scheduled run on a develop that has not moved since the last green one
+    # would repeat that run. One API call here is cheaper than the bench.
+    name: New commits
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          workflow=$(basename "${GITHUB_WORKFLOW_REF%@*}")
+          last=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?event=schedule&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""')
+          echo "Last green scheduled run: ${last:-none}. Now: $GITHUB_SHA."
+          echo "run=$([ "$last" = "$GITHUB_SHA" ] && echo false || echo true)" >> "$GITHUB_OUTPUT"
+
   install-matrix:
+    needs: changed
+    # `!cancelled()` so the installs run when `changed` is skipped, as it is off schedule.
+    if: ${{ !cancelled() && needs.changed.outputs.run != 'false' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
