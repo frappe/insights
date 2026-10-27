@@ -51,6 +51,7 @@ COMPACT_MIN_FREE_RATIO = 0.2
 # committed in one transaction, left it behind.
 LEFTOVER_TABLE_PREFIX = "ibis_duckdb_table_"
 DEFAULT_ROW_LIMIT = 10_00_000
+IMPORT_TIMEOUT = 30 * 60
 # A batch is read and written this many chunks at a time, so an import holds a
 # chunk in memory, not a batch. A chunk is a row group of the batch's parquet
 # file, and DuckDB commits many small row groups with more memory than a few
@@ -1008,16 +1009,21 @@ def enqueue_warehouse_table_import(data_source: str, table_name: str):
         data_source=data_source,
         table_name=table_name,
         queue="long",
-        timeout=30 * 60,
+        timeout=IMPORT_TIMEOUT,
         job_id=job_id,
         deduplicate=True,
     )
 
 
 def execute_warehouse_table_import(data_source: str, table_name: str):
+    from insights.api.data_store import sync_tables
+
     table = WarehouseTable(data_source, table_name)
     importer = WarehouseTableImporter(table)
-    importer.start_import()
+    try:
+        importer.start_import()
+    finally:
+        sync_tables()
 
 
 def get_warehouse_schema_name(data_source: str) -> str:

@@ -31,6 +31,7 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WarehouseTable,
     WarehouseTableImporter,
     WarehouseTableWriter,
+    execute_warehouse_table_import,
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
@@ -374,44 +375,62 @@ class TestMissingTableNotice(InsightsIntegrationTestCase):
 
 class TestSyncSchedule(InsightsIntegrationTestCase):
     TABLE = "sync_schedule_table"
+    # one more due table than the site imports at once
+    TABLES = (TABLE, "sync_schedule_table_2", "sync_schedule_table_3")
+    OTHER_TABLE = "sync_schedule_other_table"
     # an @hourly table falls due on the hour, so a moving clock would decide the outcome
     HALF_PAST = datetime(2026, 1, 1, 12, 30)
 
     @classmethod
     def before_class(cls):
-        frappe.get_doc(
-            {
-                "doctype": "Insights Table v3",
-                "table": cls.TABLE,
-                "label": cls.TABLE,
-                "data_source": "Site DB",
-                "stored": 1,
-                "sync_schedule": "@hourly",
-            }
-        ).insert(ignore_permissions=True)
+        for table in cls.TABLES:
+            frappe.get_doc(
+                {
+                    "doctype": "Insights Table v3",
+                    "table": table,
+                    "label": table,
+                    "data_source": "Site DB",
+                    "stored": 1,
+                    "sync_schedule": "@hourly",
+                }
+            ).insert(ignore_permissions=True)
 
     @classmethod
     def after_class(cls):
-        frappe.delete_doc("Insights Table v3", get_table_name("Site DB", cls.TABLE), force=True)
+        for table in cls.TABLES:
+            frappe.delete_doc("Insights Table v3", get_table_name("Site DB", table), force=True)
 
     def after_test(self):
-        frappe.db.delete("Insights Table Import Log", {"table_name": self.TABLE})
+        frappe.db.delete(
+            "Insights Table Import Log", {"table_name": ["in", [*self.TABLES, self.OTHER_TABLE]]}
+        )
 
-    def start_import(self, minutes_ago, status):
+    def start_import(self, minutes_ago, status, table=TABLE):
         log = frappe.new_doc("Insights Table Import Log")
         log.data_source = "Site DB"
-        log.table_name = self.TABLE
+        log.table_name = table
         log.status = status
         log.started_at = add_to_date(self.HALF_PAST, minutes=-minutes_ago)
         log.insert(ignore_permissions=True)
 
-    def imported_tables(self):
+    def make_all_due(self):
+        for table in self.TABLES:
+            self.start_import(minutes_ago=120, status="Completed", table=table)
+
+    @contextmanager
+    def enqueued_tables(self):
+        tables = []
         with (
             patch("frappe.enqueue") as enqueue,
             patch("insights.api.data_store.now_datetime", return_value=self.HALF_PAST),
         ):
+            yield tables
+        tables.extend(call.kwargs.get("table_name") for call in enqueue.call_args_list)
+
+    def imported_tables(self):
+        with self.enqueued_tables() as tables:
             sync_tables()
-        return [call.kwargs.get("table_name") for call in enqueue.call_args_list]
+        return tables
 
     # @feature data-store.sync-schedule
     def test_a_table_is_imported_once_its_schedule_is_due_since_its_last_import(self):
@@ -423,6 +442,34 @@ class TestSyncSchedule(InsightsIntegrationTestCase):
         self.start_import(minutes_ago=120, status="Completed")
         self.start_import(minutes_ago=10, status="Failed")
         self.assertNotIn(self.TABLE, self.imported_tables())
+
+    # @feature data-store.import-concurrency
+    def test_no_more_than_two_due_tables_are_imported_at_once(self):
+        self.make_all_due()
+        self.assertEqual(len(self.imported_tables()), 2)
+
+    # @feature data-store.import-concurrency
+    def test_an_import_under_way_holds_one_of_the_two_places(self):
+        self.make_all_due()
+        self.start_import(minutes_ago=5, status="In Progress", table=self.OTHER_TABLE)
+        self.assertEqual(len(self.imported_tables()), 1)
+
+    # @feature data-store.import-concurrency
+    def test_an_import_whose_worker_died_frees_its_place_after_the_job_timeout(self):
+        self.make_all_due()
+        self.start_import(minutes_ago=31, status="In Progress", table=self.OTHER_TABLE)
+        self.assertEqual(len(self.imported_tables()), 2)
+
+    # @feature data-store.import-concurrency
+    def test_the_next_due_table_is_imported_as_an_import_ends_even_a_failed_one(self):
+        self.start_import(minutes_ago=120, status="Completed")
+        with self.enqueued_tables() as tables:
+            with patch.object(
+                WarehouseTableImporter, "start_import", side_effect=RuntimeError("source went away")
+            ):
+                with self.assertRaises(RuntimeError):
+                    execute_warehouse_table_import("Site DB", self.OTHER_TABLE)
+        self.assertEqual(tables, [self.TABLE])
 
 
 class TestImportRowLimit(InsightsIntegrationTestCase):
