@@ -269,15 +269,36 @@ describe('the wizard steps of someone who is not an admin', () => {
 describe('an item sentence', () => {
 	// @feature upgrade.item-sentences
 	it('names the people it is about, and says "you" only to that person', () => {
-		const access = item('a', 'P17', { user: BOB, doctypes: ['Sales Invoice'] })
+		const access = item(
+			'a',
+			'P17',
+			{ user: BOB, doctypes: ['Sales Invoice'] },
+			{ form_url: '/desk/user/bob' },
+		)
 		const toDave = sentenceOf(access, DAVE)
 		expect(text(toDave.text)).toBe('Bob can’t see charts on Sales Invoices any more.')
 		expect(names(toDave.text)).toEqual(['Bob', 'Sales Invoices'])
-		expect(text(toDave.todo)).toBe('Give Bob a desk role that can read them.')
+		expect(text(toDave.todo)).toBe('Give Bob a desk role that can read Sales Invoices.')
 
 		const toBob = sentenceOf(access, BOB)
 		expect(text(toBob.text)).toBe('You can’t see charts on Sales Invoices any more.')
-		expect(text(toBob.todo)).toBe('Give yourself a desk role that can read them.')
+		expect(text(toBob.todo)).toBe('Give yourself a desk role that can read Sales Invoices.')
+	})
+
+	// @feature upgrade.item-sentences
+	it('tells a reader who may not set roles whom to ask for one', () => {
+		const access = item('a', 'P10', {
+			chart: 'Trend',
+			owner: ALICE,
+			reason: 'unreadable',
+			doctypes: ['Sales Invoice'],
+		})
+		expect(text(sentenceOf(access, ALICE).todo)).toBe(
+			'Ask a System Manager for a desk role that can read Sales Invoices.',
+		)
+		expect(text(sentenceOf(access, BOB).todo)).toBe(
+			'Ask a System Manager to give Alice a desk role that can read Sales Invoices.',
+		)
 	})
 
 	// @feature upgrade.item-sentences
@@ -347,7 +368,7 @@ describe('an item sentence', () => {
 		expect(text(owner.text)).toBe(
 			'The chart Trend runs as Alice, who can’t read Sales Invoices, so everyone who opens it sees Not Permitted.',
 		)
-		expect(text(owner.todo)).toBe('Give Alice a desk role that can read them.')
+		expect(text(owner.todo)).toBe('Give Alice a desk role that can read Sales Invoices.')
 		expect(owner.action).toEqual({
 			kind: 'form',
 			label: 'Open Alice’s roles',
@@ -371,6 +392,13 @@ describe('an item sentence', () => {
 		)
 		expect(text(team.text)).toContain('who can’t read its tables')
 		expect(text(team.todo)).toBe('Give Alice its tables through an Insights team.')
+		const ownTeam = sentenceOf(
+			item('d', 'P10', { chart: 'Trend', owner: ALICE, reason: 'unreadable', doctypes: [] }),
+			ALICE,
+		)
+		expect(text(ownTeam.todo)).toBe(
+			'Ask an Insights Admin to give you its tables through a team.',
+		)
 		expect(team.action).toMatchObject({ kind: 'route', label: 'Open chart' })
 	})
 
@@ -479,7 +507,7 @@ describe('an item sentence', () => {
 			'Everyone could edit the chart Revenue. That share is gone, so only people the workbook Sales is shared with can open it.',
 		)
 		expect(text(sentenceOf(one, DAVE).todo)).toBe(
-			'Share the workbook with whoever still needs them.',
+			'Share the workbook with anyone who still needs to open it.',
 		)
 		const both = item('b', 'P7', {
 			workbook: 'Sales',
@@ -531,7 +559,7 @@ describe('an item sentence', () => {
 		expect(sentenceOf(item('a', 'P20', data, onChart), DAVE).action?.label).toBe('Open chart')
 		expect(sentenceOf(item('b', 'P20', data, onAlert), DAVE).action?.label).toBe('Open alert')
 		expect(text(sentenceOf(item('c', 'P20', data), DAVE).text)).toBe(
-			'Only admins can edit Alice’s script Script rows now. It still runs.',
+			'Only Insights Admins can edit Alice’s script Script rows now. It still runs.',
 		)
 	})
 

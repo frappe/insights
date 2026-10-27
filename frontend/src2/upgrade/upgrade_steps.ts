@@ -192,10 +192,10 @@ export const groups = translatedTable<Group[]>(() => [
 		label: __('Alerts'),
 		kind: 'now',
 		codes: ['P19'],
-		title: __('Some alerts run as someone else, or will stop'),
+		title: __('Some alerts will stop'),
 		lead: [
 			__('An alert now runs as someone who can edit its workbook,'),
-			__('so some moved to the workbook’s owner and some will stop.'),
+			__('and these have no one it can run as.'),
 		],
 		picture: 'workbookAccess',
 	},
@@ -623,11 +623,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 									text: people.name(d.user),
 								},
 						  )
-					: self
-					  ? say(__('Give yourself a desk role that can read them.'))
-					  : say(__('Give {0} a desk role that can read them.'), {
-								text: people.name(d.user),
-					    }),
+					: askForRole(item, people, d.user, d.doctypes),
 				action: formAction(
 					item,
 					self ? __('Open your roles') : __('Open {0}’s roles', people.name(d.user)),
@@ -779,7 +775,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 		return {
 			text,
 			todo: removed.length
-				? say(__('Share the workbook with whoever still needs them.'))
+				? say(__('Share the workbook with anyone who still needs to open it.'))
 				: say(__('Remove anyone from its sharing who should not open all of it.')),
 			action: workbookSharing(item, __('Open workbook sharing')),
 		}
@@ -855,7 +851,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				text: say(__('The {0} has no one to run as, so it will stop.'), alert),
 				// turning an alert on makes it run as whoever turned it on
 				todo: say(__('Turn it off and on again as someone who can edit its workbook.')),
-				action: workbookSharing(item, __('Open workbook sharing')),
+				action: formAction(item, __('Open alert')),
 			}
 		}
 		return {
@@ -991,7 +987,7 @@ const SENTENCES: Partial<Record<string, Build>> = {
 				  : 'script'
 		return {
 			text: say(
-				__('Only admins can edit {0} {1} now. It still runs.'),
+				__('Only Insights Admins can edit {0} {1} now. It still runs.'),
 				em(possessive(people, d.author)),
 				titled(kind, d.title),
 			),
@@ -1051,24 +1047,42 @@ function giveReadAccess(
 	doctypes: string[] = [],
 ): Pick<Sentence, 'todo' | 'action'> {
 	// a table off the site database needs a team grant, which no role gives
+	const self = user === people.me
 	if (!doctypes.length) {
 		return {
-			todo: say(__('Give {0} its tables through an Insights team.'), {
-				text: person(people, user),
-			}),
+			todo: self
+				? say(__('Ask an Insights Admin to give you its tables through a team.'))
+				: say(__('Give {0} its tables through an Insights team.'), {
+						text: people.name(user),
+				  }),
 			action: routeTo(item, __('Open chart')),
 		}
 	}
-	const self = user === people.me
 	return {
-		todo: self
-			? say(__('Give yourself a desk role that can read them.'))
-			: say(__('Give {0} a desk role that can read them.'), { text: people.name(user) }),
+		todo: askForRole(item, people, user, doctypes),
 		action: formAction(
 			item,
 			self ? __('Open your roles') : __('Open {0}’s roles', people.name(user)),
 		),
 	}
+}
+
+/**
+ * The desk role `user` needs to read `doctypes`. The server offers the user's
+ * form only to a reader who may set roles, so anyone else is told whom to ask.
+ */
+function askForRole(item: UpgradeItem, people: People, user: string, doctypes: string[]): Part[] {
+	const tables = em(listOf(doctypes.map(documents), 3))
+	const self = user === people.me
+	const name = { text: people.name(user) }
+	if (item.form_url) {
+		return self
+			? say(__('Give yourself a desk role that can read {0}.'), tables)
+			: say(__('Give {0} a desk role that can read {1}.'), name, tables)
+	}
+	return self
+		? say(__('Ask a System Manager for a desk role that can read {0}.'), tables)
+		: say(__('Ask a System Manager to give {0} a desk role that can read {1}.'), name, tables)
 }
 
 function memberKinds(kind: string) {

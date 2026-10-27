@@ -251,7 +251,7 @@ function onKeydown(event: KeyboardEvent) {
 					<div><Badge size="md" :label="__('Before')" /></div>
 					<p class="text-p-base text-ink-gray-5">
 						<span class="font-semibold text-ink-gray-9">
-							{{ __('Before, you shared each chart or dashboard on its own,') }}
+							{{ __('You shared each chart or dashboard on its own,') }}
 						</span>
 						{{ __('and could let people edit it.') }}
 					</p>
@@ -293,7 +293,7 @@ function onKeydown(event: KeyboardEvent) {
 								:href="RELEASE_NOTES"
 								target="_blank"
 								rel="noopener"
-								class="text-ink-gray-8 underline hover:text-ink-gray-9"
+								class="self-start rounded-2 text-ink-gray-8 underline hover:text-ink-gray-9 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 								>{{ __('Release notes') }}</a
 							>
 						</div>
