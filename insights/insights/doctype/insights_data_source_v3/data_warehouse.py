@@ -12,6 +12,7 @@ import ibis
 import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
+import pyarrow.parquet as pq
 from duckdb import CatalogException, DependencyException
 from frappe.query_builder.functions import IfNull, Max, Min
 from frappe.utils import add_days, get_datetime, get_files_path, now, now_datetime
@@ -31,6 +32,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
     local_duckdb_write_lock,
     open_local_duckdb,
 )
+from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import read_pyarrow_batches
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
@@ -49,6 +51,19 @@ COMPACT_MIN_FREE_RATIO = 0.2
 # committed in one transaction, left it behind.
 LEFTOVER_TABLE_PREFIX = "ibis_duckdb_table_"
 DEFAULT_ROW_LIMIT = 10_00_000
+# A batch is read and written this many chunks at a time, so an import holds a
+# chunk in memory, not a batch. A chunk is a row group of the batch's parquet
+# file, and DuckDB commits many small row groups with more memory than a few
+# large ones, so a chunk is no smaller than MIN_CHUNK_MEMORY (MB).
+CHUNKS_PER_BATCH = 10
+MIN_CHUNK_MEMORY = 8
+# DuckDB's memory runs past its limit, by about 85 MB and a buffer per thread:
+# committing a wide table at a 1 GB limit took 1.1 GB with two threads and
+# 1.6 GB with eight. So a commit gets two threads and a share of the import's
+# limit, and no less than COMMIT_MIN_MEMORY (MB): at 42 MB a small table failed.
+COMMIT_THREADS = 2
+COMMIT_MEMORY_SHARE = 2 / 3
+COMMIT_MIN_MEMORY = 128
 
 
 def row_limit(table_row_limit: int | None = None) -> int:
@@ -127,6 +142,7 @@ class Warehouse:
         primary_key_column: str = "",
         cursor_column: str = "",
         bookmark: str | None = None,
+        memory_limit: int | None = None,
         log_fn=None,
     ) -> "WarehouseTableWriter":
         """Create a table writer for batch inserts with automatic cleanup.
@@ -146,6 +162,7 @@ class Warehouse:
             primary_key_column=primary_key_column,
             cursor_column=cursor_column,
             bookmark=bookmark,
+            memory_limit=memory_limit,
             log_fn=log_fn,
         )
 
@@ -171,6 +188,7 @@ class WarehouseTableWriter:
         primary_key_column: str = "",
         cursor_column: str = "",
         bookmark: str | None = None,
+        memory_limit: int | None = None,
         log_fn=None,
     ):
         self.database = database
@@ -180,6 +198,7 @@ class WarehouseTableWriter:
         self.primary_key_column = primary_key_column
         self.cursor_column = cursor_column
         self.bookmark = bookmark
+        self.memory_limit = memory_limit  # MB, for the commit
         self._log = log_fn or (lambda *args, **kwargs: None)
 
         self._temp_dir: Path | None = None
@@ -218,6 +237,23 @@ class WarehouseTableWriter:
 
         return ibis.read_parquet(parquet_path)
 
+    def insert_batches(self, batches: pa.RecordBatchReader) -> int:
+        """Write record batches to one parquet file as they are read, so one is in memory at a time."""
+        if self._temp_dir is None:
+            raise RuntimeError("WarehouseTableWriter must be used as a context manager")
+
+        parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
+        self._log(f"Writing batch {self._batch_count + 1}")
+        rows = 0
+        with pq.ParquetWriter(parquet_path, batches.schema) as file:
+            for batch in batches:
+                file.write_batch(batch)
+                rows += batch.num_rows
+
+        self._parquet_files.append(parquet_path)
+        self._batch_count += 1
+        return rows
+
     def commit(self) -> int:
         if self._committed:
             return 0
@@ -227,10 +263,18 @@ class WarehouseTableWriter:
             self._cleanup_temp_dir()
             return 0
 
+        # Arrow keeps the memory the batches freed for its next ones, which DuckDB cannot use
+        pa.default_memory_pool().release_unused()
+
         total_rows = 0
         try:
             with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
                 self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
+
+                if self.memory_limit:
+                    memory = max(int(self.memory_limit * COMMIT_MEMORY_SHARE), COMMIT_MIN_MEMORY)
+                    db.raw_sql(f"SET memory_limit = '{memory}MB'")
+                    db.raw_sql(f"SET threads = {COMMIT_THREADS}")
 
                 with suppress(CatalogException):
                     db.create_database(self.database)
@@ -463,6 +507,56 @@ class WarehouseTable:
         """Drop this table from the warehouse. No-op if it does not exist."""
         with insights.warehouse.get_write_connection() as db:
             db.drop_table(self.warehouse_table_name, database=self.schema, force=True)
+
+
+class CursorBatch:
+    """A batch read in cursor order, passed on a chunk at a time.
+
+    A full batch can end partway through the rows at its last cursor value, so it
+    holds those rows back for the next batch to read whole. A batch that is not
+    full ends the table, and passes them on too.
+    """
+
+    def __init__(self, reader: pa.RecordBatchReader, cursor_column: str, batch_size: int):
+        self.reader = reader
+        self.cursor_column = cursor_column
+        self.batch_size = batch_size
+        self.num_rows = 0
+        self.held = reader.schema.empty_table()
+
+    @property
+    def full(self) -> bool:
+        return self.num_rows >= self.batch_size
+
+    @property
+    def last(self):
+        """The cursor value of the rows held back."""
+        return self.held[self.cursor_column][0].as_py()
+
+    def rows(self) -> pa.RecordBatchReader:
+        return pa.RecordBatchReader.from_batches(self.reader.schema, self._pass_on())
+
+    def _pass_on(self) -> Generator[pa.RecordBatch, None, None]:
+        for chunk in self.reader:
+            if not chunk.num_rows:
+                continue
+            self.num_rows += chunk.num_rows
+            rows = pa.concat_tables([self.held, pa.Table.from_batches([chunk])])
+            start = start_of_last_value(rows[self.cursor_column])
+            # one row group per chunk, not one more for the rows held back from the last
+            yield from rows.slice(0, start).combine_chunks().to_batches()
+            self.held = rows.slice(start)
+
+        if not self.full:
+            yield from self.held.combine_chunks().to_batches()
+
+
+def start_of_last_value(values: pa.ChunkedArray) -> int:
+    """Where the run of rows sharing the last value begins, in rows sorted on that value."""
+    last = values[-1]
+    differs = pc.fill_null(pc.not_equal(values, last), True) if last.is_valid else pc.is_valid(values)
+    positions = pc.indices_nonzero(differs)
+    return positions[-1].as_py() + 1 if len(positions) else 0
 
 
 class WarehouseTableImporter:
@@ -732,6 +826,7 @@ class WarehouseTableImporter:
                 primary_key_column=self.dedupe_key_column,
                 cursor_column=self.cursor_column,
                 bookmark=self.bookmark,
+                memory_limit=self.settings.memory_limit,
                 log_fn=self._log,
             ) as writer:
                 total_rows = self.process_batches(batch_size, writer)
@@ -759,6 +854,11 @@ class WarehouseTableImporter:
         )
         return batch_size
 
+    def calculate_chunk_size(self, batch_size: int) -> int:
+        memory_limit = self.settings.memory_limit
+        chunk_memory = max(memory_limit / CHUNKS_PER_BATCH, MIN_CHUNK_MEMORY)
+        return max(min(int(batch_size * chunk_memory / memory_limit), batch_size), 1)
+
     def process_batches(self, batch_size: int, writer: WarehouseTableWriter) -> int:
         """Read the source in batches that never split the rows sharing a cursor value.
 
@@ -766,9 +866,11 @@ class WarehouseTableImporter:
         starts at that value. One query per batch: a second one would scan a source
         whose cursor has no index twice.
         """
+        chunk_size = self.calculate_chunk_size(batch_size)
         if not self.cursor_column:
-            batch = self.read_batch(writer, self.remote_table.head(batch_size))
-            return self.write_batch(writer, batch)
+            return self.write_batch(
+                writer, self.read_batch(writer, self.remote_table.head(batch_size), chunk_size)
+            )
 
         cursor = _[self.cursor_column]
         ordered = ibis.asc(self.cursor_column, nulls_first=True)
@@ -776,26 +878,26 @@ class WarehouseTableImporter:
         total_rows = 0
 
         while True:
-            batch = self.read_batch(writer, remaining.order_by(ordered).head(batch_size))
-            if batch.num_rows < batch_size:
+            query = remaining.order_by(ordered).head(batch_size)
+            batch = CursorBatch(self.read_batch(writer, query, chunk_size), self.cursor_column, batch_size)
+            written = self.write_batch(writer, batch.rows())
+            total_rows += written
+            if not batch.full:
                 break
 
-            values = batch[self.cursor_column]
-            last = pc.max(values)
-            # NULL sorts first: before any value, but not before NULL
-            before_last = batch.filter(pc.fill_null(pc.less(values, last), last.is_valid))
-            if before_last.num_rows:
-                total_rows += self.write_batch(writer, before_last)
-                remaining = self.remote_table.filter(cursor >= last.as_py())
+            last = batch.last
+            # free the rows it held back before the next batch reads them again
+            del batch
+            if written:
+                remaining = self.remote_table.filter(cursor >= last)
             else:
                 # one cursor value, or NULL, holds more rows than a batch
-                at_last, after_last = self.get_group_filters(last.as_py())
+                at_last, after_last = self.get_group_filters(last)
                 total_rows += self.write_batch(
-                    writer, self.read_batch(writer, self.remote_table.filter(at_last))
+                    writer, self.read_batch(writer, self.remote_table.filter(at_last), chunk_size)
                 )
                 remaining = self.remote_table.filter(after_last)
 
-        total_rows += self.write_batch(writer, batch)
         self._log(f"Total Batches: {writer.batch_count} Total Rows: {total_rows}")
         return total_rows
 
@@ -806,15 +908,19 @@ class WarehouseTableImporter:
             return cursor.isnull(), cursor.notnull()
         return cursor == value, cursor > value
 
-    def read_batch(self, writer: WarehouseTableWriter, query: Expr) -> pa.Table:
+    def read_batch(self, writer: WarehouseTableWriter, query: Expr, chunk_size: int) -> pa.RecordBatchReader:
         self._log(f"Processing batch: {writer.batch_count + 1}")
         self._log(f"Batch Query: \n{ibis.to_sql(query)}")
-        return query.to_pyarrow()
+        db = ibis.get_backend(query)
+        if db.name == "mysql":
+            return read_pyarrow_batches(db, query, chunk_size)
+        # other drivers read the whole batch at once, as before
+        return query.to_pyarrow().to_reader(max_chunksize=chunk_size)
 
-    def write_batch(self, writer: WarehouseTableWriter, rows: pa.Table) -> int:
-        writer.insert(rows)
-        self._log(f"Rows: {rows.num_rows}")
-        return rows.num_rows
+    def write_batch(self, writer: WarehouseTableWriter, rows: pa.RecordBatchReader) -> int:
+        count = writer.insert_batches(rows)
+        self._log(f"Rows: {count}")
+        return count
 
     def capture_outcome(self):
         """Report how the import ended, and nothing about what it read.

@@ -510,6 +510,73 @@ class TestImportRowLimit(InsightsIntegrationTestCase):
         self.assertEqual(self.rows_kept_by(capped), 2)
 
 
+class TestSiteDBImport(InsightsIntegrationTestCase):
+    """An import from MariaDB reads each batch a chunk at a time."""
+
+    DATA_SOURCE = "Site DB"
+    TABLE = "tabDocField"
+    SETTINGS = ("stored", "sync_mode", "row_limit", "before_import_script")
+
+    @classmethod
+    def before_class(cls):
+        cls.table_doc = get_table_name(cls.DATA_SOURCE, cls.TABLE)
+        cls.made_doc = not frappe.db.exists("Insights Table v3", cls.table_doc)
+        if cls.made_doc:
+            doc = frappe.get_doc(
+                {
+                    "doctype": "Insights Table v3",
+                    "table": cls.TABLE,
+                    "label": cls.TABLE,
+                    "data_source": cls.DATA_SOURCE,
+                }
+            )
+            doc.flags.ignore_links = True
+            doc.insert(ignore_permissions=True)
+        cls.settings_were = frappe.db.get_value(
+            "Insights Table v3", cls.table_doc, cls.SETTINGS, as_dict=True
+        )
+        frappe.db.set_value(
+            "Insights Table v3",
+            cls.table_doc,
+            {"sync_mode": "Full", "row_limit": 0, "before_import_script": None},
+        )
+
+    @classmethod
+    def after_class(cls):
+        if cls.made_doc:
+            frappe.delete_doc("Insights Table v3", cls.table_doc, force=True, ignore_permissions=True)
+        else:
+            frappe.db.set_value("Insights Table v3", cls.table_doc, cls.settings_were)
+        frappe.db.delete(
+            "Insights Table Import Log", {"table_name": cls.TABLE, "creation": [">=", cls.started]}
+        )
+        frappe.db.commit()  # nosemgrep - the import commits its logs and these settings, so undoing them must commit too
+
+    def before_test(self):
+        TestSiteDBImport.started = frappe.utils.now()
+        tmpdir = tempfile.mkdtemp(prefix="insights_site_db_import_test_")
+        self.addCleanup(shutil.rmtree, tmpdir, ignore_errors=True)
+        self.path = str(Path(tmpdir) / "store.duckdb")
+        self.enterContext(patch.object(insights.warehouse, "get_db_path", return_value=self.path))
+        self.enterContext(patch.object(insights, "create_toast"))
+        self.enterContext(patch("frappe.utils.telemetry.capture"))
+        insights.db_connections.pop("insights", None)
+
+    # @feature data-store.import-table
+    def test_an_import_from_mariadb_copies_each_row_once_across_chunks_and_batches(self):
+        # a doctype's fields share a creation and outnumber a chunk of a 1000-row batch
+        with patch.object(WarehouseTableImporter, "calculate_batch_size", return_value=1000):
+            WarehouseTableImporter(WarehouseTable(self.DATA_SOURCE, self.TABLE)).start_import()
+
+        source = frappe.db.sql("SELECT * FROM `tabDocField` ORDER BY name", as_list=True)
+        db = open_local_duckdb(self.path)
+        try:
+            stored = db.raw_sql("SELECT * FROM site_db.tabdocfield ORDER BY name").fetchall()
+        finally:
+            db.disconnect()
+        self.assertEqual([tuple(row) for row in source], stored)
+
+
 HOLD_WRITE_LOCK = """
 import sys, time, duckdb
 con = duckdb.connect(sys.argv[1])
