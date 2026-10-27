@@ -521,6 +521,19 @@ class TestCondition(AlertOverSeededTodos):
             unmet.send_alert()
         self.assertEqual(sendmail.call_count, 0)
 
+    # @feature alerts.condition
+    def test_an_alert_whose_condition_is_not_met_is_not_due_until_its_next_window(self):
+        """Otherwise every four-minute tick runs its query again."""
+        alert = self.make_alert(condition="status == 'Nowhere'")
+        self.assertTrue(alert.is_event_due())
+
+        with patch("frappe.sendmail") as sendmail:
+            alert.send_alert()
+
+        self.assertEqual(sendmail.call_count, 0)
+        alert.reload()
+        self.assertFalse(alert.is_event_due())
+
     def assert_refused_with_one_message(self, condition, message):
         frappe.clear_messages()
         with self.assertRaises(frappe.ValidationError) as refusal:

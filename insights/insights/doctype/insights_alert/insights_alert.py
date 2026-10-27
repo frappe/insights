@@ -148,6 +148,9 @@ class InsightsAlert(Document):
 
         result = self.run_query(force)
         if not result.condition_met and not force:
+            # Ran, so not due again until the next window. Otherwise every
+            # four-minute tick runs the query again.
+            self.db_set("last_execution", now_datetime(), update_modified=False)
             return
 
         # Built once: a webhook alert sends the rendered message and the rows behind it.
