@@ -137,8 +137,7 @@
    "depends_on": "eval: doc.channel == \"Webhook\"",
    "fieldname": "webhook_token",
    "fieldtype": "Password",
-   "label": "Webhook Token",
-   "mandatory_depends_on": "eval: doc.channel == \"Webhook\""
+   "label": "Webhook Token"
   },
   {
    "depends_on": "eval: doc.channel == \"Webhook\"",

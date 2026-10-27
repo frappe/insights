@@ -437,7 +437,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | alerts.condition | A user sets the condition, from the builder or as a custom expression, that triggers the alert. |
 | alerts.message | A user writes the alert's message with field tokens. |
 | alerts.email | An alert emails its recipients, inside or outside the site, with a reply-to that reaches the author and a body that names the alert and the site as text. |
-| alerts.webhook | An alert posts a versioned payload to a webhook, token in the header, rows capped and the cap declared. |
+| alerts.webhook | An alert posts a versioned payload to a webhook, token, when set, in the header, the text under `message` and `content`, rows capped and the cap declared. |
 | alerts.webhook-address-policy | A webhook reaches only a public https address, never a private or loopback one, even through rebinding or a proxy. |
 | alerts.telegram | An alert sends to Telegram. |
 | alerts.test-send | A user sends an alert once as a test. |

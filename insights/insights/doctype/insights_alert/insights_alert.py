@@ -110,8 +110,6 @@ class InsightsAlert(Document):
     def validate_webhook(self):
         if not self.webhook_url:
             frappe.throw(_("Webhook URL is required for a webhook alert"))
-        if not self.webhook_token:
-            frappe.throw(_("Webhook token is required for a webhook alert"))
         # Only what the URL says, not where it resolves. Resolving here would
         # put a name lookup inside the save transaction and still prove nothing
         # about send time. "Send test" is the button that answers that.
@@ -171,13 +169,17 @@ class InsightsAlert(Document):
         tg.send(message)
 
     def send_webhook_alert(self, message, context):
-        """POST the alert to the configured endpoint. The token travels in an
-        Authorization header rather than the URI, which would put it in the
-        receiver's access logs."""
+        """POST the alert to the configured endpoint. The token, when there is
+        one, travels in an Authorization header rather than the URI, which would
+        put it in the receiver's access logs. Without a token no header is sent:
+        Frappe reads any bearer token as OAuth, so a receiver that authenticates
+        by its secret URL, like Raven's incoming webhook, would answer 401."""
         payload = {
             "version": WEBHOOK_PAYLOAD_VERSION,
             "event": "insights_alert",
             "message": message,
+            # the same text under the key Raven's incoming webhook reads
+            "content": message,
             "context": {
                 "alert": context["alert"]["title"],
                 "query": context["query"]["title"],
@@ -188,10 +190,9 @@ class InsightsAlert(Document):
             },
         }
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.get_password('webhook_token')}",
-        }
+        headers = {"Content-Type": "application/json"}
+        if self.webhook_token:
+            headers["Authorization"] = f"Bearer {self.get_password('webhook_token')}"
 
         try:
             # frappe.as_json, not requests' json=: query rows hold datetimes
