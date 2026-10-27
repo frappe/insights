@@ -52,9 +52,10 @@ export function useChartCell(props: ChartCellProps) {
 		return read.value?.result.columns || []
 	})
 
-	// "Reset filters" clears the dashboard filters that apply to this card and the
-	// reader's card filter. It shows only when there is something to clear, so an
-	// empty card with no filters says only that it is empty.
+	// "Reset filters" takes the dashboard filters that apply to this card back to
+	// their defaults, and clears the reader's card filter. It shows only when there
+	// is something to reset, so an empty card at its defaults says only that it is
+	// empty.
 	const filtered = computed(() =>
 		Boolean(props.item.chart && props.dashboard.filtered(props.item.chart)),
 	)

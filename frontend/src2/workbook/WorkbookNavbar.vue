@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Badge } from 'frappe-ui'
 import { inject } from 'vue'
 import ContentEditable from '../components/ContentEditable.vue'
 import { workbookKey } from './workbook_key'
 import WorkbookNavbarActions from './WorkbookNavbarActions.vue'
-import { PencilIcon, PencilOff, PenOff, ShieldAlert } from 'lucide-vue-next'
+import { Avatar } from 'frappe-ui'
+import { LockIcon } from 'lucide-vue-next'
 
 const workbook = inject(workbookKey)!
 </script>
@@ -26,13 +26,48 @@ const workbook = inject(workbookKey)!
 				</slot>
 			</div>
 			<div class="flex flex-1 items-center justify-center">
-				<div class="relative flex items-center gap-3">
+				<div class="relative flex min-w-0 items-center">
+					<template v-if="workbook.doc.shipped_by">
+						<Tooltip
+							:text="
+								__(
+									'Shipped with {0}. Duplicate it to make changes.',
+									workbook.doc.shipped_by,
+								)
+							"
+						>
+							<!-- outside the title's box, as the read-only lock is, so the title
+							     stays centred. The box's padding is most of the gap, and 4px
+							     keep its focus border off the logo -->
+							<span
+								tabindex="0"
+								role="img"
+								:aria-label="
+									__(
+										'Shipped with {0}. Duplicate it to make changes.',
+										workbook.doc.shipped_by,
+									)
+								"
+								class="absolute -left-5 flex rounded-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+							>
+								<Avatar
+									size="xs"
+									shape="square"
+									:label="workbook.doc.shipped_by"
+									:image="workbook.doc.shipped_by_logo ?? undefined"
+								/>
+							</span>
+						</Tooltip>
+					</template>
 					<Tooltip
-						v-if="workbook.doc.read_only"
-						text="You have read-only access to this workbook"
+						v-else-if="workbook.doc.read_only"
+						:text="__('You have read-only access to this workbook')"
 					>
-						<ShieldAlert
-							class="absolute -left-6 h-4 w-4 cursor-pointer text-ink-orange-6"
+						<LockIcon
+							tabindex="0"
+							role="img"
+							:aria-label="__('You have read-only access to this workbook')"
+							class="absolute -left-6 size-4 rounded-4 text-ink-gray-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							stroke-width="1.5"
 						/>
 					</Tooltip>

@@ -14,6 +14,8 @@ from frappe.website.utils import cleanup_page_name
 from insights import standard
 from insights.desk import claims_on, refuse_delete_while_claimed
 from insights.insights.query_utils import referenced_queries
+from insights.patches.resize_dashboard_cells import number_chart_configs
+from insights.patches.split_number_cells import upgrade_cells
 from insights.permissions import ROLES, UNNAMEABLE_ROLES, can_copy, can_write, check_trusted_code_author
 from insights.telemetry import capture
 from insights.utils import deep_convert_dict_to_dict
@@ -209,6 +211,8 @@ class InsightsWorkbook(Document):
         and rewrites the references to them.
         """
         contents = workbook_contents(workbook_data)
+        if contents.get("wrapped"):
+            upgrade_wrapped_contents(contents)
         queries = contents["queries"]
         charts = contents["charts"]
         dashboards = contents["dashboards"]
@@ -279,9 +283,14 @@ class InsightsWorkbook(Document):
                 "Insights Chart v3", name, chart, target_workbook_name, keep_names, ignore_permissions
             )
 
+        # read after the charts are restored, under the names they took
+        configs = number_chart_configs(target_workbook_name) if contents.get("wrapped") else None
         for name, dashboard in dashboards.items():
             dashboard = deep_convert_dict_to_dict(dashboard)
-            dashboard["items"] = frappe.as_json(_rewrite_dashboard_items(dashboard.get("items"), id_map))
+            items = _rewrite_dashboard_items(dashboard.get("items"), id_map)
+            if configs is not None:
+                items = upgrade_cells(items, configs)
+            dashboard["items"] = frappe.as_json(items)
             if keep_names:
                 # A file names roles, never a level. So a hand-edited file cannot
                 # make a shipped dashboard Public.
@@ -355,6 +364,11 @@ class InsightsWorkbook(Document):
         d.dashboards = frappe.as_json(d.dashboards)
         d.read_only = not can_write(self)
         d.can_copy = can_copy(self)
+        # the check the share endpoints make, so the dialog opens wherever they would answer
+        d.can_share = frappe.has_permission(self.doctype, "share", doc=self)
+        app = standard.shipping_apps([self.name]).get(self.name)
+        d.shipped_by = app and standard.app_title(app)
+        d.shipped_by_logo = app and standard.app_logo_url(app)
         return d
 
     @frappe.whitelist()
@@ -397,7 +411,7 @@ class InsightsWorkbook(Document):
         longer belongs to the app, so it is left out.
         """
         doc_export.update(self.export_members(shipped=True))
-        for field in ("read_only", "can_copy", "data_backup"):
+        for field in ("read_only", "can_copy", "can_share", "shipped_by", "shipped_by_logo", "data_backup"):
             doc_export.pop(field, None)
 
     def export_members(self, shipped: bool = False) -> dict:
@@ -784,13 +798,16 @@ def workbook_contents(workbook_data) -> "frappe._dict":
 
     The old format put the workbook in `doc` and its members in
     `dependencies`. This function flattens that format, so one reader works for
-    the files an app ships and for every file a site exported before.
+    the files an app ships and for every file a site exported before. It is
+    what Insights before v3.50 exported, so its dashboard cells are on the grid before v3.50,
+    and `wrapped` stays set on the flattened file to say so.
     """
     data = deep_convert_dict_to_dict(frappe.parse_json(workbook_data) or {})
     if "doc" in data or "dependencies" in data:
         lifted = deep_convert_dict_to_dict(data.get("doc") or {})
         lifted.update(data.get("dependencies") or {})
         lifted.setdefault("name", data.get("name"))
+        lifted["wrapped"] = True
         data = lifted
 
     data.setdefault("folders", [])
@@ -798,6 +815,46 @@ def workbook_contents(workbook_data) -> "frappe._dict":
         data.setdefault(key, {})
 
     return data
+
+
+def upgrade_wrapped_contents(contents) -> None:
+    """Upgrade the members of a file from before v3.50 in place, as the patches upgraded
+    the ones a site already held, so an imported workbook draws as the same
+    workbook upgraded on its site. An import reports nothing: whoever imports it
+    sees the result.
+
+    The dashboard cells move to the new grid after the charts are restored,
+    because a Number card's cell grows with its readings.
+    """
+    from insights.insights.doctype.insights_chart_v3.chart_query import normalize_chart_config
+    from insights.patches.drop_unapplied_date_range_defaults import drop_unapplied_ranges
+    from insights.patches.normalize_chart_configs import draw_as_insights_3
+    from insights.patches.repair_sankey_value_aggregation import repair_value_aggregation
+    from insights.patches.rewrite_backend_attribute_names import rewrite_expressions
+
+    for query in contents["queries"].values():
+        operations = frappe.parse_json(query.get("operations"))
+        if isinstance(operations, list):
+            rewrite_expressions(operations)
+            query["operations"] = operations
+
+    for name, chart in contents["charts"].items():
+        config = frappe.parse_json(chart.get("config"))
+        if not isinstance(config, dict):
+            continue
+        chart_type = chart.get("chart_type")
+        if chart_type == "Sankey":
+            repair_value_aggregation(config)
+        config = normalize_chart_config(config, chart_type)
+        draw_as_insights_3(config, chart_type, chart.get("title") or name)
+        rewrite_expressions(config)
+        chart["config"] = config
+
+    for dashboard in contents["dashboards"].values():
+        items = frappe.parse_json(dashboard.get("items"))
+        if isinstance(items, list):
+            drop_unapplied_ranges(items)
+            dashboard["items"] = items
 
 
 def _restore_folders(folders, workbook: str, keep_names: bool, ignore_permissions: bool) -> dict:

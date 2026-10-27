@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import Toggle from '../../components/Toggle.vue'
 import VisibilitySelector from '../../components/VisibilitySelector.vue'
 import { copyToClipboard } from '../../helpers'
 import { confirmDialog } from '../../helpers/confirm_dialog'
 import { __ } from '../../translation'
 import { Chart } from '../chart'
 import { useChartShare } from './chart_share'
+import RunAsOwnerField from './RunAsOwnerField.vue'
 
 const props = defineProps<{ chart: Chart }>()
 const show = defineModel()
@@ -87,7 +87,7 @@ function applyChanges() {
 		:title="__('Share Chart')"
 		:actions="[
 			{
-				label: __('Done'),
+				label: __('Save'),
 				variant: 'solid',
 				disabled: !hasChanged,
 				onClick: saveChanges,
@@ -109,39 +109,13 @@ function applyChanges() {
 					</template>
 				</VisibilitySelector>
 
-				<div class="flex flex-col gap-2">
-					<div class="flex items-center justify-between gap-2">
-						<span class="text-sm text-ink-gray-5">
-							{{ __('Run as owner') }}
-						</span>
-						<Toggle v-model="runAsOwner" :disabled="!canMoveRunAsOwner" />
-					</div>
-					<p v-if="isPublic || !exposesOwnerRows" class="text-sm text-ink-gray-5">
-						{{
-							runAsOwner
-								? __(
-										"Every reader sees the rows this chart's owner can see, and nothing behind the chart.",
-								  )
-								: isPublic
-								  ? __(
-											'Guests have no permissions of their own, so a public link shows them nothing until the chart runs as its owner.',
-								    )
-								  : __('Each reader sees the rows their own permissions allow.')
-						}}
-					</p>
-					<p v-else class="text-sm text-ink-red-5">
-						{{
-							publishedByDashboard
-								? __(
-										"This chart is on the published dashboard {0}, so everyone who can open it will see the rows this chart's owner can see.",
-										publishedByDashboard,
-								  )
-								: __(
-										"Everyone will see the rows this chart's owner can see, including rows their own permissions would hide.",
-								  )
-						}}
-					</p>
-				</div>
+				<RunAsOwnerField
+					v-model="runAsOwner"
+					:disabled="!canMoveRunAsOwner"
+					:is-public="isPublic"
+					:exposes-owner-rows="exposesOwnerRows"
+					:published-by-dashboard="publishedByDashboard"
+				/>
 			</div>
 		</template>
 	</Dialog>

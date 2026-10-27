@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { GitFork, PackagePlus, Share2 } from 'lucide-vue-next'
 import { computed, inject, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { waitUntil } from '../helpers'
 import router from '../router'
 import session from '../session'
 import { __ } from '../translation'
@@ -14,6 +16,18 @@ import WorkbookShareDialog from './WorkbookShareDialog.vue'
 const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
+const canOpenShare = computed(() => workbook.canShare && !workbook.isdirty && !workbook.islocal)
+// The upgrade wizard links here to change who may open the workbook.
+// `can_share` arrives with the loaded document. A chart's link with the same
+// query opens the chart's own share dialog instead. The query goes once read,
+// so a reload doesn't open the dialog again.
+const route = useRoute()
+if (route.name === 'Workbook' && route.query.share) {
+	waitUntil(() => Boolean(workbook.doc.owner)).then(() => {
+		showShareDialog.value = canOpenShare.value
+		router.replace({ query: { ...route.query, share: undefined } })
+	})
+}
 const showLineageDialog = ref(false)
 const showExportDialog = ref(false)
 
@@ -32,11 +46,7 @@ function afterMarked(name: string) {
 
 <template>
 	<div v-if="workbook" class="flex gap-2">
-		<Button
-			v-if="workbook.canShare && !workbook.isdirty && !workbook.islocal"
-			variant="outline"
-			@click="showShareDialog = true"
-		>
+		<Button v-if="canOpenShare" variant="outline" @click="showShareDialog = true">
 			<template #prefix>
 				<Share2 class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>

@@ -4,7 +4,7 @@ import { getErrorMessage } from './index'
 // What frappe-ui's `frappeRequest` rejects with. `messages` is the server's error
 // text from `_server_messages`, which every user receives. `exc` is the
 // traceback, which only a System User receives.
-function refusal(fields: { messages?: string[]; exc?: string }) {
+function refusal(fields: { messages?: string[]; exc?: string; exc_type?: string }) {
 	return Object.assign(new Error('/api/method/run_doc_method ValidationError'), fields)
 }
 
@@ -35,6 +35,27 @@ describe('getErrorMessage', () => {
 		expect(getErrorMessage(refusal({ messages: ['Internal Server Error'], exc }))).toBe(
 			'(1054, "Unknown column \'status\'")',
 		)
+	})
+
+	// @feature permissions.error-is-text
+	it('reads the line of the exception raised, not the traceback of the one it was raised from', () => {
+		// an exception whose name ends in neither Error nor Exception, raised from one that does
+		const exc = [
+			'Traceback (most recent call last):',
+			'  File "ibis/backends/mysql/__init__.py", line 218, in get_schema',
+			"MySQLdb.ProgrammingError: (1146, \"Table 'site.tabNoSuch' doesn't exist\")",
+			'',
+			'The above exception was the direct cause of the following exception:',
+			'',
+			'Traceback (most recent call last):',
+			'  File "frappe/app.py", line 120, in application',
+			'ibis.common.exceptions.TableNotFound: tabNoSuch',
+		].join('\n')
+		expect(
+			getErrorMessage(
+				refusal({ messages: ['Internal Server Error'], exc, exc_type: 'TableNotFound' }),
+			),
+		).toBe('tabNoSuch')
 	})
 
 	// @feature permissions.error-is-text

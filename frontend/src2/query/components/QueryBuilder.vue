@@ -7,23 +7,19 @@ import QueryBuilderTable from './QueryBuilderTable.vue'
 import QueryHeader from './QueryHeader.vue'
 import QueryInfo from './QueryInfo.vue'
 import QueryOperations from './QueryOperations.vue'
-import { useMagicKeys } from '@vueuse/core'
-import { whenever } from '@vueuse/core'
+import { useUndoKeys } from '../../helpers/undo_keys'
 
 const query = inject<Query>('query')!
 const $find = ref<HTMLElement>()
 query.autoExecute = true
 
-const keys = useMagicKeys()
-const cmdZ = keys['Meta+Z']
-const cmdShiftZ = keys['Meta+Shift+Z']
-const stopUndoWatcher = whenever(cmdZ, () => query.canUndo() && query.history.undo())
-const stopRedoWatcher = whenever(cmdShiftZ, () => query.canRedo() && query.history.redo())
+useUndoKeys({
+	undo: () => query.canUndo() && query.history.undo(),
+	redo: () => query.canRedo() && query.history.redo(),
+})
 
 onBeforeUnmount(() => {
 	query.activeOperationIdx = query.doc.operations.length - 1
-	stopUndoWatcher()
-	stopRedoWatcher()
 })
 </script>
 

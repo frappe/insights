@@ -36,6 +36,18 @@ class SendRefused(frappe.PermissionError):
     """The user an alert runs as may not send it. A scheduled run then disables the alert."""
 
 
+class CronUnreadable(frappe.ValidationError):
+    """The alert's cron is not one the scheduler can read. A scheduled run then disables the alert."""
+
+
+CRON_OF_FREQUENCY = {
+    "Monthly": "0 0 1 * *",
+    "Weekly": "0 0 * * 0",
+    "Daily": "0 0 * * *",
+    "Hourly": "0 * * * *",
+}
+
+
 class InsightsAlert(Document):
     # begin: auto-generated types
     # This code is auto-generated. Do not modify anything in this block.
@@ -64,8 +76,13 @@ class InsightsAlert(Document):
 
     def validate(self):
         self.check_trusted_code()
+        # the form hides the field off Cron, so a cron left behind would run unseen
+        if self.frequency != "Cron":
+            self.cron_format = None
         if self.disabled:
             return
+
+        self.cron()
 
         if self.query:
             self.has_query_permission()
@@ -126,6 +143,15 @@ class InsightsAlert(Document):
         if not can_read_referenced_query(self.query):
             frappe.throw(_("You do not have permission to access this query"), frappe.PermissionError)
 
+    def check_sender_may_download(self):
+        """A send mails the query's rows, so whoever sends it by hand must be
+        allowed to download them. The scheduler's session is Administrator, so a
+        scheduled run is not checked here, and alerts already running keep running."""
+        from insights.permissions import can_export
+
+        if not can_export(frappe.get_doc("Insights Query v3", self.query)):
+            frappe.throw(_("You may not download this query's rows, so you may not send them."), SendRefused)
+
     @frappe.whitelist(methods=["POST"])
     def send_alert(self, force: bool = False):
         # Sending mails the author's recipients, so read access is not enough,
@@ -145,6 +171,7 @@ class InsightsAlert(Document):
                 SendRefused,
             )
         self.has_query_permission()
+        self.check_sender_may_download()
 
         results = self.evaluate_condition()
         if not results and not force:
@@ -315,27 +342,31 @@ class InsightsAlert(Document):
 
     @property
     def next_execution(self):
-        return get_datetime_str(self.get_next_execution())
+        try:
+            return get_datetime_str(self.get_next_execution())
+        except CronUnreadable:
+            return None  # nosemgrep - read whenever the document is, so the form still opens to fix the cron
+
+    def cron(self):
+        if self.frequency != "Cron":
+            return CRON_OF_FREQUENCY[self.frequency]
+        if not croniter.is_valid(self.cron_format or ""):
+            frappe.throw(
+                _(
+                    "{0} is not a cron the scheduler can read. Write five fields: minute, hour, day, month, weekday."
+                ).format(self.cron_format),
+                CronUnreadable,
+            )
+        return self.cron_format
 
     def get_next_execution(self):
-        CRON_MAP = {
-            "Monthly": "0 0 1 * *",
-            "Weekly": "0 0 * * 0",
-            "Daily": "0 0 * * *",
-            "Hourly": "0 * * * *",
-        }
-        if not self.cron_format:
-            self.cron_format = CRON_MAP[self.frequency]
-
         start_time = get_datetime(self.last_execution or datetime(2000, 1, 1))
-        return croniter(self.cron_format, start_time).get_next(datetime)
+        return croniter(self.cron(), start_time).get_next(datetime)
 
     def is_event_due(self):
-        if not self.last_execution:
-            return True
-
+        # read first, so an alert that never ran stops on an unreadable cron too
         next_execution = self.get_next_execution()
-        return next_execution <= now_datetime()
+        return not self.last_execution or next_execution <= now_datetime()
 
     @frappe.whitelist(methods=["POST"])
     def test_alert(self):
@@ -363,7 +394,7 @@ def run_alert(alert):
             with permission_user(alert.permission_user):
                 alert_doc.send_alert()
         frappe.db.commit()
-    except SendRefused as refusal:
+    except (SendRefused, CronUnreadable) as refusal:
         frappe.db.rollback()
         stop(alert.name, str(refusal))
     except Exception:

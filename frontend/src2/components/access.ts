@@ -1,5 +1,5 @@
 import { useStorage } from '@vueuse/core'
-import { Building2, Lock, Users } from 'lucide-vue-next'
+import { Building2, Globe, Lock, ShieldCheck, Users } from 'lucide-vue-next'
 import { computed } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
@@ -7,12 +7,10 @@ import { __ } from '../translation'
 /** Where a listed document comes from, relative to the current user. */
 export type AccessSource = 'created' | 'shared' | 'others'
 
-const DEFAULT_SOURCES: AccessSource[] = ['created', 'shared']
-
 /**
- * The Access quick filter. Nothing chosen means the default, created and
- * shared, like any other quick filter left empty; only admins get "others".
- * The choice is kept in the browser under `storageKey`.
+ * The Access quick filter. Nothing chosen means every source the user has:
+ * created and shared, and for an admin "others" too, so colleagues' work does
+ * not look lost. The choice is kept in the browser under `storageKey`.
  */
 export function useAccessSources(storageKey: string) {
 	const options = computed(() => {
@@ -27,21 +25,37 @@ export function useAccessSources(storageKey: string) {
 	const shown = computed(() =>
 		selected.value.filter((source) => options.value.some((option) => option.value === source)),
 	)
-	const sources = computed(() => (shown.value.length ? shown.value : DEFAULT_SOURCES))
+	const sources = computed(() =>
+		shown.value.length ? shown.value : options.value.map((option) => option.value),
+	)
 	return { options, selected, shown, sources }
 }
 
-type Shared = { shared_with?: string[]; shared_with_organization?: boolean }
-
-export function accessIcon(item: Shared) {
-	if (item.shared_with_organization) return Building2
-	return item.shared_with?.length ? Users : Lock
+export type Shared = {
+	shared_with?: string[]
+	shared_with_organization?: boolean
+	visible_to_roles?: string[]
+	/** Anyone with the link may open it, signed in or not. */
+	is_public?: boolean
 }
 
-export function accessLabel(item: Shared, getName: (email: string) => string) {
-	if (item.shared_with_organization) return __('Everyone')
-	if (!item.shared_with?.length) return __('Private')
-	return item.shared_with.length > 1
-		? __('{0} people', String(item.shared_with.length))
-		: getName(item.shared_with[0])
+/** The icon and label of who a listed document is shared with. */
+export function access(item: Shared, getName: (email: string) => string) {
+	if (item.is_public) return { icon: Globe, label: __('Public') }
+	if (item.shared_with_organization) return { icon: Building2, label: __('Everyone') }
+
+	const shared = item.shared_with || []
+	const people =
+		shared.length > 1
+			? __('{0} people', String(shared.length))
+			: shared.length
+			  ? getName(shared[0])
+			  : ''
+	const roles = item.visible_to_roles || []
+	if (roles.length) {
+		const label = roles.length > 1 ? __('{0} roles', String(roles.length)) : __(roles[0])
+		return { icon: ShieldCheck, label: people ? __('{0}, {1}', label, people) : label }
+	}
+	if (people) return { icon: Users, label: people }
+	return { icon: Lock, label: __('Private') }
 }

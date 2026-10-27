@@ -400,75 +400,30 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
                 self.assertIs(filter_rows_for(table, TEST_DS, "table1", user=user), table)
 
     # @feature permissions.team-grant permissions.table-row-restriction permissions.site-user-permissions permissions.card-says-it-is-scoped
-    def test_a_reader_reads_the_site_rows_desk_or_a_team_grant_allows(self):
-        """On site data a team grant adds rows to what desk allows. It never
-        removes rows."""
+    def test_a_reader_reads_the_site_rows_desk_allows_whatever_their_team_grants(self):
+        """On site data desk is the only authority. A team grant adds no row, and
+        its Table Restriction removes none."""
         from insights.insights.doctype.insights_team.insights_team import clear_cache
 
         self.set_team_permissions(1)
 
-        # No team grant: desk gives the reader their own assignments. A role's
-        # match condition names no document, so the card does not say it was narrowed.
+        # desk gives the reader their own assignments. A role's match condition
+        # names no document, so the card does not say it was narrowed
         result = self.fetch_chart_data(READER)
         self.assertEqual(self.descriptions(result), sorted(READER_TODOS))
         self.assertNotIn("narrowed_by_permissions", result)
 
         team = self.grant_todos(READER, f"description == '{OWNER_TODOS[0]}'")
-
-        # A restricted grant adds rows to the desk rows. Adding rows is not narrowing.
         result = self.fetch_chart_data(READER)
-        self.assertEqual(self.descriptions(result), sorted([*READER_TODOS, OWNER_TODOS[0]]))
+        self.assertEqual(self.descriptions(result), sorted(READER_TODOS))
         self.assertNotIn("narrowed_by_permissions", result)
-
-        # When desk allows no row, only the Table Restriction filters the rows.
-        with patch(
-            "insights.insights.doctype.insights_table_v3.insights_table_v3.desk_predicate",
-            return_value=None,
-        ):
-            result = self.fetch_chart_data(READER)
-        self.assertEqual(self.descriptions(result), [OWNER_TODOS[0]])
-        self.assertTrue(result["narrowed_by_permissions"])
 
         team.team_permissions[0].table_restrictions = None
         team.save(ignore_permissions=True)
         clear_cache()
 
-        # An unrestricted grant gives the whole table, so nothing is narrowed.
         result = self.fetch_chart_data(READER)
-        self.assertEqual(self.descriptions(result), sorted([*READER_TODOS, *OWNER_TODOS]))
-        self.assertNotIn("user_permissions", result)
-        self.assertNotIn("narrowed_by_permissions", result)
-
-    # @feature permissions.table-row-restriction permissions.card-says-it-is-scoped permissions.chart-run-as-owner
-    def test_a_restriction_is_said_to_the_user_it_narrowed_and_no_one_else(self):
-        """The owner's Table Restriction narrows the rows. The card tells the
-        owner, but not the reader of a chart run as its owner: the reader does
-        not hold that restriction."""
-        from insights.api.authoring import get_chart_data as get_authoring_data
-
-        self.set_team_permissions(1)
-        self.grant_todos(OWNER, f"description == '{READER_TODOS[0]}'")
-        # Desk allows no row, so only the restriction filters the rows (Q15).
-        desk_allows_none = patch(
-            "insights.insights.doctype.insights_table_v3.insights_table_v3.desk_predicate",
-            return_value=None,
-        )
-
-        with desk_allows_none, as_user(OWNER), db_connections():
-            authored = get_authoring_data(
-                chart_type=self.chart.chart_type,
-                query=self.query.name,
-                config=frappe.parse_json(self.chart.config),
-                chart_name=self.chart.name,
-                force=True,
-            )
-        self.assertTrue(authored["narrowed_by_permissions"])
-
-        self.set_run_as_owner(1)
-        with desk_allows_none:
-            self.assertTrue(self.fetch_chart_data(OWNER)["narrowed_by_permissions"])
-            result = self.fetch_chart_data(READER)
-        self.assertEqual(self.descriptions(result), [READER_TODOS[0]])
+        self.assertEqual(self.descriptions(result), sorted(READER_TODOS))
         self.assertNotIn("narrowed_by_permissions", result)
 
     # @feature permissions.team-grant permissions.table-row-restriction permissions.site-user-permissions
@@ -496,14 +451,13 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
 
         self.assertEqual(self.descriptions(self.fetch_chart_data(INSIGHTS_ADMIN)), [])
 
-    # @feature permissions.team-grant permissions.table-row-restriction permissions.site-user-permissions permissions.card-says-it-is-scoped
-    def test_a_team_grant_hands_out_a_column_desk_hides_on_its_own_rows_only(self):
-        """Desk hides `status` from the reader. A cell has a value when desk allows
-        its row and its column, or when a team grant allows its row. So `status`
-        has a value on the row the grant adds and is empty on rows only desk
-        allows. The card says permissions narrowed it."""
+    # @feature permissions.team-grant permissions.not-permitted-chart
+    def test_a_team_grant_never_hands_out_a_column_desk_hides(self):
+        """Desk hides `status` from the reader. A team that grants the whole
+        table does not give it back, so a chart that reads `status` is Not
+        Permitted."""
         self.set_team_permissions(1)
-        self.grant_todos(READER, f"description == '{OWNER_TODOS[0]}'")
+        self.grant_todos(READER)
         self.make_status_permlevel()
 
         with as_user(OWNER):
@@ -530,138 +484,18 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         with as_user(READER), db_connections():
             result = get_chart_data(chart=chart.name, force=True)
 
-        self.assertEqual(
-            {row["description"]: row["status"] for row in result["rows"]},
-            {READER_TODOS[0]: None, OWNER_TODOS[0]: "Open"},
-        )
-        self.assertTrue(result["narrowed_by_permissions"])
+        self.assertEqual(result["not_permitted"], {"doctypes": ["ToDo"]})
+        self.assertEqual(result["rows"], [])
 
-        # Desk allows every row, so the grant narrows no row. The card still says
-        # the blanked column narrowed it.
-        desk_allows_every_row = patch(
-            "insights.insights.doctype.insights_table_v3.insights_table_v3.desk_predicate",
-            return_value=True,
-        )
-        with desk_allows_every_row, as_user(READER), db_connections():
-            result = get_chart_data(chart=chart.name, force=True)
-
-        statuses = {row["description"]: row["status"] for row in result["rows"]}
-        self.assertEqual(statuses[OWNER_TODOS[0]], "Open")
-        self.assertIsNone(statuses[OWNER_TODOS[1]])
-        self.assertTrue(result["narrowed_by_permissions"])
-
-    # @feature permissions.card-says-it-is-scoped permissions.team-grant
-    def test_a_blanked_column_marks_only_a_card_that_reads_it(self):
-        """The per-cell rule blanks `status` on rows only desk allows. A card that
-        does not read `status` shows the full number and says nothing. A card
-        whose query filters by `status` says it was narrowed. A native SQL query
-        reads the columns it names."""
-        self.blank_status()
-
-        def native_chart(title, columns):
-            query = frappe.get_doc(
-                {
-                    "doctype": DT.QUERY,
-                    "title": title,
-                    "workbook": self.workbook.name,
-                    "use_live_connection": 1,
-                    "operations": [
-                        {
-                            "type": "sql",
-                            "data_source": "Site DB",
-                            "raw_sql": f"select {columns} from tabToDo where description like '{TODO_PREFIX}%'",
-                        }
-                    ],
-                }
-            ).insert()
-            chart = frappe.copy_doc(self.chart)
-            chart.update({"query": query.name, "title": title})
-            return chart.insert().name
-
-        with as_user(OWNER):
-            native_plain = native_chart("Run As Owner Test Native", "description")
-            native_status = native_chart("Run As Owner Test Native Status", "description, status")
-            by_status = frappe.get_doc(
-                {
-                    "doctype": DT.QUERY,
-                    "title": "Run As Owner Test Open",
-                    "workbook": self.workbook.name,
-                    "use_live_connection": 1,
-                    "is_builder_query": 1,
-                    "operations": [
-                        *todo_operations(),
-                        {
-                            "type": "filter",
-                            "column": {"type": "column", "column_name": "status"},
-                            "operator": "=",
-                            "value": "Open",
-                        },
-                    ],
-                }
-            ).insert()
-            filtered = frappe.copy_doc(self.chart)
-            filtered.update({"query": by_status.name, "title": "Run As Owner Test Open"})
-            filtered.insert()
-
-        with as_user(READER), db_connections():
-            plain = get_chart_data(chart=self.chart.name, force=True)
-            narrowed = get_chart_data(chart=filtered.name, force=True)
-            native_plain = get_chart_data(chart=native_plain, force=True)
-            native_status = get_chart_data(chart=native_status, force=True)
-
-        self.assertEqual(self.descriptions(plain), sorted([*READER_TODOS, OWNER_TODOS[0]]))
-        self.assertNotIn("narrowed_by_permissions", plain)
-        self.assertTrue(narrowed["narrowed_by_permissions"])
-        self.assertEqual(self.descriptions(native_plain), self.descriptions(plain))
-        self.assertNotIn("narrowed_by_permissions", native_plain)
-        self.assertTrue(native_status["narrowed_by_permissions"])
-
-    # @feature permissions.card-says-it-is-scoped permissions.team-grant
-    def test_the_table_browser_and_a_rows_level_mark_the_cells_they_show_blanked(self):
-        """The table browser and a drill's rows level show every column. Both show
-        `status` empty on rows only desk allows, and say so as the card does."""
-        from insights.api.data_sources import get_data_source_table
-        from insights.api.view import get_drill_data
-
-        self.blank_status()
-
-        with as_user(READER), db_connections():
-            browsed = get_data_source_table("Site DB", "tabToDo")
-            rows = get_drill_data(
-                chart=self.chart.name,
-                drill_stack=[
-                    {
-                        "segment_filters": [
-                            {"column": "description", "operator": "=", "value": READER_TODOS[0]}
-                        ],
-                        "action": {"rows": True},
-                    }
-                ],
-            )
-
-        self.assertIsNone(
-            next(row for row in browsed["rows"] if row["description"] == READER_TODOS[0])["status"]
-        )
-        self.assertTrue(browsed["narrowed_by_permissions"])
-        self.assertEqual([row["status"] for row in rows["rows"]], [None])
-        self.assertTrue(rows["narrowed_by_permissions"])
-
-    def blank_status(self):
-        """Give the reader a restricted grant and hide `status` from them in desk.
-        The per-cell rule then blanks `status` on rows only desk allows."""
-        self.set_team_permissions(1)
-        self.grant_todos(READER, f"description == '{OWNER_TODOS[0]}'")
-        self.make_status_permlevel()
-
-    def grant_todos(self, user, restriction=None):
-        """A team that grants `user` the `tabToDo` table, saved as the Teams page saves it."""
+    def grant_todos(self, user, restriction=None, table="tabToDo"):
+        """A team that grants `user` the `table` table, saved as the Teams page saves it."""
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
         from insights.insights.doctype.insights_team.insights_team import clear_cache
 
-        table = get_table_name("Site DB", "tabToDo")
-        if not frappe.db.exists(DT.TABLE, table):
+        name = get_table_name("Site DB", table)
+        if not frappe.db.exists(DT.TABLE, name):
             frappe.get_doc(
-                {"doctype": DT.TABLE, "table": "tabToDo", "label": "tabToDo", "data_source": "Site DB"}
+                {"doctype": DT.TABLE, "table": table, "label": table, "data_source": "Site DB"}
             ).insert(ignore_permissions=True)
 
         team = frappe.get_doc(
@@ -670,7 +504,7 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         team.append("team_members", {"user": user})
         team.append(
             "team_permissions",
-            {"resource_type": DT.TABLE, "resource_name": table, "table_restrictions": restriction},
+            {"resource_type": DT.TABLE, "resource_name": name, "table_restrictions": restriction},
         )
         team.insert(ignore_permissions=True)
         self.addCleanup(clear_cache)
@@ -679,14 +513,13 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         return team
 
     # @feature permissions.team-grant permissions.site-user-permissions
-    def test_the_builder_lists_the_site_tables_desk_or_a_team_grant_allows(self):
+    def test_the_builder_lists_the_site_tables_desk_allows(self):
         """The builder's table list must match the tables the reader can query. On
-        site data desk allows a table as a team grant does. This reader is in no
-        team."""
+        site data only desk allows a table, so a team that grants one desk denies
+        does not list it."""
         from insights.api.data_sources import get_data_source_tables
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
-        self.set_team_permissions(1)
         for table in ("tabToDo", "tabDeleted Document"):
             if not frappe.db.exists(DT.TABLE, get_table_name("Site DB", table)):
                 frappe.get_doc(
@@ -698,8 +531,13 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
                 tables = get_data_source_tables("Site DB", search_term=search_term)
             return [table.table_name for table in tables]
 
-        self.assertIn("tabToDo", listed("tabToDo"))
-        # Desk denies this table and no team grants it.
+        for team_permissions in (0, 1):
+            with self.subTest(team_permissions=team_permissions):
+                self.set_team_permissions(team_permissions)
+                self.assertIn("tabToDo", listed("tabToDo"))
+                self.assertNotIn("tabDeleted Document", listed("tabDeleted Document"))
+
+        self.grant_todos(READER, table="tabDeleted Document")
         self.assertNotIn("tabDeleted Document", listed("tabDeleted Document"))
 
     # @feature permissions.card-says-it-is-scoped

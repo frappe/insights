@@ -3,14 +3,11 @@ import { call } from 'frappe-ui'
 import { computed, effectScope, reactive, ref, shallowRef, toRefs, watch, watchEffect } from 'vue'
 import { numberCardRows, numberReadings } from '../charts/adapter/number'
 import useChart, { type Chart } from '../charts/chart'
-import {
-	FILTER_TYPE_KINDS,
-	operatorOf,
-	type Filter,
-} from '../components/filter_picker/filter_picker'
+import { type Filter } from '../components/filter_picker/filter_picker'
 import useChartPreview, { type ChartPreviewContext } from '../charts/chart_preview'
 import { type DashboardFilterContext } from '../charts/chart_view'
 import { getUniqueId, safeJSONParse, showErrorToast, waitUntil } from '../helpers'
+import { withStoredCells } from './stored_cells'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { __ } from '../translation'
 import useDocumentResource from '../helpers/resource'
@@ -32,10 +29,19 @@ import {
 	derivedPlacement,
 	GRID_COLUMNS,
 	layoutRank,
+	placeNewChart,
+	placeNewFilter,
 	sameBox,
 	writePlacement,
 } from './grid_placement'
-import { cellRulesFor, defaultFilterStates, FILTER_ROWS, invalidateDashboard } from './view'
+import {
+	cellRulesFor,
+	defaultFilterStates,
+	FILTER_ROWS,
+	filtersOffDefault,
+	invalidateDashboard,
+	withDefaults,
+} from './view'
 import type { GranularityType } from '../helpers/constants'
 
 /**
@@ -59,6 +65,9 @@ const ARRANGEABLE_WIDTH = 1058
 
 /** Columns a Number cell is dropped at: a fifth of the grid, so five read as a row of cards. */
 const NUMBER_CARD_COLUMNS = 4
+
+/** Columns a chart cell is dropped at: half the grid, so two read side by side. */
+const CHART_COLUMNS = 10
 
 /** Columns a filter cell takes. */
 const FILTER_WIDTH = 4
@@ -88,6 +97,8 @@ function makeDashboard(name: string) {
 
 	const editing = ref(false)
 	const editingItemIndex = ref<number>()
+	// the chart picker is open. The edit actions and an empty grid both open it
+	const pickingCharts = ref(false)
 
 	// Which breakpoint's layout the author is arranging. Every edit session starts
 	// at the widest, because that is the layout every item has and the one the
@@ -115,6 +126,16 @@ function makeDashboard(name: string) {
 	})
 
 	const filterStates = ref<FilterValues>({})
+	// a reader's user default stands in for the owner's
+	const filterDefaults = computed(() => {
+		const userDefaults = dashboard.doc.user_defaults || {}
+		const items = dashboard.doc.items.map((item) =>
+			item.type == 'filter' && item.filter_name in userDefaults
+				? { ...item, default_value: userDefaults[item.filter_name] }
+				: item,
+		)
+		return defaultFilterStates(items)
+	})
 
 	// What a reader filtered one card down to, per chart. It is a filter the
 	// reader owns and the document never holds: not saved with the dashboard, and
@@ -157,11 +178,21 @@ function makeDashboard(name: string) {
 	 */
 	async function cellsFor(chart: WorkbookChart, y: number): Promise<WorkbookDashboardItem[]> {
 		if (chart.chart_type !== 'Number') {
+			const layouts = (filters: boolean) =>
+				dashboard.doc.items
+					.filter((item) => (item.type === 'filter') === filters)
+					.map((item) => item.layout)
 			return [
 				{
 					type: 'chart',
 					chart: chart.name,
-					layout: { i: getUniqueId(), x: 0, y, w: 10, h: 20 },
+					layout: placeNewChart(
+						getUniqueId(),
+						CHART_COLUMNS,
+						20,
+						layouts(false),
+						layouts(true),
+					),
 				},
 			]
 		}
@@ -223,6 +254,46 @@ function makeDashboard(name: string) {
 		{ immediate: true },
 	)
 
+	// A Number chart's save gives a reading it added a cell on every dashboard
+	// that shows it, and takes a removed one's cell (`keep_reading_cells`). This
+	// store read the grid before that save, so it reads it again. Mid-edit, Done
+	// saves the whole grid, so the author's grid takes the stored cells of those
+	// charts instead (`withStoredCells`).
+	async function takeStoredCells(charts: string[]) {
+		const stored: { items: string | WorkbookDashboardItem[] } = await call(
+			'insights.api.get_doc',
+			{
+				doctype: 'Insights Dashboard v3',
+				name: dashboard.doc.name,
+			},
+		)
+		const storedItems: WorkbookDashboardItem[] =
+			typeof stored.items === 'string' ? safeJSONParse(stored.items) || [] : stored.items
+		dashboard.doc.items = withStoredCells(dashboard.doc.items, storedItems, charts)
+	}
+
+	const savedReadings = new Map<string, string>()
+	watch(
+		() =>
+			Object.values(chartsByName.value)
+				.filter((chart) => chart.isloaded && chart.originalDoc.chart_type === 'Number')
+				.map((chart) => [
+					chart.originalDoc.name,
+					numberReadings(chart.originalDoc.config as NumberChartConfig).join(','),
+				]),
+		(charts) => {
+			const changed: string[] = []
+			for (const [name, readings] of charts) {
+				if (savedReadings.has(name) && savedReadings.get(name) !== readings)
+					changed.push(name)
+				savedReadings.set(name, readings)
+			}
+			if (!changed.length) return
+			if (editing.value) takeStoredCells(changed).catch(showErrorToast)
+			else dashboard.load()
+		},
+	)
+
 	/**
 	 * Grid rules for each cell beyond its layout, from `cellRulesFor`. The builder
 	 * derives them from the chart stores it already holds.
@@ -265,49 +336,15 @@ function makeDashboard(name: string) {
 				h: FILTER_ROWS,
 			},
 		}
-		dashboard.doc.items.push(newFilter)
-		positionNewFilter(newFilter)
-		editingItemIndex.value = dashboard.doc.items.length - 1
-	}
-
-	function positionNewFilter(newFilter: WorkbookDashboardItem) {
 		const items = dashboard.doc.items
-		const existingFilters = items.filter((item) => item.type === 'filter' && item !== newFilter)
-
-		if (existingFilters.length === 0) {
-			newFilter.layout.x = 0
-			newFilter.layout.y = 0
-			return
-		}
-
-		const topRowY = Math.min(...existingFilters.map((item) => item.layout.y))
-		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
-		const rightmostX = Math.max(
-			...topRowFilters.map((item) => item.layout.x + (item.layout.w || FILTER_WIDTH)),
-			0,
+		placeNewFilter(
+			newFilter.layout,
+			items.filter((item) => item.type === 'filter').map((item) => item.layout),
+			items.filter((item) => item.type !== 'filter').map((item) => item.layout),
+			FILTER_ROWS,
 		)
-
-		if (rightmostX + newFilter.layout.w <= GRID_COLUMNS) {
-			newFilter.layout.x = rightmostX
-			newFilter.layout.y = topRowY
-		} else {
-			newFilter.layout.x = 0
-			newFilter.layout.y = 0
-
-			existingFilters.forEach((item) => {
-				item.layout.y += FILTER_ROWS
-			})
-
-			const otherItems = items.filter((item) => item.type !== 'filter')
-			if (otherItems.length > 0) {
-				const minOtherY = Math.min(...otherItems.map((item) => item.layout.y))
-				if (minOtherY <= FILTER_ROWS) {
-					otherItems.forEach((item) => {
-						item.layout.y = Math.max(0, item.layout.y + FILTER_ROWS)
-					})
-				}
-			}
-		}
+		items.push(newFilter)
+		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
 	function removeItem(index: number) {
@@ -451,47 +488,34 @@ function makeDashboard(name: string) {
 		applyFilter(filter_name)
 	}
 
-	/**
-	 * Whether a filter says enough to narrow anything, which is the rule the
-	 * server states in `_filter_is_set`: an operator, and a value where the
-	 * operator asks for one.
-	 */
-	function isFilterSet(item: WorkbookDashboardFilter): boolean {
-		const state = filterStates.value[item.filter_name]
-		if (!state?.operator) return false
-
-		const kind = FILTER_TYPE_KINDS[item.filter_type]
-		const needsValue = operatorOf(kind, state.operator)?.needsValue ?? true
-		return !needsValue || ![undefined, null, ''].includes(state.value as any)
-	}
-
-	/** The saved filters that reach one card and are currently set. */
-	function filtersOn(chart_name: string): WorkbookDashboardFilter[] {
-		return dashboard.doc.items
-			.filter((item) => item.type === 'filter')
-			.map((item) => item as WorkbookDashboardFilter)
-			.filter((item) => Boolean(item.links?.[chart_name]) && isFilterSet(item))
+	function filtersOffDefaultOn(chart_name: string): string[] {
+		const reaching = dashboard.doc.items.filter(
+			(item) =>
+				item.type === 'filter' && (item as WorkbookDashboardFilter).links?.[chart_name],
+		) as WorkbookDashboardFilter[]
+		return filtersOffDefault(reaching, filterStates.value, filterDefaults.value)
 	}
 
 	/**
 	 * Whether this card's rows are narrowed by something the reader can undo:
-	 * the grid's own filters that reach it, and the filter the reader put on the
-	 * card. What the author filtered the chart by is the chart, not a filter.
+	 * the grid's own filters that reach it, moved off their defaults, and the
+	 * filter the reader put on the card. What the author filtered the chart by is
+	 * the chart, not a filter.
 	 */
 	function cardIsFiltered(chart_name: string): boolean {
-		return Boolean(filtersOn(chart_name).length || cardFiltersOn(chart_name).length)
+		return Boolean(filtersOffDefaultOn(chart_name).length || cardFiltersOn(chart_name).length)
 	}
 
-	/** Everything `cardIsFiltered` counts, taken off. */
+	/** Everything `cardIsFiltered` counts, taken back to its default. */
 	function resetCardFilters(chart_name: string) {
-		const cleared = filtersOn(chart_name)
-		cleared.forEach((item) => delete filterStates.value[item.filter_name])
+		const moved = filtersOffDefaultOn(chart_name)
+		filterStates.value = withDefaults(filterStates.value, filterDefaults.value, moved)
 		delete cardFilters.value[chart_name]
-		// A grid filter links several cards, so unsetting one from this card is a
+		// A grid filter links several cards, so resetting one from this card is a
 		// change to every card it reaches — the same act as answering it, run the
 		// same way. The card's own filter reaches nothing else, which is what the
 		// last line is for.
-		cleared.forEach((item) => applyFilter(item.filter_name))
+		moved.forEach(applyFilter)
 		refreshChart(chart_name)
 	}
 
@@ -597,8 +621,7 @@ function makeDashboard(name: string) {
 	// belongs to the document, and the owner is here to check it. A default fills
 	// only a filter that has no state yet.
 	waitUntil(() => dashboard.isloaded).then(() => {
-		const defaults = defaultFilterStates(dashboard.doc.items)
-		Object.entries(defaults).forEach(([filter_name, state]) => {
+		Object.entries(filterDefaults.value).forEach(([filter_name, state]) => {
 			if (filter_name in filterStates.value) return
 			filterStates.value[filter_name] = state
 		})
@@ -609,6 +632,7 @@ function makeDashboard(name: string) {
 
 		editing,
 		editingItemIndex,
+		pickingCharts,
 		isEditingItem,
 		finishEditing,
 		discardEditing,

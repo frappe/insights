@@ -1,5 +1,6 @@
 import ast
 import html
+import re
 import sys
 import time
 import traceback
@@ -55,6 +56,7 @@ from insights.insights.query_utils import (
     real_table_refs,
     runs_stored_procedure,
     table_reference,
+    unbound_reads,
 )
 from insights.permission_user import get_permission_user, script_session
 from insights.utils import create_execution_log
@@ -113,6 +115,23 @@ def is_carried_currency_column(name: str) -> bool:
 # a carried currency is the only kind of hidden column today
 def is_hidden_column(name: str) -> bool:
     return is_carried_currency_column(name)
+
+
+def linked_currency_codes(doctype: str, fieldname: str) -> dict[str, str]:
+    """Each document's currency code, by name.
+
+    Read without a permission check, as desk prints any Currency field whose
+    options name a link: a reader of a company's amounts need not read Company.
+    Only a field that links to Currency is read, so a code is all this reveals.
+    """
+    if not frappe.db.exists("DocType", doctype):
+        return {}
+    field = frappe.get_meta(doctype).get_field(fieldname)
+    if not field or field.fieldtype != "Link" or field.options != "Currency":
+        return {}
+    return dict(
+        frappe.get_all(doctype, fields=["name", fieldname], filters={fieldname: ["is", "set"]}, as_list=True)
+    )
 
 
 def get_carried_currency_columns(measures) -> dict[str, str]:
@@ -186,6 +205,14 @@ PIVOT_TAILS = "insights_pivot_tails"
 
 # `full` is the client's word for what ibis calls an outer join
 JOIN_TYPES = {"inner": "inner", "left": "left", "right": "right", "full": "outer"}
+
+# sqlglot underlines the token it stopped at with terminal codes
+TERMINAL_CODES = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def sqlglot_message(error: Exception) -> str:
+    return TERMINAL_CODES.sub("", str(error))
+
 
 # frappe's exceptions, and so every one Insights derives from them. Each carries
 # a message for the reader. Any other error is a Python or ibis one
@@ -334,6 +361,9 @@ class IbisQueryBuilder:
             cause = nested
         elif not frappe.has_permission("Insights Query v3", "write", self.doc):
             cause = type(error).__name__
+        elif isinstance(error, QueryRefused):
+            # a sentence the engine wrote for the author, which its class adds nothing to
+            cause = html.escape(str(error), quote=False)
         elif isinstance(error, FRAPPE_ERRORS):
             # a bare `raise frappe.PermissionError` leaves its message in the flags
             text = str(error) or frappe.flags.error_message
@@ -898,7 +928,7 @@ class IbisQueryBuilder:
             parsed = sg.parse(statement, dialect=dialect)
         except Exception as e:
             frappe.throw(
-                frappe._("Failed to parse the SQL column expression: {0}").format(e),
+                frappe._("Failed to parse the SQL column expression: {0}").format(sqlglot_message(e)),
                 QueryRefused,
             )
 
@@ -916,6 +946,13 @@ class IbisQueryBuilder:
                 frappe._("A SQL column expression cannot read another table"),
                 QueryRefused,
             )
+        if reads := unbound_reads(select):
+            frappe.throw(
+                frappe._("A SQL column expression cannot read data through {0}").format(
+                    frappe.utils.escape_html(", ".join(reads))
+                ),
+                QueryRefused,
+            )
         return select
 
     def apply_summary(self, summarize_args):
@@ -930,9 +967,9 @@ class IbisQueryBuilder:
 
     def translate_carried_currencies(self, measures):
         carried = {}
-        for name, column_name in get_carried_currency_columns(measures).items():
+        for name, source in get_carried_currency_columns(measures).items():
             # a missing column must not fail the query; it carries null and the amount prints bare
-            col = self.get_column(column_name, throw=False)
+            col = self.get_currency_codes(source)
             if col is None:
                 carried[name] = ibis.null().cast("string")
                 continue
@@ -940,6 +977,21 @@ class IbisQueryBuilder:
             one_currency = (col.min() == col.max()) & ~col.isnull().any()
             carried[name] = ibis.ifelse(one_currency, col.min(), ibis.null()).cast("string")
         return carried
+
+    def get_currency_codes(self, source: str):
+        """The currency code of each row. `source` is a column of codes, or a
+        Currency field's options in frappe's form, `Company:company:default_currency`:
+        the `default_currency` of the Company the row's `company` names.
+        """
+        if source.count(":") != 2:
+            return self.get_column(source, throw=False)
+
+        doctype, link_column, fieldname = source.split(":")
+        link = self.get_column(link_column, throw=False)
+        codes = linked_currency_codes(doctype, fieldname)
+        if link is None or not codes:
+            return None
+        return link.cast("string").substitute(codes, else_=ibis.null().cast("string"))
 
     def aggregate_by_window(self, summarize_args):
         """One aggregate per span, unioned, each named by the date it starts on.
@@ -1127,18 +1179,6 @@ class IbisQueryBuilder:
         if raw_sql.lower().startswith(("select", "with")):
             parsed = sg.parse_one(raw_sql, dialect=source_dialect)
             self.refuse_held_back_in_sql(parsed, bindings)
-            # a binding reaches the database as SQL text, so the execution cannot
-            # tell which of its columns are read. Work that out here instead
-            named = {column.name.lower() for column in parsed.find_all(sg.exp.Column)}
-            reads_all = any(
-                isinstance(projection, sg.exp.Star) or isinstance(projection.this, sg.exp.Star)
-                for select in parsed.find_all(sg.exp.Select)
-                for projection in select.expressions
-            )
-            for table_expr in bindings.values():
-                read = [c for c in table_expr.columns if reads_all or c.lower() in named]
-                if read:
-                    user_permissions.record_blanked_reads(table_expr.select(*read))
         replace_map = {table_name: ibis.to_sql(table_expr) for table_name, table_expr in bindings.items()}
 
         if not self.use_live_connection:
@@ -1231,6 +1271,27 @@ class IbisQueryBuilder:
                     title=frappe._("Unsupported SQL Query"),
                 )
 
+        if runs_stored_procedure(raw_sql):
+            return raw_sql
+
+        try:
+            parsed = sg.parse_one(raw_sql, dialect=dialect)
+        except Exception as e:
+            frappe.throw(
+                frappe._("Failed to parse the SQL query: {0}").format(sqlglot_message(e)),
+                QueryRefused,
+                title=frappe._("Invalid SQL Query"),
+            )
+
+        if reads := unbound_reads(parsed):
+            frappe.throw(
+                frappe._("A native query can read only named tables, not {0}").format(
+                    frappe.utils.escape_html(", ".join(reads))
+                ),
+                QueryRefused,
+                title=frappe._("Unsupported SQL Query"),
+            )
+
         return raw_sql
 
     def _transpile_sql_to_duckdb(self, raw_sql: str, source_dialect: str | None) -> str:
@@ -1241,7 +1302,9 @@ class IbisQueryBuilder:
             transpiled_sql = sg.transpile(raw_sql, read=source_dialect, write="duckdb")
         except Exception as e:
             frappe.throw(
-                frappe._("Failed to translate SQL query for Data Store execution: {0}").format(e),
+                frappe._("Failed to translate SQL query for Data Store execution: {0}").format(
+                    sqlglot_message(e)
+                ),
                 QueryRefused,
                 title=frappe._("Unsupported SQL Query"),
             )
@@ -1606,10 +1669,6 @@ def execute_ibis_query(
     except ibis.common.exceptions.OperationNotDefinedError:
         # TODO: throw better error message
         raise
-
-    # the columns the query reads are known only now. Record them before
-    # returning a cached answer, which read the same columns
-    user_permissions.record_blanked_reads(query)
 
     backend = query.get_backend()
     if cache:

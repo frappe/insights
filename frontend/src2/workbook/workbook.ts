@@ -2,7 +2,8 @@ import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { useTelemetry } from '../telemetry'
 import { computed, reactive, toRefs } from 'vue'
-import useChart, { newChart } from '../charts/chart'
+import useChart, { newChart, type Chart } from '../charts/chart'
+import { firstMeasure } from '../charts/helpers'
 import useDashboard, { newDashboard } from '../dashboard/dashboard'
 import {
 	copyToClipboard,
@@ -93,10 +94,14 @@ function makeWorkbook(name: string) {
 
 	function addChart(query_name?: string) {
 		const chart = newChart()
-		chart.doc.title = 'Chart ' + (workbook.doc.charts.length + 1)
+		const query = query_name ? useQuery(query_name) : undefined
+		chart.doc.title = query?.doc.title || 'Chart ' + (workbook.doc.charts.length + 1)
 		chart.doc.workbook = workbook.doc.name
 		chart.doc.query = query_name || ''
 		chart.doc.chart_type = 'Bar'
+		const measure = query && firstMeasure(query.result.columnOptions)
+		if (measure)
+			chart.doc.config = { y_axis: { series: [{ measure }] } } as Chart['doc']['config']
 		chart.doc.sort_order = workbook.doc.charts.length
 		chart.doc.folder = null
 		chart.insert().then(() => {
@@ -191,7 +196,7 @@ function makeWorkbook(name: string) {
 	}
 
 	const isOwner = computed(() => workbook.doc.owner === session.user?.email)
-	const canShare = computed(() => isOwner.value)
+	const canShare = computed(() => Boolean(workbook.doc.can_share))
 
 	async function getSharePermissions(): Promise<UpdateSharePermissionsArgs> {
 		const method = 'insights.api.workbooks.get_share_permissions'
@@ -287,7 +292,12 @@ function makeWorkbook(name: string) {
 	function deleteWorkbook() {
 		confirmDialog({
 			title: __('Delete Workbook'),
-			message: __('Are you sure you want to delete this workbook?'),
+			message: workbook.doc.shipped_by
+				? __(
+						'This workbook ships with {0}. Deleting it removes it from the app.',
+						workbook.doc.shipped_by,
+				  )
+				: __('Are you sure you want to delete this workbook?'),
 			theme: 'red',
 			onSuccess: () => workbook.delete().then(() => router.replace('/workbook')),
 		})
@@ -422,6 +432,7 @@ export function getWorkbookResource(name: string) {
 		},
 		enableAutoSave: true,
 		disableLocalStorage: true,
+		showsLoadFailure: true,
 		transform(doc: any) {
 			doc.folders = safeJSONParse(doc.folders) || []
 			doc.queries = safeJSONParse(doc.queries) || []

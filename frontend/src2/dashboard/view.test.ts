@@ -10,7 +10,9 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 	call: (method: string, args: any) => {
 		calls.push({ method, args })
 		if (method === 'insights.api.view.get_dashboard') {
-			return Promise.resolve(answer.dashboard)
+			return answer.dashboard instanceof Error
+				? Promise.reject(answer.dashboard)
+				: Promise.resolve(answer.dashboard)
 		}
 		if (answer.refuseSave && method === 'frappe.client.set_value') {
 			return Promise.reject(Object.assign(new Error('refused'), { status: 417 }))
@@ -64,7 +66,7 @@ vi.stubGlobal('localStorage', {
 import useChart from '../charts/chart'
 import useDashboard from './dashboard'
 import { nextTick, ref } from 'vue'
-import { useDashboardView, watchFilterDefault } from './view'
+import { cellRulesFor, useDashboardView, watchFilterDefault } from './view'
 
 const layout = { i: '1', x: 0, y: 0, w: 20, h: 8 }
 
@@ -145,6 +147,47 @@ describe('a dashboard opened a second time', () => {
 	})
 })
 
+// The server tells a missing dashboard from one the reader may not read, and
+// says nothing else about the second.
+describe('a dashboard the reader may not open', () => {
+	const refused = (exc_type: string, messages: string[] = []) =>
+		Object.assign(new Error(exc_type), { exc_type, messages })
+
+	// @feature permissions.denied-says-no-access permissions.no-access-names-roles
+	it('says Not Found for a reference that names nothing, and No Access for a refusal', async () => {
+		answer.dashboard = refused('DoesNotExistError')
+		const missing = await opened('missing')
+		answer.dashboard = refused('PermissionError', ["You don't have access to this dashboard"])
+		const denied = await opened('denied')
+		answer.dashboard = refused('SharedWithRoles', ['Shared with Stock User'])
+		const shared = await opened('shared')
+
+		expect([missing.notFound, missing.noAccess, missing.failed]).toEqual([
+			true,
+			undefined,
+			false,
+		])
+		expect([denied.notFound, denied.noAccess, denied.failed]).toEqual([
+			false,
+			{ doctypes: [], sharedWith: undefined },
+			false,
+		])
+		expect(shared.noAccess).toEqual({ doctypes: [], sharedWith: 'Shared with Stock User' })
+		expect(denied.title).toBe('')
+		expect(dataCalls()).toHaveLength(0)
+	})
+
+	// @feature permissions.no-access-when-nothing-is-permitted
+	it('names the doctypes its charts need when the reader may read none of their data', async () => {
+		answer.dashboard = { not_permitted: { doctypes: ['Sales Invoice'] } }
+		const view = await opened('refused-data')
+
+		expect(view.noAccess).toEqual({ doctypes: ['Sales Invoice'] })
+		expect([view.notFound, view.failed, view.items]).toEqual([false, false, []])
+		expect(dataCalls()).toHaveLength(0)
+	})
+})
+
 // A dashboard shipped by an app is read-only. To change it, a site duplicates
 // its workbook.
 describe('a shipped dashboard', () => {
@@ -212,6 +255,31 @@ describe('a filter with a default that the reader cleared', () => {
 		await settled()
 
 		expect(view.filters).toEqual({})
+	})
+})
+
+describe("an empty card's Reset filters", () => {
+	// @feature charts.reset-filters dashboard.filter-default
+	it("takes the filters back to the board's defaults, and stays hidden while they are there", async () => {
+		const withDefault = dashboardAnswer('Bar')
+		Object.assign(withDefault.items[1], { default_operator: '=', default_value: 'north' })
+		answer.dashboard = withDefault
+		const view = await opened('reset-to-default')
+		expect(view.filtered('chart-1')).toBe(false)
+
+		view.setFilter('region', { operator: '=', value: 'south' })
+		expect(view.filtered('chart-1')).toBe(true)
+		view.resetCardFilters('chart-1')
+		expect(view.filters).toEqual({ region: { operator: '=', value: 'north' } })
+		expect(view.filtered('chart-1')).toBe(false)
+
+		// cleared by hand, the default is back after a reset and after a reload
+		view.setFilter('region')
+		expect(view.filtered('chart-1')).toBe(true)
+		view.resetCardFilters('chart-1')
+		view.refresh()
+		await settled()
+		expect(view.filters).toEqual({ region: { operator: '=', value: 'north' } })
 	})
 })
 
@@ -371,5 +439,35 @@ describe('an edit session the author discards', () => {
 		} finally {
 			vi.useRealTimers()
 		}
+	})
+})
+
+describe('Number cells in one row', () => {
+	const number = (comparison: boolean) => ({
+		chart_type: 'Number',
+		config: {
+			number_columns: [{ column_name: 'amount', measure_name: 'Amount', aggregation: 'sum' }],
+			number_column_options: [comparison ? { comparison: { source: 'last year' } } : {}],
+		},
+	})
+	const charts: Record<string, any> = {
+		compared: number(true),
+		plain: number(false),
+		below: number(false),
+	}
+	const cell = (chart: string, x: number, y: number) =>
+		({ type: 'chart', chart, layout: { i: chart, x, y, w: 7, h: 4 } }) as any
+
+	// @feature dashboard.cell-height-rule
+	it('take the height of the tallest, so the row ends level', () => {
+		const rules = cellRulesFor(
+			[cell('compared', 0, 3), cell('plain', 7, 3), cell('below', 0, 8)],
+			(chart) => charts[chart],
+		)
+
+		expect(rules.compared.height).toBe(5)
+		expect(rules.plain.height).toBe(5)
+		// a row of its own keeps the height its reading needs
+		expect(rules.below.height).toBe(4)
 	})
 })

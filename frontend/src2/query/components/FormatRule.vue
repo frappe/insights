@@ -365,7 +365,9 @@ const isInvalidColumn = computed(() => {
 							<span class="text-sm">{{ option.label }}</span>
 							<!-- the empty slot is shown too: a scale that starts at
 							     nothing should show that it does -->
-							<div class="flex h-2 w-32 rounded-sm ring-1 ring-outline-gray-1">
+							<div
+								class="flex h-2 w-32 overflow-hidden rounded-1 ring-1 ring-outline-gray-1"
+							>
 								<div
 									v-for="(fill, i) in option.swatches.value"
 									:key="i"

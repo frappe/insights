@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import re
 from collections.abc import Callable
 
 import frappe
@@ -266,6 +267,62 @@ def real_table_refs(parsed: sg.Expression) -> list[sg.exp.Table]:
     return [table for table in parsed.find_all(sg.exp.Table) if not is_cte(table)]
 
 
+# functions that run a query given as a string, or read a file or another database
+UNBOUND_READ_FUNCTION = re.compile(
+    # DuckDB
+    r"query|query_table|(postgres|mysql|sqlite)_(query|execute)|\w+_attach"
+    r"|read_\w+|\w+_scan\w*|glob|sniff_csv|parquet_\w+|iceberg_\w+"
+    # Postgres, with the tablefunc, dblink, adminpack and pageinspect extensions
+    r"|(query|table|cursor|schema|database)_to_xml\w*|ts_stat|ts_rewrite|crosstab\d*|connectby"
+    r"|dblink\w*|pg_read_\w+|pg_ls_\w+|pg_stat_file|pg_file_\w+|pg_logdir_ls|lo_\w+|get_raw_page"
+    # MariaDB, SQLite, ClickHouse, MSSQL
+    r"|load_file|load_extension|readfile|file|joinget\w*|dictget\w*"
+    r"|openrowset|openquery|opendatasource",
+    re.IGNORECASE,
+)
+
+
+# table functions that make rows from their arguments alone, as sqlglot types
+# them, and by name where a dialect leaves them untyped
+ROW_FUNCTIONS = (sg.exp.GenerateSeries, sg.exp.ExplodingGenerateSeries, sg.exp.JSONTable, sg.exp.Unnest)
+ROW_FUNCTION_NAME = re.compile(
+    r"generate_series|range|unnest|json_table|json_tree"
+    r"|jsonb?_(each|each_text|array_elements|array_elements_text|to_recordset)",
+    re.IGNORECASE,
+)
+
+
+def unbound_reads(parsed: sg.Expression) -> list[str]:
+    """What `parsed` reads without naming a table, so no binding can replace it.
+
+    A FROM source such as DuckDB's `query_table('tabUser')`, or a function such
+    as Postgres' `query_to_xml('select ...')`, reads a table the binding never
+    sees. A FROM source that makes rows from its arguments, such as
+    `generate_series`, reads none.
+    """
+    sources = [
+        table.this.sql()
+        for table in parsed.find_all(sg.exp.Table)
+        if not isinstance(table.this, sg.exp.Identifier) and not makes_rows(table.this)
+    ]
+    functions = [
+        name
+        for func in parsed.find_all(sg.exp.Func)
+        if UNBOUND_READ_FUNCTION.fullmatch(name := function_name(func))
+    ]
+    return sources + functions
+
+
+def function_name(func: sg.exp.Func) -> str:
+    return func.name if isinstance(func, sg.exp.Anonymous) else func.sql_name()
+
+
+def makes_rows(source: sg.Expression) -> bool:
+    return isinstance(source, ROW_FUNCTIONS) or (
+        isinstance(source, sg.exp.Anonymous) and bool(ROW_FUNCTION_NAME.fullmatch(source.name))
+    )
+
+
 def extract_query_deps_from_operations(operations: list) -> list[str]:
     """Extract all referenced query names from a list of operations."""
     return [
@@ -369,34 +426,44 @@ def table_references(operations) -> list[dict]:
 
 
 def sync_query_references(query_name: str, operations) -> None:
-    """Rebuild edge rows for *query_name* in Insights Query Reference.
+    """Make the edge rows of *query_name* in Insights Query Reference match the
+    tables and queries its operations read.
 
-    Deletes all existing outgoing edges for this query then inserts fresh
-    rows for every table and query reference found in operations.
+    Only the rows that changed are written, and each is deleted by name. A delete
+    by `query` would lock the gaps of that index, and two saves of neighbouring
+    queries would deadlock on them (#1147).
     """
     from frappe.model.document import bulk_insert
 
     ops = frappe.parse_json(operations) or []
+    wanted = {("Table", ref["data_source"], ref["table_name"], None) for ref in table_references(ops)}
+    wanted |= {("Query", None, None, dep) for dep in extract_query_deps_from_operations(ops)}
+
+    stale = []
+    for row in frappe.get_all(
+        "Insights Query Reference",
+        filters={"query": query_name},
+        fields=["name", "ref_type", "data_source", "table_name", "ref_query"],
+    ):
+        key = (row.ref_type, row.data_source or None, row.table_name or None, row.ref_query or None)
+        if key in wanted:
+            wanted.discard(key)
+        else:
+            stale.append(row.name)
+
+    if stale:
+        frappe.db.delete("Insights Query Reference", {"name": ["in", stale]})
 
     docs = []
-    for tbl in table_references(ops):
+    for ref_type, data_source, table_name, ref_query in sorted(wanted, key=str):
         ref = frappe.new_doc("Insights Query Reference")
         ref.name = frappe.generate_hash(length=10)
         ref.query = query_name
-        ref.ref_type = "Table"
-        ref.data_source = tbl["data_source"]
-        ref.table_name = tbl["table_name"]
+        ref.ref_type = ref_type
+        ref.data_source = data_source
+        ref.table_name = table_name
+        ref.ref_query = ref_query
         docs.append(ref)
-
-    for dep_query in extract_query_deps_from_operations(ops):
-        ref = frappe.new_doc("Insights Query Reference")
-        ref.name = frappe.generate_hash(length=10)
-        ref.query = query_name
-        ref.ref_type = "Query"
-        ref.ref_query = dep_query
-        docs.append(ref)
-
-    frappe.db.delete("Insights Query Reference", {"query": query_name})
     if docs:
         bulk_insert("Insights Query Reference", docs)
 
@@ -412,17 +479,34 @@ def query_operations(query_name: str, operations_by_name: dict[str, list] | None
     return frappe.db.get_value("Insights Query v3", query_name, "operations")
 
 
+def reachable_operations(queries) -> dict[str, list | None]:
+    """The stored operations of `queries` and of every query they read, by name.
+
+    One read per hop, for a caller that walks many queries. A name with no row
+    maps to None.
+    """
+    found: dict[str, list | None] = {}
+    frontier = {name for name in queries if name}
+    while frontier:
+        rows = frappe.get_all(
+            "Insights Query v3", filters={"name": ("in", list(frontier))}, fields=["name", "operations"]
+        )
+        found.update(dict.fromkeys(frontier))
+        found.update({row.name: row.operations for row in rows})
+        frontier = {name for row in rows for name in referenced_queries(row.operations)} - found.keys()
+    return found
+
+
 def get_direct_dependencies(query_name: str, operations_by_name: dict[str, list] | None = None) -> list[str]:
     """Return the query names this query directly depends on.
 
     Read from the query's own `operations`, not from `Insights Query Reference`.
-    A forward edge is already in the row, and the edge table is rebuilt by a
-    background job that runs after the save commits, so it lags every write.
+    A forward edge is already in the row.
 
     Only the edge table answers the reverse question - who references this query -
-    so `downstream_queries` reads it and lags one job. `get_lineage_graph` and
-    `get_last_execution_per_table` still read it forwards, where a report that
-    lags one job is the whole point of the index.
+    so `downstream_queries` reads it. `get_lineage_graph` and
+    `get_last_execution_per_table` still read it forwards, as reports over every
+    query.
     """
     if not query_name:
         return []

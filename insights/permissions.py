@@ -515,16 +515,34 @@ class InsightsPermissions:
     def _build_table_permission_query(self, ptype):
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import desk_readable_tables
 
-        # if team permissions are not enabled, all tables are accessible
+        Table = frappe.qb.DocType("Insights Table v3")
+        DataSource = frappe.qb.DocType("Insights Data Source v3")
+        # On a site DB source, desk read on a doctype lets the user read its
+        # table. `apply_user_permissions` filters rows by the same rule. It
+        # grants read only: desk read does not allow changing the Insights
+        # Table document.
+        desk_tables = desk_readable_tables(self.user) if ptype == "read" else set()
+        desk_reads = Table.table.isin(list(desk_tables)) if desk_tables else LiteralValue("1 = 0")
+
+        # if team permissions are not enabled, every table is accessible, and on
+        # the site DB every table desk lets the user read
         if not self.team_permissions_enabled:
-            return frappe.qb.from_(frappe.qb.DocType("Insights Table v3")).select("name")
+            if ptype != "read":
+                return frappe.qb.from_(Table).select("name")
+            return (
+                frappe.qb.from_(Table)
+                .select(Table.name)
+                .inner_join(DataSource)
+                .on(Table.data_source == DataSource.name)
+                .where((DataSource.is_site_db == 0) | desk_reads)
+            )
 
         # if team permissions are enabled,
         # tables linked to user's teams are accessible
-        # & all tables of data sources linked to user's teams
+        # & all tables of data sources linked to user's teams,
+        # except on the site DB, where desk alone decides
         AllowedTables = self._build_resource_query("Insights Table v3")
 
-        Table = frappe.qb.DocType("Insights Table v3")
         AllowedSources = self._build_resource_query("Insights Data Source v3")
         TablesOfAllowedSources = (
             frappe.qb.from_(Table)
@@ -534,21 +552,12 @@ class InsightsPermissions:
             .where(AllowedSources.name.isnotnull())
         )
 
-        # On a site DB source, desk read on a doctype lets the user read its
-        # table, as a team grant does. `apply_user_permissions` filters rows by
-        # the same rule. It grants read only: desk read does not allow changing
-        # the Insights Table document.
-        DataSource = frappe.qb.DocType("Insights Data Source v3")
-        desk_tables = desk_readable_tables(self.user) if ptype == "read" else set()
         TablesDeskReads = (
             frappe.qb.from_(Table)
             .select(Table.name.as_("name"))
             .inner_join(DataSource)
             .on(Table.data_source == DataSource.name)
-            .where(
-                (DataSource.is_site_db == 1)
-                & (Table.table.isin(list(desk_tables)) if desk_tables else LiteralValue("1 = 0"))
-            )
+            .where((DataSource.is_site_db == 1) & desk_reads)
         )
 
         return (
@@ -560,9 +569,13 @@ class InsightsPermissions:
             .on(Table.name == TablesOfAllowedSources.name)
             .left_join(TablesDeskReads)
             .on(Table.name == TablesDeskReads.name)
+            .inner_join(DataSource)
+            .on(Table.data_source == DataSource.name)
             .where(
-                AllowedTables.name.isnotnull()
-                | TablesOfAllowedSources.name.isnotnull()
+                (
+                    (AllowedTables.name.isnotnull() | TablesOfAllowedSources.name.isnotnull())
+                    & (DataSource.is_site_db == 0)
+                )
                 | TablesDeskReads.name.isnotnull()
             )
         )
@@ -763,9 +776,8 @@ class InsightsPermissions:
         column of that chart. It stays in the chart's own workbook, as the
         first hop does.
 
-        Read each query's own `operations`, not the edge table. A background
-        job rebuilds that table after the save commits, so a grant read from it
-        refuses the author a dashboard they just saved.
+        Read each query's own `operations`, the source the edge table is
+        derived from.
 
         Only the hops past the first are found here. The first hop stays a
         join, because computing the chart grant for every query in the graph is
@@ -1326,6 +1338,168 @@ def can_read_rows(doc, user=None) -> bool:
 
     stored = frappe.get_doc(doc.doctype, doc.name)
     return bool(InsightsPermissions(user, ignore_visibility=True).has_doc_permission(stored, "read"))
+
+
+def dashboard_readers(dashboards: list[str]) -> dict[str, frappe._dict]:
+    """Who besides its owner may open each of `dashboards`, by the grants of this module's table.
+
+    `shared_with` lists the users a share on the dashboard or its workbook
+    names. `shared_with_organization`, `visible_to_roles` and `is_public` are
+    the wider grants: an org-wide share or the `Everyone` level, the `Roles`
+    level, the `Public` level. `team_granted` is a team grant, and
+    `workbook_owner` the workbook's owner, who may be another user. An admin
+    may open anything and is not counted. The dashboard list shows this as its
+    Access column.
+    """
+    from insights.api.list_filters import get_shares
+
+    if not dashboards:
+        return {}
+
+    DASHBOARD = "Insights Dashboard v3"
+    rows = frappe.get_all(
+        DASHBOARD, filters={"name": ["in", dashboards]}, fields=["name", "owner", "workbook", "visibility"]
+    )
+    workbook_names = list({row.workbook for row in rows if row.workbook})
+    workbooks = {
+        workbook.name: workbook
+        for workbook in frappe.get_all(
+            "Insights Workbook",
+            filters={"name": ["in", workbook_names]},
+            fields=["name", "owner", "is_standard"],
+        )
+    }
+    roles: dict[str, list] = {}
+    for role in frappe.get_all(
+        "Has Role",
+        filters={"parenttype": DASHBOARD, "parentfield": "visible_to_roles", "parent": ["in", dashboards]},
+        fields=["parent", "role"],
+        order_by="role asc",
+    ):
+        roles.setdefault(role.parent, []).append(role)
+    everyone_dashboards, dashboard_users = get_shares(DASHBOARD, dashboards)
+    everyone_workbooks, workbook_users = get_shares("Insights Workbook", workbook_names)
+    team_granted = set(
+        frappe.get_all(
+            "Insights Resource Permission",
+            filters={"resource_type": DASHBOARD, "resource_name": ["in", dashboards]},
+            pluck="resource_name",
+        )
+    )
+
+    readers = {}
+    for row in rows:
+        workbook = workbooks.get(row.workbook) or frappe._dict()
+        level, visible_to = reach(
+            frappe._dict(visibility=row.visibility, visible_to_roles=roles.get(row.name))
+        )
+        shared_with = {*dashboard_users.get(row.name, []), *workbook_users.get(row.workbook, [])}
+        readers[row.name] = frappe._dict(
+            owner=row.owner,
+            is_standard=bool(workbook.is_standard),
+            workbook_owner=workbook.owner,
+            shared_with=sorted(shared_with - {row.owner}),
+            shared_with_organization=row.name in everyone_dashboards
+            or row.workbook in everyone_workbooks
+            or VISIBILITY_LEVELS[level] == EVERYONE,
+            visible_to_roles=sorted(visible_to),
+            is_public=VISIBILITY_LEVELS[level] == PUBLIC,
+            team_granted=row.name in team_granted,
+        )
+    return readers
+
+
+def only_owner_reads(readers: frappe._dict) -> bool:
+    """Whether nobody but its owner may open a dashboard, given its `dashboard_readers`."""
+    return not (
+        readers.shared_with
+        or readers.shared_with_organization
+        or readers.visible_to_roles
+        or readers.is_public
+        or readers.team_granted
+        or (readers.workbook_owner and readers.workbook_owner != readers.owner)
+    )
+
+
+def same_rows_for_every_reader(
+    dashboards: list[str], readers: dict | None = None, user: str | None = None
+) -> set[str]:
+    """The `dashboards` every reader sees with the same rows, so one preview image may show to `user`.
+
+    That holds when nobody but its owner may open it (`only_owner_reads`), or
+    when each chart on it shows every reader the same rows. A chart does when
+    it runs as its owner (`declared_owner`), or when none of its rows follow
+    the reader (`why_rows_follow_reader`): no site table, no Table
+    Restriction, no script. Such a chart still refuses a reader who may not
+    read one of its tables, so the preview shows only to a `user` who may. A
+    chart that no longer exists, names no query, or reads a query that no
+    longer exists, shows nobody any rows. An app's dashboard always fails:
+    roles read it, and its charts read the site database as their reader.
+
+    `readers` is `dashboard_readers` of `dashboards`, when the caller has it
+    already. `user` is the session user unless given.
+    """
+    from insights.insights.doctype.insights_team.insights_team import check_table_permission
+    from insights.insights.query_utils import reachable_operations, source_tables
+    from insights.permission_user import declared_owner, runs_as_user, why_rows_follow_reader
+
+    if not dashboards:
+        return set()
+    readers = readers if readers is not None else dashboard_readers(dashboards)
+    user = user or frappe.session.user
+
+    shared = {
+        name
+        for name, dashboard in readers.items()
+        if not dashboard.is_standard and not only_owner_reads(dashboard)
+    }
+    CHART = "Insights Chart v3"
+    charts: dict[str, list[str]] = {}
+    for row in frappe.get_all(
+        "Insights Dashboard Chart v3",
+        filters={"parenttype": "Insights Dashboard v3", "parent": ["in", list(shared)]},
+        fields=["parent", "chart"],
+    ):
+        charts.setdefault(row.parent, []).append(row.chart)
+    stored = {
+        chart.name: chart
+        for chart in frappe.get_all(
+            CHART,
+            filters={"name": ["in", [chart for names in charts.values() for chart in names]]},
+            fields=["name", "query", "config", "run_as_owner"],
+        )
+    }
+    operations = reachable_operations({chart.query for chart in stored.values()})
+    query_answers: dict[str, bool] = {}
+    table_answers: dict[tuple[str, str], bool] = {}
+
+    def may_read(table: dict) -> bool:
+        key = (table["data_source"], table["table_name"])
+        if key not in table_answers:
+            table_answers[key] = check_table_permission(*key, user=user, raise_error=False)
+        return table_answers[key]
+
+    def query_shows_same_rows(query: str) -> bool:
+        if query not in query_answers:
+            query_answers[query] = not why_rows_follow_reader(query, None, operations) and all(
+                may_read(table) for table in source_tables(query, operations_by_name=operations)
+            )
+        return query_answers[query]
+
+    def shows_same_rows(name: str) -> bool:
+        chart = stored.get(name)
+        if not chart or not chart.query:
+            return True
+        if chart.run_as_owner and declared_owner(frappe._dict(doctype=CHART, name=name)):
+            return True
+        return not runs_as_user(frappe.parse_json(chart.config)) and query_shows_same_rows(chart.query)
+
+    return {
+        name
+        for name, dashboard in readers.items()
+        if not dashboard.is_standard
+        and (name not in shared or all(shows_same_rows(chart) for chart in charts.get(name, [])))
+    }
 
 
 def can_download(user=None) -> bool:

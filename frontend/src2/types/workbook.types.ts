@@ -24,6 +24,11 @@ export type WorkbookListItem = {
 	last_opened: string | null
 	last_opened_from_now: string
 	shared_with_organization?: boolean
+	/** The title of the app that ships the workbook, when one does. */
+	shipped_by: string | null
+	shipped_by_logo: string | null
+	/** The roles its dashboards show to. An app shares its workbook this way. */
+	visible_to_roles: string[]
 }
 
 export type WorkbookFolder = {
@@ -69,8 +74,12 @@ export type InsightsWorkbook = {
 	read_only: boolean
 	/** A read-only workbook the reader may duplicate instead. */
 	can_copy?: boolean
+	/** Whether the reader may change who the workbook is shared with. */
+	can_share?: boolean
 	/** Set when an app ships the workbook. `module` is the module it ships in. */
 	is_standard?: boolean
+	shipped_by?: string | null
+	shipped_by_logo?: string | null
 	module?: string | null
 }
 
@@ -111,6 +120,7 @@ export type InsightsChartv3 = {
 	can_move_run_as_owner?: boolean
 	/** Whether the caller may widen the chart's Visibility (the server's `can_share`). */
 	can_share?: boolean
+	can_show_in_desk?: boolean
 	operations: Operation[]
 	use_live_connection?: boolean
 	config: ChartConfig & {
@@ -142,6 +152,8 @@ export type InsightsDashboardv3 = {
 	can_share?: boolean
 	vertical_compact_layout: boolean
 	has_workbook_access: boolean
+	/** The reader's value for each filter's `default_user_key`, by filter name. */
+	user_defaults?: Record<string, FilterValue>
 }
 
 export type WorkbookDashboardItem =
@@ -210,7 +222,7 @@ export type WorkbookDashboardFilter = WorkbookDashboardItemLayout & {
 	default_operator?: FilterOperator
 	default_value?: FilterValue
 	// a user default key, such as `Company`. The server sends the reader's value
-	// for it as `default_value`
+	// for it as `default_value` to a view, and in `user_defaults` to the builder
 	default_user_key?: string
 	icon?: string
 }

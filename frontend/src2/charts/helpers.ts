@@ -1,4 +1,5 @@
 import { AXIS_CHARTS, ChartConfig } from '../types/chart.types'
+import type { ColumnMeasure, ColumnOption, MeasureDataType } from '../types/query.types'
 
 // What a Chart's config needs doing to it before anything reads it. Rendering is
 // not here: the adapter turns a config into chart props, and frappe-ui renders
@@ -121,6 +122,36 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 	}
 
 	return config
+}
+
+/**
+ * Ready a config for another chart type. Each type reads its own slots, so the
+ * slots of the type left stay as they are, and switching back finds them. A
+ * sort names a column of the rows the old type drew, which an axis chart and
+ * any other type do not share.
+ */
+export function switchChartType(config: any, from: string, to: string) {
+	if (from && AXIS_CHARTS.includes(from) !== AXIS_CHARTS.includes(to)) {
+		config.order_by = []
+	}
+	return ensureConfigSlots(config, to)
+}
+
+/**
+ * What a new chart on a query plots: the query's first measure, if it has one.
+ * A grouped query has one row per group, so counting its rows draws 1 for every
+ * bar. The measure is summed under its own name, as the picker does for a
+ * column that is already a measure.
+ */
+export function firstMeasure(columnOptions: ColumnOption[]): ColumnMeasure | undefined {
+	const column = columnOptions.find((option) => option.is_measure)
+	if (!column) return
+	return {
+		column_name: column.value,
+		data_type: column.data_type as MeasureDataType,
+		aggregation: 'sum',
+		measure_name: column.value,
+	}
 }
 
 /** The single-Dimension slots a config can have, over every chart type. */

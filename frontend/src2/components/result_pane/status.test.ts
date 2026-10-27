@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { computed } from 'vue'
 import { emptyResult } from '../../query/helpers'
 import type { QueryResult } from '../../types/query.types'
-import { fetchTiming, knownRowCount, rangeAroundCount, rowCountText } from './status'
+import { fetchTiming, knownRowCount, rowCountText } from './status'
 
 const result = (patch: Partial<QueryResult>) => ({ ...emptyResult(), ...patch })
 
@@ -65,10 +65,5 @@ describe('row count copy', () => {
 	it('says one row in the singular', () => {
 		expect(rowCountText(1)).toBe('Showing 1 row')
 		expect(rowCountText(2)).toBe('Showing 2 rows')
-	})
-
-	// @feature query.row-count
-	it('cuts the range sentence where the count goes', () => {
-		expect(rangeAroundCount(1, 100)).toEqual(['Showing 1–100 of', 'rows'])
 	})
 })

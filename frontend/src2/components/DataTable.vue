@@ -5,7 +5,6 @@ import { ExternalLink, Plus, Table2Icon } from 'lucide-vue-next'
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { usePagination } from '../composables/usePagination'
 import { createHeaders } from '../helpers'
-import { carriedCurrency, numberFormatter, type NumberFormatter } from '../charts/number_format'
 import { FIELDTYPES } from '../helpers/constants'
 import {
 	applyDateRule,
@@ -37,7 +36,9 @@ import {
 	SortDirection,
 	SortOrder,
 } from '../types/query.types'
+import { __ } from '../translation'
 import { RESULT_GRID_HOST } from './result_pane/result_grid'
+import { useTableNumberFormats } from './table_number_formats'
 import DataTableColumn from './DataTableColumn.vue'
 import DataTableFooter from './DataTableFooter.vue'
 
@@ -71,11 +72,13 @@ const props = defineProps<{
 	numberFormats?: Record<string, NumberFormat>
 	pageSize?: number
 	currentPage?: number
+	/** What a column's header reads, where it is not the column's name. */
+	columnLabel?: (name: string) => string
 }>()
 
 const headers = computed(() => {
 	if (!props.columns?.length) return []
-	return createHeaders(props.columns)
+	return createHeaders(props.columns, props.columnLabel)
 })
 
 const columnsMeta = computed(() => {
@@ -446,42 +449,22 @@ function getCellPaint(colName: string, val: any): CellPaint {
 	return {}
 }
 
-// The grid formats its cells the way every chart does: it states the policy and
-// the one resolver answers it. A column is looked up by name, which is what the
-// Measure behind it is called. A cell reads its currency off its own row, and a
-// column total off every row it sums, so a total over rows in different
-// currencies prints bare. A row total belongs to no column and prints under the
-// table's own default.
-const cellFormatters = computed(() => {
-	const config = { number_format: props.numberFormat, number_formats: props.numberFormats }
-	const formats = props.columnFormats || {}
-	const rows = props.rows || []
-	const cache = new Map<string, NumberFormatter>()
-	return (columnName: string, row?: QueryResultRow): NumberFormatter => {
-		const over = row ? [row] : rows
-		const key = `${columnName}\0${carriedCurrency(over, columnName)}`
-		let format = cache.get(key)
-		if (!format) {
-			format = numberFormatter(
-				config,
-				{ measure_name: columnName, format: formats[columnName] },
-				over,
-			)
-			cache.set(key, format)
-		}
-		return format
-	}
-})
-
-const defaultFormatter = computed(() => numberFormatter(props.numberFormat))
+const numberFormats = useTableNumberFormats(() => ({
+	numberFormat: props.numberFormat,
+	numberFormats: props.numberFormats,
+	columnFormats: props.columnFormats,
+	rows: props.rows,
+	numberColumns: (props.columns || []).map((col) => col.name).filter(isNumberColumn),
+}))
 
 function _formatNumber(value: any, columnName?: string, row?: QueryResultRow) {
-	const format = columnName ? cellFormatters.value(columnName, row) : defaultFormatter.value
-	const isNull = value === null || value === undefined
+	const format = columnName
+		? numberFormats.cell.value(columnName, row)
+		: numberFormats.plain.value
 	// A zero standing in for a missing number is still a number of this column,
 	// so it prints in the column's own units.
-	if (isNull) {
-		return props.replaceNullsWithZeros ? format(0) : 'null'
+	if (value === null || value === undefined) {
+		return props.replaceNullsWithZeros ? format(0) : ''
 	}
 	return format(value)
 }
@@ -611,7 +594,9 @@ function toggleNewColumn() {
 							class="h-8 border-b border-r px-3 text-right"
 							width="1px"
 						>
-							<div class="truncate pl-3 pr-20"></div>
+							<div class="whitespace-nowrap pl-3 text-sm-medium text-ink-gray-7">
+								{{ __('Total') }}
+							</div>
 						</td>
 					</tr>
 				</thead>
@@ -692,9 +677,9 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals && totalPerRow"
-							class="tnum h-8 border-b border-r px-3 text-right font-bold"
+							class="tnum h-8 whitespace-nowrap border-b border-r px-3 text-right font-bold"
 						>
-							{{ _formatNumber(totalPerRow[idx]) }}
+							{{ numberFormats.rowTotal.value(row)(totalPerRow[idx]) }}
 						</td>
 					</tr>
 
@@ -726,9 +711,9 @@ function toggleNewColumn() {
 
 						<td
 							v-if="props.showRowTotals && totalColumnTotal"
-							class="tnum h-8 border-b border-r border-t px-3 text-right font-bold"
+							class="tnum h-8 whitespace-nowrap border-b border-r border-t px-3 text-right font-bold"
 						>
-							{{ _formatNumber(totalColumnTotal) }}
+							{{ numberFormats.rowTotal.value()(totalColumnTotal) }}
 						</td>
 					</tr>
 

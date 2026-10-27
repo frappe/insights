@@ -112,6 +112,32 @@ function drawnLabels(props: any): string[] {
 }
 
 describe('the category axis', () => {
+	// @feature charts.every-type-draws-what-the-result-holds
+	it('draws a missing category as a blank label, not "null"', () => {
+		const props = propsOf({
+			type: 'Bar',
+			dimension: 'department',
+			measures: ['amount'],
+			categories: ['Sales', null],
+		})
+
+		expect(drawnLabels(props)).toEqual(['Sales', ''])
+	})
+
+	// @feature charts.every-type-draws-what-the-result-holds
+	it('drills into a missing category as the null it is', () => {
+		const filler = adapt({
+			type: 'Bar',
+			dimension: 'department',
+			measures: ['amount'],
+			categories: ['Sales', null],
+		})
+		const plotted = (filler.props as any).data[1]
+		const target = (filler.drillDown as any).select({ name: 'amount', row: plotted })
+
+		expect(target.row.department).toBeNull()
+	})
+
 	// @feature charts.x-axis
 	it('reads a text Dimension as categories', () => {
 		expect(propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).xAxis).toEqual({
@@ -958,7 +984,11 @@ describe('the fit a trend line draws', () => {
 })
 
 describe('a trend line', () => {
-	const tokens = { axisLabel: 'oklch(0.58 0 0)', backdrop: '#242424' } as ChartTokens
+	const tokens = {
+		axisLabel: 'oklch(0.58 0 0)',
+		dataLabel: 'oklch(0.683 0 0)',
+		backdrop: '#242424',
+	} as ChartTokens
 	const month = { name: 'month', type: 'Date' as const, granularity: 'month' as const }
 	const time = (date: string) => new Date(date).getTime()
 	const spec = (overrides: Partial<AxisChartSpec> = {}): AxisChartSpec => ({
@@ -1000,6 +1030,7 @@ describe('a trend line', () => {
 							show: true,
 							position: 'insideEndTop',
 							formatter: expect.any(Function),
+							color: 'oklch(0.683 0 0)',
 							fontSize: 11,
 							backgroundColor: 'color-mix(in srgb, #242424 80%, transparent)',
 							padding: [2, 4],

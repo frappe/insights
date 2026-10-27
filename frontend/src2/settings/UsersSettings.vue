@@ -19,7 +19,7 @@ const filteredUsers = computed(() => {
 	}
 	return userStore.users.filter(
 		(user) =>
-			user.full_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+			user.full_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
 			user.email.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
@@ -37,6 +37,7 @@ const listOptions = ref({
 		{
 			label: __('Status'),
 			key: 'enabled',
+			width: '10rem',
 			getLabel: (props: any) => {
 				const user = props.row as User
 				if (user.invitation_status) {
@@ -63,6 +64,7 @@ const listOptions = ref({
 		{
 			label: __('Email'),
 			key: 'email',
+			width: 2,
 		},
 		// {
 		// 	label: 'Last Active',
@@ -149,7 +151,7 @@ function sendInvitation() {
 
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
 			<div class="flex justify-between gap-2 overflow-visible py-1">
-				<FormControl :placeholder="__('Search')" :debounce="300">
+				<FormControl v-model="searchQuery" :placeholder="__('Search')" :debounce="300">
 					<template #prefix>
 						<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 					</template>

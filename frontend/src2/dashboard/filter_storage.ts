@@ -36,3 +36,10 @@ export function writeFilters(dashboard: string, changed: StoredFilters) {
 	const stored = { ...storedFilters(dashboard), ...changed }
 	localStorage.setItem(key(dashboard), JSON.stringify(stored))
 }
+
+/** Drops the reader's choices, so these filters open with their defaults again. */
+export function forgetFilters(dashboard: string, names: string[]) {
+	const stored = storedFilters(dashboard)
+	names.forEach((name) => delete stored[name])
+	localStorage.setItem(key(dashboard), JSON.stringify(stored))
+}

@@ -33,6 +33,7 @@ import {
 import { showErrorToast } from '../helpers'
 import type { FilterType, GranularityType } from '../helpers/constants'
 import { navigate } from '../helpers/navigation'
+import { refusalOf, type NotPermitted, type Refusable } from '../not_permitted'
 import { stableStringify } from '../helpers/stable_stringify'
 import type { NumberChartConfig } from '../types/chart.types'
 import type { FilterOperator, FilterValue } from '../types/query.types'
@@ -42,7 +43,7 @@ import type {
 	Layout,
 	WorkbookDashboardItemLayout,
 } from '../types/workbook.types'
-import { readFilters, writeFilters } from './filter_storage'
+import { forgetFilters, readFilters, writeFilters } from './filter_storage'
 import { layoutRank, ROW_HEIGHT, type CellRules } from './grid_placement'
 
 export type DashboardViewItem = WorkbookDashboardItemLayout & {
@@ -112,6 +113,43 @@ export function defaultFilterStates(items: FilterDefaults[]): FilterValues {
 }
 
 /**
+ * Whether a filter's state narrows anything: an operator, and a value where the
+ * operator asks for one. The server applies the same rule in `_filter_is_set`.
+ */
+export function filterNarrows(filter_type: FilterType | undefined, state?: FilterState) {
+	if (!state?.operator || !filter_type) return false
+	const kind = FILTER_TYPE_KINDS[filter_type]
+	const needsValue = operatorOf(kind, state.operator)?.needsValue ?? true
+	return !needsValue || ![undefined, null, ''].includes(state.value as any)
+}
+
+/** The filters among `items` that narrow other than their defaults do. */
+export function filtersOffDefault(
+	items: FilterDefaults[],
+	states: FilterValues,
+	defaults: FilterValues,
+): string[] {
+	return items
+		.filter((item) => item.type === 'filter' && item.filter_name)
+		.filter((item) => {
+			const state = states[item.filter_name!]
+			const narrows = filterNarrows(item.filter_type, state) ? state : null
+			return stableStringify(narrows) !== stableStringify(defaults[item.filter_name!] ?? null)
+		})
+		.map((item) => item.filter_name!)
+}
+
+/** `states` with each named filter back at its default, or unset where it has none. */
+export function withDefaults(states: FilterValues, defaults: FilterValues, names: string[]) {
+	const reset = { ...states }
+	names.forEach((name) => {
+		if (defaults[name]) reset[name] = defaults[name]
+		else delete reset[name]
+	})
+	return reset
+}
+
+/**
  * Call `apply` when a filter's default changes.
  *
  * Do not call it when Refresh replaces the item with an equal one. Applying the
@@ -148,8 +186,9 @@ export const FILTER_ROWS = Math.ceil((FILTER.trigger + FILTER.cellPadding) / ROW
 /**
  * Grid rules for each cell, beyond its stored layout.
  *
- * A Number cell's height follows the card of its reading. The owner sets only
- * the width, and the height follows later config changes. Two Number cells fit
+ * A Number cell's height follows the card of its reading, or the tallest card
+ * in its row. The owner sets only the width, and the height follows later
+ * config changes. Two Number cells fit
  * in one narrow row; every other cell takes a full row. A filter cell has one
  * fixed height and takes its row alone, so no card fills the space beside the
  * filters.
@@ -163,6 +202,8 @@ export function cellRulesFor(
 	chartFor: (chart: string) => { chart_type?: string; config?: object } | undefined | null,
 ): CellRules {
 	const rules: CellRules = {}
+	// Number cells by the row they start on, so a row of them ends level
+	const numberRows = new Map<number, string[]>()
 	for (const item of items) {
 		if (item.type === 'filter') {
 			rules[item.layout.i] = { height: FILTER_ROWS, exclusiveRow: true }
@@ -175,7 +216,13 @@ export function cellRulesFor(
 			height: numberCardRows(chart.config as NumberChartConfig, item.reading),
 			halfWidth: true,
 		}
+		const row = numberRows.get(item.layout.y) || []
+		numberRows.set(item.layout.y, [...row, item.layout.i])
 	}
+	numberRows.forEach((cells) => {
+		const height = Math.max(...cells.map((i) => rules[i].height!))
+		cells.forEach((i) => (rules[i].height = height))
+	})
 	return rules
 }
 
@@ -223,6 +270,8 @@ export type DashboardBuilderActions = {
 	// a chart dragged in from the workbook's sidebar
 	dragOver: (event: DragEvent) => void
 	drop: (event: DragEvent) => void
+	// opens the picker of the workbook's charts
+	pickCharts: () => void
 }
 
 /**
@@ -237,8 +286,12 @@ export type DashboardBuilderActions = {
  */
 export type DashboardView = {
 	loading: boolean
-	// the dashboard is missing, or the reader may not read it. Both are Not Found
+	// the reference names no dashboard
 	notFound: boolean
+	// the reader may not read the dashboard. `sharedWith` is the server's line
+	// naming the roles it is shared with. `doctypes` names what its charts read
+	// when the reader may read the dashboard but none of its charts' data
+	noAccess?: NotPermitted & { sharedWith?: string }
 	// the request failed for another reason, so a retry may succeed
 	failed: boolean
 	name: string
@@ -268,10 +321,10 @@ export type DashboardView = {
 		granularity?: GranularityType,
 	) => Promise<string[]>
 	cardRange: (chart: string, column: string) => Promise<[number, number] | undefined>
-	// whether a dashboard filter or a card filter narrows this card, so an empty
-	// card can say why
+	// whether a dashboard filter moved off its default or a card filter narrows
+	// this card, so an empty card can say why
 	filtered: (chart: string) => boolean
-	// clear every filter that `filtered` counts
+	// take every filter that `filtered` counts back to its default
 	resetCardFilters: (chart: string) => void
 	// Keyed by chart, not by cell. Several cells can show one chart (a Number
 	// chart has one cell per reading), and they share one read.
@@ -390,12 +443,14 @@ function makeDashboardPage(
 	const state = reactive({
 		loading: true,
 		notFound: false,
+		noAccess: undefined as DashboardView['noAccess'],
 		failed: false,
 		name: '',
 		title: '',
 		items: [] as DashboardViewItem[],
 		verticalCompact: true,
 		filters: {} as FilterValues,
+		defaults: {} as FilterValues,
 		cardFilters: {} as Record<string, Filter[]>,
 		builderRoute: undefined as string | undefined,
 		// set only when the reader may edit. Chart routes use it
@@ -502,21 +557,22 @@ function makeDashboardPage(
 		reads.get(chart)?.load()
 	}
 
+	function filtersOffDefaultOn(chart: string) {
+		const reaching = state.items.filter((item) => item.charts?.includes(chart))
+		return filtersOffDefault(reaching, state.filters, state.defaults)
+	}
+
 	function filtered(chart: string) {
-		return Boolean(Object.keys(filtersFor(chart)).length || state.cardFilters[chart]?.length)
+		return Boolean(filtersOffDefaultOn(chart).length || state.cardFilters[chart]?.length)
 	}
 
 	function resetCardFilters(chart: string) {
-		const reaching = Object.keys(filtersFor(chart))
-		const kept = { ...state.filters }
-		reaching.forEach((filter_name) => delete kept[filter_name])
+		const moved = filtersOffDefaultOn(chart)
 		const { [chart]: _, ...cardFilters } = state.cardFilters
-		state.filters = kept
+		state.filters = withDefaults(state.filters, state.defaults, moved)
 		state.cardFilters = cardFilters
-		writeFilters(
-			state.name,
-			Object.fromEntries(reaching.map((filter_name) => [filter_name, null])),
-		)
+		// forgotten, not stored as the default, so a default the owner changes later applies
+		forgetFilters(state.name, moved)
 		// a dashboard filter applies to other cards too. Each one skips its load if
 		// its request is unchanged
 		rerun()
@@ -538,15 +594,18 @@ function makeDashboardPage(
 		fetchDashboard(reference, surface)
 			.then((doc) => {
 				if (token !== fetches) return
-				opened = true
 				state.notFound = false
 				state.failed = false
+				state.noAccess = doc.not_permitted
+				if (doc.not_permitted) return
+				opened = true
 				state.name = doc.name
 				state.title = doc.title
 				state.items = doc.items
 				state.verticalCompact = doc.vertical_compact_layout
 				// the reader's last choice overrides the owner's defaults
-				state.filters = readFilters(doc.name, defaultFilterStates(doc.items))
+				state.defaults = defaultFilterStates(doc.items)
+				state.filters = readFilters(doc.name, state.defaults)
 				const editable = doc.can_write && doc.workbook
 				state.builderRoute = editable
 					? `/workbook/${doc.workbook}/dashboard/${doc.name}`
@@ -558,8 +617,19 @@ function makeDashboardPage(
 			.catch((error) => {
 				if (token !== fetches) return
 				opened = false
-				state.notFound = error?.exc_type === 'DoesNotExistError'
-				state.failed = !state.notFound
+				const refusal = refusalOf(error)
+				state.notFound = refusal === 'notFound'
+				state.noAccess =
+					refusal === 'noAccess'
+						? {
+								doctypes: [],
+								sharedWith:
+									error.exc_type === 'SharedWithRoles'
+										? error.messages?.at(-1)
+										: undefined,
+						  }
+						: undefined
+				state.failed = !refusal
 			})
 			.finally(() => {
 				if (token !== fetches) return
@@ -571,6 +641,7 @@ function makeDashboardPage(
 	const view = reactive({
 		loading: computed(() => state.loading),
 		notFound: computed(() => state.notFound),
+		noAccess: computed(() => state.noAccess),
 		failed: computed(() => state.failed),
 		name: computed(() => state.name),
 		title: computed(() => state.title),
@@ -637,7 +708,10 @@ function makeDashboardPage(
 /** Which page a dashboard is viewed on, as the `dashboard_viewed` event names it. */
 export type DashboardSurface = 'dashboards' | 'shared' | 'desk'
 
-function fetchDashboard(dashboard: string, surface: DashboardSurface): Promise<DashboardViewDoc> {
+function fetchDashboard(
+	dashboard: string,
+	surface: DashboardSurface,
+): Promise<Refusable<DashboardViewDoc>> {
 	return call('insights.api.view.get_dashboard', { dashboard, surface })
 }
 

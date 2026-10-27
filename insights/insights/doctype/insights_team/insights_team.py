@@ -65,6 +65,21 @@ class InsightsTeam(Document):
         for d in self.team_permissions:
             if d.resource_type not in SHARED_OBJECT:
                 frappe.throw(f"Invalid resource type: {d.resource_type}")
+        self.validate_table_restrictions()
+
+    def validate_table_restrictions(self):
+        """Refuse a new or changed Table Restriction that is not a condition on
+        its table's columns. Otherwise every query on the table fails later with
+        a raw error."""
+        before = self.get_doc_before_save()
+        held = {(d.resource_name, d.table_restrictions) for d in before.team_permissions} if before else set()
+        for d in self.team_permissions:
+            if (
+                d.resource_type == "Insights Table v3"
+                and (d.table_restrictions or "").strip()
+                and (d.resource_name, d.table_restrictions) not in held
+            ):
+                check_table_restriction(d.resource_name, d.table_restrictions)
 
     def on_trash(self):
         self.prevent_admin_team_deletion()
@@ -163,7 +178,8 @@ class InsightsTeam(Document):
 
 def update_admin_team(user, method=None):
     try:
-        if not user.has_value_changed("roles"):
+        # a delete runs on_change after on_trash, with every role "changed"
+        if user.flags.in_delete or not user.has_value_changed("roles"):
             return
 
         roles = user.get("roles", [])
@@ -183,12 +199,20 @@ def update_admin_team(user, method=None):
                 },
             )
         if is_admin and user.name not in admin_team_members():
-            team = frappe.get_cached_doc("Insights Team", "Admin")
+            # the cache misses rows written directly, like the delete above
+            team = frappe.get_doc("Insights Team", "Admin")
             team.append("team_members", {"user": user.name})
             team.save(ignore_permissions=True)
 
     except Exception:
         frappe.log_error(title="update_admin_team")
+
+
+def remove_deleted_user(user, method=None):
+    """A row naming a deleted user fails every later save of its team, and
+    `update_admin_team` logs that and moves on."""
+    frappe.db.delete("Insights Team Member", {"user": user.name})
+    clear_cache()
 
 
 def clear_cache():
@@ -288,10 +312,9 @@ def check_data_source_permission(source_name, user=None, raise_error=True):
 def check_table_permission(data_source, table, user=None, raise_error=True):
     """Whether this user may read this table.
 
-    On the site database, desk's own permissions or a team grant let a
-    reader in, and either one is enough. Being an admin is not a grant there. On
-    other data sources only a team grant lets a reader in, and an admin always
-    passes.
+    On the site database, only desk's own permissions let a reader in. A team
+    grant and being an admin count for nothing there. On other data sources
+    only a team grant lets a reader in, and an admin always passes.
 
     A refusal raises `NotPermitted`, which `answers_refusal` catches, as every
     other check here does: this reader may not read this data.
@@ -301,7 +324,7 @@ def check_table_permission(data_source, table, user=None, raise_error=True):
 
     user = user or frappe.session.user
     if is_site_db(data_source):
-        permitted = desk_reads_table(table, user) or team_grant(data_source, table, user) is not None
+        permitted = desk_reads_table(table, user)
     elif is_admin(user):
         permitted = True
     elif not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
@@ -325,10 +348,10 @@ def team_grant(data_source, table, user=None) -> list[str] | None:
 
     An empty list means the whole table. None means no grant. Only a team that
     names the table or its data source grants it. An admin's pass through the
-    team check is not a grant, so on the site database an admin reads what
-    desk permissions allow. Each team grants the rows its own restrictions
+    team check is not a grant. Each team grants the rows its own restrictions
     allow, and one team's grant never narrows another's. So a team that grants
-    without a restriction grants the whole table.
+    without a restriction grants the whole table. The site database never asks:
+    desk decides there.
     """
     if not frappe.db.get_single_value("Insights Settings", "enable_permissions"):
         return None
@@ -369,6 +392,43 @@ def restriction_predicate(table, restrictions: list[str]):
     columns = {column: table[column] for column in table.schema().names}
     predicates = [exec_with_return(expression.strip(), columns) for expression in restrictions]
     return functools.reduce(operator.or_, predicates)
+
+
+def check_table_restriction(table_name: str, restriction: str) -> None:
+    """Throw unless `restriction` is a condition on the columns of `table_name`,
+    checked by the code that applies it. A table whose columns were never
+    recorded is checked when it runs."""
+    import ibis
+    import ibis.expr.types as ir
+
+    from insights.insights.doctype.insights_data_source_v3.ibis.utils import get_ibis_dtype
+
+    table = frappe.db.get_value("Insights Table v3", table_name, ["table", "columns"], as_dict=True)
+    columns = frappe.parse_json(table.columns) if table and table.columns else None
+    if not columns:
+        return
+    schema = get_ibis_dtype([{"value": c.get("name"), "description": c.get("type")} for c in columns])
+    try:
+        predicate = restriction_predicate(
+            ibis.table({name: dtype or "string" for name, dtype in schema.items()}, name="restriction"),
+            [restriction],
+        )
+        valid = isinstance(predicate, ir.BooleanValue)
+    except Exception:
+        # the sandbox's own refusal would show beside this message
+        frappe.clear_last_message()
+        valid = False
+    if not valid:
+        frappe.throw(
+            frappe._(
+                "The Table Restriction on {0}, {1}, is not a condition on its columns. Name a column as it is, like {2}."
+            ).format(
+                frappe.bold(table.table),
+                frappe.bold(frappe.utils.escape_html(restriction.strip())),
+                frappe.bold('status == "Open"'),
+            ),
+            title=frappe._("Invalid Table Restriction"),
+        )
 
 
 def remove_admin_role(users):

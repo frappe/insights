@@ -10,6 +10,7 @@ from frappe.monitor import add_data_to_monitor
 
 import insights
 from insights.decorators import insights_whitelist
+from insights.desk import can_show_charts_in_desk
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     get_columns_from_schema,
 )
@@ -22,7 +23,10 @@ from insights.insights.doctype.insights_team.insights_team import (
 )
 from insights.insights.query_builders.sql_functions import get_fiscal_year_start_date
 from insights.permissions import can_download
+from insights.resolver import DASHBOARD, may_read
 from insights.telemetry import get_entry
+from insights.upgrade import ITEM as UPGRADE_ITEM
+from insights.upgrade import is_upgrade_admin, item_filters, upgrade_unseen
 from insights.utils import get_currencies, get_owned_file
 
 
@@ -86,6 +90,7 @@ def get_site_info():
         # through the server's own fallback, so an unset field does not put the
         # two calendars a quarter apart
         "fiscal_year_start": get_fiscal_year_start_date().isoformat(),
+        "currency_precision": frappe.utils.get_currency_precision(),
         **get_currency_info(),
     }
 
@@ -118,10 +123,13 @@ def get_user_info():
     locale = user.get("language") or frappe.db.get_single_value("System Settings", "language") or "en"
 
     has_demo_data = False
+    has_workbooks = False
     if is_admin:
         from insights.setup.setup_wizard import check_demo_data_exists
 
         has_demo_data = check_demo_data_exists()
+        # the workbooks an app ships are not the site's own
+        has_workbooks = bool(frappe.db.exists("Insights Workbook", {"is_standard": 0}))
 
     return {
         "email": frappe.session.user,
@@ -135,7 +143,24 @@ def get_user_info():
         "locale": locale,
         "has_desk_access": user.get("user_type") == "System User",
         "has_demo_data": has_demo_data,
+        "has_workbooks": has_workbooks,
+        "upgrade_unseen": upgrade_unseen(),
+        "owns_workbooks": bool(frappe.db.exists("Insights Workbook", {"owner": frappe.session.user})),
+        "upgrade_item_count": frappe.db.count(UPGRADE_ITEM, {**item_filters(), "status": "Open"}),
+        "is_upgrade_admin": is_upgrade_admin(),
+        # what the upgrade wizard's welcome shows only to those who can do it
+        "reads_standard_dashboards": reads_standard_dashboards(),
+        "can_show_in_desk": can_show_charts_in_desk(),
     }
+
+
+def reads_standard_dashboards() -> bool:
+    """Whether the user may open a shipped dashboard. A View decides it, as it
+    does for a reader with no Insights role, whom `frappe.get_list` refuses."""
+    return any(
+        may_read(frappe.get_cached_doc(DASHBOARD, name))
+        for name in frappe.get_all(DASHBOARD, filters={"is_standard": 1}, pluck="name")
+    )
 
 
 def get_csv_file(filename: str):

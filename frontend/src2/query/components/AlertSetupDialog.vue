@@ -1,12 +1,12 @@
 <script setup lang="tsx">
 import { Textarea, toast } from 'frappe-ui'
-import { computed, reactive, unref } from 'vue'
+import { computed, reactive, ref, unref, watch } from 'vue'
 import Toggle from '../../components/Toggle.vue'
 import { waitUntil, wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { __ } from '../../translation'
 import useUserStore from '../../users/users'
-import useAlertStore from '../alert'
+import useAlertStore, { cronRefusal } from '../alert'
 import { Query } from '../query'
 import ExpressionEditor from './ExpressionEditor.vue'
 
@@ -64,6 +64,13 @@ const webhookError = computed(() => {
 	return ''
 })
 
+// A toast under the dialog is half hidden, so the field says it too.
+const cronError = ref('')
+watch(
+	() => [alert.doc.frequency, alert.doc.cron_format],
+	() => (cronError.value = ''),
+)
+
 const isValidAlert = computed(() => {
 	if (!alert.doc.title) return false
 	if (!alert.doc.frequency) return false
@@ -89,13 +96,20 @@ function updateAlert() {
 		alert.doc.query = props.query.doc.name
 	}
 	alert.doc.disabled = 0
-	return alert.save().then(() => {
+	return save().then(() => {
 		toast.success(isNew ? __('Alert Created') : __('Alert Updated'), {
 			description: isNew
 				? __(`Alert "{0}" has been created.`, alert.doc.title)
 				: __(`Alert "{0}" has been updated.`, alert.doc.title),
 		})
 		show.value = false
+	})
+}
+
+function save() {
+	return alert.save().catch((error) => {
+		cronError.value = cronRefusal(error) || ''
+		throw error
 	})
 }
 
@@ -113,7 +127,7 @@ function testSendAlert() {
 
 function toggleAlert() {
 	alert.doc.disabled = alert.doc.disabled ? 0 : 1
-	return alert.save().then(() => {
+	return save().then(() => {
 		toast.success(alert.doc.disabled ? __('Alert Disabled') : __('Alert Enabled'), {
 			description: alert.doc.disabled
 				? __(`Alert "{0}" has been disabled.`, alert.doc.title)
@@ -173,13 +187,15 @@ function toggleAlert() {
 								{ value: 'Cron', label: __('Cron') },
 							]"
 						/>
-						<FormControl
-							v-if="alert.doc.frequency === 'Cron'"
-							type="text"
-							:label="__('Cron')"
-							v-model="alert.doc.cron_format"
-							:placeholder="__('e.g. 0 0 12 * * ?')"
-						/>
+						<div v-if="alert.doc.frequency === 'Cron'" class="flex flex-col gap-1.5">
+							<FormControl
+								type="text"
+								:label="__('Cron')"
+								v-model="alert.doc.cron_format"
+								:placeholder="__('e.g. 0 12 * * *')"
+							/>
+							<ErrorMessage v-if="cronError" :message="cronError" />
+						</div>
 					</div>
 					<div class="flex flex-1 flex-col gap-3">
 						<FormControl

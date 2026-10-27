@@ -12,13 +12,15 @@ import {
 	watchToggle,
 	wheneverChanges,
 } from '../helpers'
+import { tableLabel } from '../data_source/data_source'
 import { confirmDialog } from '../helpers/confirm_dialog'
 import { FIELDTYPES } from '../helpers/constants'
 import useDocumentResource from '../helpers/resource'
+import { stableStringify } from '../helpers/stable_stringify'
 import { useResultExport } from '../helpers/result_export'
 import { __ } from '../translation'
 import session from '../session'
-import { isServerBusyError, scheduleQueryExecution } from './execution_queue'
+import { scheduleQueryExecution } from './execution_queue'
 import {
 	AdhocFilters,
 	CodeArgs,
@@ -155,7 +157,6 @@ export function makeQuery(name: string) {
 		return query.doc.operations[activeEditIndex.value]
 	})
 
-	const isServerBusy = ref(false)
 	const executionError = ref('')
 	const result = ref(emptyResult())
 	const executing = ref(false)
@@ -202,7 +203,6 @@ export function makeQuery(name: string) {
 			await waitUntil(() => query.isloaded)
 		}
 
-		isServerBusy.value = false
 		executionError.value = ''
 
 		if (page_size) {
@@ -226,13 +226,17 @@ export function makeQuery(name: string) {
 		const isStale = () => token !== currentExecutionToken
 		return scheduleQueryExecution(
 			() =>
-				query.call('execute', {
-					active_operation_idx: activeOperationIdx.value,
-					adhoc_filters: adhocFilters.value,
-					force: Boolean(force),
-					page: currentPage.value,
-					page_size: pageSize.value,
-				}),
+				query.call(
+					'execute',
+					{
+						active_operation_idx: activeOperationIdx.value,
+						adhoc_filters: adhocFilters.value,
+						force: Boolean(force),
+						page: currentPage.value,
+						page_size: pageSize.value,
+					},
+					{ showError: false },
+				),
 			{ isStale, priority: executionPriority.value },
 		)
 			.then((response: any) => {
@@ -268,10 +272,9 @@ export function makeQuery(name: string) {
 			})
 			.catch((err) => {
 				if (isStale()) return
-				isServerBusy.value = isServerBusyError(err)
 				// a failed run used to clear the table and say nothing, so the
 				// message has to survive the reset for the editor to show it
-				executionError.value = isServerBusy.value ? '' : getErrorMessage(err)
+				executionError.value = getErrorMessage(err)
 				result.value = emptyResult()
 			})
 			.finally(() => {
@@ -300,6 +303,7 @@ export function makeQuery(name: string) {
 		fetchingCount.value = true
 		return (
 			scheduleQueryExecution(() =>
+				// Load Count is the reader's own click, and nothing else answers it
 				query.call('get_count', {
 					active_operation_idx: activeOperationIdx.value,
 					adhoc_filters: adhocFilters.value,
@@ -366,8 +370,8 @@ export function makeQuery(name: string) {
 				activeOperationIdx.value = 0
 			}
 
-			if (query.doc.title?.match(/Query \d+/) && 'table_name' in args.table) {
-				query.doc.title = args.table.table_name
+			if (query.doc.title?.match(/Query \d+/) && args.table.type == 'table') {
+				query.doc.title = tableLabel(args.table)
 			}
 
 			if (args.table.type == 'query') {
@@ -722,6 +726,13 @@ export function makeQuery(name: string) {
 		}
 	}
 
+	// the editor writes the script after a pause in typing, so a run takes the
+	// script as the editor holds it, not as it was last written
+	function runCode(args: CodeArgs, force: boolean = false) {
+		setCode(args)
+		return execute(force)
+	}
+
 	function updateVariables(variables: QueryVariable[]) {
 		if (!query.doc.is_script_query) return Promise.resolve()
 
@@ -747,28 +758,28 @@ export function makeQuery(name: string) {
 		})
 	}
 
+	// Only the steps, as text with sorted keys, so a save's reply with the same
+	// steps adds no entry, and neither does looking at an earlier step. An undo or
+	// redo shows the whole pipeline.
 	const history = useDebouncedRefHistory(
-		// @ts-ignore
 		computed({
-			get() {
-				return {
-					doc: query.doc,
-					activeOperationIdx: activeOperationIdx.value,
-					activeEditIndex: activeEditIndex.value,
-				}
-			},
-			set(value) {
-				Object.assign(query.doc, value.doc)
-				activeOperationIdx.value = value.activeOperationIdx
-				activeEditIndex.value = value.activeEditIndex
+			get: () => stableStringify(query.doc.operations),
+			set(value: string) {
+				query.doc.operations = JSON.parse(value)
+				activeOperationIdx.value = query.doc.operations.length - 1
 			},
 		}),
 		{
-			deep: true,
 			capacity: 100,
 			debounce: 500,
 		},
 	)
+	// The history starts before the document loads, and undoing to that start
+	// would empty the pipeline
+	query.onAfterLoad(() => {
+		history.commit()
+		history.clear()
+	})
 
 	const importingTables = ref(false)
 	async function refreshStoredTables() {
@@ -837,7 +848,6 @@ export function makeQuery(name: string) {
 		executing,
 		isStale,
 		fetchingCount,
-		isServerBusy,
 		executionError,
 		result,
 
@@ -882,6 +892,7 @@ export function makeQuery(name: string) {
 
 		getCodeOperation,
 		setCode,
+		runCode,
 		updateVariables,
 
 		dimensions,

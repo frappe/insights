@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { useMagicKeys, watchDebounced, whenever } from '@vueuse/core'
+import { watchDebounced } from '@vueuse/core'
 import { Badge, Textarea } from 'frappe-ui'
-import { computed, onBeforeUnmount, provide, ref } from 'vue'
+import { computed, provide, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import NumberInput from '../components/NumberInput.vue'
 import LazyTextInput from '../components/LazyTextInput.vue'
 import { downloadImage, waitUntil } from '../helpers'
+import { useUndoKeys } from '../helpers/undo_keys'
 import { DropdownOption } from '../types/query.types'
 import { rendersOwnCards } from './adapter'
 import useChart from './chart'
@@ -50,15 +52,9 @@ watchDebounced(
 	},
 )
 
-const keys = useMagicKeys()
-const cmdZ = keys['Meta+Z']
-const cmdShiftZ = keys['Meta+Shift+Z']
-const stopUndoWatcher = whenever(cmdZ, () => readOnly.value || chart.history.undo())
-const stopRedoWatcher = whenever(cmdShiftZ, () => readOnly.value || chart.history.redo())
-
-onBeforeUnmount(() => {
-	stopUndoWatcher()
-	stopRedoWatcher()
+useUndoKeys({
+	undo: () => readOnly.value || chart.history.undo(),
+	redo: () => readOnly.value || chart.history.redo(),
 })
 
 const chartEl = ref<HTMLElement | null>(null)
@@ -79,6 +75,16 @@ function downloadChart() {
 }
 
 const showShareDialog = ref(false)
+
+// A desk chart's form links here to change who sees the chart. `can_share`
+// arrives with the loaded document, which the dialog's draft starts from. The
+// query stays: the workbook keys its view by the full path, so dropping it would
+// remount the builder and close the dialog.
+if (useRoute().query.share) {
+	waitUntil(() => Boolean(chart.isloaded)).then(() => {
+		showShareDialog.value = Boolean(chart.doc.can_share)
+	})
+}
 </script>
 
 <template>

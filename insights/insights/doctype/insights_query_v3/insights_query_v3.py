@@ -97,7 +97,7 @@ class InsightsQueryv3(Document):
 
     def on_trash(self):
         standard.guard_member(self)
-        if not self.flags.force_delete:
+        if not (self.flags.force_delete or standard.deleted_with_workbook(self)):
             refuse_delete_while_linked(self, taken=("Insights Alert", "Insights Query Reference"))
 
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
@@ -163,13 +163,7 @@ class InsightsQueryv3(Document):
         if before:
             kept = {variable.name for variable in self.variables}
             delete_variable_secrets([variable for variable in before.variables if variable.name not in kept])
-        frappe.enqueue(
-            sync_query_references,
-            query_name=self.name,
-            operations=self.operations,
-            enqueue_after_commit=True,
-            now=bool(frappe.flags.in_test),
-        )
+        sync_query_references(self.name, self.operations)
 
     def cleanup_empty_folder(self, folder_name):
         """Delete folder if it has no queries or charts"""
@@ -192,7 +186,7 @@ class InsightsQueryv3(Document):
         """Collect all leaf table references from this query and its transitive dependencies.
 
         Which tables a query reads is a forward question, so each row answers its
-        own. The edge table lags every write, and this runs right after a save.
+        own.
         """
         return source_tables(self.name, self.operations)
 
@@ -225,7 +219,7 @@ class InsightsQueryv3(Document):
         builder.force = force
         builder.import_if_not_exists = import_if_not_exists
         if builder.build() is None:
-            frappe.throw("Failed to build query", QueryRefused)
+            frappe.throw(frappe._("Failed to build query"), QueryRefused)
 
         return builder
 

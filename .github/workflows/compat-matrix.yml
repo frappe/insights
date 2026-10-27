@@ -123,7 +123,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.frappe_branch == 'version-15' && '18' || '24' }}
+          # Frappe v15 runs on Node v18, but Insights' Vite needs Node v20.19
+          node-version: ${{ matrix.frappe_branch == 'version-15' && '20' || '24' }}
 
       - name: Install bench
         run: |

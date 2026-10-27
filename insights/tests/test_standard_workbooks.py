@@ -8,6 +8,7 @@ file gives them.
 
 import os
 import shutil
+import unittest
 from contextlib import contextmanager
 from unittest.mock import patch
 
@@ -16,8 +17,10 @@ from frappe.model.sync import get_doc_files
 from frappe.modules import get_module_path
 from frappe.modules.import_file import import_doc
 
-from insights import standard
+from insights import desk_islands, standard
 from insights.api import get_site_info
+from insights.api.dashboards import get_dashboards
+from insights.api.workbooks import get_workbooks
 from insights.migrate import after_app_install, sync_standard_workbooks
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT
@@ -104,8 +107,14 @@ def module_folder() -> str:
 
 
 def delete_standard_workbooks():
-    """Delete the rows and the files. A developer-mode save writes a file."""
-    standard_workbooks = frappe.get_all(DT.WORKBOOK, filters={"is_standard": 1}, pluck="name")
+    """Delete the rows and the files. A developer-mode save writes a file.
+
+    Only this module's: a developer-mode delete also deletes the files another
+    installed app ships.
+    """
+    standard_workbooks = frappe.get_all(
+        DT.WORKBOOK, filters={"is_standard": 1, "module": MODULE}, pluck="name"
+    )
     for name in {*standard_workbooks, *frappe.get_all(DT.WORKBOOK, {"name": WORKBOOK}, pluck="name")}:
         with developer_mode():
             frappe.delete_doc(DT.WORKBOOK, name, force=True, delete_permanently=True)
@@ -116,6 +125,11 @@ def delete_standard_workbooks():
 def migrate():
     """The step of `bench migrate` that syncs standard workbook files."""
     sync_standard_workbooks()
+
+
+def commit():
+    """Run what a commit runs, without committing the test's rows."""
+    frappe.db.after_commit.run()
 
 
 def is_imported() -> bool:
@@ -199,6 +213,50 @@ class AShippedFileRestoresItsMembersUnderTheirOwnNames(InsightsIntegrationTestCa
         dashboard = frappe.get_doc(DT.DASHBOARD, DASHBOARD)
         self.assertEqual(dashboard.visibility, "Roles")
         self.assertEqual([row.role for row in dashboard.visible_to_roles], ["System Manager"])
+
+    # @feature standard.ship workbook.list
+    def test_an_app_with_no_title_is_named_by_its_name(self):
+        self.import_file()
+
+        with self.patch_hooks({"app_title": []}):
+            self.assertEqual(frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict().shipped_by, "insights")
+
+    # @feature standard.ship workbook.list
+    def test_the_workbook_list_names_the_app_and_the_roles_it_shows_it_to(self):
+        self.import_file()
+
+        (workbook,) = [
+            w for w in get_workbooks(sources=["created", "shared", "others"]) if w["name"] == WORKBOOK
+        ]
+        self.assertEqual(workbook["shipped_by"], frappe.get_hooks("app_title", app_name="insights")[0])
+        self.assertEqual(workbook["visible_to_roles"], ["Desk User"])
+
+    # @feature standard.ship workbook.list
+    def test_the_workbook_list_and_header_show_the_app_logo(self):
+        self.import_file()
+
+        with self.patch_hooks({"app_logo_url": ["/assets/insights/logo.svg"]}):
+            (workbook,) = [
+                w for w in get_workbooks(sources=["created", "shared", "others"]) if w["name"] == WORKBOOK
+            ]
+            self.assertEqual(workbook["shipped_by_logo"], "/assets/insights/logo.svg")
+            doc = frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict()
+            self.assertEqual(doc.shipped_by_logo, "/assets/insights/logo.svg")
+
+    # @feature standard.ship dashboard.list
+    def test_the_dashboard_list_shows_the_app_logo_when_it_has_one(self):
+        self.import_file()
+
+        def listed():
+            (dashboard,) = [
+                d for d in get_dashboards(sources=["created", "shared", "others"]) if d["name"] == DASHBOARD
+            ]
+            return dashboard
+
+        with self.patch_hooks({"app_logo_url": ["/assets/insights/logo.svg"]}):
+            self.assertEqual(listed()["shipped_by_logo"], "/assets/insights/logo.svg")
+        with self.patch_hooks({"app_logo_url": []}):
+            self.assertIsNone(listed()["shipped_by_logo"])
 
     # @feature standard.ship
     def test_an_imported_member_lands_in_the_folder_the_file_titles(self):
@@ -284,6 +342,10 @@ class AFileLeavesOutWhatTheSiteOwns(InsightsIntegrationTestCase):
         for field in (
             "timestamp",
             "read_only",
+            "can_copy",
+            "can_share",
+            "shipped_by",
+            "shipped_by_logo",
             "data_backup",
         ):
             self.assertNotIn(field, file)
@@ -315,6 +377,23 @@ class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCas
     def assertRefused(self, act):
         with self.assertRaises(frappe.ValidationError):
             act()
+
+    # @feature standard.duplicate
+    def test_an_insights_admin_without_system_manager_opens_and_duplicates_it(self):
+        """That is how an admin customizes what an app ships."""
+        from insights.api import get_doc
+        from insights.tests.factories import as_user, create_user, delete_users
+
+        admin = create_user("standard_admin@test.com", roles=["Insights Admin", "Desk User"]).name
+        self.addCleanup(delete_users, admin)
+        self.assertNotIn("System Manager", frappe.get_roles(admin))
+
+        with as_user(admin):
+            self.assertEqual(get_doc(DT.WORKBOOK, WORKBOOK).name, WORKBOOK)
+            copy = frappe.get_doc(DT.WORKBOOK, WORKBOOK).duplicate()
+
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, copy, True)
+        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, copy, ["owner", "is_standard"]), (admin, 0))
 
     # @feature standard.read-only
     def test_the_workbook_and_its_members_refuse_an_edit(self):
@@ -380,6 +459,13 @@ class AStandardWorkbookIsReadOnlyOnTheSiteThatHoldsIt(InsightsIntegrationTestCas
 
         with developer_mode():
             self.assertFalse(frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict().read_only)
+
+    # @feature standard.read-only
+    def test_the_workbook_names_the_app_that_ships_it(self):
+        """The builder shows it, in developer mode too, where nothing is read-only."""
+        with developer_mode():
+            workbook = frappe.get_doc(DT.WORKBOOK, WORKBOOK).as_dict()
+        self.assertEqual(workbook.shipped_by, frappe.get_hooks("app_title", app_name="insights")[0])
 
     # @feature standard.read-only
     def test_developer_mode_may_change_it(self):
@@ -456,14 +542,33 @@ class DeveloperModeWritesTheFileBack(InsightsIntegrationTestCase):
         with developer_mode():
             frappe.get_doc(DT.WORKBOOK, WORKBOOK).save()
             frappe.delete_doc(DT.WORKBOOK, WORKBOOK, force=True)
+        commit()
 
         self.assertFalse(os.path.exists(os.path.dirname(self.file_path())))
+
+    # @feature standard.export-on-save
+    def test_a_delete_that_rolls_back_keeps_the_file_of_another_app(self):
+        shipped = frappe.get_all(
+            DT.WORKBOOK, {"is_standard": 1, "module": ("!=", MODULE)}, ["name", "module"], limit=1
+        )
+        if not shipped:
+            self.skipTest("no other installed app ships a workbook")
+        path = standard.file_path(DT.WORKBOOK, shipped[0].name, shipped[0].module)
+
+        frappe.db.savepoint("delete_another_app_s_workbook")
+        with developer_mode():
+            frappe.delete_doc(DT.WORKBOOK, shipped[0].name, force=True)
+        frappe.db.rollback(save_point="delete_another_app_s_workbook")
+        commit()
+
+        self.assertTrue(os.path.exists(path))
 
     # @feature standard.export-on-save
     def test_renaming_the_workbook_moves_its_file(self):
         with developer_mode():
             frappe.get_doc(DT.WORKBOOK, WORKBOOK).save()
             frappe.rename_doc(DT.WORKBOOK, WORKBOOK, "test-standard-renamed", force=True)
+        commit()
 
         self.assertFalse(os.path.exists(os.path.dirname(self.file_path())))
         self.assertEqual(self.written("test-standard-renamed")["name"], "test-standard-renamed")
@@ -475,6 +580,7 @@ class DeveloperModeWritesTheFileBack(InsightsIntegrationTestCase):
             workbook.save()
             workbook.is_standard = 0
             workbook.save()
+        commit()
 
         self.assertFalse(os.path.exists(os.path.dirname(self.file_path())))
         self.assertIsNone(frappe.db.get_value(DT.WORKBOOK, WORKBOOK, "module"))
@@ -563,7 +669,7 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
             dashboard=dashboard.name,
         )
 
-    def mark(self, workbook=None, name="selling", module=MODULE):
+    def mark(self, workbook=None, name="test-selling", module=MODULE):
         with developer_mode():
             return frappe.get_doc(DT.WORKBOOK, workbook or self.built.workbook).mark_as_standard(
                 name=name, module=module
@@ -573,15 +679,17 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
     def test_the_workbook_and_its_members_take_readable_names(self):
         name = self.mark()
 
-        self.assertEqual(name, "selling")
-        self.assertTrue(frappe.db.exists(DT.WORKBOOK, "selling"))
+        self.assertEqual(name, "test-selling")
+        self.assertTrue(frappe.db.exists(DT.WORKBOOK, "test-selling"))
         self.assertEqual(
-            sorted(frappe.get_all(DT.QUERY, {"workbook": "selling"}, pluck="name")),
-            ["selling-orders", "selling-revenue-by-month"],
+            sorted(frappe.get_all(DT.QUERY, {"workbook": "test-selling"}, pluck="name")),
+            ["test-selling-orders", "test-selling-revenue-by-month"],
         )
-        self.assertTrue(frappe.db.exists(DT.CHART, "selling-revenue-trend"))
-        self.assertTrue(frappe.db.exists(DT.DASHBOARD, "selling-overview"))
-        self.assertEqual(frappe.db.get_value(DT.WORKBOOK, "selling", ["is_standard", "module"]), (1, MODULE))
+        self.assertTrue(frappe.db.exists(DT.CHART, "test-selling-revenue-trend"))
+        self.assertTrue(frappe.db.exists(DT.DASHBOARD, "test-selling-overview"))
+        self.assertEqual(
+            frappe.db.get_value(DT.WORKBOOK, "test-selling", ["is_standard", "module"]), (1, MODULE)
+        )
 
     # @feature standard.mark
     def test_a_name_the_workbook_already_uses_takes_a_number(self):
@@ -601,22 +709,25 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
         self.mark()
 
         operations = frappe.parse_json(
-            frappe.db.get_value(DT.QUERY, "selling-revenue-by-month", "operations")
+            frappe.db.get_value(DT.QUERY, "test-selling-revenue-by-month", "operations")
         )
-        self.assertEqual(operations[0]["table"]["query_name"], "selling-orders")
+        self.assertEqual(operations[0]["table"]["query_name"], "test-selling-orders")
         self.assertEqual(
             operations[0]["table"]["workbook"],
-            "selling",
+            "test-selling",
             "a reference names the workbook its query sits in, so both move together",
         )
 
         self.assertEqual(
-            frappe.db.get_value(DT.CHART, "selling-revenue-trend", "query"), "selling-revenue-by-month"
+            frappe.db.get_value(DT.CHART, "test-selling-revenue-trend", "query"),
+            "test-selling-revenue-by-month",
         )
 
-        items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, "selling-overview", "items"))
-        self.assertEqual(items[0]["chart"], "selling-revenue-trend")
-        self.assertEqual(items[1]["links"], {"selling-revenue-trend": "`selling-revenue-by-month`.`amount`"})
+        items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, "test-selling-overview", "items"))
+        self.assertEqual(items[0]["chart"], "test-selling-revenue-trend")
+        self.assertEqual(
+            items[1]["links"], {"test-selling-revenue-trend": "`test-selling-revenue-by-month`.`amount`"}
+        )
 
     # @feature standard.mark
     def test_a_marked_dashboard_is_read_by_every_desk_user(self):
@@ -624,7 +735,7 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
         dashboard has the same readers on every site."""
         self.mark()
 
-        dashboard = frappe.get_doc(DT.DASHBOARD, "selling-overview")
+        dashboard = frappe.get_doc(DT.DASHBOARD, "test-selling-overview")
         self.assertEqual(dashboard.visibility, "Roles")
         self.assertEqual([row.role for row in dashboard.visible_to_roles], ["Desk User"])
 
@@ -636,7 +747,7 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
         board.save()
         self.mark()
 
-        dashboard = frappe.get_doc(DT.DASHBOARD, "selling-overview")
+        dashboard = frappe.get_doc(DT.DASHBOARD, "test-selling-overview")
         self.assertEqual(dashboard.visibility, "Roles")
         self.assertEqual([row.role for row in dashboard.visible_to_roles], ["System Manager"])
 
@@ -667,36 +778,38 @@ class MarkingAWorkbookStandardSettlesItsNames(InsightsIntegrationTestCase):
     # @feature standard.mark
     def test_a_workbook_is_marked_standard_in_developer_mode_only(self):
         with self.assertRaises(frappe.ValidationError):
-            frappe.get_doc(DT.WORKBOOK, self.built.workbook).mark_as_standard(name="selling", module=MODULE)
+            frappe.get_doc(DT.WORKBOOK, self.built.workbook).mark_as_standard(
+                name="test-selling", module=MODULE
+            )
 
     # @feature standard.mark
     def test_a_name_whose_file_another_workbook_already_holds_is_refused(self):
         """The file name is `scrub(name)`, and two names can scrub to the same value."""
-        self.mark(name="selling_report")
+        self.mark(name="test-selling_report")
 
         other = self.build("Selling Board, other")
         with self.assertRaises(frappe.ValidationError):
-            self.mark(workbook=other.workbook, name="selling-report")
+            self.mark(workbook=other.workbook, name="test-selling-report")
 
     # @feature standard.mark
     def test_a_rename_onto_a_name_another_workbook_files_under_is_refused(self):
         """A rename also sets a standard workbook's name, and `after_rename`
         writes the file. Without this check, it would overwrite the other
         workbook's file."""
-        self.mark(name="selling_report")
+        self.mark(name="test-selling_report")
 
         other = self.build("Selling Board, other")
         self.mark(workbook=other.workbook, name="buying-report")
 
         with developer_mode(), self.assertRaises(frappe.ValidationError):
-            frappe.rename_doc(DT.WORKBOOK, "buying-report", "selling-report", force=True)
+            frappe.rename_doc(DT.WORKBOOK, "buying-report", "test-selling-report", force=True)
 
     # @feature workbook.duplicate
     def test_a_duplicate_of_a_standard_workbook_belongs_to_the_site(self):
         self.mark()
 
         with developer_mode():
-            copy = frappe.get_doc(DT.WORKBOOK, "selling").duplicate()
+            copy = frappe.get_doc(DT.WORKBOOK, "test-selling").duplicate()
 
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, copy, True)
         self.assertEqual(frappe.db.get_value(DT.WORKBOOK, copy, ["is_standard", "module"]), (0, None))
@@ -826,16 +939,33 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
         frappe.get_doc({"doctype": DT.WORKBOOK, "title": "The site's own"}).insert(set_name=WORKBOOK)
         frappe.db.set_value(DT.WORKBOOK, WORKBOOK, "modified", "2025-01-01", update_modified=False)
         self.addCleanup(frappe.delete_doc, DT.WORKBOOK, WORKBOOK, force=True)
-        # a refused import leaves `in_import` set. A real migrate stops at the
-        # error, but this test continues
-        self.addCleanup(lambda: frappe.flags.pop("in_import", None))
         self.ship()
 
-        self.assertRaisesRegex(frappe.ValidationError, "already has a document of that name", migrate)
+        migrate()
+
         self.assertEqual(frappe.db.get_value(DT.WORKBOOK, WORKBOOK, "title"), "The site's own")
         self.assertFalse(frappe.db.get_value(DT.WORKBOOK, WORKBOOK, "is_standard"))
 
+    # @feature standard.resync
+    def test_a_file_that_fails_to_import_stops_neither_the_others_nor_the_migrate(self):
+        self.ship()
+        failed = frappe.db.count("Error Log")
+        real_import = standard.import_file_by_path
 
+        def refuse_this_app(path, **kwargs):
+            if path.startswith(module_folder()):
+                raise frappe.ValidationError
+            return real_import(path, **kwargs)
+
+        with patch.object(standard, "import_file_by_path", refuse_this_app):
+            migrate()
+
+        self.assertFalse(frappe.db.exists(DT.WORKBOOK, WORKBOOK))
+        self.assertFalse(frappe.flags.in_import)
+        self.assertEqual(frappe.db.count("Error Log"), failed + 1)
+
+
+@unittest.skipUnless(desk_islands(), "Frappe has no desk islands")
 class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
     """A release drops a chart that a desk Dashboard Chart shows. The sync keeps
     the chart for the desk document, but the app no longer ships it. So the file
@@ -866,8 +996,10 @@ class AMemberKeptForDeskLeavesWithItsClaim(InsightsIntegrationTestCase):
             }
         ).insert()
         self.addCleanup(
-            lambda: frappe.db.exists("Dashboard Chart", self.desk_chart.name)
-            and frappe.delete_doc("Dashboard Chart", self.desk_chart.name, force=True)
+            lambda: (
+                frappe.db.exists("Dashboard Chart", self.desk_chart.name)
+                and frappe.delete_doc("Dashboard Chart", self.desk_chart.name, force=True)
+            )
         )
 
         file = standard_file(modified="2026-02-01 00:00:00.000000")
@@ -933,9 +1065,7 @@ class WhatTheExportToAppDialogReads(InsightsIntegrationTestCase):
         # the list must match the framework's module list. Frappe never reads a
         # module that no app's `modules.txt` lists, so the next migrate deletes a
         # file written there as an orphan
-        from frappe.modules.utils import get_module_list
-
-        shipped = {(app, module) for app in installed for module in get_module_list(app)}
+        shipped = {(app, module) for app in installed for module in frappe.get_module_list(app)}
         self.assertTrue(
             all((module["app"], module["module"]) in shipped for module in modules),
             "a module no app ships cannot take a file",

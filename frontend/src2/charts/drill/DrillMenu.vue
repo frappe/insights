@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Button, FormControl, Popover, usePortalTarget } from 'frappe-ui'
-import { ChevronLeft, ChevronRight, Layers, Rows3, Search } from 'lucide-vue-next'
+import { ChevronLeft, Search } from 'lucide-vue-next'
 import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, ref } from 'vue'
 import { __ } from '../../translation'
+import DrillActions from './DrillActions.vue'
 import { columnLabel, type DrillDimension } from './drill_stack'
 import type { ClickPoint } from './segment_click'
 
@@ -102,41 +103,13 @@ function openDimensions() {
 			</template>
 
 			<div ref="menu" class="w-56 p-1.5">
-				<div v-if="pane === 'actions'" class="flex flex-col gap-0.5">
-					<Button
-						v-if="props.canRows !== false"
-						variant="ghost"
-						:class="rowClass"
-						@click="emit('rows')"
-					>
-						<template #prefix>
-							<Rows3 class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-						</template>
-						<span class="truncate">{{ __('View rows') }}</span>
-					</Button>
-					<!-- A segment that pins every dimension the query has left cannot be
-					     split any further, and the rows are the only way on. -->
-					<Button
-						v-if="props.dimensions.length"
-						variant="ghost"
-						:class="rowClass"
-						@click="openDimensions"
-					>
-						<template #prefix>
-							<Layers class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
-						</template>
-						<span class="truncate">{{ __('Break down by') }}</span>
-						<template #suffix>
-							<ChevronRight class="h-4 w-4 text-ink-gray-5" stroke-width="1.5" />
-						</template>
-					</Button>
-					<p
-						v-if="props.canRows === false && !props.dimensions.length"
-						class="px-2 py-1.5 text-base text-ink-gray-5"
-					>
-						{{ __('Nothing to drill into here') }}
-					</p>
-				</div>
+				<DrillActions
+					v-if="pane === 'actions'"
+					:can-rows="props.canRows"
+					:can-break-down="props.dimensions.length > 0"
+					@rows="emit('rows')"
+					@breakdown="openDimensions"
+				/>
 
 				<div v-else class="flex flex-col gap-1.5">
 					<div class="flex items-center gap-1">

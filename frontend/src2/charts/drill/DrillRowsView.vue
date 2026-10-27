@@ -6,7 +6,7 @@ import ResultPane from '../../components/result_pane/ResultPane.vue'
 import QueryDataTable from '../../query/components/QueryDataTable.vue'
 import type { QueryResultColumn, QueryResultRow } from '../../types/query.types'
 import { recordUrl } from '../record_link'
-import type { DrillLevel, DrillLevelData, DrillSubject } from './drill_stack'
+import { columnLabel, type DrillLevel, type DrillLevelData, type DrillSubject } from './drill_stack'
 import { makeDrillRows } from './rows_view'
 
 const props = defineProps<{
@@ -52,6 +52,7 @@ function recordLink(column: QueryResultColumn, row: QueryResultRow) {
 					:page-size="pageSize"
 					:enable-sort="true"
 					:get-cell-link="links ? recordLink : undefined"
+					:column-label="columnLabel"
 				/>
 			</template>
 		</ResultPane>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { AlertOctagon } from 'lucide-vue-next'
-import { provide, watch, watchEffect } from 'vue'
+import { computed, provide, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import LoadFailure from '../components/LoadFailure.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { waitUntil } from '../helpers'
+import { __ } from '../translation'
 import useWorkbook from './workbook'
 import { workbookKey } from './workbook_key'
 import WorkbookNavbar from './WorkbookNavbar.vue'
@@ -74,12 +76,28 @@ whenever(cmdV, () => {
 })
 
 watchEffect(() => {
-	document.title = `${workbook.doc.title} | Workbook`
+	document.title = workbook.loadFailure
+		? __('Workbook | Insights')
+		: `${workbook.doc.title} | Workbook`
 })
+
+const loadFailureTitle = computed(
+	() =>
+		({
+			notFound: __('Workbook not found'),
+			noAccess: __("You don't have access to this workbook"),
+			failed: __('Could not load the workbook. Refresh to try again.'),
+		})[workbook.loadFailure!],
+)
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col">
+	<div v-if="workbook.loadFailure" class="flex h-full w-full">
+		<LoadFailure :title="loadFailureTitle">
+			<Button class="mt-2" :label="__('Go to Workbooks')" :route="{ path: '/workbook' }" />
+		</LoadFailure>
+	</div>
+	<div v-else class="flex h-full w-full flex-col">
 		<LoadingOverlay v-if="workbook.pending" />
 		<WorkbookNavbar />
 		<div

@@ -138,6 +138,24 @@ describe('a link to a chart the reader cannot open', () => {
 		expect(read.failed).toBe(true)
 		expect(read.failure).toBe('Not Found')
 	})
+
+	// @feature shared.missing-link permissions.denied-says-no-access
+	it('tells a missing chart from one the reader may not read', async () => {
+		const refused = (exc_type: string) =>
+			Promise.reject(Object.assign(new Error(exc_type), { exc_type }))
+		const answer = ({ chart }: { chart: string }) =>
+			refused(chart === 'chart-gone' ? 'DoesNotExistError' : 'PermissionError')
+		// both refuse, and only the first refusal is the card's
+		answers.set('insights.api.view.get_chart', answer)
+		answers.set('insights.api.view.get_chart_data', answer)
+		const gone = useChartView('chart-gone')
+		const denied = useChartView('chart-denied')
+
+		await Promise.all([gone.load(), denied.load()])
+
+		expect([gone.failed, gone.refusal]).toEqual([true, 'notFound'])
+		expect([denied.failed, denied.refusal]).toEqual([true, 'noAccess'])
+	})
 })
 
 // Not Permitted is a result, not a failure. The reader cannot retry or fix it,
