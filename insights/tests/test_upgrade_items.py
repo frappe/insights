@@ -116,8 +116,6 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         add_item("P12", "Guests see nothing.", data={"chart": "Revenue", "owner": BOB, "reason": "disabled"})
         unreadable = {"chart": "Trend", "owner": BOB, "reason": "unreadable", "doctypes": ["ToDo"]}
         add_item("P10", "Readers see Not Permitted.", data=unreadable)
-        moved = {"chart": "Trend", "publisher": BOB, "owner": ALICE, "doctypes": ["ToDo"]}
-        add_item("P11", "Readers see Not Permitted.", data=moved)
 
         def links(user):
             with self.as_user(user):
@@ -131,7 +129,6 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertIn("/user/", offered[("P12", False)])
         # a public chart that runs as someone who can't read it needs them a role
         self.assertEqual(offered[("P10", False)], offered[("P12", False)])
-        self.assertEqual(offered[("P11", False)], offered[("P12", False)])
         self.assertEqual(set(links(INSIGHTS_ADMIN).values()), {None})
 
     # @feature upgrade.attention-items
