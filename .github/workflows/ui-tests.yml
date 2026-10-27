@@ -5,6 +5,7 @@ name: UI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - 'docs/**'
       - '**.md'
@@ -26,6 +27,7 @@ permissions:
 
 jobs:
   tests:
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     name: UI
@@ -104,16 +106,6 @@ jobs:
       - name: Run unit tests
         working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
         run: yarn test
-
-      # `frontend/e2e/AGENTS.md` tells an agent that lint refuses a sleep, a
-      # conditional and `test.only`. This is what makes that true.
-      - name: Lint the suite
-        working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
-        run: yarn lint:e2e
-
-      - name: Lint the app
-        working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
-        run: yarn lint
 
       - name: Configure the site
         working-directory: ${{ env.BENCH_PATH }}

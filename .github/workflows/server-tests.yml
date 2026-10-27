@@ -2,6 +2,18 @@ name: Server
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    # Later patterns override earlier ones. Server tests read the island entries
+    # from assets.json, and some read `.ts` sources: translatable labels, the
+    # filter picker's operators, client escaping.
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**.md'
+      - '!frontend/**'
+      - 'frontend/build-islands.mjs'
+      - 'frontend/src2/**/*.ts'
+      - 'frontend/src2/**/*.tsx'
   workflow_dispatch:
   schedule:
     # Run everday at midnight UTC / 5:30 IST
@@ -15,7 +27,32 @@ permissions:
   contents: read
 
 jobs:
+  changed:
+    # A scheduled run on a develop that has not moved since the last green one
+    # would repeat that run. One API call here is cheaper than the bench.
+    name: New commits
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          workflow=$(basename "${GITHUB_WORKFLOW_REF%@*}")
+          last=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?event=schedule&status=success&per_page=1" --jq '.workflow_runs[0].head_sha // ""')
+          echo "Last green scheduled run: ${last:-none}. Now: $GITHUB_SHA."
+          echo "run=$([ "$last" = "$GITHUB_SHA" ] && echo false || echo true)" >> "$GITHUB_OUTPUT"
+
   tests:
+    needs: changed
+    # `!cancelled()` so the tests run when `changed` is skipped, as it is off schedule.
+    if: >-
+      !cancelled() && needs.changed.outputs.run != 'false' &&
+      !(github.event_name == 'pull_request' && github.event.pull_request.draft)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -126,28 +163,14 @@ jobs:
         env:
           TYPE: server
 
-      - name: Upload coverage data
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-server
-          path: ${{ env.BENCH_PATH }}/sites/coverage.xml
-
-  coverage:
-    name: Coverage Wrap Up
-    needs: tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone
-        uses: actions/checkout@v6
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-
+      # In this job, not a job of its own: each job takes a runner from the frappe
+      # org's shared pool, and waits in its queue.
       - name: Upload coverage data
         uses: codecov/codecov-action@v6
         with:
           name: Server
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ env.BENCH_PATH }}/sites/coverage.xml
           fail_ci_if_error: true
           verbose: true
           flags: server
