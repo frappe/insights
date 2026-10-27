@@ -393,7 +393,7 @@ does now, so a future change that breaks it is visible.
 
 A test that disagrees with the code is a wrong test. Fix the test.
 
-If you find genuine broken behavior, **report it as a bug**, and write a test
+If you find genuine broken behavior, **describe it in your report or PR description** (don't open an issue unasked), and write a test
 that records the current behavior. Never fix product code inside a test change. A change that
 mixes the two hides the fix and breaks the baseline.
 
@@ -547,5 +547,5 @@ test.describe('permissions', () => {
 - [ ] No `if`, no sleep, no assertion on a REST field.
 - [ ] Every CSS locator has a `// locator:` reason.
 - [ ] `yarn lint:e2e` reports no errors.
-- [ ] Any genuine bug is a new ticket, not a code fix.
+- [ ] Any genuine bug is described in your report or PR description, not a code fix; don't open an issue unasked.
 - [ ] Report which flows you could not reach, and why.

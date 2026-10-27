@@ -1,6 +1,6 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+How agents should consume this repo's domain documentation when exploring the codebase.
 
 ## Before exploring, read these
 
@@ -26,7 +26,6 @@ repo has had:
   belongs in the ticket. An ADR holds what stays true after the effort is gone.
 
 Write an ADR at the moment the decision is made, not when the ticket closes.
-Close-out is for the ones you missed, and there should be few.
 
 ## Naming
 
