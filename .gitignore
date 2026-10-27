@@ -193,8 +193,3 @@ frontend/components.d.ts
 # Browser sessions and CSRF tokens the Playwright setup project writes
 frontend/e2e/.auth/
 scripts/
-
-# docs/projects links to the effort docs outside the repo. See docs/agents/issue-tracker.md.
-# These paths are local-only and are never committed.
-docs/projects
-docs/research/

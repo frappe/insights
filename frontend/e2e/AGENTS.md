@@ -1,8 +1,7 @@
 # Writing end-to-end tests for Insights
 
-Read this once, then write your area's tests. Six agents write in parallel from
-this file, so every rule here is a rule, not a suggestion. Where the rule leaves
-you a choice, take the option this file shows first.
+Read this once, then write your area's tests. Every rule here is a rule, not a
+suggestion. Where the rule leaves you a choice, take the option this file shows first.
 
 Scope: browser flows only. The backend has its own suite in `insights/tests/`.
 
@@ -29,9 +28,9 @@ The fixtures file re-exports both.
 
 ## File and title rules
 
-**One file per area**, named `<area>.spec.ts`. The areas match the inventory:
+**One file per area**, named `<area>.spec.ts` after an area of `docs/features.md`:
 `query`, `charts`, `dashboard`, `workbook`, `shared`, `data-source`,
-`permissions`.
+`permissions`, `settings`. `seeding.spec.ts` checks the seeding helpers themselves.
 
 **One top-level `test.describe` per file**, named after the area. Lint enforces
 this.
@@ -394,9 +393,8 @@ does now, so a future change that breaks it is visible.
 
 A test that disagrees with the code is a wrong test. Fix the test.
 
-If you find genuine broken behavior, **file it as a new ticket on the map** at
-`docs/projects/e2e-tests/issues/NN-<slug>.md`, and write a test that records the
-current behavior. Never fix product code inside a test change. A change that
+If you find genuine broken behavior, **describe it in your report or PR description** (don't open an issue unasked), and write a test
+that records the current behavior. Never fix product code inside a test change. A change that
 mixes the two hides the fix and breaks the baseline.
 
 The one edit to `frontend/src2/` this suite allows is an accessible name — a
@@ -549,5 +547,5 @@ test.describe('permissions', () => {
 - [ ] No `if`, no sleep, no assertion on a REST field.
 - [ ] Every CSS locator has a `// locator:` reason.
 - [ ] `yarn lint:e2e` reports no errors.
-- [ ] Any genuine bug is a new ticket, not a code fix.
+- [ ] Any genuine bug is described in your report or PR description, not a code fix; don't open an issue unasked.
 - [ ] Report which flows you could not reach, and why.

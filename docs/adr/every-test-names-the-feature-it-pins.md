@@ -10,7 +10,7 @@ Accepted.
 
 Agents write most tests now, and each one pins the rule it was written beside. The suite grew to 1,208 cases across three layers with no denominator: nobody could say what share of the product had a test, or which layer a new test belonged to. The e2e areas already used flow-sentence titles as their inventory, but the backend and unit suites had no such list, and the three were never read together.
 
-Prior art was surveyed first (`docs/projects/test-strategy/research/`, archived). Every hand-kept feature matrix found had drifted. The ones that survive are generated from annotations on the tests and diffed in CI. No repo states "one e2e per feature"; the ones with rules say the opposite.
+Prior art was surveyed first. Every hand-kept feature matrix found had drifted. The ones that survive are generated from annotations on the tests and diffed in CI. No repo states "one e2e per feature"; the ones with rules say the opposite.
 
 ## Decision
 

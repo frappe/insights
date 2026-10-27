@@ -17,9 +17,10 @@ import pyarrow as pa
 from duckdb import ConversionException, IOException
 from frappe.utils import add_to_date
 from ibis.backends.duckdb import Backend as DuckDBBackend
+from rq.job import JobStatus
 
 import insights
-from insights.api.data_store import sync_tables
+from insights.api.data_store import sync_tables, update_failed_sync_status
 from insights.insights.doctype.insights_data_source_v3.connectors import duckdb as duckdb_connector
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     connect_duckdb,
@@ -31,9 +32,12 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WarehouseTable,
     WarehouseTableImporter,
     WarehouseTableWriter,
+    execute_warehouse_table_import,
+    import_job_id,
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import as_user
 
 # A reader in this process shares the DuckDB instance, so it never conflicts.
 # Only a second process reproduces the lock the web workers take in production.
@@ -374,44 +378,64 @@ class TestMissingTableNotice(InsightsIntegrationTestCase):
 
 class TestSyncSchedule(InsightsIntegrationTestCase):
     TABLE = "sync_schedule_table"
+    # one more due table than the site imports at once
+    TABLES = (TABLE, "sync_schedule_table_2", "sync_schedule_table_3")
+    OTHER_TABLE = "sync_schedule_other_table"
     # an @hourly table falls due on the hour, so a moving clock would decide the outcome
     HALF_PAST = datetime(2026, 1, 1, 12, 30)
 
     @classmethod
     def before_class(cls):
-        frappe.get_doc(
-            {
-                "doctype": "Insights Table v3",
-                "table": cls.TABLE,
-                "label": cls.TABLE,
-                "data_source": "Site DB",
-                "stored": 1,
-                "sync_schedule": "@hourly",
-            }
-        ).insert(ignore_permissions=True)
+        for table in cls.TABLES:
+            frappe.get_doc(
+                {
+                    "doctype": "Insights Table v3",
+                    "table": table,
+                    "label": table,
+                    "data_source": "Site DB",
+                    "stored": 1,
+                    "sync_schedule": "@hourly",
+                }
+            ).insert(ignore_permissions=True)
 
     @classmethod
     def after_class(cls):
-        frappe.delete_doc("Insights Table v3", get_table_name("Site DB", cls.TABLE), force=True)
+        for table in cls.TABLES:
+            frappe.delete_doc("Insights Table v3", get_table_name("Site DB", table), force=True)
 
     def after_test(self):
-        frappe.db.delete("Insights Table Import Log", {"table_name": self.TABLE})
+        frappe.db.delete(
+            "Insights Table Import Log", {"table_name": ["in", [*self.TABLES, self.OTHER_TABLE]]}
+        )
 
-    def start_import(self, minutes_ago, status):
+    def start_import(self, minutes_ago, status, table=TABLE):
         log = frappe.new_doc("Insights Table Import Log")
         log.data_source = "Site DB"
-        log.table_name = self.TABLE
+        log.table_name = table
         log.status = status
         log.started_at = add_to_date(self.HALF_PAST, minutes=-minutes_ago)
         log.insert(ignore_permissions=True)
 
-    def imported_tables(self):
+    def make_all_due(self):
+        for table in self.TABLES:
+            self.start_import(minutes_ago=120, status="Completed", table=table)
+
+    @contextmanager
+    def enqueued_tables(self, users=None):
+        tables, users = [], [] if users is None else users
         with (
-            patch("frappe.enqueue") as enqueue,
+            patch(
+                "frappe.enqueue", side_effect=lambda *args, **kwargs: users.append(frappe.session.user)
+            ) as enqueue,
             patch("insights.api.data_store.now_datetime", return_value=self.HALF_PAST),
         ):
+            yield tables
+        tables.extend(call.kwargs.get("table_name") for call in enqueue.call_args_list)
+
+    def imported_tables(self):
+        with self.enqueued_tables() as tables:
             sync_tables()
-        return [call.kwargs.get("table_name") for call in enqueue.call_args_list]
+        return tables
 
     # @feature data-store.sync-schedule
     def test_a_table_is_imported_once_its_schedule_is_due_since_its_last_import(self):
@@ -423,6 +447,75 @@ class TestSyncSchedule(InsightsIntegrationTestCase):
         self.start_import(minutes_ago=120, status="Completed")
         self.start_import(minutes_ago=10, status="Failed")
         self.assertNotIn(self.TABLE, self.imported_tables())
+
+    # @feature data-store.import-concurrency
+    def test_no_more_than_two_due_tables_are_imported_at_once(self):
+        self.make_all_due()
+        self.assertEqual(len(self.imported_tables()), 2)
+
+    # @feature data-store.import-concurrency
+    def test_the_tables_that_have_waited_longest_are_imported_first(self):
+        # the table list sorts the last edited first, and here it has waited least
+        for order, table in enumerate(self.TABLES):
+            self.start_import(minutes_ago=90 + 60 * order, status="Completed", table=table)
+            frappe.db.set_value(
+                "Insights Table v3",
+                get_table_name("Site DB", table),
+                "modified",
+                add_to_date(None, minutes=-order),
+                update_modified=False,
+            )
+        self.assertEqual(self.imported_tables(), [self.TABLES[2], self.TABLES[1]])
+
+    # @feature data-store.import-concurrency
+    def test_an_import_under_way_holds_one_of_the_two_places(self):
+        self.make_all_due()
+        self.start_import(minutes_ago=5, status="In Progress", table=self.OTHER_TABLE)
+        self.assertEqual(len(self.imported_tables()), 1)
+
+    # @feature data-store.import-concurrency
+    def test_imports_queued_but_not_started_hold_their_places(self):
+        self.make_all_due()
+        queued = {import_job_id("Site DB", table) for table in self.TABLES[1:]}
+        with patch(
+            "insights.api.data_store.get_job_status",
+            side_effect=lambda job_id: JobStatus.QUEUED if job_id in queued else None,
+        ):
+            self.assertEqual(self.imported_tables(), [])
+
+    # @feature data-store.import-concurrency
+    def test_an_import_whose_worker_died_frees_its_place_after_the_job_timeout(self):
+        self.make_all_due()
+        self.start_import(minutes_ago=31, status="In Progress", table=self.OTHER_TABLE)
+        self.assertEqual(len(self.imported_tables()), 2)
+
+    # @feature data-store.import-concurrency
+    def test_the_next_due_table_is_imported_as_an_import_ends_even_a_failed_one(self):
+        self.start_import(minutes_ago=120, status="Completed")
+        users = []
+        # a reader whose query found its table missing queued the import that ends
+        with as_user("Guest"), self.enqueued_tables(users) as tables:
+            with patch.object(
+                WarehouseTableImporter, "start_import", side_effect=RuntimeError("source went away")
+            ):
+                with self.assertRaises(RuntimeError):
+                    execute_warehouse_table_import("Site DB", self.OTHER_TABLE)
+            self.assertEqual(frappe.session.user, "Guest")
+        self.assertEqual(tables, [self.TABLE])
+        self.assertEqual(users, ["Administrator"])
+
+    # @feature data-store.killed-import-reason
+    def test_an_import_whose_worker_was_killed_fails_and_says_why(self):
+        self.start_import(minutes_ago=0, status="In Progress")
+        log = frappe.get_last_doc("Insights Table Import Log", {"table_name": self.TABLE})
+        # a killed worker leaves its log In Progress, and the hourly check looks an hour back
+        log.db_set("creation", self.HALF_PAST, update_modified=False)
+
+        update_failed_sync_status()
+
+        log.reload()
+        self.assertEqual(log.status, "Failed")
+        self.assertIn("worker was killed or restarted", log.output)
 
 
 class TestImportRowLimit(InsightsIntegrationTestCase):
@@ -508,6 +601,73 @@ class TestImportRowLimit(InsightsIntegrationTestCase):
         capped = self.importer_for(self.CAPPED)
         self.assertEqual(capped.settings.row_limit, 2)
         self.assertEqual(self.rows_kept_by(capped), 2)
+
+
+class TestSiteDBImport(InsightsIntegrationTestCase):
+    """An import from MariaDB reads each batch a chunk at a time."""
+
+    DATA_SOURCE = "Site DB"
+    TABLE = "tabDocField"
+    SETTINGS = ("stored", "sync_mode", "row_limit", "before_import_script")
+
+    @classmethod
+    def before_class(cls):
+        cls.table_doc = get_table_name(cls.DATA_SOURCE, cls.TABLE)
+        cls.made_doc = not frappe.db.exists("Insights Table v3", cls.table_doc)
+        if cls.made_doc:
+            doc = frappe.get_doc(
+                {
+                    "doctype": "Insights Table v3",
+                    "table": cls.TABLE,
+                    "label": cls.TABLE,
+                    "data_source": cls.DATA_SOURCE,
+                }
+            )
+            doc.flags.ignore_links = True
+            doc.insert(ignore_permissions=True)
+        cls.settings_were = frappe.db.get_value(
+            "Insights Table v3", cls.table_doc, cls.SETTINGS, as_dict=True
+        )
+        frappe.db.set_value(
+            "Insights Table v3",
+            cls.table_doc,
+            {"sync_mode": "Full", "row_limit": 0, "before_import_script": None},
+        )
+
+    @classmethod
+    def after_class(cls):
+        if cls.made_doc:
+            frappe.delete_doc("Insights Table v3", cls.table_doc, force=True, ignore_permissions=True)
+        else:
+            frappe.db.set_value("Insights Table v3", cls.table_doc, cls.settings_were)
+        frappe.db.delete(
+            "Insights Table Import Log", {"table_name": cls.TABLE, "creation": [">=", cls.started]}
+        )
+        frappe.db.commit()  # nosemgrep - the import commits its logs and these settings, so undoing them must commit too
+
+    def before_test(self):
+        TestSiteDBImport.started = frappe.utils.now()
+        tmpdir = tempfile.mkdtemp(prefix="insights_site_db_import_test_")
+        self.addCleanup(shutil.rmtree, tmpdir, ignore_errors=True)
+        self.path = str(Path(tmpdir) / "store.duckdb")
+        self.enterContext(patch.object(insights.warehouse, "get_db_path", return_value=self.path))
+        self.enterContext(patch.object(insights, "create_toast"))
+        self.enterContext(patch("frappe.utils.telemetry.capture"))
+        insights.db_connections.pop("insights", None)
+
+    # @feature data-store.import-table
+    def test_an_import_from_mariadb_copies_each_row_once_across_chunks_and_batches(self):
+        # a doctype's fields share a creation and outnumber a chunk of a 1000-row batch
+        with patch.object(WarehouseTableImporter, "calculate_batch_size", return_value=1000):
+            WarehouseTableImporter(WarehouseTable(self.DATA_SOURCE, self.TABLE)).start_import()
+
+        source = frappe.db.sql("SELECT * FROM `tabDocField` ORDER BY name", as_list=True)
+        db = open_local_duckdb(self.path)
+        try:
+            stored = db.raw_sql("SELECT * FROM site_db.tabdocfield ORDER BY name").fetchall()
+        finally:
+            db.disconnect()
+        self.assertEqual([tuple(row) for row in source], stored)
 
 
 HOLD_WRITE_LOCK = """
@@ -773,6 +933,64 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
             self.run_import(["a", "b", "c", "d", "e"], [None, None, None, "2026-02-01", "2026-02-02"])
 
         self.assertEqual(self.stored_names(), ["a", "b", "c", "d", "e"])
+
+    @contextmanager
+    def commit_running_out_of_memory(self, times):
+        """Commit with a 600 MB limit, and run out of memory the first `times` times.
+
+        It runs out after the rows at the bookmark are deleted, so the rollback has
+        work to undo.
+        """
+        get_single_value = frappe.db.get_single_value
+        commit, insert = WarehouseTableWriter._commit, DuckDBBackend.insert
+        limits, threads = [], []
+
+        def commit_with(writer, memory):
+            limits.append(memory)
+            return commit(writer, memory)
+
+        def insert_or_run_out(db, *args, **kwargs):
+            threads.append(db.raw_sql("SELECT current_setting('threads')").fetchone()[0])
+            if len(limits) <= times:
+                raise duckdb.OutOfMemoryException("Out of Memory Error: could not allocate block")
+            return insert(db, *args, **kwargs)
+
+        with (
+            patch.dict(frappe.conf, {"insights_duckdb_memory_limit": None}),
+            patch.object(
+                frappe.db,
+                "get_single_value",
+                side_effect=lambda doctype, field, *args, **kwargs: 600
+                if field == "max_memory_usage"
+                else get_single_value(doctype, field, *args, **kwargs),
+            ),
+            patch.object(WarehouseTableWriter, "_commit", autospec=True, side_effect=commit_with),
+            patch.object(DuckDBBackend, "insert", autospec=True, side_effect=insert_or_run_out),
+        ):
+            yield limits, threads
+
+    # @feature data-store.import-table
+    def test_a_commit_that_runs_out_of_its_share_of_memory_runs_again_with_the_whole_limit(self):
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+        with self.commit_running_out_of_memory(times=1) as (limits, threads):
+            self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b", "c"])
+        self.assertEqual(limits, [400, 600])
+        self.assertEqual(threads, [1, 1])
+
+    # @feature data-store.import-table
+    def test_a_commit_that_runs_out_of_the_whole_limit_fails_and_says_to_raise_it(self):
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+        with self.commit_running_out_of_memory(times=2) as (limits, _):
+            with self.assertRaisesRegex(duckdb.OutOfMemoryException, "Raise Max Memory Usage"):
+                self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b"])
+        self.assertEqual(limits, [400, 600])
+        log = frappe.get_last_doc("Insights Table Import Log", {"table_name": self.TABLE})
+        self.assertEqual(log.status, "Failed")
+        self.assertIn("needs more than 600 MB. Raise Max Memory Usage in Insights Settings", log.output)
 
     # @feature data-store.import-table
     def test_a_column_empty_in_one_batch_keeps_its_source_type(self):

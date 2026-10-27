@@ -61,7 +61,6 @@ const webhookError = computed(() => {
 	const url = alert.doc.webhook_url?.trim()
 	if (!url) return __('Webhook URL is required')
 	if (!url.startsWith('https://')) return __('Webhook URL must use https://')
-	if (!alert.doc.webhook_token) return __('Token is required')
 	return ''
 })
 
@@ -235,9 +234,11 @@ function toggleAlert() {
 							</div>
 							<FormControl
 								type="password"
-								:label="__('Token')"
+								:label="__('Token (optional)')"
 								v-model="alert.doc.webhook_token"
-								:placeholder="__('Sent as an Authorization: Bearer header')"
+								:placeholder="
+									__('Sent as an Authorization: Bearer header when set')
+								"
 							/>
 						</template>
 					</div>

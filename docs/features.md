@@ -434,6 +434,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.import-table | An admin imports a source table into the data store and queries run against the copy. |
 | data-store.import-row-limit | An admin caps how many rows an import copies. |
 | data-store.sync-schedule | An admin sets a cron schedule on a stored table, and the table is imported when the schedule is due, counted from its last import. |
+| data-store.import-concurrency | A site imports at most two due tables at once and starts the next as one ends, the longest waiting first; an import whose worker died frees its place after the job timeout. |
+| data-store.killed-import-reason | An import whose worker was killed is marked failed, and its log says the worker stopped without finishing. |
 | data-store.list | An admin browses the stored tables and searches them by name. |
 | data-store.import-atomic | A failed import leaves the stored table as it was and no other table behind. |
 | data-store.import-cursor | An incremental import's cursor describes what is in the store, not what a run intended. |
@@ -456,7 +458,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | alerts.condition | A user sets the condition, from the builder or as a custom expression, that triggers the alert. |
 | alerts.message | A user writes the alert's message with field tokens. |
 | alerts.email | An alert emails its recipients, inside or outside the site, with a reply-to that reaches the author and a body that names the alert and the site as text. |
-| alerts.webhook | An alert posts a versioned payload to a webhook, token in the header, rows capped and the cap declared. |
+| alerts.webhook | An alert posts a versioned payload to a webhook, token, when set, in the header, the text under `message` and `content`, rows capped and the cap declared. |
 | alerts.webhook-address-policy | A webhook reaches only a public https address, never a private or loopback one, even through rebinding or a proxy. |
 | alerts.telegram | An alert sends to Telegram. |
 | alerts.schedule | An alert runs on its frequency, or on a cron expression the save checks the scheduler can read. |
