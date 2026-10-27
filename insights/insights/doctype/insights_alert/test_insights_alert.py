@@ -71,6 +71,23 @@ class TestWebhookPayload(IntegrationTestCase):
         self.assertNotIn("sekret-token", call.args[0])
 
     # @feature alerts.webhook
+    def test_a_send_without_a_token_has_no_authorization_header(self):
+        """Frappe reads any bearer token as OAuth, so Raven's guest endpoint would answer 401."""
+        doc = webhook_alert()
+        doc.webhook_token = None
+        with patch(POST) as post:
+            doc.send_webhook_alert("msg", message_context())
+        self.assertNotIn("Authorization", post.call_args.kwargs["headers"])
+
+    # @feature alerts.webhook
+    def test_content_carries_the_message_text(self):
+        """Raven's incoming webhook reads `content`, not `message`."""
+        payload, _ = self.post_one(message_context())
+        self.assertEqual(payload["content"], "**3 invoices are overdue**")
+        self.assertEqual(payload["content"], payload["message"])
+        self.assertEqual(payload["version"], 1)
+
+    # @feature alerts.webhook
     def test_rows_are_capped_and_the_cap_is_declared(self):
         payload, _ = self.post_one(message_context(row_count=ALERT_MAX_ROWS + 150))
         self.assertEqual(len(payload["context"]["rows"]), ALERT_MAX_ROWS)
@@ -82,6 +99,27 @@ class TestWebhookPayload(IntegrationTestCase):
         payload, _ = self.post_one(message_context(row_count=3))
         self.assertEqual(len(payload["context"]["rows"]), 3)
         self.assertFalse(payload["context"]["truncated"])
+
+
+class TestWebhookWithoutToken(InsightsIntegrationTestCase):
+    # @feature alerts.webhook
+    def test_a_webhook_alert_saves_without_a_token(self):
+        workbook = create_test_workbook("Administrator")
+        self.addCleanup(frappe.delete_doc, "Insights Workbook", workbook.name, force=True)
+        query = create_test_query("Administrator", workbook.name)
+        alert = frappe.get_doc(
+            doctype="Insights Alert",
+            title="Raven webhook",
+            channel="Webhook",
+            query=query.name,
+            frequency="Daily",
+            condition="q['status'] == 'Open'",
+            custom_condition=1,
+            message="{{ rows }}",
+            webhook_url="https://example.com/hooks/insights",
+        ).insert()
+        self.addCleanup(frappe.delete_doc, "Insights Alert", alert.name, force=True)
+        self.assertFalse(alert.get_password("webhook_token", raise_exception=False))
 
 
 class TestWebhookFailures(IntegrationTestCase):
