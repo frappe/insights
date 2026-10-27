@@ -368,6 +368,11 @@ def run_alert(alert):
     try:
         alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
         if alert_doc.is_event_due():
+            # Committed before the query runs. A job killed for running too
+            # long skips every handler below, and the alert would stay due,
+            # running the same long query on every tick.
+            alert_doc.db_set("last_execution", now_datetime(), update_modified=False)
+            frappe.db.commit()  # nosemgrep
             # the scheduler runs as Administrator, so without this the alert
             # would read every row of every table it names
             with permission_user(alert.permission_user):

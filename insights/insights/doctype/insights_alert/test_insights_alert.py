@@ -14,6 +14,7 @@ from insights.insights.doctype.insights_alert.insights_alert import (
     InsightsAlert,
     send_alerts,
 )
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import InsightsQueryv3
 from insights.permission_user import permission_user
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -232,6 +233,27 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
             ),
             1,
         )
+
+    # @feature alerts.failed-run-recorded
+    def test_a_run_killed_mid_query_is_not_due_on_the_next_tick(self):
+        """rq kills a job that outlives its timeout, and no handler runs. A
+        query that takes that long would otherwise run again on every tick."""
+
+        class HardKill(BaseException):
+            """Like the kill: no `except Exception` catches it."""
+
+        frappe.db.set_value("Insights Alert", self.alert.name, "last_execution", None)
+        frappe.db.commit()  # nosemgrep
+
+        with (
+            patch.object(InsightsQueryv3, "get_builder", side_effect=HardKill),
+            self.assertRaises(HardKill),
+        ):
+            send_alerts()
+        # the process died with what it had not committed
+        frappe.db.rollback()
+
+        self.assertFalse(frappe.get_doc("Insights Alert", self.alert.name).is_event_due())
 
 
 class ATickRunsEveryAlert(InsightsIntegrationTestCase):
