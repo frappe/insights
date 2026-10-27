@@ -10,7 +10,7 @@ How an agent writes a test during a feature, and how `/iris-code-review` judges 
 | unit | vitest | `frontend/src2/**/*.test.ts` | the adapter from result to chart props, pure state, helpers |
 | e2e | Playwright | `frontend/e2e/tests/<area>.spec.ts` | what only a browser proves |
 
-Run them with `bench --site <site> run-tests --app insights --module <module>`, `cd frontend && yarn test`, and the e2e command in `frontend/e2e/AGENTS.md`.
+Run them with `bench --site <site> run-tests --app insights` (add `--module <module>` for one module), `cd frontend && yarn test`, and the e2e command in `frontend/e2e/AGENTS.md`. `run-tests` refuses a site without `allow_tests`; set it with `bench --site <site> set-config allow_tests true`. Tests write data, so run them on a site you can throw away.
 
 ## The ladder
 
@@ -62,7 +62,7 @@ Each rule answers a failure someone has recorded; the source is named in bracket
 
 - A `skip` has an issue link, an owner and an expiry date on the same line. Review checks the date; a skip past its expiry is a finding.
 - In e2e, `test.skip` is a lint error. Use the `@quarantine` tag as `frontend/e2e/AGENTS.md` states, and put the same three fields in its comment.
-- A retry is a CI allowance, not a fix. `retries: 2` in `playwright.config.ts` absorbs infrastructure noise; it does not license a flaky test.
+- A retry is a CI allowance, not a fix. The one retry `playwright.config.ts` allows in CI absorbs infrastructure noise; it does not license a flaky test.
 - Before you land an e2e case, run it with `--repeat-each 3`. Any failure is a real failure.
 
 ## The pre-merge pass

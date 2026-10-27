@@ -44,7 +44,7 @@ Count reviewable source only. Leave out lock files, `insights/locale/**` and gen
 ## Users
 
 - Read `CONTEXT.md`, `AGENTS.md` and the `docs/adr/` records for the changed area before you judge, so the review argues from recorded decisions.
-- When `docs/projects/<effort>/` matches the branch, read its map and the tickets the PR says it resolves, so scope is judged against stated intent.
+- Read the PR description and the issues it says it resolves, so scope is judged against stated intent.
 
 ## Layer
 
