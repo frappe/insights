@@ -17,6 +17,7 @@ import pyarrow as pa
 from duckdb import ConversionException, IOException
 from frappe.utils import add_to_date
 from ibis.backends.duckdb import Backend as DuckDBBackend
+from rq.job import JobStatus
 
 import insights
 from insights.api.data_store import sync_tables, update_failed_sync_status
@@ -32,9 +33,11 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WarehouseTableImporter,
     WarehouseTableWriter,
     execute_warehouse_table_import,
+    import_job_id,
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import as_user
 
 # A reader in this process shares the DuckDB instance, so it never conflicts.
 # Only a second process reproduces the lock the web workers take in production.
@@ -418,10 +421,12 @@ class TestSyncSchedule(InsightsIntegrationTestCase):
             self.start_import(minutes_ago=120, status="Completed", table=table)
 
     @contextmanager
-    def enqueued_tables(self):
-        tables = []
+    def enqueued_tables(self, users=None):
+        tables, users = [], [] if users is None else users
         with (
-            patch("frappe.enqueue") as enqueue,
+            patch(
+                "frappe.enqueue", side_effect=lambda *args, **kwargs: users.append(frappe.session.user)
+            ) as enqueue,
             patch("insights.api.data_store.now_datetime", return_value=self.HALF_PAST),
         ):
             yield tables
@@ -455,6 +460,16 @@ class TestSyncSchedule(InsightsIntegrationTestCase):
         self.assertEqual(len(self.imported_tables()), 1)
 
     # @feature data-store.import-concurrency
+    def test_imports_queued_but_not_started_hold_their_places(self):
+        self.make_all_due()
+        queued = {import_job_id("Site DB", table) for table in self.TABLES[1:]}
+        with patch(
+            "insights.api.data_store.get_job_status",
+            side_effect=lambda job_id: JobStatus.QUEUED if job_id in queued else None,
+        ):
+            self.assertEqual(self.imported_tables(), [])
+
+    # @feature data-store.import-concurrency
     def test_an_import_whose_worker_died_frees_its_place_after_the_job_timeout(self):
         self.make_all_due()
         self.start_import(minutes_ago=31, status="In Progress", table=self.OTHER_TABLE)
@@ -463,13 +478,17 @@ class TestSyncSchedule(InsightsIntegrationTestCase):
     # @feature data-store.import-concurrency
     def test_the_next_due_table_is_imported_as_an_import_ends_even_a_failed_one(self):
         self.start_import(minutes_ago=120, status="Completed")
-        with self.enqueued_tables() as tables:
+        users = []
+        # a reader whose query found its table missing queued the import that ends
+        with as_user("Guest"), self.enqueued_tables(users) as tables:
             with patch.object(
                 WarehouseTableImporter, "start_import", side_effect=RuntimeError("source went away")
             ):
                 with self.assertRaises(RuntimeError):
                     execute_warehouse_table_import("Site DB", self.OTHER_TABLE)
+            self.assertEqual(frappe.session.user, "Guest")
         self.assertEqual(tables, [self.TABLE])
+        self.assertEqual(users, ["Administrator"])
 
     # @feature data-store.killed-import-reason
     def test_an_import_whose_worker_was_killed_fails_and_says_why(self):

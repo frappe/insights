@@ -594,7 +594,7 @@ class WarehouseTableImporter:
 
     def enqueue_import(self) -> bool:
         """Queue an import for this table. True when one was already under way."""
-        job_id = f"import_{frappe.scrub(self.table.data_source)}_{frappe.scrub(self.table.table_name)}"
+        job_id = import_job_id(self.table.data_source, self.table.table_name)
 
         if is_job_enqueued(job_id) or self.import_in_progress():
             insights.create_toast(
@@ -1007,8 +1007,12 @@ class WarehouseTableImporter:
         self.log.log_output(f"[{now()}] [{elapsed:.1f}s] {message}", commit=commit)
 
 
+def import_job_id(data_source: str, table_name: str) -> str:
+    return f"import_{frappe.scrub(data_source)}_{frappe.scrub(table_name)}"
+
+
 def enqueue_warehouse_table_import(data_source: str, table_name: str):
-    job_id = f"import_{frappe.scrub(data_source)}_{frappe.scrub(table_name)}"
+    job_id = import_job_id(data_source, table_name)
     frappe.enqueue(
         "insights.insights.doctype.insights_data_source_v3.data_warehouse.execute_warehouse_table_import",
         data_source=data_source,
@@ -1021,14 +1025,30 @@ def enqueue_warehouse_table_import(data_source: str, table_name: str):
 
 
 def execute_warehouse_table_import(data_source: str, table_name: str):
-    from insights.api.data_store import sync_tables
-
     table = WarehouseTable(data_source, table_name)
     importer = WarehouseTableImporter(table)
     try:
         importer.start_import()
     finally:
+        start_next_imports()
+
+
+def start_next_imports():
+    """Start the next due tables as the scheduler would, whoever's import just ended.
+
+    A reader whose query found a table missing queues its import, and the
+    imports this one starts must not run as that reader.
+    """
+    from insights.api.data_store import sync_tables
+
+    user = frappe.session.user
+    frappe.set_user("Administrator")  # nosemgrep - frappe.enqueue takes the session's user
+    try:
         sync_tables()
+    except Exception:
+        frappe.log_error(title="Error starting the next due table imports")
+    finally:
+        frappe.set_user(user)  # nosemgrep - gives the job back its own user
 
 
 def get_warehouse_schema_name(data_source: str) -> str:

@@ -4,10 +4,13 @@ import frappe
 from croniter import croniter
 from frappe.query_builder.functions import Max
 from frappe.utils import add_to_date, now, now_datetime
+from frappe.utils.background_jobs import get_job_status
+from frappe.utils.synchronization import filelock
+from rq.job import JobStatus
 
 import insights
 from insights.decorators import insights_whitelist
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import IMPORT_TIMEOUT
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import IMPORT_TIMEOUT, import_job_id
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
 # An import holds a chunk of rows and then its commit in memory, and every worker
@@ -74,43 +77,51 @@ def sync_tables():
     not its last success, so a failing table waits for its next due time instead
     of retrying on every tick.
     """
-    tables = frappe.get_all(
-        "Insights Table v3",
-        filters={"stored": 1},
-        fields=["data_source", "table", "sync_schedule", "creation"],
-    )
-
-    Log = frappe.qb.DocType("Insights Table Import Log")
-    started = {
-        (row.data_source, row.table_name): row.started_at
-        for row in frappe.qb.from_(Log)
-        .select(Log.data_source, Log.table_name, Max(Log.started_at).as_("started_at"))
-        .groupby(Log.data_source, Log.table_name)
-        .run(as_dict=True)
-    }
-
-    now = now_datetime()
-    running = count_running_imports(now)
-    for table in tables:
+    # the tick and an import that ends can count the running imports at once
+    with filelock("insights_sync_tables"):
+        tables = frappe.get_all(
+            "Insights Table v3",
+            filters={"stored": 1},
+            fields=["data_source", "table", "sync_schedule", "creation"],
+        )
+        now = now_datetime()
+        running = count_running_imports(tables, now)
         if running >= MAX_RUNNING_IMPORTS:
-            break
-        last = started.get((table.data_source, table.table)) or table.creation
-        try:
-            if croniter(table.sync_schedule, last).get_next(datetime) <= now:
-                # a table whose import is already queued counts as running too
-                insights.warehouse.get_table(table.data_source, table.table).enqueue_import()
-                running += 1
-        except Exception:
-            frappe.log_error(title=f"Error scheduling import of {table.table}")
+            return
+
+        Log = frappe.qb.DocType("Insights Table Import Log")
+        started = {
+            (row.data_source, row.table_name): row.started_at
+            for row in frappe.qb.from_(Log)
+            .select(Log.data_source, Log.table_name, Max(Log.started_at).as_("started_at"))
+            .groupby(Log.data_source, Log.table_name)
+            .run(as_dict=True)
+        }
+
+        for table in tables:
+            if running >= MAX_RUNNING_IMPORTS:
+                break
+            last = started.get((table.data_source, table.table)) or table.creation
+            try:
+                if croniter(table.sync_schedule, last).get_next(datetime) <= now:
+                    # an import already queued or running is counted already
+                    if not insights.warehouse.get_table(table.data_source, table.table).enqueue_import():
+                        running += 1
+            except Exception:
+                frappe.log_error(title=f"Error scheduling import of {table.table}")
 
 
-def count_running_imports(now: datetime) -> int:
-    """Imports started within their job's timeout that have not ended.
+def import_queued(data_source: str, table_name: str) -> bool:
+    return get_job_status(import_job_id(data_source, table_name)) == JobStatus.QUEUED
+
+
+def count_running_imports(tables: list, now: datetime) -> int:
+    """Imports started within their job's timeout that have not ended, then queued ones.
 
     A worker killed mid-import never ends its log, so a log older than the
-    timeout no longer holds a place.
+    timeout no longer holds a place. A queued import has written no log yet.
     """
-    return frappe.db.count(
+    running = frappe.db.count(
         "Insights Table Import Log",
         {
             "status": "In Progress",
@@ -118,6 +129,11 @@ def count_running_imports(now: datetime) -> int:
             "started_at": ("between", [add_to_date(now, seconds=-IMPORT_TIMEOUT), now]),
         },
     )
+    for table in tables:
+        if running >= MAX_RUNNING_IMPORTS:
+            break
+        running += import_queued(table.data_source, table.table)
+    return running
 
 
 def update_failed_sync_status():
