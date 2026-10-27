@@ -2,6 +2,14 @@ name: Server
 
 on:
   pull_request:
+    # Later patterns override earlier ones. The frontend reaches these tests only
+    # through the island entries, which `test_desk_island` reads from assets.json.
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**.md'
+      - '!frontend/**'
+      - 'frontend/build-islands.mjs'
   workflow_dispatch:
   schedule:
     # Run everday at midnight UTC / 5:30 IST
@@ -126,28 +134,14 @@ jobs:
         env:
           TYPE: server
 
-      - name: Upload coverage data
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-server
-          path: ${{ env.BENCH_PATH }}/sites/coverage.xml
-
-  coverage:
-    name: Coverage Wrap Up
-    needs: tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Clone
-        uses: actions/checkout@v6
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-
+      # In this job, not a job of its own: each job takes a runner from the frappe
+      # org's shared pool, and waits in its queue.
       - name: Upload coverage data
         uses: codecov/codecov-action@v6
         with:
           name: Server
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ env.BENCH_PATH }}/sites/coverage.xml
           fail_ci_if_error: true
           verbose: true
           flags: server
