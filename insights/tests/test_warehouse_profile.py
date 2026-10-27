@@ -1,10 +1,13 @@
 import json
+import subprocess
+import sys
 from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.query_builder.functions import Max
 from rq.job import JobStatus
 
+import insights
 from insights.api.data_store import profile_warehouse
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import create_user, delete_users
@@ -13,6 +16,16 @@ from insights.utils import create_execution_log
 ADMIN = "warehouse-profile-admin@test.com"
 ANALYST = "warehouse-profile-analyst@test.com"
 QUERY = "warehouse-profile-test"
+
+# A writer in this process shares the DuckDB instance, so only a second process
+# holds the file as an import's commit does.
+HOLD_WRITE_LOCK = """
+import sys, time, duckdb
+con = duckdb.connect(sys.argv[1])
+print("held", flush=True)
+time.sleep(float(sys.argv[2]))
+con.close()
+"""
 
 
 def run_now(method, queue, timeout, job_id, deduplicate, enqueue_after_commit, **kwargs):
@@ -74,6 +87,23 @@ class WarehouseProfile(InsightsIntegrationTestCase):
         self.assertNotEqual(first.file_url, second.file_url)
         first.reload()
         self.assertEqual(first.get_content(), report)
+
+    # @feature data-store.profile-warehouse
+    def test_a_replay_waits_for_an_import_to_release_the_warehouse(self):
+        # closes this process's read connection, which would keep the writer out
+        with insights.warehouse.get_write_connection():
+            pass
+        writer = subprocess.Popen(
+            [sys.executable, "-c", HOLD_WRITE_LOCK, insights.warehouse.get_db_path(), "3"],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        self.addCleanup(writer.wait)
+        writer.stdout.readline()
+
+        [entry] = json.loads(self.profile().get_content())["queries"]
+        self.assertIsNone(entry["error"])
+        self.assertGreater(entry["runs"][0]["operators"], 0)
 
     # @feature data-store.profile-warehouse
     def test_an_insights_user_cannot_profile_the_data_store(self):

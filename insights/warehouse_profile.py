@@ -93,6 +93,9 @@ def run(
         The name of the File that holds the report.
     """
     file = frappe.get_doc("File", file) if file else create_report_file()
+    # two requests at once both pass the queued check, and rq runs the one job id twice
+    if json.loads(file.get_content()).get("status") != "Queued":
+        return file.name
     report = {
         "generated_at": frappe.utils.now(),
         "site": frappe.local.site,
