@@ -63,7 +63,7 @@ MIN_CHUNK_MEMORY = 8
 # and column: committing 46 columns at a 1 GB limit took 1.1 GB with two threads
 # and 1.6 GB with eight, and 304 columns fit 341 MB only with one thread. So a
 # commit gets one thread and a share of the import's limit, no less than
-# COMMIT_MIN_MEMORY (MB). One that still runs out runs again under DuckDB's own
+# COMMIT_MIN_MEMORY (MB). One that still runs out runs once more with the whole
 # limit, and a site that sets its own DuckDB limit keeps it.
 COMMIT_THREADS = 1
 COMMIT_MEMORY_SHARE = 2 / 3
@@ -270,22 +270,29 @@ class WarehouseTableWriter:
         # Arrow keeps the memory the batches freed for its next ones, which DuckDB cannot use
         pa.default_memory_pool().release_unused()
 
-        memory = self.commit_memory()
         try:
-            try:
-                total_rows = self._commit(memory)
-            except OutOfMemoryException:
-                if memory is None:
-                    raise
-                self._log(
-                    f"The commit needs more than {memory} MB, committing again under DuckDB's own limit"
-                )
-                total_rows = self._commit(None)
+            total_rows = self._commit_within_limit()
             self._committed = True
         finally:
             self._cleanup_temp_dir()
 
         return total_rows
+
+    def _commit_within_limit(self) -> int:
+        memory = self.commit_memory()
+        if memory is None:
+            return self._commit(None)
+        limit = max(self.memory_limit, COMMIT_MIN_MEMORY)
+        for attempt in sorted({memory, limit}):
+            try:
+                return self._commit(attempt)
+            except OutOfMemoryException as error:
+                if attempt == limit:
+                    raise OutOfMemoryException(
+                        f"Committing '{self.table_name}' needs more than {limit} MB. "
+                        "Raise Max Memory Usage in Insights Settings and import it again."
+                    ) from error
+                self._log(f"The commit needs more than {attempt} MB, committing again with {limit} MB")
 
     def commit_memory(self) -> int | None:
         """MB DuckDB may use to commit, or None to keep its own limit."""

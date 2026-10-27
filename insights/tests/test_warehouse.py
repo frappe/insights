@@ -934,28 +934,63 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
 
         self.assertEqual(self.stored_names(), ["a", "b", "c", "d", "e"])
 
-    # @feature data-store.import-table
-    def test_a_commit_that_runs_out_of_the_imports_memory_runs_again_under_duckdbs_own(self):
-        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
-        insert = DuckDBBackend.insert
-        limits = []
+    @contextmanager
+    def commit_running_out_of_memory(self, times):
+        """Commit with a 600 MB limit, and run out of memory the first `times` times.
 
-        # after the rows at the bookmark are deleted, so the rollback has work to undo
-        def out_of_memory_once(db, *args, **kwargs):
-            limits.append(db.raw_sql("SELECT current_setting('memory_limit')").fetchone()[0])
-            if len(limits) == 1:
+        It runs out after the rows at the bookmark are deleted, so the rollback has
+        work to undo.
+        """
+        get_single_value = frappe.db.get_single_value
+        commit, insert = WarehouseTableWriter._commit, DuckDBBackend.insert
+        limits, threads = [], []
+
+        def commit_with(writer, memory):
+            limits.append(memory)
+            return commit(writer, memory)
+
+        def insert_or_run_out(db, *args, **kwargs):
+            threads.append(db.raw_sql("SELECT current_setting('threads')").fetchone()[0])
+            if len(limits) <= times:
                 raise duckdb.OutOfMemoryException("Out of Memory Error: could not allocate block")
             return insert(db, *args, **kwargs)
 
         with (
             patch.dict(frappe.conf, {"insights_duckdb_memory_limit": None}),
-            patch.object(DuckDBBackend, "insert", autospec=True, side_effect=out_of_memory_once),
+            patch.object(
+                frappe.db,
+                "get_single_value",
+                side_effect=lambda doctype, field, *args, **kwargs: 600
+                if field == "max_memory_usage"
+                else get_single_value(doctype, field, *args, **kwargs),
+            ),
+            patch.object(WarehouseTableWriter, "_commit", autospec=True, side_effect=commit_with),
+            patch.object(DuckDBBackend, "insert", autospec=True, side_effect=insert_or_run_out),
         ):
+            yield limits, threads
+
+    # @feature data-store.import-table
+    def test_a_commit_that_runs_out_of_its_share_of_memory_runs_again_with_the_whole_limit(self):
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+        with self.commit_running_out_of_memory(times=1) as (limits, threads):
             self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
 
         self.assertEqual(self.stored_names(), ["a", "b", "c"])
-        self.assertEqual(len(limits), 2)
-        self.assertNotEqual(limits[0], limits[1])
+        self.assertEqual(limits, [400, 600])
+        self.assertEqual(threads, [1, 1])
+
+    # @feature data-store.import-table
+    def test_a_commit_that_runs_out_of_the_whole_limit_fails_and_says_to_raise_it(self):
+        self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
+        with self.commit_running_out_of_memory(times=2) as (limits, _):
+            with self.assertRaisesRegex(duckdb.OutOfMemoryException, "Raise Max Memory Usage"):
+                self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
+
+        self.assertEqual(self.stored_names(), ["a", "b"])
+        self.assertEqual(limits, [400, 600])
+        log = frappe.get_last_doc("Insights Table Import Log", {"table_name": self.TABLE})
+        self.assertEqual(log.status, "Failed")
+        self.assertIn("needs more than 600 MB. Raise Max Memory Usage in Insights Settings", log.output)
 
     # @feature data-store.import-table
     def test_a_column_empty_in_one_batch_keeps_its_source_type(self):
