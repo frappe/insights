@@ -69,7 +69,9 @@ def read_pyarrow_batches(db: MySQLBackend, query: Table, chunk_size: int) -> pa.
 
     ibis's own reader buffers the whole result in the client, then copies it
     into Python rows, pandas and Arrow at once. An unbuffered cursor holds only
-    a chunk; each chunk is converted as ibis converts the whole result.
+    a chunk; each chunk is converted as ibis converts the whole result. ibis
+    streams PostgreSQL this way since https://github.com/ibis-project/ibis/issues/10938,
+    but not MySQL; when it does, this copy can go.
     """
     schema = query.schema()
     return pa.RecordBatchReader.from_batches(
