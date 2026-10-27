@@ -65,6 +65,48 @@ SAMPLE_INTERVAL = 0.05
 DEFAULT_MAX_SECONDS = 180
 
 
+def build_report(
+    limit: int = 10,
+    since_days: int = 7,
+    min_time: float = 1.0,
+    concurrency: int = 1,
+    max_seconds: int = DEFAULT_MAX_SECONDS,
+    budget: float | None = None,
+) -> dict[str, Any]:
+    """Profile the slowest logged warehouse queries and answer with the report.
+
+    Args:
+        limit: How many of the slowest distinct queries to replay.
+        since_days: How far back to read the execution log.
+        min_time: Ignore anything that already runs faster than this, in seconds.
+        concurrency: Replay each statement this many times at once.
+        max_seconds: Cancel a replay that runs longer than this.
+        budget: Stop starting new replays once this many seconds have passed.
+            A caller that holds a web worker must pass one. `not_profiled` then
+            names what was left, for the next call to pick up.
+    """
+    queries = slowest_logged(limit, since_days, min_time)
+    if not queries:
+        frappe.throw(f"No data store queries slower than {min_time}s in the last {since_days} days")
+
+    deadline = time.monotonic() + budget if budget else None
+    profiled, skipped = [], []
+    for query in queries:
+        if deadline and time.monotonic() >= deadline:
+            skipped.append(query["query"])
+            continue
+        profiled.append(_replay(query, concurrency, max_seconds))
+
+    return {
+        "generated_at": frappe.utils.now(),
+        "site": frappe.local.site,
+        "settings": read_settings(),
+        "concurrency": concurrency,
+        "queries": profiled,
+        "not_profiled": skipped,
+    }
+
+
 def run(
     limit: int = 10,
     since_days: int = 7,
@@ -73,30 +115,12 @@ def run(
     max_seconds: int = DEFAULT_MAX_SECONDS,
     out: str | None = None,
 ) -> str:
-    """Profile the slowest logged warehouse queries and write a JSON report.
+    """Profile from the bench, print a summary and write the report to a file.
 
-    Args:
-        limit: How many of the slowest distinct queries to replay.
-        since_days: How far back to read the execution log.
-        min_time: Ignore anything that already runs faster than this, in seconds.
-        concurrency: Replay each statement this many times at once.
-        max_seconds: Cancel a replay that runs longer than this.
-        out: Path to write the report to. Defaults to the site's private files.
-
-    Returns:
-        The path the report was written to.
+    Returns the path the report was written to. `insights.api.data_store` runs
+    the same profile over the API, for a caller with no shell on the host.
     """
-    queries = slowest_logged(limit, since_days, min_time)
-    if not queries:
-        frappe.throw(f"No data store queries slower than {min_time}s in the last {since_days} days")
-
-    report = {
-        "generated_at": frappe.utils.now(),
-        "site": frappe.local.site,
-        "settings": read_settings(),
-        "concurrency": concurrency,
-        "queries": [_replay(q, concurrency, max_seconds) for q in queries],
-    }
+    report = build_report(limit, since_days, min_time, concurrency, max_seconds)
     path = _write_report(report, out)
     print(summarize(report))
     print(f"\nFull report: {path}")
