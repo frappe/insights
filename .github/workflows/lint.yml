@@ -69,7 +69,7 @@ jobs:
       - name: Check commit titles
         if: ${{ !cancelled() }}
         run: |
-          npm install --no-save @commitlint/cli @commitlint/config-conventional
+          npm install --no-save --ignore-scripts @commitlint/cli @commitlint/config-conventional
           npx commitlint --verbose --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
 
   deps-vulnerable-check:

@@ -2,14 +2,17 @@ name: Server
 
 on:
   pull_request:
-    # Later patterns override earlier ones. The frontend reaches these tests only
-    # through the island entries, which `test_desk_island` reads from assets.json.
+    # Later patterns override earlier ones. Server tests read the island entries
+    # from assets.json, and some read `.ts` sources: translatable labels, the
+    # filter picker's operators, client escaping.
     paths:
       - '**'
       - '!docs/**'
       - '!**.md'
       - '!frontend/**'
       - 'frontend/build-islands.mjs'
+      - 'frontend/src2/**/*.ts'
+      - 'frontend/src2/**/*.tsx'
   workflow_dispatch:
   schedule:
     # Run everday at midnight UTC / 5:30 IST
