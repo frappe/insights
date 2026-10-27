@@ -36,13 +36,14 @@ const workbook = inject(workbookKey)!
 								)
 							"
 						>
-							<!-- where the read-only lock sits: outside the title's box, whose
-							     padding is the gap, so the title stays centred -->
+							<!-- outside the title's box, as the read-only lock is, so the title
+							     stays centred. The box's padding is most of the gap, and 4px
+							     keep its focus border off the logo -->
 							<span
 								tabindex="0"
 								role="img"
 								:aria-label="workbook.doc.shipped_by"
-								class="absolute -left-6 flex rounded-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+								class="absolute -left-5 flex rounded-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							>
 								<Avatar
 									size="xs"
