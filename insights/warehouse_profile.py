@@ -87,10 +87,10 @@ def run(
         max_seconds: Cancel a replay that runs longer than this, and give up
             waiting for a writer to release the file after as long.
         file: The name of the File to write the report to. `enqueue` creates it,
-            to answer with its URL.
+            to answer with it.
 
     Returns:
-        The URL of the File that holds the report.
+        The name of the File that holds the report.
     """
     file = frappe.get_doc("File", file) if file else create_report_file()
     report = {
@@ -109,17 +109,17 @@ def run(
                 write_report(file, report)
         report["status"] = "Done"
     except LockTimeoutError:
-        report["status"], report["error"] = "Failed", "Another warehouse profile is running"
+        report["status"] = "Failed"
+        report["error"] = "Another warehouse profile is running"
     except Exception as e:
-        report["status"], report["error"] = (
-            "Failed",
-            str(e).splitlines()[0][:500] if str(e) else type(e).__name__,
-        )
+        frappe.log_error(title="Warehouse profile failed")
+        report["status"] = "Failed"
+        report["error"] = str(e).splitlines()[0][:500] if str(e) else type(e).__name__
 
     write_report(file, report)
     print(summarize(report))
-    print(f"\nFull report: {file.get_full_path()}")
-    return file.file_url
+    print(f"\nFull report: File {file.name}, {file.file_url}")
+    return file.name
 
 
 def enqueue(
@@ -132,8 +132,8 @@ def enqueue(
     """Queue `run` on the long queue, one profile at a time.
 
     Returns:
-        The URL of the private File the job writes its report to. Its `status`
-        is `Queued` until the job starts.
+        The name of the private File the job writes its report to. Its
+        `status` is `Queued` until the job starts.
     """
     if is_job_enqueued(PROFILE_LOCK):
         frappe.throw(_("A warehouse profile is already queued or running"))
@@ -159,7 +159,7 @@ def enqueue(
         max_seconds=max_seconds,
         file=file.name,
     )
-    return file.file_url
+    return file.name
 
 
 def create_report_file():
@@ -168,14 +168,16 @@ def create_report_file():
             "doctype": "File",
             "file_name": f"warehouse_profile_{frappe.utils.now_datetime():%Y%m%d_%H%M%S}.json",
             "is_private": 1,
-            "content": json.dumps({"status": "Queued"}),
+            # File shares one stored copy among equal contents, so the first must be unique
+            "content": json.dumps({"status": "Queued", "queued_at": frappe.utils.now()}),
         }
     ).insert(ignore_permissions=True)
 
 
 def write_report(file, report: dict) -> None:
-    with open(file.get_full_path(), "w") as f:  # nosemgrep - the File's own path, which it created
-        json.dump(report, f, indent=2, default=str)
+    file.save_file(content=json.dumps(report, indent=2, default=str), overwrite=True)
+    file.save(ignore_permissions=True)
+    frappe.db.commit()  # nosemgrep - a killed job must leave the report as far as it got
 
 
 def slowest_logged(limit: int, since_days: int, min_time: float) -> list[dict]:

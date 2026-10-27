@@ -41,13 +41,18 @@ class WarehouseProfile(InsightsIntegrationTestCase):
         frappe.db.delete("Insights Query Execution Log", {"query": QUERY})
         delete_users(ADMIN, ANALYST)
 
+    def profile(self):
+        """Profile as the admin, running the job at once, and answer with the report's File."""
+        with self.as_user(ADMIN), patch("frappe.enqueue", side_effect=run_now):
+            file = frappe.get_doc("File", profile_warehouse(limit=1, min_time=self.logged_seconds))
+        # the job commits its report, so the cleanup has to commit too
+        self.addCleanup(frappe.db.commit)
+        self.addCleanup(file.delete, ignore_permissions=True)
+        return file
+
     # @feature data-store.profile-warehouse
     def test_an_admin_profiles_the_slowest_data_store_query_into_a_private_file(self):
-        with self.as_user(ADMIN), patch("frappe.enqueue", side_effect=run_now):
-            file_url = profile_warehouse(limit=1, min_time=self.logged_seconds)
-
-        file = frappe.get_doc("File", {"file_url": file_url})
-        self.addCleanup(file.delete, ignore_permissions=True)
+        file = self.profile()
         report = json.loads(file.get_content())
 
         self.assertTrue(file.is_private)
@@ -59,6 +64,16 @@ class WarehouseProfile(InsightsIntegrationTestCase):
         self.assertIsNone(run["error"])
         self.assertGreater(run["operators"], 0)
         self.assertEqual(run["rows_scanned"], 100000)
+
+    # @feature data-store.profile-warehouse
+    def test_a_second_profile_leaves_the_first_report_as_it_was(self):
+        first = self.profile()
+        report = first.get_content()
+        second = self.profile()
+
+        self.assertNotEqual(first.file_url, second.file_url)
+        first.reload()
+        self.assertEqual(first.get_content(), report)
 
     # @feature data-store.profile-warehouse
     def test_an_insights_user_cannot_profile_the_data_store(self):

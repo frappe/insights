@@ -194,8 +194,8 @@ def profile_warehouse(
     """Queue a profile of the slowest data store queries, for an operator with no shell on the host.
 
     Each replay runs its query for real, so the profile runs on the long queue,
-    not in this request. Answers with the URL of the private File the job writes
-    its report to. The arguments are those of `insights.warehouse_profile.run`,
+    not in this request. Answers with the name of the private File the job
+    writes its report to. The arguments are those of `insights.warehouse_profile.run`,
     within the caps above.
     """
     from insights.warehouse_profile import enqueue
