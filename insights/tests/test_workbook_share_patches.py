@@ -191,9 +191,8 @@ class TestWorkbookSharePatches(InsightsIntegrationTestCase):
         move_alert_run_as()
 
         self.assertEqual(frappe.db.get_value("Insights Alert", alert, "permission_user"), OWNER)
-        message, data = item("P19", alert)
-        self.assertIn(f"now runs as {OWNER}", message)
-        self.assertEqual(data, alert_data(AUTHOR, "moved"))
+        # it sends the same rows to the same people, so there is nothing to act on
+        self.assertFalse(frappe.db.exists(ITEM, {"code": "P19"}))
 
     # @feature upgrade.alerts-keep-running
     def test_an_alert_is_not_moved_to_an_owner_who_may_read_other_rows(self):

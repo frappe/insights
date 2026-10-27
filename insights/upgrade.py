@@ -101,7 +101,7 @@ def is_upgrade_admin(user: str | None = None) -> bool:
 
 # Codes that tell only the user they are addressed to: a note, or a failure of
 # their own script or import. An admin works through every other item.
-NOTE_CODES = ("P11", "P20", "P21", "J1", "J4", "Q1", "Q5", "C4", "N5")
+NOTE_CODES = ("P11", "P20", "P21", "J4", "Q1", "Q5", "C4", "N5")
 
 
 def item_filters(user: str | None = None) -> dict:

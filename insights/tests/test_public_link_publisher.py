@@ -110,25 +110,14 @@ class TestPublicLinkPublisher(InsightsIntegrationTestCase):
     def assert_moved_to_the_publisher(self):
         self.assertEqual(frappe.db.get_value(DT.CHART, self.chart, "owner"), PUBLISHER)
         self.assertTrue(frappe.db.get_value(DT.CHART, self.chart, "run_as_owner"))
-        # the previous owner, Administrator, is told through the admins' item
-        items = frappe.get_all(
-            ITEM,
-            filters={"code": "P11", "reference_name": self.chart},
-            fields=["user", "message", "data"],
-            order_by="creation asc",
-        )
-        message = f'"{PREFIX} Chart": now owned by {PUBLISHER}, who published it, instead of {OWNER}'
-        data = {"chart": f"{PREFIX} Chart", "publisher": PUBLISHER, "owner": OWNER}
-        self.assertEqual(
-            [(item.user, item.message, frappe.parse_json(item.data)) for item in items],
-            [(None, message, data), (PUBLISHER, message, data)],
-        )
+        # readers see the rows they saw, and the previous owner keeps edit, so
+        # nobody has anything to act on
+        self.assertFalse(frappe.db.exists(ITEM, {"code": "P11", "reference_name": self.chart}))
 
     # @feature shared.chart-on-public-dashboard permissions.chart-run-as-owner upgrade.public-links-keep-rows
     def test_a_link_another_person_published_moves_to_the_publisher(self):
         """The link served the dashboard owner's rows, and Run as owner can only
-        name the chart's owner. So the publisher becomes the owner, and the
-        previous owner is told."""
+        name the chart's owner. So the publisher becomes the owner."""
         self.published()
         frappe.db.set_value(DT.DASHBOARD, self.dashboard, "owner", PUBLISHER)
 

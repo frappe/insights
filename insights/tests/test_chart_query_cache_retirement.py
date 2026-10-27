@@ -103,7 +103,7 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         self.assertFalse(frappe.db.exists("Version", {"ref_doctype": QUERY, "docname": cache}))
 
     # @feature upgrade.cached-queries-removed
-    def test_a_cache_an_alert_watches_stays_as_a_query_and_its_owner_is_told(self):
+    def test_a_cache_an_alert_watches_stays_as_a_query_and_nobody_is_told(self):
         chart, cache = self.cached_query()
         alert = frappe.get_doc(
             {
@@ -123,17 +123,8 @@ class TestChartQueryCacheRetirement(InsightsIntegrationTestCase):
         self.assertEqual(
             frappe.db.sql_list(f"select `{FIELD}` from `tab{CHART}` where name = %s", chart), [None]
         )
-        items = frappe.get_all(ITEM, filters={"code": "J1"}, fields=["reference_name", "user", "data"])
-        self.assertEqual(
-            [(item.reference_name, item.user, frappe.parse_json(item.data)) for item in items],
-            [
-                (
-                    cache,
-                    ALERT_OWNER,
-                    {"alert": "Chart Query Cache Test Alert", "chart": "Chart Query Cache Test Chart"},
-                )
-            ],
-        )
+        # the alert keeps checking what it checked, so there is nothing to act on
+        self.assertFalse(frappe.db.exists(ITEM, {"code": "J1"}))
 
     # @feature upgrade.cached-queries-removed
     def test_a_charts_runs_are_logged_under_its_query_once_its_cache_is_gone(self):

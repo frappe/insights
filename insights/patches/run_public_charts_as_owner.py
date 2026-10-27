@@ -29,7 +29,8 @@ def execute():
     reads other rows than the publisher, the publisher becomes the owner, so
     the link keeps serving the rows it served. The publisher chose to publish
     those rows, and `validate_run_as_owner` lets only the owner share them.
-    The previous owner and the publisher are told. A disabled publisher can run nothing, so that
+    The previous owner and the publisher are told only when the publisher can't
+    read the chart's tables, as readers then see Not Permitted. A disabled publisher can run nothing, so that
     chart is left running as its reader, and its owner is told.
     """
     for chart, publisher in publicly_reachable_charts().items():
@@ -44,9 +45,10 @@ def execute():
         elif frappe.db.get_value("User", publisher, "enabled"):
             frappe.db.set_value(CHART, chart, {"owner": publisher, "run_as_owner": 1}, update_modified=False)
             keep_edit(chart, owner)
-            unreadable = unreadable_by(chart, publisher)
-            report(chart, owner, publisher, moved=True, unreadable=unreadable)
-            if unreadable is not None:
+            # readers keep their rows and the previous owner keeps edit, so a move
+            # is told only when the publisher can't read the chart's tables
+            if (unreadable := unreadable_by(chart, publisher)) is not None:
+                report(chart, owner, publisher, moved=True, unreadable=unreadable)
                 report_unreadable(chart, publisher, unreadable)
         else:
             report(chart, owner, publisher, moved=False)

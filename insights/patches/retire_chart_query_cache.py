@@ -3,8 +3,6 @@ from frappe.query_builder import Case
 from frappe.query_builder.functions import IfNull
 from frappe.utils import create_batch
 
-from insights.upgrade import add_item
-
 CHART = "Insights Chart v3"
 QUERY = "Insights Query v3"
 ALERT = "Insights Alert"
@@ -60,8 +58,9 @@ def execute():
     happen, and the delete is permanent, so the chart's own field is read rather
     than trusted. The last is an alert that names it, set on the chart's rows
     back when they were a query a user could pick. The alert still fires on the
-    rows the document returns, so the document stays as a query of its own, and
-    the alert's owner is told it no longer follows the chart. A document kept
+    rows the document returns, so the document stays as a query of its own,
+    titled after the chart. Nobody is told: the alert checks what it checked,
+    and there is nothing to act on. A document kept
     for any of these is no longer the chart's: its column is cleared.
 
     The rows are deleted in batches, not through `frappe.delete_doc`. A site can
@@ -104,16 +103,11 @@ def execute():
     )
     cached = [name for name in cached if name not in charted]
 
-    alerts = (
-        frappe.get_all(ALERT, filters={"query": ("in", cached)}, fields=["name", "title", "query", "owner"])
-        if cached
-        else []
+    alerted = (
+        set(frappe.get_all(ALERT, filters={"query": ("in", cached)}, pluck="query")) if cached else set()
     )
-    alerted = {alert.query for alert in alerts}
     cached = [name for name in cached if name not in alerted]
 
-    for alert in alerts:
-        report_alert(alert)
     title_after_charts(sourced | charted | alerted)
     unlink_from_charts(sourced | charted | alerted)
     if not cached:
@@ -209,17 +203,6 @@ def chart_title(cache: str) -> str | None:
     Chart = frappe.qb.DocType(CHART)
     titles = frappe.qb.from_(Chart).select(Chart.title).where(Chart[FIELD] == cache).limit(1).run(pluck=True)
     return titles[0] if titles else None
-
-
-def report_alert(alert) -> None:
-    data = {"alert": alert.title, "chart": chart_title(alert.query) or alert.query}
-    add_item(
-        "J1",
-        f'"{data["alert"]}" on chart "{data["chart"]}"',
-        reference=(QUERY, alert.query),
-        user=None if alert.owner == "Administrator" else alert.owner,
-        data=data,
-    )
 
 
 def delete_documents(doctype: str, names: list[str]) -> None:
