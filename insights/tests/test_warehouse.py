@@ -454,6 +454,20 @@ class TestSyncSchedule(InsightsIntegrationTestCase):
         self.assertEqual(len(self.imported_tables()), 2)
 
     # @feature data-store.import-concurrency
+    def test_the_tables_that_have_waited_longest_are_imported_first(self):
+        # the table list sorts the last edited first, and here it has waited least
+        for order, table in enumerate(self.TABLES):
+            self.start_import(minutes_ago=90 + 60 * order, status="Completed", table=table)
+            frappe.db.set_value(
+                "Insights Table v3",
+                get_table_name("Site DB", table),
+                "modified",
+                add_to_date(None, minutes=-order),
+                update_modified=False,
+            )
+        self.assertEqual(self.imported_tables(), [self.TABLES[2], self.TABLES[1]])
+
+    # @feature data-store.import-concurrency
     def test_an_import_under_way_holds_one_of_the_two_places(self):
         self.make_all_due()
         self.start_import(minutes_ago=5, status="In Progress", table=self.OTHER_TABLE)

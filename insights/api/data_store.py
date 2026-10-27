@@ -106,15 +106,25 @@ def sync_tables():
             .run(as_dict=True)
         }
 
+        due = []
         for table in tables:
-            if running >= MAX_RUNNING_IMPORTS:
-                break
             last = started.get((table.data_source, table.table)) or table.creation
             try:
-                if croniter(table.sync_schedule, last).get_next(datetime) <= now:
-                    # an import already queued or running is counted already
-                    if not insights.warehouse.get_table(table.data_source, table.table).enqueue_import():
-                        running += 1
+                due_at = croniter(table.sync_schedule, last).get_next(datetime)
+            except Exception:
+                frappe.log_error(title=f"Error scheduling import of {table.table}")
+                continue
+            if due_at <= now:
+                due.append((due_at, table))
+
+        # the table that has waited longest goes first, or a table could wait for good
+        for _, table in sorted(due, key=lambda item: item[0]):
+            if running >= MAX_RUNNING_IMPORTS:
+                break
+            try:
+                # an import already queued or running is counted already
+                if not insights.warehouse.get_table(table.data_source, table.table).enqueue_import():
+                    running += 1
             except Exception:
                 frappe.log_error(title=f"Error scheduling import of {table.table}")
 
