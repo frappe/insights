@@ -42,7 +42,12 @@ const workbook = inject(workbookKey)!
 							<span
 								tabindex="0"
 								role="img"
-								:aria-label="workbook.doc.shipped_by"
+								:aria-label="
+									__(
+										'Shipped with {0}. Duplicate it to make changes.',
+										workbook.doc.shipped_by,
+									)
+								"
 								class="absolute -left-5 flex rounded-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							>
 								<Avatar
