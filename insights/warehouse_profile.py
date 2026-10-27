@@ -11,7 +11,9 @@ From the bench:
 
     bench --site <site> execute insights.warehouse_profile.run --kwargs "{'limit': 10}"
 
-`concurrency` replays a statement N times at once, as a dashboard does.
+`concurrency` replays a statement N times at once, as a dashboard does. The
+copies run in one process and share one DuckDB instance, its threads and its
+memory limit, where web workers in separate processes each have their own.
 `insights.api.data_store.profile_warehouse` queues the same run as a job. Either
 way the report is a private File.
 """
@@ -26,9 +28,12 @@ from contextlib import suppress
 from typing import Any
 
 import frappe
+from duckdb import IOException
 from frappe import _
+from frappe.utils.synchronization import filelock
 
 import insights
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import WRITE_LOCK_RETRY_INTERVAL
 
 # The settings that decide how much of the host one query may take. Insights sets
 # `memory_limit` and leaves the rest at DuckDB's defaults, so a report that does
@@ -52,7 +57,11 @@ SAMPLE_INTERVAL = 0.05
 DEFAULT_MAX_SECONDS = 180
 
 # Two profiles at once would each measure the other's load.
-PROFILE_JOB_ID = "insights_warehouse_profile"
+PROFILE_LOCK = "insights_warehouse_profile"
+
+# A replay holds the file for reading, and a writer waiting for it retries this
+# often. A pause longer than that between replays lets the writer in.
+WRITER_PAUSE = 2 * WRITE_LOCK_RETRY_INTERVAL
 
 
 def run(
@@ -76,21 +85,16 @@ def run(
     Returns:
         The file name of the private File that holds the report.
     """
-    db = insights.warehouse.get_connection()
-    try:
-        settings = read_settings(db.con)
-    finally:
-        db.disconnect()
-
-    report = {
-        "generated_at": frappe.utils.now(),
-        "site": frappe.local.site,
-        "settings": settings,
-        "concurrency": concurrency,
-        "queries": [
-            _replay(query, concurrency, max_seconds) for query in slowest_logged(limit, since_days, min_time)
-        ],
-    }
+    with filelock(PROFILE_LOCK, timeout=0):
+        report = {
+            "generated_at": frappe.utils.now(),
+            "site": frappe.local.site,
+            "concurrency": concurrency,
+            "queries": [
+                _replay(query, concurrency, max_seconds)
+                for query in slowest_logged(limit, since_days, min_time)
+            ],
+        }
     file = frappe.get_doc(
         {
             "doctype": "File",
@@ -116,14 +120,19 @@ def enqueue(
     Returns:
         The job's id and the file name its report will have.
     """
+    if not slowest_logged(limit, since_days, min_time):
+        frappe.throw(
+            _("No data store queries slower than {0}s in the last {1} days").format(min_time, since_days)
+        )
+
     file_name = report_file_name()
     job = frappe.enqueue(
         "insights.warehouse_profile.run",
         queue="long",
-        job_id=PROFILE_JOB_ID,
+        job_id=PROFILE_LOCK,
         deduplicate=True,
         # concurrent copies run side by side, so each query costs at most `max_seconds`
-        timeout=limit * max_seconds + 60,
+        timeout=limit * (max_seconds + WRITER_PAUSE) + 60,
         limit=limit,
         since_days=since_days,
         min_time=min_time,
@@ -242,12 +251,12 @@ class MemorySampler(threading.Thread):
             for tag, (memory, temporary) in memory_by_tag(self.cursor).items()
         }
         self.samples += 1
-        total = sum(memory for memory, _ in growth.values())
+        total = sum(memory for memory, temporary in growth.values())
         if total <= self.peak_bytes:
             return
         self.peak_bytes = total
-        self.peak_by_tag = {tag: memory for tag, (memory, _) in growth.items() if memory > 0}
-        self.peak_temp_bytes = sum(temporary for _, temporary in growth.values())
+        self.peak_by_tag = {tag: memory for tag, (memory, temporary) in growth.items() if memory > 0}
+        self.peak_temp_bytes = sum(temporary for memory, temporary in growth.values())
 
     def stop(self) -> dict[str, Any]:
         self.stop_event.set()
@@ -354,33 +363,40 @@ def _replay(logged: dict, concurrency: int, max_seconds: int) -> dict[str, Any]:
     """Profile one logged statement, alone or against copies of itself.
 
     Each copy runs on a connection of its own, opened through the warehouse so
-    it has the settings a dashboard query has, and closed after so that the
-    next replay starts on an empty buffer and writers can open the file between
-    replays. A worker thread has no `frappe.local`, so the connections are opened
-    here.
+    it has the warehouse's settings, and closed after so that the next replay
+    starts on an empty buffer. A worker thread has no `frappe.local`, so the
+    connections are opened here.
     """
     entry = {
         "query": logged["query"],
         "logged_seconds": logged["time_taken"],
         "shape": sql_shape(logged["sql"]),
+        "error": None,
+        "runs": [],
     }
-    dbs = [insights.warehouse.get_connection() for _ in range(concurrency)]
+    dbs = []
     try:
+        while len(dbs) < concurrency:
+            dbs.append(insights.warehouse.get_connection())
+        entry["settings"] = read_settings(dbs[0].con)
         baseline = memory_by_tag(dbs[0].con)
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             entry["runs"] = list(
                 pool.map(lambda db: profile_sql(db.con, logged["sql"], baseline, max_seconds), dbs)
             )
+    except IOException as e:  # a writer holds the file, as an import does while it commits
+        entry["error"] = str(e).splitlines()[0][:500]
     finally:
         for db in dbs:
             db.disconnect()
+        time.sleep(WRITER_PAUSE)
     return entry
 
 
 def summarize(report: dict) -> str:
     """A table of the report, for reading in a terminal."""
     lines = [
-        f"DuckDB settings: {report['settings']}",
+        f"DuckDB settings: {next((e['settings'] for e in report['queries'] if 'settings' in e), {})}",
         "",
         (  # nosemgrep - one header line, split to fit
             f"{'query':<22}{'logged':>8}{'wall':>8}{'optime':>8}{'peakRAM':>10}{'spill':>9}"
@@ -396,6 +412,8 @@ def summarize(report: dict) -> str:
 def _summary_row(entry: dict) -> str:
     """One line per query: what it cost alone, or at the chosen concurrency."""
     runs = entry["runs"]
+    if not runs:
+        return f"{entry['query']:<22}{entry['logged_seconds']:>8.1f}  {entry['error']}"
     wall = max(r["wall_seconds"] for r in runs)
     peak = max(r["sampled_peak_bytes"] for r in runs)
     spill = max(r["sampled_peak_temp_bytes"] for r in runs)

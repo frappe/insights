@@ -3,13 +3,14 @@ from datetime import datetime
 import frappe
 from croniter import croniter
 from frappe.query_builder.functions import Max
-from frappe.utils import add_to_date, cint, flt, now, now_datetime
+from frappe.utils import add_to_date, cint, now, now_datetime
 from frappe.utils.background_jobs import get_job_status
 from frappe.utils.synchronization import filelock
 from rq.job import JobStatus
 
 import insights
 from insights.decorators import insights_whitelist
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import IMPORT_WRITE_LOCK_TIMEOUT
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import IMPORT_TIMEOUT, import_job_id
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
@@ -20,11 +21,12 @@ MAX_RUNNING_IMPORTS = 2
 # What one call may ask of a production warehouse. The bench entry point has no caps.
 MAX_PROFILE_QUERIES = 20
 MAX_PROFILE_CONCURRENCY = 4
-MAX_PROFILE_SECONDS = 300
+# a replay holds the file for reading, and an import gives up its commit after this wait
+MAX_PROFILE_SECONDS = IMPORT_WRITE_LOCK_TIMEOUT // 2
 
 
-def _bounded(value, lo, hi, cast=cint):
-    return max(lo, min(cast(value), hi))
+def _bounded(value, lo, hi):
+    return max(lo, min(cint(value), hi))
 
 
 @insights_whitelist()
@@ -198,8 +200,8 @@ def profile_warehouse(
 
     return enqueue(
         limit=_bounded(limit, 1, MAX_PROFILE_QUERIES),
-        since_days=_bounded(since_days, 1, 90),
-        min_time=_bounded(min_time, 0, 3600, cast=flt),
+        since_days=since_days,
+        min_time=min_time,
         concurrency=_bounded(concurrency, 1, MAX_PROFILE_CONCURRENCY),
         max_seconds=_bounded(max_seconds, 5, MAX_PROFILE_SECONDS),
     )

@@ -2,6 +2,7 @@ import json
 from unittest.mock import patch
 
 import frappe
+from frappe.utils.background_jobs import get_job
 
 from insights.api.data_store import profile_warehouse
 from insights.tests.base import InsightsIntegrationTestCase
@@ -60,4 +61,17 @@ class WarehouseProfile(InsightsIntegrationTestCase):
     def test_an_insights_user_cannot_profile_the_data_store(self):
         with self.as_user(ANALYST), patch("frappe.enqueue") as enqueue:
             self.assertRaises(frappe.PermissionError, profile_warehouse)
+        enqueue.assert_not_called()
+
+    # @feature data-store.profile-warehouse
+    def test_a_second_profile_is_refused_while_the_first_is_queued(self):
+        with self.as_user(ADMIN):
+            job_id = profile_warehouse(limit=1, min_time=LOGGED_SECONDS)["job_id"]
+            self.addCleanup(lambda: get_job(job_id).delete())
+            self.assertRaises(frappe.ValidationError, profile_warehouse, limit=1, min_time=LOGGED_SECONDS)
+
+    # @feature data-store.profile-warehouse
+    def test_an_admin_is_told_when_no_logged_query_is_slow_enough_to_profile(self):
+        with self.as_user(ADMIN), patch("frappe.enqueue") as enqueue:
+            self.assertRaises(frappe.ValidationError, profile_warehouse, min_time=LOGGED_SECONDS * 10)
         enqueue.assert_not_called()
