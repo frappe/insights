@@ -3,7 +3,7 @@ from datetime import datetime
 import frappe
 from croniter import croniter
 from frappe.query_builder.functions import Max
-from frappe.utils import add_to_date, now, now_datetime
+from frappe.utils import add_to_date, cint, flt, now, now_datetime
 from frappe.utils.background_jobs import get_job_status
 from frappe.utils.synchronization import filelock
 from rq.job import JobStatus
@@ -16,6 +16,15 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_ta
 # An import holds a chunk of rows and then its commit in memory, and every worker
 # on the long queue would take one, so a site runs only this many at once.
 MAX_RUNNING_IMPORTS = 2
+
+# What one call may ask of a production warehouse. The bench entry point has no caps.
+MAX_PROFILE_QUERIES = 20
+MAX_PROFILE_CONCURRENCY = 4
+MAX_PROFILE_SECONDS = 300
+
+
+def _bounded(value, lo, hi, cast=cint):
+    return max(lo, min(cast(value), hi))
 
 
 @insights_whitelist()
@@ -177,19 +186,20 @@ def profile_warehouse(
     min_time: float = 1.0,
     concurrency: int = 1,
     max_seconds: int = 60,
-) -> str:
+) -> dict[str, str]:
     """Queue a profile of the slowest data store queries, for an operator with no shell on the host.
 
     Each replay runs its query for real, so the profile runs on the long queue,
-    not in this request. Answers with the file name of the private File that will
-    hold the report once the job ends. The arguments are those of `insights.warehouse_profile.run`.
+    not in this request. Answers with the job's id and the file name of the
+    private File that will hold the report once the job ends. The arguments are
+    those of `insights.warehouse_profile.run`, within the caps above.
     """
     from insights.warehouse_profile import enqueue
 
     return enqueue(
-        limit=limit,
-        since_days=since_days,
-        min_time=min_time,
-        concurrency=concurrency,
-        max_seconds=max_seconds,
+        limit=_bounded(limit, 1, MAX_PROFILE_QUERIES),
+        since_days=_bounded(since_days, 1, 90),
+        min_time=_bounded(min_time, 0, 3600, cast=flt),
+        concurrency=_bounded(concurrency, 1, MAX_PROFILE_CONCURRENCY),
+        max_seconds=_bounded(max_seconds, 5, MAX_PROFILE_SECONDS),
     )

@@ -26,6 +26,7 @@ from contextlib import suppress
 from typing import Any
 
 import frappe
+from frappe import _
 
 import insights
 
@@ -50,6 +51,9 @@ SAMPLE_INTERVAL = 0.05
 # the outage it is meant to explain.
 DEFAULT_MAX_SECONDS = 180
 
+# Two profiles at once would each measure the other's load.
+PROFILE_JOB_ID = "insights_warehouse_profile"
+
 
 def run(
     limit: int = 10,
@@ -70,7 +74,7 @@ def run(
         file_name: The report's file name. `enqueue` picks it, to answer with it.
 
     Returns:
-        The name of the File that holds the report.
+        The file name of the private File that holds the report.
     """
     db = insights.warehouse.get_connection()
     try:
@@ -97,7 +101,7 @@ def run(
     ).insert(ignore_permissions=True)
     print(summarize(report))
     print(f"\nFull report: {file.get_full_path()}")
-    return file.name
+    return file.file_name
 
 
 def enqueue(
@@ -106,12 +110,18 @@ def enqueue(
     min_time: float = 1.0,
     concurrency: int = 1,
     max_seconds: int = DEFAULT_MAX_SECONDS,
-) -> str:
-    """Queue `run` on the long queue and answer with the file name its report will have."""
+) -> dict[str, str]:
+    """Queue `run` on the long queue, one profile at a time.
+
+    Returns:
+        The job's id and the file name its report will have.
+    """
     file_name = report_file_name()
-    frappe.enqueue(
+    job = frappe.enqueue(
         "insights.warehouse_profile.run",
         queue="long",
+        job_id=PROFILE_JOB_ID,
+        deduplicate=True,
         # concurrent copies run side by side, so each query costs at most `max_seconds`
         timeout=limit * max_seconds + 60,
         limit=limit,
@@ -121,7 +131,9 @@ def enqueue(
         max_seconds=max_seconds,
         file_name=file_name,
     )
-    return file_name
+    if not job:
+        frappe.throw(_("A warehouse profile is already queued or running"))
+    return {"job_id": job.id, "file_name": file_name}
 
 
 def report_file_name() -> str:

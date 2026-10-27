@@ -15,8 +15,9 @@ QUERY = "warehouse-profile-test"
 LOGGED_SECONDS = 10**6
 
 
-def run_now(method, queue, timeout, **kwargs):
-    return frappe.get_attr(method)(**kwargs)
+def run_now(method, queue, timeout, job_id, deduplicate, **kwargs):
+    frappe.get_attr(method)(**kwargs)
+    return frappe._dict(id=job_id)
 
 
 class WarehouseProfile(InsightsIntegrationTestCase):
@@ -40,7 +41,7 @@ class WarehouseProfile(InsightsIntegrationTestCase):
     # @feature data-store.profile-warehouse
     def test_an_admin_profiles_the_slowest_data_store_query_into_a_private_file(self):
         with self.as_user(ADMIN), patch("frappe.enqueue", side_effect=run_now):
-            file_name = profile_warehouse(limit=1, min_time=LOGGED_SECONDS)
+            file_name = profile_warehouse(limit=1, min_time=LOGGED_SECONDS)["file_name"]
 
         file = frappe.get_doc("File", {"file_name": file_name})
         self.addCleanup(file.delete, ignore_permissions=True)
