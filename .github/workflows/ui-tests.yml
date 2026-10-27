@@ -5,6 +5,7 @@ name: UI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - 'docs/**'
       - '**.md'
@@ -26,6 +27,7 @@ permissions:
 
 jobs:
   tests:
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     name: UI
