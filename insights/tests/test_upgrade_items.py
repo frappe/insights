@@ -17,7 +17,7 @@ from insights.api.upgrade import (
     reopen_upgrade_items,
 )
 from insights.patches import mark_v3_users as mark_v3_users_patch
-from insights.patches.run_public_charts_as_owner import report as report_public_chart
+from insights.patches.run_public_charts_as_owner import report_disabled_publisher
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
@@ -156,12 +156,12 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
         self.assertEqual(self.user_info("Administrator")["upgrade_item_count"], 2)
 
     # @feature upgrade.attention-items
-    def test_an_item_names_its_people_by_first_name_and_a_moved_chart_names_both_owners(self):
+    def test_an_item_names_its_people_by_first_name(self):
         workbook = create_test_workbook(BOB, title=f"{PREFIX} Published")
         chart = create_test_chart(BOB, workbook.name, title=f"{PREFIX} Chart")
-        report_public_chart(chart.name, BOB, ALICE, moved=True)
+        report_disabled_publisher(chart.name, BOB, ALICE)
         add_item("P3", "A workbook is shared.", data={"workbook": "Sales", "users": [ALICE, "Nobody"]})
-        data = {"chart": f"{PREFIX} Chart", "publisher": ALICE, "owner": BOB}
+        data = {"chart": f"{PREFIX} Chart", "publisher": ALICE, "publisher_disabled": True}
         people = {
             ALICE: {"full_name": "Alice Moss", "first_name": "Alice"},
             BOB: {"full_name": "Bob Lane", "first_name": "Bob"},
@@ -171,11 +171,12 @@ class TestUpgradeItems(InsightsIntegrationTestCase):
             [(i.code, i.user, i.data, i.people) for i in get_upgrade_items()],
             [("P3", None, {"workbook": "Sales", "users": [ALICE, "Nobody"]}, {ALICE: people[ALICE]})],
         )
-        for user in (ALICE, BOB):
-            with self.as_user(user):
-                self.assertEqual(
-                    [(i.user, i.data, i.people) for i in get_upgrade_items()], [(user, data, people)]
-                )
+        # told to the chart's owner, naming its publisher
+        with self.as_user(BOB):
+            self.assertEqual(
+                [(i.user, i.data, i.people) for i in get_upgrade_items()],
+                [(BOB, data, {ALICE: people[ALICE]})],
+            )
 
     # @feature upgrade.attention-items
     def test_an_item_without_data_has_none_to_show(self):
