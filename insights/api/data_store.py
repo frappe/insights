@@ -21,7 +21,9 @@ MAX_RUNNING_IMPORTS = 2
 # What one call may ask of a production warehouse. The bench entry point has no caps.
 MAX_PROFILE_QUERIES = 20
 MAX_PROFILE_CONCURRENCY = 4
-# a replay holds the file for reading, and an import gives up its commit after this wait
+# A replay holds the file for reading. An import waits twice this long for it. A
+# table drop or rename waits only WRITE_LOCK_TIMEOUT and fails during a longer
+# replay, which profiling the slowest queries cannot avoid.
 MAX_PROFILE_SECONDS = IMPORT_WRITE_LOCK_TIMEOUT // 2
 
 

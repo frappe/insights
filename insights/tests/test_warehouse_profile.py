@@ -1,9 +1,9 @@
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import frappe
 from frappe.query_builder.functions import Max
-from frappe.utils.background_jobs import get_job
+from rq.job import JobStatus
 
 from insights.api.data_store import profile_warehouse
 from insights.tests.base import InsightsIntegrationTestCase
@@ -67,10 +67,9 @@ class WarehouseProfile(InsightsIntegrationTestCase):
         enqueue.assert_not_called()
 
     # @feature data-store.profile-warehouse
-    def test_a_second_profile_is_refused_while_the_first_is_queued(self):
-        with self.as_user(ADMIN):
-            job_id = profile_warehouse(limit=1, min_time=self.logged_seconds)["job_id"]
-            self.addCleanup(lambda: get_job(job_id).delete())
+    def test_a_profile_is_refused_while_another_is_queued(self):
+        queued = MagicMock(id="queued", **{"get_status.return_value": JobStatus.QUEUED})
+        with self.as_user(ADMIN), patch("frappe.utils.background_jobs.get_job", return_value=queued):
             self.assertRaises(
                 frappe.ValidationError, profile_warehouse, limit=1, min_time=self.logged_seconds
             )
