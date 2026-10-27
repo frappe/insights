@@ -2,6 +2,7 @@ import json
 from unittest.mock import patch
 
 import frappe
+from frappe.query_builder.functions import Max
 from frappe.utils.background_jobs import get_job
 
 from insights.api.data_store import profile_warehouse
@@ -12,8 +13,6 @@ from insights.utils import create_execution_log
 ADMIN = "warehouse-profile-admin@test.com"
 ANALYST = "warehouse-profile-analyst@test.com"
 QUERY = "warehouse-profile-test"
-# slower than anything another suite logs, so it is the one query profiled
-LOGGED_SECONDS = 10**6
 
 
 def run_now(method, queue, timeout, job_id, deduplicate, **kwargs):
@@ -27,9 +26,13 @@ class WarehouseProfile(InsightsIntegrationTestCase):
         cls.after_class()
         create_user(ADMIN, roles=["Insights User", "Insights Admin"])
         create_user(ANALYST, roles="Insights User")
+        # slower than anything else logged, so it is the one query profiled
+        Log = frappe.qb.DocType("Insights Query Execution Log")
+        slowest = frappe.qb.from_(Log).select(Max(Log.time_taken)).where(Log.data_store == 1).run()[0][0]
+        cls.logged_seconds = (slowest or 0) + 1
         create_execution_log(
             "SELECT sum(range) FROM range(100000)",
-            time_taken=LOGGED_SECONDS,
+            time_taken=cls.logged_seconds,
             query_name=QUERY,
             data_store=True,
         )
@@ -42,7 +45,7 @@ class WarehouseProfile(InsightsIntegrationTestCase):
     # @feature data-store.profile-warehouse
     def test_an_admin_profiles_the_slowest_data_store_query_into_a_private_file(self):
         with self.as_user(ADMIN), patch("frappe.enqueue", side_effect=run_now):
-            file_name = profile_warehouse(limit=1, min_time=LOGGED_SECONDS)["file_name"]
+            file_name = profile_warehouse(limit=1, min_time=self.logged_seconds)["file_name"]
 
         file = frappe.get_doc("File", {"file_name": file_name})
         self.addCleanup(file.delete, ignore_permissions=True)
@@ -66,12 +69,14 @@ class WarehouseProfile(InsightsIntegrationTestCase):
     # @feature data-store.profile-warehouse
     def test_a_second_profile_is_refused_while_the_first_is_queued(self):
         with self.as_user(ADMIN):
-            job_id = profile_warehouse(limit=1, min_time=LOGGED_SECONDS)["job_id"]
+            job_id = profile_warehouse(limit=1, min_time=self.logged_seconds)["job_id"]
             self.addCleanup(lambda: get_job(job_id).delete())
-            self.assertRaises(frappe.ValidationError, profile_warehouse, limit=1, min_time=LOGGED_SECONDS)
+            self.assertRaises(
+                frappe.ValidationError, profile_warehouse, limit=1, min_time=self.logged_seconds
+            )
 
     # @feature data-store.profile-warehouse
     def test_an_admin_is_told_when_no_logged_query_is_slow_enough_to_profile(self):
         with self.as_user(ADMIN), patch("frappe.enqueue") as enqueue:
-            self.assertRaises(frappe.ValidationError, profile_warehouse, min_time=LOGGED_SECONDS * 10)
+            self.assertRaises(frappe.ValidationError, profile_warehouse, min_time=self.logged_seconds + 1)
         enqueue.assert_not_called()

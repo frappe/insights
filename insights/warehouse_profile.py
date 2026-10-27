@@ -85,16 +85,21 @@ def run(
     Returns:
         The file name of the private File that holds the report.
     """
-    with filelock(PROFILE_LOCK, timeout=0):
-        report = {
-            "generated_at": frappe.utils.now(),
-            "site": frappe.local.site,
-            "concurrency": concurrency,
-            "queries": [
-                _replay(query, concurrency, max_seconds)
-                for query in slowest_logged(limit, since_days, min_time)
-            ],
-        }
+    report = {
+        "generated_at": frappe.utils.now(),
+        "site": frappe.local.site,
+        "concurrency": concurrency,
+        "error": None,
+        "queries": [],
+    }
+    # the report is the only answer the caller gets, so a failed run still saves one
+    try:
+        with filelock(PROFILE_LOCK, timeout=0):
+            for query in slowest_logged(limit, since_days, min_time):
+                report["queries"].append(_replay(query, concurrency, max_seconds))
+    except Exception as e:
+        report["error"] = str(e).splitlines()[0][:500] if str(e) else type(e).__name__
+
     file = frappe.get_doc(
         {
             "doctype": "File",
@@ -406,6 +411,8 @@ def summarize(report: dict) -> str:
     ]
     for entry in report["queries"]:
         lines.append(_summary_row(entry))
+    if report["error"]:
+        lines.append(f"Stopped: {report['error']}")
     return "\n".join(lines)
 
 
