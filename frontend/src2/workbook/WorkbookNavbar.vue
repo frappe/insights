@@ -36,21 +36,22 @@ const workbook = inject(workbookKey)!
 								)
 							"
 						>
+							<!-- where the read-only lock sits: outside the title's box, whose
+							     padding is the gap, so the title stays centred -->
 							<span
 								tabindex="0"
-								class="flex shrink-0 items-center gap-1.5 rounded-4 px-0.5 text-base text-ink-gray-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+								role="img"
+								:aria-label="workbook.doc.shipped_by"
+								class="absolute -left-6 flex rounded-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							>
 								<Avatar
-									class="shrink-0"
 									size="xs"
 									shape="square"
 									:label="workbook.doc.shipped_by"
 									:image="workbook.doc.shipped_by_logo ?? undefined"
 								/>
-								{{ workbook.doc.shipped_by }}
 							</span>
 						</Tooltip>
-						<span class="mx-1 text-base text-ink-gray-4" aria-hidden="true">/</span>
 					</template>
 					<Tooltip
 						v-else-if="workbook.doc.read_only"
