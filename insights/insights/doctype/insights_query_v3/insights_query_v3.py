@@ -7,7 +7,6 @@ from io import BytesIO
 
 import frappe
 import ibis
-import ibis.expr.types as ir
 import pandas as pd
 import sqlglot
 import sqlglot.expressions as sqlglot_exp
@@ -706,13 +705,12 @@ class InsightsQueryv3(Document):
         try:
             builder = self.get_builder(force=True)
             query = builder.query
-            meets = builder.evaluate_expression(expression)
-            if isinstance(meets, ir.Column):
-                query_meets = query.mutate(alert_meets=meets)
-                summary = query_meets.aggregate(count=_.count(), meets=query_meets["alert_meets"].any())
-            else:
-                # a condition over the whole result, such as `count() > 10`
-                summary = query.aggregate(count=_.count(), meets=meets)
+            # As a column, the condition may be anything `filter` took: a row
+            # test, a reduction over the query such as `count() > 10`, or one
+            # over another table, which becomes a subquery. `aggregate` refuses
+            # the last.
+            query_meets = query.mutate(alert_meets=builder.evaluate_expression(expression))
+            summary = query_meets.aggregate(count=_.count(), meets=query_meets["alert_meets"].any())
             totals, _time_taken = execute_ibis_query(
                 summary,
                 cache=False,
