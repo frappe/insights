@@ -16,8 +16,6 @@ from frappe.utils import get_files_path
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 
-from insights.profiler.recorder import record_connection
-
 from .compilers import StarExceptDropColumns
 
 # DuckDB hands a file to one writer or to many readers, never both, and a read
@@ -85,8 +83,7 @@ def open_local_duckdb(
         db = connect_duckdb(path)
         db.disconnect()
 
-    with record_connection(path, read_only=read_only):
-        db = connect_duckdb(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
+    db = connect_duckdb(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
 
     private_folder = os.path.realpath(get_files_path(is_private=1))
     private_folder = _escape_sql_path(private_folder)
