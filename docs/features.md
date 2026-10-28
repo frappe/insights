@@ -428,6 +428,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.memory-limit | Every DuckDB connection is held to a memory limit, 4 GB or DuckDB's lower default on a small host, unless the site config sets `insights_duckdb_memory_limit`. |
 | data-store.compaction | The store file is compacted without losing data, and small files are left alone. |
 | data-store.execution-log-retention | Log Settings clears query execution logs past the retention an admin sets; the 90-day default outlasts the cleanup's unused-table window. |
+| data-store.execution-log-failures | A run that fails is kept in the query execution log with its error, and a Data Store read that a writer's lock refused is kept as Locked. |
+| data-store.execution-log-cache | Each run's row in the query execution log says how it used the result cache: a miss, a forced run or a run with the cache off. An answer from the cache ran nothing and writes no row. |
 
 ## alerts
 

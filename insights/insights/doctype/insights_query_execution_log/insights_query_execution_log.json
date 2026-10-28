@@ -9,12 +9,17 @@
  "engine": "MyISAM",
  "field_order": [
   "data_source",
+  "status",
+  "cache",
   "column_break_zzqc",
   "query",
   "data_store",
   "section_break_pkwk",
   "sql",
-  "time_taken"
+  "time_taken",
+  "error_section",
+  "error_type",
+  "error"
  ],
  "fields": [
   {
@@ -42,6 +47,7 @@
   {
    "fieldname": "query",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Query",
    "read_only": 1
   },
@@ -55,11 +61,48 @@
    "fieldtype": "Check",
    "label": "Data Store",
    "read_only": 1
+  },
+  {
+   "default": "Success",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Success\nFailed\nLocked",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cache",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Cache",
+   "options": "\nMiss\nForced\nOff",
+   "read_only": 1
+  },
+  {
+   "depends_on": "error_type",
+   "fieldname": "error_section",
+   "fieldtype": "Section Break",
+   "label": "Error"
+  },
+  {
+   "fieldname": "error_type",
+   "fieldtype": "Data",
+   "label": "Error Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error",
+   "fieldtype": "Long Text",
+   "label": "Error",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-06 12:00:00.000000",
+ "modified": "2026-10-28 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Query Execution Log",
@@ -72,15 +115,6 @@
    "read": 1,
    "report": 1,
    "role": "Insights Admin",
-   "share": 1
-  },
-  {
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "Insights User",
    "share": 1
   }
  ],
