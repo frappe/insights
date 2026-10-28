@@ -274,3 +274,7 @@ standard_queries = {
     "Insights Chart v3": "insights.api.search.search_workbook_items",
     "Insights Dashboard v3": "insights.api.search.search_workbook_items",
 }
+
+# Expose method source code through the API discovery endpoints. Safe for open
+# source apps and helps API clients understand what a method does.
+expose_discovery_source = True
