@@ -428,8 +428,6 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.memory-limit | Every DuckDB connection is held to a memory limit, 4 GB or DuckDB's lower default on a small host, unless the site config sets `insights_duckdb_memory_limit`. |
 | data-store.compaction | The store file is compacted without losing data, and small files are left alone. |
 | data-store.execution-log-retention | Log Settings clears query execution logs past the retention an admin sets; the 90-day default outlasts the cleanup's unused-table window. |
-| data-store.profiler-recorder | An admin records a window of use, and every Insights request, query, store open and background job in it is kept with its outcome: a query that failed, an open a writer's lock refused, and work a killed worker never finished. |
-| data-store.profiler-dashboard | An admin profiles a dashboard: each chart's statements are built as a reader's load builds them, run in the data store and taken apart scan by scan, and rerun under other settings and at the browser's concurrency. |
 
 ## alerts
 

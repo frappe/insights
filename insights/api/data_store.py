@@ -3,7 +3,7 @@ from datetime import datetime
 import frappe
 from croniter import croniter
 from frappe.query_builder.functions import Max
-from frappe.utils import add_to_date, now, now_datetime
+from frappe.utils import add_to_date, cint, flt, now, now_datetime
 from frappe.utils.background_jobs import get_job_status
 from frappe.utils.synchronization import filelock
 from rq.job import JobStatus
@@ -16,6 +16,14 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_ta
 # An import holds a chunk of rows and then its commit in memory, and every worker
 # on the long queue would take one, so a site runs only this many at once.
 MAX_RUNNING_IMPORTS = 2
+
+
+def _bounded(value, lo, hi, cast=cint):
+    """Keep a caller's number inside what one request may ask for."""
+    try:
+        return max(lo, min(cast(value), hi))
+    except (TypeError, ValueError):
+        return lo
 
 
 @insights_whitelist()
@@ -168,3 +176,43 @@ def update_failed_sync_status():
             f"[{now()}] The import stopped without finishing: its worker was killed or restarted, "
             "for example when the server ran out of memory."
         )
+
+
+@insights_whitelist(role="Insights Admin", methods=["POST"])
+def profile_warehouse(
+    limit: int = 5,
+    since_days: int = 7,
+    min_time: float = 1.0,
+    concurrency: int = 1,
+    max_seconds: int = 30,
+    budget: int = 60,
+):
+    """Profile the slowest data store queries and answer with the report.
+
+    For an operator with no shell on the host: the same profile that
+    `insights.warehouse_profile.run` prints from the bench, as JSON.
+
+    Each replay runs its query for real, so this call holds the worker it runs
+    in. `budget` bounds that: once it is spent no further query is started, and
+    `not_profiled` names what was left for the next call. The arguments are
+    held to what one request may ask for — a longer profile belongs on the
+    bench, which nothing here times out.
+
+    Args:
+        limit: How many of the slowest distinct queries to replay (1-20).
+        since_days: How far back to read the execution log (1-90).
+        min_time: Ignore queries already faster than this, in seconds.
+        concurrency: Replay each statement this many times at once (1-4).
+        max_seconds: Cancel a single replay after this long (5-60).
+        budget: Start no new replay once this many seconds have passed (10-120).
+    """
+    from insights.warehouse_profile import build_report
+
+    return build_report(
+        limit=_bounded(limit, 1, 20),
+        since_days=_bounded(since_days, 1, 90),
+        min_time=_bounded(min_time, 0, 3600, cast=flt),
+        concurrency=_bounded(concurrency, 1, 4),
+        max_seconds=_bounded(max_seconds, 5, 60),
+        budget=_bounded(budget, 10, 120),
+    )
