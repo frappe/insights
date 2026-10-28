@@ -28,12 +28,12 @@ def stop_recording():
     return {"recording_until": None}
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def recording_status():
     return {"recording_until": events.recording_until(), "files": events.files()}
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def recording_report(
     minutes: int = 60,
     since: float | None = None,
@@ -94,7 +94,7 @@ def _checked(options: dict) -> dict:
     return options
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def get_profile(profile: str):
     """A profile's progress, and its report once it has one."""
     found = job.status(profile)
@@ -103,12 +103,12 @@ def get_profile(profile: str):
     return {"status": found, "report": job.report(profile)}
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def list_profiles(limit: int = 20):
     return job.recent(max(1, min(int(limit), 100)))
 
 
-@insights_whitelist(role="Insights Admin")
+@insights_whitelist(role="Insights Admin", methods=["POST"])
 def get_statement(digest: str):
     """The SQL text kept under a digest, by a profile or by the recorder."""
     sql = events.read_sql(digest)
