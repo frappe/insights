@@ -57,6 +57,8 @@ from insights.insights.query_utils import (
     table_reference,
 )
 from insights.permission_user import get_permission_user, script_session
+from insights.profiler import capture as profiler_capture
+from insights.profiler import recorder as profiler_recorder
 from insights.utils import create_execution_log
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -1601,51 +1603,65 @@ def execute_ibis_query(
         offset = (page - 1) * page_size
         query = query.limit(page_size, offset=offset)
 
+    compile_started = time.monotonic()
     try:
         sql = ibis.to_sql(query)
     except ibis.common.exceptions.OperationNotDefinedError:
         # TODO: throw better error message
         raise
+    compile_s = flt(time.monotonic() - compile_started, 4)
 
     # the columns the query reads are known only now. Record them before
     # returning a cached answer, which read the same columns
     user_permissions.record_blanked_reads(query)
 
     backend = query.get_backend()
+    use_data_store = is_warehouse(backend)
+    recording = {"data_store": use_data_store, "reference": reference_name, "compile_s": compile_s}
+
+    # the profiler is building a dashboard's statements, to profile them later
+    if profiler_capture.take(sql, data_store=use_data_store, reference=reference_name):
+        return pd.DataFrame(columns=query.columns), -1
+
     if cache:
         backend_id = backend.db_identity if backend else None
         cache_key = make_digest(sql, backend_id)
 
         if has_cached_results(cache_key) and not force:
-            return get_cached_results(cache_key), -1
+            with profiler_recorder.record_query(sql, cache="hit", **recording):
+                return get_cached_results(cache_key), -1
 
     time_taken = -1
-    use_data_store = is_warehouse(backend)
 
-    try:
-        if use_data_store:
-            start = time.monotonic()
-            result = query.execute()
-            time_taken = flt(time.monotonic() - start, 3)
-        else:
-            result, time_taken = _execute_live_query(query)
-    except Exception as e:
-        if "max_statement_time" in str(e):
-            frappe.log_error(
-                title="Query execution time exceeded the limit.",
-                message=f"Query: {sql}",
-            )
-            from insights.insights.doctype.insights_settings.insights_settings import (
-                get_max_execution_time,
-            )
+    cache_state = ("forced" if force else "miss") if cache else "off"
+    with profiler_recorder.record_query(sql, cache=cache_state, **recording) as recorded:
+        try:
+            if use_data_store:
+                start = time.monotonic()
+                result = query.execute()
+                time_taken = flt(time.monotonic() - start, 3)
+            else:
+                result, time_taken = _execute_live_query(query)
+        except Exception as e:
+            if "max_statement_time" in str(e):
+                frappe.log_error(
+                    title="Query execution time exceeded the limit.",
+                    message=f"Query: {sql}",
+                )
+                from insights.insights.doctype.insights_settings.insights_settings import (
+                    get_max_execution_time,
+                )
 
-            max_time = get_max_execution_time()
-            frappe.throw(
-                title="Query Timeout",
-                msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
-                exc=QueryTimeout,
-            )
-        raise e
+                max_time = get_max_execution_time()
+                frappe.throw(
+                    title="Query Timeout",
+                    msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
+                    exc=QueryTimeout,
+                )
+            raise e
+        recorded["execute_s"] = time_taken
+        if isinstance(result, pd.DataFrame):
+            recorded.update(rows=len(result), result_bytes=int(result.memory_usage(deep=False).sum()))
 
     create_execution_log(
         sql,

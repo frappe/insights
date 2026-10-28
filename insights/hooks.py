@@ -93,7 +93,14 @@ after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
 after_app_install = "insights.migrate.after_app_install"
 
-after_request = ["insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request"]
+# the profiler's recorder returns at once unless an Insights Admin switched it on
+before_request = ["insights.profiler.recorder.before_request"]
+after_request = [
+    "insights.profiler.recorder.after_request",
+    "insights.insights.doctype.insights_data_source_v3.insights_data_source_v3.after_request",
+]
+before_job = ["insights.profiler.recorder.before_job"]
+after_job = ["insights.profiler.recorder.after_job"]
 
 fixtures = [
     {
