@@ -140,5 +140,6 @@ class TestExecutionLogOutcomes(InsightsIntegrationTestCase):
         self.assertEqual(time_taken, -1, "the third run did not read the cache")
         self.assertEqual(
             [(log.status, log.cache) for log in self.logs("status", "cache")],
-            [("Success", "Off"), ("Success", "Miss"), ("Success", "Hit"), ("Success", "Forced")],
+            [("Success", "Off"), ("Success", "Miss"), ("Success", "Forced")],
+            "a cache hit ran nothing, so it writes no row",
         )

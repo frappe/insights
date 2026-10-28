@@ -14,7 +14,7 @@ class InsightsQueryExecutionLog(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
-        cache: DF.Literal["", "Miss", "Hit", "Forced", "Off"]
+        cache: DF.Literal["", "Miss", "Forced", "Off"]
         data_source: DF.Data | None
         data_store: DF.Check
         error: DF.LongText | None

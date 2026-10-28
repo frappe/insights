@@ -429,7 +429,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.compaction | The store file is compacted without losing data, and small files are left alone. |
 | data-store.execution-log-retention | Log Settings clears query execution logs past the retention an admin sets; the 90-day default outlasts the cleanup's unused-table window. |
 | data-store.execution-log-failures | A run that fails is kept in the query execution log with its error, and a Data Store read that a writer's lock refused is kept as Locked. |
-| data-store.execution-log-cache | Each run's row in the query execution log says whether its answer came from the result cache: a hit, a miss, a forced run or a run with the cache off. |
+| data-store.execution-log-cache | Each run's row in the query execution log says how it used the result cache: a miss, a forced run or a run with the cache off. An answer from the cache ran nothing and writes no row. |
 
 ## alerts
 

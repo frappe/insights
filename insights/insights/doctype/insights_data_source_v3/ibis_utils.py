@@ -1619,7 +1619,6 @@ def execute_ibis_query(
         cache_key = make_digest(sql, backend_id)
 
         if has_cached_results(cache_key) and not force:
-            create_execution_log(sql, query_name=reference_name, data_store=use_data_store, cache="Hit")
             return get_cached_results(cache_key), -1
         cache_outcome = "Forced" if force else "Miss"
 

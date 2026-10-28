@@ -488,11 +488,11 @@ frappectl -s $SITE doc list "Version" --filters-json '{"ref_doctype":"Insights Q
   --fields name,owner,creation,data --all
 ```
 
-**When the user asks how slow a query is, or why it failed, read the log.** Only an Insights Admin can. Each run writes an `Insights Query Execution Log` with `query`, `status` (`Success`, `Failed`, or `Locked` when a Data Store writer held the file), `cache` (`Miss`, `Hit`, `Forced` or `Off`), `time_taken` in seconds, `data_store`, `sql`, and `error_type` and `error` for a failure. A hit took no time, so leave hits out of timings. It answers without running anything:
+**When the user asks how slow a query is, or why it failed, read the log.** Only an Insights Admin can. Each run writes an `Insights Query Execution Log` with `query`, `status` (`Success`, `Failed`, or `Locked` when a Data Store writer held the file), `cache` (`Miss`, `Forced` or `Off`; an answer from the cache writes no row), `time_taken` in seconds, `data_store`, `sql`, and `error_type` and `error` for a failure. It answers without running anything:
 
 ```sh
 frappectl -s $SITE doc list "Insights Query Execution Log" \
-  --filters-json '{"query":"<name>","status":"Success","cache":["!=","Hit"]}' \
+  --filters-json '{"query":"<name>","status":"Success"}' \
   --fields creation,time_taken,data_store --limit 20
 ```
 
