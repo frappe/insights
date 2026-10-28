@@ -117,6 +117,19 @@ def get_duckdb_default_memory_limit() -> int:
     return int(float(size) * DUCKDB_SIZE_UNITS[unit])
 
 
+def refused_by_writer(error: BaseException) -> BaseException | None:
+    """The DuckDB error under `error` that refused a read because a writer holds
+    the file, if that is why it failed. A read that is refused shows it with the
+    same messages as a write that waits."""
+    while error is not None:
+        if isinstance(error, IOException | ConnectionException) and any(
+            message in str(error) for message in READER_HELD_ERRORS
+        ):
+            return error
+        error = error.__cause__ or error.__context__
+    return None
+
+
 def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
     """Open path for writing, waiting out the readers that still hold it."""
     deadline = time.monotonic() + lock_timeout

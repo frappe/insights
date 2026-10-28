@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import pathlib
+from contextlib import contextmanager, suppress
 
 import chardet
 import frappe
@@ -116,16 +117,40 @@ def refuse_delete_while_linked(doc, taken: tuple[str, ...]) -> None:
             )
 
 
-def create_execution_log(sql, time_taken=0, query_name=None, data_store=False):
-    frappe.get_doc(
-        {
-            "doctype": "Insights Query Execution Log",
-            "time_taken": time_taken,
-            "query": query_name,
-            "sql": sql,
-            "data_store": data_store,
-        }
-    ).insert(ignore_permissions=True)
+def create_execution_log(sql, time_taken=0, query_name=None, data_store=False, cache=None, error=None):
+    log = {
+        "doctype": "Insights Query Execution Log",
+        "time_taken": time_taken,
+        "query": query_name,
+        "sql": sql,
+        "data_store": data_store,
+        "cache": cache,
+    }
+    if error:
+        from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import refused_by_writer
+
+        # the error the user reads may wrap the refusal; the log keeps the refusal
+        refusal = refused_by_writer(error)
+        error = refusal or error
+        log.update(
+            status="Locked" if refusal else "Failed", error_type=type(error).__name__, error=str(error)
+        )
+    frappe.get_doc(log).insert(ignore_permissions=True)
+
+
+@contextmanager
+def log_failed_execution(sql=None, query_name=None, data_store=False, cache=None):
+    """Keep a run that fails in the execution log, then let its error go on.
+
+    The log's table is MyISAM, so the row outlives the rollback of the request
+    that failed.
+    """
+    try:
+        yield
+    except Exception as e:
+        with suppress(Exception):  # nosemgrep - the run's own error is the one to raise
+            create_execution_log(sql, query_name=query_name, data_store=data_store, cache=cache, error=e)
+        raise
 
 
 def detect_encoding(file_path: str):

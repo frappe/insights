@@ -43,6 +43,7 @@ from insights.utils import (
     as_text,
     deep_convert_dict_to_dict,
     get_currencies,
+    log_failed_execution,
     refuse_delete_while_linked,
 )
 
@@ -320,7 +321,13 @@ class InsightsQueryv3(Document):
         page_size: int = 100,
         import_if_not_exists: bool = True,
     ):
-        with set_adhoc_filters(adhoc_filters):
+        # a Data Store read a writer refuses is refused here, when the build opens the store
+        with (
+            set_adhoc_filters(adhoc_filters),
+            log_failed_execution(
+                query_name=self.execution_reference, data_store=not self.use_live_connection
+            ),
+        ):
             ibis_query = self.build(
                 active_operation_idx, force=force, import_if_not_exists=import_if_not_exists
             )

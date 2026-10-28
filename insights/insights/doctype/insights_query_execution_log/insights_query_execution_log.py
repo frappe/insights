@@ -14,10 +14,14 @@ class InsightsQueryExecutionLog(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        cache: DF.Literal["", "Miss", "Hit", "Forced", "Off"]
         data_source: DF.Data | None
+        data_store: DF.Check
+        error: DF.LongText | None
+        error_type: DF.Data | None
         query: DF.Data | None
-        use_data_store: DF.Check
         sql: DF.Code | None
+        status: DF.Literal["Success", "Failed", "Locked"]
         time_taken: DF.Float
     # end: auto-generated types
 

@@ -57,7 +57,7 @@ from insights.insights.query_utils import (
     table_reference,
 )
 from insights.permission_user import get_permission_user, script_session
-from insights.utils import create_execution_log
+from insights.utils import create_execution_log, log_failed_execution
 from insights.utils import deep_convert_dict_to_dict as _dict
 
 from .ibis.functions import _apply_granularity
@@ -1612,46 +1612,51 @@ def execute_ibis_query(
     user_permissions.record_blanked_reads(query)
 
     backend = query.get_backend()
+    use_data_store = is_warehouse(backend)
+    cache_outcome = "Off"
     if cache:
         backend_id = backend.db_identity if backend else None
         cache_key = make_digest(sql, backend_id)
 
         if has_cached_results(cache_key) and not force:
+            create_execution_log(sql, query_name=reference_name, data_store=use_data_store, cache="Hit")
             return get_cached_results(cache_key), -1
+        cache_outcome = "Forced" if force else "Miss"
 
     time_taken = -1
-    use_data_store = is_warehouse(backend)
 
-    try:
-        if use_data_store:
-            start = time.monotonic()
-            result = query.execute()
-            time_taken = flt(time.monotonic() - start, 3)
-        else:
-            result, time_taken = _execute_live_query(query)
-    except Exception as e:
-        if "max_statement_time" in str(e):
-            frappe.log_error(
-                title="Query execution time exceeded the limit.",
-                message=f"Query: {sql}",
-            )
-            from insights.insights.doctype.insights_settings.insights_settings import (
-                get_max_execution_time,
-            )
+    with log_failed_execution(sql, reference_name, use_data_store, cache_outcome):
+        try:
+            if use_data_store:
+                start = time.monotonic()
+                result = query.execute()
+                time_taken = flt(time.monotonic() - start, 3)
+            else:
+                result, time_taken = _execute_live_query(query)
+        except Exception as e:
+            if "max_statement_time" in str(e):
+                frappe.log_error(
+                    title="Query execution time exceeded the limit.",
+                    message=f"Query: {sql}",
+                )
+                from insights.insights.doctype.insights_settings.insights_settings import (
+                    get_max_execution_time,
+                )
 
-            max_time = get_max_execution_time()
-            frappe.throw(
-                title="Query Timeout",
-                msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
-                exc=QueryTimeout,
-            )
-        raise e
+                max_time = get_max_execution_time()
+                frappe.throw(
+                    title="Query Timeout",
+                    msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
+                    exc=QueryTimeout,
+                )
+            raise e
 
     create_execution_log(
         sql,
         time_taken,
         query_name=reference_name,
         data_store=use_data_store,
+        cache=cache_outcome,
     )
 
     if isinstance(result, pd.DataFrame):
