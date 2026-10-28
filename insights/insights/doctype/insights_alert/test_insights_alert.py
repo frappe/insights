@@ -14,6 +14,7 @@ from insights.insights.doctype.insights_alert.insights_alert import (
     InsightsAlert,
     send_alerts,
 )
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import InsightsQueryv3
 from insights.permission_user import permission_user
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -34,6 +35,14 @@ def message_context(row_count=1):
         "count": row_count,
         "rows": [{"invoice": f"INV-{i}"} for i in range(row_count)],
     }
+
+
+def query_result(row_count=1):
+    """What `run_query` answers for a met condition."""
+    context = message_context(row_count)
+    return frappe._dict(
+        condition_met=True, rows=context["rows"], count=row_count, query_title=context["query"]["title"]
+    )
 
 
 def webhook_alert():
@@ -188,8 +197,7 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
         self.assertIsNone(self.alert.last_execution)
 
         with (
-            patch.object(InsightsAlert, "evaluate_condition", return_value=True),
-            patch.object(InsightsAlert, "get_message_context", return_value=message_context()),
+            patch.object(InsightsAlert, "run_query", return_value=query_result()),
             patch(POST, side_effect=requests.ConnectionError("endpoint is down")),
         ):
             send_alerts()
@@ -208,17 +216,45 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
         detail = "Can't connect to MySQL server on '10.0.4.12'"
 
         with (
-            patch.object(InsightsAlert, "evaluate_condition", side_effect=frappe.ValidationError(detail)),
+            patch.object(InsightsAlert, "run_query", side_effect=frappe.ValidationError(detail)),
             patch("frappe.sendmail") as sendmail,
+            # counted as it is written: a read of Error Log goes through
+            # `frappe.db`, which a full suite may leave on another database
+            patch("frappe.log_error", wraps=frappe.log_error) as log_error,
         ):
             send_alerts()
 
+        self.assertEqual(sendmail.call_count, 1)
         message = sendmail.call_args.kwargs["message"]
         self.assertIn(self.alert.title, message)
         self.assertNotIn("10.0.4.12", message)
-        self.assertTrue(
-            frappe.get_all("Error Log", filters={"method": f"Failed to send alert: {self.alert.name}"})
-        )
+        logged = [
+            call
+            for call in log_error.call_args_list
+            if call.kwargs.get("title") == f"Failed to send alert: {self.alert.name}"
+        ]
+        self.assertEqual(len(logged), 1)
+
+    # @feature alerts.failed-run-recorded
+    def test_a_run_killed_mid_query_is_not_due_on_the_next_tick(self):
+        """rq kills a job that outlives its timeout, and no handler runs. A
+        query that takes that long would otherwise run again on every tick."""
+
+        class HardKill(BaseException):
+            """Like the kill: no `except Exception` catches it."""
+
+        frappe.db.set_value("Insights Alert", self.alert.name, "last_execution", None)
+        frappe.db.commit()  # nosemgrep
+
+        with (
+            patch.object(InsightsQueryv3, "get_builder", side_effect=HardKill),
+            self.assertRaises(HardKill),
+        ):
+            send_alerts()
+        # the process died with what it had not committed
+        frappe.db.rollback()
+
+        self.assertFalse(frappe.get_doc("Insights Alert", self.alert.name).is_event_due())
 
 
 class ATickRunsEveryAlert(InsightsIntegrationTestCase):
@@ -508,6 +544,19 @@ class TestCondition(AlertOverSeededTodos):
             unmet.send_alert()
         self.assertEqual(sendmail.call_count, 0)
 
+    # @feature alerts.condition
+    def test_an_alert_whose_condition_is_not_met_is_not_due_until_its_next_window(self):
+        """Otherwise every four-minute tick runs its query again."""
+        alert = self.make_alert(condition="status == 'Nowhere'")
+        self.assertTrue(alert.is_event_due())
+
+        with patch("frappe.sendmail") as sendmail:
+            alert.send_alert()
+
+        self.assertEqual(sendmail.call_count, 0)
+        alert.reload()
+        self.assertFalse(alert.is_event_due())
+
     def assert_refused_with_one_message(self, condition, message):
         frappe.clear_messages()
         with self.assertRaises(frappe.ValidationError) as refusal:
@@ -565,6 +614,62 @@ class TestCondition(AlertOverSeededTodos):
 
 
 class TestRowsAnAlertIncludes(AlertOverSeededTodos):
+    # @feature alerts.condition alerts.message
+    def test_a_send_builds_the_query_once_and_reads_the_rows_only_when_it_sends(self):
+        """The condition and the count come from one aggregate, and the rows from
+        one more statement when the alert sends. A query that takes a minute used
+        to run three times and outlast the job's timeout."""
+        message = "{{ count }} todos, {{ rows[0].description }}, {{ rows[1].description }}"
+
+        builds, statements, sendmail = self.send(self.make_alert(message=message))
+        self.assertEqual((builds, statements), (1, 2))
+        # the whole count, and the first two rows in the query's own order
+        self.assertIn(
+            f"3 todos, {ALERT_TODO_PREFIX} Closed 3, {ALERT_TODO_PREFIX} Open 1",
+            sendmail.call_args.kwargs["message"],
+        )
+
+        builds, statements, sendmail = self.send(self.make_alert(condition="status == 'Nowhere'"))
+        self.assertEqual((builds, statements, sendmail.call_count), (1, 1, 0))
+
+    def send(self, alert):
+        """Send `alert` with a cap of two rows. Answers how many times the query
+        was built and how many statements ran, and the mail."""
+        from insights.insights.doctype.insights_query_v3 import insights_query_v3
+
+        query_class = insights_query_v3.InsightsQueryv3
+        with (
+            patch.object(
+                query_class, "get_builder", autospec=True, side_effect=query_class.get_builder
+            ) as builds,
+            patch.object(
+                insights_query_v3, "execute_ibis_query", wraps=insights_query_v3.execute_ibis_query
+            ) as statements,
+            patch(f"{InsightsAlert.__module__}.ALERT_MAX_ROWS", 2),
+            patch("frappe.sendmail") as sendmail,
+        ):
+            alert.send_alert()
+        return builds.call_count, statements.call_count, sendmail
+
+    # @feature alerts.condition
+    def test_a_condition_over_the_whole_result_decides_the_send(self):
+        """`count()` reads every row and `q.count()` is one value for the query.
+        Neither is a test of a single row, and both may decide the alert."""
+        for condition, met in (
+            ("count() > 2", True),
+            ("count() > 3", False),
+            ("q.count() > 2", True),
+            ("q.count() > 3", False),
+            ("(status == 'Open') & (count() > 2)", True),
+        ):
+            with self.subTest(condition=condition):
+                alert = self.make_alert(condition=condition, message="{{ count }} todos")
+                with patch("frappe.sendmail") as sendmail:
+                    alert.send_alert()
+                self.assertEqual(sendmail.call_count, int(met))
+                if met:
+                    self.assertIn("3 todos", sendmail.call_args.kwargs["message"])
+
     # @feature alerts.message alerts.webhook
     def test_the_rows_stop_at_the_cap_and_the_count_is_the_whole_result(self):
         """`send_alert` builds one context for every channel. So its count is the
@@ -605,10 +710,10 @@ class TestRowsAnAlertIncludes(AlertOverSeededTodos):
 
     # @feature alerts.condition alerts.message
     def test_a_script_query_is_read_fresh_for_the_condition_and_the_count(self):
-        """`send_alert` decides on `evaluate_condition` and mails
-        `get_message_context`. A script's output is cached separately from the
-        SQL over it. So an earlier run could fire the condition and print the
-        count from rows the script no longer returns."""
+        """`send_alert` decides on `run_query` and mails what it read. A script's
+        output is cached separately from the SQL over it. So an earlier run
+        could fire the condition and print the count from rows the script no
+        longer returns."""
         script = self.make_script_query(
             "results = frappe.get_all('ToDo', "
             f"filters={{'description': ['like', '{ALERT_TODO_PREFIX} Script%']}}, "
@@ -621,15 +726,16 @@ class TestRowsAnAlertIncludes(AlertOverSeededTodos):
         alert = self.make_alert(query=script, condition="status == 'Open'")
         # stands for an author's run of the query, or an earlier tick
         frappe.get_doc("Insights Query v3", script).execute()
-        self.assertFalse(alert.evaluate_condition())
+        self.assertFalse(alert.run_query().condition_met)
 
         opened = frappe.get_doc(
             {"doctype": "ToDo", "description": f"{ALERT_TODO_PREFIX} Script 2", "status": "Open"}
         ).insert(ignore_permissions=True)
         self.addCleanup(frappe.delete_doc, "ToDo", opened.name, force=True, ignore_permissions=True)
 
-        self.assertTrue(alert.evaluate_condition())
-        self.assertEqual(alert.get_message_context()["count"], 2)
+        result = alert.run_query()
+        self.assertTrue(result.condition_met)
+        self.assertEqual(result.count, 2)
 
     def make_script_query(self, code):
         return create_test_query(

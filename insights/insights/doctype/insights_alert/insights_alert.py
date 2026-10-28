@@ -146,13 +146,15 @@ class InsightsAlert(Document):
             )
         self.has_query_permission()
 
-        results = self.evaluate_condition()
-        if not results and not force:
+        result = self.run_query(force)
+        if not result.condition_met and not force:
+            # Ran, so not due again until the next window. Otherwise every
+            # four-minute tick runs the query again.
+            self.db_set("last_execution", now_datetime(), update_modified=False)
             return
 
-        # Built once: the context runs the query, and a webhook alert sends the
-        # rendered message and the rows behind it.
-        context = self.get_message_context()
+        # Built once: a webhook alert sends the rendered message and the rows behind it.
+        context = self.get_message_context(result)
         message = self.evaluate_message(context)
 
         if self.channel == "Email":
@@ -270,13 +272,21 @@ class InsightsAlert(Document):
             ),
         )
 
-    def get_message_context(self):
-        # Read fresh, like the condition that fired. A cached page and a cached
-        # count expire at different times, so they may not match it or each other.
+    def run_query(self, force: bool = False):
+        """Whether the condition is met, the count, and the rows when the alert
+        sends: when the condition is met, or `force`. Read fresh: a cached page
+        and a cached count expire at different times, so they may not match the
+        condition or each other."""
+        self.check_trusted_code()
         doc = frappe.get_doc("Insights Query v3", self.query)
         with db_connections():
-            rows = doc.execute(page_size=ALERT_MAX_ROWS, force=True)["rows"]
-            count = doc.count_rows(force=True)
+            result = doc.execute_for_alert(self.condition, ALERT_MAX_ROWS, rows_when_unmet=force)
+        result.query_title = doc.title
+        return result
+
+    def get_message_context(self, result=None):
+        result = result or self.run_query(force=True)
+        rows, count = result.rows, result.count
 
         datatable = pd.DataFrame(rows).to_html(index=False)
         if count > len(rows):
@@ -287,7 +297,7 @@ class InsightsAlert(Document):
                 "rows": rows,
                 "count": count,
                 "query": {
-                    "title": doc.title,
+                    "title": result.query_title,
                 },
                 "alert": {
                     "title": self.title,
@@ -358,6 +368,11 @@ def run_alert(alert):
     try:
         alert_doc = frappe.get_cached_doc("Insights Alert", alert.name)
         if alert_doc.is_event_due():
+            # Committed before the query runs. A job killed for running too
+            # long skips every handler below, and the alert would stay due,
+            # running the same long query on every tick.
+            alert_doc.db_set("last_execution", now_datetime(), update_modified=False)
+            frappe.db.commit()  # nosemgrep
             # the scheduler runs as Administrator, so without this the alert
             # would read every row of every table it names
             with permission_user(alert.permission_user):

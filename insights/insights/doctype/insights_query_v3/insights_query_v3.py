@@ -7,6 +7,7 @@ from io import BytesIO
 
 import frappe
 import ibis
+import pandas as pd
 import sqlglot
 import sqlglot.expressions as sqlglot_exp
 import sqlparse
@@ -689,6 +690,53 @@ class InsightsQueryv3(Document):
             reference_name=self.name,
         )
         return bool(len(results))
+
+    def execute_for_alert(self, expression, page_size, rows_when_unmet=False):
+        """How many rows there are and whether any meets `expression`, from one
+        aggregate, then the first `page_size` rows if the alert sends.
+
+        An alert used to run the query for the condition, the rows and the
+        count, and a query that takes a minute then outlasts the job's timeout.
+        An alert whose condition is not met now runs it once, and one that
+        sends runs it twice, from one build. Window columns would carry all
+        three in one statement, but they make the database hold every row
+        before the limit: ten times slower over two million rows.
+        """
+        try:
+            builder = self.get_builder(force=True)
+            query = builder.query
+            # As a column, the condition may be anything `filter` took: a row
+            # test, a reduction over the query such as `count() > 10`, or one
+            # over another table, which becomes a subquery. `aggregate` refuses
+            # the last.
+            query_meets = query.mutate(alert_meets=builder.evaluate_expression(expression))
+            summary = query_meets.aggregate(count=_.count(), meets=query_meets["alert_meets"].any())
+            totals, _time_taken = execute_ibis_query(
+                summary,
+                cache=False,
+                reference_doctype=self.doctype,
+                reference_name=self.execution_reference,
+            )
+            count = int(totals["count"].iloc[0])
+            meets = totals["meets"].iloc[0]
+            # no row meets a condition, whatever it says about an empty result
+            condition_met = count > 0 and bool(pd.notna(meets) and meets)
+
+            rows = []
+            if condition_met or rows_when_unmet:
+                results, _time_taken = execute_ibis_query(
+                    query,
+                    page_size=page_size,
+                    cache=False,
+                    reference_doctype=self.doctype,
+                    reference_name=self.execution_reference,
+                )
+                rows = results.to_dict(orient="records")
+        except Exception as e:
+            self.capture_failure(e)
+            raise
+
+        return frappe._dict(count=count, condition_met=condition_met, rows=rows)
 
     @insights_whitelist()
     def export(self):
