@@ -143,10 +143,13 @@ def log_failed_execution(sql=None, query_name=None, data_store=False, cache=None
     """Keep a run that fails in the execution log, then let its error go on.
 
     The log's table is MyISAM, so the row outlives the rollback of the request
-    that failed.
+    that failed. A run the concurrency limit turned away never ran, and the
+    client retries it, so it is not kept.
     """
     try:
         yield
+    except frappe.ServiceUnavailableError:
+        raise
     except Exception as e:
         with suppress(Exception):  # nosemgrep - the run's own error is the one to raise
             create_execution_log(sql, query_name=query_name, data_store=data_store, cache=cache, error=e)

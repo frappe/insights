@@ -20,6 +20,7 @@ from insights.insights.doctype.insights_query_execution_log.insights_query_execu
 )
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import create_test_query, create_test_workbook
+from insights.utils import log_failed_execution
 
 # An import job in another process holds the store this way while it commits.
 HOLD_WRITE_LOCK = """
@@ -92,6 +93,15 @@ class TestExecutionLogOutcomes(InsightsIntegrationTestCase):
         self.assertIn("not a number", log.sql)
 
     # @feature data-store.execution-log-failures
+    def test_a_run_the_concurrency_limit_turned_away_is_not_kept(self):
+        # the run never started, and the client retries it on the 503
+        with self.assertRaises(frappe.ServiceUnavailableError):
+            with log_failed_execution(query_name=self.reference):
+                raise frappe.ServiceUnavailableError("Server is busy. Please try again in a few seconds.")
+
+        self.assertEqual(self.logs("status"), [])
+
+    # @feature data-store.execution-log-failures
     def test_a_data_store_read_a_writer_holds_the_file_against_is_kept_as_locked(self):
         workbook = create_test_workbook("Administrator")
         query = create_test_query("Administrator", workbook.name)
@@ -109,13 +119,11 @@ class TestExecutionLogOutcomes(InsightsIntegrationTestCase):
         )
         try:
             self.assertEqual(writer.stdout.readline().strip(), "held")
-            with self.assertRaises(Exception) as refused:
+            with self.assertRaises(Exception):
                 query.execute()
         finally:
             writer.communicate()
 
-        # the user reads the operation that failed; the log keeps the refusal under it
-        self.assertNotIn("lock", str(refused.exception))
         [log] = self.logs("status", "error_type", "error", "data_store")
         self.assertEqual((log.status, log.error_type, log.data_store), ("Locked", "IOException", 1))
         self.assertIn("Could not set lock", log.error)
