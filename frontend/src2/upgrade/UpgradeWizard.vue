@@ -61,11 +61,8 @@ function state(step: Step) {
 		<template #title>{{ __('Insights v3.50') }}</template>
 		<template #description>{{ __('What is new, and what the upgrade left for you') }}</template>
 		<SettingsSidebar>
-			<div class="flex items-center gap-2 px-1.5 pb-1 pt-2">
-				<img src="../assets/insights-logo-new.svg" alt="" class="size-[26px] rounded-4" />
-				<span class="text-base font-semibold text-ink-gray-9">{{
-					__('Insights v3.50')
-				}}</span>
+			<div class="px-1.5 pb-1 pt-2 text-base font-semibold text-ink-gray-9">
+				{{ __('Insights v3.50') }}
 			</div>
 			<template v-for="section in ['welcome', 'new', 'upgrade'] as const" :key="section">
 				<SettingsNavGroup
