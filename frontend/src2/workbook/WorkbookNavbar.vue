@@ -26,8 +26,17 @@ const workbook = inject(workbookKey)!
 				</slot>
 			</div>
 			<div class="flex flex-1 items-center justify-center">
-				<div class="relative flex min-w-0 items-center">
-					<template v-if="workbook.doc.shipped_by">
+				<ContentEditable
+					class="font-medium !text-ink-gray-7 !gap-1.5"
+					:modelValue="workbook.doc.title"
+					placeholder="Untitled Workbook"
+					@returned="workbook.doc.title = $event"
+					@blur="workbook.doc.title = $event"
+				>
+					<!-- in the title's box, so the logo or lock and the title are centred as
+					     one, 6px apart, as frappe-ui's PageHeaderMobileTitle does. Raised 1px to
+					     centre on the capitals, which sit above the middle of the line box -->
+					<template v-if="workbook.doc.shipped_by" #prefix>
 						<Tooltip
 							:text="
 								__(
@@ -36,9 +45,6 @@ const workbook = inject(workbookKey)!
 								)
 							"
 						>
-							<!-- outside the title's box, as the read-only lock is, so the title
-							     stays centred. The box's padding is most of the gap, and 4px
-							     keep its focus border off the logo -->
 							<span
 								tabindex="0"
 								role="img"
@@ -48,7 +54,7 @@ const workbook = inject(workbookKey)!
 										workbook.doc.shipped_by,
 									)
 								"
-								class="absolute -left-5 flex rounded-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+								class="flex shrink-0 -translate-y-px rounded-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
 							>
 								<Avatar
 									size="xs"
@@ -59,26 +65,18 @@ const workbook = inject(workbookKey)!
 							</span>
 						</Tooltip>
 					</template>
-					<Tooltip
-						v-else-if="workbook.doc.read_only"
-						:text="__('You have read-only access to this workbook')"
-					>
-						<LockIcon
-							tabindex="0"
-							role="img"
-							:aria-label="__('You have read-only access to this workbook')"
-							class="absolute -left-6 size-4 rounded-4 text-ink-gray-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
-							stroke-width="1.5"
-						/>
-					</Tooltip>
-					<ContentEditable
-						class="font-medium !text-ink-gray-7"
-						:modelValue="workbook.doc.title"
-						placeholder="Untitled Workbook"
-						@returned="workbook.doc.title = $event"
-						@blur="workbook.doc.title = $event"
-					></ContentEditable>
-				</div>
+					<template v-else-if="workbook.doc.read_only" #prefix>
+						<Tooltip :text="__('You have read-only access to this workbook')">
+							<LockIcon
+								tabindex="0"
+								role="img"
+								:aria-label="__('You have read-only access to this workbook')"
+								class="size-4 shrink-0 -translate-y-px rounded-4 text-ink-gray-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-3"
+								stroke-width="1.5"
+							/>
+						</Tooltip>
+					</template>
+				</ContentEditable>
 			</div>
 			<div class="absolute right-0">
 				<WorkbookNavbarActions />
