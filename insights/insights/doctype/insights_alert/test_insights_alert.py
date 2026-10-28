@@ -213,12 +213,14 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
         frappe.db.set_value("Insights Alert", self.alert.name, "last_execution", None)
         # `send_alerts` rolls back what it catches
         frappe.db.commit()  # nosemgrep
-        started = now_datetime()
         detail = "Can't connect to MySQL server on '10.0.4.12'"
 
         with (
             patch.object(InsightsAlert, "run_query", side_effect=frappe.ValidationError(detail)),
             patch("frappe.sendmail") as sendmail,
+            # counted as it is written: a read of Error Log goes through
+            # `frappe.db`, which a full suite may leave on another database
+            patch("frappe.log_error", wraps=frappe.log_error) as log_error,
         ):
             send_alerts()
 
@@ -226,13 +228,12 @@ class TestFailedAlertIsNotRetriedEveryTick(InsightsIntegrationTestCase):
         message = sendmail.call_args.kwargs["message"]
         self.assertIn(self.alert.title, message)
         self.assertNotIn("10.0.4.12", message)
-        self.assertEqual(
-            frappe.db.count(
-                "Error Log",
-                {"method": f"Failed to send alert: {self.alert.name}", "creation": [">=", started]},
-            ),
-            1,
-        )
+        logged = [
+            call
+            for call in log_error.call_args_list
+            if call.kwargs.get("title") == f"Failed to send alert: {self.alert.name}"
+        ]
+        self.assertEqual(len(logged), 1)
 
     # @feature alerts.failed-run-recorded
     def test_a_run_killed_mid_query_is_not_due_on_the_next_tick(self):
