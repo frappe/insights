@@ -171,34 +171,40 @@ export type MixedChartConfig = AxisChartConfig & {
 
 /**
  * What the reading is aimed at. The card prints it on the value line, as
- * `$621.8K / $750K`: a target is part of the reading, not commentary on it, so
- * it has no label and no percent — the fraction is the whole statement.
+ * `$621.8K / $750K`: a target is part of the reading, not commentary on it.
+ * The gap to it prints in the delta row only when the author asks for it.
  */
 export type NumberTarget = {
 	value?: number
 	/** A measure of the card's own query, read off the row the reading came from. */
 	measure?: Measure
+	/**
+	 * Prints the gap to the target in the delta row: `change` as a percent of the
+	 * target, `delta` as a signed number in the value's own units. Signed
+	 * `reading - target`, so a miss reads as a fall. Left out, the target prints
+	 * on the value line alone.
+	 */
+	gap?: NumberComparisonShow
+	/** What to call the gap, e.g. `vs plan`. Defaults to `vs target`. */
+	label?: string
 }
 
 /**
- * The one number the reading is compared with, printed in the delta row with an
- * arrow and a color. One, not a list: a second comparison is a second card, and
- * that is the dashboard's job.
+ * The one period the reading is compared with, printed in the delta row with
+ * an arrow and a color. One, not a list: a second comparison is a second card,
+ * and that is the dashboard's job. A fixed number or a Measure is a target.
  */
 export type NumberComparison = {
 	/**
 	 * The question, not the way it is answered: `previous` is the period before
 	 * the one on the card and `last year` is the same period a year earlier,
 	 * both of which the card's own period is what fetches — a span shifts
-	 * itself back, a grain already holds the row. `constant` is a fixed number,
-	 * and `measure` a measure of the card's own query read off the same last row.
+	 * itself back, a grain already holds the row.
 	 *
 	 * A period a question cannot be put to answers nothing: only a span can be
 	 * anchored a year back, so `last year` beside a grain prints no delta.
 	 */
-	source: 'previous' | 'last year' | 'constant' | 'measure'
-	value?: number
-	measure?: Measure
+	source: 'previous' | 'last year'
 	/**
 	 * How the gap is printed: `change` as a percent of the comparison number,
 	 * `delta` as a signed number in the value's own units. Defaults to `change`.
@@ -279,7 +285,7 @@ export type NumberColumnOptions = {
 	negative_is_better?: boolean
 	/** What the reading is aimed at. A target belongs to the reading, not to the chart. */
 	target?: NumberTarget
-	/** The one number the reading is compared with. Naming none compares nothing. */
+	/** The one period the reading is compared with. Naming none compares nothing. */
 	comparison?: NumberComparison
 	/**
 	 * A bar under the card for how far the reading has come: towards its target,

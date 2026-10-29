@@ -15,14 +15,6 @@ function adapt(spec: NumberChartSpec) {
 
 const cardsOf = (spec: NumberChartSpec) => adapt(spec).props.cards
 
-/** A result column read as a measure, the way a target column is named. */
-const measureNamed = (name: string) => ({
-	column_name: name,
-	data_type: 'Decimal' as const,
-	aggregation: 'sum' as const,
-	measure_name: name,
-})
-
 const monthly = { name: 'created_at', type: 'Datetime', granularity: 'month' } as const
 
 const revenue = { name: 'Revenue', readings: [12300] }
@@ -324,89 +316,22 @@ describe('the comparison', () => {
 		expect(card.deltaCaption).toBeUndefined()
 	})
 
-	// @feature charts.number-comparison
-	it('measures against a fixed number, and calls it the target when unworded', () => {
-		const card = cardsOf({
-			values: [
-				{
-					name: 'Revenue',
-					readings: [300],
-					comparison: { source: 'constant', value: 250 },
-				},
-			],
-		})[0]
-		expect(card.delta).toBe(20)
-		expect(card.deltaCaption).toBe('vs target')
-	})
-
-	// @feature charts.number-comparison
-	it('measures against a column, read off the row the reading came from', () => {
-		const card = cardsOf({
-			values: [
-				{
-					name: 'Revenue',
-					readings: [100, 300],
-					target: [500, 400],
-					comparison: { source: 'measure', measure: measureNamed('Revenue_target') },
-				},
-			],
-		})[0]
-		expect(card.delta).toBe(-25)
-	})
-
 	// @feature charts.number-comparison-show
-	it("states the gap in the value's own units when asked for a difference", () => {
-		// The gap is money, so it shows the money sign the reading shows.
+	it('states the change from the period before as a difference when asked', () => {
 		const card = cardsOf({
 			values: [
 				{
 					name: 'Revenue',
-					readings: [300],
+					readings: [200, 300],
 					prefix: '$',
-					comparison: { source: 'constant', value: 400, show: 'delta', label: 'vs plan' },
+					comparison: { source: 'previous', show: 'delta' },
 				},
 			],
+			period: monthly,
 		})[0]
-		expect(card.delta).toBe(-100)
+		expect(card.delta).toBe(100)
 		expect(card.deltaPrefix).toBe('$')
-		expect(card.deltaSuffix).toBeUndefined()
-		expect(card.deltaCaption).toBe('vs plan')
-	})
-
-	// @feature charts.number-comparison-show
-	it('leaves the unit off the gap, because the value line already shows it', () => {
-		// The card reads "67 days / 45 days": a third "days" on the delta row
-		// says nothing and pushes the caption out of the card.
-		const card = cardsOf({
-			values: [
-				{
-					name: 'Days of Inventory',
-					readings: [67],
-					suffix: ' days',
-					comparison: { source: 'constant', value: 97, show: 'delta', label: 'vs plan' },
-				},
-			],
-		})[0]
-		expect(card.suffix).toBe(' days')
-		expect(card.delta).toBe(-30)
-		expect(card.deltaSuffix).toBeUndefined()
-	})
-
-	// @feature charts.number-comparison-show
-	it("prints a percent measure's gap in points, not percent", () => {
-		// 42% against a 42.8% target is a gap of 0.8 points, not -0.8%.
-		const card = cardsOf({
-			values: [
-				{
-					name: 'Margin',
-					readings: [0.42],
-					percent: true,
-					comparison: { source: 'constant', value: 0.428, show: 'delta' },
-				},
-			],
-		})[0]
-		expect(card.delta).toBeCloseTo(-0.8)
-		expect(card.deltaSuffix).toBe(' pts')
+		expect(card.deltaCaption).toBe('vs previous month')
 	})
 
 	// @feature charts.number-comparison charts.number-negative-is-better
@@ -465,17 +390,128 @@ describe('the comparison', () => {
 	})
 
 	// @feature charts.number-comparison
-	it('shows no delta row when the comparison names no number to hold the reading against', () => {
-		const card = cardsOf({
-			values: [{ name: 'Revenue', readings: [300], comparison: { source: 'constant' } }],
-		})[0]
+	it('states none at all on a value that compares nothing', () => {
+		const card = cardsOf({ values: [{ name: 'Revenue', readings: [200, 300] }] })[0]
 		expect(card.delta).toBeUndefined()
 		expect(card.deltaCaption).toBeUndefined()
 	})
+})
 
-	// @feature charts.number-comparison
-	it('states none at all on a value that compares nothing', () => {
-		const card = cardsOf({ values: [{ name: 'Revenue', readings: [200, 300] }] })[0]
+describe('the gap to the target', () => {
+	// @feature charts.number-target-gap
+	it('prints a miss as a fall, a share of the target, and calls it the target', () => {
+		// 112 against 120 fell 8 short: (112 - 120) / 120.
+		const card = cardsOf({
+			values: [{ name: 'Tickets', readings: [112], targetValue: 120, targetGap: 'change' }],
+		})[0]
+		expect(card.target).toBe(120)
+		expect(card.delta).toBeCloseTo(-6.67, 2)
+		expect(card.deltaSuffix).toBe('%')
+		expect(card.deltaCaption).toBe('vs target')
+	})
+
+	// @feature charts.number-target-gap charts.number-negative-is-better
+	it('colors a fall below the target as better where a fall is better', () => {
+		const card = cardsOf({
+			values: [
+				{
+					name: 'Cost',
+					readings: [90],
+					targetValue: 100,
+					targetGap: 'change',
+					negativeIsBetter: true,
+				},
+			],
+		})[0]
+		expect(card.delta).toBe(-10)
+		expect(card.negativeIsBetter).toBe(true)
+	})
+
+	// @feature charts.number-target-gap
+	it('measures against a target column, read off the row the reading came from', () => {
+		const card = cardsOf({
+			values: [
+				{
+					name: 'Revenue',
+					readings: [100, 300],
+					target: [500, 250],
+					targetColumn: true,
+					targetGap: 'change',
+				},
+			],
+		})[0]
+		expect(card.delta).toBe(20)
+	})
+
+	// @feature charts.number-target-gap
+	it("states the gap in the value's own units when asked for a difference", () => {
+		// The gap is money, so it shows the money sign the reading shows.
+		const card = cardsOf({
+			values: [
+				{
+					name: 'Revenue',
+					readings: [300],
+					prefix: '$',
+					targetValue: 400,
+					targetGap: 'delta',
+					targetLabel: 'vs plan',
+				},
+			],
+		})[0]
+		expect(card.delta).toBe(-100)
+		expect(card.deltaPrefix).toBe('$')
+		expect(card.deltaSuffix).toBeUndefined()
+		expect(card.deltaCaption).toBe('vs plan')
+	})
+
+	// @feature charts.number-target-gap
+	it('leaves the unit off the gap, because the value line already shows it', () => {
+		// The card reads "67 days / 97 days": a third "days" on the delta row
+		// says nothing and pushes the caption out of the card.
+		const card = cardsOf({
+			values: [
+				{
+					name: 'Days of Inventory',
+					readings: [67],
+					suffix: ' days',
+					targetValue: 97,
+					targetGap: 'delta',
+				},
+			],
+		})[0]
+		expect(card.suffix).toBe(' days')
+		expect(card.delta).toBe(-30)
+		expect(card.deltaSuffix).toBeUndefined()
+	})
+
+	// @feature charts.number-target-gap
+	it("prints a percent measure's gap in points, not percent", () => {
+		// 42% against a 42.8% target is a gap of 0.8 points, not -0.8%.
+		const card = cardsOf({
+			values: [
+				{
+					name: 'Margin',
+					readings: [0.42],
+					percent: true,
+					targetValue: 0.428,
+					targetGap: 'delta',
+				},
+			],
+		})[0]
+		expect(card.delta).toBeCloseTo(-0.8)
+		expect(card.deltaSuffix).toBe(' pts')
+	})
+
+	// @feature charts.number-target-gap
+	it('prints no delta row for a target that prints no gap, or names no number', () => {
+		expect(
+			cardsOf({ values: [{ name: 'Revenue', readings: [300], targetValue: 400 }] })[0]
+				.deltaCaption,
+		).toBeUndefined()
+
+		const input = numberChart({ values: [{ name: 'Revenue', readings: [300] }] })
+		;(input.config as NumberChartConfig).number_column_options[0].target = { gap: 'change' }
+		const card = adaptChart(input)!.props.cards[0]
 		expect(card.delta).toBeUndefined()
 		expect(card.deltaCaption).toBeUndefined()
 	})
@@ -498,6 +534,25 @@ describe('a card with both a target and a comparison', () => {
 		expect(card.target).toBe(400)
 		expect(card.delta).toBe(50)
 		expect(card.deltaCaption).toBe('vs last month')
+	})
+
+	// @feature charts.number-target-gap
+	it('gives the one delta row to the comparison, not the gap to the target', () => {
+		const card = cardsOf({
+			values: [
+				{
+					name: 'Revenue',
+					readings: [200, 300],
+					targetValue: 400,
+					targetGap: 'change',
+					comparison: { source: 'previous' },
+				},
+			],
+			period: monthly,
+		})[0]
+		expect(card.target).toBe(400)
+		expect(card.delta).toBe(50)
+		expect(card.deltaCaption).toBe('vs previous month')
 	})
 })
 
@@ -669,6 +724,11 @@ describe('the rows a Number cell takes', () => {
 				period: monthly,
 			}),
 		).toBe(5)
+	})
+
+	// @feature dashboard.cell-height-rule charts.number-target-gap
+	it('adds the delta row for a reading that prints its gap to a target', () => {
+		expect(rowsFor({ values: [{ ...revenue, targetValue: 400, targetGap: 'change' }] })).toBe(5)
 	})
 
 	// @feature dashboard.cell-height-rule

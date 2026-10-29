@@ -3,6 +3,8 @@ import math
 
 import frappe
 
+from insights.insights.doctype.insights_chart_v3.chart_query import named_number
+
 PATCH = "insights.patches.resize_dashboard_cells"
 
 OLD_ROW_HEIGHT = 52
@@ -168,8 +170,11 @@ def reading_id(reading: dict) -> str:
 
 
 def _compared(config: dict, reading: str | None) -> bool:
-    """Whether the reading prints a delta row."""
-    return bool(_options_of(config, reading).get("comparison"))
+    """Whether the reading prints a delta row: a comparison, or a target that
+    prints its gap."""
+    options = _options_of(config, reading)
+    target = options.get("target") or {}
+    return bool(options.get("comparison") or (target.get("gap") and named_number(target)))
 
 
 def _options_of(config: dict, reading: str | None) -> dict:
