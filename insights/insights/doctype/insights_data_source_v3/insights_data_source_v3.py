@@ -31,7 +31,7 @@ from .connectors.frappe_db import (
 )
 from .connectors.mariadb import get_mariadb_connection
 from .connectors.mssql import get_mssql_connection
-from .connectors.postgresql import get_postgres_connection
+from .connectors.postgresql import check_primary_connection, get_postgres_connection
 from .connectors.rest_api import RestAPIClient
 from .connectors.sqlite import get_sqlite_connection
 
@@ -193,12 +193,25 @@ class InsightsDataSourceDocument:
                 frappe.throw(f"{field} is mandatory for {self.database_type} Database")
 
     def validate_remote_db_fields(self):
+        self.validate_read_replica_fields()
         if self.connection_string:
             return
         mandatory = ("host", "port", "username", "password", "database_name")
         for field in mandatory:
             if not self.get(field):
                 frappe.throw(f"{field} is mandatory for Database")
+
+    def validate_read_replica_fields(self):
+        if not self.is_read_replica:
+            return
+        if self.database_type != "PostgreSQL":
+            frappe.throw("Only a PostgreSQL data source can be a read replica")
+        if self.connection_string:
+            frappe.throw("A read replica needs host, port and login fields, not a connection string")
+        mandatory = ("primary_host", "primary_username", "primary_password")
+        for field in mandatory:
+            if not self.get(field):
+                frappe.throw(f"{field} is mandatory for a read replica")
 
     def validate_bigquery_fields(self):
         mandatory = (
@@ -237,9 +250,14 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         http_headers: DF.JSON | None
         is_ducklake: DF.Check
         is_frappe_db: DF.Check
+        is_read_replica: DF.Check
         is_site_db: DF.Check
         password: DF.Password | None
         port: DF.Int
+        primary_host: DF.Data | None
+        primary_password: DF.Password | None
+        primary_port: DF.Int
+        primary_username: DF.Data | None
         schema: DF.Data | None
         ssl_ca: DF.SmallText | None
         status: DF.Literal["Inactive", "Active"]
@@ -484,6 +502,9 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
             self.get_api_client().test_connection()
         else:
             self.get_table_list()
+            # a query falls back when the primary fails, so only a test sees a bad login
+            if self.is_read_replica and self.database_type == "PostgreSQL":
+                check_primary_connection(self)
 
     def get_api_client(self):
         if self.type != "REST API":

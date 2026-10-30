@@ -39,7 +39,14 @@
   "section_break_rccm",
   "http_headers",
   "section_break_ajvs",
-  "connection_string"
+  "connection_string",
+  "read_replica_section",
+  "is_read_replica",
+  "primary_host",
+  "primary_port",
+  "column_break_rrep",
+  "primary_username",
+  "primary_password"
  ],
  "fields": [
   {
@@ -255,6 +262,53 @@
    "fieldname": "ssl_ca",
    "fieldtype": "Small Text",
    "label": "CA Certificate"
+  },
+  {
+   "collapsible": 1,
+   "depends_on": "eval:doc.database_type == 'PostgreSQL'",
+   "fieldname": "read_replica_section",
+   "fieldtype": "Section Break",
+   "label": "Read Replica"
+  },
+  {
+   "default": "0",
+   "description": "Tick when this server is a read-only replica. Insights then learns the columns of a native SQL query on the primary below, and still reads every row from this server.",
+   "fieldname": "is_read_replica",
+   "fieldtype": "Check",
+   "label": "Is Read Replica"
+  },
+  {
+   "depends_on": "eval:doc.database_type == 'PostgreSQL' && doc.is_read_replica",
+   "fieldname": "primary_host",
+   "fieldtype": "Data",
+   "label": "Primary Host",
+   "mandatory_depends_on": "eval:doc.database_type == 'PostgreSQL' && doc.is_read_replica"
+  },
+  {
+   "default": "5432",
+   "depends_on": "eval:doc.database_type == 'PostgreSQL' && doc.is_read_replica",
+   "fieldname": "primary_port",
+   "fieldtype": "Int",
+   "label": "Primary Port"
+  },
+  {
+   "fieldname": "column_break_rrep",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.database_type == 'PostgreSQL' && doc.is_read_replica",
+   "description": "Needs only CONNECT and TEMPORARY on the database and USAGE on its schemas, no access to any table: the primary reads no rows.",
+   "fieldname": "primary_username",
+   "fieldtype": "Data",
+   "label": "Primary Username",
+   "mandatory_depends_on": "eval:doc.database_type == 'PostgreSQL' && doc.is_read_replica"
+  },
+  {
+   "depends_on": "eval:doc.database_type == 'PostgreSQL' && doc.is_read_replica",
+   "fieldname": "primary_password",
+   "fieldtype": "Password",
+   "label": "Primary Password",
+   "mandatory_depends_on": "eval:doc.database_type == 'PostgreSQL' && doc.is_read_replica"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -264,7 +318,7 @@
    "link_fieldname": "data_source"
   }
  ],
- "modified": "2026-01-26 14:31:03.238213",
+ "modified": "2026-10-29 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Data Source v3",
