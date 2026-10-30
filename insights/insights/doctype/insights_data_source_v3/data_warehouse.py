@@ -180,6 +180,10 @@ class WarehouseTableWriter:
         if self._temp_dir is None:
             raise RuntimeError("WarehouseTableWriter must be used as a context manager")
 
+        # a MariaDB uuid column arrives as `uuid.UUID` objects, which Arrow refuses
+        if isinstance(data, Expr) and any(t.is_uuid() for t in data.schema().values()):
+            text = data.cast({c: "string" for c, t in data.schema().items() if t.is_uuid()})
+            data = ibis.memtable(text.to_pandas(), schema=data.schema())
         # switch to memory backend for writing to temp directory
         data = ibis.memtable(data)
 
