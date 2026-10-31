@@ -105,6 +105,15 @@ def web_tier_setting(name: str) -> int | None:
     return _gunicorn_settings(tuple(sys.argv)).get(name, GUNICORN_DEFAULTS[name])
 
 
+def gunicorn_workers() -> int | None:
+    """The worker count gunicorn was given, on its command line or as a literal
+    in its config file. `None` outside gunicorn, and when the config computes it:
+    gunicorn's default of one would then overstate what one worker may take."""
+    if not os.environ.get("SERVER_SOFTWARE", "").startswith("gunicorn"):
+        return None
+    return _gunicorn_settings(tuple(sys.argv)).get("workers")
+
+
 @cache
 def _gunicorn_settings(argv: tuple[str, ...]) -> dict:
     settings = {}

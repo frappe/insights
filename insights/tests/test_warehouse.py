@@ -416,19 +416,19 @@ class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
 
 class TestWarehouseMemoryShare(InsightsIntegrationTestCase):
     # @feature data-store.memory-limit
-    def test_a_gunicorn_worker_gets_the_memory_of_the_slots_it_may_hold(self):
+    def test_the_memory_share_is_split_among_the_processes_that_may_hold_slots(self):
         budget = {"cpu_budget": 8, "memory_budget": 32 * GiB, "insights_duckdb_memory_limit": None}
-        one_slot = (32 - 2) * GiB // 2 // 3
+        share = (32 - 2) * GiB // 2
         limits = []
         for workers in (8, 2, None):
-            setting = {"workers": workers}.get
             with (
                 patch.dict(frappe.conf, budget),
-                patch.object(duckdb_connector, "web_tier_setting", side_effect=setting),
+                patch.object(duckdb_connector, "gunicorn_workers", return_value=workers),
             ):
                 limits.append(duckdb_connector.get_default_memory_limit())
-        # 3 slots: one each on 8 workers, two on one of 2 workers; a job takes none
-        self.assertEqual(limits, [one_slot, 2 * one_slot, one_slot])
+        # 3 slots: one per worker on 8 workers, 2 workers share the slots, a job or
+        # an unknown worker count gets one slot's share
+        self.assertEqual(limits, [share // 3, share // 2, share // 3])
 
 
 class TestDataStoreSlots(InsightsIntegrationTestCase):
@@ -560,13 +560,17 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
 
     # @feature data-store.query-slots
     def test_slots_split_evenly_among_gunicorns_workers_and_a_lone_process_may_hold_them_all(self):
-        def per_process(workers):
-            setting = {"workers": workers}.get
-            with patch.object(data_warehouse, "web_tier_setting", side_effect=setting):
+        def per_process(in_gunicorn, workers):
+            with (
+                patch.object(data_warehouse, "web_tier_setting", return_value=1 if in_gunicorn else None),
+                patch.object(data_warehouse, "gunicorn_workers", return_value=workers),
+            ):
                 return data_warehouse.slots_per_process()
 
         with patch.dict(frappe.conf, {"insights_data_store_slots": 3}):
-            self.assertEqual([per_process(w) for w in (8, 3, 2, None)], [1, 1, 2, 3])
+            # 8, 3 and 2 workers; a config that computes its count; no gunicorn
+            cases = [(True, 8), (True, 3), (True, 2), (True, None), (False, None)]
+            self.assertEqual([per_process(*case) for case in cases], [1, 1, 2, 1, 3])
 
     # @feature data-store.query-slots
     def test_a_process_slot_whose_release_never_ran_frees_itself_after_a_lease(self):

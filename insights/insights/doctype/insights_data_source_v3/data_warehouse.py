@@ -1,6 +1,7 @@
 import math
 import os
 import shutil
+import socket
 import tempfile
 import threading
 import time
@@ -38,7 +39,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import read_pyarrow_batches
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
-from insights.resources import ResourcePool, cpu_budget, server_busy, web_tier_setting
+from insights.resources import ResourcePool, cpu_budget, gunicorn_workers, server_busy, web_tier_setting
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -142,11 +143,14 @@ def data_store_slots() -> int:
 
 
 def slots_per_process() -> int:
-    """The slots one process may hold: an even split among gunicorn's workers.
-    Outside gunicorn one process serves every request, so it may hold them all."""
+    """The slots one process may hold: an even split among gunicorn's workers, or
+    one when the worker count is not known. Outside gunicorn one process serves
+    every request, so it may hold them all."""
     slots = data_store_slots()
-    workers = web_tier_setting("workers")
-    return math.ceil(slots / workers) if workers else slots
+    if web_tier_setting("workers") is None:
+        return slots
+    workers = gunicorn_workers()
+    return math.ceil(slots / workers) if workers else 1
 
 
 def data_store_pool() -> ResourcePool:
@@ -1244,17 +1248,33 @@ def cleanup_data_store():
 def drop_stale_spill_folders() -> int:
     """Drop the spill folders of processes that stopped without closing DuckDB,
     such as a worker the OOM killer took. A folder a query spills into is
-    written to, so one untouched for a day is not in use."""
+    written to, so one untouched for a day is not in use, unless its process on
+    this host still runs: DuckDB keeps an open store's folder and does not make
+    it again."""
     parent = Path(f"{insights.warehouse.get_db_path()}.tmp")
     if not parent.is_dir():
         return 0
     cutoff = time.time() - STALE_SPILL_FOLDER_SECONDS
     dropped = 0
     for folder in parent.iterdir():
-        if folder.is_dir() and folder.stat().st_mtime < cutoff:
-            shutil.rmtree(folder, ignore_errors=True)
-            dropped += 1
+        with suppress(OSError):
+            if folder.is_dir() and folder.stat().st_mtime < cutoff and not _runs_here(folder.name):
+                shutil.rmtree(folder, ignore_errors=True)
+                dropped += 1
     return dropped
+
+
+def _runs_here(spill_folder: str) -> bool:
+    host, _, pid = spill_folder.rpartition("-")
+    if host != socket.gethostname() or not pid.isdigit():
+        return False
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False  # nosemgrep - no such process is the answer: it stopped
+    except PermissionError:
+        return True  # nosemgrep - the process exists, under another user
+    return True
 
 
 def prune_unused_tables() -> list[str]:

@@ -1,7 +1,6 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
-import math
 import os
 import shutil
 import socket
@@ -20,7 +19,7 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 
 from insights.exceptions import QueryTimeout
-from insights.resources import cpu_budget, memory_budget, web_tier_setting
+from insights.resources import cpu_budget, gunicorn_workers, memory_budget
 
 from .compilers import StarExceptDropColumns
 
@@ -177,16 +176,16 @@ def get_memory_limit() -> str:
 
 def get_default_memory_limit() -> int:
     """A process's share of the data store's memory. DuckDB applies its limit to
-    the process, and each query that runs holds a slot, so a gunicorn worker gets
-    the share of the slots it may hold (`data_warehouse.slots_per_process`).
-    Another process takes no slot and gets one slot's share."""
+    the process, and each query that runs holds a slot, so the share is split
+    among the processes that may hold slots at once: the slots, or gunicorn's
+    workers when there are fewer (`data_warehouse.slots_per_process`). Together
+    they stay within the share, unless the floor applies."""
     from insights.insights.doctype.insights_data_source_v3.data_warehouse import data_store_slots
 
     slots = data_store_slots()
-    workers = web_tier_setting("workers")
-    held = math.ceil(slots / workers) if workers else 1
+    workers = gunicorn_workers()
     share = (memory_budget() - MEMORY_HEADROOM) * DATA_STORE_SHARE
-    return max(int(share * held / slots), MIN_MEMORY_LIMIT)
+    return max(int(share / min(slots, workers or slots)), MIN_MEMORY_LIMIT)
 
 
 def get_threads() -> int:

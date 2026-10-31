@@ -1,4 +1,5 @@
 import os
+import socket
 import tempfile
 import time
 from contextlib import contextmanager
@@ -442,17 +443,24 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
     def test_cleanup_drops_spill_folders_untouched_for_a_day(self):
         with tempfile.TemporaryDirectory(prefix="insights_spill_cleanup_") as tmpdir:
             path = str(Path(tmpdir) / "warehouse.duckdb")
-            stale, live = Path(f"{path}.tmp/host-1"), Path(f"{path}.tmp/host-2")
-            for folder in (stale, live):
+            spill = Path(f"{path}.tmp")
+            # a dead process, a recent one, and an idle one that still runs here
+            stale, recent, idle = (
+                spill / "other-host-1",
+                spill / "other-host-2",
+                spill / f"{socket.gethostname()}-{os.getpid()}",
+            )
+            for folder in (stale, recent, idle):
                 folder.mkdir(parents=True)
                 (folder / "duckdb_temp_storage_DEFAULT-0.tmp").write_bytes(b"x")
             day_ago = time.time() - 25 * 60 * 60
-            os.utime(stale, (day_ago, day_ago))
+            for folder in (stale, idle):
+                os.utime(folder, (day_ago, day_ago))
 
             with patch.object(insights.warehouse, "get_db_path", lambda: path):
                 self.assertEqual(data_warehouse.drop_stale_spill_folders(), 1)
 
-            self.assertEqual([p.name for p in Path(f"{path}.tmp").iterdir()], ["host-2"])
+            self.assertEqual(sorted(p.name for p in spill.iterdir()), sorted([recent.name, idle.name]))
 
     # compaction
 
