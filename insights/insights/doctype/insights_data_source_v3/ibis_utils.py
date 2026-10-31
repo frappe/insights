@@ -1,5 +1,6 @@
 import ast
 import html
+import math
 import sys
 import time
 import traceback
@@ -75,7 +76,7 @@ from insights.insights.query_utils import (
     table_reference,
 )
 from insights.permission_user import get_permission_user, script_session
-from insights.resources import single_flight
+from insights.resources import ResourcePool, server_busy, single_flight, web_tier_setting
 from insights.utils import create_execution_log, log_failed_execution
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -94,22 +95,14 @@ from .sandbox import NotDefined, expression_globals, script_globals
 if TYPE_CHECKING:
     from .insights_data_source_v3 import InsightsDataSourcev3
 
-try:
-    from frappe.concurrency_limiter import concurrent_limit
-except ImportError:
-    # Fallback no-op decorator if concurrency_limiter is not available (e.g. in older versions of Frappe)
-    def concurrent_limit(limit=None, wait_timeout=None):
-        def decorator(func):
-            return func
-
-        return decorator
-
-
 # the relation a `sql_column` fragment selects from, standing for the pipeline so far
 SQL_COLUMN_RELATION = "_insights_sql_column"
 
 # the alias a native SQL query is nested under before ibis sees it
 NATIVE_SQL_RELATION = "_insights_native_sql"
+
+# seconds a live query answered busy waits before the chart asks again
+LIVE_QUERY_RETRY_AFTER = 1
 
 # The aggregations whose group values add up to the value of the whole. Only
 # these let a set of groups be read as parts of one total: two groups' averages
@@ -1783,15 +1776,46 @@ def compiled_once(backend, query: IbisQuery, sql: str):
             del backend.compile
 
 
-# reject immediately instead of waiting for a slot: a blocked request holds on to a
-# web thread, so waiting here is what starves the pool when a dashboard executes all
-# of its charts at once. The frontend retries on the 503.
-@concurrent_limit(wait_timeout=0)
+def live_query_pool() -> ResourcePool | None:
+    """Half of the web tier's threads, as `frappe.concurrent_limit` allows by
+    default, but counted from gunicorn's config file too. `None` outside
+    gunicorn, where no fixed pool of threads can run out."""
+    workers, threads = web_tier_setting("workers"), web_tier_setting("threads")
+    if workers is None:
+        return None
+    capacity = max(1, workers * threads // 2)
+    from insights.insights.doctype.insights_settings.insights_settings import get_max_execution_time
+
+    return ResourcePool(
+        "insights:live_query",
+        capacity,
+        # one user, API client or site cannot take every slot
+        per_site=math.ceil(capacity / 2),
+        per_user=math.ceil(capacity / 2),
+        max_waiters=0,
+        # longer than a request lives or a MariaDB query runs
+        lease_seconds=max(web_tier_setting("timeout"), get_max_execution_time()) + 5,
+    )
+
+
 def _execute_live_query(query: IbisQuery):
-    start = time.monotonic()
-    with cancellable_live_query(query.get_backend()):
-        result = query.execute()
-    return result, flt(time.monotonic() - start, 3)
+    # background jobs and the CLI do not hold a web thread, and have no one to
+    # answer busy to
+    pool = live_query_pool() if getattr(frappe.local, "request", None) else None
+    # not waited on: a blocked request holds on to a web thread, so waiting here
+    # is what starves the pool when a dashboard executes all of its charts at
+    # once. The frontend retries on the 503.
+    lease = pool.acquire() if pool else None
+    if pool and not lease:
+        raise server_busy(LIVE_QUERY_RETRY_AFTER)
+    try:
+        start = time.monotonic()
+        with cancellable_live_query(query.get_backend()):
+            result = query.execute()
+        return result, flt(time.monotonic() - start, 3)
+    finally:
+        if lease:
+            pool.release(lease)
 
 
 def get_columns_from_schema(schema: ibis.Schema):
