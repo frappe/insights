@@ -16,6 +16,7 @@ import sqlglot as sg
 import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_eval, safe_exec
+from ibis.backends.sql import SQLBackend
 from ibis.common.annotations import SignatureValidationError
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.datatypes import DataType
@@ -1641,7 +1642,10 @@ def execute_ibis_query(
 
     time_taken = -1
 
-    with log_failed_execution(sql, reference_name, use_data_store, cache_outcome):
+    with (
+        log_failed_execution(sql, reference_name, use_data_store, cache_outcome),
+        compiled_once(backend, query, sql),
+    ):
         try:
             if use_data_store:
                 start = time.monotonic()
@@ -1682,6 +1686,42 @@ def execute_ibis_query(
             cache_results(cache_key, result, cache_expiry)
 
     return result, time_taken
+
+
+@contextmanager
+def compiled_once(backend, query: IbisQuery, sql: str):
+    """Let `backend` run `sql` where its `execute` would compile `query` again.
+
+    On a deep pipeline one compile costs as much as the run itself. The
+    backend's own `execute` still runs, so the result is converted as ibis
+    converts it for that backend.
+
+    `sql` is `ibis.to_sql`'s, which is what `SQLBackend.compile` produces. A
+    backend that compiles its own way (BigQuery adds its session dataset)
+    compiles again.
+    """
+    if type(backend).compile is not SQLBackend.compile:
+        yield
+        return
+
+    previous = vars(backend).get("compile")
+    backend_compile = backend.compile
+
+    def compile_once(expr, /, *, limit=None, params=None, **kwargs):
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if expr.op() is query.op() and limit is None and not params:
+            return sql
+        return backend_compile(expr, limit=limit, params=params, **kwargs)
+
+    backend.compile = compile_once
+    try:
+        yield
+    finally:
+        if previous:
+            backend.compile = previous
+        else:
+            del backend.compile
 
 
 # reject immediately instead of waiting for a slot: a blocked request holds on to a

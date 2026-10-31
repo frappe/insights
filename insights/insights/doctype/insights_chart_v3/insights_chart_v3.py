@@ -218,11 +218,14 @@ class InsightsChartv3(Document):
 
         query = self.get_query(self.get_operations(order_by))
         with runs_as(self):
+            # The SQL names tables, joins and columns the reader may not see, and
+            # `insights.api.view` serves this to a Guest.
             result = query.execute(
                 force=force,
                 page=page,
                 page_size=page_size,
                 adhoc_filters=adhoc_filters,
+                include_sql=False,
             )
             # read before the sparkline runs, because each build clears what the
             # last one recorded. Only the session user's scope is sent. A Run as
@@ -230,10 +233,6 @@ class InsightsChartv3(Document):
             # name documents this reader may not see
             scope = user_permissions.scope(frappe.session.user)
             sparkline = self.get_sparkline_data(force=force, adhoc_filters=adhoc_filters)
-        # The SQL names tables, joins and columns the reader may not see, and
-        # `insights.api.view` serves this to a Guest.
-        result.pop("sql", None)
-
         result["rows"] = self.periods_oldest_last(result["rows"])
 
         # the client formats and links by these, and a reading surface is the
@@ -375,6 +374,7 @@ class InsightsChartv3(Document):
             force=force,
             page_size=SPARKLINE_MAX_POINTS,
             adhoc_filters=adhoc_filters,
+            include_sql=False,
         )
         return {"columns": result["columns"], "rows": result["rows"]}
 

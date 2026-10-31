@@ -23,10 +23,10 @@ from frappe import _
 from insights.insights.doctype.insights_chart_v3.chart_drill import (
     asks_for_rows,
     drill_data,
-    drill_dimensions,
     drill_rows_export,
     drill_rows_range,
     drill_rows_values,
+    stored_drill_dimensions,
 )
 from insights.insights.doctype.insights_chart_v3.chart_query import config_errors
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
@@ -202,7 +202,7 @@ def chart_answer(
         # them for the same reason: the menu shows "View rows", and the server
         # decides who may have them
         "drill": {
-            "dimensions": drill_dimensions(doc) if reads_rows else [],
+            "dimensions": stored_drill_dimensions(doc, chart["modified"], force) if reads_rows else [],
             "can_rows": reads_rows,
         },
         "can_filter": can_filter_card(doc.name),
