@@ -522,6 +522,18 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
             with self.assertRaises(frappe.ServiceUnavailableError):
                 insights.warehouse.get_table("Site DB", "tabToDo").get_ibis_table()
 
+        with patch.object(data_warehouse, "SLOT_WAIT", 0), self.request():
+            with patch.object(frappe.utils.error, "log_error") as log_error:
+                try:
+                    insights.warehouse.db
+                    self.fail("the store opened with every slot held")
+                except frappe.ServiceUnavailableError as e:
+                    # as Frappe answers the request
+                    response = frappe.app.handle_exception(e)
+        self.assertEqual(response.status_code, 503)
+        # a busy answer is not an error to log
+        log_error.assert_not_called()
+
     # @feature data-store.query-slots telemetry.query-failed
     def test_a_query_that_finds_every_slot_held_answers_busy_and_is_not_reported_as_failed(self):
         workbook = create_test_workbook("Administrator", title="Slot Test Workbook")
