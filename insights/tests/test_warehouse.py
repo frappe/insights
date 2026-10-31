@@ -1,5 +1,7 @@
+import os
 import pickle
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -318,6 +320,38 @@ class TestWarehouseWriteLock(InsightsIntegrationTestCase):
             self.assertIn("Could not set lock", str(caught.exception))
 
 
+class TestWarehouseSpillFolder(InsightsIntegrationTestCase):
+    # @feature data-store.memory-limit
+    def test_each_process_spills_into_its_own_folder(self):
+        with tempfile.TemporaryDirectory(prefix="insights_spill_test_") as tmpdir:
+            path = str(Path(tmpdir) / "warehouse.duckdb")
+            folders = []
+            for read_only in (False, True):
+                db = open_local_duckdb(path, read_only=read_only)
+                try:
+                    folders.append(db.raw_sql("SELECT current_setting('temp_directory')").fetchone()[0])
+                finally:
+                    db.disconnect()
+            other = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    f"from {duckdb_connector.__name__} import get_temp_directory; print(get_temp_directory({path!r}))",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                env=dict(os.environ, PYTHONPATH=os.path.dirname(os.path.dirname(insights.__file__))),
+            ).stdout.strip()
+
+        # DuckDB names spill files alike in every process, so a shared folder
+        # lets one process delete or overwrite another's
+        mine = os.path.join(f"{path}.tmp", f"{socket.gethostname()}-{os.getpid()}")
+        self.assertEqual(folders, [mine, mine])
+        self.assertEqual(os.path.dirname(other), f"{path}.tmp")
+        self.assertNotEqual(other, mine)
+
+
 class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
     def memory_limits(self, path):
         connections = [
@@ -351,7 +385,7 @@ class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
     def test_a_read_connection_gets_its_share_of_the_servers_cores_memory_and_disk(self):
         # (cores, RAM) -> (slots, threads per query, memory per process)
         servers = {
-            (2, 4 * GiB): (2, 1, 512 * 1024**2),
+            (2, 4 * GiB): (2, 1, GiB),
             (8, 31 * GiB): (3, 2, (31 - 2) * GiB // 2 // 3),
             (64, 256 * GiB): (12, 4, (256 - 2) * GiB // 2 // 12),
         }
@@ -384,6 +418,23 @@ class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
                     self.assertEqual(settings, (threads, *expected), (cores, memory))
 
 
+class TestWarehouseMemoryShare(InsightsIntegrationTestCase):
+    # @feature data-store.memory-limit
+    def test_the_memory_share_is_split_among_the_processes_that_may_hold_slots(self):
+        budget = {"cpu_budget": 8, "memory_budget": 32 * GiB, "insights_duckdb_memory_limit": None}
+        share = (32 - 2) * GiB // 2
+        limits = []
+        for workers in (8, 2, None):
+            with (
+                patch.dict(frappe.conf, budget),
+                patch.object(duckdb_connector, "gunicorn_workers", return_value=workers),
+            ):
+                limits.append(duckdb_connector.get_default_memory_limit())
+        # 3 slots: one per worker on 8 workers, 2 workers share the slots, a job or
+        # an unknown worker count gets one slot's share
+        self.assertEqual(limits, [share // 3, share // 2, share // 3])
+
+
 class TestDataStoreSlots(InsightsIntegrationTestCase):
     def before_test(self):
         self.addCleanup(self.close_store)
@@ -391,12 +442,20 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
         patcher = patch.dict(frappe.conf, {"insights_data_store_slots": 2})
         patcher.start()
         self.addCleanup(patcher.stop)
-        pool = data_store_pool()
-        frappe.cache.delete(*(frappe.cache.make_key(key, shared=True) for key in pool.keys))
-        self.addCleanup(frappe.cache.delete, *(frappe.cache.make_key(key, shared=True) for key in pool.keys))
+        # the pool is shared by every site on this Redis: touch only this site's leases
+        self.forget_leases()
+        self.addCleanup(self.forget_leases)
+
+    def forget_leases(self):
+        for key in data_store_pool().keys:
+            key = frappe.cache.make_key(key, shared=True)
+            if mine := [
+                m for m in frappe.cache.zrange(key, 0, -1) if m.decode().startswith(f"{frappe.local.site}|")
+            ]:
+                frappe.cache.zrem(key, *mine)
 
     def close_store(self):
-        frappe.local.insights_data_store_slot = None
+        data_warehouse.release_data_store_slot()
         if db := insights.db_connections.pop(WAREHOUSE_DB_NAME, None):
             db.disconnect()
 
@@ -416,7 +475,7 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
             frappe.local.request = None
 
     def holders(self):
-        return data_store_pool().holders()
+        return [h for h in data_store_pool().holders() if h.startswith(f"{frappe.local.site}|")]
 
     # @feature data-store.query-slots
     def test_a_request_holds_its_slot_from_opening_the_store_until_it_ends(self):
@@ -483,13 +542,62 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
         self.assertNotIn("Operation", str(busy.exception))
         self.assertNotIn("query_failed", [call.args[0] for call in sender.call_args_list])
 
+    # @feature data-store.query-slots
+    def test_a_gunicorn_worker_holds_only_its_split_of_the_slots(self):
+        with patch.object(data_warehouse, "slots_per_process", return_value=1), self.request():
+            insights.warehouse.db
+            first = frappe.local.insights_data_store_slot
+            # another request in this process, while the first still holds its slot
+            frappe.local.insights_data_store_slot = None
+            start = time.monotonic()
+            with self.assertRaises(frappe.ServiceUnavailableError):
+                data_warehouse.take_data_store_slot()
+            # the pool had room: the process turned it away, at once
+            self.assertLess(time.monotonic() - start, 1)
+            self.assertEqual(len(self.holders()), 1)
+            frappe.local.insights_data_store_slot = first
+
+        self.assertEqual(self.holders(), [])
+        with patch.object(data_warehouse, "slots_per_process", return_value=1), self.request():
+            insights.warehouse.db
+            self.assertEqual(len(self.holders()), 1)
+
+    # @feature data-store.query-slots
+    def test_slots_split_evenly_among_gunicorns_workers_and_a_lone_process_may_hold_them_all(self):
+        def per_process(in_gunicorn, workers):
+            with (
+                patch.object(data_warehouse, "web_tier_setting", return_value=1 if in_gunicorn else None),
+                patch.object(data_warehouse, "gunicorn_workers", return_value=workers),
+            ):
+                return data_warehouse.slots_per_process()
+
+        with patch.dict(frappe.conf, {"insights_data_store_slots": 3}):
+            # 8, 3 and 2 workers; a config that computes its count; no gunicorn
+            cases = [(True, 8), (True, 3), (True, 2), (True, None), (False, None)]
+            self.assertEqual([per_process(*case) for case in cases], [1, 1, 2, 1, 3])
+
+    # @feature data-store.query-slots
+    def test_a_process_slot_whose_release_never_ran_frees_itself_after_a_lease(self):
+        slot = data_warehouse.ProcessSlot()
+        stale = slot.acquire(1, hold=0.2)
+        self.assertIsNone(slot.acquire(1, hold=0.2))
+        time.sleep(0.25)
+        fresh = slot.acquire(1, hold=60)
+        self.assertTrue(fresh)
+        # the late release of the first holder leaves the second one holding
+        slot.release(stale)
+        self.assertIsNone(slot.acquire(1, hold=60))
+        self.assertTrue(slot.acquire(2, hold=60))
+        slot.release(fresh)
+        self.assertTrue(slot.acquire(2, hold=60))
+
     # @feature data-store.time-limit
     def test_a_request_that_runs_several_queries_shares_the_web_tiers_time_among_them(self):
         with patch.object(data_warehouse, "web_tier_setting", return_value=120), self.request():
             insights.warehouse.db
             self.assertEqual(data_warehouse.get_data_store_time_limit(), 60)
-            pool, lease, started = frappe.local.insights_data_store_slot
-            frappe.local.insights_data_store_slot = (pool, lease, started - 49.5)
+            pool, lease, started, process_slot = frappe.local.insights_data_store_slot
+            frappe.local.insights_data_store_slot = (pool, lease, started - 49.5, process_slot)
             self.assertEqual(data_warehouse.get_data_store_time_limit(), 40)
 
     # @feature data-store.single-flight data-store.query-slots
@@ -511,7 +619,7 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
             frappe.cache.set(lock_key, "theirs", px=10_000)
 
             def their_run_ends():
-                seen.append(held_here())
+                seen.append((held_here(), len(data_warehouse._process_slot._holders)))
                 # nosemgrep - the key comes from make_key, which prefixes the site
                 frappe.cache.set(value_key, pickle.dumps(pd.DataFrame({"answer": [7]})), ex=60)
                 # nosemgrep - the key comes from make_key, which prefixes the site
@@ -521,15 +629,20 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
             threading.Timer(0.5, their_run_ends).start()
             result, time_taken = execute_ibis_query(query, paginate=False)
 
-        self.assertEqual(seen, [[]])
+            # rows from another's run read no store, so it takes neither slot again
+            after = (held_here(), len(data_warehouse._process_slot._holders))
+
+        # while it waited it held no pool lease and no slot of its process
+        self.assertEqual(seen, [([], 0)])
+        self.assertEqual(after, ([], 0))
         self.assertEqual((result["answer"].tolist(), time_taken), ([7], -1))
 
     # @feature data-store.time-limit data-store.single-flight
     def test_a_request_that_gave_its_slot_back_to_wait_keeps_its_time_used(self):
         with patch.object(data_warehouse, "web_tier_setting", return_value=120), self.request():
             insights.warehouse.db
-            pool, lease, started = frappe.local.insights_data_store_slot
-            frappe.local.insights_data_store_slot = (pool, lease, started - 49.5)
+            pool, lease, started, process_slot = frappe.local.insights_data_store_slot
+            frappe.local.insights_data_store_slot = (pool, lease, started - 49.5, process_slot)
             data_warehouse.yield_data_store_slot()
             data_warehouse.take_data_store_slot()
             self.assertEqual(data_warehouse.get_data_store_time_limit(), 40)
@@ -588,7 +701,7 @@ class TestQueryCancel(InsightsIntegrationTestCase):
         self.addCleanup(frappe.db.set_single_value, "Insights Settings", "max_execution_time", original)
         frappe.db.set_single_value("Insights Settings", "max_execution_time", 20)
         self.request_id = frappe.generate_hash(length=32)
-        frappe.local.insights_data_store_slot = None
+        data_warehouse.release_data_store_slot()
         # an earlier test may have left the store open, which takes no slot
         if db := insights.db_connections.pop(WAREHOUSE_DB_NAME, None):
             db.disconnect()

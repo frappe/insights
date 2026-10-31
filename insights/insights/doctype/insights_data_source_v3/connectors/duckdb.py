@@ -3,6 +3,7 @@
 
 import os
 import shutil
+import socket
 import threading
 import time
 from collections.abc import Generator
@@ -18,7 +19,7 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 
 from insights.exceptions import QueryTimeout
-from insights.resources import cpu_budget, memory_budget
+from insights.resources import cpu_budget, gunicorn_workers, memory_budget
 
 from .compilers import StarExceptDropColumns
 
@@ -45,13 +46,16 @@ READER_HELD_ERRORS = ("Could not set lock", "different configuration than existi
 # got OOM-killed, and one dashboard filled every core. So the data store gets
 # half of what the server may use, split among the queries the slot pool lets
 # run at once (`data_warehouse.data_store_slots`). Under its memory cap a query
-# spills to `<db file>.tmp`. Sites can set the memory limit with this site
+# spills to its own folder in `<db file>.tmp`. Sites can set the memory limit with this site
 # config key.
 MEMORY_LIMIT_CONFIG_KEY = "insights_duckdb_memory_limit"
 DATA_STORE_SHARE = 0.5
 # what the OS, MariaDB and the web workers' own Python keep, before the share
 MEMORY_HEADROOM = 2 * 1024**3
-MIN_MEMORY_LIMIT = 512 * 1024**2
+# a window function cannot spill all it holds: on a 2-core, 4 GiB server, charts
+# that ran under 1 GiB ran out of memory under the half share's 512 MiB. Where
+# the floor applies, the slots together take more than the half share
+MIN_MEMORY_LIMIT = 1024**3
 # a query may spill this share of the disk that is free, split among the slots
 TEMP_DISK_SHARE = 0.25
 
@@ -62,6 +66,11 @@ class InsightsDuckDBCompiler(StarExceptDropColumns, DuckDBCompiler):
 
 def connect_duckdb(*args, **kwargs) -> DuckDBBackend:
     kwargs.setdefault("memory_limit", get_memory_limit())
+    if args and isinstance(args[0], str) and args[0] != ":memory:":
+        # DuckDB names its spill files the same in every process, so processes
+        # that spill into one folder delete and overwrite each other's files.
+        # Passed to connect: a folder cannot change once it has been used
+        kwargs.setdefault("temp_directory", get_temp_directory(args[0]))
     db = ibis.duckdb.connect(*args, **kwargs)
     db.compiler = InsightsDuckDBCompiler()
     # set, not passed to connect: connecting with settings that differ from those
@@ -188,12 +197,16 @@ def get_memory_limit() -> str:
 
 def get_default_memory_limit() -> int:
     """A process's share of the data store's memory. DuckDB applies its limit to
-    the process, and each query that runs holds a slot, so with every slot taken
-    in a different process, together they stay within the share."""
+    the process, and each query that runs holds a slot, so the share is split
+    among the processes that may hold slots at once: the slots, or gunicorn's
+    workers when there are fewer (`data_warehouse.slots_per_process`). Together
+    they stay within the share, unless the floor applies."""
     from insights.insights.doctype.insights_data_source_v3.data_warehouse import data_store_slots
 
+    slots = data_store_slots()
+    workers = gunicorn_workers()
     share = (memory_budget() - MEMORY_HEADROOM) * DATA_STORE_SHARE
-    return max(int(share / data_store_slots()), MIN_MEMORY_LIMIT)
+    return max(int(share / min(slots, workers or slots)), MIN_MEMORY_LIMIT)
 
 
 def get_threads() -> int:
@@ -202,6 +215,14 @@ def get_threads() -> int:
     finish one query sooner but let fewer run at once; the CPU a query costs
     does not change with its threads."""
     return max(1, min(int(cpu_budget()) // 4, 4))
+
+
+def get_temp_directory(path: str) -> str:
+    """This process's spill folder, inside DuckDB's default `<db file>.tmp`. Named
+    for the host too: containers that share the sites folder repeat pids."""
+    parent = f"{path}.tmp"
+    os.makedirs(parent, exist_ok=True)
+    return os.path.join(parent, f"{socket.gethostname()}-{os.getpid()}")
 
 
 def get_temp_directory_limit(path: str) -> int:
