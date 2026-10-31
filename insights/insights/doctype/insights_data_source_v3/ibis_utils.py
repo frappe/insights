@@ -27,8 +27,16 @@ from ibis.expr.types import Table as IbisQuery
 import insights
 from insights import not_permitted, user_permissions
 from insights.cache_utils import make_digest
+from insights.cancellation import (
+    cancel_requested,
+    cancellable_live_query,
+    current_request_id,
+    raise_cancelled,
+    was_cancelled,
+)
 from insights.exceptions import (
     ExpressionSyntaxError,
+    QueryCancelled,
     QueryRefused,
     QueryTimeout,
     UnknownColumn,
@@ -40,6 +48,8 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     get_data_store_time_limit,
     is_warehouse,
+    take_data_store_slot,
+    yield_data_store_slot,
 )
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
@@ -65,6 +75,7 @@ from insights.insights.query_utils import (
     table_reference,
 )
 from insights.permission_user import get_permission_user, script_session
+from insights.resources import single_flight
 from insights.utils import create_execution_log, log_failed_execution
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -313,10 +324,12 @@ class IbisQueryBuilder:
                     not_permitted.NotPermitted,
                     frappe.ServiceUnavailableError,
                     QueryTimeout,
+                    QueryCancelled,
                 ):
                     # Not Permitted is a normal answer, not a broken operation. The
                     # card names what it needs. Neither is a busy data store, which
-                    # the client retries, nor a query stopped at the time limit
+                    # the client retries, nor a query stopped at the time limit or
+                    # by its reader
                     raise
                 except Exception as e:
                     self.throw_in_operation(e, idx, operation)
@@ -1100,7 +1113,11 @@ class IbisQueryBuilder:
         )
 
         if is_warehouse(ranked.get_backend()):
-            with time_limit(ranked.get_backend(), get_data_store_time_limit()):
+            # a request that waited on another's run gave its slot back
+            take_data_store_slot()
+            with time_limit(
+                ranked.get_backend(), get_data_store_time_limit(), cancel_requested(current_request_id())
+            ):
                 top = ranked.execute()
         else:
             top = ranked.execute()
@@ -1631,15 +1648,53 @@ def execute_ibis_query(
 
     backend = query.get_backend()
     use_data_store = is_warehouse(backend)
-    cache_outcome = "Off"
-    if cache:
-        backend_id = backend.db_identity if backend else None
-        cache_key = make_digest(sql, backend_id)
+    if not cache:
+        return _run_query(query, sql, backend, use_data_store, reference_name, "Off")
 
-        if has_cached_results(cache_key) and not force:
-            return get_cached_results(cache_key), -1
-        cache_outcome = "Forced" if force else "Miss"
+    backend_id = backend.db_identity if backend else None
+    cache_key = make_digest(sql, backend_id)
 
+    # A reload, a second tab or another reader of the same dashboard asks the
+    # same question while it runs. They wait for that run's answer instead of
+    # running it again, and hold no data store slot while they wait. They wait
+    # no longer than a run may take, which is the data store's limit for a live
+    # query too. Only the request that ran it has a time taken.
+    ran = {}
+
+    def run():
+        ran["time_taken"] = -1
+        result, ran["time_taken"] = _run_query(
+            query, sql, backend, use_data_store, reference_name, "Forced" if force else "Miss"
+        )
+        return result
+
+    def stop_if_cancelled():
+        if was_cancelled():
+            raise_cancelled()
+
+    try:
+        result = single_flight(
+            # v3 holds the DataFrame itself, which v2's JSON reader cannot read
+            f"insights:query_results:v3:{cache_key}",
+            run,
+            ttl=cache_expiry,
+            wait=get_data_store_time_limit(),
+            force=force,
+            on_wait=yield_data_store_slot,
+            check=stop_if_cancelled,
+            shared_errors=(QueryTimeout,),
+        )
+    except QueryTimeout as e:
+        if "time_taken" in ran:
+            raise
+        # the run this request waited on timed out, and its message is not in
+        # this request's messages yet
+        # nosemgrep - the message is the run's own, translated where it was thrown
+        frappe.throw(str(e), QueryTimeout, title=frappe._("Query Timeout"))
+    return result, ran.get("time_taken", -1)
+
+
+def _run_query(query: IbisQuery, sql: str, backend, use_data_store: bool, reference_name, cache_outcome: str):
     time_taken = -1
 
     with (
@@ -1648,13 +1703,19 @@ def execute_ibis_query(
     ):
         try:
             if use_data_store:
+                # a request that waited on another's run gave its slot back
+                take_data_store_slot()
                 start = time.monotonic()
-                with time_limit(backend, get_data_store_time_limit()):
+                with time_limit(backend, get_data_store_time_limit(), cancel_requested(current_request_id())):
                     result = query.execute()
                 time_taken = flt(time.monotonic() - start, 3)
             else:
                 result, time_taken = _execute_live_query(query)
+        except QueryCancelled:
+            raise
         except Exception as e:
+            if was_cancelled():
+                raise_cancelled(e)
             if "max_statement_time" in str(e) or isinstance(e, QueryTimeLimitExceeded):
                 frappe.log_error(
                     title="Query execution time exceeded the limit.",
@@ -1682,8 +1743,6 @@ def execute_ibis_query(
 
     if isinstance(result, pd.DataFrame):
         result = result.replace({pd.NaT: None, np.nan: None})
-        if cache:
-            cache_results(cache_key, result, cache_expiry)
 
     return result, time_taken
 
@@ -1730,7 +1789,8 @@ def compiled_once(backend, query: IbisQuery, sql: str):
 @concurrent_limit(wait_timeout=0)
 def _execute_live_query(query: IbisQuery):
     start = time.monotonic()
-    result = query.execute()
+    with cancellable_live_query(query.get_backend()):
+        result = query.execute()
     return result, flt(time.monotonic() - start, 3)
 
 
@@ -1795,10 +1855,6 @@ def get_cached_results(cache_key) -> pd.DataFrame:
     # a result with no rows still has columns, and records alone cannot hold them
     df = pd.DataFrame(payload["rows"], columns=payload["columns"])
     return df.replace({pd.NaT: None, np.nan: None})
-
-
-def has_cached_results(cache_key):
-    return frappe.cache().get_value(_results_cache_key(cache_key)) is not None
 
 
 def exec_with_return(

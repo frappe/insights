@@ -9,10 +9,12 @@ can move into Frappe as it is.
 
 import ast
 import os
+import pickle
 import random
 import sys
 import time
 import uuid
+from contextlib import suppress
 from functools import cache
 
 import frappe
@@ -330,3 +332,119 @@ def server_busy(retry_after: int):
     )
     exc.retry_after = retry_after
     return exc
+
+
+# A run in flight is a lock that holds the run's token. When it ends, the run
+# leaves its outcome under its token for the callers that joined it, and drops
+# the lock, so a caller that comes later starts a run of its own.
+SINGLE_FLIGHT_OUTCOME_SECONDS = 10
+
+RELEASE_LOCK_SCRIPT = """
+if redis.call('GET', KEYS[1]) == ARGV[1] then redis.call('DEL', KEYS[1]) end
+return 1
+"""
+
+
+def single_flight(
+    key: str, fn, ttl: int, wait: float, *, force: bool = False, on_wait=None, check=None, shared_errors=()
+):
+    """`fn()`, run once at a time for `key` across every process on this Redis.
+
+    The first caller runs `fn` and caches its value under `key` for `ttl`
+    seconds. A caller
+    that comes while it runs waits up to `wait` seconds and reads that value. If
+    the run fails, one waiter runs `fn` again and the rest wait for it; once
+    `wait` has passed, a waiter runs `fn` itself. An error in `shared_errors`
+    is raised to the waiters instead, because a run again would fail the same
+    way (a time limit). `force` skips the cached value but still joins a run in
+    flight, whose value is as fresh as a new run's would be.
+
+    `on_wait` is called once, before a caller first waits. `check` is called
+    while it waits, and may raise to stop waiting.
+
+    A value of `None` is not cached.
+    """
+    value_key = frappe.cache.make_key(key)
+    lock_key = frappe.cache.make_key(f"{key}:run")
+    deadline = time.monotonic() + wait
+    waited = False
+    while True:
+        if not force and (value := _cached(value_key)) is not None:
+            return value
+        if time.monotonic() >= deadline:
+            return fn()
+        token = uuid.uuid4().hex
+        try:
+            # nosemgrep - the key comes from make_key, which prefixes the site
+            taken = frappe.cache.set(lock_key, token, nx=True, px=max(1, int(wait * 1000)))
+            # nosemgrep - the key comes from make_key, which prefixes the site
+            running = None if taken else frappe.cache.get(lock_key)
+        except Exception:
+            frappe.log_error(f"single_flight({key}): Redis unavailable, not merging")
+            return fn()
+        if taken:
+            return _lead(value_key, lock_key, token, fn, ttl, shared_errors)
+        if running is None:
+            continue  # the run ended between the two calls
+        if not waited and on_wait:
+            on_wait()
+        waited = True
+        outcome = _await_outcome(lock_key, running.decode(), deadline, check)
+        if outcome == b"done" and (value := _cached(value_key)) is not None:
+            return value
+        if outcome and outcome.startswith(b"raised:"):
+            raise pickle.loads(outcome[len(b"raised:") :])
+        # the run failed, or its worker died: the callers left start again,
+        # and one of them runs it
+
+
+def _lead(value_key, lock_key, token: str, fn, ttl: int, shared_errors):
+    outcome = b"failed"
+    try:
+        value = fn()
+        if value is not None:
+            try:
+                # nosemgrep - the key comes from make_key, which prefixes the site
+                frappe.cache.set(value_key, pickle.dumps(value), ex=ttl)
+            except Exception:
+                # the run itself succeeded; its waiters run it again
+                frappe.log_error(f"single_flight: could not cache the value of {value_key}")
+                return value
+        outcome = b"done"
+        return value
+    except shared_errors as e:
+        with suppress(Exception):  # nosemgrep - an error pickle cannot hold lets waiters run again
+            outcome = b"raised:" + pickle.dumps(e)
+        raise
+    finally:
+        try:
+            # nosemgrep - the key comes from make_key, which prefixes the site
+            frappe.cache.set(f"{lock_key.decode()}:{token}", outcome, ex=SINGLE_FLIGHT_OUTCOME_SECONDS)
+            frappe.cache.eval(RELEASE_LOCK_SCRIPT, 1, lock_key, token)
+        except Exception:
+            frappe.log_error(f"single_flight: could not end the run of {lock_key}")
+
+
+def _await_outcome(lock_key, token: str, deadline: float, check=None) -> bytes | None:
+    """The outcome of the run with `token` once it ends, `None` when its lock
+    expired with no outcome (its worker died) or `deadline` passed."""
+    outcome_key = f"{lock_key.decode()}:{token}"
+    while time.monotonic() < deadline:
+        outcome, running = frappe.cache.mget([outcome_key, lock_key])
+        if outcome:
+            return outcome
+        if running is None or running.decode() != token:
+            return None
+        if check:
+            check()
+        time.sleep(min(max(0.0, deadline - time.monotonic()), POLL_INTERVAL * (0.5 + random.random())))
+    return None
+
+
+def _cached(key):
+    try:
+        # nosemgrep - the key comes from make_key, which prefixes the site
+        value = frappe.cache.get(key)
+        return None if value is None else pickle.loads(value)
+    except Exception:
+        return None  # nosemgrep - an unreadable value is a miss, and the run replaces it

@@ -140,6 +140,19 @@ def get_chart_count(
     return doc.count_rows(adhoc_filters, card_filters, force=force)
 
 
+@frappe.whitelist(allow_guest=True, methods=["POST"])  # nosemgrep - a reader stops only their own requests
+def cancel_queries(request_ids: list[str] | str):
+    """Stop the queries the reader's requests `request_ids` run: the reader left
+    the dashboard, changed its filters or reloaded the page.
+
+    The page sends it with `sendBeacon` as it unloads, so the ids may come as a
+    JSON string in a form.
+    """
+    from insights.cancellation import cancel
+
+    cancel(frappe.parse_json(request_ids) or [])
+
+
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
 def download_chart_rows(
     chart: str,
