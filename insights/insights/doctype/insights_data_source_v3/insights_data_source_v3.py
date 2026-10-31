@@ -587,6 +587,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
 
 def after_request():
+    from insights.insights.doctype.insights_data_source_v3.data_warehouse import release_data_store_slot
+
     closed = {}
     for name, db in insights.db_connections.items():
         try:
@@ -597,6 +599,9 @@ def after_request():
 
     for name in closed:
         del insights.db_connections[name]
+
+    # after the store is closed, so the next holder does not meet this one's memory
+    release_data_store_slot()
 
 
 @contextmanager

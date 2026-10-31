@@ -32,7 +32,14 @@ from insights.exceptions import (
     QueryTimeout,
     UnknownColumn,
 )
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+    QueryTimeLimitExceeded,
+    time_limit,
+)
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+    get_data_store_time_limit,
+    is_warehouse,
+)
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
     held_back_key,
@@ -1628,12 +1635,13 @@ def execute_ibis_query(
         try:
             if use_data_store:
                 start = time.monotonic()
-                result = query.execute()
+                with time_limit(backend, get_data_store_time_limit()):
+                    result = query.execute()
                 time_taken = flt(time.monotonic() - start, 3)
             else:
                 result, time_taken = _execute_live_query(query)
         except Exception as e:
-            if "max_statement_time" in str(e):
+            if "max_statement_time" in str(e) or isinstance(e, QueryTimeLimitExceeded):
                 frappe.log_error(
                     title="Query execution time exceeded the limit.",
                     message=f"Query: {sql}",
@@ -1642,7 +1650,7 @@ def execute_ibis_query(
                     get_max_execution_time,
                 )
 
-                max_time = get_max_execution_time()
+                max_time = getattr(e, "seconds", None) or get_max_execution_time()
                 frappe.throw(
                     title="Query Timeout",
                     msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",

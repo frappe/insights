@@ -425,7 +425,10 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.division-by-zero | A division by zero returns null in the data store, as it does on the live connection. |
 | data-store.cleanup-prunes-stale | The weekly cleanup drops a table no query has used, and keeps one used recently, nested, freshly imported or incremental. |
 | data-store.cleanup-keeps-unexplained | The cleanup deletes only what it can rebuild and keeps an unexplained orphan. |
-| data-store.memory-limit | Every DuckDB connection is held to a memory limit, 4 GB or DuckDB's lower default on a small host, unless the site config sets `insights_duckdb_memory_limit`. |
+| data-store.memory-limit | Every DuckDB connection is held to its share of the server's memory and cores (cgroup aware, split among the data store slots), and a read to a share of the free disk for spilling, unless the site config sets `insights_duckdb_memory_limit`. |
+| data-store.query-slots | A request that reads the data store holds one of the server's slots from opening the store until it ends, and gives it back when it fails. When every slot is held it waits a few seconds, then is answered busy with `Retry-After`, and the chart tries again. Background jobs take no slot. |
+| data-store.slot-pool | No one user, guest address or site holds every data store slot, though a site alone on the bench may; a slot a killed worker held comes back when its lease ends, and a changed slot count applies at once. |
+| data-store.time-limit | A data store query stops at Max Execution Time, and before the web tier's timeout would kill its worker, with the message a live query gives; the connection runs the next query. |
 | data-store.compaction | The store file is compacted without losing data, and small files are left alone. |
 | data-store.execution-log-retention | Log Settings clears query execution logs past the retention an admin sets; the 90-day default outlasts the cleanup's unused-table window. |
 | data-store.execution-log-failures | A run that fails is kept in the query execution log with its error, and a Data Store read that a writer's lock refused is kept as Locked. |
