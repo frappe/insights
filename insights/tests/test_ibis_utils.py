@@ -31,6 +31,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     sparkline_operations,
 )
+from insights.insights.doctype.insights_data_source_v3 import ibis_utils
 from insights.insights.doctype.insights_data_source_v3.connectors.bigquery import get_bigquery_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.clickhouse import get_clickhouse_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import connect_duckdb
@@ -1198,12 +1199,11 @@ class TestLiveQuerySlots(InsightsIntegrationTestCase):
     its size."""
 
     def before_test(self):
-        self.leases = []
-        self.addCleanup(self.release_leases)
-
-    def release_leases(self):
-        for pool, lease in self.leases:
-            pool.release(lease)
+        # the bench's live queries share the real pool, on every site
+        name = f"test:{frappe.generate_hash(length=10)}"
+        self.enterContext(patch.object(ibis_utils, "LIVE_QUERY_POOL", name))
+        keys = [f"resource_pool:{name}:{kind}" for kind in ("leases", "waiters")]
+        self.addCleanup(frappe.cache.delete, *(frappe.cache.make_key(key, shared=True) for key in keys))
 
     def serve_from_config_file(self, settings: str):
         """Run as a gunicorn worker started as Pilot starts one: `-c <file>`, with
@@ -1222,7 +1222,6 @@ class TestLiveQuerySlots(InsightsIntegrationTestCase):
         for _ in range(count):
             lease = pool.acquire()
             self.assertTrue(lease)
-            self.leases.append((pool, lease))
 
     @contextmanager
     def request(self):
@@ -1270,7 +1269,7 @@ class TestLiveQuerySlots(InsightsIntegrationTestCase):
         # the class commits when it ends, so a rollback alone would keep the change
         self.addCleanup(frappe.db.set_single_value, "Insights Settings", "max_execution_time", original)
         frappe.db.set_single_value("Insights Settings", "max_execution_time", 1)
-        self.serve_from_config_file("workers = 1\nthreads = 2\ntimeout = 1\n")
+        self.serve_from_config_file("workers = 1\nthreads = 2\ntimeout = 1\ngraceful_timeout = 0\n")
         with db_connections(), self.request():
             # never released, as by a worker killed mid-query
             self.hold(1)
