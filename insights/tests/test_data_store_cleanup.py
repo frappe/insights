@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
@@ -434,6 +435,24 @@ class TestDataStoreCleanup(InsightsIntegrationTestCase):
             self.assertEqual(
                 sorted(kept), [f"{schema}.ibis_duckdb_table_more", f"{schema}.ibis_duckdb_table_other"]
             )
+
+    # spill folders
+
+    # @feature data-store.spill-cleanup
+    def test_cleanup_drops_spill_folders_untouched_for_a_day(self):
+        with tempfile.TemporaryDirectory(prefix="insights_spill_cleanup_") as tmpdir:
+            path = str(Path(tmpdir) / "warehouse.duckdb")
+            stale, live = Path(f"{path}.tmp/host-1"), Path(f"{path}.tmp/host-2")
+            for folder in (stale, live):
+                folder.mkdir(parents=True)
+                (folder / "duckdb_temp_storage_DEFAULT-0.tmp").write_bytes(b"x")
+            day_ago = time.time() - 25 * 60 * 60
+            os.utime(stale, (day_ago, day_ago))
+
+            with patch.object(insights.warehouse, "get_db_path", lambda: path):
+                self.assertEqual(data_warehouse.drop_stale_spill_folders(), 1)
+
+            self.assertEqual([p.name for p in Path(f"{path}.tmp").iterdir()], ["host-2"])
 
     # compaction
 

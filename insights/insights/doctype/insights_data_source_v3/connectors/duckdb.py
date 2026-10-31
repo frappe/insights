@@ -1,8 +1,10 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import math
 import os
 import shutil
+import socket
 import threading
 import time
 from collections.abc import Generator
@@ -18,7 +20,7 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 
 from insights.exceptions import QueryTimeout
-from insights.resources import cpu_budget, memory_budget
+from insights.resources import cpu_budget, memory_budget, web_tier_setting
 
 from .compilers import StarExceptDropColumns
 
@@ -52,7 +54,8 @@ DATA_STORE_SHARE = 0.5
 # what the OS, MariaDB and the web workers' own Python keep, before the share
 MEMORY_HEADROOM = 2 * 1024**3
 # a window function cannot spill all it holds: on a 2-core, 4 GiB server, charts
-# that ran under 1 GiB ran out of memory under the half share's 512 MiB
+# that ran under 1 GiB ran out of memory under the half share's 512 MiB. Where
+# the floor applies, the slots together take more than the half share
 MIN_MEMORY_LIMIT = 1024**3
 # a query may spill this share of the disk that is free, split among the slots
 TEMP_DISK_SHARE = 0.25
@@ -174,12 +177,16 @@ def get_memory_limit() -> str:
 
 def get_default_memory_limit() -> int:
     """A process's share of the data store's memory. DuckDB applies its limit to
-    the process, and each query that runs holds a slot, so with every slot taken
-    in a different process, together they stay within the share."""
+    the process, and each query that runs holds a slot, so a gunicorn worker gets
+    the share of the slots it may hold (`data_warehouse.slots_per_process`).
+    Another process takes no slot and gets one slot's share."""
     from insights.insights.doctype.insights_data_source_v3.data_warehouse import data_store_slots
 
+    slots = data_store_slots()
+    workers = web_tier_setting("workers")
+    held = math.ceil(slots / workers) if workers else 1
     share = (memory_budget() - MEMORY_HEADROOM) * DATA_STORE_SHARE
-    return max(int(share / data_store_slots()), MIN_MEMORY_LIMIT)
+    return max(int(share * held / slots), MIN_MEMORY_LIMIT)
 
 
 def get_threads() -> int:
@@ -191,10 +198,11 @@ def get_threads() -> int:
 
 
 def get_temp_directory(path: str) -> str:
-    """This process's spill folder, inside DuckDB's default `<db file>.tmp`."""
+    """This process's spill folder, inside DuckDB's default `<db file>.tmp`. Named
+    for the host too: containers that share the sites folder repeat pids."""
     parent = f"{path}.tmp"
     os.makedirs(parent, exist_ok=True)
-    return os.path.join(parent, str(os.getpid()))
+    return os.path.join(parent, f"{socket.gethostname()}-{os.getpid()}")
 
 
 def get_temp_directory_limit(path: str) -> int:

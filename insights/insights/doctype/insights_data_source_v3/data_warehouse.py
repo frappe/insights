@@ -51,6 +51,7 @@ CLEANUP_LOCK_TIMEOUT = 15 * 60
 # Rebuilding the file is only worth the disk and time above these thresholds.
 COMPACT_MIN_FILE_SIZE = 100 * 1024 * 1024
 COMPACT_MIN_FREE_RATIO = 0.2
+STALE_SPILL_FOLDER_SECONDS = 24 * 60 * 60
 # ibis's `create_table(overwrite=True)` fills a table of this name before
 # renaming it over the target. An import that died in between, before imports
 # committed in one transaction, left it behind.
@@ -100,34 +101,31 @@ WEB_TIMEOUT_SHARE = 0.75
 
 
 class ProcessSlot:
-    """At most one data store slot per process. DuckDB's memory limit and
-    threads are per process and sized for one query; the pool alone would let a
-    gthread worker take several, and their queries share one query's memory.
+    """The data store slots one process may hold. DuckDB's memory limit and
+    threads are per process and sized for the slots it may hold; the pool alone
+    would let one gthread worker take every slot, and its queries would share
+    one query's memory.
 
-    Held no longer than a pool lease, so a request whose release never ran does
+    A hold ends with its pool lease, so a request whose release never ran does
     not lock its process out for good."""
 
     def __init__(self):
-        self._changed = threading.Condition()
-        self._holder = None
-        self._until = 0.0
+        self._lock = threading.Lock()
+        self._holders = {}
 
-    def acquire(self, wait: float, hold: float) -> object | None:
-        deadline = time.monotonic() + wait
-        with self._changed:
-            while (now := time.monotonic()) < self._until:
-                if now >= deadline:
-                    return None
-                self._changed.wait(min(deadline, self._until) - now)
-            self._holder, self._until = object(), now + hold
-            return self._holder
+    def acquire(self, capacity: int, hold: float) -> object | None:
+        with self._lock:
+            now = time.monotonic()
+            self._holders = {h: until for h, until in self._holders.items() if until > now}
+            if len(self._holders) >= capacity:
+                return None
+            holder = object()
+            self._holders[holder] = now + hold
+            return holder
 
     def release(self, holder: object):
-        with self._changed:
-            # a holder that outlived its hold may no longer be the one holding
-            if holder is self._holder:
-                self._holder, self._until = None, 0.0
-                self._changed.notify()
+        with self._lock:
+            self._holders.pop(holder, None)
 
 
 _process_slot = ProcessSlot()
@@ -141,6 +139,14 @@ def data_store_slots() -> int:
     cores = max(1, int(cpu_budget()))
     reserve = max(1, cores // 4)
     return max(2, min((cores - reserve) // get_threads(), MAX_SLOTS))
+
+
+def slots_per_process() -> int:
+    """The slots one process may hold: an even split among gunicorn's workers.
+    Outside gunicorn one process serves every request, so it may hold them all."""
+    slots = data_store_slots()
+    workers = web_tier_setting("workers")
+    return math.ceil(slots / workers) if workers else slots
 
 
 def data_store_pool() -> ResourcePool:
@@ -166,11 +172,12 @@ def take_data_store_slot():
         return
     if getattr(frappe.local, "insights_data_store_slot", None):
         return
-    started = time.monotonic()
     pool = data_store_pool()
-    if not (process_slot := _process_slot.acquire(wait=SLOT_WAIT, hold=pool.lease_seconds)):
+    # not waited on: a waiting thread is not in the pool's waiting line, which
+    # bounds how many web threads wait. The client retries the busy answer
+    if not (process_slot := _process_slot.acquire(slots_per_process(), hold=pool.lease_seconds)):
         raise server_busy(SLOT_RETRY_AFTER)
-    lease = pool.acquire(wait=max(0, SLOT_WAIT - (time.monotonic() - started)))
+    lease = pool.acquire(wait=SLOT_WAIT)
     if not lease:
         _process_slot.release(process_slot)
         raise server_busy(SLOT_RETRY_AFTER)
@@ -1220,6 +1227,7 @@ def cleanup_data_store():
 
     dropped, kept = drop_orphan_warehouse_tables()
     compacted = compact_warehouse()
+    spill_folders = drop_stale_spill_folders()
 
     summary = {
         "tables_pruned": len(pruned),
@@ -1227,9 +1235,26 @@ def cleanup_data_store():
         "orphans_kept": len(kept),
         "size_before": compacted[0] if compacted else None,
         "size_after": compacted[1] if compacted else None,
+        "spill_folders_dropped": spill_folders,
     }
     logger.info(f"Data store cleanup: {summary}")
     return summary
+
+
+def drop_stale_spill_folders() -> int:
+    """Drop the spill folders of processes that stopped without closing DuckDB,
+    such as a worker the OOM killer took. A folder a query spills into is
+    written to, so one untouched for a day is not in use."""
+    parent = Path(f"{insights.warehouse.get_db_path()}.tmp")
+    if not parent.is_dir():
+        return 0
+    cutoff = time.time() - STALE_SPILL_FOLDER_SECONDS
+    dropped = 0
+    for folder in parent.iterdir():
+        if folder.is_dir() and folder.stat().st_mtime < cutoff:
+            shutil.rmtree(folder, ignore_errors=True)
+            dropped += 1
+    return dropped
 
 
 def prune_unused_tables() -> list[str]:
