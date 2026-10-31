@@ -1,5 +1,7 @@
 import os
 import re
+import shutil
+import tempfile
 import unittest
 from datetime import datetime
 from types import SimpleNamespace
@@ -8,9 +10,11 @@ from unittest.mock import patch
 
 import frappe
 import ibis
+import numpy as np
 import pandas as pd
 from ibis.backends.clickhouse import Backend as ClickHouseBackend
 from ibis.backends.postgres import Backend as PostgresBackend
+from ibis.backends.sql.compilers.base import SQLGlotCompiler
 from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
 from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
@@ -31,7 +35,8 @@ from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
     percentage_change,
     previous_period_value,
 )
-from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder, execute_ibis_query
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
 from insights.utils import deep_convert_dict_to_dict as _dict
 
@@ -1109,3 +1114,71 @@ class TestIbisPeriodValue(IbisQueryBuilderTestCase):
                     [None if pd.isna(v) else int(v) for v in result.execute()["previous"]],
                     [None, 1, None, 10],
                 )
+
+
+# one row of each kind a run has to carry back as it is, and a row of blanks
+DUCKDB_TYPED_ROWS = """
+SELECT * FROM (VALUES
+    (1, DATE '2026-01-31', TIMESTAMP '2026-01-31 10:20:30.123456',
+     TIMESTAMPTZ '2026-01-31 10:20:30+05:30', 12.50::DECIMAL(18, 2), TRUE, 'a', 1.5::DOUBLE),
+    (2, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
+) AS t(id, day, moment, moment_tz, amount, flag, label, rate)
+"""
+MARIADB_TYPED_ROWS = """
+SELECT 1 AS id, CAST('2026-01-31' AS DATE) AS day,
+    CAST('2026-01-31 10:20:30.123456' AS DATETIME(6)) AS moment,
+    CAST(12.50 AS DECIMAL(18, 2)) AS amount, TRUE AS flag, 'a' AS label, 1.5e0 AS rate
+UNION ALL
+SELECT 2, NULL, NULL, NULL, NULL, NULL, NULL
+"""
+
+
+class TestExecuteIbisQuery(InsightsIntegrationTestCase):
+    """A run hands back what ibis's own execute returns, on one compile."""
+
+    def run_counting_compiles(self, query, **kwargs):
+        compiles = []
+        to_sqlglot = SQLGlotCompiler.to_sqlglot
+
+        def counted(compiler, expr, **kw):
+            compiles.append(expr)
+            return to_sqlglot(compiler, expr, **kw)
+
+        with patch.object(SQLGlotCompiler, "to_sqlglot", counted):
+            result, _ = execute_ibis_query(query, cache=False, **kwargs)
+        return result, len(compiles)
+
+    def assert_runs_as_ibis_does(self, table):
+        cases = {
+            "every row": (table.order_by("id"), {"paginate": False}, table.order_by("id")),
+            "a page": (
+                table.order_by("id"),
+                {"page": 2, "page_size": 1},
+                table.order_by("id").limit(1, offset=1),
+            ),
+            "no rows": (table.filter(table.id < 0), {"paginate": False}, table.filter(table.id < 0)),
+        }
+        for case, (query, kwargs, as_ibis) in cases.items():
+            with self.subTest(case=case):
+                result, compiles = self.run_counting_compiles(query, **kwargs)
+                expected = as_ibis.execute().replace({pd.NaT: None, np.nan: None})
+                pd.testing.assert_frame_equal(result, expected)
+                self.assertEqual(compiles, 1)
+
+    # @feature query.result-values
+    def test_a_data_store_run_returns_what_ibis_returns_on_one_compile(self):
+        tmpdir = tempfile.mkdtemp(prefix="insights_execute_test_")
+        self.addCleanup(shutil.rmtree, tmpdir, ignore_errors=True)
+        path = os.path.join(tmpdir, "store.duckdb")
+        self.enterContext(patch.object(insights.warehouse, "get_db_path", return_value=path))
+        db = connect_duckdb(path)
+        self.addCleanup(db.disconnect)
+        db.raw_sql(f"CREATE TABLE typed AS {DUCKDB_TYPED_ROWS}")
+
+        self.assert_runs_as_ibis_does(db.table("typed"))
+
+    # @feature query.result-values
+    def test_a_live_run_returns_what_ibis_returns_on_one_compile(self):
+        with db_connections():
+            db = frappe.get_doc("Insights Data Source v3", "Site DB")._get_ibis_backend()
+            self.assert_runs_as_ibis_does(db.sql(MARIADB_TYPED_ROWS))

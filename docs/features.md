@@ -91,6 +91,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.result-pagination | A user pages through the result rows. |
 | query.result-timing | The result pane states how long the run took, or that it came from cache. |
 | query.result-cache | A re-run reads the result from the cache, with infinity and NaN read back as blanks. |
+| query.result-values | A run returns dates, times with their time zone, decimals, booleans, blanks and an empty result as the source holds them, from the data store and a live connection. |
 | query.result-raw-row | The raw row behind a formatted result row is the one at the same position, across re-runs. |
 | query.result-drill | A user clicks a cell of a summarized result and drills into it as a chart would. |
 | query.conditional-formatting | A user highlights result cells by a rule or colors them on a scale. |

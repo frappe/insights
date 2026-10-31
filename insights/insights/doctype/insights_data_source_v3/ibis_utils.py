@@ -1601,8 +1601,11 @@ def execute_ibis_query(
         offset = (page - 1) * page_size
         query = query.limit(page_size, offset=offset)
 
+    backend = query.get_backend()
     try:
-        sql = ibis.to_sql(query)
+        # compiled by the backend that runs it, so `compiled_once` can hand the
+        # backend this string instead of a second compile
+        sql = backend.compile(query, pretty=True)
     except ibis.common.exceptions.OperationNotDefinedError:
         # TODO: throw better error message
         raise
@@ -1611,7 +1614,6 @@ def execute_ibis_query(
     # returning a cached answer, which read the same columns
     user_permissions.record_blanked_reads(query)
 
-    backend = query.get_backend()
     use_data_store = is_warehouse(backend)
     cache_outcome = "Off"
     if cache:
@@ -1624,7 +1626,10 @@ def execute_ibis_query(
 
     time_taken = -1
 
-    with log_failed_execution(sql, reference_name, use_data_store, cache_outcome):
+    with (
+        log_failed_execution(sql, reference_name, use_data_store, cache_outcome),
+        compiled_once(backend, query, sql),
+    ):
         try:
             if use_data_store:
                 start = time.monotonic()
@@ -1664,6 +1669,34 @@ def execute_ibis_query(
             cache_results(cache_key, result, cache_expiry)
 
     return result, time_taken
+
+
+@contextmanager
+def compiled_once(backend, query: IbisQuery, sql: str):
+    """Let `backend` run `sql` where its `execute` would compile `query` again.
+
+    On a deep pipeline one compile costs as much as the run itself. The
+    backend's own `execute` still runs, so the result is converted as ibis
+    converts it for that backend.
+    """
+    previous = vars(backend).get("compile")
+    backend_compile = backend.compile
+
+    def compile_once(expr, /, *, limit=None, params=None, **kwargs):
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if expr.op() is query.op() and limit is None and not params:
+            return sql
+        return backend_compile(expr, limit=limit, params=params, **kwargs)
+
+    backend.compile = compile_once
+    try:
+        yield
+    finally:
+        if previous:
+            backend.compile = previous
+        else:
+            del backend.compile
 
 
 # reject immediately instead of waiting for a slot: a blocked request holds on to a
