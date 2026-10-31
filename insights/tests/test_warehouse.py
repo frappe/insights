@@ -20,6 +20,7 @@ from duckdb import ConversionException, IOException
 from frappe.utils import add_to_date
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from rq.job import JobStatus
+from werkzeug.wrappers import Response
 
 import insights
 from insights.api.data_store import sync_tables, update_failed_sync_status
@@ -397,12 +398,17 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
 
     @contextmanager
     def request(self):
-        frappe.utils.set_request(path="/api/method/insights.api.view.get_chart_data")
+        frappe.utils.set_request(method="POST", path="/api/method/insights.api.view.get_chart_data")
         frappe.local.response_headers = frappe.local.response_headers.__class__()
+        response = Response(mimetype="application/json")
         try:
             yield
+        except Exception:
+            response.status_code = 500
+            raise
         finally:
-            frappe.app.run_after_request_hooks(frappe.local.request, None)
+            # every app's hooks, as Frappe runs them after the response is built
+            frappe.app.run_after_request_hooks(frappe.local.request, response)
             frappe.local.request = None
 
     def holders(self):
