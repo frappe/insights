@@ -239,7 +239,9 @@ def drill_data(
         # the dialog keeps a breakdown level while it is open, so back and
         # breadcrumb clicks do not fetch it again. A rows level is fetched again
         # on every sort, find and page
-        result = query.execute(adhoc_filters=adhoc_filters, page=page, page_size=page_size, force=True)
+        result = query.execute(
+            adhoc_filters=adhoc_filters, page=page, page_size=page_size, force=True, include_sql=False
+        )
         # read the scope before `count_rows` builds the query again. It is the
         # session user's scope, as in `InsightsChartv3.fetch`
         scope = user_permissions.scope(frappe.session.user)
@@ -785,7 +787,7 @@ def _span_seconds(chart, segment: list[dict], column: dict, adhoc_filters) -> fl
     query = chart.get_query(
         operations=[*segment, {"type": "summarize", "measures": measures, "dimensions": []}]
     )
-    rows = query.execute(adhoc_filters=adhoc_filters, page_size=1, force=True)["rows"]
+    rows = query.execute(adhoc_filters=adhoc_filters, page_size=1, force=True, include_sql=False)["rows"]
     ends = rows[0] if rows else {}
 
     start, end = ends.get(SPAN_START), ends.get(SPAN_END)
@@ -940,7 +942,7 @@ def _surface_holds(chart, sliced: list[dict], column: str, value) -> bool:
         return False
 
     query = chart.get_query(operations=[*sliced, _filter_group([_rule(column, "=", value)])])
-    return bool(query.execute(page_size=1)["rows"])
+    return bool(query.execute(page_size=1, include_sql=False)["rows"])
 
 
 def _bucket(on_surface: dict, dimension: dict | None, grains: dict, value) -> tuple | None:
