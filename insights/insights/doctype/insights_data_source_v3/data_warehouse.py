@@ -543,6 +543,9 @@ class WarehouseTable:
                     ),
                     TableNotStored,
                 )
+        except frappe.ServiceUnavailableError:
+            # every data store slot is taken: the client retries a 503
+            raise
         except Exception as e:
             frappe.log_error(e)
             frappe.throw("Error accessing the data warehouse. Please try again.")

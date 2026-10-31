@@ -443,6 +443,11 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
         self.assertEqual((busy.exception.http_status_code, retry_after), (503, "2"))
         self.assertNotIn(WAREHOUSE_DB_NAME, insights.db_connections)
 
+        # a query opens the store when it reads its first table
+        with patch.object(data_warehouse, "SLOT_WAIT", 0), self.request():
+            with self.assertRaises(frappe.ServiceUnavailableError):
+                insights.warehouse.get_table("Site DB", "tabToDo").get_ibis_table()
+
     # @feature data-store.query-slots
     def test_a_background_job_reads_the_store_without_a_slot(self):
         self.assertIsNone(getattr(frappe.local, "request", None))
