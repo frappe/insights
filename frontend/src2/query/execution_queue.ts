@@ -47,6 +47,7 @@ export function cancelQueryExecutions(requestIds: string[]) {
 		queueMicrotask(() => {
 			const request_ids = cancelling
 			cancelling = []
+			// eslint-disable-next-line no-restricted-syntax -- a cancel that fails only lets the queries run on, and the reader has left them
 			call(CANCEL_METHOD, { request_ids }).catch(() => {})
 		})
 	}

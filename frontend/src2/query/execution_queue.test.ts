@@ -80,6 +80,7 @@ describe('a query request nobody waits for', () => {
 		const queries = [
 			scheduleQueryExecution(running.run),
 			scheduleQueryExecution(answered.run),
+			// eslint-disable-next-line no-restricted-syntax -- the aborted query is meant to fail; the test checks its cancel, not its result
 			scheduleQueryExecution(aborted.run).catch(() => {}),
 		]
 		await settled()

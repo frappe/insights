@@ -331,6 +331,8 @@ def server_busy(retry_after: int):
         frappe._("Server is busy. Please try again in a few seconds.")
     )
     exc.retry_after = retry_after
+    # an answer, not a failure: Frappe would write an Error Log row for each one
+    exc.skip_error_log = True
     return exc
 
 
