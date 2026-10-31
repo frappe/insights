@@ -36,6 +36,11 @@ WORKBOOK_TITLE = "Permission User Test Workbook"
 TODO_PREFIX = "Permission User Test"
 
 
+def met_condition():
+    """What `InsightsAlert.run_query` answers when the condition is met, with no rows."""
+    return frappe._dict(condition_met=True, rows=[], count=0, query_title="Todos")
+
+
 def todo_operations():
     return [
         {
@@ -120,7 +125,7 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
         delete_workbooks(title_prefix=WORKBOOK_TITLE)
         delete_users(PUBLISHER, EDITOR)
 
-    def create_alert(self, author=PUBLISHER, query=None):
+    def create_alert(self, author=PUBLISHER, query=None, condition="q['status'] == 'Open'"):
         with as_user(author), db_connections():
             alert = frappe.get_doc(
                 {
@@ -131,7 +136,7 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
                     "recipients": PUBLISHER,
                     "frequency": "Daily",
                     "custom_condition": 1,
-                    "condition": "q['status'] == 'Open'",
+                    "condition": condition,
                     "message": "{{ rows }}",
                 }
             ).insert()
@@ -193,8 +198,7 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
             with (
                 as_user("Administrator"),
                 permission_user(alert.permission_user),
-                patch.object(InsightsAlert, "evaluate_condition", return_value=True),
-                patch.object(InsightsAlert, "get_message_context", return_value={"rows": [], "count": 0}),
+                patch.object(InsightsAlert, "run_query", return_value=met_condition()),
                 patch("frappe.sendmail") as sendmail,
             ):
                 frappe.get_doc("Insights Alert", alert.name).send_alert()
@@ -216,8 +220,7 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
         frappe.db.set_value("Insights Alert", alert.name, "last_execution", None)
         frappe.db.commit()  # nosemgrep
         with (
-            patch.object(InsightsAlert, "evaluate_condition", return_value=True),
-            patch.object(InsightsAlert, "get_message_context", return_value={"rows": [], "count": 0}),
+            patch.object(InsightsAlert, "run_query", return_value=met_condition()),
             patch("frappe.sendmail") as sendmail,
         ):
             send_alerts()
@@ -330,7 +333,8 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
 
     # @feature alerts.enable
     def test_a_query_swapped_after_validation_still_runs_as_the_enabler(self):
-        alert = self.create_alert()
+        # a condition both tables can answer, because the rows come from the same run
+        alert = self.create_alert(condition="q['name'] != ''")
 
         # the owner repoints the query at `tabUser` once validate() has passed it
         self.repoint_query(user_operations())
