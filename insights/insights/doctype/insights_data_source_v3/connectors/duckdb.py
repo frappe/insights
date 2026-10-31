@@ -166,9 +166,9 @@ def get_memory_limit() -> str:
 
 
 def get_default_memory_limit() -> int:
-    """A process's share of the data store's memory. Each query that runs holds a
-    slot, so with every slot taken in a different process, together they stay
-    within the share."""
+    """A process's share of the data store's memory. DuckDB applies its limit to
+    the process, and each query that runs holds a slot, so with every slot taken
+    in a different process, together they stay within the share."""
     from insights.insights.doctype.insights_data_source_v3.data_warehouse import data_store_slots
 
     share = (memory_budget() - MEMORY_HEADROOM) * DATA_STORE_SHARE
@@ -176,9 +176,10 @@ def get_default_memory_limit() -> int:
 
 
 def get_threads() -> int:
-    """Threads per query: a quarter of the cores, 1 to 4. More threads per query
-    finish one query sooner but let fewer run at once (measured in ticket 3:
-    the CPU a query costs does not change with its threads)."""
+    """Threads for a process's DuckDB: a quarter of the cores, 1 to 4. A slot
+    usually holds a process's only query, so these are a query's threads. More
+    finish one query sooner but let fewer run at once; the CPU a query costs
+    does not change with its threads."""
     return max(1, min(int(cpu_budget()) // 4, 4))
 
 

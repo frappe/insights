@@ -311,10 +311,11 @@ class IbisQueryBuilder:
                     CircularQueryReferenceError,
                     not_permitted.NotPermitted,
                     frappe.ServiceUnavailableError,
+                    QueryTimeout,
                 ):
                     # Not Permitted is a normal answer, not a broken operation. The
-                    # card names what it needs. A busy data store is not one
-                    # either: the client retries the 503
+                    # card names what it needs. Neither is a busy data store, which
+                    # the client retries, nor a query stopped at the time limit
                     raise
                 except Exception as e:
                     self.throw_in_operation(e, idx, operation)

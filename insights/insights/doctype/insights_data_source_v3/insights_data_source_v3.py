@@ -345,6 +345,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.is_frappe_db:
             return get_frappedb_connection(self)
         if self.type == "REST API":
+            from insights.insights.doctype.insights_data_source_v3.data_warehouse import take_data_store_slot
+
+            # its tables live in the data store, and are read as data store tables are
+            take_data_store_slot()
             return insights.warehouse.get_connection(self.schema)
         if self.database_type == "MariaDB":
             return get_mariadb_connection(self)
