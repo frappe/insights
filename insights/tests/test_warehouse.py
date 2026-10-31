@@ -20,6 +20,7 @@ import ibis
 import pandas as pd
 import pyarrow as pa
 from duckdb import ConversionException, IOException
+from frappe.concurrency_limiter import WebTierSettings
 from frappe.utils import add_to_date
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from rq.job import JobStatus
@@ -58,6 +59,11 @@ from insights.tests.factories import (
 )
 
 GiB = 1024**3
+
+
+def web_tier_of(workers, timeout=120):
+    return WebTierSettings(workers=workers, threads=4, timeout=timeout, graceful_timeout=30)
+
 
 # A second process reproduces the lock the web workers take in production.
 HOLD_READ_LOCK = """
@@ -424,14 +430,14 @@ class TestWarehouseMemoryShare(InsightsIntegrationTestCase):
         budget = {"cpu_budget": 8, "memory_budget": 32 * GiB, "insights_duckdb_memory_limit": None}
         share = (32 - 2) * GiB // 2
         limits = []
-        for workers in (8, 2, None):
+        for web_tier in (web_tier_of(8), web_tier_of(2), None):
             with (
                 patch.dict(frappe.conf, budget),
-                patch.object(duckdb_connector, "gunicorn_workers", return_value=workers),
+                patch.object(duckdb_connector, "web_tier_settings", return_value=web_tier),
             ):
                 limits.append(duckdb_connector.get_default_memory_limit())
-        # 3 slots: one per worker on 8 workers, 2 workers share the slots, a job or
-        # an unknown worker count gets one slot's share
+        # 3 slots: one per worker on 8 workers, 2 workers share the slots, a job
+        # gets one slot's share
         self.assertEqual(limits, [share // 3, share // 2, share // 3])
 
 
@@ -576,17 +582,14 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
 
     # @feature data-store.query-slots
     def test_slots_split_evenly_among_gunicorns_workers_and_a_lone_process_may_hold_them_all(self):
-        def per_process(in_gunicorn, workers):
-            with (
-                patch.object(data_warehouse, "web_tier_setting", return_value=1 if in_gunicorn else None),
-                patch.object(data_warehouse, "gunicorn_workers", return_value=workers),
-            ):
+        def per_process(web_tier):
+            with patch.object(data_warehouse, "web_tier_settings", return_value=web_tier):
                 return data_warehouse.slots_per_process()
 
         with patch.dict(frappe.conf, {"insights_data_store_slots": 3}):
-            # 8, 3 and 2 workers; a config that computes its count; no gunicorn
-            cases = [(True, 8), (True, 3), (True, 2), (True, None), (False, None)]
-            self.assertEqual([per_process(*case) for case in cases], [1, 1, 2, 1, 3])
+            # 8, 3 and 2 workers; no gunicorn
+            cases = [web_tier_of(8), web_tier_of(3), web_tier_of(2), None]
+            self.assertEqual([per_process(case) for case in cases], [1, 1, 2, 3])
 
     # @feature data-store.query-slots
     def test_a_process_slot_whose_release_never_ran_frees_itself_after_a_lease(self):
@@ -605,7 +608,7 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
 
     # @feature data-store.time-limit
     def test_a_request_that_runs_several_queries_shares_the_web_tiers_time_among_them(self):
-        with patch.object(data_warehouse, "web_tier_setting", return_value=120), self.request():
+        with patch.object(data_warehouse, "web_tier_settings", return_value=web_tier_of(8)), self.request():
             insights.warehouse.db
             self.assertEqual(data_warehouse.get_data_store_time_limit(), 60)
             pool, lease, started, process_slot = frappe.local.insights_data_store_slot
@@ -651,7 +654,7 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
 
     # @feature data-store.time-limit data-store.single-flight
     def test_a_request_that_gave_its_slot_back_to_wait_keeps_its_time_used(self):
-        with patch.object(data_warehouse, "web_tier_setting", return_value=120), self.request():
+        with patch.object(data_warehouse, "web_tier_settings", return_value=web_tier_of(8)), self.request():
             insights.warehouse.db
             pool, lease, started, process_slot = frappe.local.insights_data_store_slot
             frappe.local.insights_data_store_slot = (pool, lease, started - 49.5, process_slot)
@@ -696,7 +699,7 @@ class TestDataStoreTimeLimit(InsightsIntegrationTestCase):
     # @feature data-store.time-limit
     def test_a_query_never_outlives_the_web_tiers_timeout(self):
         frappe.db.set_single_value("Insights Settings", "max_execution_time", 600)
-        with patch.object(data_warehouse, "web_tier_setting", return_value=2):
+        with patch.object(data_warehouse, "web_tier_settings", return_value=web_tier_of(8, timeout=2)):
             with self.assertRaises(QueryTimeout) as timeout:
                 execute_ibis_query(self.db.sql(self.SLOW_QUERY), cache=False)
 

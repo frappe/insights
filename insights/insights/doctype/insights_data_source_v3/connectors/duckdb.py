@@ -14,12 +14,13 @@ from urllib.parse import urlparse
 import frappe
 import ibis
 from duckdb import ConnectionException, InterruptException, IOException
+from frappe.concurrency_limiter import web_tier_settings
 from frappe.utils import get_files_path
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 
 from insights.exceptions import QueryTimeout
-from insights.resources import cpu_budget, gunicorn_workers, memory_budget
+from insights.resources import cpu_budget, memory_budget
 
 from .compilers import StarExceptDropColumns
 
@@ -204,9 +205,9 @@ def get_default_memory_limit() -> int:
     from insights.insights.doctype.insights_data_source_v3.data_warehouse import data_store_slots
 
     slots = data_store_slots()
-    workers = gunicorn_workers()
+    web_tier = web_tier_settings()
     share = (memory_budget() - MEMORY_HEADROOM) * DATA_STORE_SHARE
-    return max(int(share / min(slots, workers or slots)), MIN_MEMORY_LIMIT)
+    return max(int(share / min(slots, web_tier.workers if web_tier else slots)), MIN_MEMORY_LIMIT)
 
 
 def get_threads() -> int:

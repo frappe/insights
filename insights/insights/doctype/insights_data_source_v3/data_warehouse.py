@@ -17,6 +17,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from duckdb import CatalogException, DependencyException, OutOfMemoryException
+from frappe.concurrency_limiter import web_tier_settings
 from frappe.query_builder.functions import IfNull, Max, Min
 from frappe.utils import add_days, cint, get_datetime, get_files_path, now, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
@@ -39,7 +40,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import read_pyarrow_batches
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
-from insights.resources import ResourcePool, cpu_budget, gunicorn_workers, server_busy, web_tier_setting
+from insights.resources import ResourcePool, cpu_budget, server_busy
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -143,27 +144,25 @@ def data_store_slots() -> int:
 
 
 def slots_per_process() -> int:
-    """The slots one process may hold: an even split among gunicorn's workers, or
-    one when the worker count is not known. Outside gunicorn one process serves
-    every request, so it may hold them all."""
+    """The slots one process may hold: an even split among gunicorn's workers.
+    Outside gunicorn one process serves every request, so it may hold them all."""
     slots = data_store_slots()
-    if web_tier_setting("workers") is None:
+    if not (web_tier := web_tier_settings()):
         return slots
-    workers = gunicorn_workers()
-    return math.ceil(slots / workers) if workers else 1
+    return math.ceil(slots / web_tier.workers)
 
 
 def data_store_pool() -> ResourcePool:
     slots = data_store_slots()
-    workers, threads = web_tier_setting("workers"), web_tier_setting("threads")
-    timeout = web_tier_setting("timeout")
+    web_tier = web_tier_settings()
+    timeout = web_tier.timeout if web_tier else None
     return ResourcePool(
         "insights:data_store",
         slots,
         # one user, API client or site cannot take every slot
         per_site=math.ceil(slots / 2),
         per_user=math.ceil(slots / 2),
-        max_waiters=max(1, workers * threads // 4) if workers else slots,
+        max_waiters=max(1, web_tier.workers * web_tier.threads // 4) if web_tier else slots,
         # a request lives no longer than the web tier lets it
         lease_seconds=timeout + 5 if timeout else get_data_store_time_limit() + 60,
     )
@@ -216,8 +215,8 @@ def get_data_store_time_limit() -> int:
     from insights.insights.doctype.insights_settings.insights_settings import get_max_execution_time
 
     limit = get_max_execution_time()
-    if timeout := web_tier_setting("timeout"):
-        left = timeout * WEB_TIMEOUT_SHARE
+    if (web_tier := web_tier_settings()) and web_tier.timeout:
+        left = web_tier.timeout * WEB_TIMEOUT_SHARE
         if slot := getattr(frappe.local, "insights_data_store_slot", None):
             left -= time.monotonic() - slot[2]
         limit = min(limit, int(left))

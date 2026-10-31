@@ -7,24 +7,17 @@ Written against Frappe's own APIs only (`frappe.cache`, `frappe.conf`), so that 
 can move into Frappe as it is.
 """
 
-import ast
 import os
 import pickle
 import random
-import sys
 import time
 import uuid
 from contextlib import suppress
 from functools import cache
 
 import frappe
-from frappe.utils import cint
 
 CGROUP_ROOT = "/sys/fs/cgroup"
-
-# gunicorn's own defaults, for a setting neither the command line nor the config file sets
-GUNICORN_DEFAULTS = {"workers": 1, "threads": 1, "timeout": 30}
-GUNICORN_FLAGS = {"workers": ("-w", "--workers"), "threads": ("--threads",), "timeout": ("-t", "--timeout")}
 
 
 def cpu_budget() -> float:
@@ -90,74 +83,6 @@ def _read_cgroup(folder: str, name: str) -> list[str] | None:
             return f.read().split()
     except (OSError, ValueError):
         return None  # nosemgrep - a controller that is not enabled sets no limit
-
-
-def web_tier_setting(name: str) -> int | None:
-    """A gunicorn setting (`workers`, `threads` or `timeout`) of the web tier this
-    process serves, or `None` outside gunicorn.
-
-    Read from the command line, then from the config file, as gunicorn reads
-    them. Benches set `-w` and `--threads` on the command line; a server may set
-    them in `gunicorn.conf.py` instead, where `frappe.concurrency_limiter`
-    does not look. A worker is forked from the master, so `sys.argv` is the
-    master's command line.
-    """
-    if not os.environ.get("SERVER_SOFTWARE", "").startswith("gunicorn"):
-        return None
-    return _gunicorn_settings(tuple(sys.argv)).get(name, GUNICORN_DEFAULTS[name])
-
-
-def gunicorn_workers() -> int | None:
-    """The worker count gunicorn was given, on its command line or as a literal
-    in its config file. `None` outside gunicorn, and when the config computes it:
-    gunicorn's default of one would then overstate what one worker may take."""
-    if not os.environ.get("SERVER_SOFTWARE", "").startswith("gunicorn"):
-        return None
-    return _gunicorn_settings(tuple(sys.argv)).get("workers")
-
-
-@cache
-def _gunicorn_settings(argv: tuple[str, ...]) -> dict:
-    settings = {}
-    config = _flag_value(argv, "-c", "--config") or "gunicorn.conf.py"
-    if not config.startswith("python:"):
-        settings.update(_literal_assignments(config))
-    for name, flags in GUNICORN_FLAGS.items():
-        if (value := _flag_value(argv, *flags)) is not None:
-            settings[name] = cint(value)
-    return settings
-
-
-def _flag_value(argv, *flags) -> str | None:
-    for i, arg in enumerate(argv):
-        for flag in flags:
-            if arg == flag and i + 1 < len(argv):
-                return argv[i + 1]
-            if arg.startswith(f"{flag}="):
-                return arg.split("=", 1)[1]
-            # gunicorn also reads a short flag joined to its value: `-t120`
-            if not flag.startswith("--") and arg.startswith(flag) and arg[len(flag) :].isdigit():
-                return arg[len(flag) :]
-    return None
-
-
-def _literal_assignments(path: str) -> dict:
-    """The integer settings a gunicorn config file assigns as literals. A setting
-    it computes is left to the defaults: running the file here would run its
-    hooks a second time."""
-    try:
-        with open(path) as f:  # nosemgrep - the config file gunicorn itself loaded, named on its command line
-            tree = ast.parse(f.read())
-    except (OSError, SyntaxError, ValueError):
-        return {}  # nosemgrep - a config file gunicorn could not have read sets nothing, so its defaults hold
-    settings = {}
-    for node in tree.body:
-        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
-            name = node.targets[0].id
-            if name in GUNICORN_DEFAULTS and isinstance(node.value, ast.Constant):
-                if isinstance(node.value.value, int | float) and not isinstance(node.value.value, bool):
-                    settings[name] = int(node.value.value)
-    return settings
 
 
 # Leases, not tokens: each holder is a member of a sorted set scored by its
