@@ -70,10 +70,10 @@ def _cgroup_folders() -> list[str]:
     """This process's cgroup v2 folder and its ancestors: a limit set on a parent
     slice binds every unit under it."""
     try:
-        with open("/proc/self/cgroup") as f:
+        with open("/proc/self/cgroup") as f:  # nosemgrep - a fixed kernel file, no user input
             line = next((line for line in f if line.startswith("0::")), None)
     except OSError:
-        return []
+        return []  # nosemgrep - no cgroup file means no cgroup limit
     if not line:
         return []
     path = line.strip()[3:].strip("/")
@@ -83,10 +83,11 @@ def _cgroup_folders() -> list[str]:
 
 def _read_cgroup(folder: str, name: str) -> list[str] | None:
     try:
+        # nosemgrep - cgroup files under /sys/fs/cgroup, no user input
         with open(os.path.join(folder, name)) as f:
             return f.read().split()
     except (OSError, ValueError):
-        return None
+        return None  # nosemgrep - a controller that is not enabled sets no limit
 
 
 def web_tier_setting(name: str) -> int | None:
@@ -131,10 +132,10 @@ def _literal_assignments(path: str) -> dict:
     it computes is left to the defaults: running the file here would run its
     hooks a second time."""
     try:
-        with open(path) as f:
+        with open(path) as f:  # nosemgrep - the config file gunicorn itself loaded, named on its command line
             tree = ast.parse(f.read())
     except (OSError, SyntaxError, ValueError):
-        return {}
+        return {}  # nosemgrep - a config file gunicorn could not have read sets nothing, so its defaults hold
     settings = {}
     for node in tree.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
