@@ -101,6 +101,7 @@ SQL_COLUMN_RELATION = "_insights_sql_column"
 # the alias a native SQL query is nested under before ibis sees it
 NATIVE_SQL_RELATION = "_insights_native_sql"
 
+LIVE_QUERY_POOL = "insights:live_query"
 # seconds a live query answered busy waits before the chart asks again
 LIVE_QUERY_RETRY_AFTER = 1
 
@@ -1786,15 +1787,19 @@ def live_query_pool() -> ResourcePool | None:
     capacity = max(1, workers * threads // 2)
     from insights.insights.doctype.insights_settings.insights_settings import get_max_execution_time
 
+    # a request past gunicorn's timeout runs on until the worker's graceful
+    # timeout ends it
+    request_lives = web_tier_setting("timeout") + web_tier_setting("graceful_timeout")
     return ResourcePool(
-        "insights:live_query",
+        LIVE_QUERY_POOL,
         capacity,
         # one user, API client or site cannot take every slot
         per_site=math.ceil(capacity / 2),
         per_user=math.ceil(capacity / 2),
         max_waiters=0,
-        # longer than a request lives or a MariaDB query runs
-        lease_seconds=max(web_tier_setting("timeout"), get_max_execution_time()) + 5,
+        # longer than a request lives or a MariaDB query runs. A query on a
+        # source with no statement limit may run on after its worker exits
+        lease_seconds=max(request_lives, get_max_execution_time()) + 5,
     )
 
 
