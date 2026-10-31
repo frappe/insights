@@ -380,7 +380,7 @@ class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
     def test_a_read_connection_gets_its_share_of_the_servers_cores_memory_and_disk(self):
         # (cores, RAM) -> (slots, threads per query, memory per process)
         servers = {
-            (2, 4 * GiB): (2, 1, 512 * 1024**2),
+            (2, 4 * GiB): (2, 1, GiB),
             (8, 31 * GiB): (3, 2, (31 - 2) * GiB // 2 // 3),
             (64, 256 * GiB): (12, 4, (256 - 2) * GiB // 2 // 12),
         }

@@ -51,7 +51,9 @@ MEMORY_LIMIT_CONFIG_KEY = "insights_duckdb_memory_limit"
 DATA_STORE_SHARE = 0.5
 # what the OS, MariaDB and the web workers' own Python keep, before the share
 MEMORY_HEADROOM = 2 * 1024**3
-MIN_MEMORY_LIMIT = 512 * 1024**2
+# a window function cannot spill all it holds: on a 2-core, 4 GiB server, charts
+# that ran under 1 GiB ran out of memory under the half share's 512 MiB
+MIN_MEMORY_LIMIT = 1024**3
 # a query may spill this share of the disk that is free, split among the slots
 TEMP_DISK_SHARE = 0.25
 
