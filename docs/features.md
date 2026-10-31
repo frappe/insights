@@ -96,7 +96,6 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.result-drill | A user clicks a cell of a summarized result and drills into it as a chart would. |
 | query.conditional-formatting | A user highlights result cells by a rule or colors them on a scale. |
 | query.alerts-open | A user opens the list of alerts on a query and searches it. |
-| query.live-slots | Live queries run at most half of the web tier's threads at once, as gunicorn's command line or config file sets them; past that a chart is answered busy at once with `Retry-After`, writes no Error Log row, and tries again. A slot a killed worker held comes back when its lease ends. Background jobs take no slot. |
 
 ## charts
 

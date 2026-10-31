@@ -23,13 +23,8 @@ from frappe.utils import cint
 CGROUP_ROOT = "/sys/fs/cgroup"
 
 # gunicorn's own defaults, for a setting neither the command line nor the config file sets
-GUNICORN_DEFAULTS = {"workers": 1, "threads": 1, "timeout": 30, "graceful_timeout": 30}
-GUNICORN_FLAGS = {
-    "workers": ("-w", "--workers"),
-    "threads": ("--threads",),
-    "timeout": ("-t", "--timeout"),
-    "graceful_timeout": ("--graceful-timeout",),
-}
+GUNICORN_DEFAULTS = {"workers": 1, "threads": 1, "timeout": 30}
+GUNICORN_FLAGS = {"workers": ("-w", "--workers"), "threads": ("--threads",), "timeout": ("-t", "--timeout")}
 
 
 def cpu_budget() -> float:
@@ -98,7 +93,7 @@ def _read_cgroup(folder: str, name: str) -> list[str] | None:
 
 
 def web_tier_setting(name: str) -> int | None:
-    """A gunicorn setting (`workers`, `threads`, `timeout` or `graceful_timeout`) of the web tier this
+    """A gunicorn setting (`workers`, `threads` or `timeout`) of the web tier this
     process serves, or `None` outside gunicorn.
 
     Read from the command line, then from the config file, as gunicorn reads

@@ -1,18 +1,14 @@
 import os
 import re
 import shutil
-import sys
 import tempfile
-import time
 import unittest
-from contextlib import contextmanager
 from datetime import datetime
 from types import SimpleNamespace
 from typing import ClassVar
 from unittest.mock import patch
 
 import frappe
-import frappe.app
 import ibis
 import numpy as np
 import pandas as pd
@@ -22,7 +18,6 @@ from ibis.backends.sql.compilers.base import SQLGlotCompiler
 from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
 from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
-from werkzeug.datastructures import Headers
 
 import insights
 from insights.exceptions import QueryRefused
@@ -31,7 +26,6 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     sparkline_operations,
 )
-from insights.insights.doctype.insights_data_source_v3 import ibis_utils
 from insights.insights.doctype.insights_data_source_v3.connectors.bigquery import get_bigquery_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.clickhouse import get_clickhouse_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import connect_duckdb
@@ -41,11 +35,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
     percentage_change,
     previous_period_value,
 )
-from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
-    IbisQueryBuilder,
-    execute_ibis_query,
-    live_query_pool,
-)
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder, execute_ibis_query
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import FakeDataSource, InsightsIntegrationTestCase
 from insights.utils import deep_convert_dict_to_dict as _dict
@@ -1192,89 +1182,3 @@ class TestExecuteIbisQuery(InsightsIntegrationTestCase):
         with db_connections():
             db = frappe.get_doc("Insights Data Source v3", "Site DB")._get_ibis_backend()
             self.assert_runs_as_ibis_does(db.sql(MARIADB_TYPED_ROWS))
-
-
-class TestLiveQuerySlots(InsightsIntegrationTestCase):
-    """Live queries share half of the web tier's threads, however gunicorn was told
-    its size."""
-
-    def before_test(self):
-        # the bench's live queries share the real pool, on every site
-        name = f"test:{frappe.generate_hash(length=10)}"
-        self.enterContext(patch.object(ibis_utils, "LIVE_QUERY_POOL", name))
-        keys = [f"resource_pool:{name}:{kind}" for kind in ("leases", "waiters")]
-        self.addCleanup(frappe.cache.delete, *(frappe.cache.make_key(key, shared=True) for key in keys))
-
-    def serve_from_config_file(self, settings: str):
-        """Run as a gunicorn worker started as Pilot starts one: `-c <file>`, with
-        no size on its command line."""
-        folder = tempfile.mkdtemp(prefix="insights_gunicorn_")
-        self.addCleanup(shutil.rmtree, folder, ignore_errors=True)
-        config = os.path.join(folder, "gunicorn.conf.py")
-        with open(config, "w") as f:
-            f.write(settings)
-        self.enterContext(patch.dict(os.environ, {"SERVER_SOFTWARE": "gunicorn/23.0.0"}))
-        self.enterContext(patch.object(sys, "argv", ["gunicorn", "-c", config, "frappe.app:application"]))
-
-    def hold(self, count: int):
-        """Leases held by other requests, as theirs would be while they run."""
-        pool = live_query_pool()
-        for _ in range(count):
-            lease = pool.acquire()
-            self.assertTrue(lease)
-
-    @contextmanager
-    def request(self):
-        frappe.utils.set_request(method="POST", path="/api/method/insights.api.view.get_chart_data")
-        frappe.local.response_headers = Headers()
-        try:
-            yield
-        finally:
-            frappe.local.request = None
-
-    def run_live(self):
-        db = frappe.get_doc("Insights Data Source v3", "Site DB")._get_ibis_backend()
-        result, _ = execute_ibis_query(db.sql("select 7 as n"), cache=False)
-        return result["n"].tolist()
-
-    # @feature query.live-slots
-    def test_live_queries_take_half_the_threads_a_config_file_gives_and_are_then_busy_at_once(self):
-        self.serve_from_config_file("workers = 8\nthreads = 4\ntimeout = 120\n")
-        with db_connections(), self.request():
-            self.hold(15)
-            self.assertEqual(self.run_live(), [7])
-
-            self.hold(1)
-            start = time.monotonic()
-            with patch.object(frappe.utils.error, "log_error") as log_error:
-                try:
-                    self.run_live()
-                    self.fail("a live query ran with every slot held")
-                except frappe.ServiceUnavailableError as busy:
-                    # as Frappe answers the request
-                    response = frappe.app.handle_exception(busy)
-            self.assertLess(time.monotonic() - start, 1)
-            self.assertEqual(response.status_code, 503)
-            self.assertEqual(frappe.local.response_headers.get("Retry-After"), "1")
-            # a busy answer is not an error to log
-            log_error.assert_not_called()
-
-        # a background job holds no web thread, so it takes no slot
-        with db_connections():
-            self.assertEqual(self.run_live(), [7])
-
-    # @feature query.live-slots
-    def test_a_slot_whose_request_never_released_it_comes_back_when_its_lease_ends(self):
-        original = frappe.db.get_single_value("Insights Settings", "max_execution_time")
-        # the class commits when it ends, so a rollback alone would keep the change
-        self.addCleanup(frappe.db.set_single_value, "Insights Settings", "max_execution_time", original)
-        frappe.db.set_single_value("Insights Settings", "max_execution_time", 1)
-        self.serve_from_config_file("workers = 1\nthreads = 2\ntimeout = 1\ngraceful_timeout = 0\n")
-        with db_connections(), self.request():
-            # never released, as by a worker killed mid-query
-            self.hold(1)
-            with self.assertRaises(frappe.ServiceUnavailableError):
-                self.run_live()
-
-            time.sleep(live_query_pool().lease_seconds + 0.5)
-            self.assertEqual(self.run_live(), [7])

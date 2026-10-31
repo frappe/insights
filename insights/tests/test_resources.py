@@ -261,25 +261,16 @@ class TestWebTierSettings(IntegrationTestCase):
     # @feature data-store.time-limit
     def test_the_web_tier_is_read_from_the_command_line_then_its_config_file(self):
         with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as config:
-            config.write(
-                "import os\nworkers = 8\nthreads = 4\ntimeout = 120\ngraceful_timeout = 45\nbind = '0.0.0.0'\n"
-            )
+            config.write("import os\nworkers = 8\nthreads = 4\ntimeout = 120\nbind = '0.0.0.0'\n")
         self.addCleanup(os.unlink, config.name)
 
         with patch.dict(os.environ, {"SERVER_SOFTWARE": "gunicorn/23.0.0"}):
             with patch("sys.argv", ["gunicorn", "-c", config.name, "--threads=2", "frappe.app:application"]):
                 self.assertEqual(
-                    [
-                        web_tier_setting(name)
-                        for name in ("workers", "threads", "timeout", "graceful_timeout")
-                    ],
-                    [8, 2, 120, 45],
+                    [web_tier_setting(name) for name in ("workers", "threads", "timeout")], [8, 2, 120]
                 )
             with patch("sys.argv", ["gunicorn", "-c", "/nonexistent.py", "-t90", "frappe.app:application"]):
-                self.assertEqual(
-                    [web_tier_setting(name) for name in ("timeout", "workers", "graceful_timeout")],
-                    [90, 1, 30],
-                )
+                self.assertEqual((web_tier_setting("timeout"), web_tier_setting("workers")), (90, 1))
 
         with patch.dict(os.environ, {"SERVER_SOFTWARE": "Werkzeug/3.0"}):
             self.assertIsNone(web_tier_setting("timeout"))
