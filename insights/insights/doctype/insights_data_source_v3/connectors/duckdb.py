@@ -45,7 +45,7 @@ READER_HELD_ERRORS = ("Could not set lock", "different configuration than existi
 # got OOM-killed, and one dashboard filled every core. So the data store gets
 # half of what the server may use, split among the queries the slot pool lets
 # run at once (`data_warehouse.data_store_slots`). Under its memory cap a query
-# spills to `<db file>.tmp`. Sites can set the memory limit with this site
+# spills to its own folder in `<db file>.tmp`. Sites can set the memory limit with this site
 # config key.
 MEMORY_LIMIT_CONFIG_KEY = "insights_duckdb_memory_limit"
 DATA_STORE_SHARE = 0.5
@@ -62,6 +62,11 @@ class InsightsDuckDBCompiler(StarExceptDropColumns, DuckDBCompiler):
 
 def connect_duckdb(*args, **kwargs) -> DuckDBBackend:
     kwargs.setdefault("memory_limit", get_memory_limit())
+    if args and isinstance(args[0], str) and args[0] != ":memory:":
+        # DuckDB names its spill files the same in every process, so processes
+        # that spill into one folder delete and overwrite each other's files.
+        # Passed to connect: a folder cannot change once it has been used
+        kwargs.setdefault("temp_directory", get_temp_directory(args[0]))
     db = ibis.duckdb.connect(*args, **kwargs)
     db.compiler = InsightsDuckDBCompiler()
     # set, not passed to connect: connecting with settings that differ from those
@@ -181,6 +186,13 @@ def get_threads() -> int:
     finish one query sooner but let fewer run at once; the CPU a query costs
     does not change with its threads."""
     return max(1, min(int(cpu_budget()) // 4, 4))
+
+
+def get_temp_directory(path: str) -> str:
+    """This process's spill folder, inside DuckDB's default `<db file>.tmp`."""
+    parent = f"{path}.tmp"
+    os.makedirs(parent, exist_ok=True)
+    return os.path.join(parent, str(os.getpid()))
 
 
 def get_temp_directory_limit(path: str) -> int:

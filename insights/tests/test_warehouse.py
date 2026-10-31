@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import sys
@@ -312,6 +313,38 @@ class TestWarehouseWriteLock(InsightsIntegrationTestCase):
                 open_local_duckdb(path, read_only=False, allowed_dir=tmpdir, lock_timeout=1)
 
             self.assertIn("Could not set lock", str(caught.exception))
+
+
+class TestWarehouseSpillFolder(InsightsIntegrationTestCase):
+    # @feature data-store.memory-limit
+    def test_each_process_spills_into_its_own_folder(self):
+        with tempfile.TemporaryDirectory(prefix="insights_spill_test_") as tmpdir:
+            path = str(Path(tmpdir) / "warehouse.duckdb")
+            folders = []
+            for read_only in (False, True):
+                db = open_local_duckdb(path, read_only=read_only)
+                try:
+                    folders.append(db.raw_sql("SELECT current_setting('temp_directory')").fetchone()[0])
+                finally:
+                    db.disconnect()
+            other = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    f"from {duckdb_connector.__name__} import get_temp_directory; print(get_temp_directory({path!r}))",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+                env=dict(os.environ, PYTHONPATH=os.path.dirname(os.path.dirname(insights.__file__))),
+            ).stdout.strip()
+
+        # DuckDB names spill files alike in every process, so a shared folder
+        # lets one process delete or overwrite another's
+        mine = os.path.join(f"{path}.tmp", str(os.getpid()))
+        self.assertEqual(folders, [mine, mine])
+        self.assertEqual(os.path.dirname(other), f"{path}.tmp")
+        self.assertNotEqual(other, mine)
 
 
 class TestWarehouseMemoryLimit(InsightsIntegrationTestCase):
