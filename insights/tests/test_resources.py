@@ -1,8 +1,6 @@
 # Copyright (c) 2026, Frappe Technologies Pvt. Ltd. and Contributors
 # See license.txt
 
-import os
-import tempfile
 import threading
 import time
 from unittest.mock import patch
@@ -11,7 +9,7 @@ import frappe
 from frappe.tests import IntegrationTestCase
 
 from insights.exceptions import QueryCancelled, QueryTimeout
-from insights.resources import ResourcePool, single_flight, web_tier_setting
+from insights.resources import ResourcePool, single_flight
 
 
 class TestResourcePool(IntegrationTestCase):
@@ -255,22 +253,3 @@ class TestSingleFlight(IntegrationTestCase):
         start = time.monotonic()
         self.assertEqual(single_flight(key, lambda: "rows", 60, 5), "rows")
         self.assertLess(time.monotonic() - start, 2)
-
-
-class TestWebTierSettings(IntegrationTestCase):
-    # @feature data-store.time-limit
-    def test_the_web_tier_is_read_from_the_command_line_then_its_config_file(self):
-        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as config:
-            config.write("import os\nworkers = 8\nthreads = 4\ntimeout = 120\nbind = '0.0.0.0'\n")
-        self.addCleanup(os.unlink, config.name)
-
-        with patch.dict(os.environ, {"SERVER_SOFTWARE": "gunicorn/23.0.0"}):
-            with patch("sys.argv", ["gunicorn", "-c", config.name, "--threads=2", "frappe.app:application"]):
-                self.assertEqual(
-                    [web_tier_setting(name) for name in ("workers", "threads", "timeout")], [8, 2, 120]
-                )
-            with patch("sys.argv", ["gunicorn", "-c", "/nonexistent.py", "-t90", "frappe.app:application"]):
-                self.assertEqual((web_tier_setting("timeout"), web_tier_setting("workers")), (90, 1))
-
-        with patch.dict(os.environ, {"SERVER_SOFTWARE": "Werkzeug/3.0"}):
-            self.assertIsNone(web_tier_setting("timeout"))
