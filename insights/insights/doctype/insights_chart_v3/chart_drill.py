@@ -31,6 +31,7 @@ from frappe import _
 from frappe.utils import add_to_date, get_datetime, get_time
 
 from insights import user_permissions
+from insights.cache_utils import get_or_set_cache, make_digest
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     ORDERED_TYPES,
     adjacent_bucket,
@@ -46,7 +47,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 )
 from insights.insights.query_builders.sql_functions import read_on, resolve_timespan
 from insights.not_permitted import refuse
-from insights.permission_user import runs_as
+from insights.permission_user import permission_user_for, runs_as
 from insights.permissions import can_read_rows
 
 ROWS = "rows"
@@ -183,6 +184,24 @@ def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
 
     with runs_as(chart):
         return _dimensions_on(_surface(chart, operations, index))
+
+
+def stored_drill_dimensions(chart, modified: str | None) -> list[dict]:
+    """`drill_dimensions` of a stored chart, kept until it or a query it reads changes.
+
+    Finding them builds the whole pipeline again, on every card load, for a menu
+    that changes only on an edit. `modified` is the chart's `last_modified`, as
+    the card received it. The operations are in the key because a dashboard can
+    lend a card its Period. The user the build runs as is, because the columns a
+    reader may read (permlevel) and what a script query returns depend on them.
+
+    A role change shows when the entry expires, after ten minutes. Until then a
+    stale menu can offer a column the reader lost, and `drill_data` refuses it:
+    it checks the column against the surface it builds.
+    """
+    operations = chart.get_operations()
+    key = make_digest("drill_dimensions", chart.name, modified, permission_user_for(chart), operations)
+    return get_or_set_cache(key, lambda: drill_dimensions(chart, operations))
 
 
 def drill_data(

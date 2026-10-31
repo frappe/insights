@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 import frappe
 import frappe.share
+from ibis.backends.sql.compilers.base import SQLGlotCompiler
 
 from insights.api.authoring import get_chart_data as get_authoring_chart_data
 from insights.api.authoring import get_drill_data as get_authoring_drill_data
@@ -28,6 +29,7 @@ from insights.insights.doctype.insights_chart_v3.chart_drill import drill_data, 
 from insights.insights.doctype.insights_chart_v3.insights_chart_v3 import InsightsChartv3
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
+from insights.insights.doctype.insights_query_v3.insights_query_v3 import InsightsQueryv3
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
 
@@ -1784,6 +1786,93 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertNotIn("count_of_rows", dimensions)
         # and neither is anything that measures rather than groups
         self.assertNotIn("docstatus", dimensions)
+
+    def load_counting(self, user, chart, dashboard):
+        """A forced card load under `user`, with its menu, how many times the
+        pipeline was built, and how many times it was compiled after its build.
+        A build compiles the permission filter it embeds; that is not counted."""
+        counts = {"build": 0, "compile": 0}
+        building = []
+        build, to_sqlglot = InsightsQueryv3.build, SQLGlotCompiler.to_sqlglot
+
+        def counted_build(*args, **kwargs):
+            counts["build"] += 1
+            building.append(True)
+            try:
+                return build(*args, **kwargs)
+            finally:
+                building.pop()
+
+        def counted_compile(*args, **kwargs):
+            if not building:
+                counts["compile"] += 1
+            return to_sqlglot(*args, **kwargs)
+
+        with (
+            patch.object(InsightsQueryv3, "build", counted_build),
+            patch.object(SQLGlotCompiler, "to_sqlglot", counted_compile),
+            as_user(user),
+            db_connections(),
+        ):
+            card = get_chart_data(chart=chart.name, dashboard=dashboard.name, force=True)
+        return {d["name"] for d in card["drill"]["dimensions"]}, counts
+
+    # @feature dashboard.loads
+    def test_a_card_load_compiles_its_query_once(self):
+        _, chart, dashboard = self.make_content()
+
+        _, counts = self.load_counting(OWNER, chart, dashboard)
+
+        self.assertEqual(counts["compile"], 1)
+
+    # @feature charts.drill-breakdown-options dashboard.card-follows-edits
+    def test_the_menu_is_built_once_until_the_chart_or_its_query_changes(self):
+        query, chart, dashboard = self.make_content()
+
+        _, first = self.load_counting(OWNER, chart, dashboard)
+        menu, again = self.load_counting(OWNER, chart, dashboard)
+        # the card's own run builds it; the menu's build is the one kept
+        self.assertEqual((first["build"], again["build"]), (2, 1))
+        self.assertIn("priority", menu)
+
+        with as_user(OWNER):
+            chart.reload()
+            chart.config = frappe.as_json(bar_config_over("priority"))
+            chart.save()
+        _, edited_chart = self.load_counting(OWNER, chart, dashboard)
+        self.assertEqual(edited_chart["build"], 2)
+
+        with as_user(OWNER):
+            query.reload()
+            query.operations = frappe.as_json(
+                [
+                    *todo_operations(),
+                    {
+                        "type": "mutate",
+                        "new_name": "shouted",
+                        "data_type": "String",
+                        "expression": {"type": "expression", "expression": "description.upper()"},
+                    },
+                ]
+            )
+            query.save()
+        menu, _ = self.load_counting(OWNER, chart, dashboard)
+        self.assertIn("shouted", menu)
+
+    # @feature charts.drill-breakdown-options permissions.not-permitted-chart
+    def test_readers_who_may_read_different_columns_get_their_own_menu(self):
+        """The menu lists the columns the reader may read. A reader who read it
+        first must not hand their columns to the next."""
+        _, chart, dashboard = self.make_content(config=bar_config_over("priority"), run_as_owner=0)
+        self.share_dashboard_with(dashboard.name, OUTSIDER)
+
+        owner_menu, _ = self.load_counting(OWNER, chart, dashboard)
+        self.make_status_permlevel()
+        outsider_menu, _ = self.load_counting(OUTSIDER, chart, dashboard)
+
+        self.assertIn("status", owner_menu)
+        self.assertNotIn("status", outsider_menu)
+        self.assertIn("priority", outsider_menu)
 
     # @feature charts.drill-record-link
     def test_a_drilled_row_names_the_desk_record_it_opens(self):
