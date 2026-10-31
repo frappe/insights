@@ -1247,15 +1247,18 @@ class TestLiveQuerySlots(InsightsIntegrationTestCase):
 
             self.hold(1)
             start = time.monotonic()
-            try:
-                self.run_live()
-                self.fail("a live query ran with every slot held")
-            except frappe.ServiceUnavailableError as busy:
-                # as Frappe answers the request
-                response = frappe.app.handle_exception(busy)
+            with patch.object(frappe.utils.error, "log_error") as log_error:
+                try:
+                    self.run_live()
+                    self.fail("a live query ran with every slot held")
+                except frappe.ServiceUnavailableError as busy:
+                    # as Frappe answers the request
+                    response = frappe.app.handle_exception(busy)
             self.assertLess(time.monotonic() - start, 1)
             self.assertEqual(response.status_code, 503)
             self.assertEqual(frappe.local.response_headers.get("Retry-After"), "1")
+            # a busy answer is not an error to log
+            log_error.assert_not_called()
 
         # a background job holds no web thread, so it takes no slot
         with db_connections():
