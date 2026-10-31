@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const calls = vi.hoisted(() => [] as { method: string; args: any }[])
-const answer = vi.hoisted(() => ({ dashboard: {} as any, refuseSave: false }))
+const calls = vi.hoisted(() => [] as { method: string; args: any; options?: any }[])
+const answer = vi.hoisted(() => ({ dashboard: {} as any, refuseSave: false, cardsHang: false }))
 
 vi.mock('frappe-ui', async (importOriginal) => ({
 	...(await importOriginal<object>()),
 	// a refused save shows a toast, which needs a DOM
 	toast: { error: () => {} },
-	call: (method: string, args: any) => {
-		calls.push({ method, args })
+	call: (method: string, args: any, options?: any) => {
+		calls.push({ method, args, options })
 		if (method === 'insights.api.view.get_dashboard') {
 			return Promise.resolve(answer.dashboard)
 		}
@@ -37,6 +37,9 @@ vi.mock('frappe-ui', async (importOriginal) => ({
 				config: '{}',
 			})
 		}
+		if (method === 'insights.api.view.cancel_queries') return Promise.resolve()
+		// the server is still running the card's query
+		if (answer.cardsHang) return new Promise(() => {})
 		// a card's rows come with the chart they were computed from
 		const chart = answer.dashboard.charts.find((chartDoc: any) => chartDoc.name === args.chart)
 		return Promise.resolve({ chart, columns: [], rows: [] })
@@ -63,7 +66,7 @@ vi.stubGlobal('localStorage', {
 
 import useChart from '../charts/chart'
 import useDashboard from './dashboard'
-import { nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import { useDashboardView, watchFilterDefault } from './view'
 
 const layout = { i: '1', x: 0, y: 0, w: 20, h: 8 }
@@ -105,11 +108,19 @@ const dashboardCalls = () =>
 
 const dataCalls = () => calls.filter((call) => call.method === 'insights.api.view.get_chart_data')
 
+const cancelled = () =>
+	calls
+		.filter((call) => call.method === 'insights.api.view.cancel_queries')
+		.flatMap((call) => call.args.request_ids)
+
+const requestId = (call: { options?: any }) => call.options.headers['X-Insights-Request-Id']
+
 beforeEach(() => {
 	calls.length = 0
 	stored.clear()
 	answer.dashboard = dashboardAnswer('Bar')
 	answer.refuseSave = false
+	answer.cardsHang = false
 })
 
 // A reader leaves a dashboard and comes back. The SPA route rebuilds the page
@@ -142,6 +153,51 @@ describe('a dashboard opened a second time', () => {
 		expect(calls).toHaveLength(asked)
 		expect(second.chartView('chart-1')).toBe(first.chartView('chart-1'))
 		expect(second.chartView('chart-1')?.doc.chart_type).toBe('Bar')
+	})
+})
+
+// A query the server runs for a card nobody sees uses the server for nothing.
+describe('a dashboard the reader leaves while its cards load', () => {
+	// @feature data-store.cancel
+	it('stops their queries, and runs those cards again when the reader comes back', async () => {
+		answer.cardsHang = true
+		const first = effectScope()
+		const second = effectScope()
+		first.run(() => useDashboardView(() => 'leaving', 'dashboards'))
+		second.run(() => useDashboardView(() => 'leaving', 'dashboards'))
+		await settled()
+		const [load] = dataCalls()
+
+		// the page is still shown by its other mount
+		first.stop()
+		await settled()
+		expect(cancelled()).toEqual([])
+		second.stop()
+		await settled()
+		expect(cancelled()).toEqual([requestId(load)])
+
+		answer.cardsHang = false
+		const fetched = dashboardCalls().length
+		const back = await opened('leaving')
+		expect(dataCalls()).toHaveLength(2)
+		// the page the reader left is shown while its cards load, not a loading page
+		expect(back.loading).toBe(false)
+		expect(dashboardCalls()).toHaveLength(fetched)
+	})
+})
+
+describe('a filter changed while its cards load', () => {
+	// @feature data-store.cancel dashboard.filter-links
+	it('stops the query the old filter started', async () => {
+		answer.cardsHang = true
+		const view = await opened('refiltered')
+		const [old] = dataCalls()
+
+		view.setFilter('region', { operator: '=', value: 'north' })
+		await settled()
+
+		expect(cancelled()).toEqual([requestId(old)])
+		expect(dataCalls()).toHaveLength(2)
 	})
 })
 

@@ -1,3 +1,5 @@
+import { call } from 'frappe-ui'
+
 // Only live source queries are capped server-side; cached and data store results
 // come back without ever reaching the limiter. The client can't tell which path a
 // query will take, so it doesn't try to stay under the server's limit - it fires up
@@ -14,6 +16,54 @@ type Waiter = { priority: number; resume: () => void }
 
 let inFlight = 0
 const waiting: Waiter[] = []
+
+// Each request is named, so the server can stop its query once nobody waits for
+// it: the reader changed the filters, left the dashboard or left the page.
+const REQUEST_ID_HEADER = 'X-Insights-Request-Id'
+const CANCEL_METHOD = 'insights.api.view.cancel_queries'
+const running = new Set<string>()
+// A reload aborts the page's requests before it fires `pagehide`. The server
+// still runs their queries, so a request that ends with no answer stays named
+// a little longer, for the beacon.
+const ABANDONED_REQUEST_MS = 5000
+
+// `crypto.randomUUID` exists only on HTTPS and localhost, and a site may be
+// served over plain HTTP
+function newRequestId() {
+	const bytes = crypto.getRandomValues(new Uint8Array(16))
+	return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+let cancelling: string[] = []
+
+/**
+ * Ask the server to stop the queries of these requests. It answers nothing to
+ * wait for. A dashboard that closes stops all its cards at once, so the ids
+ * asked in one task go in one request.
+ */
+export function cancelQueryExecutions(requestIds: string[]) {
+	if (!requestIds.length) return
+	if (!cancelling.length) {
+		queueMicrotask(() => {
+			const request_ids = cancelling
+			cancelling = []
+			call(CANCEL_METHOD, { request_ids }).catch(() => {})
+		})
+	}
+	cancelling.push(...requestIds)
+}
+
+// A page that unloads cannot wait for a request, so a beacon carries the ids.
+// It cannot set headers, so the CSRF token goes in the form.
+if (typeof window !== 'undefined') {
+	window.addEventListener('pagehide', () => {
+		if (!running.size) return
+		const form = new FormData()
+		form.append('request_ids', JSON.stringify([...running]))
+		if (window.csrf_token) form.append('csrf_token', window.csrf_token)
+		navigator.sendBeacon(`/api/method/${CANCEL_METHOD}`, form)
+	})
+}
 
 class StaleExecutionError extends Error {}
 
@@ -59,24 +109,35 @@ function retryDelay(attempt: number) {
  * giving up and surfacing the error.
  *
  * `isStale` lets a superseded execution drop out instead of spending a slot on a
- * result nobody is waiting for. `priority` orders the waiting calls, lowest first -
+ * result nobody is waiting for. `signal` does that too, and once the request is
+ * sent, aborting it asks the server to stop its query. `run` sends `headers`,
+ * which name the request. `priority` orders the waiting calls, lowest first -
  * dashboard charts pass their position so the top of the page loads before the
  * bottom. Calls that are already running are not preempted.
  */
 export async function scheduleQueryExecution<T>(
-	run: () => Promise<T>,
-	options: { isStale?: () => boolean; priority?: number } = {},
+	run: (headers: Record<string, string>) => Promise<T>,
+	options: { isStale?: () => boolean; priority?: number; signal?: AbortSignal } = {},
 ): Promise<T> {
-	const { isStale, priority = 0 } = options
+	const { isStale, priority = 0, signal } = options
 
 	for (let attempt = 1; ; attempt++) {
 		await acquireSlot(priority)
+		const requestId = newRequestId()
+		const cancel = () => cancelQueryExecutions([requestId])
+		let answered = true
 		try {
-			if (isStale?.()) throw new StaleExecutionError()
-			return await run()
-		} catch (err) {
+			if (isStale?.() || signal?.aborted) throw new StaleExecutionError()
+			running.add(requestId)
+			signal?.addEventListener('abort', cancel, { once: true })
+			return await run({ [REQUEST_ID_HEADER]: requestId })
+		} catch (err: any) {
+			answered = err?.status !== undefined || err instanceof StaleExecutionError
 			if (attempt >= MAX_ATTEMPTS || !isServerBusyError(err)) throw err
 		} finally {
+			if (answered) running.delete(requestId)
+			else setTimeout(() => running.delete(requestId), ABANDONED_REQUEST_MS)
+			signal?.removeEventListener('abort', cancel)
 			releaseSlot()
 		}
 		await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt)))
