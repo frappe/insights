@@ -17,6 +17,7 @@ from frappe.utils import get_files_path
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 
+from insights.exceptions import QueryTimeout
 from insights.resources import cpu_budget, memory_budget
 
 from .compilers import StarExceptDropColumns
@@ -70,9 +71,11 @@ def connect_duckdb(*args, **kwargs) -> DuckDBBackend:
     return db
 
 
-class QueryTimeLimitExceeded(Exception):
-    def __init__(self, seconds: float):
-        super().__init__(f"The query ran longer than {seconds} seconds")
+class QueryTimeLimitExceeded(QueryTimeout):
+    def __init__(self, seconds: int):
+        super().__init__(
+            f"Query execution time exceeded the limit of {seconds} seconds. Please try again with a smaller timespan or a more specific filter."
+        )
         self.seconds = seconds
 
 

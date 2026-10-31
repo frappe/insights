@@ -124,6 +124,9 @@ def _flag_value(argv, *flags) -> str | None:
                 return argv[i + 1]
             if arg.startswith(f"{flag}="):
                 return arg.split("=", 1)[1]
+            # gunicorn also reads a short flag joined to its value: `-t120`
+            if not flag.startswith("--") and arg.startswith(flag) and arg[len(flag) :].isdigit():
+                return arg[len(flag) :]
     return None
 
 
@@ -152,8 +155,9 @@ def _literal_assignments(path: str) -> dict:
 # initialised, so two processes cannot both fill a pool, and the capacity a call
 # passes is the one it is checked against.
 #
-# A site may hold more than its share while no other site holds or waits, so a
-# single-site bench keeps the whole pool.
+# A site or a user may hold more than its share while no other site or user
+# holds or waits, so a single-site bench, or one reader on an idle server, keeps
+# the whole pool.
 #
 # Returns 1 when the lease is taken, 0 when the caller is now (or still) waiting,
 # -1 when it may not wait.
@@ -170,10 +174,10 @@ redis.call('ZREMRANGEBYSCORE', waiters, '-inf', now)
 
 local function starts(s, prefix) return string.sub(s, 1, #prefix) == prefix end
 
-local held, site_held, user_held, other_site = 0, 0, 0, false
+local held, site_held, user_held, other_site, other_user = 0, 0, 0, false, false
 for _, m in ipairs(redis.call('ZRANGE', leases, 0, -1)) do
     held = held + 1
-    if starts(m, user_prefix) then user_held = user_held + 1 end
+    if starts(m, user_prefix) then user_held = user_held + 1 else other_user = true end
     if starts(m, site_prefix) then site_held = site_held + 1 else other_site = true end
 end
 local queue = redis.call('ZRANGE', waiters, 0, -1)
@@ -181,14 +185,15 @@ local waiting, user_waiting = 0, 0
 for _, m in ipairs(queue) do
     if m ~= member then
         waiting = waiting + 1
-        if starts(m, user_prefix) then user_waiting = user_waiting + 1 end
+        if starts(m, user_prefix) then user_waiting = user_waiting + 1 else other_user = true end
         if not starts(m, site_prefix) then other_site = true end
     end
 end
 
-local site_capacity = capacity
+local site_capacity, user_capacity = capacity, capacity
 if other_site then site_capacity = per_site end
-if held < capacity and site_held < site_capacity and user_held < per_user then
+if other_user then user_capacity = per_user end
+if held < capacity and site_held < site_capacity and user_held < user_capacity then
     local deadline = now + lease_ms
     redis.call('ZADD', leases, deadline, member)
     redis.call('ZREM', waiters, member)
@@ -198,9 +203,10 @@ if held < capacity and site_held < site_capacity and user_held < per_user then
 end
 
 if redis.call('ZSCORE', waiters, member) then return 0 end
-if wait_ms <= 0 or waiting >= max_waiters or user_waiting >= per_user then return -1 end
+if wait_ms <= 0 or waiting >= max_waiters or user_waiting >= user_capacity then return -1 end
 redis.call('ZADD', waiters, now + wait_ms, member)
-redis.call('PEXPIRE', waiters, wait_ms + 1000)
+local last_waiter = redis.call('ZRANGE', waiters, -1, -1, 'WITHSCORES')
+redis.call('PEXPIREAT', waiters, math.max(now + wait_ms, tonumber(last_waiter[2])))
 return 0
 """
 
@@ -220,8 +226,8 @@ UNLIMITED = "unlimited"
 class ResourcePool:
     """At most `capacity` holders across every process on this Redis.
 
-    `per_site` and `per_user` cap one site's and one user's holders. A site's cap
-    applies only while another site holds or waits. A lease that is not released
+    `per_site` and `per_user` cap one site's and one user's holders, while another
+    site or user holds or waits. A lease that is not released
     is dropped after `lease_seconds`.
     """
 

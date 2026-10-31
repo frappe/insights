@@ -75,17 +75,21 @@ class TestResourcePool(IntegrationTestCase):
         self.assertEqual(len(pool.holders()), 3)
 
     # @feature data-store.slot-pool
-    def test_one_user_holds_at_most_their_share(self):
+    def test_one_user_holds_at_most_their_share_while_another_user_reads(self):
         pool = self.pool(4, per_user=2)
-        self.assertTrue(self.acquire_as(pool, user="api@example.com"))
-        self.assertTrue(self.acquire_as(pool, user="api@example.com"))
+        alone = [self.acquire_as(pool, user="api@example.com") for _ in range(4)]
+        self.assertTrue(all(alone))
+        for lease in alone[2:]:
+            pool.release(lease)
 
+        self.assertTrue(self.acquire_as(pool, user="reader@example.com"))
         self.assertIsNone(self.acquire_as(pool, user="api@example.com"))
         self.assertTrue(self.acquire_as(pool, user="reader@example.com"))
 
     # @feature data-store.slot-pool
     def test_every_guest_counts_against_their_own_address(self):
         pool = self.pool(4, per_user=1)
+        self.assertTrue(self.acquire_as(pool, user="reader@example.com"))
         with patch.object(frappe.local, "request_ip", "10.0.0.1", create=True):
             self.assertTrue(self.acquire_as(pool, user="Guest"))
             self.assertIsNone(self.acquire_as(pool, user="Guest"))
@@ -144,8 +148,8 @@ class TestWebTierSettings(IntegrationTestCase):
                 self.assertEqual(
                     [web_tier_setting(name) for name in ("workers", "threads", "timeout")], [8, 2, 120]
                 )
-            with patch("sys.argv", ["gunicorn", "-c", "/nonexistent.py", "frappe.app:application"]):
-                self.assertEqual(web_tier_setting("timeout"), 30)
+            with patch("sys.argv", ["gunicorn", "-c", "/nonexistent.py", "-t90", "frappe.app:application"]):
+                self.assertEqual((web_tier_setting("timeout"), web_tier_setting("workers")), (90, 1))
 
         with patch.dict(os.environ, {"SERVER_SOFTWARE": "Werkzeug/3.0"}):
             self.assertIsNone(web_tier_setting("timeout"))

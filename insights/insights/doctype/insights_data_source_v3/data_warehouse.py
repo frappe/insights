@@ -135,24 +135,28 @@ def take_data_store_slot():
     lease = pool.acquire(wait=SLOT_WAIT)
     if not lease:
         raise server_busy(SLOT_RETRY_AFTER)
-    frappe.local.insights_data_store_slot = (pool, lease)
+    frappe.local.insights_data_store_slot = (pool, lease, time.monotonic())
 
 
 def release_data_store_slot():
     if slot := getattr(frappe.local, "insights_data_store_slot", None):
         frappe.local.insights_data_store_slot = None
-        pool, lease = slot
+        pool, lease, _started = slot
         pool.release(lease)
 
 
-def get_data_store_time_limit() -> float:
+def get_data_store_time_limit() -> int:
     """Seconds a data store query may run: Max Execution Time, as for a live
-    query, but never so long that the web tier kills the worker first."""
+    query, but never so long that the web tier kills the worker first. A request
+    that runs several queries shares the web tier's time among them."""
     from insights.insights.doctype.insights_settings.insights_settings import get_max_execution_time
 
     limit = get_max_execution_time()
     if timeout := web_tier_setting("timeout"):
-        limit = min(limit, int(timeout * WEB_TIMEOUT_SHARE))
+        left = timeout * WEB_TIMEOUT_SHARE
+        if slot := getattr(frappe.local, "insights_data_store_slot", None):
+            left -= time.monotonic() - slot[2]
+        limit = min(limit, int(left))
     return max(1, limit)
 
 

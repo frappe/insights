@@ -43,7 +43,12 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import execute_ibis_query
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
-from insights.tests.factories import as_user
+from insights.tests.factories import (
+    as_user,
+    create_test_query,
+    create_test_workbook,
+    delete_workbooks,
+)
 
 GiB = 1024**3
 
@@ -448,6 +453,35 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
             with self.assertRaises(frappe.ServiceUnavailableError):
                 insights.warehouse.get_table("Site DB", "tabToDo").get_ibis_table()
 
+    # @feature data-store.query-slots telemetry.query-failed
+    def test_a_query_that_finds_every_slot_held_answers_busy_and_is_not_reported_as_failed(self):
+        workbook = create_test_workbook("Administrator", title="Slot Test Workbook")
+        self.addCleanup(delete_workbooks, title_prefix="Slot Test Workbook")
+        query = create_test_query("Administrator", workbook.name)
+        query.db_set("use_live_connection", 0)
+        pool = data_store_pool()
+        for user in ("one@example.com", "two@example.com"):
+            with patch.object(frappe.local, "session", frappe._dict(user=user)):
+                self.assertTrue(pool.acquire())
+
+        with patch.object(data_warehouse, "SLOT_WAIT", 0), self.request():
+            with patch("frappe.utils.telemetry.capture") as sender:
+                with self.assertRaises(frappe.ServiceUnavailableError) as busy:
+                    query.execute()
+
+        # the build does not reword it as a broken operation
+        self.assertNotIn("Operation", str(busy.exception))
+        self.assertNotIn("query_failed", [call.args[0] for call in sender.call_args_list])
+
+    # @feature data-store.time-limit
+    def test_a_request_that_runs_several_queries_shares_the_web_tiers_time_among_them(self):
+        with patch.object(data_warehouse, "web_tier_setting", return_value=120), self.request():
+            insights.warehouse.db
+            self.assertEqual(data_warehouse.get_data_store_time_limit(), 60)
+            pool, lease, started = frappe.local.insights_data_store_slot
+            frappe.local.insights_data_store_slot = (pool, lease, started - 49.5)
+            self.assertEqual(data_warehouse.get_data_store_time_limit(), 40)
+
     # @feature data-store.query-slots
     def test_a_background_job_reads_the_store_without_a_slot(self):
         self.assertIsNone(getattr(frappe.local, "request", None))
@@ -461,8 +495,10 @@ class TestDataStoreTimeLimit(InsightsIntegrationTestCase):
     SLOW_QUERY = "select sum(a.range * b.range % 7) as n from range(100000) a, range(100000) b"
 
     def before_test(self):
+        original = frappe.db.get_single_value("Insights Settings", "max_execution_time")
+        # the class commits when it ends, so a rollback alone would keep the change
+        self.addCleanup(frappe.db.set_single_value, "Insights Settings", "max_execution_time", original)
         frappe.db.set_single_value("Insights Settings", "max_execution_time", 1)
-        self.addCleanup(frappe.clear_cache, doctype="Insights Settings")
         self.db = insights.warehouse.db
         # stops the query should the limit not, so a failing test ends
         guard = threading.Timer(30, self.db.con.interrupt)

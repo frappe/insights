@@ -307,9 +307,14 @@ class IbisQueryBuilder:
                 operation = _dict(operation)
                 try:
                     self.query = self.perform_operation(operation)
-                except (CircularQueryReferenceError, not_permitted.NotPermitted):
+                except (
+                    CircularQueryReferenceError,
+                    not_permitted.NotPermitted,
+                    frappe.ServiceUnavailableError,
+                ):
                     # Not Permitted is a normal answer, not a broken operation. The
-                    # card names what it needs
+                    # card names what it needs. A busy data store is not one
+                    # either: the client retries the 503
                     raise
                 except Exception as e:
                     self.throw_in_operation(e, idx, operation)
@@ -1092,7 +1097,11 @@ class IbisQueryBuilder:
             **{label: pivot_name(ranked[name]) for label, name in zip(labels, names_from, strict=True)}
         )
 
-        top = ranked.execute()
+        if is_warehouse(ranked.get_backend()):
+            with time_limit(ranked.get_backend(), get_data_store_time_limit()):
+                top = ranked.execute()
+        else:
+            top = ranked.execute()
         has_tail = len(top) > max_names
         # sorted by the value, not its name, so numbers and dates keep their order
         top = top.head(max_names).sort_values(names_from, na_position="last")

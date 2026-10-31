@@ -274,6 +274,10 @@ class InsightsQueryv3(Document):
         """
         from insights.telemetry import caller, capture, error_kind
 
+        if isinstance(exc, frappe.ServiceUnavailableError):
+            # the server was too busy to start the run, and the client retries it
+            return
+
         with suppress(Exception):  # nosemgrep - telemetry never fails the run it reports on
             capture(
                 "query_failed",
