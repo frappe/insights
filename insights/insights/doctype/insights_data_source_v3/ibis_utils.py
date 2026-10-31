@@ -16,6 +16,7 @@ import sqlglot as sg
 import sqlparse
 from frappe.utils.data import flt
 from frappe.utils.safe_exec import SERVER_SCRIPT_FILE_PREFIX, safe_eval, safe_exec
+from ibis.backends.sql import SQLBackend
 from ibis.common.annotations import SignatureValidationError
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.datatypes import DataType
@@ -1601,11 +1602,8 @@ def execute_ibis_query(
         offset = (page - 1) * page_size
         query = query.limit(page_size, offset=offset)
 
-    backend = query.get_backend()
     try:
-        # compiled by the backend that runs it, so `compiled_once` can hand the
-        # backend this string instead of a second compile
-        sql = backend.compile(query, pretty=True)
+        sql = ibis.to_sql(query)
     except ibis.common.exceptions.OperationNotDefinedError:
         # TODO: throw better error message
         raise
@@ -1614,6 +1612,7 @@ def execute_ibis_query(
     # returning a cached answer, which read the same columns
     user_permissions.record_blanked_reads(query)
 
+    backend = query.get_backend()
     use_data_store = is_warehouse(backend)
     cache_outcome = "Off"
     if cache:
@@ -1678,7 +1677,15 @@ def compiled_once(backend, query: IbisQuery, sql: str):
     On a deep pipeline one compile costs as much as the run itself. The
     backend's own `execute` still runs, so the result is converted as ibis
     converts it for that backend.
+
+    `sql` is `ibis.to_sql`'s, which is what `SQLBackend.compile` produces. A
+    backend that compiles its own way (BigQuery adds its session dataset)
+    compiles again.
     """
+    if type(backend).compile is not SQLBackend.compile:
+        yield
+        return
+
     previous = vars(backend).get("compile")
     backend_compile = backend.compile
 
