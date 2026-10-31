@@ -1,3 +1,4 @@
+import math
 import os
 import shutil
 import tempfile
@@ -15,7 +16,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from duckdb import CatalogException, DependencyException, OutOfMemoryException
 from frappe.query_builder.functions import IfNull, Max, Min
-from frappe.utils import add_days, get_datetime, get_files_path, now, now_datetime
+from frappe.utils import add_days, cint, get_datetime, get_files_path, now, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
@@ -29,12 +30,14 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
     IMPORT_WRITE_LOCK_TIMEOUT,
     MEMORY_LIMIT_CONFIG_KEY,
     WRITE_LOCK_TIMEOUT,
+    get_threads,
     local_duckdb_write_connection,
     local_duckdb_write_lock,
     open_local_duckdb,
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import read_pyarrow_batches
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
+from insights.resources import ResourcePool, cpu_budget, server_busy, web_tier_setting
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -82,6 +85,81 @@ def quote_ident(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
 
 
+# A request that reads the data store holds a slot from the moment it opens the
+# store until it ends, so the Python that builds the query and shapes its rows
+# is inside the bound, not only DuckDB. A full pool is waited on briefly, then
+# answered with a 503 the frontend retries; a waiting request holds a web
+# thread, so few may wait.
+SLOTS_CONFIG_KEY = "insights_data_store_slots"
+MAX_SLOTS = 16
+SLOT_WAIT = 3
+SLOT_RETRY_AFTER = 2
+# a data store query must end before the web tier kills its request
+WEB_TIMEOUT_SHARE = 0.75
+
+
+def data_store_slots() -> int:
+    """How many data store queries this server runs at once: the cores left after
+    a quarter is kept for everything else, at `get_threads` per query."""
+    if slots := cint(frappe.conf.get(SLOTS_CONFIG_KEY)):
+        return slots
+    cores = max(1, int(cpu_budget()))
+    reserve = max(1, cores // 4)
+    return max(2, min((cores - reserve) // get_threads(), MAX_SLOTS))
+
+
+def data_store_pool() -> ResourcePool:
+    slots = data_store_slots()
+    workers, threads = web_tier_setting("workers"), web_tier_setting("threads")
+    timeout = web_tier_setting("timeout")
+    return ResourcePool(
+        "insights:data_store",
+        slots,
+        # one user, API client or site cannot take every slot
+        per_site=math.ceil(slots / 2),
+        per_user=math.ceil(slots / 2),
+        max_waiters=max(1, workers * threads // 4) if workers else slots,
+        # a request lives no longer than the web tier lets it
+        lease_seconds=timeout + 5 if timeout else get_data_store_time_limit() + 60,
+    )
+
+
+def take_data_store_slot():
+    # background jobs and the CLI do not hold a web thread, and have no one to
+    # answer busy to
+    if getattr(frappe.local, "request", None) is None:
+        return
+    if getattr(frappe.local, "insights_data_store_slot", None):
+        return
+    pool = data_store_pool()
+    lease = pool.acquire(wait=SLOT_WAIT)
+    if not lease:
+        raise server_busy(SLOT_RETRY_AFTER)
+    frappe.local.insights_data_store_slot = (pool, lease, time.monotonic())
+
+
+def release_data_store_slot():
+    if slot := getattr(frappe.local, "insights_data_store_slot", None):
+        frappe.local.insights_data_store_slot = None
+        pool, lease, _started = slot
+        pool.release(lease)
+
+
+def get_data_store_time_limit() -> int:
+    """Seconds a data store query may run: Max Execution Time, as for a live
+    query, but never so long that the web tier kills the worker first. A request
+    that runs several queries shares the web tier's time among them."""
+    from insights.insights.doctype.insights_settings.insights_settings import get_max_execution_time
+
+    limit = get_max_execution_time()
+    if timeout := web_tier_setting("timeout"):
+        left = timeout * WEB_TIMEOUT_SHARE
+        if slot := getattr(frappe.local, "insights_data_store_slot", None):
+            left -= time.monotonic() - slot[2]
+        limit = min(limit, int(left))
+    return max(1, limit)
+
+
 class Warehouse:
     def __init__(self):
         pass
@@ -115,6 +193,7 @@ class Warehouse:
     @property
     def db(self) -> DuckDBBackend:
         if WAREHOUSE_DB_NAME not in insights.db_connections:
+            take_data_store_slot()
             ddb = self.get_connection(read_only=True)
             insights.db_connections[WAREHOUSE_DB_NAME] = ddb
 
@@ -468,6 +547,9 @@ class WarehouseTable:
                     ),
                     TableNotStored,
                 )
+        except frappe.ServiceUnavailableError:
+            # every data store slot is taken: the client retries a 503
+            raise
         except Exception as e:
             frappe.log_error(e)
             frappe.throw("Error accessing the data warehouse. Please try again.")

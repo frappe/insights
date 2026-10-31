@@ -33,7 +33,14 @@ from insights.exceptions import (
     QueryTimeout,
     UnknownColumn,
 )
-from insights.insights.doctype.insights_data_source_v3.data_warehouse import is_warehouse
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
+    QueryTimeLimitExceeded,
+    time_limit,
+)
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+    get_data_store_time_limit,
+    is_warehouse,
+)
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
     held_back_key,
@@ -301,9 +308,15 @@ class IbisQueryBuilder:
                 operation = _dict(operation)
                 try:
                     self.query = self.perform_operation(operation)
-                except (CircularQueryReferenceError, not_permitted.NotPermitted):
+                except (
+                    CircularQueryReferenceError,
+                    not_permitted.NotPermitted,
+                    frappe.ServiceUnavailableError,
+                    QueryTimeout,
+                ):
                     # Not Permitted is a normal answer, not a broken operation. The
-                    # card names what it needs
+                    # card names what it needs. Neither is a busy data store, which
+                    # the client retries, nor a query stopped at the time limit
                     raise
                 except Exception as e:
                     self.throw_in_operation(e, idx, operation)
@@ -1086,7 +1099,11 @@ class IbisQueryBuilder:
             **{label: pivot_name(ranked[name]) for label, name in zip(labels, names_from, strict=True)}
         )
 
-        top = ranked.execute()
+        if is_warehouse(ranked.get_backend()):
+            with time_limit(ranked.get_backend(), get_data_store_time_limit()):
+                top = ranked.execute()
+        else:
+            top = ranked.execute()
         has_tail = len(top) > max_names
         # sorted by the value, not its name, so numbers and dates keep their order
         top = top.head(max_names).sort_values(names_from, na_position="last")
@@ -1632,12 +1649,13 @@ def execute_ibis_query(
         try:
             if use_data_store:
                 start = time.monotonic()
-                result = query.execute()
+                with time_limit(backend, get_data_store_time_limit()):
+                    result = query.execute()
                 time_taken = flt(time.monotonic() - start, 3)
             else:
                 result, time_taken = _execute_live_query(query)
         except Exception as e:
-            if "max_statement_time" in str(e):
+            if "max_statement_time" in str(e) or isinstance(e, QueryTimeLimitExceeded):
                 frappe.log_error(
                     title="Query execution time exceeded the limit.",
                     message=f"Query: {sql}",
@@ -1646,7 +1664,7 @@ def execute_ibis_query(
                     get_max_execution_time,
                 )
 
-                max_time = get_max_execution_time()
+                max_time = getattr(e, "seconds", None) or get_max_execution_time()
                 frappe.throw(
                     title="Query Timeout",
                     msg=f"Query execution time exceeded the limit of {max_time} seconds. Please try again with a smaller timespan or a more specific filter.",
