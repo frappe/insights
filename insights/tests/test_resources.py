@@ -10,7 +10,8 @@ from unittest.mock import patch
 import frappe
 from frappe.tests import IntegrationTestCase
 
-from insights.resources import ResourcePool, web_tier_setting
+from insights.exceptions import QueryCancelled, QueryTimeout
+from insights.resources import ResourcePool, single_flight, web_tier_setting
 
 
 class TestResourcePool(IntegrationTestCase):
@@ -134,6 +135,126 @@ class TestResourcePool(IntegrationTestCase):
         start = time.monotonic()
         self.assertIsNone(self.acquire_as(pool, user="second@example.com", wait=2))
         self.assertLess(time.monotonic() - start, 0.5)
+
+
+class TestSingleFlight(IntegrationTestCase):
+    def key(self):
+        key = f"test:{frappe.generate_hash(length=10)}"
+        names = (key, f"{key}:run")
+        self.addCleanup(frappe.cache.delete, *(frappe.cache.make_key(name) for name in names))
+        return key
+
+    def together(self, *calls):
+        """Run each call in its own thread, as requests in other workers would,
+        starting them in this order. Returns what each returned or raised."""
+        site, conf = frappe.local.site, frappe.local.conf
+        outcomes = [None] * len(calls)
+
+        def request(i, call):
+            frappe.local.site, frappe.local.conf = site, conf
+            try:
+                outcomes[i] = call()
+            except Exception as e:
+                outcomes[i] = e
+
+        threads = []
+        for i, call in enumerate(calls):
+            threads.append(threading.Thread(target=request, args=(i, call)))
+            threads[-1].start()
+            time.sleep(0.1)
+        for thread in threads:
+            thread.join()
+        return outcomes
+
+    def slow(self, value, runs, seconds=0.5):
+        def run():
+            runs.append(value)
+            time.sleep(seconds)
+            if isinstance(value, Exception):
+                raise value
+            return value
+
+        return run
+
+    # @feature data-store.single-flight
+    def test_callers_that_ask_while_a_run_is_in_flight_wait_for_its_value(self):
+        key, runs, waited = self.key(), [], []
+
+        def ask():
+            return single_flight(key, self.slow("rows", runs), 60, 5, on_wait=lambda: waited.append(1))
+
+        self.assertEqual(self.together(ask, ask, ask), ["rows"] * 3)
+        self.assertEqual((runs, len(waited)), (["rows"], 2))
+        # the value stays cached for the next caller
+        self.assertEqual(single_flight(key, self.slow("other", runs), 60, 5), "rows")
+        self.assertEqual(runs, ["rows"])
+
+    # @feature data-store.single-flight
+    def test_a_refresh_skips_the_cached_value_and_joins_a_run_in_flight(self):
+        key, runs = self.key(), []
+        single_flight(key, lambda: "old", 60, 5)
+
+        outcomes = self.together(
+            lambda: single_flight(key, self.slow("new", runs), 60, 5, force=True),
+            lambda: single_flight(key, self.slow("again", runs), 60, 5, force=True),
+        )
+
+        self.assertEqual((outcomes, runs), (["new", "new"], ["new"]))
+
+    # @feature data-store.single-flight
+    def test_when_the_run_fails_one_waiter_runs_it_again_and_the_rest_read_its_value(self):
+        key, runs = self.key(), []
+        failure = ValueError("the source went away")
+
+        outcomes = self.together(
+            lambda: single_flight(key, self.slow(failure, runs), 60, 5),
+            lambda: single_flight(key, self.slow("rows", runs), 60, 5),
+            lambda: single_flight(key, self.slow("rows", runs), 60, 5),
+        )
+
+        self.assertEqual(outcomes, [failure, "rows", "rows"])
+        self.assertEqual(runs, [failure, "rows"])
+
+    # @feature data-store.single-flight
+    def test_a_run_that_fails_as_a_new_run_would_fails_its_waiters_without_running_again(self):
+        key, runs = self.key(), []
+        timeout = QueryTimeout("Query execution time exceeded the limit of 1 seconds")
+
+        def ask(value):
+            return lambda: single_flight(key, self.slow(value, runs), 60, 5, shared_errors=(QueryTimeout,))
+
+        outcomes = self.together(ask(timeout), ask("rows"), ask("rows"))
+
+        self.assertEqual([type(outcome) for outcome in outcomes], [QueryTimeout] * 3)
+        self.assertEqual(str(outcomes[2]), str(timeout))
+        self.assertEqual(runs, [timeout])
+
+    # @feature data-store.single-flight data-store.cancel
+    def test_a_waiter_whose_reader_left_stops_waiting(self):
+        key, runs, asked = self.key(), [], time.monotonic()
+
+        def left():
+            if time.monotonic() - asked > 0.5:
+                raise QueryCancelled("left")
+
+        outcomes = self.together(
+            lambda: single_flight(key, self.slow("rows", runs, 3), 60, 5),
+            lambda: single_flight(key, self.slow("rows", runs), 60, 5, check=left),
+        )
+
+        self.assertIsInstance(outcomes[1], QueryCancelled)
+        self.assertEqual(runs, ["rows"])
+
+    # @feature data-store.single-flight
+    def test_a_run_whose_worker_died_is_run_by_a_caller_once_its_lock_expires(self):
+        key = self.key()
+        # a run that will never end: its worker was killed
+        # nosemgrep - the key comes from make_key, which prefixes the site
+        frappe.cache.set(frappe.cache.make_key(f"{key}:run"), "dead", px=500)
+
+        start = time.monotonic()
+        self.assertEqual(single_flight(key, lambda: "rows", 60, 5), "rows")
+        self.assertLess(time.monotonic() - start, 2)
 
 
 class TestWebTierSettings(IntegrationTestCase):

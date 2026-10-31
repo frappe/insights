@@ -17,7 +17,7 @@ from ibis import _
 
 from insights import standard
 from insights.decorators import insights_whitelist
-from insights.exceptions import QueryRefused, UnknownColumn
+from insights.exceptions import QueryCancelled, QueryRefused, UnknownColumn
 from insights.insights.doctype.insights_data_source_v3.ibis.functions import _apply_granularity
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
@@ -274,8 +274,9 @@ class InsightsQueryv3(Document):
         """
         from insights.telemetry import caller, capture, error_kind
 
-        if isinstance(exc, frappe.ServiceUnavailableError):
-            # the server was too busy to start the run, and the client retries it
+        if isinstance(exc, frappe.ServiceUnavailableError | QueryCancelled):
+            # the server was too busy to start the run, and the client retries
+            # it, or the reader left and asked it to stop
             return
 
         with suppress(Exception):  # nosemgrep - telemetry never fails the run it reports on

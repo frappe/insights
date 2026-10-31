@@ -135,14 +135,25 @@ def take_data_store_slot():
     lease = pool.acquire(wait=SLOT_WAIT)
     if not lease:
         raise server_busy(SLOT_RETRY_AFTER)
-    frappe.local.insights_data_store_slot = (pool, lease, time.monotonic())
+    started = getattr(frappe.local, "insights_data_store_started", None) or time.monotonic()
+    frappe.local.insights_data_store_slot = (pool, lease, started)
 
 
 def release_data_store_slot():
+    frappe.local.insights_data_store_started = None
     if slot := getattr(frappe.local, "insights_data_store_slot", None):
         frappe.local.insights_data_store_slot = None
         pool, lease, _started = slot
         pool.release(lease)
+
+
+def yield_data_store_slot():
+    """Give the slot back while the request waits on another request's run. A
+    slot it takes again keeps the request's start, so its time limit does not
+    start over."""
+    if slot := getattr(frappe.local, "insights_data_store_slot", None):
+        release_data_store_slot()
+        frappe.local.insights_data_store_started = slot[2]
 
 
 def get_data_store_time_limit() -> int:

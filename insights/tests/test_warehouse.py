@@ -1,3 +1,4 @@
+import pickle
 import shutil
 import subprocess
 import sys
@@ -24,7 +25,9 @@ from werkzeug.wrappers import Response
 
 import insights
 from insights.api.data_store import sync_tables, update_failed_sync_status
-from insights.exceptions import QueryTimeout
+from insights.cache_utils import make_digest
+from insights.cancellation import REQUEST_ID_HEADER, cancel
+from insights.exceptions import QueryCancelled, QueryTimeout
 from insights.insights.doctype.insights_data_source_v3 import data_warehouse
 from insights.insights.doctype.insights_data_source_v3.connectors import duckdb as duckdb_connector
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
@@ -42,6 +45,7 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     import_job_id,
 )
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import execute_ibis_query
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import after_request
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -488,6 +492,48 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
             frappe.local.insights_data_store_slot = (pool, lease, started - 49.5)
             self.assertEqual(data_warehouse.get_data_store_time_limit(), 40)
 
+    # @feature data-store.single-flight data-store.query-slots
+    def test_a_request_that_waits_on_another_workers_run_holds_no_slot_and_gets_its_rows(self):
+        with self.request():
+            query = insights.warehouse.db.sql("select 42 as answer")
+            pool, site, seen = data_store_pool(), frappe.local.site, []
+
+            def held_here():
+                # the pool is the bench's: other sites' readers hold leases in it too
+                return [lease for lease in pool.holders() if lease.startswith(f"{site}|")]
+
+            self.assertEqual(len(held_here()), 1)
+            key = f"insights:query_results:v3:{make_digest(ibis.to_sql(query), query.get_backend().db_identity)}"
+            value_key, lock_key = frappe.cache.make_key(key), frappe.cache.make_key(f"{key}:run")
+            self.addCleanup(frappe.cache.delete, value_key, lock_key)
+            # another worker runs the same query
+            # nosemgrep - the key comes from make_key, which prefixes the site
+            frappe.cache.set(lock_key, "theirs", px=10_000)
+
+            def their_run_ends():
+                seen.append(held_here())
+                # nosemgrep - the key comes from make_key, which prefixes the site
+                frappe.cache.set(value_key, pickle.dumps(pd.DataFrame({"answer": [7]})), ex=60)
+                # nosemgrep - the key comes from make_key, which prefixes the site
+                frappe.cache.set(f"{lock_key.decode()}:theirs", "done", ex=10)
+                frappe.cache.delete(lock_key)
+
+            threading.Timer(0.5, their_run_ends).start()
+            result, time_taken = execute_ibis_query(query, paginate=False)
+
+        self.assertEqual(seen, [[]])
+        self.assertEqual((result["answer"].tolist(), time_taken), ([7], -1))
+
+    # @feature data-store.time-limit data-store.single-flight
+    def test_a_request_that_gave_its_slot_back_to_wait_keeps_its_time_used(self):
+        with patch.object(data_warehouse, "web_tier_setting", return_value=120), self.request():
+            insights.warehouse.db
+            pool, lease, started = frappe.local.insights_data_store_slot
+            frappe.local.insights_data_store_slot = (pool, lease, started - 49.5)
+            data_warehouse.yield_data_store_slot()
+            data_warehouse.take_data_store_slot()
+            self.assertEqual(data_warehouse.get_data_store_time_limit(), 40)
+
     # @feature data-store.query-slots
     def test_a_background_job_reads_the_store_without_a_slot(self):
         self.assertIsNone(getattr(frappe.local, "request", None))
@@ -530,6 +576,104 @@ class TestDataStoreTimeLimit(InsightsIntegrationTestCase):
                 execute_ibis_query(self.db.sql(self.SLOW_QUERY), cache=False)
 
         self.assertIn("exceeded the limit of 1 seconds", str(timeout.exception))
+
+
+class TestQueryCancel(InsightsIntegrationTestCase):
+    SAVEPOINT = "test_query_cancel"
+    SLOW_QUERY = TestDataStoreTimeLimit.SLOW_QUERY
+
+    def before_test(self):
+        original = frappe.db.get_single_value("Insights Settings", "max_execution_time")
+        # the class commits when it ends, so a rollback alone would keep the change
+        self.addCleanup(frappe.db.set_single_value, "Insights Settings", "max_execution_time", original)
+        frappe.db.set_single_value("Insights Settings", "max_execution_time", 20)
+        self.request_id = frappe.generate_hash(length=32)
+        frappe.local.insights_data_store_slot = None
+        # an earlier test may have left the store open, which takes no slot
+        if db := insights.db_connections.pop(WAREHOUSE_DB_NAME, None):
+            db.disconnect()
+
+    def held_here(self):
+        # the pool is the bench's: other sites' readers hold leases in it too
+        return [lease for lease in data_store_pool().holders() if lease.startswith(f"{frappe.local.site}|")]
+
+    @contextmanager
+    def request(self):
+        frappe.utils.set_request(
+            method="POST",
+            path="/api/method/insights.api.view.get_chart_data",
+            headers={REQUEST_ID_HEADER: self.request_id},
+        )
+        try:
+            yield
+        finally:
+            frappe.local.request = None
+
+    def cancel_from_another_request(self, after: float, user: str = "Administrator"):
+        """`cancel_queries`, as the reader's next request sends it, in another thread."""
+        site, sites_path, request_id = frappe.local.site, frappe.local.sites_path, self.request_id
+
+        def run():
+            frappe.init(site, sites_path=sites_path)
+            frappe.connect()
+            frappe.set_user(user)
+            try:
+                cancel([request_id])
+            finally:
+                after_request()
+                frappe.destroy()
+
+        thread = threading.Timer(after, run)
+        thread.start()
+        self.addCleanup(thread.join)
+
+    def assert_stopped_soon(self, run):
+        start = time.monotonic()
+        with self.assertRaises(QueryCancelled):
+            run()
+        self.assertLess(time.monotonic() - start, 5)
+
+    # @feature data-store.cancel
+    def test_a_data_store_query_stops_when_its_reader_cancels_it_and_frees_its_slot(self):
+        logged = frappe.db.count("Insights Query Execution Log")
+        with self.request():
+            db = insights.warehouse.db
+            self.assertEqual(len(self.held_here()), 1)
+            self.cancel_from_another_request(after=0.5)
+            self.assert_stopped_soon(lambda: execute_ibis_query(db.sql(self.SLOW_QUERY), cache=False))
+            # the connection runs the next query
+            result, _ = execute_ibis_query(db.sql("select 7 as n"), cache=False)
+            self.assertEqual(result["n"].tolist(), [7])
+        after_request()
+
+        self.assertEqual(self.held_here(), [])
+        # only the query that ran to its end is logged: a stopped one did not fail
+        self.assertEqual(frappe.db.count("Insights Query Execution Log"), logged + 1)
+
+    # @feature data-store.cancel
+    def test_a_live_mariadb_query_is_killed_when_its_reader_cancels_it(self):
+        site_db = frappe.get_doc("Insights Data Source v3", "Site DB")
+        with self.request():
+            db = site_db._get_ibis_backend()
+            self.cancel_from_another_request(after=0.5)
+            # slow to run, not to read its schema, which ibis reads by running it
+            slow = db.sql("select sum(seq % 7) as n from seq_1_to_300000000")
+            self.assert_stopped_soon(lambda: execute_ibis_query(slow, cache=False))
+        after_request()
+
+    # @feature data-store.cancel
+    def test_a_reader_cannot_stop_another_readers_query(self):
+        with self.request():
+            db = insights.warehouse.db
+            self.cancel_from_another_request(after=0.2, user="Guest")
+            # runs past the cancel and a few polls
+            start = time.monotonic()
+            result, _ = execute_ibis_query(
+                db.sql("select sum(a.range * b.range % 7) as n from range(20000) a, range(20000) b"),
+                cache=False,
+            )
+        self.assertGreater(time.monotonic() - start, 1)
+        self.assertEqual(len(result), 1)
 
 
 class TestMissingTableNotice(InsightsIntegrationTestCase):
