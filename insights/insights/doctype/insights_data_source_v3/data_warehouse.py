@@ -2,6 +2,7 @@ import math
 import os
 import shutil
 import tempfile
+import threading
 import time
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager, suppress
@@ -98,6 +99,40 @@ SLOT_RETRY_AFTER = 2
 WEB_TIMEOUT_SHARE = 0.75
 
 
+class ProcessSlot:
+    """At most one data store slot per process. DuckDB's memory limit and
+    threads are per process and sized for one query; the pool alone would let a
+    gthread worker take several, and their queries share one query's memory.
+
+    Held no longer than a pool lease, so a request whose release never ran does
+    not lock its process out for good."""
+
+    def __init__(self):
+        self._changed = threading.Condition()
+        self._holder = None
+        self._until = 0.0
+
+    def acquire(self, wait: float, hold: float) -> object | None:
+        deadline = time.monotonic() + wait
+        with self._changed:
+            while (now := time.monotonic()) < self._until:
+                if now >= deadline:
+                    return None
+                self._changed.wait(min(deadline, self._until) - now)
+            self._holder, self._until = object(), now + hold
+            return self._holder
+
+    def release(self, holder: object):
+        with self._changed:
+            # a holder that outlived its hold may no longer be the one holding
+            if holder is self._holder:
+                self._holder, self._until = None, 0.0
+                self._changed.notify()
+
+
+_process_slot = ProcessSlot()
+
+
 def data_store_slots() -> int:
     """How many data store queries this server runs at once: the cores left after
     a quarter is kept for everything else, at `get_threads` per query."""
@@ -131,18 +166,25 @@ def take_data_store_slot():
         return
     if getattr(frappe.local, "insights_data_store_slot", None):
         return
+    started = time.monotonic()
     pool = data_store_pool()
-    lease = pool.acquire(wait=SLOT_WAIT)
-    if not lease:
+    if not (process_slot := _process_slot.acquire(wait=SLOT_WAIT, hold=pool.lease_seconds)):
         raise server_busy(SLOT_RETRY_AFTER)
-    frappe.local.insights_data_store_slot = (pool, lease, time.monotonic())
+    lease = pool.acquire(wait=max(0, SLOT_WAIT - (time.monotonic() - started)))
+    if not lease:
+        _process_slot.release(process_slot)
+        raise server_busy(SLOT_RETRY_AFTER)
+    frappe.local.insights_data_store_slot = (pool, lease, time.monotonic(), process_slot)
 
 
 def release_data_store_slot():
     if slot := getattr(frappe.local, "insights_data_store_slot", None):
         frappe.local.insights_data_store_slot = None
-        pool, lease, _started = slot
-        pool.release(lease)
+        pool, lease, _started, process_slot = slot
+        try:
+            pool.release(lease)
+        finally:
+            _process_slot.release(process_slot)
 
 
 def get_data_store_time_limit() -> int:

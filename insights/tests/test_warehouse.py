@@ -420,12 +420,20 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
         patcher = patch.dict(frappe.conf, {"insights_data_store_slots": 2})
         patcher.start()
         self.addCleanup(patcher.stop)
-        pool = data_store_pool()
-        frappe.cache.delete(*(frappe.cache.make_key(key, shared=True) for key in pool.keys))
-        self.addCleanup(frappe.cache.delete, *(frappe.cache.make_key(key, shared=True) for key in pool.keys))
+        # the pool is shared by every site on this Redis: touch only this site's leases
+        self.forget_leases()
+        self.addCleanup(self.forget_leases)
+
+    def forget_leases(self):
+        for key in data_store_pool().keys:
+            key = frappe.cache.make_key(key, shared=True)
+            if mine := [
+                m for m in frappe.cache.zrange(key, 0, -1) if m.decode().startswith(f"{frappe.local.site}|")
+            ]:
+                frappe.cache.zrem(key, *mine)
 
     def close_store(self):
-        frappe.local.insights_data_store_slot = None
+        data_warehouse.release_data_store_slot()
         if db := insights.db_connections.pop(WAREHOUSE_DB_NAME, None):
             db.disconnect()
 
@@ -445,7 +453,7 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
             frappe.local.request = None
 
     def holders(self):
-        return data_store_pool().holders()
+        return [h for h in data_store_pool().holders() if h.startswith(f"{frappe.local.site}|")]
 
     # @feature data-store.query-slots
     def test_a_request_holds_its_slot_from_opening_the_store_until_it_ends(self):
@@ -512,13 +520,46 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
         self.assertNotIn("Operation", str(busy.exception))
         self.assertNotIn("query_failed", [call.args[0] for call in sender.call_args_list])
 
+    # @feature data-store.query-slots
+    def test_a_process_holds_one_slot_however_many_threads_it_serves(self):
+        with self.request():
+            insights.warehouse.db
+            first = frappe.local.insights_data_store_slot
+            # another request in this process, while the first still holds its slot
+            frappe.local.insights_data_store_slot = None
+            with patch.object(data_warehouse, "SLOT_WAIT", 0.3):
+                with self.assertRaises(frappe.ServiceUnavailableError):
+                    data_warehouse.take_data_store_slot()
+            # the pool had room: the process's own slot turned it away
+            self.assertEqual(len(self.holders()), 1)
+            frappe.local.insights_data_store_slot = first
+
+        self.assertEqual(self.holders(), [])
+        with self.request():
+            insights.warehouse.db
+            self.assertEqual(len(self.holders()), 1)
+
+    # @feature data-store.query-slots
+    def test_a_process_slot_whose_release_never_ran_frees_itself_after_a_lease(self):
+        slot = data_warehouse.ProcessSlot()
+        stale = slot.acquire(wait=0, hold=0.2)
+        self.assertIsNone(slot.acquire(wait=0, hold=0.2))
+        time.sleep(0.25)
+        fresh = slot.acquire(wait=0, hold=60)
+        self.assertTrue(fresh)
+        # the late release of the first holder leaves the second one holding
+        slot.release(stale)
+        self.assertIsNone(slot.acquire(wait=0, hold=60))
+        slot.release(fresh)
+        self.assertTrue(slot.acquire(wait=0, hold=60))
+
     # @feature data-store.time-limit
     def test_a_request_that_runs_several_queries_shares_the_web_tiers_time_among_them(self):
         with patch.object(data_warehouse, "web_tier_setting", return_value=120), self.request():
             insights.warehouse.db
             self.assertEqual(data_warehouse.get_data_store_time_limit(), 60)
-            pool, lease, started = frappe.local.insights_data_store_slot
-            frappe.local.insights_data_store_slot = (pool, lease, started - 49.5)
+            pool, lease, started, process_slot = frappe.local.insights_data_store_slot
+            frappe.local.insights_data_store_slot = (pool, lease, started - 49.5, process_slot)
             self.assertEqual(data_warehouse.get_data_store_time_limit(), 40)
 
     # @feature data-store.query-slots
