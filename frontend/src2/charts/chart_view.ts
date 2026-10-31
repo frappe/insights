@@ -161,6 +161,8 @@ export type ChartSource = {
 		force: boolean,
 		filterContext: DashboardFilterContext | undefined,
 		page: number,
+		// they name the request, so the server can stop its query
+		headers?: Record<string, string>,
 	) => Promise<ChartDataResponse | undefined>
 	fetchCount?: (
 		filterContext: DashboardFilterContext | undefined,
@@ -252,6 +254,8 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	const pageSize = computed(() => (paged.value ? doc.value.config.limit || 100 : undefined))
 
 	let currentLoad = 0
+	// the load in flight. Aborting it asks the server to stop its query
+	let inFlight: AbortController | undefined
 	let lastRequestKey: string | undefined
 	// the request key without the page: a new request starts on page 1
 	let lastQuestion: string | undefined
@@ -295,6 +299,10 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 
 		const token = ++currentLoad
 		const isStale = () => token !== currentLoad
+		// a changed filter or sort replaces the load in flight, whose rows nobody
+		// will see
+		inFlight?.abort()
+		const controller = (inFlight = new AbortController())
 
 		// the rows that come back answer this copy, not later edits
 		const asked = copy(current.value)
@@ -308,10 +316,11 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		// once.
 		const page = currentPage.value
 		const dataLoad = scheduleQueryExecution(
-			() => source.fetchData(force, filterContext(), page),
+			(headers) => source.fetchData(force, filterContext(), page, headers),
 			{
 				isStale,
 				priority: executionPriority.value,
+				signal: controller.signal,
 			},
 		)
 
@@ -415,8 +424,25 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 			failed.value = true
 			clearChart()
 		} finally {
-			if (!isStale()) executing.value = false
+			if (!isStale()) {
+				executing.value = false
+				inFlight = undefined
+			}
 		}
+	}
+
+	/**
+	 * Stop the load in flight: nobody is left to see its rows. The read is left
+	 * stale, so its next load runs again. Returns whether a load was stopped.
+	 */
+	function cancel() {
+		if (!inFlight) return false
+		inFlight.abort()
+		inFlight = undefined
+		currentLoad++
+		lastRequestKey = undefined
+		stale.value = true
+		return true
 	}
 
 	function goToPage(page: number) {
@@ -514,6 +540,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		cancelDownload: download?.cancelDownload,
 
 		load,
+		cancel,
 	})
 }
 
@@ -647,12 +674,12 @@ function makeSavedChartView(
 			// query, the dashboard's filter links), so a read keeps its rows until
 			// Refresh.
 			requestKey: (filterContext) => stableStringify(request(filterContext)),
-			fetchData: (force, filterContext, page) =>
-				call('insights.api.view.get_chart_data', {
-					...request(filterContext),
-					force,
-					page,
-				}),
+			fetchData: (force, filterContext, page, headers) =>
+				call(
+					'insights.api.view.get_chart_data',
+					{ ...request(filterContext), force, page },
+					{ headers },
+				),
 			fetchCount: (filterContext, force) =>
 				call('insights.api.view.get_chart_count', { ...request(filterContext), force }),
 			fetchExport: (format, filterContext) =>

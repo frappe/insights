@@ -299,6 +299,9 @@ export type DashboardInBuilder = DashboardView & { builder: DashboardBuilderActi
 type DashboardPage = {
 	view: DashboardView
 	open: () => void
+	// a mount shows the page, and leaves it when it unmounts or shows another
+	enter: () => void
+	leave: () => void
 	// the next mount reloads the dashboard and its cards instead of using this
 	// snapshot
 	forget: () => void
@@ -363,9 +366,15 @@ export function useDashboardView(
 
 	// A page already opened in this tab shows what the reader left. Only Refresh
 	// or a reload replaces it.
+	// A page left by its last mount stops the loads still in flight.
 	watch(
 		() => toValue(reference),
-		() => page().open(),
+		(_, __, onCleanup) => {
+			const shown = page()
+			shown.open()
+			shown.enter()
+			onCleanup(() => shown.leave())
+		},
 		{ immediate: true },
 	)
 
@@ -421,6 +430,8 @@ function makeDashboardPage(
 	// whether a fetch has succeeded, so a mount has something to show
 	let opened = false
 	let pending = false
+	// the last mount left while cards loaded, and their loads were stopped
+	let stopped = false
 
 	// Only the dashboard filters that apply to this chart, so the other filters
 	// leave its request unchanged.
@@ -467,7 +478,12 @@ function makeDashboardPage(
 	 */
 	function openReads(charts: ChartViewDoc[], force: boolean) {
 		const named = new Set(charts.map((doc) => doc.name))
-		;[...reads.keys()].forEach((chart) => named.has(chart) || reads.delete(chart))
+		;[...reads.keys()].forEach((chart) => {
+			if (named.has(chart)) return
+			// nobody will see the rows of a card the layout dropped
+			reads.get(chart)?.cancel()
+			reads.delete(chart)
+		})
 		// The reads belong to this page, because its filters narrow their rows. The
 		// same chart on another dashboard has its own read. `doc` is only a
 		// placeholder for a read with no rows yet. A read that has rows gets the new
@@ -523,6 +539,12 @@ function makeDashboardPage(
 	}
 
 	function open() {
+		if (stopped) {
+			stopped = false
+			// the cards whose loads were stopped are stale, and run. The rest skip
+			// their unchanged requests
+			rerun()
+		}
 		if (opened || pending) return
 		fetch(false)
 	}
@@ -621,9 +643,23 @@ function makeDashboardPage(
 		}),
 	}) as DashboardView
 
+	// the mounts that show this page now
+	let mounts = 0
+
 	return {
 		view,
 		open,
+		enter: () => {
+			mounts++
+		},
+		// Nobody sees the cards a load in flight would fill, so the server stops
+		// its query. The next mount runs the cards it stopped.
+		leave: () => {
+			if (--mounts > 0) return
+			reads.forEach((read) => {
+				if (read.cancel()) stopped = true
+			})
+		},
 		forget: () => {
 			opened = false
 			// The cards are part of the snapshot. Mark them stale, because a filter

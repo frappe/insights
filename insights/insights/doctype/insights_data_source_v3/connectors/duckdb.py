@@ -79,36 +79,57 @@ class QueryTimeLimitExceeded(QueryTimeout):
         self.seconds = seconds
 
 
+# how often a running query looks for a cancel: one Redis call per this many
+# seconds while it runs, none for a query that ends sooner
+CANCEL_POLL_INTERVAL = 0.5
+
+
 @contextmanager
-def time_limit(db: DuckDBBackend, seconds: float):
-    """Interrupt the query `db` runs once it has run `seconds`.
+def time_limit(db: DuckDBBackend, seconds: float, cancelled=None):
+    """Interrupt the query `db` runs once it has run `seconds`, or once
+    `cancelled()` says its reader asked it to stop.
 
     DuckDB has no statement timeout, and a query that outlives the web tier's
     timeout gets its worker killed. An interrupted query raises, and the
     connection serves the next one.
     """
     lock = threading.Lock()
-    state = {"running": True, "interrupted": False}
+    state = {"running": True, "interrupted": None}
+    finished = threading.Event()
 
-    def interrupt():
+    def interrupt(reason: str):
         with lock:
             if state["running"]:
-                state["interrupted"] = True
+                state["interrupted"] = reason
                 db.con.interrupt()
 
-    timer = threading.Timer(seconds, interrupt)
-    timer.daemon = True
-    timer.start()
+    def watch():
+        deadline = time.monotonic() + seconds
+        while True:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                return interrupt("time_limit")
+            if finished.wait(min(left, CANCEL_POLL_INTERVAL) if cancelled else left):
+                return
+            if cancelled and cancelled():
+                return interrupt("cancelled")
+
+    watcher = threading.Thread(target=watch, daemon=True)
+    watcher.start()
     try:
         yield
     except InterruptException as e:
-        if state["interrupted"]:
+        if state["interrupted"] == "time_limit":
             raise QueryTimeLimitExceeded(seconds) from e
+        if state["interrupted"] == "cancelled":
+            from insights.cancellation import raise_cancelled
+
+            raise_cancelled(e)
         raise
     finally:
         with lock:
             state["running"] = False
-        timer.cancel()
+        finished.set()
 
 
 def get_duckdb_path(data_source) -> str:
