@@ -134,7 +134,7 @@ class QueryColumns:
             else:
                 result, error = attempt(
                     lambda: frappe.get_doc(QUERY, name).execute(
-                        page_size=QUERY_PAGE_SIZE, import_if_not_exists=False
+                        page_size=QUERY_PAGE_SIZE, import_if_not_exists=False, include_sql=False
                     )
                 )
                 self.runs[name] = (
