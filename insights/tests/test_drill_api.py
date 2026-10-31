@@ -1787,8 +1787,8 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # and neither is anything that measures rather than groups
         self.assertNotIn("docstatus", dimensions)
 
-    def load_counting(self, user, chart, dashboard):
-        """A forced card load under `user`, with its menu, how many times the
+    def load_counting(self, user, chart, dashboard, force=False):
+        """A card load under `user`, with its menu, how many times the
         pipeline was built, and how many times it was compiled after its build.
         A build compiles the permission filter it embeds; that is not counted."""
         counts = {"build": 0, "compile": 0}
@@ -1814,18 +1814,18 @@ class TestDrillAPI(InsightsIntegrationTestCase):
             as_user(user),
             db_connections(),
         ):
-            card = get_chart_data(chart=chart.name, dashboard=dashboard.name, force=True)
+            card = get_chart_data(chart=chart.name, dashboard=dashboard.name, force=force)
         return {d["name"] for d in card["drill"]["dimensions"]}, counts
 
     # @feature dashboard.loads
     def test_a_card_load_compiles_its_query_once(self):
         _, chart, dashboard = self.make_content()
 
-        _, counts = self.load_counting(OWNER, chart, dashboard)
+        _, counts = self.load_counting(OWNER, chart, dashboard, force=True)
 
         self.assertEqual(counts["compile"], 1)
 
-    # @feature charts.drill-breakdown-options dashboard.card-follows-edits
+    # @feature charts.drill-breakdown-options dashboard.card-follows-edits dashboard.refresh
     def test_the_menu_is_built_once_until_the_chart_or_its_query_changes(self):
         query, chart, dashboard = self.make_content()
 
@@ -1834,6 +1834,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         # the card's own run builds it; the menu's build is the one kept
         self.assertEqual((first["build"], again["build"]), (2, 1))
         self.assertIn("priority", menu)
+        # a refresh reads the source again, and a re-import can change its columns
+        _, refreshed = self.load_counting(OWNER, chart, dashboard, force=True)
+        self.assertEqual(refreshed["build"], 2)
 
         with as_user(OWNER):
             chart.reload()

@@ -186,22 +186,26 @@ def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
         return _dimensions_on(_surface(chart, operations, index))
 
 
-def stored_drill_dimensions(chart, modified: str | None) -> list[dict]:
+def stored_drill_dimensions(chart, modified: str | None, force: bool = False) -> list[dict]:
     """`drill_dimensions` of a stored chart, kept until it or a query it reads changes.
 
     Finding them builds the whole pipeline again, on every card load, for a menu
     that changes only on an edit. `modified` is the chart's `last_modified`, as
     the card received it. The operations are in the key because a dashboard can
-    lend a card its Period. The user the build runs as is, because the columns a
-    reader may read (permlevel) and what a script query returns depend on them.
+    lend a card its Period. The user the build runs as and their roles are,
+    because the columns a reader may read (permlevel) and what a script query
+    returns depend on them.
 
-    A role change shows when the entry expires, after ten minutes. Until then a
-    stale menu can offer a column the reader lost, and `drill_data` refuses it:
-    it checks the column against the surface it builds.
+    A column a re-import adds or drops leaves `modified` alone, so a forced
+    load, the reader's Refresh, builds the menu again. Anything else that
+    changes the columns shows when the entry expires, after ten minutes. Until
+    then a stale menu can offer a column the reader lost, and `drill_data`
+    refuses it: it checks the column against the surface it builds.
     """
     operations = chart.get_operations()
-    key = make_digest("drill_dimensions", chart.name, modified, permission_user_for(chart), operations)
-    return get_or_set_cache(key, lambda: drill_dimensions(chart, operations))
+    user = permission_user_for(chart)
+    key = make_digest("drill_dimensions", chart.name, modified, user, frappe.get_roles(user), operations)
+    return get_or_set_cache(key, lambda: drill_dimensions(chart, operations), force=force)
 
 
 def drill_data(

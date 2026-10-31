@@ -202,7 +202,7 @@ def chart_answer(
         # them for the same reason: the menu shows "View rows", and the server
         # decides who may have them
         "drill": {
-            "dimensions": stored_drill_dimensions(doc, chart["modified"]) if reads_rows else [],
+            "dimensions": stored_drill_dimensions(doc, chart["modified"], force) if reads_rows else [],
             "can_rows": reads_rows,
         },
         "can_filter": can_filter_card(doc.name),
