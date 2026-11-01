@@ -34,7 +34,7 @@ import {
 
 const Settings = defineAsyncComponent(() => import('../settings/Settings.vue'))
 
-const RELEASE_NOTES = 'https://github.com/frappe/insights/releases'
+const RELEASE_NOTES = 'https://github.com/frappe/insights/releases/tag/v3.50.0'
 
 const props = defineProps<{ step: Step }>()
 const emit = defineEmits<{ close: [] }>()
