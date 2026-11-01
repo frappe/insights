@@ -96,10 +96,9 @@ def _two_reading_config():
     return config
 
 
-def _against_measure(column, name):
-    """A comparison reading its number off a measure of its own."""
+def _target_measure(column, name):
+    """A target reading its number off a measure of its own."""
     return {
-        "source": "measure",
         "measure": {
             "aggregation": "sum",
             "column_name": column,
@@ -583,26 +582,26 @@ class TestChartDerivation(unittest.TestCase):
 
     # @feature charts.number-readings
     def test_a_name_naming_two_measures_is_reported(self):
-        """Every reading, target and comparison is read back off one result by
-        name, so two measures under one name would hand one card a number the
-        other one asked for."""
+        """Every reading and target is read back off one result by name, so two
+        measures under one name would hand one card a number the other one asked
+        for."""
         config = _two_reading_config()
         config["number_column_options"] = [
-            {"comparison": _against_measure("base_net_amount", "Last Month")},
-            {"comparison": _against_measure("line_cogs", "Last Month")},
+            {"target": _target_measure("base_net_amount", "Budget")},
+            {"target": _target_measure("line_cogs", "Budget")},
         ]
         errors = config_errors("Number", "sales-invoice-lines", config)
         self.assertTrue(errors)
-        self.assertIn("Last Month", errors[0])
+        self.assertIn("Budget", errors[0])
 
-        config["number_column_options"][1]["comparison"]["measure"]["measure_name"] = "COGS Last Month"
+        config["number_column_options"][1]["target"]["measure"]["measure_name"] = "COGS Budget"
         self.assertEqual(config_errors("Number", "sales-invoice-lines", config), [])
 
-    # @feature charts.number-comparison
-    def test_a_comparison_cannot_rename_a_readings_fold_either(self):
+    # @feature charts.number-target
+    def test_a_target_cannot_rename_a_readings_fold_either(self):
         config = _two_reading_config()
         config["number_column_options"] = [
-            {"comparison": _against_measure("line_cogs", "Revenue MTD")},
+            {"target": _target_measure("line_cogs", "Revenue MTD")},
         ]
         self.assertTrue(config_errors("Number", "sales-invoice-lines", config))
 
@@ -611,15 +610,15 @@ class TestChartDerivation(unittest.TestCase):
         """One name naming one fold twice is one column, however many cards read it."""
         config = _two_reading_config()
         config["number_column_options"] = [
-            {"comparison": _against_measure("base_net_amount", "Last Month")},
-            {"comparison": _against_measure("base_net_amount", "Last Month")},
+            {"target": _target_measure("base_net_amount", "Budget")},
+            {"target": _target_measure("base_net_amount", "Budget")},
         ]
         self.assertEqual(config_errors("Number", "sales-invoice-lines", config), [])
 
         operations = derive_operations("Number", "sales-invoice-lines", config)
         summarize = next(op for op in operations if op["type"] == "summarize")
         names = [m["measure_name"] for m in summarize["measures"]]
-        self.assertEqual(names, ["Revenue MTD", "COGS MTD", "Last Month"])
+        self.assertEqual(names, ["Revenue MTD", "COGS MTD", "Budget"])
 
     # @feature charts.number-readings
     def test_a_card_with_no_slice_reads_one_number_over_the_whole_result(self):
