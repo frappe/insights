@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Button, LoadingIndicator } from 'frappe-ui'
+import { LoadingIndicator, Tooltip } from 'frappe-ui'
+import { RefreshCw } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import type { PaginationState } from '../../composables/usePagination'
 import { __ } from '../../translation'
-import { knownRowCount, rowCountText } from './status'
+import { knownRowCount, rangeAroundCount, rowCountText } from './status'
 
 // What the result is, in one line: how many rows, what the run cost, and when.
 // Every editor used to write its own copy of the cache line. This is the one.
@@ -33,6 +34,9 @@ const settledCount = computed(() =>
 		fetchable: Boolean(props.onFetchCount),
 		paging: props.paging,
 	}),
+)
+const unknownCountRange = computed(() =>
+	props.paging ? rangeAroundCount(props.paging.from.value, props.paging.to.value) : ['', ''],
 )
 
 /**
@@ -96,24 +100,19 @@ async function fetchCount() {
 					}}
 				</span>
 				<template v-else>
-					<span>
-						{{
-							__(
-								'Showing {0}–{1}',
-								String(props.paging.from.value),
-								String(props.paging.to.value),
-							)
-						}}
-					</span>
-					<span class="text-ink-gray-4">·</span>
-					<Button
-						class="-my-1"
-						variant="ghost"
-						size="sm"
-						:label="__('Load Count')"
-						:loading="fetchingCount"
-						@click="fetchCount"
+					<span v-if="unknownCountRange[0]">{{ unknownCountRange[0] }}</span>
+					<LoadingIndicator
+						v-if="fetchingCount"
+						class="inline h-3.5 w-3.5 text-ink-gray-4"
 					/>
+					<Tooltip v-else :text="__('Load Count')">
+						<RefreshCw
+							class="inline-flex h-3.5 w-3.5 cursor-pointer transition-all hover:text-ink-gray-7"
+							stroke-width="1.5"
+							@click="fetchCount"
+						/>
+					</Tooltip>
+					<span v-if="unknownCountRange[1]">{{ unknownCountRange[1] }}</span>
 				</template>
 			</template>
 			<span v-else>{{ __('Showing 0 rows') }}</span>
