@@ -38,6 +38,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
     get_memory_limit,
     open_local_duckdb,
 )
+from insights.insights.doctype.insights_data_source_v3.connectors.rest_api import RestAPIClient
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WAREHOUSE_DB_NAME,
     WarehouseTable,
@@ -48,7 +49,10 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     import_job_id,
 )
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import execute_ibis_query
-from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import after_request
+from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
+    DataSourceConnectionError,
+    after_request,
+)
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
@@ -559,6 +563,40 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
         # the build does not reword it as a broken operation
         self.assertNotIn("Operation", str(busy.exception))
         self.assertNotIn("query_failed", [call.args[0] for call in sender.call_args_list])
+
+    # @feature data-store.query-slots
+    def test_a_busy_answer_while_connecting_to_a_source_stays_a_busy_answer(self):
+        with patch.object(RestAPIClient, "test_connection"):
+            source = frappe.get_doc(
+                {
+                    "doctype": "Insights Data Source v3",
+                    "title": "Busy REST API Source",
+                    "type": "REST API",
+                    "api_base_url": "https://api.example.com",
+                    "schema": "busy_rest_api_source",
+                }
+            ).insert()
+        self.addCleanup(frappe.delete_doc, source.doctype, source.name, force=True)
+        pool = data_store_pool()
+        for user in ("one@example.com", "two@example.com"):
+            with patch.object(frappe.local, "session", frappe._dict(user=user)):
+                self.assertTrue(pool.acquire())
+        error_logs = frappe.db.count("Error Log")
+
+        # its tables live in the data store, so it connects with a data store slot
+        with patch.object(data_warehouse, "SLOT_WAIT", 0), self.request():
+            try:
+                source._get_ibis_backend()
+                self.fail("the source connected with every slot held")
+            except frappe.ServiceUnavailableError as e:
+                self.assertNotIsInstance(e, DataSourceConnectionError)
+                # as Frappe answers the request
+                response = frappe.app.handle_exception(e)
+            retry_after = frappe.local.response_headers.get("Retry-After")
+
+        self.assertEqual((response.status_code, retry_after), (503, "2"))
+        self.assertEqual(frappe.db.count("Error Log"), error_logs)
+        self.assertNotIn(source.name, insights.db_connections)
 
     # @feature data-store.query-slots
     def test_a_gunicorn_worker_holds_only_its_split_of_the_slots(self):
