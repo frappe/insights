@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { SidebarCard } from 'frappe-ui'
-import { Sparkle } from 'lucide-vue-next'
+import { CircleArrowUp } from 'lucide-vue-next'
 import { computed, watch } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
@@ -39,7 +39,9 @@ const percent = computed(() => {
 
 <template>
 	<SidebarCard v-if="show">
-		<template #prefix><Sparkle class="size-4 text-ink-gray-8" stroke-width="1.5" /></template>
+		<template #prefix>
+			<CircleArrowUp class="size-4 text-ink-gray-8" stroke-width="1.5" />
+		</template>
 		<template #title>{{ __('Insights v3.50') }}</template>
 		<template #description>
 			<span class="flex flex-col gap-1.5">
