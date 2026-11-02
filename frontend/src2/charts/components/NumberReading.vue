@@ -102,7 +102,7 @@ const readingLength = computed(() => {
 			:class="
 				cardless
 					? '-mt-1.5 [&_.text-3xl-semibold]:text-xl-semibold [&_.text-sm]:text-p-base [&_.text-sm-medium]:text-p-base-medium'
-					: 'h-full !py-2 [&_.text-3xl-semibold]:[font-size:min(1.5rem,calc((100cqi_-_2rem)_/_(var(--reading-length)_*_0.62)))]'
+					: 'h-full !py-2 [&_.text-3xl-semibold]:[font-size:min(1.25rem,calc((100cqi_-_2rem)_/_(var(--reading-length)_*_0.62)))]'
 			"
 			:title="cardless ? '' : reading.title"
 			:loading="props.loading && !card.missing"
