@@ -92,7 +92,7 @@ class TestPostgresReadReplica(UnitTestCase):
         with self.assertRaisesRegex(frappe.ValidationError, "more than one column named name"):
             db._get_schema_using_query("SELECT a.name, b.name FROM a, b")
 
-    def test_a_connection_string_source_reads_columns_the_same_way(self):
+    def test_a_connection_string_source_connects_with_its_decoded_parts_on_the_same_backend(self):
         source = frappe._dict(connection_string="postgresql://reader:p%40ss@replica.internal:5433/shop")
 
         with patch.object(InsightsPostgresBackend, "do_connect") as do_connect:
