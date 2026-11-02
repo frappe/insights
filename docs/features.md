@@ -70,6 +70,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | query.native-sql-error-text | SQL that does not parse is refused with the parser's message as plain text. |
 | query.native-sql-one-statement | Native SQL is one statement; more than one statement, a table in a schema the data source does not read, a table function or a function that runs a query is refused. |
 | query.native-sql-schema-qualified | Native SQL on a PostgreSQL data source names a table as `schema.table` for any schema the data source reads. |
+| query.native-sql-read-only-source | Native SQL runs on a read-only PostgreSQL server, such as a hot-standby replica, and writes nothing to it. |
 | query.native-sql-format | A user reformats the SQL text. |
 | query.native-sql-schema-explorer | A user browses the source's tables and columns and inserts a name into the SQL. |
 | query.native-sql-autocomplete | The SQL editor autocompletes table and column names. |
