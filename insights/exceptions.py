@@ -26,3 +26,7 @@ class QueryTimeout(frappe.ValidationError):
 
 class ExpressionSyntaxError(frappe.ValidationError):
     """An expression or a script the engine cannot read."""
+
+
+class QueryCancelled(frappe.ValidationError):
+    """The reader left before the run ended, and asked that it stop."""

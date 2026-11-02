@@ -31,6 +31,7 @@ from frappe import _
 from frappe.utils import add_to_date, get_datetime, get_time
 
 from insights import user_permissions
+from insights.cache_utils import get_or_set_cache, make_digest
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     ORDERED_TYPES,
     adjacent_bucket,
@@ -46,7 +47,7 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
 )
 from insights.insights.query_builders.sql_functions import read_on, resolve_timespan
 from insights.not_permitted import refuse
-from insights.permission_user import runs_as
+from insights.permission_user import permission_user_for, runs_as
 from insights.permissions import can_read_rows
 
 ROWS = "rows"
@@ -185,6 +186,28 @@ def drill_dimensions(chart, operations: list[dict] | None = None) -> list[dict]:
         return _dimensions_on(_surface(chart, operations, index))
 
 
+def stored_drill_dimensions(chart, modified: str | None, force: bool = False) -> list[dict]:
+    """`drill_dimensions` of a stored chart, kept until it or a query it reads changes.
+
+    Finding them builds the whole pipeline again, on every card load, for a menu
+    that changes only on an edit. `modified` is the chart's `last_modified`, as
+    the card received it. The operations are in the key because a dashboard can
+    lend a card its Period. The user the build runs as and their roles are,
+    because the columns a reader may read (permlevel) and what a script query
+    returns depend on them.
+
+    A column a re-import adds or drops leaves `modified` alone, so a forced
+    load, the reader's Refresh, builds the menu again. Anything else that
+    changes the columns shows when the entry expires, after ten minutes. Until
+    then a stale menu can offer a column the reader lost, and `drill_data`
+    refuses it: it checks the column against the surface it builds.
+    """
+    operations = chart.get_operations()
+    user = permission_user_for(chart)
+    key = make_digest("drill_dimensions", chart.name, modified, user, frappe.get_roles(user), operations)
+    return get_or_set_cache(key, lambda: drill_dimensions(chart, operations), force=force)
+
+
 def drill_data(
     chart,
     drill_stack: list,
@@ -239,7 +262,9 @@ def drill_data(
         # the dialog keeps a breakdown level while it is open, so back and
         # breadcrumb clicks do not fetch it again. A rows level is fetched again
         # on every sort, find and page
-        result = query.execute(adhoc_filters=adhoc_filters, page=page, page_size=page_size, force=True)
+        result = query.execute(
+            adhoc_filters=adhoc_filters, page=page, page_size=page_size, force=True, include_sql=False
+        )
         # read the scope before `count_rows` builds the query again. It is the
         # session user's scope, as in `InsightsChartv3.fetch`
         scope = user_permissions.scope(frappe.session.user)
@@ -785,7 +810,7 @@ def _span_seconds(chart, segment: list[dict], column: dict, adhoc_filters) -> fl
     query = chart.get_query(
         operations=[*segment, {"type": "summarize", "measures": measures, "dimensions": []}]
     )
-    rows = query.execute(adhoc_filters=adhoc_filters, page_size=1, force=True)["rows"]
+    rows = query.execute(adhoc_filters=adhoc_filters, page_size=1, force=True, include_sql=False)["rows"]
     ends = rows[0] if rows else {}
 
     start, end = ends.get(SPAN_START), ends.get(SPAN_END)
@@ -940,7 +965,7 @@ def _surface_holds(chart, sliced: list[dict], column: str, value) -> bool:
         return False
 
     query = chart.get_query(operations=[*sliced, _filter_group([_rule(column, "=", value)])])
-    return bool(query.execute(page_size=1)["rows"])
+    return bool(query.execute(page_size=1, include_sql=False)["rows"])
 
 
 def _bucket(on_surface: dict, dimension: dict | None, grains: dict, value) -> tuple | None:

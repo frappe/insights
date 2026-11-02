@@ -1,6 +1,9 @@
+import math
 import os
 import shutil
+import socket
 import tempfile
+import threading
 import time
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager, suppress
@@ -14,8 +17,9 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from duckdb import CatalogException, DependencyException, OutOfMemoryException
+from frappe.concurrency_limiter import web_tier_settings
 from frappe.query_builder.functions import IfNull, Max, Min
-from frappe.utils import add_days, get_datetime, get_files_path, now, now_datetime
+from frappe.utils import add_days, cint, get_datetime, get_files_path, now, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
@@ -29,12 +33,14 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
     IMPORT_WRITE_LOCK_TIMEOUT,
     MEMORY_LIMIT_CONFIG_KEY,
     WRITE_LOCK_TIMEOUT,
+    get_threads,
     local_duckdb_write_connection,
     local_duckdb_write_lock,
     open_local_duckdb,
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import read_pyarrow_batches
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
+from insights.resources import ResourcePool, cpu_budget, server_busy
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -47,6 +53,7 @@ CLEANUP_LOCK_TIMEOUT = 15 * 60
 # Rebuilding the file is only worth the disk and time above these thresholds.
 COMPACT_MIN_FILE_SIZE = 100 * 1024 * 1024
 COMPACT_MIN_FREE_RATIO = 0.2
+STALE_SPILL_FOLDER_SECONDS = 24 * 60 * 60
 # ibis's `create_table(overwrite=True)` fills a table of this name before
 # renaming it over the target. An import that died in between, before imports
 # committed in one transaction, left it behind.
@@ -82,6 +89,140 @@ def quote_ident(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
 
 
+# A request that reads the data store holds a slot from the moment it opens the
+# store until it ends, so the Python that builds the query and shapes its rows
+# is inside the bound, not only DuckDB. A full pool is waited on briefly, then
+# answered with a 503 the frontend retries; a waiting request holds a web
+# thread, so few may wait.
+SLOTS_CONFIG_KEY = "insights_data_store_slots"
+MAX_SLOTS = 16
+SLOT_WAIT = 3
+SLOT_RETRY_AFTER = 2
+# a data store query must end before the web tier kills its request
+WEB_TIMEOUT_SHARE = 0.75
+
+
+class ProcessSlot:
+    """The data store slots one process may hold. DuckDB's memory limit and
+    threads are per process and sized for the slots it may hold; the pool alone
+    would let one gthread worker take every slot, and its queries would share
+    one query's memory.
+
+    A hold ends with its pool lease, so a request whose release never ran does
+    not lock its process out for good."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._holders = {}
+
+    def acquire(self, capacity: int, hold: float) -> object | None:
+        with self._lock:
+            now = time.monotonic()
+            self._holders = {h: until for h, until in self._holders.items() if until > now}
+            if len(self._holders) >= capacity:
+                return None
+            holder = object()
+            self._holders[holder] = now + hold
+            return holder
+
+    def release(self, holder: object):
+        with self._lock:
+            self._holders.pop(holder, None)
+
+
+_process_slot = ProcessSlot()
+
+
+def data_store_slots() -> int:
+    """How many data store queries this server runs at once: the cores left after
+    a quarter is kept for everything else, at `get_threads` per query."""
+    if slots := cint(frappe.conf.get(SLOTS_CONFIG_KEY)):
+        return slots
+    cores = max(1, int(cpu_budget()))
+    reserve = max(1, cores // 4)
+    return max(2, min((cores - reserve) // get_threads(), MAX_SLOTS))
+
+
+def slots_per_process() -> int:
+    """The slots one process may hold: an even split among gunicorn's workers.
+    Outside gunicorn one process serves every request, so it may hold them all."""
+    slots = data_store_slots()
+    if not (web_tier := web_tier_settings()):
+        return slots
+    return math.ceil(slots / web_tier.workers)
+
+
+def data_store_pool() -> ResourcePool:
+    slots = data_store_slots()
+    web_tier = web_tier_settings()
+    timeout = web_tier.timeout if web_tier else None
+    return ResourcePool(
+        "insights:data_store",
+        slots,
+        # one user, API client or site cannot take every slot
+        per_site=math.ceil(slots / 2),
+        per_user=math.ceil(slots / 2),
+        max_waiters=max(1, web_tier.workers * web_tier.threads // 4) if web_tier else slots,
+        # a request lives no longer than the web tier lets it
+        lease_seconds=timeout + 5 if timeout else get_data_store_time_limit() + 60,
+    )
+
+
+def take_data_store_slot():
+    # background jobs and the CLI do not hold a web thread, and have no one to
+    # answer busy to
+    if getattr(frappe.local, "request", None) is None:
+        return
+    if getattr(frappe.local, "insights_data_store_slot", None):
+        return
+    pool = data_store_pool()
+    # not waited on: a waiting thread is not in the pool's waiting line, which
+    # bounds how many web threads wait. The client retries the busy answer
+    if not (process_slot := _process_slot.acquire(slots_per_process(), hold=pool.lease_seconds)):
+        raise server_busy(SLOT_RETRY_AFTER)
+    lease = pool.acquire(wait=SLOT_WAIT)
+    if not lease:
+        _process_slot.release(process_slot)
+        raise server_busy(SLOT_RETRY_AFTER)
+    started = getattr(frappe.local, "insights_data_store_started", None) or time.monotonic()
+    frappe.local.insights_data_store_slot = (pool, lease, started, process_slot)
+
+
+def release_data_store_slot():
+    frappe.local.insights_data_store_started = None
+    if slot := getattr(frappe.local, "insights_data_store_slot", None):
+        frappe.local.insights_data_store_slot = None
+        pool, lease, _started, process_slot = slot
+        try:
+            pool.release(lease)
+        finally:
+            _process_slot.release(process_slot)
+
+
+def yield_data_store_slot():
+    """Give the slot back while the request waits on another request's run. A
+    slot it takes again keeps the request's start, so its time limit does not
+    start over."""
+    if slot := getattr(frappe.local, "insights_data_store_slot", None):
+        release_data_store_slot()
+        frappe.local.insights_data_store_started = slot[2]
+
+
+def get_data_store_time_limit() -> int:
+    """Seconds a data store query may run: Max Execution Time, as for a live
+    query, but never so long that the web tier kills the worker first. A request
+    that runs several queries shares the web tier's time among them."""
+    from insights.insights.doctype.insights_settings.insights_settings import get_max_execution_time
+
+    limit = get_max_execution_time()
+    if (web_tier := web_tier_settings()) and web_tier.timeout:
+        left = web_tier.timeout * WEB_TIMEOUT_SHARE
+        if slot := getattr(frappe.local, "insights_data_store_slot", None):
+            left -= time.monotonic() - slot[2]
+        limit = min(limit, int(left))
+    return max(1, limit)
+
+
 class Warehouse:
     def __init__(self):
         pass
@@ -115,6 +256,7 @@ class Warehouse:
     @property
     def db(self) -> DuckDBBackend:
         if WAREHOUSE_DB_NAME not in insights.db_connections:
+            take_data_store_slot()
             ddb = self.get_connection(read_only=True)
             insights.db_connections[WAREHOUSE_DB_NAME] = ddb
 
@@ -468,6 +610,9 @@ class WarehouseTable:
                     ),
                     TableNotStored,
                 )
+        except frappe.ServiceUnavailableError:
+            # every data store slot is taken: the client retries a 503
+            raise
         except Exception as e:
             frappe.log_error(e)
             frappe.throw("Error accessing the data warehouse. Please try again.")
@@ -1096,6 +1241,7 @@ def cleanup_data_store():
 
     dropped, kept = drop_orphan_warehouse_tables()
     compacted = compact_warehouse()
+    spill_folders = drop_stale_spill_folders()
 
     summary = {
         "tables_pruned": len(pruned),
@@ -1103,9 +1249,42 @@ def cleanup_data_store():
         "orphans_kept": len(kept),
         "size_before": compacted[0] if compacted else None,
         "size_after": compacted[1] if compacted else None,
+        "spill_folders_dropped": spill_folders,
     }
     logger.info(f"Data store cleanup: {summary}")
     return summary
+
+
+def drop_stale_spill_folders() -> int:
+    """Drop the spill folders of processes that stopped without closing DuckDB,
+    such as a worker the OOM killer took. A folder a query spills into is
+    written to, so one untouched for a day is not in use, unless its process on
+    this host still runs: DuckDB keeps an open store's folder and does not make
+    it again."""
+    parent = Path(f"{insights.warehouse.get_db_path()}.tmp")
+    if not parent.is_dir():
+        return 0
+    cutoff = time.time() - STALE_SPILL_FOLDER_SECONDS
+    dropped = 0
+    for folder in parent.iterdir():
+        with suppress(OSError):
+            if folder.is_dir() and folder.stat().st_mtime < cutoff and not _runs_here(folder.name):
+                shutil.rmtree(folder, ignore_errors=True)
+                dropped += 1
+    return dropped
+
+
+def _runs_here(spill_folder: str) -> bool:
+    host, _, pid = spill_folder.rpartition("-")
+    if host != socket.gethostname() or not pid.isdigit():
+        return False
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False  # nosemgrep - no such process is the answer: it stopped
+    except PermissionError:
+        return True  # nosemgrep - the process exists, under another user
+    return True
 
 
 def prune_unused_tables() -> list[str]:

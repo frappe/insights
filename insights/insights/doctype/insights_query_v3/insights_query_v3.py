@@ -17,7 +17,7 @@ from ibis import _
 
 from insights import standard
 from insights.decorators import insights_whitelist
-from insights.exceptions import QueryRefused, UnknownColumn
+from insights.exceptions import QueryCancelled, QueryRefused, UnknownColumn
 from insights.insights.doctype.insights_data_source_v3.ibis.functions import _apply_granularity
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     CircularQueryReferenceError,
@@ -268,6 +268,11 @@ class InsightsQueryv3(Document):
         """
         from insights.telemetry import caller, capture, error_kind
 
+        if isinstance(exc, frappe.ServiceUnavailableError | QueryCancelled):
+            # the server was too busy to start the run, and the client retries
+            # it, or the reader left and asked it to stop
+            return
+
         with suppress(Exception):  # nosemgrep - telemetry never fails the run it reports on
             capture(
                 "query_failed",
@@ -287,6 +292,7 @@ class InsightsQueryv3(Document):
         page: int = 1,
         page_size: int = 100,
         import_if_not_exists: bool = True,
+        include_sql: bool = True,
     ):
         """Run this query and answer with its rows.
 
@@ -297,10 +303,20 @@ class InsightsQueryv3(Document):
         A Data Store run of a table not stored yet reads an empty table and
         queues its import. Without `import_if_not_exists` it raises
         `TableNotStored` instead.
+
+        `sql` is the compiled query the builder shows. A deep pipeline takes as
+        long to compile as to run, so a caller that never shows it passes
+        `include_sql=False` and the answer has no `sql`.
         """
         try:
             return self._run(
-                active_operation_idx, adhoc_filters, force, page, page_size, import_if_not_exists
+                active_operation_idx,
+                adhoc_filters,
+                force,
+                page,
+                page_size,
+                import_if_not_exists,
+                include_sql,
             )
         except Exception as e:
             self.capture_failure(e)
@@ -314,6 +330,7 @@ class InsightsQueryv3(Document):
         page: int = 1,
         page_size: int = 100,
         import_if_not_exists: bool = True,
+        include_sql: bool = True,
     ):
         # a Data Store read a writer refuses is refused here, when the build opens the store
         with (
@@ -350,7 +367,7 @@ class InsightsQueryv3(Document):
                     break
 
         return {
-            "sql": ibis.to_sql(ibis_query),
+            **({"sql": ibis.to_sql(ibis_query)} if include_sql else {}),
             "columns": columns,
             "rows": results,
             "currency_symbols": get_currencies(codes),

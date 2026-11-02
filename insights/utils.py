@@ -144,11 +144,13 @@ def log_failed_execution(sql=None, query_name=None, data_store=False, cache=None
 
     The log's table is MyISAM, so the row outlives the rollback of the request
     that failed. A run the concurrency limit turned away never ran, and the
-    client retries it, so it is not kept.
+    client retries it, so it is not kept. Nor is a run its reader stopped.
     """
+    from insights.exceptions import QueryCancelled
+
     try:
         yield
-    except frappe.ServiceUnavailableError:
+    except (frappe.ServiceUnavailableError, QueryCancelled):
         raise
     except Exception as e:
         with suppress(Exception):  # nosemgrep - the run's own error is the one to raise

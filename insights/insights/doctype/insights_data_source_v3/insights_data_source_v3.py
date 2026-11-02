@@ -345,6 +345,10 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.is_frappe_db:
             return get_frappedb_connection(self)
         if self.type == "REST API":
+            from insights.insights.doctype.insights_data_source_v3.data_warehouse import take_data_store_slot
+
+            # its tables live in the data store, and are read as data store tables are
+            take_data_store_slot()
             return insights.warehouse.get_connection(self.schema)
         if self.database_type == "MariaDB":
             return get_mariadb_connection(self)
@@ -587,6 +591,8 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
 
 def after_request():
+    from insights.insights.doctype.insights_data_source_v3.data_warehouse import release_data_store_slot
+
     closed = {}
     for name, db in insights.db_connections.items():
         try:
@@ -597,6 +603,9 @@ def after_request():
 
     for name in closed:
         del insights.db_connections[name]
+
+    # after the store is closed, so the next holder does not meet this one's memory
+    release_data_store_slot()
 
 
 @contextmanager
