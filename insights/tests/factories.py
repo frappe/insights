@@ -186,7 +186,9 @@ def cleanup_workbook_flow_fixtures():
 
 
 def skip_without_uuid_type():
-    # MariaDB has a `uuid` type from 10.7; CI's server tests run on 10.6
+    # frappe names by uuid from v16, and MariaDB has a `uuid` type from 10.7; CI's server tests run on 10.6
+    if int(frappe.__version__.split(".")[0]) < 16:
+        raise unittest.SkipTest(f"needs frappe 16 or later for a uuid name, found {frappe.__version__}")
     version = frappe.db.sql("select version()")[0][0].split("-")[0]
     if frappe.db.db_type != "mariadb" or tuple(map(int, version.split(".")[:2])) < (10, 7):
         raise unittest.SkipTest(f"needs MariaDB 10.7 or later for a uuid name, found {version}")
