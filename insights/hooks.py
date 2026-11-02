@@ -1,5 +1,7 @@
 import frappe
 
+from insights import desk_islands
+
 app_name = "insights"
 app_title = "Insights"
 app_publisher = "Frappe Technologies Pvt. Ltd."
@@ -35,9 +37,6 @@ add_to_apps_screen = [
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/insights/css/insights.css"
-
-# a desk page with an island needs the app's mount path to build links
-extend_bootinfo = "insights.desk.boot_app_path"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/insights/css/insights.css"
@@ -88,7 +87,6 @@ extend_bootinfo = "insights.desk.boot_app_path"
 # Installation
 # ------------
 
-# before_install = "insights.install.before_install"
 after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
 after_app_install = "insights.migrate.after_app_install"
@@ -154,17 +152,13 @@ has_permission = {
 # ---------------
 # Hook on document methods and events
 
+# an upgrade item names what it is about; deleting that must not wait on it
+ignore_links_on_delete = ["Insights Upgrade Item"]
+
 doc_events = {
     "User": {
         "on_change": "insights.insights.doctype.insights_team.insights_team.update_admin_team",
-    },
-    # a desk document that links to Insights content renders through an
-    # Insights island — see insights/desk.py
-    "Dashboard": {
-        "onload": "insights.desk.claim",
-    },
-    "Dashboard Chart": {
-        "onload": "insights.desk.claim",
+        "on_trash": "insights.insights.doctype.insights_team.insights_team.remove_deleted_user",
     },
     "DocShare": {
         "validate": "insights.permissions.validate_member_share",
@@ -175,6 +169,40 @@ doc_events = {
         "on_trash": "insights.permissions.refuse_member_row_alone",
     },
 }
+
+# a desk document that links to Insights content renders through an Insights
+# island — see insights/desk.py
+if desk_islands():
+    # a desk page with an island needs the app's mount path to build links
+    extend_bootinfo = "insights.desk.boot_app_path"
+
+    # a desk form that shows an Insights chart hides desk's own definition
+    doctype_js = {
+        "Dashboard Chart": ["public/js/desk_chart_form.js", "public/js/dashboard_chart.js"],
+        "Number Card": ["public/js/desk_chart_form.js", "public/js/number_card.js"],
+    }
+
+    permission_query_conditions |= {
+        "Dashboard Chart": "insights.desk.get_permission_query_conditions",
+        "Number Card": "insights.desk.get_permission_query_conditions",
+    }
+    has_permission |= {
+        "Dashboard Chart": "insights.desk.has_permission",
+        "Number Card": "insights.desk.has_permission",
+    }
+    doc_events |= {
+        "Dashboard": {
+            "onload": "insights.desk.claim",
+        },
+        "Dashboard Chart": {
+            "onload": "insights.desk.claim",
+            "before_validate": "insights.desk.fill_desk_definition",
+        },
+        "Number Card": {
+            "onload": "insights.desk.claim",
+            "before_validate": "insights.desk.fill_desk_definition",
+        },
+    }
 
 # Scheduled Tasks
 # ---------------

@@ -5,6 +5,8 @@ import TabbedSidebarLayout, { Tab, TabGroup } from '../components/TabbedSidebarL
 import { __ } from '../translation'
 
 const showDialog = defineModel({ required: true, default: false })
+// the label of the tab to open on
+const props = defineProps<{ tab?: string }>()
 const tabGroups: TabGroup[] = [
 	{
 		groupLabel: __('Account'),
@@ -47,7 +49,8 @@ const tabGroups: TabGroup[] = [
 		],
 	},
 ]
-const activeTab = shallowRef<Tab>(tabGroups[0].tabs[0])
+const tabs = tabGroups.flatMap((group) => group.tabs)
+const activeTab = shallowRef<Tab>(tabs.find((tab) => tab.label === props.tab) ?? tabs[0])
 </script>
 
 <template>

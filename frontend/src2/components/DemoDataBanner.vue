@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
-import { call, toast } from 'frappe-ui'
 import { Sparkles } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import session from '../session'
 import { __ } from '../translation'
+import { setupDemoData as runDemoSetup } from './demo_data'
 
 const dismissed = useStorage('insights:demo-banner-dismissed', false)
 const loading = ref(false)
@@ -13,24 +13,13 @@ const show = computed(
 		session.initialized &&
 		!dismissed.value &&
 		session.user.is_admin &&
-		!session.user.has_demo_data,
+		!session.user.has_demo_data &&
+		!session.user.has_workbooks,
 )
 
 async function setupDemoData() {
 	loading.value = true
-	try {
-		await call('insights.setup.setup_wizard.setup_demo_data')
-		session.user.has_demo_data = true
-		toast.success(__('Demo Data Ready'), {
-			description: __('Sample data with workbook has been set up successfully'),
-		})
-	} catch {
-		toast.error(__('Setup Failed'), {
-			description: __('Failed to setup demo data'),
-		})
-	} finally {
-		loading.value = false
-	}
+	await runDemoSetup().finally(() => (loading.value = false))
 }
 
 function dismiss() {

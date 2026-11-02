@@ -42,10 +42,9 @@ test.describe('permissions', () => {
 		await viewerPage.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/query/${query.name}`)
 		await expect(viewerPage.getByRole('link', { name: query.title })).toBeVisible()
 
-		// locator: the read-only marker is a bare lucide icon in the navbar. It
-		// has no role, no label and no text, so the class lucide stamps on
-		// every icon it renders is the only name this element has.
-		const readOnlyMarker = viewerPage.locator('.lucide-shield-alert')
+		const readOnlyMarker = viewerPage.getByRole('img', {
+			name: 'You have read-only access to this workbook',
+		})
 		await expect(readOnlyMarker).toBeVisible()
 		await readOnlyMarker.hover()
 		// The bubble is rendered twice: the copy a reader sees, and an aria-hidden

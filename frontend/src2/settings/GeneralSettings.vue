@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { ref } from 'vue'
 import DatePickerControl from '../query/components/DatePickerControl.vue'
+import { setupDemoData as runDemoSetup } from '../components/demo_data'
 import session from '../session'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
@@ -14,19 +14,7 @@ const demoLoading = ref(false)
 
 async function setupDemoData() {
 	demoLoading.value = true
-	try {
-		await call('insights.setup.setup_wizard.setup_demo_data')
-		session.user.has_demo_data = true
-		toast.success(__('Demo Data Ready'), {
-			description: __('Sample data and workbook have been set up successfully'),
-		})
-	} catch {
-		toast.error(__('Setup Failed'), {
-			description: __('Failed to setup demo data'),
-		})
-	} finally {
-		demoLoading.value = false
-	}
+	await runDemoSetup().finally(() => (demoLoading.value = false))
 }
 </script>
 

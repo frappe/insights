@@ -14,12 +14,12 @@ from urllib.parse import urlparse
 import frappe
 import ibis
 from duckdb import ConnectionException, InterruptException, IOException
-from frappe.concurrency_limiter import web_tier_settings
 from frappe.utils import get_files_path
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
 
 from insights.exceptions import QueryTimeout
+from insights.insights.doctype.insights_data_source_v3.web_tier import web_tier_settings
 from insights.resources import cpu_budget, memory_budget
 
 from .compilers import StarExceptDropColumns

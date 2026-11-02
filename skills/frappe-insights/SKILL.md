@@ -1,6 +1,6 @@
 ---
 name: frappe-insights
-description: Create, read, update and delete Frappe Insights workbooks — queries, charts and dashboards — on a Frappe site. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted, when the site runs Insights 4 (develop).
+description: Create, read, update and delete Frappe Insights workbooks — queries, charts and dashboards — on a Frappe site. Use when the user asks for an Insights workbook, query, chart or dashboard, or wants an existing one changed, explained or deleted, when the site runs Insights v3.50 or later.
 ---
 
 # Frappe Insights
@@ -9,7 +9,7 @@ A workbook is a set of documents: `Insights Workbook`, and inside it `Insights Q
 
 With a shell and `frappectl`, read `reference/cli.md` first. `examples/build_workbook.py` in this skill's directory writes and verifies a workbook in one script.
 
-This skill needs nothing installed on the site beyond Insights. It supports Insights 4 (develop) sites only. Section 1 checks the version.
+This skill needs nothing installed on the site beyond Insights. It supports Insights v3.50 and later only. Section 1 checks the version.
 
 ## Before you start
 
@@ -58,7 +58,7 @@ Call, in order:
 
 ### Read the site's version too, not only its data
 
-Read `get_app_version` before anything else. It returns a string such as `"4.0.0-dev"` or `"3.14.1"`. **If the major version is below 4, stop.** Tell the user this skill supports only Insights develop sites. An older site accepts payloads it does not understand and reports no error: it ignores unknown chart config keys, `import_workbook` returns only a name, and `json_value` is missing. The workbook then looks built and is wrong.
+Read `get_app_version` before anything else. It returns a string such as `"3.50.0-dev"` or `"3.14.1"`. **If its major and minor version are below v3.50, stop.** Tell the user this skill supports only Insights v3.50 and later. An older site accepts payloads it does not understand and reports no error: it ignores unknown chart config keys, `import_workbook` returns only a name, and `json_value` is missing. The workbook then looks built and is wrong.
 
 A develop site can still be older than this file, so an endpoint this file names may not be there. Before you depend on one, call it once with no arguments, such as `insights.api.ai.lineage.describe_query`.
 
@@ -182,7 +182,7 @@ Without the endpoint you get the same documents, in more calls, with no snippet 
 
 **For a query you found, read its lineage.** A newer site answers both directions in one call: `insights.api.ai.lineage.describe_query` with `{"query": <name>}`.
 
-`upstream` holds every query it reads, through every hop, and the tables at the end, each with `stored`, `row_limit` and `sync_from`. `downstream` holds the queries built on it, the charts on those, the dashboards that show those charts, and the `filter_links` that name one of those queries. It is permission filtered, so a query you cannot read answers "not found". `downstream` comes from an index a background job rebuilds after each save, so a query saved a moment ago may be missing from it. `upstream` is read from the operations and is always current. Without the endpoint, read each query in the chain and run the `like` searches above for its name.
+`upstream` holds every query it reads, through every hop, and the tables at the end, each with `stored`, `row_limit` and `sync_from`. `downstream` holds the queries built on it, the charts on those, the dashboards that show those charts, and the `filter_links` that name one of those queries. It is permission filtered, so a query you cannot read answers "not found". `downstream` comes from an index that each save of a query rewrites. `upstream` is read from the operations. Without the endpoint, read each query in the chain and run the `like` searches above for its name.
 
 **Then search the JSON.** It reaches column names, expression text, filter values and measure names. A definition lives there even when no title says so:
 
@@ -397,7 +397,7 @@ Confirmed against the Insights `develop` code. Do not assume anything outside th
 | Purpose | Method and arguments |
 |---|---|
 | Who am I | `frappe.auth.get_logged_user` |
-| Insights version | `insights.api.get_app_version` — stop below 4 |
+| Insights version | `insights.api.get_app_version` — stop below v3.50 |
 | List workbooks | `insights.api.workbooks.get_workbooks` (`search_term`, `limit`, `sources`: any of `created`, `shared`, `others`; `filters`: `[field, operator, value]` over workbook columns or `query`, `chart`, `dashboard`, `data_source`, `table_name`) |
 | List data sources | `insights.api.data_sources.get_all_data_sources` |
 | Search tables, all sources | `insights.api.data_sources.get_data_source_tables` (`search_term`, `limit`; omit `data_source` to search every source) |

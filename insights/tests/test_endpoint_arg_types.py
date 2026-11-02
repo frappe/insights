@@ -6,7 +6,10 @@ function it decorates, so it read an empty `__annotations__` and checked
 nothing. It now decorates the endpoint itself.
 """
 
+import inspect
+
 import frappe
+from frappe.utils.typing_validations import validate_argument_types
 
 from insights.api.workbooks import (
     create_folder,
@@ -69,6 +72,10 @@ class EndpointsCheckArgumentTypes(InsightsIntegrationTestCase):
     # @feature permissions.malformed-request-refused
     def test_an_unannotated_endpoint_is_refused(self):
         """`require_type_annotated_api_methods` is on, so frappe refuses one."""
+        if "force_types" not in inspect.signature(validate_argument_types).parameters:
+            self.skipTest(
+                "frappe v16 ignores require_type_annotated_api_methods; lifts with https://github.com/frappe/frappe/pull/36744, Saqib, 2026-12-31"
+            )
 
         @insights_whitelist()
         def takes_anything(name):

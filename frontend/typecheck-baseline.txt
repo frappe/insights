@@ -42,8 +42,6 @@ src2/query/components/FormatRule.vue: TS2345: Argument of type 'string' is not a
 src2/query/components/join_utils.ts: TS2304: Cannot find name 'DropdownOption'.
 src2/query/components/JoinSelectorDialog.vue: TS2322: Type 'ComboboxOptionValue | null | undefined' is not assignable to type 'string'. Type 'undefined' is not assignable to type 'string'.
 src2/query/components/JoinSelectorDialog.vue: TS2322: Type 'ComboboxOptionValue | null | undefined' is not assignable to type 'string'. Type 'undefined' is not assignable to type 'string'.
-src2/query/query.test.ts: TS2322: Type 'VitestUtils' is not assignable to type 'Awaitable<HookCleanupCallback>'.
-src2/query/query.test.ts: TS2322: Type 'VitestUtils' is not assignable to type 'Awaitable<void>'.
 src2/query/Query.vue: TS2339: Property 'query' does not exist on type 'Window & typeof globalThis'.
 src2/socket.ts: TS2339: Property 'site_name' does not exist on type 'Window & typeof globalThis'.
 src2/socket.ts: TS2339: Property 'socketio_port' does not exist on type 'Window & typeof globalThis'.

@@ -56,6 +56,9 @@ test.describe('query', () => {
 		// so getByText is the first level of the ladder that reaches them.
 		await page.getByText('Query Builder').click()
 
+		// The picker opens on the site's own database. A data source in its
+		// sidebar is a div with no role, so its title is the way in.
+		await page.getByRole('dialog').getByText('Demo Data', { exact: true }).click()
 		await page.getByRole('button', { name: `orders ${demoDataSource}` }).click()
 		await page.getByRole('button', { name: 'Confirm' }).click()
 
@@ -364,15 +367,17 @@ test.describe('query', () => {
 
 		await expect(page.getByRole('cell', { name: 'shipping_limit_date' })).toBeVisible()
 		// `shipping_limit_date` is the only column in orderitems that prints a
-		// time, and no shipping time in the demo data falls on midnight.
-		await expect(page.getByRole('cell', { name: /00:00:00/ })).toHaveCount(0)
+		// time.
+		const withTime = page.getByRole('cell', { name: /\d{2}:\d{2}:\d{2}/ })
+		await expect(withTime).toHaveCount(100)
 
 		await columnTypeMenu(page, 'shipping_limit_date').click()
 		await page.getByRole('button', { name: 'Date', exact: true }).click()
 
 		await expect(page.getByText('Convert')).toBeVisible()
-		// A Date still prints a time, and the cast drops that time to midnight.
-		await expect(page.getByRole('cell', { name: /00:00:00/ })).toHaveCount(100)
+		// A Date prints the day alone.
+		await expect(page.getByRole('cell', { name: /^\d{4}-\d{2}-\d{2}$/ })).toHaveCount(100)
+		await expect(withTime).toHaveCount(0)
 		await expect(dataRows(page)).toHaveCount(100)
 	})
 

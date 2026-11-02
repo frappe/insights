@@ -17,6 +17,7 @@ import {
 	Summarize,
 	Union,
 } from '../../types/query.types'
+import { tableLabel } from '../../data_source/data_source'
 import { workbookKey } from '../../workbook/workbook_key'
 import { query_operation_types } from '../helpers'
 import { Query } from '../query'
@@ -50,7 +51,7 @@ const SourceInfo = (props: any) => {
 	const source = props.source as Source
 	const source_name =
 		source.table.type === 'table'
-			? source.table.table_name
+			? tableLabel(source.table)
 			: getQueryTitle(source.table.query_name)
 	const is_table = source.table.type === 'table'
 
@@ -67,7 +68,7 @@ const JoinInfo = (props: any) => {
 	const join = props.join as Join
 	const join_type = join.join_type
 	const join_name =
-		join.table.type === 'table' ? join.table.table_name : getQueryTitle(join.table.query_name)
+		join.table.type === 'table' ? tableLabel(join.table) : getQueryTitle(join.table.query_name)
 	const is_table = join.table.type === 'table'
 
 	return (
@@ -84,7 +85,7 @@ const UnionInfo = (props: any) => {
 	const union = props.union as Union
 	const union_name =
 		union.table.type === 'table'
-			? union.table.table_name
+			? tableLabel(union.table)
 			: getQueryTitle(union.table.query_name)
 
 	return (

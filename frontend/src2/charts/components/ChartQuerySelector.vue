@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Table2 } from 'lucide-vue-next'
+import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { wheneverChanges } from '../../helpers'
 import useQuery from '../../query/query'
@@ -20,6 +21,9 @@ wheneverChanges(
 	},
 	{ immediate: true },
 )
+
+// the query's own pane is not on screen, so a failed run is told here or nowhere
+const failure = computed(() => (query.value ? useQuery(query.value)?.executionError : ''))
 </script>
 
 <template>
@@ -35,4 +39,7 @@ wheneverChanges(
 			</template>
 		</Combobox>
 	</InlineFormControlLabel>
+	<p v-if="failure" class="whitespace-pre-wrap font-mono text-xs leading-5 text-ink-red-4">
+		{{ failure }}
+	</p>
 </template>

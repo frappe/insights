@@ -1,7 +1,7 @@
 import { useTimeAgo } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { reactive, ref } from 'vue'
-import { getUniqueId, showErrorToast } from '../helpers'
+import { getErrorMessage, getUniqueId, showErrorToast } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 
 export type InsightsAlert = {
@@ -45,6 +45,17 @@ async function loadAlerts(query: string) {
 	}))
 	loading.value = false
 	return alerts.value
+}
+
+// A list row with a `disabled` field is inert in frappe-ui's ListView, so the
+// alert's own field would make a disabled alert impossible to open and enable
+export function alertRows(alerts: InsightsAlert[]) {
+	return alerts.map(({ disabled, ...alert }) => ({ ...alert, enabled: !disabled }))
+}
+
+/** The server's refusal of a cron, to show under the Cron field. Any other failure is not one. */
+export function cronRefusal(error: any): string | undefined {
+	return error?.exc_type === 'CronUnreadable' ? getErrorMessage(error) : undefined
 }
 
 const EMPTY_ALERT: InsightsAlert = {

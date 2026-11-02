@@ -28,6 +28,8 @@ const levels = computed(() => [
 	},
 ])
 
+const labels = (options: { label: string }[]) => options.map((option) => option.label).join(', ')
+
 const roleOptions = computed(() => roleStore.roles.map((role) => ({ label: role, value: role })))
 </script>
 
@@ -53,8 +55,9 @@ const roleOptions = computed(() => roleStore.roles.map((role) => ({ label: role,
 			:loading="roleStore.loading"
 			:placeholder="__('Select roles')"
 		>
-			<template #summary>
-				<span class="text-ink-gray-4">{{ __('Select roles') }}</span>
+			<!-- the roles themselves, not a count: they are who may open it -->
+			<template #summary="{ selectedOptions, summary }">
+				{{ selectedOptions.length > 1 ? labels(selectedOptions) : summary }}
 			</template>
 		</MultiSelect>
 	</div>

@@ -10,6 +10,8 @@ saved, so a chain stays runnable by everyone who may read the query at its head.
 A reference that arrives with the request was never written, and is checked then.
 """
 
+from unittest.mock import patch
+
 import frappe
 from frappe.utils import set_request
 
@@ -264,8 +266,8 @@ class ASavedReferenceKeepsItsOwnAccess:
 
     # @feature query.source-query
     def test_the_chain_runs_before_the_reference_index_is_built(self):
-        """`Insights Query Reference` is rebuilt by a background job after the save
-        commits, so it lags. What was saved is what decides, and it cannot wait."""
+        """`Insights Query Reference` is derived from what was saved. What was
+        saved is what decides, so a missing row changes nothing."""
         frappe.db.delete("Insights Query Reference", {"query": self.consumer})
         self.addCleanup(
             sync_query_references,
@@ -280,7 +282,7 @@ class ASavedReferenceKeepsItsOwnAccess:
     # @feature query.copy-paste
     def test_an_export_includes_its_references_before_the_index_is_built(self):
         """An export packs the queries it is built on. Which those are comes from
-        the query, not from the index that a background job rebuilds."""
+        the query, not from the index derived from it."""
         frappe.db.delete("Insights Query Reference", {"query": self.consumer})
         self.addCleanup(
             sync_query_references,
@@ -528,8 +530,8 @@ def create_query_over_a_table(owner, workbook, title):
 class TestSourceTablesComeFromTheQuery(InsightsIntegrationTestCase):
     """Which tables a query reads is a forward question, so the row answers it.
 
-    `refresh_stored_tables` runs right after a save, and the edge table is rebuilt
-    by a background job that runs after the save commits.
+    `refresh_stored_tables` runs right after a save, and the edge table is
+    derived from the row.
     """
 
     @classmethod
@@ -688,6 +690,22 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
         execute()
         self.assertEqual(frappe.db.count(DT.QUERY), count)
 
+    # @feature upgrade.copied-sources-reported
+    def test_a_query_left_in_a_deleted_workbook_is_not_copied_into_it(self):
+        """The copy's workbook link would refuse the insert, and stop the migrate."""
+        from insights.patches.copy_cross_workbook_query_sources import execute
+
+        far = self.make_workbook("Copy Orphan Far Workbook")
+        source = create_source_query(OWNER, far, "Copy Orphan Source").name
+        gone = self.make_workbook("Copy Orphan Deleted Workbook")
+        reader = create_source_query(OWNER, gone, "Copy Orphan Reader").name
+        source_from(reader, source)
+        frappe.db.delete(DT.WORKBOOK, gone)
+
+        execute()
+
+        self.assertEqual(self.sources_of(reader), [source])
+
     # @feature query.source-query dashboard.filter-links
     def test_a_filter_linked_to_the_source_is_linked_to_the_copy(self):
         """`route_filters` follows a link only to a query the card reads. After
@@ -767,15 +785,13 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
                 self.assertTrue(chart_reads(chart, source_copy))
                 frappe.db.rollback(save_point="copy_hop")
 
-    # @feature query.source-query
+    # @feature query.source-query upgrade.copied-sources-reported
     def test_a_copy_keeps_a_sources_variables_without_their_values(self):
         """A variable holds a script's credential, and editors of the reading
-        workbook can edit the copy. So the copy gets no values, and the patch
-        lists the copies that need a value entered."""
-        import contextlib
-        import io
-
+        workbook can edit the copy. So the copy gets no values, and the reading
+        workbook's owner is told which copies need a value entered."""
         from insights.patches.copy_cross_workbook_query_sources import execute
+        from insights.upgrade import ITEM
 
         far = self.make_workbook("Copy Secret Far Workbook")
         source = frappe.get_doc(DT.QUERY, create_source_query(OWNER, far, "Copy Secret Source").name)
@@ -786,17 +802,63 @@ class TestCrossWorkbookSourcesAreCopied(InsightsIntegrationTestCase):
         reader = create_source_query(OWNER, near, "Copy Secret Reader").name
         source_from(reader, source.name)
 
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output):
-            execute()
+        execute()
 
         (copy,) = self.sources_of(reader)
         (variable,) = frappe.get_doc(DT.QUERY, copy).variables
         self.assertEqual(variable.variable_name, "LOG_PASSWORD")
         self.assertIsNone(variable.get_password("variable_value", raise_exception=False))
-        self.assertIn(copy, output.getvalue())
+        (item,) = frappe.get_all(
+            ITEM, filters={"code": "P21", "reference_name": copy}, fields=["user", "message", "data"]
+        )
+        self.assertEqual(item.user, OWNER)
+        self.assertIn("LOG_PASSWORD", item.message)
+        self.assertEqual(
+            frappe.parse_json(item.data),
+            {
+                "query": "Copy Secret Source",
+                "workbook": "Copy Secret Near Workbook",
+                "source_workbook": "Copy Secret Far Workbook",
+                "variables": ["LOG_PASSWORD"],
+            },
+        )
         self.assertEqual(
             frappe.get_doc(DT.QUERY, source.name).variables[0].get_password("variable_value"), "hunter2"
+        )
+
+    # @feature query.source-query upgrade.copied-sources-reported
+    def test_a_cycle_of_sources_in_other_workbooks_ends_and_is_reported(self):
+        """Two queries of one workbook read each other, so the copy of one reaches
+        the other again. Recursing on stopped the migrate."""
+        from insights.patches.copy_cross_workbook_query_sources import execute
+        from insights.upgrade import ITEM
+
+        far = self.make_workbook("Copy Cycle Far Workbook")
+        one = create_source_query(OWNER, far, "Copy Cycle One").name
+        two = create_source_query(OWNER, far, "Copy Cycle Two").name
+        source_from(one, two)
+        source_from(two, one)
+        near = self.make_workbook("Copy Cycle Near Workbook")
+        reader = create_source_query(OWNER, near, "Copy Cycle Reader").name
+        source_from(reader, one)
+
+        execute()
+
+        (one_copy,) = self.sources_of(reader)
+        (two_copy,) = self.sources_of(one_copy)
+        self.assertEqual(self.sources_of(two_copy), [one])
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "P21", "reference_name": two_copy}, ["message", "data"]
+        )
+        self.assertIn('remove its source "Copy Cycle One", which reads it back', message)
+        self.assertEqual(
+            frappe.parse_json(data),
+            {
+                "query": "Copy Cycle Two",
+                "workbook": "Copy Cycle Near Workbook",
+                "source": "Copy Cycle One",
+                "cycle": True,
+            },
         )
 
 
@@ -900,6 +962,54 @@ class TestRemovingAQuery(InsightsIntegrationTestCase):
 
         self.assertFalse(frappe.db.exists(DT.QUERY, self.base))
         self.assertFalse(any(self.kept()))
+
+
+class TestASaveWritesWhatTheQueryReads(InsightsIntegrationTestCase):
+    """A query's save writes its rows in `Insights Query Reference` before it
+    returns. A job used to write them, one per autosave and none on a full queue,
+    and two jobs could land out of order and leave the older save's rows.
+
+    The rows that stay the same are left in place. Deleting every row of the query
+    would take gap locks on the `query` index, and saves of neighbouring queries
+    would deadlock on them (#1147).
+    """
+
+    def setUp(self):
+        self.workbook = create_test_workbook("Administrator", title="Reference Save Workbook").name
+        self.addCleanup(frappe.delete_doc, DT.WORKBOOK, self.workbook, force=True, ignore_permissions=True)
+        self.base = create_source_query("Administrator", self.workbook, "Reference Save Base").name
+        self.other = create_source_query("Administrator", self.workbook, "Reference Save Other").name
+
+    def references(self, query):
+        return frappe.get_all(
+            "Insights Query Reference",
+            filters={"query": query},
+            fields=["name", "ref_type", "ref_query", "data_source", "table_name"],
+            order_by="name",
+        )
+
+    # @feature query.references-on-save
+    def test_a_save_writes_the_queries_it_reads_without_a_job(self):
+        with patch("frappe.enqueue") as enqueue:
+            consumer = create_referencing_query(
+                "Administrator", self.workbook, self.base, "Reference Save Consumer"
+            )
+            self.assertEqual([ref.ref_query for ref in self.references(consumer.name)], [self.base])
+
+            consumer.operations = reference_operations(self.other)
+            consumer.save()
+            self.assertEqual([ref.ref_query for ref in self.references(consumer.name)], [self.other])
+        enqueue.assert_not_called()
+
+    # @feature query.references-on-save
+    def test_a_save_that_reads_the_same_queries_leaves_their_rows_in_place(self):
+        consumer = create_referencing_query("Administrator", self.workbook, self.base, "Reference Save Kept")
+        before = self.references(consumer.name)
+
+        consumer.title = "Reference Save Kept, Renamed"
+        consumer.save()
+
+        self.assertEqual(self.references(consumer.name), before)
 
 
 class TestAReferenceInTheRequestIsChecked(AReferenceInTheRequestIsChecked, InsightsIntegrationTestCase):

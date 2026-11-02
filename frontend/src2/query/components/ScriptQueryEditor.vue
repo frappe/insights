@@ -21,6 +21,10 @@ const operation = query.getCodeOperation()
 const code = ref(operation ? operation.code : '')
 wheneverChanges(code, () => query.setCode({ code: code.value }), { debounce: 500 })
 
+function run(force = false) {
+	query.runCode({ code: code.value }, force)
+}
+
 const placeholder_script = `# assign rows to \`results\`, e.g. results = frappe.db.get_all("ToDo", fields=["name", "status"])`
 
 const showLogs = ref(false)
@@ -58,7 +62,7 @@ const icon = (component: any) =>
 	h(component, { class: 'h-3.5 w-3.5 text-ink-gray-6', strokeWidth: 1.5 })
 
 const extraActions = () => [
-	{ label: __('Force Run'), icon: icon(Play), onClick: () => query.execute(true) },
+	{ label: __('Force Run'), icon: icon(Play), onClick: () => run(true) },
 	{ label: __('Variables'), icon: icon(Braces), onClick: openVariablesDialog },
 	{ label: __('Logs'), icon: icon(Bug), onClick: () => (showLogs.value = !showLogs.value) },
 	{ label: __('Docs'), icon: icon(BookOpen), onClick: openDocs },
@@ -79,7 +83,7 @@ function handleSaveVariables(variables: any[]) {
 	<div class="flex flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
 		<QueryHeader>
 			<QueryActions
-				:on-execute="() => query.execute()"
+				:on-execute="() => run()"
 				:extra-actions="extraActions"
 				:stale="query.isStale"
 			/>

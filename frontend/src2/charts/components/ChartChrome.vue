@@ -30,13 +30,18 @@ const card = computed(() => !rendersOwnCards(props.chart.doc.chart_type))
 <template>
 	<div class="flex h-full w-full flex-col">
 		<div class="min-h-0 w-full flex-1">
-			<!-- `--chart-card-inset` is this card's own horizontal padding, named so
-			     that a filler running to the card edge measures against it. Unset,
+			<!-- `--chart-card-inset` is this card's own horizontal padding, and
+			     `--chart-card-inset-bottom` its bottom padding, named so that a filler
+			     running to the card edge measures against them. Unset,
 			     which is what a body with no card around it reads, the bleed is
 			     nothing. -->
 			<ChartCard
 				class="h-full border-outline-gray-2"
-				:class="card ? '[--chart-card-inset:1rem]' : undefined"
+				:class="
+					card
+						? '[--chart-card-inset:1rem] [--chart-card-inset-bottom:0.75rem]'
+						: undefined
+				"
 				:card="card"
 			>
 				<ChartBody

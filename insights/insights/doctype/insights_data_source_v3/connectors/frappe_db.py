@@ -24,11 +24,15 @@ def get_primary_data_source():
     if not site_db.database_type:
         site_db.database_type = "PostgreSQL" if frappe.conf.db_type == "postgres" else "MariaDB"
 
-    # Use Site DB config if available, otherwise fall back to Frappe config
+    # Unset credentials fall back to the framework's own connection, not the
+    # site config: v16 connects as db_user.
+    db = frappe.local.db
+
     if not site_db.host or not site_db.port:
         site_db.host = frappe.conf.db_host
         site_db.port = frappe.conf.db_port
         site_db.unix_socket = frappe.conf.db_socket
+        site_db.ssl_options = get_site_db_ssl_options()
 
     if not site_db.host:
         site_db.host = "localhost"
@@ -37,18 +41,31 @@ def get_primary_data_source():
         site_db.port = 5432 if site_db.database_type == "PostgreSQL" else 3306
 
     if not site_db.database_name:
-        site_db.database_name = frappe.conf.db_name
+        site_db.database_name = db.cur_db_name
 
     if not site_db.username:
-        site_db.username = frappe.conf.db_name
+        site_db.username = db.user
 
     if not site_db.password:
-        site_db.password = frappe.conf.db_password
+        site_db.password = db.password
 
     if site_db.use_ssl is None:
         site_db.use_ssl = False
 
     return site_db
+
+
+def get_site_db_ssl_options():
+    """The SSL settings the framework connects to its own database with."""
+    conf = frappe.conf
+    if not conf.db_ssl_ca:
+        return None
+
+    ssl = {"ca": conf.db_ssl_ca}
+    if conf.db_ssl_cert and conf.db_ssl_key:
+        ssl |= {"cert": conf.db_ssl_cert, "key": conf.db_ssl_key}
+
+    return {"ssl_mode": "VERIFY_IDENTITY" if conf.db_ssl_check_hostname else "VERIFY_CA", "ssl": ssl}
 
 
 def get_replica_data_source():

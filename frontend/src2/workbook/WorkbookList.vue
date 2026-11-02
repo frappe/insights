@@ -2,22 +2,22 @@
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
 import { QuickFilter } from '@framework/ui/QuickFilter'
 import { useMagicKeys, whenever } from '@vueuse/core'
-import { Avatar, Breadcrumbs, MultiSelect } from 'frappe-ui'
+import { Breadcrumbs, MultiSelect } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
 import { PlusIcon } from 'lucide-vue-next'
-import { accessIcon, accessLabel, AccessSource, useAccessSources } from '../components/access'
+import { AccessSource, useAccessSources } from '../components/access'
+import AccessLabel from '../components/AccessLabel.vue'
+import OwnerAvatar from '../components/OwnerAvatar.vue'
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
 import { __ } from '../translation'
 import { WorkbookListItem } from '../types/workbook.types'
-import useUserStore from '../users/users'
 import useWorkbook, { newWorkbookName } from './workbook'
 import { pastedWorkbook } from './workbook_file'
 import useWorkbooks from './workbooks'
 
 const router = useRouter()
-const userStore = useUserStore()
 const workbookStore = useWorkbooks()
 
 const {
@@ -176,14 +176,11 @@ watchEffect(() => {
 						class="absolute inset-0 sm:rounded-[10px]"
 						:aria-label="workbook.title"
 					/>
-					<Tooltip :text="userStore.getName(workbook.owner) || workbook.owner">
-						<Avatar
-							class="relative shrink-0"
-							size="sm"
-							:label="userStore.getName(workbook.owner) || workbook.owner"
-							:image="userStore.getImage(workbook.owner)"
-						/>
-					</Tooltip>
+					<OwnerAvatar
+						:owner="workbook.owner"
+						:shipped-by="workbook.shipped_by"
+						:shipped-by-logo="workbook.shipped_by_logo"
+					/>
 					<span class="ml-3 truncate text-base text-ink-gray-8">{{
 						workbook.title
 					}}</span>
@@ -200,10 +197,7 @@ watchEffect(() => {
 					</span>
 				</ListCell>
 				<ListCell>
-					<component :is="accessIcon(workbook)" class="size-4 shrink-0 text-ink-gray-5" />
-					<span class="ml-2 truncate text-base text-ink-gray-6">
-						{{ accessLabel(workbook, userStore.getName) }}
-					</span>
+					<AccessLabel :item="workbook" />
 				</ListCell>
 				<ListCell>
 					<span class="truncate text-base text-ink-gray-6">

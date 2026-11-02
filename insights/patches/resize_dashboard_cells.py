@@ -75,9 +75,12 @@ def already_rescaled() -> bool:
     )
 
 
-def number_chart_configs() -> dict[str, dict]:
-    """Every Number chart on the site, by name, with the config naming its readings."""
-    charts = frappe.get_all("Insights Chart v3", filters={"chart_type": "Number"}, fields=["name", "config"])
+def number_chart_configs(workbook: str | None = None) -> dict[str, dict]:
+    """Every Number chart on the site, or in `workbook`, by name, with the config naming its readings."""
+    filters = {"chart_type": "Number"}
+    if workbook:
+        filters["workbook"] = workbook
+    charts = frappe.get_all("Insights Chart v3", filters=filters, fields=["name", "config"])
     configs = {chart.name: frappe.parse_json(chart.config) for chart in charts}
     return {name: config for name, config in configs.items() if isinstance(config, dict)}
 

@@ -148,9 +148,11 @@ export function getErrorMessage(err: any) {
 	const sentence = err.messages?.filter((message: string) => message !== NO_SENTENCE).at(-1)
 	if (sentence) return asText(sentence)
 
-	// the exception line is not always last: DuckDB appends the offending SQL and a caret
+	// the exception line is not always last: DuckDB appends the offending SQL and a caret.
+	// It is found by the class raised, because a chained traceback lists its causes first
 	const lines: string[] = err.exc?.split('\n') ?? []
-	const excLine = lines.filter((line) => /^[\w.]+(Error|Exception): /.test(line)).at(-1)
+	const raised = err.exc_type || '\\w*(Error|Exception)'
+	const excLine = lines.filter((line) => new RegExp(`^([\\w]+\\.)*${raised}: `).test(line)).at(-1)
 	if (!excLine) return err.message || err.toString()
 	const message = excLine.split(': ').slice(1).join(': ')
 	const details = lines.slice(lines.lastIndexOf(excLine) + 1)
@@ -234,6 +236,8 @@ export type FormatUnits = {
 	prefix: string
 	suffix: string
 	frappe_number_format?: string
+	// the places an amount prints when nothing states its own
+	decimals?: number
 }
 
 const NO_UNITS: FormatUnits = { scale: 1, prefix: '', suffix: '' }
@@ -249,11 +253,27 @@ export function getFormatUnits(format?: DataFormat, code?: string | null): Forma
 	const resolved = code === undefined ? session.site?.currency : code
 	const currency = resolved ? session.site?.currency_symbols?.[resolved] : undefined
 	if (!currency) return NO_UNITS
-	const units = { ...NO_UNITS, frappe_number_format: currency.number_format }
+	const units = {
+		...NO_UNITS,
+		frappe_number_format: currency.number_format,
+		decimals:
+			session.site?.currency_precision ??
+			numberFormatPlaces(currency.number_format || session.site?.number_format),
+	}
 	if (!currency.symbol) return units
 	return currency.symbol_on_right
 		? { ...units, suffix: ` ${currency.symbol}` }
 		: { ...units, prefix: `${currency.symbol} ` }
+}
+
+// Desk's `get_number_format_info`: the digits after the format's decimal mark.
+const NO_DECIMAL_MARK = ['#.###', '#,###']
+const COMMA_DECIMAL_MARK = ['#.###,##', '# ###,##']
+function numberFormatPlaces(format?: string) {
+	if (!format) return 2
+	if (NO_DECIMAL_MARK.includes(format)) return 0
+	const mark = COMMA_DECIMAL_MARK.includes(format) ? ',' : '.'
+	return format.split(mark)[1]?.length ?? 0
 }
 
 export function guessPrecision(number: number) {
@@ -429,7 +449,11 @@ export function attachRealtimeListener(event: string, callback: (...args: any[])
 	})
 }
 
-export function createHeaders(columns: QueryResultColumn[]) {
+/** `columnLabel` names a plain column's header. A pivoted column is named by its parts. */
+export function createHeaders(
+	columns: QueryResultColumn[],
+	columnLabel: (name: string) => string = (name) => name,
+) {
 	const nestedColumns = columns.filter((column) => column.name.includes('___'))
 	const levels = nestedColumns.length ? nestedColumns[0].name.split('___').length : 1
 
@@ -454,7 +478,7 @@ export function createHeaders(columns: QueryResultColumn[]) {
 			const isLast = level === levels - 1
 
 			headerRow.push({
-				label: isNested ? column.parts[level] : isLast ? column.name : '',
+				label: isNested ? column.parts[level] : isLast ? columnLabel(column.name) : '',
 				level,
 				isLast,
 				column: column,

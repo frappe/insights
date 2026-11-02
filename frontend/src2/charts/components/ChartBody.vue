@@ -48,23 +48,30 @@ import ChartStateMessage from './ChartStateMessage.vue'
 // config: a table's sort re-runs the chart in the reader's order without
 // writing it back, and a reader is told about the data ("No data") where an
 // author is told about the config.
-const props = defineProps<{
-	chart: ChartRead
-	// heads the chart. Left out, no title is shown anywhere in it — which is what
-	// a host that prints its own asks for.
-	title?: string
-	// the line under the title, and the text behind the mark beside it. Like the
-	// title, a host that prints its own header leaves them out.
-	description?: string | null
-	info?: string | null
-	// which reading to show, for a Number Chart. A host that shows one reading per
-	// cell says which. One that renders the chart says nothing and gets them all.
-	reading?: string
-	readonly?: boolean
-	// whether filters narrowed the rows, so an empty card can show a way to clear them.
-	// Only a surface that owns filter state can say, and only it can reset them.
-	filtered?: boolean
-}>()
+const props = withDefaults(
+	defineProps<{
+		chart: ChartRead
+		// heads the chart. Left out, no title is shown anywhere in it — which is what
+		// a host that prints its own asks for.
+		title?: string
+		// the line under the title, and the text behind the mark beside it. Like the
+		// title, a host that prints its own header leaves them out.
+		description?: string | null
+		info?: string | null
+		// which reading to show, for a Number Chart. A host that shows one reading per
+		// cell says which. One that renders the chart says nothing and gets them all.
+		reading?: string
+		// `false`: the filler draws no card of its own, see `ChartAdapterInput`
+		card?: boolean
+		readonly?: boolean
+		// whether filters narrowed the rows, so an empty card can show a way to clear them.
+		// Only a surface that owns filter state can say, and only it can reset them.
+		filtered?: boolean
+	}>(),
+	// Vue casts an absent boolean prop to `false`, which would take every
+	// Number chart's card away.
+	{ card: true },
+)
 const emit = defineEmits<{
 	// where the reader pointed, for a surface that shows the drill menu
 	segmentClick: [click: ChartSegmentClick]
@@ -113,6 +120,7 @@ const filler = computed(() => {
 		description: description.value,
 		tokens: tokens.value,
 		reading: props.reading,
+		card: props.card,
 		readonly: readonly.value,
 		sort: props.chart.sort,
 		drillable: props.chart.drillable,
@@ -165,7 +173,9 @@ onBeforeUnmount(() => clearTimeout(veilTimer))
 // server refused puts it back in — nothing is rendered, and the space the chart
 // would take is where the reason is printed.
 const state = computed(() => {
-	if (props.chart.failed) return props.chart.serverBusy ? 'serverBusy' : 'failed'
+	if (props.chart.failed) {
+		return props.chart.refusal || (props.chart.serverBusy ? 'serverBusy' : 'failed')
+	}
 	if (props.chart.executing && !hasRows.value) return 'loading'
 	// nothing ran, so config errors and an empty result do not apply
 	if (props.chart.notPermitted) return 'notPermitted'
@@ -203,6 +213,8 @@ const unconfigured = computed(() => {
 const headline = computed(() => {
 	if (state.value === 'serverBusy') return __('The server is busy')
 	if (state.value === 'failed') return __('Could not load')
+	if (state.value === 'notFound') return __('Chart not found')
+	if (state.value === 'noAccess') return __("You don't have access to this chart")
 	// Frappe's term. It is a card state like No data and Could not load, not a
 	// layout of its own, so every state reads the same way.
 	if (state.value === 'notPermitted') return refusalHeadline()
@@ -229,7 +241,9 @@ const detail = computed(() => {
 const failure = computed<ChartFailure | null>(() =>
 	headline.value
 		? {
-				...(state.value === 'notPermitted' ? { kind: 'notPermitted' as const } : {}),
+				...(state.value === 'notPermitted' || state.value === 'noAccess'
+					? { kind: 'notPermitted' as const }
+					: {}),
 				headline: headline.value,
 				detailText: detail.value || undefined,
 		  }
@@ -243,7 +257,6 @@ const stateProps = computed(() => {
 	const owned: ChartStateProps = {
 		loading: state.value === 'loading',
 		failure: failure.value,
-		empty: state.value === 'empty',
 		onRetry: () => props.chart.load(true),
 	}
 	return owned
@@ -360,7 +373,7 @@ function reportSegment(target: DrillDownTarget) {
 					     gets no retry: the reader cannot change their own
 					     permissions. -->
 					<Button
-						v-if="state !== 'notPermitted'"
+						v-if="state === 'failed' || state === 'serverBusy'"
 						class="shrink-0"
 						variant="outline"
 						:label="state === 'serverBusy' ? __('Try again') : __('Retry')"

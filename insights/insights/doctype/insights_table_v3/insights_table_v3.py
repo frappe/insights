@@ -200,7 +200,6 @@ class InsightsTablev3(Document):
         from insights.insights.doctype.insights_team.insights_team import (
             apply_table_restrictions,
             check_table_permission,
-            team_grant,
         )
 
         # every table read funnels through here, so this is where the permission user
@@ -214,8 +213,7 @@ class InsightsTablev3(Document):
 
         def readable(t):
             if site_db:
-                granted = team_grant(data_source, table_name, user=user)
-                return apply_user_permissions(t, data_source, table_name, user=user, granted=granted)
+                return apply_user_permissions(t, data_source, table_name, user=user)
             return apply_table_restrictions(t, data_source, table_name, user=user)
 
         ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
@@ -267,9 +265,18 @@ class InsightsTablev3(Document):
 
     @frappe.whitelist()
     def get_stats(self):
-        """Return usage and sync statistics for this table."""
+        """Return usage and sync statistics for this table.
+
+        A site table's row count is for admins only: desk may narrow what a
+        reader sees of the table, or deny it.
+        """
+        from insights.insights.doctype.insights_team.insights_team import is_admin
+
         self.check_identity()
-        return get_table_stats(self.data_source, self.table)
+        stats = get_table_stats(self.data_source, self.table)
+        if is_site_db(self.data_source) and not is_admin(frappe.session.user):
+            stats["last_import_rows"] = None
+        return stats
 
 
 def get_table_name(data_source, table):
@@ -365,12 +372,6 @@ def filter_permitted_columns(
     rule has to hold wherever the stored list is read.
     """
     if not is_site_db(data_source):
-        return columns
-
-    from insights.insights.doctype.insights_team.insights_team import team_grant
-
-    # a team grant includes every column
-    if team_grant(data_source, table_name, user=user) is not None:
         return columns
 
     try:
@@ -510,14 +511,11 @@ def is_site_db(data_source: str) -> bool:
     return bool(frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True))
 
 
-def apply_user_permissions(t: Table, data_source, table_name, user=None, granted: list[str] | None = None):
-    """The rows and columns of a site table that `user` may read.
+def apply_user_permissions(t: Table, data_source, table_name, user=None):
+    """The rows and columns of a site table that desk lets `user` read.
 
-    Desk permissions or a team grant, whichever allows more, cell by cell. A
-    cell comes back if desk allows its row and its column, or if a grant allows
-    its row. `granted` is the Table Restrictions of the team grant
-    (`team_grant`), or None when no grant covers the table. So a column that
-    desk hides is kept, and it is empty on the rows that only desk allows.
+    A team grant adds nothing and a Table Restriction removes nothing here:
+    on the site database, desk permissions are the only authority.
     """
     user = user or get_permission_user()
 
@@ -525,49 +523,19 @@ def apply_user_permissions(t: Table, data_source, table_name, user=None, granted
         # external databases and uploads have no Frappe permissions to filter by
         return t
 
-    if granted is not None and not granted:
-        return t
-
     table_name = strip_schema_prefix(table_name)
 
-    if granted is None:
-        if table_name != "tabSingles":
-            t = apply_column_permissions(t, table_name, user)
-        desk = desk_rows(t, data_source, table_name, user)
-        if desk is None:
-            # No permission query means the reader may not read the table. The
-            # chart is Not Permitted rather than empty, because "No data" would
-            # read as zero. A list of every single doctype helps nobody.
-            not_permitted.refuse(
-                [] if table_name == "tabSingles" else not_permitted.unreadable_doctypes(table_name, user)
-            )
-        return desk
-
-    from insights.insights.doctype.insights_team.insights_team import restriction_predicate
-
-    # The grant is restricted, so it gives less than the whole table: rows
-    # desk does not allow, and cells of columns desk hides. Where desk allows
-    # rows too, the grant only adds to them, so nothing is recorded as narrowed.
-    by_desk = desk_predicate(t, data_source, table_name, user)
-    if by_desk is None:
-        user_permissions.record_narrowed(user)
-        return t.filter(restriction_predicate(t, granted))
-    if by_desk is not True:
-        t = t.filter(by_desk | restriction_predicate(t, granted))
-
-    if table_name == "tabSingles":
-        return t
-    allowed = get_permitted_columns_for_table(table_name, user)
-    by_team = restriction_predicate(t, granted)
-    blanked = [column for column in t.columns if column not in allowed]
-    if not blanked:
-        return t
-
-    t = t.mutate(
-        **{column: ibis.ifelse(by_team, t[column], ibis.null(t[column].type())) for column in blanked}
-    )
-    user_permissions.record_blanked(user, t.op(), blanked)
-    return t
+    if table_name != "tabSingles":
+        t = apply_column_permissions(t, table_name, user)
+    desk = desk_rows(t, data_source, table_name, user)
+    if desk is None:
+        # No permission query means the reader may not read the table. The
+        # chart is Not Permitted rather than empty, because "No data" would
+        # read as zero. A list of every single doctype helps nobody.
+        not_permitted.refuse(
+            [] if table_name == "tabSingles" else not_permitted.unreadable_doctypes(table_name, user)
+        )
+    return desk
 
 
 def desk_rows(t: Table, data_source, table_name, user) -> Table | None:
@@ -583,9 +551,13 @@ def desk_predicate(t: Table, data_source, table_name, user):
         allowed_single_doctypes = set(single_doctypes) & readable_doctypes(user)
         if not allowed_single_doctypes:
             return None
-        if len(allowed_single_doctypes) == len(single_doctypes):
-            return True
-        return t.doctype.isin(allowed_single_doctypes)
+        # a single's fields are its rows here, so a field desk holds back is a row to drop
+        permitted_fields = [
+            f"{doctype}.{field}"
+            for doctype in allowed_single_doctypes
+            for field in get_permitted_columns_for_table(f"tab{doctype}", user)
+        ]
+        return t.doctype.concat(".", t.field).isin(permitted_fields)
 
     permission_query = get_permission_query_for_table(table_name, user)
     if not permission_query:
@@ -629,8 +601,9 @@ def desk_readable_tables(user: str) -> set[str]:
 
     A readable doctype's table, a child table of one, and `tabSingles` when any
     single doctype is readable. These are the tables `apply_user_permissions` allows.
+    A share lets its user read the doctype's table, as `desk_reads_table` says.
     """
-    readable = readable_doctypes(user)
+    readable = readable_doctypes(user) | set(frappe.share.get_shared_doctypes(user))
     children = {
         *frappe.get_all(
             "DocField",
@@ -721,7 +694,8 @@ def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
     def permitted(dt, parent=None) -> set[str]:
         # get_permitted_fields drops optional meta columns (`_assign`, `_comments`, ...)
         # because they aren't in valid_columns; add them back so they survive.
-        return {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *optional_fields}
+        readable = {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *optional_fields}
+        return readable - masked_fields(dt, parent, user)
 
     if not meta.istable:
         if not frappe.has_permission(doctype, "read", user=user):
@@ -738,6 +712,21 @@ def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
     for parent in permitted_parents:
         allowed |= permitted(doctype, parent)
     return allowed
+
+
+def masked_fields(doctype, parenttype=None, user=None) -> set[str]:
+    """The fields desk shows `user` masked.
+
+    Desk returns a masked value, and a query would return the raw one, so the
+    column is held back like a permlevel column. `Meta.get_masked_fields`
+    answers for the session user only, and a chart may run as its owner.
+    """
+    user = user or frappe.session.user
+    if user == "Administrator":
+        return set()
+    meta = frappe.get_meta(doctype)
+    unmasked = set(meta.get_permlevel_access("mask", parenttype, user=user))
+    return {df.fieldname for df in meta.fields if df.get("mask") and df.permlevel not in unmasked}
 
 
 def get_permission_query_for_table(table_name, user=None) -> str | None:

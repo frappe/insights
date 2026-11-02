@@ -5,13 +5,15 @@ import { nextTick } from 'vue'
 // Otherwise the watcher resends the refused payload on every later edit, and no
 // later edit reaches the server.
 
-const answers: { update?: (args: any) => Promise<any> } = {}
+const answers: { get?: () => Promise<any>; update?: (args: any) => Promise<any> } = {}
+const toasted = vi.hoisted(() => [] as string[])
 let inserted = 0
 
 vi.mock('frappe-ui', async () => ({
 	...((await vi.importActual('frappe-ui')) as object),
 	call: (method: string, args: any) => {
 		if (method === 'insights.api.get_doc') {
+			if (answers.get) return answers.get()
 			return Promise.resolve({
 				doctype: 'Insights Chart v3',
 				name: 'chart-1',
@@ -28,7 +30,7 @@ vi.mock('frappe-ui', async () => ({
 		}
 		return Promise.resolve({})
 	},
-	toast: { error: () => {} },
+	toast: { error: (message: string) => toasted.push(message) },
 }))
 
 import useDocumentResource from './resource'
@@ -111,6 +113,32 @@ describe('a document the server refuses', () => {
 
 		expect(alert.doc.title).toBe('Sales dropped')
 		expect(alert.isdirty).toBe(true)
+	})
+})
+
+describe('a document the server will not hand over', () => {
+	// @feature workbook.not-found
+	it('keeps why, for the page to say in place of a toast', async () => {
+		for (const [exc_type, status, failure] of [
+			['DoesNotExistError', 404, 'notFound'],
+			['PermissionError', 403, 'noAccess'],
+			['OperationalError', 500, 'failed'],
+		] as const) {
+			toasted.length = 0
+			answers.get = () =>
+				Promise.reject(Object.assign(new Error('refused'), { exc_type, status }))
+			const workbook = useDocumentResource<any>('Insights Workbook', 'wb-1', {
+				initialDoc: { doctype: 'Insights Workbook', name: 'wb-1', owner: '' },
+				disableLocalStorage: true,
+				showsLoadFailure: true,
+			})
+			await settled()
+
+			expect(workbook.loadFailure).toBe(failure)
+			expect(workbook.pending).toBe(true)
+			expect(toasted).toEqual([])
+		}
+		answers.get = undefined
 	})
 })
 

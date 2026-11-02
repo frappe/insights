@@ -191,3 +191,71 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
             csv = frappe.get_doc(DT.QUERY, query.name).download_results(format="csv")
         header = csv.splitlines()[0].split(",")
         self.assertEqual(sorted(header), ["kind", "status", "todos", "total"])
+
+
+def make_number_card(currency):
+    card = frappe.get_doc(
+        {"doctype": "Number Card", "label": f"{TOKEN} {currency}", "type": "Custom", "currency": currency}
+    )
+    # the code reads one field, so the card needs none of what a saved card needs
+    card.db_insert()
+    return card.name
+
+
+class TestCurrencyFromALinkedDocument(InsightsIntegrationTestCase):
+    """A measure's currency is a field of the document a row links to, named in the
+    options form of frappe's Currency field: `Doctype:link_column:field`."""
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        cls.workbook = create_test_workbook(ADMIN, title="Linked Currency Workbook").name
+        cls.cards = {"USD": make_number_card("USD"), "INR": make_number_card("INR")}
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
+        frappe.db.delete("Number Card", {"name": ["in", list(cls.cards.values())]})
+        delete_users(ADMIN)
+
+    def carried(self, currency_column):
+        rows = [
+            {"card": self.cards["USD"], "amount": 5},
+            {"card": self.cards["USD"], "amount": 7},
+            {"card": self.cards["INR"], "amount": 3},
+            {"card": "no such card", "amount": 1},
+        ]
+        operations = [
+            {"type": "code", "code": f"results = {rows}"},
+            {
+                "type": "summarize",
+                "measures": [
+                    {
+                        "measure_name": "total",
+                        "column_name": "amount",
+                        "data_type": "Integer",
+                        "aggregation": "sum",
+                        "format": "currency",
+                        "currency_column": currency_column,
+                    }
+                ],
+                "dimensions": [{"dimension_name": "card", "column_name": "card", "data_type": "String"}],
+            },
+        ]
+        query = create_test_query(ADMIN, self.workbook, title="Linked Currency", operations=operations)
+        with as_user(ADMIN):
+            result = query.execute(force=True)
+        return {row["card"]: row["total__currency"] for row in result["rows"]}
+
+    # @feature query.summarize-currency-carried
+    def test_each_row_carries_the_currency_of_the_document_it_links(self):
+        carried = self.carried("Number Card:card:currency")
+        self.assertEqual(carried[self.cards["USD"]], "USD")
+        self.assertEqual(carried[self.cards["INR"]], "INR")
+        self.assertIsNone(carried["no such card"])
+
+    # @feature query.summarize-currency-carried
+    def test_only_a_field_that_links_to_currency_is_read(self):
+        # read without a permission check, so any other field would leak through the code
+        carried = self.carried("Number Card:card:label")
+        self.assertEqual(set(carried.values()), {None})

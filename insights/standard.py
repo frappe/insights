@@ -37,6 +37,13 @@ def deleting(workbook: str):
         being_deleted.discard(workbook)
 
 
+def deleted_with_workbook(doc) -> bool:
+    """Whether `doc` goes because its workbook is being deleted, which removes
+    every member that links it. Frappe v15 and v16 do not tell `on_trash` that
+    a delete is forced, so `doc.flags.force_delete` alone misses this case."""
+    return doc.workbook in (frappe.flags.get(BEING_DELETED) or set())
+
+
 def validate_standard(doc) -> None:
     """Refuse a write to a standard document outside developer mode.
 
@@ -108,11 +115,27 @@ def export(doc) -> None:
 
 
 def delete_folder(doc, name: str | None = None) -> None:
-    """`name` is the old name after a rename."""
+    """Remove the workbook's file after the commit, in developer mode.
+
+    `name` is the old name after a rename. Like frappe's standard Report, the
+    file goes only once the delete commits: a delete that rolls back, as every
+    test does, keeps the row and its file. A system write never removes one:
+    an import deletes the row before it writes it again from the file.
+    """
     if not frappe.conf.developer_mode or not doc.get("module"):
         return
+    if any(frappe.flags.get(flag) for flag in SYSTEM_WRITE_FLAGS):
+        return
 
-    delete_document_folder(doc.module, doc.doctype, name or doc.name)
+    module, doctype = doc.module, doc.doctype
+    name = name or doc.name
+
+    def delete():
+        # a rollback to a savepoint keeps this callback, and brings the row back
+        if frappe.db.get_value(doctype, name, ["is_standard", "module"]) != (1, module):
+            delete_document_folder(module, doctype, name)
+
+    frappe.db.after_commit.add(delete)
 
 
 def import_shipped(apps: list[str] | None = None) -> None:
@@ -135,7 +158,20 @@ def import_shipped(apps: list[str] | None = None) -> None:
         for stem in sorted(os.listdir(folder)):
             path = os.path.join(folder, stem, f"{stem}.json")
             if os.path.exists(path):
-                import_file_by_path(path, ignore_version=True)
+                import_file(path)
+
+
+def import_file(path: str) -> None:
+    """Import one workbook file. A file that fails is logged and rolled back,
+    so the other files and the rest of the migrate still run."""
+    frappe.db.savepoint("insights_import_shipped")
+    try:
+        import_file_by_path(path, ignore_version=True)
+    except Exception:
+        frappe.db.rollback(save_point="insights_import_shipped")
+        # frappe sets it for the import and clears it only on success
+        frappe.flags.in_import = False
+        frappe.log_error(title=f"Failed to import the shipped workbook {os.path.basename(path)}")
 
 
 def delete_unshipped() -> None:
@@ -280,3 +316,26 @@ def is_read_only(workbook: str | None) -> bool:
         return False
 
     return bool(frappe.db.get_value(WORKBOOK, workbook, "is_standard"))
+
+
+def shipping_apps(workbooks: list[str]) -> dict[str, str]:
+    """The app that ships each of `workbooks`, for those an app ships."""
+    if not workbooks:
+        return {}
+
+    apps = {}
+    for workbook in frappe.get_all(
+        WORKBOOK, filters={"name": ["in", workbooks], "is_standard": 1}, fields=["name", "module"]
+    ):
+        app = frappe.local.module_app.get(frappe.scrub(workbook.module or ""))
+        if app:
+            apps[workbook.name] = app
+    return apps
+
+
+def app_title(app: str) -> str:
+    return (frappe.get_hooks("app_title", app_name=app) or [app])[0]
+
+
+def app_logo_url(app: str) -> str | None:
+    return (frappe.get_hooks("app_logo_url", app_name=app) or [None])[0]

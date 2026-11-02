@@ -7,7 +7,7 @@ from frappe.model.document import Document
 from frappe.utils import get_datetime, getdate
 
 from insights import standard, user_permissions
-from insights.desk import claims_on, refuse_delete_while_claimed
+from insights.desk import can_show_in_desk, claims_on, refuse_delete_while_claimed, show_in_desk
 from insights.insights.doctype.insights_chart_v3.chart_drill import check_rows
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     adjacent_bucket,
@@ -18,6 +18,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     dashboard_period,
     derive_operations,
     normalize_chart_config,
+    number_readings,
     period_column,
     period_grain,
     reads_newest_first,
@@ -78,6 +79,7 @@ class InsightsChartv3(Document):
         d.read_only = not can_write(self)
         d.can_share = can_share(self)
         d.can_move_run_as_owner = may_move_run_as_owner(self)
+        d.can_show_in_desk = can_show_in_desk(self)
         return d
 
     def validate(self):
@@ -116,6 +118,43 @@ class InsightsChartv3(Document):
 
         standard.export_member(self)
         capture_visibility_widened(self)
+        self.keep_reading_cells()
+
+    def keep_reading_cells(self):
+        """Keep one cell per reading on every dashboard that shows this Number chart.
+
+        A dashboard cell shows one reading, and the cells are made when the chart
+        is added, so `follow_readings` applies this save's change of readings.
+        An import or a sync writes the dashboards itself. A dashboard shows only
+        charts of its own workbook (`check_dashboard_chart_access`), and whoever
+        may save this chart may edit that workbook, so its dashboards save
+        without a second check.
+        """
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import follow_readings
+
+        before = self.get_doc_before_save()
+        if (
+            not before
+            or self.chart_type != "Number"
+            or any(frappe.flags.get(flag) for flag in standard.SYSTEM_WRITE_FLAGS)
+        ):
+            return
+        was = number_readings(frappe.parse_json(before.config)) if before.chart_type == "Number" else []
+        now = number_readings(frappe.parse_json(self.config))
+        if was == now:
+            return
+
+        for name in frappe.get_all(
+            "Insights Dashboard Chart v3",
+            filters={"chart": self.name, "parenttype": "Insights Dashboard v3"},
+            pluck="parent",
+            distinct=True,
+        ):
+            dashboard = frappe.get_doc("Insights Dashboard v3", name)
+            items = frappe.parse_json(dashboard.items) or []
+            if follow_readings(items, self.name, was, now):
+                dashboard.items = frappe.as_json(items)
+                dashboard.save(ignore_permissions=True)
 
     def before_rename(self, old_name, new_name, merge=False):
         standard.guard_member(self)
@@ -125,7 +164,7 @@ class InsightsChartv3(Document):
 
     def on_trash(self):
         standard.guard_member(self)
-        if not self.flags.force_delete:
+        if not (self.flags.force_delete or standard.deleted_with_workbook(self)):
             refuse_delete_while_claimed(self.title or self.name, claims_on(self.doctype, {"name": self.name}))
             refuse_delete_while_linked(self, taken=("Insights Dashboard v3",))
         self.remove_from_dashboards()
@@ -433,6 +472,22 @@ class InsightsChartv3(Document):
         query.flags.execution_reference = self.query
         return query
 
+    def setup_errors(self, config: dict | None = None) -> list[str]:
+        """What the chart still needs before it can run: a slot `config_errors`
+        names, or a source query with no operations yet.
+
+        The builder saves a new query after the chart beside it asks for rows, so
+        an empty query is a step on the way to a chart, not a broken one.
+        """
+        if config is None:
+            config = frappe.parse_json(self.config or "{}")
+        if errors := config_errors(self.chart_type, self.query, config):
+            return errors
+        query = frappe.db.get_value("Insights Query v3", self.query, ["name", "operations"], as_dict=True)
+        if query and not frappe.parse_json(query.operations or "[]"):
+            return [_("Query is empty")]
+        return []
+
     def get_operations(self, order_by: list | None = None):
         """The operations that produce the chart's rows.
 
@@ -447,7 +502,7 @@ class InsightsChartv3(Document):
         config = frappe.parse_json(self.config or "{}")
         if order_by is not None:
             config["order_by"] = reader_order(order_by)
-        errors = config_errors(self.chart_type, self.query, config)
+        errors = self.setup_errors(config)
         if errors:
             frappe.throw(
                 _("Chart {0} is not configured: {1}. Open it in Insights to configure it.").format(
@@ -464,6 +519,10 @@ class InsightsChartv3(Document):
         from insights.permissions import published_reach
 
         return published_reach(self)
+
+    @frappe.whitelist(methods=["POST"])
+    def show_in_desk(self) -> dict:
+        return show_in_desk(self)
 
     @frappe.whitelist()
     def export(self):
