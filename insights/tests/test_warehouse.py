@@ -20,7 +20,6 @@ import ibis
 import pandas as pd
 import pyarrow as pa
 from duckdb import ConversionException, IOException
-from frappe.concurrency_limiter import WebTierSettings
 from frappe.utils import add_to_date
 from ibis.backends.duckdb import Backend as DuckDBBackend
 from rq.job import JobStatus
@@ -49,6 +48,7 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
 )
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import execute_ibis_query
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import after_request
+from insights.insights.doctype.insights_data_source_v3.web_tier import WebTierSettings
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
