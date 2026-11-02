@@ -12,7 +12,7 @@ const props = defineProps<{ column: QueryResultColumn }>()
 		<Button
 			variant="ghost"
 			class="w-full !justify-start"
-			icon-left="arrow-up"
+			icon-left="lucide-arrow-up"
 			@click="emit('sort', 'asc')"
 		>
 			<span class="truncate">Ascending</span>
@@ -20,7 +20,7 @@ const props = defineProps<{ column: QueryResultColumn }>()
 		<Button
 			variant="ghost"
 			class="w-full !justify-start"
-			icon-left="arrow-down"
+			icon-left="lucide-arrow-down"
 			@click="emit('sort', 'desc')"
 		>
 			<span class="truncate">Descending</span>
@@ -28,7 +28,7 @@ const props = defineProps<{ column: QueryResultColumn }>()
 		<Button
 			variant="ghost"
 			class="w-full !justify-start"
-			icon-left="x"
+			icon-left="lucide-x"
 			@click="emit('sort', '')"
 		>
 			<span class="truncate">Remove Sort</span>

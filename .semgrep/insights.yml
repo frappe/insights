@@ -1,0 +1,132 @@
+rules:
+  # Semgrep matches a `try` by its exact shape, so each shape a handler sits in is a
+  # pattern of its own. A handler in a `try` of three or more is not matched.
+  - id: except-returns-default
+    languages: [python]
+    severity: ERROR
+    message: >-
+      This failure reaches the caller as a normal value. Handle the error, let it
+      propagate, or end the line with `# nosemgrep - <why the default is the answer>`.
+    paths:
+      exclude:
+        - /insights/patches/
+        - /insights/tests/
+        - test_*.py
+    patterns:
+      - pattern-either:
+          - pattern: |
+              try:
+                  ...
+              except ...:
+                  $BODY
+          - pattern: |
+              try:
+                  ...
+              except ...:
+                  $BODY
+              else:
+                  ...
+          - pattern: |
+              try:
+                  ...
+              except ...:
+                  $BODY
+              finally:
+                  ...
+          - pattern: |
+              try:
+                  ...
+              except ...:
+                  $BODY
+              except ...:
+                  ...
+          - pattern: |
+              try:
+                  ...
+              except ...:
+                  ...
+              except ...:
+                  $BODY
+      - metavariable-regex:
+          metavariable: $BODY
+          regex: ^(pass|return( None| \[\]| \{\}| False| 0)?)$
+      - focus-metavariable: $BODY
+
+  - id: suppress-swallows-failure
+    languages: [python]
+    severity: ERROR
+    message: >-
+      `suppress(Exception)` hides every failure in the block, as `except Exception: pass`
+      does. Handle the error, suppress only the error you expect, or end the line with
+      `# nosemgrep - <why no failure matters here>`.
+    paths:
+      exclude:
+        - /insights/patches/
+        - /insights/tests/
+        - test_*.py
+    patterns:
+      - pattern-either:
+          - pattern: |
+              with contextlib.suppress(..., $ERROR, ...):
+                  ...
+          - pattern: |
+              with contextlib.suppress(..., (..., $ERROR, ...), ...):
+                  ...
+      - metavariable-regex:
+          metavariable: $ERROR
+          regex: ^(Exception|BaseException)$
+
+  - id: patch-writes-without-controller
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A patch that writes around the controller skips its validation and hooks, so the
+      next change to the controller has to fix the patch too. Use `doc.insert()` or
+      `doc.save()`.
+    paths:
+      include:
+        - /insights/patches/
+      exclude:
+        # Sites upgrading from v2 still run it. It keeps the legacy timestamps that
+        # `insert()` would overwrite, so it is left as it is.
+        - /insights/patches/normalize_workbook.py
+    pattern-either:
+      - patterns:
+          - pattern: $DOC.$METHOD(...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(db_insert|db_update|db_set|before_validate|validate|before_save|after_save|before_insert|after_insert|on_update|before_submit|on_submit|before_cancel|on_cancel|on_trash|after_delete|before_rename|after_rename)$
+      - patterns:
+          - pattern: $DOC.run_method("$HOOK", ...)
+          - metavariable-regex:
+              metavariable: $HOOK
+              regex: ^(before_validate|validate|before_save|after_save|before_insert|after_insert|on_update|before_submit|on_submit|before_cancel|on_cancel|on_trash|after_delete|before_rename|after_rename)$
+
+  # A table's member outranks its column of the same name on attribute access, so a
+  # column the author named `execute` or `to_csv` read by `getattr` is the bound method.
+  # Deny by default: a new receiver of a computed name is a column read until shown otherwise.
+  - id: column-read-by-attribute
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A computed name read by attribute from a table or `_` gets the table's member when
+      the column is named like one. Read the column by item: `table[name]`, `_[name]`.
+    paths:
+      include:
+        - /insights/insights/doctype/insights_data_source_v3/
+        - /insights/insights/doctype/insights_query_v3/
+        - /insights/insights/doctype/insights_table_v3/
+        - /insights/insights/doctype/insights_table_import_job/
+        - /insights/insights/doctype/insights_team/
+        - /insights/user_permissions.py
+      exclude:
+        - test_*.py
+    patterns:
+      - pattern-either:
+          - pattern: getattr($TABLE, $NAME)
+          - pattern: getattr($TABLE, $NAME, $DEFAULT)
+      - pattern-not: getattr($TABLE, "...", ...)
+      - metavariable-regex:
+          metavariable: $TABLE
+          # modules, the request local and the sandbox's document proxy take computed names by design
+          regex: ^(?!(ibis|s|functions|frappe\.local|self\._doc)$)

@@ -1,0 +1,561 @@
+"""The rewrite of every older chart config shape.
+
+See the `normalize_chart_config` docstring in `chart_query.py` for why. The
+expected outputs below are what the browser's `handleOld*` functions produced
+before they were deleted.
+"""
+
+import copy
+
+import frappe
+
+from insights.insights.doctype.insights_chart_v3.chart_query import (
+    normalize_chart_config as normalize,
+)
+from insights.patches.normalize_chart_configs import draw_as_insights_3, statistic_lines_moved
+from insights.patches.normalize_chart_configs import execute as run_patch
+from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import DT, create_test_workbook
+from insights.upgrade import ITEM
+
+OWNER = "Administrator"
+WORKBOOK_TITLE = "Chart Config Normalization Test Workbook"
+
+
+def measure(name):
+    return {
+        "measure_name": name,
+        "column_name": name.lower(),
+        "data_type": "Decimal",
+        "aggregation": "sum",
+    }
+
+
+class TestChartConfigNormalization(InsightsIntegrationTestCase):
+    """`normalize_chart_config` on its own: the rewrite, without a document behind it."""
+
+    SAVEPOINT = "test_chart_config_normalization"
+
+    # @feature upgrade.chart-config-older-shapes
+    def test_an_axis_that_was_the_dimension_itself_keeps_it(self):
+        dimension = {"column_name": "posting_date", "data_type": "Date", "granularity": "month"}
+
+        written = normalize(
+            {"x_axis": copy.deepcopy(dimension), "split_by": {"column_name": "region", "data_type": "String"}}
+        )
+
+        self.assertEqual(written["x_axis"], {"dimension": {**dimension, "dimension_name": "posting_date"}})
+        self.assertEqual(
+            written["split_by"]["dimension"],
+            {"column_name": "region", "data_type": "String", "dimension_name": "region"},
+        )
+
+    # @feature upgrade.chart-config-older-shapes
+    def test_a_value_axis_that_was_a_list_of_measures_plots_them_as_series(self):
+        written = normalize({"y_axis": [measure("Revenue"), measure("Profit")]})
+
+        self.assertEqual(
+            written["y_axis"],
+            {"series": [{"measure": measure("Revenue")}, {"measure": measure("Profit")}]},
+        )
+
+    # @feature charts.tooltip-measures upgrade.chart-config-older-shapes
+    def test_a_series_hidden_from_the_chart_becomes_a_tooltip_measure(self):
+        written = normalize(
+            {
+                "y_axis": {
+                    "series": [
+                        {"measure": measure("Revenue")},
+                        {"measure": measure("Margin"), "hide_from_chart": True},
+                    ]
+                }
+            }
+        )
+
+        self.assertEqual(written["y_axis"]["series"], [{"measure": measure("Revenue")}])
+        self.assertEqual(written["tooltip"], {"measures": [measure("Margin")]})
+
+    # A chart that hid every series has nothing left to plot, and the renderer
+    # renders nothing at all rather than an empty plot.
+    # @feature charts.tooltip-measures upgrade.chart-config-older-shapes
+    def test_a_chart_that_hid_every_series_is_left_alone(self):
+        config = {"y_axis": {"series": [{"measure": measure("Revenue"), "hide_from_chart": True}]}}
+
+        self.assertEqual(normalize(config), config)
+
+    # @feature charts.series-type upgrade.chart-config-older-shapes
+    def test_a_series_marked_in_the_other_case_is_folded_to_the_one_the_renderer_reads(self):
+        written = normalize(
+            {
+                "y_axis": {
+                    "series": [
+                        {"measure": measure("Revenue"), "type": "Bar"},
+                        {"measure": measure("Margin"), "type": "Line"},
+                    ]
+                }
+            }
+        )
+
+        self.assertEqual([s["type"] for s in written["y_axis"]["series"]], ["bar", "line"])
+
+    # @feature charts.axis-min-max upgrade.chart-config-older-shapes
+    def test_an_axis_bound_the_form_wrote_as_text_is_a_number_and_a_cleared_one_is_gone(self):
+        written = normalize({"y_axis": {"series": [], "min": "0", "max": ""}})
+
+        self.assertEqual(written["y_axis"]["min"], 0)
+        self.assertNotIn("max", written["y_axis"])
+
+    # @feature charts.reference-lines upgrade.chart-config-older-shapes
+    def test_a_reference_line_saved_before_ids_is_given_one(self):
+        written = normalize(
+            {"y_axis": {"series": [{"measure": measure("Revenue")}], "reference_lines": [{"value": 500}]}}
+        )
+
+        self.assertTrue(written["y_axis"]["reference_lines"][0]["id"])
+
+    # `statistic` read every plotted number on the axis, so it named no Measure.
+    # @feature charts.reference-lines upgrade.chart-config-older-shapes
+    def test_a_statistic_line_is_read_against_the_first_series_of_its_axis(self):
+        written = normalize(
+            {
+                "y_axis": {
+                    "series": [
+                        {"measure": measure("Revenue")},
+                        {"measure": measure("Margin"), "align": "Right"},
+                    ],
+                    "reference_lines": [{"statistic": "average", "align": "Right"}],
+                }
+            }
+        )
+
+        line = written["y_axis"]["reference_lines"][0]
+        self.assertNotIn("statistic", line)
+        self.assertEqual(line["aggregate"], "average")
+        self.assertEqual(line["measure_name"], "Margin")
+        self.assertEqual(line["axis"], "y")
+
+    # @feature charts.config-typed-values upgrade.chart-config-older-shapes
+    def test_a_number_box_that_wrote_text_holds_the_number_and_a_cleared_one_is_gone(self):
+        written = normalize(
+            {
+                "limit": "1000",
+                "max_column_values": "",
+                "split_by": {
+                    "dimension": {"column_name": "region", "data_type": "String"},
+                    "max_split_values": "10",
+                },
+                "number_column_options": [{"decimal": "2"}],
+            }
+        )
+
+        self.assertEqual(written["limit"], 1000)
+        self.assertNotIn("max_column_values", written)
+        self.assertEqual(written["split_by"]["max_split_values"], 10)
+        self.assertEqual(written["number_column_options"][0]["decimal"], 2)
+
+    # Every slot, so a reader never falls back to `column_name` for the ones the
+    # rewrite forgot.
+    # @feature charts.dimension-label upgrade.chart-config-older-shapes
+    def test_a_dimension_saved_before_it_had_a_name_is_named_after_its_column(self):
+        written = normalize(
+            {
+                "x_axis": {"dimension": {"column_name": "region"}},
+                "split_by": {"dimension": {"column_name": "channel"}},
+                "date_column": {"column_name": "posting_date"},
+                "label_column": {"column_name": "item"},
+                "source_column": {"column_name": "from"},
+                "target_column": {"column_name": "to"},
+                "x_column": {"column_name": "day"},
+                "y_column": {"column_name": "hour"},
+                "dimension": {"column_name": "customer"},
+                "quadrant_column": {"column_name": "territory"},
+                "location_column": {"column_name": "state"},
+                "rows": [{"column_name": "company"}],
+                "columns": [{"column_name": "month", "dimension_name": "Month"}],
+            }
+        )
+
+        self.assertEqual(written["x_axis"]["dimension"]["dimension_name"], "region")
+        self.assertEqual(written["split_by"]["dimension"]["dimension_name"], "channel")
+        self.assertEqual(written["date_column"]["dimension_name"], "posting_date")
+        self.assertEqual(written["label_column"]["dimension_name"], "item")
+        self.assertEqual(written["source_column"]["dimension_name"], "from")
+        self.assertEqual(written["target_column"]["dimension_name"], "to")
+        self.assertEqual(written["x_column"]["dimension_name"], "day")
+        self.assertEqual(written["y_column"]["dimension_name"], "hour")
+        self.assertEqual(written["dimension"]["dimension_name"], "customer")
+        self.assertEqual(written["quadrant_column"]["dimension_name"], "territory")
+        self.assertEqual(written["location_column"]["dimension_name"], "state")
+        self.assertEqual(written["rows"][0]["dimension_name"], "company")
+        # the name its author gave it stands
+        self.assertEqual(written["columns"][0]["dimension_name"], "Month")
+
+    # @feature charts.config-typed-values upgrade.chart-config-older-shapes
+    def test_a_slot_holds_the_dimension_and_not_the_option_the_picker_handed_it(self):
+        written = normalize(
+            {
+                "rows": [
+                    {
+                        "column_name": "region",
+                        "data_type": "String",
+                        "dimension_name": "Region",
+                        "label": "region",
+                        "value": "region",
+                        "type": "dimension",
+                        "resolvedSlots": {},
+                    }
+                ],
+                "values": [{**measure("Revenue"), "label": "Revenue", "value": "Revenue"}],
+            }
+        )
+
+        self.assertEqual(
+            written["rows"][0],
+            {"column_name": "region", "data_type": "String", "dimension_name": "Region"},
+        )
+        self.assertEqual(written["values"][0], measure("Revenue"))
+
+    # A card's readings are measures, and the id is what a dashboard cell names
+    # one by: `reading_id` in `resize_dashboard_cells.py` reads it.
+    # @feature charts.number-readings upgrade.chart-config-older-shapes
+    def test_a_readings_id_survives_the_slot_it_sits_in(self):
+        written = normalize({"number_columns": [{**measure("Revenue"), "id": "Revenue", "label": "Revenue"}]})
+
+        self.assertEqual(written["number_columns"][0]["id"], "Revenue")
+        self.assertNotIn("label", written["number_columns"][0])
+
+    # @feature charts.number-readings dashboard.number-cell-per-reading upgrade.chart-config-older-shapes
+    def test_a_reading_saved_before_ids_takes_its_measures_name(self):
+        written = normalize({"number_columns": [measure("Revenue"), {**measure("Margin"), "id": "Profit"}]})
+
+        self.assertEqual(written["number_columns"][0]["id"], "Revenue")
+        # the id it was saved with stands, whatever its Measure is called now
+        self.assertEqual(written["number_columns"][1]["id"], "Profit")
+
+    # @feature charts.number-readings upgrade.chart-config-older-shapes
+    def test_a_reading_that_names_no_measure_takes_an_id_that_stands(self):
+        written = normalize({"number_columns": [{}]})
+
+        self.assertTrue(written["number_columns"][0]["id"])
+        self.assertEqual(normalize(written), written)
+
+    # The rewrite drops what a picker left. It does not hold the slot to a list
+    # of allowed keys, because a field a chart type gains later is nobody's
+    # leftover.
+    # @feature charts.config-typed-values upgrade.chart-config-older-shapes
+    def test_a_slot_keeps_a_key_the_rewrite_has_no_rule_for(self):
+        written = normalize(
+            {"rows": [{"column_name": "region", "dimension_name": "Region", "timezone": "IST"}]}
+        )
+
+        self.assertEqual(written["rows"][0]["timezone"], "IST")
+
+    # A Number card is the one chart type whose own older shapes are a rewrite of
+    # their own, and a card that arrives from an import has to be
+    # stored through them too.
+    # @feature charts.type-number upgrade.number-older-shapes upgrade.chart-config-older-shapes
+    def test_a_number_card_is_stored_through_the_readings_own_rewrite(self):
+        written = normalize(
+            {"number_columns": [measure("Revenue")], "comparison": True},
+            "Number",
+        )
+
+        self.assertNotIn("comparison", written)
+        self.assertEqual(written["number_column_options"][0]["comparison"], {"source": "previous"})
+
+    # A user's own text keys some of a config's maps, and a name that reads like
+    # a number box is still a name.
+    # @feature charts.number-format charts.config-typed-values
+    def test_a_measure_named_after_a_number_box_keeps_its_format(self):
+        written = normalize({"number_formats": {"max": {"decimals": "2"}, "Revenue": {"prefix": "$"}}})
+
+        self.assertEqual(written["number_formats"]["max"], {"decimals": 2})
+        self.assertEqual(written["number_formats"]["Revenue"], {"prefix": "$"})
+
+    # @feature upgrade.chart-config-older-shapes
+    def test_a_config_already_in_the_shape_is_left_alone(self):
+        config = {
+            "limit": 100,
+            "x_axis": {
+                "dimension": {"column_name": "region", "data_type": "String", "dimension_name": "region"}
+            },
+            "y_axis": {"series": [{"measure": measure("Revenue"), "type": "bar"}], "stack": True},
+        }
+
+        self.assertEqual(normalize(config), config)
+
+    # @feature upgrade.chart-config-older-shapes
+    def test_a_second_run_changes_nothing(self):
+        config = {
+            "limit": "1000",
+            "x_axis": {"column_name": "region", "data_type": "String"},
+            "y_axis": [measure("Revenue")],
+        }
+
+        once = normalize(config)
+
+        self.assertEqual(normalize(once), once)
+
+
+class TestChartConfigNormalizationPatch(InsightsIntegrationTestCase):
+    SAVEPOINT = "test_chart_config_normalization_patch"
+
+    @classmethod
+    def before_class(cls):
+        cls.workbook = create_test_workbook(OWNER, title=WORKBOOK_TITLE).name
+
+    @classmethod
+    def after_class(cls):
+        for chart in frappe.get_all(DT.CHART, filters={"workbook": cls.workbook}, pluck="name"):
+            frappe.delete_doc(DT.CHART, chart, force=True)
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True)
+
+    def chart(self, config):
+        """A chart whose stored config is the one given, older shape and all.
+
+        The insert normalizes, so the config is written under it — these rows
+        stand for the ones stored before `validate` normalized anything.
+        """
+        name = (
+            frappe.get_doc(
+                {
+                    "doctype": DT.CHART,
+                    "title": "Trend",
+                    "workbook": self.workbook,
+                    "chart_type": "Line",
+                    "config": {},
+                }
+            )
+            .insert()
+            .name
+        )
+        frappe.db.set_value(DT.CHART, name, "config", frappe.as_json(config), update_modified=False)
+        return name
+
+    # @feature upgrade.chart-config-older-shapes
+    def test_a_config_saved_in_an_older_shape_is_stored_in_todays(self):
+        chart = frappe.get_doc(
+            {
+                "doctype": DT.CHART,
+                "title": "Trend",
+                "workbook": self.workbook,
+                "chart_type": "Line",
+                "config": {"x_axis": {"column_name": "region", "data_type": "String"}},
+            }
+        ).insert()
+
+        stored = frappe.parse_json(frappe.db.get_value(DT.CHART, chart.name, "config"))
+        self.assertEqual(
+            stored["x_axis"]["dimension"],
+            {"column_name": "region", "data_type": "String", "dimension_name": "region"},
+        )
+
+    # An import is the one path that can still bring in an older Number card, so
+    # the insert converts it.
+    # @feature charts.type-number upgrade.number-older-shapes
+    def test_a_number_card_that_arrives_in_an_older_shape_is_stored_in_todays(self):
+        chart = frappe.get_doc(
+            {
+                "doctype": DT.CHART,
+                "title": "Revenue",
+                "workbook": self.workbook,
+                "chart_type": "Number",
+                "config": {"number_columns": [measure("Revenue")], "comparison": True},
+            }
+        ).insert()
+
+        stored = frappe.parse_json(frappe.db.get_value(DT.CHART, chart.name, "config"))
+        self.assertNotIn("comparison", stored)
+        self.assertEqual(stored["number_column_options"][0]["comparison"], {"source": "previous"})
+
+    # @feature upgrade.chart-config-older-shapes
+    def test_the_stored_chart_is_rewritten_without_touching_when_it_was_modified(self):
+        name = self.chart(
+            {
+                "limit": "1000",
+                "x_axis": {"column_name": "region", "data_type": "String"},
+                "y_axis": {"series": [{"measure": measure("Revenue"), "type": "Line"}]},
+            }
+        )
+        modified = frappe.db.get_value(DT.CHART, name, "modified")
+
+        run_patch()
+
+        stored = frappe.parse_json(frappe.db.get_value(DT.CHART, name, "config"))
+        self.assertEqual(stored["limit"], 1000)
+        self.assertEqual(stored["x_axis"]["dimension"]["column_name"], "region")
+        self.assertEqual(stored["y_axis"]["series"][0]["type"], "line")
+        self.assertEqual(frappe.db.get_value(DT.CHART, name, "modified"), modified)
+
+    # @feature upgrade.chart-config-older-shapes
+    def test_a_chart_already_in_the_shape_is_not_written(self):
+        name = self.chart(
+            {
+                "limit": 100,
+                "x_axis": {
+                    "dimension": {"column_name": "region", "data_type": "String", "dimension_name": "region"}
+                },
+                "y_axis": {"series": [{"measure": measure("Revenue")}]},
+            }
+        )
+        before = frappe.db.get_value(DT.CHART, name, "config")
+
+        run_patch()
+
+        self.assertEqual(frappe.db.get_value(DT.CHART, name, "config"), before)
+
+
+def drawn(chart_type, config):
+    """The config as Insights v3.50 draws what Insights before v3.50 drew, and what could not be kept."""
+    config = copy.deepcopy(config)
+    found = draw_as_insights_3(config, chart_type, "Card")
+    return config, found
+
+
+def number_card(date_column=None, window=None, **options):
+    config = {
+        "number_columns": [{**measure("Revenue"), "format": options.pop("format", None)}],
+        "number_column_options": [options],
+    }
+    if date_column:
+        config["date_column"] = date_column
+    if window:
+        config["window"] = window
+    return config
+
+
+class TestDrawnAsInsightsV3(InsightsIntegrationTestCase):
+    """The one-time step that writes what Insights before v3.50 assumed when it drew a chart."""
+
+    SAVEPOINT = "test_drawn_as_insights_v3"
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_bar_that_stated_no_stack_stacks_and_one_that_did_keeps_it(self):
+        self.assertTrue(drawn("Bar", {"y_axis": {"series": []}})[0]["y_axis"]["stack"])
+        self.assertFalse(drawn("Bar", {"y_axis": {"stack": False}})[0]["y_axis"]["stack"])
+        self.assertNotIn("stack", drawn("Row", {"y_axis": {}})[0]["y_axis"])
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_line_drops_the_stack_it_never_drew(self):
+        config, _ = drawn(
+            "Line", {"y_axis": {"series": [], "stack": True, "normalize": True, "overlap": True}}
+        )
+
+        self.assertEqual(config["y_axis"], {"series": []})
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_donut_draws_as_many_slices_before_others(self):
+        self.assertEqual(drawn("Donut", {})[0]["max_slices"], 11)
+        self.assertEqual(drawn("Donut", {"max_slices": 6})[0]["max_slices"], 7)
+        self.assertEqual(drawn("Donut", {"max_slices": 0})[0]["max_slices"], 11)
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_number_suffix_prints_after_the_unit_and_a_blank_one_leaves_it(self):
+        percent, _ = drawn("Number", number_card(format="percent", suffix=" of target", prefix=""))
+        blank, _ = drawn("Number", number_card(format="percent", suffix=""))
+
+        self.assertEqual(percent["number_column_options"][0], {"suffix": "% of target"})
+        self.assertEqual(blank["number_column_options"][0], {})
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_reading_with_no_prefix_of_its_own_takes_the_cards(self):
+        config = {**number_card(), "prefix": "Rs ", "suffix": " inv"}
+
+        config, _ = drawn("Number", config)
+
+        self.assertEqual(config["number_column_options"][0], {"prefix": "Rs ", "suffix": " inv"})
+        self.assertNotIn("prefix", config)
+        self.assertNotIn("suffix", config)
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_currency_suffix_after_a_symbol_on_the_right_is_reported(self):
+        config = {**number_card(format="currency", suffix=" net"), "currency_column": "currency"}
+
+        config, found = drawn("Number", config)
+
+        self.assertEqual(config["number_column_options"][0], {"suffix": " net"})
+        self.assertEqual(
+            [(code, data) for code, _, data in found], [("N4", {"chart": "Card", "suffix": " net"})]
+        )
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_card_on_a_date_reads_its_latest_day(self):
+        date = {"column_name": "posting_date", "data_type": "Date"}
+
+        config, found = drawn("Number", number_card(date))
+        monthly, _ = drawn("Number", number_card(date, window={"grain": "month"}))
+        timed, timed_found = drawn("Number", number_card({**date, "data_type": "Datetime"}))
+
+        self.assertEqual((config["window"], found), ({"grain": "day"}, []))
+        self.assertEqual(monthly["window"], {"grain": "month"})
+        self.assertEqual(timed["window"], {"grain": "day"})
+        self.assertEqual(
+            [(code, data) for code, _, data in timed_found],
+            [("N5", {"chart": "Card", "column": "posting_date"})],
+        )
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_card_on_a_time_of_day_shows_the_total_and_is_reported(self):
+        config, found = drawn(
+            "Number",
+            number_card({"column_name": "at", "data_type": "Time"}, window={"grain": "hour"}),
+        )
+
+        self.assertNotIn("window", config)
+        self.assertEqual(
+            [(code, data) for code, _, data in found], [("N6", {"chart": "Card", "column": "at"})]
+        )
+
+    # @feature upgrade.charts-draw-as-before
+    def test_a_statistic_line_over_more_than_one_series_or_none_is_reported(self):
+        def moved(series, split=None):
+            config = {"y_axis": {"series": series, "reference_lines": [{"statistic": "average"}]}}
+            if split:
+                config["split_by"] = {"dimension": {"column_name": split}}
+            return statistic_lines_moved(config, normalize(config), "Card")
+
+        one, two = (
+            [{"measure": measure("Revenue")}],
+            [{"measure": measure("Revenue")}, {"measure": measure("Cost")}],
+        )
+
+        self.assertEqual(moved(one), [])
+        self.assertEqual([code for code, *_ in moved(two)], ["C4"])
+        self.assertIn("line reads Revenue only", moved(two)[0][1])
+        self.assertEqual(
+            moved(two)[0][2],
+            {"chart": "Card", "lines": [{"statistic": "average", "removed": False, "measure": "Revenue"}]},
+        )
+        self.assertEqual([code for code, *_ in moved(one, split="region")], ["C4"])
+        self.assertIn("line removed", moved([])[0][1])
+        self.assertEqual(
+            moved([])[0][2],
+            {"chart": "Card", "lines": [{"statistic": "average", "removed": True, "measure": None}]},
+        )
+
+    # @feature upgrade.charts-draw-as-before
+    def test_the_patch_tells_the_owner_what_it_could_not_keep(self):
+        frappe.db.delete(ITEM)
+        workbook = create_test_workbook(OWNER, title=WORKBOOK_TITLE).name
+        chart = frappe.get_doc(
+            {
+                "doctype": DT.CHART,
+                "title": "Busy hour",
+                "workbook": workbook,
+                "chart_type": "Number",
+                "config": {},
+            }
+        ).insert()
+        config = number_card({"column_name": "at", "data_type": "Time", "granularity": "hour"})
+        frappe.db.set_value(DT.CHART, chart.name, "config", frappe.as_json(config), update_modified=False)
+
+        run_patch()
+
+        stored = frappe.parse_json(frappe.db.get_value(DT.CHART, chart.name, "config"))
+        self.assertNotIn("window", stored)
+        self.assertNotIn("granularity", stored["date_column"])
+        message, data = frappe.db.get_value(
+            ITEM, {"code": "N6", "reference_name": chart.name}, ["message", "data"]
+        )
+        self.assertIn('"Busy hour"', message)
+        self.assertEqual(frappe.parse_json(data), {"chart": "Busy hour", "column": "at"})

@@ -48,21 +48,25 @@ class StoredDocumentDecides:
     def export_workbook(self, name, **claims):
         return run_doc_method("export", {"doctype": DT.WORKBOOK, "name": name, **claims})
 
+    # @feature permissions.request-body-not-trusted
     def test_the_owner_exports_their_own_workbook(self):
         """The baseline the refusals below are measured against."""
         with self.as_user(OWNER):
             exported = self.export_workbook(self.owner_workbook)
-        self.assertIn(self.owner_query, exported["dependencies"]["queries"])
+        self.assertIn(self.owner_query, exported["queries"])
 
+    # @feature permissions.request-body-not-trusted
     def test_another_user_cannot_export_the_workbook(self):
         with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
             self.export_workbook(self.owner_workbook)
 
+    # @feature permissions.request-body-not-trusted
     def test_claiming_to_own_the_workbook_does_not_grant_export(self):
         """`owner` decides access, and the body is not where it is read from."""
         with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
             self.export_workbook(self.owner_workbook, owner=OTHER)
 
+    # @feature permissions.request-body-not-trusted
     def test_claiming_a_workbook_does_not_grant_a_query_method(self):
         """A query's access runs through its workbook, so that link is stored too."""
         with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
@@ -76,6 +80,7 @@ class StoredDocumentDecides:
                 },
             )
 
+    # @feature permissions.request-body-not-trusted
     def test_calling_a_stored_document_unsaved_does_not_grant_a_method(self):
         """`__islocal` is the client saying it has nothing saved yet. A stored row
         under that name says otherwise."""
@@ -90,6 +95,7 @@ class StoredDocumentDecides:
                 },
             )
 
+    # @feature permissions.request-body-not-trusted
     def test_a_document_the_client_has_not_saved_still_runs(self):
         """The builder runs a query before it is saved, and there is no stored
         row to decide from."""
@@ -107,12 +113,13 @@ class StoredDocumentDecides:
             )
         self.assertIn("select", formatted.lower())
 
+    # @feature shared.public-methods-bounded
     def test_a_guest_cannot_run_a_method_on_an_unsaved_document(self):
         """The unsaved path is not a way in.
 
         A guest holds no permission on the doctype and no Insights role, so the
-        method surface refuses before a document is built. What a guest reaches is
-        a public document, and an unsaved one is nobody's.
+        call fails before a document is built. A guest reads only through
+        `insights.api.view`.
         """
         with self.as_user("Guest"), self.assertRaises(frappe.PermissionError):
             run_doc_method(
@@ -137,6 +144,20 @@ class StoredDocumentDecides:
                 },
             )
 
+    # @feature permissions.request-body-not-trusted
+    def test_a_forged_document_does_not_pass_the_controller(self):
+        """Frappe's `/api/v2` route builds the document from the request body,
+        `owner` and `__islocal` included. Both routes share the controller, so
+        the controller must check the stored row."""
+        forged = frappe.get_doc({"doctype": DT.QUERY})
+        forged.update({"name": self.owner_query, "owner": OTHER, "__islocal": 1})
+        self.assertTrue(forged.is_new())
+
+        with self.as_user(OTHER):
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=forged))
+            self.assertFalse(frappe.has_permission(DT.QUERY, ptype="write", doc=forged))
+
+    # @feature permissions.request-body-not-trusted
     def test_a_filter_set_is_not_a_name(self):
         """One name is one document. A dict would reach every matching row."""
         with self.as_user(OTHER), self.assertRaises(frappe.ValidationError):

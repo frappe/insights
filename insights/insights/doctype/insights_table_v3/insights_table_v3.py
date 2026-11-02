@@ -7,6 +7,7 @@ from hashlib import md5
 import frappe
 import ibis
 import sqlglot as sg
+from croniter import croniter
 from frappe.model.document import Document
 from frappe.permissions import get_valid_perms
 from frappe.query_builder.functions import Count, Max, Sum
@@ -14,6 +15,8 @@ from ibis import Table
 from ibis.backends.duckdb import Backend as DuckDBBackend
 
 import insights
+from insights import not_permitted, user_permissions
+from insights.exceptions import TableNotStored
 from insights.permission_user import get_permission_user
 from insights.utils import InsightsDataSourcev3
 
@@ -28,6 +31,7 @@ class InsightsTablev3(Document):
         from frappe.types import DF
 
         before_import_script: DF.Code | None
+        columns: DF.JSON | None
         data_source: DF.Link
         estimated_on: DF.Datetime | None
         estimated_row_count: DF.Int
@@ -40,6 +44,7 @@ class InsightsTablev3(Document):
         sync_from: DF.Datetime | None
         sync_mode: DF.Literal["Full", "Incremental"]
         sync_primary_key_column: DF.Data | None
+        sync_schedule: DF.Data
         sync_strategy: DF.Literal["Append Only", "Update or Insert"]
         table: DF.Data
     # end: auto-generated types
@@ -48,6 +53,12 @@ class InsightsTablev3(Document):
         self.name = get_table_name(self.data_source, self.table)
 
     def validate(self):
+        if not croniter.is_valid(self.sync_schedule):
+            frappe.throw(
+                frappe._("{0} is not a cron expression.").format(frappe.bold(self.sync_schedule)),
+                title=frappe._("Invalid Sync Schedule"),
+            )
+
         if self.sync_mode == "Incremental":
             self._validate_incremental_sync_config()
 
@@ -60,12 +71,61 @@ class InsightsTablev3(Document):
             except Exception as e:
                 frappe.throw(f"Error executing before import script: {e}")
 
+    def before_save(self):
+        self.drop_full_copy_on_switch_to_incremental()
+        self.check_cursor_is_stored()
+
+    def drop_full_copy_on_switch_to_incremental(self):
+        """An incremental import resumes from the newest stored cursor, so a Full copy
+        capped by the row limit must go, and the first import starts from Sync From.
+
+        Rows an incremental import stored stay: the source may have purged them."""
+        if not self.get_doc_before_save() or not self.has_value_changed("sync_mode"):
+            return
+        if self.sync_mode != "Incremental":
+            return
+
+        from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+            WarehouseTableImporter,
+        )
+
+        table = insights.warehouse.get_table(self.data_source, self.table)
+        # a running import commits rows read under the old settings after this drop
+        if WarehouseTableImporter(table).import_in_progress():
+            frappe.throw(
+                frappe._("{0} is being imported. Change its sync settings once the import finishes.").format(
+                    frappe.bold(self.table)
+                )
+            )
+
+        table.drop()
+        self.last_sync_bookmark = None
+
+    def check_cursor_is_stored(self):
+        """An incremental import resumes from the newest stored cursor, so a new cursor
+        must be a column of the stored rows."""
+        if not self.get_doc_before_save() or not self.has_value_changed("sync_cursor_column"):
+            return
+        if self.sync_mode != "Incremental":
+            return
+
+        table = insights.warehouse.get_table(self.data_source, self.table)
+        db = insights.warehouse.db
+        if table.warehouse_table_name not in db.list_tables(database=table.schema):
+            return
+
+        if self.sync_cursor_column not in db.table(table.warehouse_table_name, database=table.schema).columns:
+            frappe.throw(
+                frappe._(
+                    "The stored rows of {0} have no column {1}. Clear its stored data to use it as the cursor."
+                ).format(frappe.bold(self.table), frappe.bold(self.sync_cursor_column))
+            )
+
     def _validate_incremental_sync_config(self):
         try:
             remote = InsightsDataSourcev3.get_doc(self.data_source).get_ibis_table(self.table)
         except Exception:
-            # Can't connect right now — skip validation rather than blocking save.
-            return
+            return  # nosemgrep - a source that is down must not block the save, and the import reports the failure
 
         self.sync_strategy = self.sync_strategy or "Append Only"
 
@@ -136,7 +196,7 @@ class InsightsTablev3(Document):
         )
 
     @staticmethod
-    def get_ibis_table(data_source, table_name, use_live_connection=False):
+    def get_ibis_table(data_source, table_name, use_live_connection=False, import_if_not_exists=True):
         from insights.insights.doctype.insights_team.insights_team import (
             apply_table_restrictions,
             check_table_permission,
@@ -145,21 +205,35 @@ class InsightsTablev3(Document):
         # every table read funnels through here, so this is where the permission user
         # in effect decides whose permissions the rows are filtered by
         user = get_permission_user()
+        site_db = is_site_db(data_source)
 
-        # TODO: replace with frappe.has_permission()
-        check_table_permission(data_source, table_name, user=user)
+        # on the site database, `apply_user_permissions` refuses and names the doctypes
+        if not site_db:
+            check_table_permission(data_source, table_name, user=user)
+
+        def readable(t):
+            if site_db:
+                return apply_user_permissions(t, data_source, table_name, user=user)
+            return apply_table_restrictions(t, data_source, table_name, user=user)
 
         ds_type = frappe.db.get_value("Insights Data Source v3", data_source, "type", cache=True)
         if not use_live_connection and ds_type != "REST API":
             wt = insights.warehouse.get_table(data_source, table_name)
-            t = wt.get_ibis_table(import_if_not_exists=True)
-        else:
-            ds = InsightsDataSourcev3.get_doc(data_source)
-            t = ds.get_ibis_table(table_name)
+            try:
+                t = wt.get_ibis_table(import_if_not_exists=import_if_not_exists)
+            except TableNotStored as not_stored:
+                # a reader the live read refuses is told only that, not that the table is not
+                # stored. Only the site database refuses there; other sources were decided above
+                if site_db:
+                    try:
+                        readable(InsightsDataSourcev3.get_doc(data_source).get_ibis_table(table_name))
+                    except not_permitted.NotPermitted:
+                        not_permitted.forget_refusal(not_stored)
+                        raise
+                raise
+            return readable(t)
 
-        t = apply_table_restrictions(t, data_source, table_name, user=user)
-        t = apply_user_permissions(t, data_source, table_name, user=user)
-        return t
+        return readable(InsightsDataSourcev3.get_doc(data_source).get_ibis_table(table_name))
 
     def check_identity(self):
         """`autoname` builds the name out of the data source and the table, so the
@@ -191,13 +265,121 @@ class InsightsTablev3(Document):
 
     @frappe.whitelist()
     def get_stats(self):
-        """Return usage and sync statistics for this table."""
+        """Return usage and sync statistics for this table.
+
+        A site table's row count is for admins only: desk may narrow what a
+        reader sees of the table, or deny it.
+        """
+        from insights.insights.doctype.insights_team.insights_team import is_admin
+
         self.check_identity()
-        return get_table_stats(self.data_source, self.table)
+        stats = get_table_stats(self.data_source, self.table)
+        if is_site_db(self.data_source) and not is_admin(frappe.session.user):
+            stats["last_import_rows"] = None
+        return stats
 
 
 def get_table_name(data_source, table):
     return md5((data_source + table).encode()).hexdigest()[:10]
+
+
+def store_columns(data_source: str, table_name: str, schema: ibis.Schema) -> None:
+    """Record the columns of a remote table, so reading them needs no connection.
+
+    The only place that knows a table's shape is the source itself, and asking it
+    costs a round trip per table. Every caller that needs the shape of every table
+    - the schema browser, column search - therefore paid for one connection per
+    table. The sync already holds the schema, so it writes it down here instead.
+
+    A failure is never the caller's problem: the caller wanted the table, not the
+    record of its columns.
+    """
+    from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+        get_columns_from_schema,
+    )
+
+    try:
+        columns = get_columns_from_schema(schema)
+        name = get_table_name(data_source, table_name)
+        stored = frappe.db.get_value("Insights Table v3", name, "columns")
+        if stored and frappe.parse_json(stored) == columns:
+            return
+        frappe.db.set_value(
+            "Insights Table v3",
+            name,
+            "columns",
+            frappe.as_json(columns),
+            update_modified=False,
+        )
+    except Exception:
+        frappe.log_error("Failed to store table columns")
+
+
+def get_stored_columns(
+    data_source: str | None = None, user: str | None = None, contains: str | None = None
+) -> dict[str, frappe._dict]:
+    """Stored columns of every table the caller may read, keyed by table document name.
+
+    Each value includes `data_source`, `table`, `label` and `columns`, where `columns`
+    is narrowed to what the caller may read. A table synced before the columns were
+    stored is left out - it has nothing to report.
+
+    `contains` drops a table whose stored list does not hold the string at all, before
+    the permission checks run. The read itself is still every table's stored list. It
+    is the permission check, the expensive half, that a search pays only for what it
+    matches. The test reads types as well as names, so it over-includes and never
+    under-includes. The caller narrows the result either way.
+    """
+    tables = frappe.get_list(
+        "Insights Table v3",
+        filters={"data_source": data_source} if data_source else None,
+        fields=["name", "table", "label", "data_source", "columns"],
+        limit=0,
+    )
+
+    needle = (contains or "").lower()
+
+    # insights_team imports this module, so its import stays inside the function
+    from insights.insights.doctype.insights_team.insights_team import check_table_permission
+
+    permitted = {}
+    for table in tables:
+        if not table.columns:
+            continue
+        if needle and needle not in table.columns.lower():
+            continue
+        if not check_table_permission(table.data_source, table.table, user=user, raise_error=False):
+            continue
+        permitted[table.name] = frappe._dict(
+            data_source=table.data_source,
+            table=table.table,
+            label=table.label,
+            columns=filter_permitted_columns(
+                table.data_source, table.table, frappe.parse_json(table.columns), user=user
+            ),
+        )
+    return permitted
+
+
+def filter_permitted_columns(
+    data_source: str, table_name: str, columns: list[dict], user: str | None = None
+) -> list[dict]:
+    """Drop the columns `user` may not read.
+
+    A stored column list is what the source holds, not what the reader is allowed to
+    see. The query engine drops permlevel-restricted columns in
+    `apply_column_permissions`, and a column name is document content, so the same
+    rule has to hold wherever the stored list is read.
+    """
+    if not is_site_db(data_source):
+        return columns
+
+    try:
+        allowed = get_permitted_columns_for_table(strip_schema_prefix(table_name), user=user)
+    except Exception:
+        return []  # nosemgrep - a table the meta cannot check reports no column, so it fails closed
+
+    return [column for column in columns if column.get("name") in allowed]
 
 
 def get_table_stats(data_source: str, table_name: str) -> dict:
@@ -291,7 +473,7 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
     """The queries that reference this table and that the caller may read.
 
     `Insights Query Reference` is an edge table. It is granted to Administrator
-    and System Manager alone, and a join over it carries the joined query's title
+    and System Manager alone, and a join over it passes the joined query's title
     and workbook out with it. Reading a table says nothing about who may see the
     queries built on it, so each one is asked for by name.
     """
@@ -309,12 +491,12 @@ def _get_referencing_queries(data_source: str, table_name: str) -> list[dict]:
         "Insights Query v3",
         filters={"name": ("in", referencing)},
         fields=["name", "title", "workbook"],
-        limit_page_length=0,
+        limit=0,
     )
 
 
 def strip_schema_prefix(table_name: str) -> str:
-    """Drop the `<schema>.` prefix postgres table names used to always carry.
+    """Drop the `<schema>.` prefix postgres table names used to always have.
 
     The frappe table -> doctype mapping below needs the bare `tab`-prefixed name, so
     `public.tabUser` has to resolve to the `User` doctype and not blow up in `get_meta`.
@@ -325,41 +507,139 @@ def strip_schema_prefix(table_name: str) -> str:
     return table if separator and table.startswith("tab") else table_name
 
 
+def is_site_db(data_source: str) -> bool:
+    return bool(frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True))
+
+
 def apply_user_permissions(t: Table, data_source, table_name, user=None):
+    """The rows and columns of a site table that desk lets `user` read.
+
+    A team grant adds nothing and a Table Restriction removes nothing here:
+    on the site database, desk permissions are the only authority.
+    """
     user = user or get_permission_user()
 
-    if not frappe.db.get_value("Insights Data Source v3", data_source, "is_site_db", cache=True):
-        # external databases and uploads carry no Frappe permissions to filter by
-        return t
-
-    if not frappe.db.get_single_value("Insights Settings", "apply_user_permissions", cache=True):
+    if not is_site_db(data_source):
+        # external databases and uploads have no Frappe permissions to filter by
         return t
 
     table_name = strip_schema_prefix(table_name)
 
+    if table_name != "tabSingles":
+        t = apply_column_permissions(t, table_name, user)
+    desk = desk_rows(t, data_source, table_name, user)
+    if desk is None:
+        # No permission query means the reader may not read the table. The
+        # chart is Not Permitted rather than empty, because "No data" would
+        # read as zero. A list of every single doctype helps nobody.
+        not_permitted.refuse(
+            [] if table_name == "tabSingles" else not_permitted.unreadable_doctypes(table_name, user)
+        )
+    return desk
+
+
+def desk_rows(t: Table, data_source, table_name, user) -> Table | None:
+    """The rows of `t` that desk lets `user` read: all of `t`, a filtered `t`, or None."""
+    by_desk = desk_predicate(t, data_source, table_name, user)
+    return t if by_desk is True else None if by_desk is None else t.filter(by_desk)
+
+
+def desk_predicate(t: Table, data_source, table_name, user):
+    """The rows desk lets `user` read, as a condition: `True` for all, `None` for none."""
     if table_name == "tabSingles":
         single_doctypes = frappe.get_all("DocType", filters={"issingle": 1}, pluck="name")
-        allowed_doctypes = get_valid_perms(user=user)
-        allowed_doctypes = [p.parent for p in allowed_doctypes if p.read]
-        allowed_single_doctypes = set(single_doctypes) & set(allowed_doctypes)
+        allowed_single_doctypes = set(single_doctypes) & readable_doctypes(user)
         if not allowed_single_doctypes:
-            return t.filter(False)
-        if len(allowed_single_doctypes) == len(single_doctypes):
-            return t
-        return t.filter(t.doctype.isin(allowed_single_doctypes))
+            return None
+        # a single's fields are its rows here, so a field desk holds back is a row to drop
+        permitted_fields = [
+            f"{doctype}.{field}"
+            for doctype in allowed_single_doctypes
+            for field in get_permitted_columns_for_table(f"tab{doctype}", user)
+        ]
+        return t.doctype.concat(".", t.field).isin(permitted_fields)
 
-    # 1. Column-level (permlevel) read permissions: drop columns the user can't read.
-    t = apply_column_permissions(t, table_name, user)
-
-    # 2. Row-level permissions: keep only the rows the user is allowed to see.
     permission_query = get_permission_query_for_table(table_name, user)
     if not permission_query:
-        return t.filter(False)
+        return None
 
     if not _has_where_clause(permission_query):
-        return t
+        return True
 
-    return apply_row_permissions(t, data_source, table_name, permission_query)
+    if "name" not in t.columns:
+        frappe.throw(
+            f"Cannot apply user permissions for table {table_name} because it does not have a `name` column"
+        )
+    return t.name.isin(permitted_names(t, data_source, table_name, permission_query).name)
+
+
+def readable_doctypes(user) -> set[str]:
+    return {p.parent for p in get_valid_perms(user=user) if p.read}
+
+
+def desk_reads_table(table: str, user: str | None = None) -> bool:
+    """Whether desk lets `user` read any rows of this site table.
+
+    It matches the query engine: `apply_user_permissions` reads a table's rows
+    through `frappe.get_list`, which allows a share as it allows a role. A table
+    without a doctype allows nobody.
+    """
+    user = user or frappe.session.user
+    table = strip_schema_prefix(table)
+    if table == "tabSingles":
+        return bool(
+            frappe.db.exists("DocType", {"issingle": 1, "name": ["in", list(readable_doctypes(user))]})
+        )
+    try:
+        return not not_permitted.unreadable_doctypes(table, user)
+    except frappe.DoesNotExistError:
+        return False  # nosemgrep - a table without a doctype allows nobody
+
+
+def desk_readable_tables(user: str) -> set[str]:
+    """Every site table in which desk lets `user` read some rows.
+
+    A readable doctype's table, a child table of one, and `tabSingles` when any
+    single doctype is readable. These are the tables `apply_user_permissions` allows.
+    A share lets its user read the doctype's table, as `desk_reads_table` says.
+    """
+    readable = readable_doctypes(user) | set(frappe.share.get_shared_doctypes(user))
+    children = {
+        *frappe.get_all(
+            "DocField",
+            filters={
+                "parenttype": "DocType",
+                "parent": ["in", list(readable)],
+                "fieldtype": ["in", ["Table", "Table MultiSelect"]],
+            },
+            pluck="options",
+            distinct=True,
+        ),
+        *frappe.get_all(
+            "Custom Field",
+            filters={"dt": ["in", list(readable)], "fieldtype": ["in", ["Table", "Table MultiSelect"]]},
+            pluck="options",
+            distinct=True,
+        ),
+    }
+    tables = {f"tab{doctype}" for doctype in readable | children}
+    if frappe.db.exists("DocType", {"issingle": 1, "name": ["in", list(readable)]}):
+        tables.add("tabSingles")
+    return tables
+
+
+def held_back_key(table_name: str, column: str) -> str:
+    """The key a held-back column is recorded under.
+
+    A held-back column belongs to a table. Two tables in one build can hold back
+    the same column name, and they mean two different columns. Both readers of
+    the record ask about the tables on their own side: the join that decides its
+    output names, and the refusal that names the doctype.
+
+    The table part is normalised the way the warehouse names its tables, so a
+    warehouse build and a live build write and read the same key.
+    """
+    return f"{frappe.scrub(strip_schema_prefix(table_name))}.{column}"
 
 
 def apply_column_permissions(t: Table, table_name, user=None):
@@ -368,32 +648,35 @@ def apply_column_permissions(t: Table, table_name, user=None):
     Uses frappe's `get_permitted_fields` as the source of truth and applies it as an
     explicit projection, so column-level security is enforced consistently whether `t`
     comes from the warehouse (DuckDB) or a live site-db connection.
+
+    Dropped here, not refused, so a chart that never names the column still
+    runs. A query that names the column is Not Permitted, so the dropped columns
+    are held back for `get_column` to refuse.
     """
     allowed = get_permitted_columns_for_table(table_name, user)
     cols = [c for c in t.columns if c in allowed]
-    # If nothing is permitted, the row filter below will block all rows anyway; selecting
-    # an empty column list is invalid in ibis, so leave the projection untouched here.
-    return t.select(cols) if cols else t
+    # No permitted column means the reader may not read the table. The row check
+    # below refuses that, and ibis rejects an empty column list anyway.
+    if not cols:
+        return t
+
+    doctype = table_name.removeprefix("tab")
+    not_permitted.hold_back({held_back_key(table_name, c): doctype for c in t.columns if c not in allowed})
+    return t.select(cols)
 
 
-def apply_row_permissions(t: Table, data_source, table_name, permission_query):
-    if "name" not in t.columns:
-        frappe.throw(
-            f"Cannot apply user permissions for table {table_name} because it does not have a `name` column"
-        )
-
+def permitted_names(t: Table, data_source, table_name, permission_query):
+    """The `name` of every row `permission_query` allows, on `t`'s own backend."""
     from_warehouse = isinstance(t.get_backend(), DuckDBBackend)
     if from_warehouse:
         # `t` is on DuckDB but the permission query must run against the live site-db (a
         # different backend), so execute it separately and materialize the permitted names.
         db = InsightsDataSourcev3.get_doc(data_source)._get_ibis_backend()
-        names_expr = ibis.memtable(db.sql(permission_query).select("name"))
-    else:
-        # Same backend: keep it lazy so it compiles to a single SQL statement (semi-join
-        # subquery) — no extra DB round trip.
-        names_expr = t.sql(permission_query).select("name")
+        return ibis.memtable(db.sql(permission_query).select("name"))
 
-    return t.semi_join(names_expr, "name")
+    # Same backend: keep it lazy so it compiles to a single SQL statement (a
+    # subquery) — no extra DB round trip.
+    return t.sql(permission_query).select("name")
 
 
 def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
@@ -411,7 +694,8 @@ def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
     def permitted(dt, parent=None) -> set[str]:
         # get_permitted_fields drops optional meta columns (`_assign`, `_comments`, ...)
         # because they aren't in valid_columns; add them back so they survive.
-        return {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *optional_fields}
+        readable = {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *optional_fields}
+        return readable - masked_fields(dt, parent, user)
 
     if not meta.istable:
         if not frappe.has_permission(doctype, "read", user=user):
@@ -428,6 +712,21 @@ def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
     for parent in permitted_parents:
         allowed |= permitted(doctype, parent)
     return allowed
+
+
+def masked_fields(doctype, parenttype=None, user=None) -> set[str]:
+    """The fields desk shows `user` masked.
+
+    Desk returns a masked value, and a query would return the raw one, so the
+    column is held back like a permlevel column. `Meta.get_masked_fields`
+    answers for the session user only, and a chart may run as its owner.
+    """
+    user = user or frappe.session.user
+    if user == "Administrator":
+        return set()
+    meta = frappe.get_meta(doctype)
+    unmasked = set(meta.get_permlevel_access("mask", parenttype, user=user))
+    return {df.fieldname for df in meta.fields if df.get("mask") and df.permlevel not in unmasked}
 
 
 def get_permission_query_for_table(table_name, user=None) -> str | None:
@@ -466,10 +765,16 @@ def get_permission_query_for_table(table_name, user=None) -> str | None:
 
 
 def get_permission_query(doctype, parent_doctype=None, user=None):
-    # Used purely as a row filter (semi_join on `name`), so we only need `name` plus the
+    # Used purely as a row filter (`name` in it), so we only need `name` plus the
     # permission WHERE/match conditions. Column-level (permlevel) restrictions are applied
     # separately via apply_column_permissions().
-    return str(
+    #
+    # `frappe.get_list` is the supported path: every permission-filtered chart
+    # must run the same SQL as frappe's own list. What narrowed the rows is read
+    # separately (`insights.user_permissions.narrowing`), because a card that
+    # does not say it is scoped reads as the whole number.
+    user = user or frappe.session.user
+    sql = str(
         frappe.get_list(
             doctype,
             fields=["name"],
@@ -479,6 +784,10 @@ def get_permission_query(doctype, parent_doctype=None, user=None):
             run=False,
         )
     )
+    # Record it for the user the filter was built for. A Public chart runs as
+    # its owner, and the reader must not see the owner's grants.
+    user_permissions.record(user, user_permissions.narrowing(doctype, user, parent_doctype))
+    return sql
 
 
 def get_parents(child_doctype):

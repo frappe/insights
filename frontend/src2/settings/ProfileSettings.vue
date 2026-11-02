@@ -31,14 +31,14 @@ function update() {
 
 <template>
 	<div class="flex w-full flex-col gap-6 p-8 px-10">
-		<h1 class="text-xl font-semibold">Profile</h1>
+		<h1 class="text-2xl-semibold">Profile</h1>
 		<div class="flex items-start gap-4">
 			<div class="relative flex flex-col items-center justify-between gap-2">
 				<Avatar class="!h-15 !w-15" :image="user.user_image" :label="user.full_name" />
 			</div>
 			<div class="flex h-15 flex-col justify-center gap-1">
-				<span class="text-lg font-semibold">{{ user.full_name }}</span>
-				<span class="text-base text-gray-700">{{ user.email }}</span>
+				<span class="text-lg-semibold">{{ user.full_name }}</span>
+				<span class="text-base text-ink-gray-6">{{ user.email }}</span>
 			</div>
 		</div>
 		<div class="flex w-full flex-col gap-4">
