@@ -100,5 +100,10 @@ class TestPostgresReadReplica(UnitTestCase):
 
         self.assertIsInstance(db, InsightsPostgresBackend)
         do_connect.assert_called_once_with(
-            user="reader", password="p@ss", host="replica.internal", database="shop", port=5433
+            user="reader",
+            password="p@ss",
+            host="replica.internal",
+            database="shop",
+            port=5433,
+            connect_timeout=5,
         )

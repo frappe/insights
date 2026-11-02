@@ -57,7 +57,9 @@ ORDER BY c.position""",
 def get_postgres_connection(data_source):
     if data_source.connection_string:
         url = urlparse(data_source.connection_string)
-        return InsightsPostgresBackend()._from_url(url, **dict(parse_qsl(url.query)))
+        return InsightsPostgresBackend()._from_url(
+            url, **{"connect_timeout": 5, **dict(parse_qsl(url.query))}
+        )
 
     password = data_source.get_password(raise_exception=False)
     data_source.port = int(data_source.port or 5432)
