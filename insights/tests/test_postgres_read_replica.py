@@ -2,23 +2,24 @@
 
 ibis learns the columns of native SQL by creating a temporary view over it, and
 a hot-standby replica refuses every write, temporary views included:
-`cannot execute CREATE VIEW in a read-only transaction`. So nothing the replica
-is sent may create anything. A data source marked as a read replica creates
-the view on its primary; without a primary that answers, the columns come from
-a zero-row run of the query on the replica.
+`cannot execute CREATE VIEW in a read-only transaction`. So the columns come
+from a zero-row run of the query, and nothing the server is sent creates anything.
 """
 
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
+import frappe
 import ibis
 from frappe.tests import UnitTestCase
 
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import (
     InsightsPostgresBackend,
+    get_postgres_connection,
 )
 
 QUERY = "SELECT name, grand_total FROM orders;"
+TEXT_OID = 25
 NUMERIC_OID = 1700
 NUMERIC_12_2_MOD = (12 << 16 | 2) + 4
 
@@ -26,9 +27,11 @@ NUMERIC_12_2_MOD = (12 << 16 | 2) + 4
 class HotStandby:
     """A psycopg connection to a replica in recovery: it reads and refuses every write."""
 
-    def __init__(self):
+    def __init__(self, columns):
+        self.columns = columns
         self.statements = []
         self.description = None
+        self.pgresult = None
 
     def cursor(self):
         return self
@@ -47,67 +50,55 @@ class HotStandby:
         if statement.lstrip().upper().startswith(("CREATE", "DROP")):
             raise RuntimeError("cannot execute CREATE VIEW in a read-only transaction")
         if params is None:
-            self.description = [
-                SimpleNamespace(name="name", type_code=25, _fmod=-1),
-                SimpleNamespace(name="grand_total", type_code=NUMERIC_OID, _fmod=NUMERIC_12_2_MOD),
-            ]
+            self.description = [SimpleNamespace(name=name, type_code=oid) for name, oid, _, _ in self.columns]
+            self.pgresult = SimpleNamespace(fmod=lambda i: self.columns[i][2])
+        else:
+            # the catalog read replaces the zero-row run's result
+            self.description = self.pgresult = None
         return self
 
     def fetchall(self):
-        return [("text",), ("numeric(12,2)",)]
+        return [(type_name,) for _, _, _, type_name in self.columns]
 
     def close(self):
         pass
 
 
-def replica(connect_primary=None):
+def replica(*columns):
     backend = InsightsPostgresBackend()
-    backend.con = HotStandby()
-    backend.connect_primary = connect_primary
+    backend.con = HotStandby(columns)
     return backend
 
 
 class TestPostgresReadReplica(UnitTestCase):
-    def test_a_read_replica_learns_the_columns_of_native_sql_on_its_primary(self):
-        primary = Mock()
-        primary._get_schema_using_query.return_value = ibis.schema({"name": "string"})
-        db = replica(connect_primary=lambda: primary)
-
-        db._get_schema_using_query(QUERY)
-        db._get_schema_using_query(QUERY)
-
-        self.assertEqual(primary._get_schema_using_query.call_count, 2)
-        self.assertEqual(db.con.statements, [])
-
-    def test_without_a_primary_the_replica_reads_the_columns_off_a_zero_row_run(self):
-        db = replica()
+    def test_a_replica_reads_the_columns_of_native_sql_off_a_zero_row_run(self):
+        db = replica(
+            ("name", TEXT_OID, -1, "text"),
+            ("grand_total", NUMERIC_OID, NUMERIC_12_2_MOD, "numeric(12,2)"),
+        )
 
         schema = db._get_schema_using_query(QUERY)
 
         self.assertEqual(schema, ibis.schema({"name": "string", "grand_total": "decimal(12, 2)"}))
-        first = db.con.statements[0]
+        first, catalog_read = db.con.statements
         self.assertTrue(first.startswith("SELECT * FROM (SELECT"), first)
         self.assertTrue(first.endswith("LIMIT 0"), first)
         self.assertNotIn(";", first)
+        self.assertIn("format_type", catalog_read)
 
-    def test_an_unreachable_primary_is_logged_once_and_the_replica_still_answers(self):
-        connect_primary = Mock(side_effect=ConnectionError("primary.internal refused"))
-        db = replica(connect_primary=connect_primary)
+    def test_two_result_columns_with_one_name_are_refused_by_name(self):
+        db = replica(("name", TEXT_OID, -1, "text"), ("name", TEXT_OID, -1, "text"))
 
-        with patch("frappe.log_error") as log_error:
-            first = db._get_schema_using_query(QUERY)
-            second = db._get_schema_using_query(QUERY)
+        with self.assertRaisesRegex(frappe.ValidationError, "more than one column named name"):
+            db._get_schema_using_query("SELECT a.name, b.name FROM a, b")
 
-        self.assertEqual(first, second)
-        self.assertEqual(list(first.names), ["name", "grand_total"])
-        connect_primary.assert_called_once()
-        log_error.assert_called_once()
+    def test_a_connection_string_source_reads_columns_the_same_way(self):
+        source = frappe._dict(connection_string="postgresql://reader:p%40ss@replica.internal:5433/shop")
 
-    def test_closing_the_replica_closes_the_primary_it_opened(self):
-        primary = Mock()
-        db = replica(connect_primary=lambda: primary)
-        db._get_schema_using_query(QUERY)
+        with patch.object(InsightsPostgresBackend, "do_connect") as do_connect:
+            db = get_postgres_connection(source)
 
-        db.disconnect()
-
-        primary.disconnect.assert_called_once()
+        self.assertIsInstance(db, InsightsPostgresBackend)
+        do_connect.assert_called_once_with(
+            user="reader", password="p@ss", host="replica.internal", database="shop", port=5433
+        )
