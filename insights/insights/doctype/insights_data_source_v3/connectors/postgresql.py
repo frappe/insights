@@ -41,8 +41,9 @@ class InsightsPostgresBackend(PostgresBackend):
             names = [column.name for column in cursor.description]
             if repeated := [name for name, count in Counter(names).items() if count > 1]:
                 frappe.throw(
-                    f"The query returns more than one column named {', '.join(repeated)}. "
-                    "Give each column its own name with AS."
+                    frappe._(
+                        "The query returns more than one column named {0}. Give each column its own name with AS."
+                    ).format(", ".join(repeated))
                 )
 
             oids = [column.type_code for column in cursor.description]
