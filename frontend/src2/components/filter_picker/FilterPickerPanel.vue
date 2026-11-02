@@ -1,0 +1,1001 @@
+<script setup lang="ts">
+// The popover's inside: one input, and under it one list per stage. reka's
+// combobox owns the highlight and the arrow keys; this file owns what a pick
+// means.
+import { Badge, Button, KeyboardShortcut, Tooltip } from 'frappe-ui'
+import { Delete, Plus, Search } from 'lucide-vue-next'
+import { watchDebounced } from '@vueuse/core'
+import { ComboboxInput, ComboboxRoot } from 'reka-ui'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
+import { isMac } from '../../composables/useShortcut'
+import { showErrorToast } from '../../helpers'
+import dayjs from '../../helpers/dayjs'
+import { columnIcon } from '../../query/column_icon'
+import { __ } from '../../translation'
+import type { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
+import {
+	calendarOf,
+	datePresets,
+	defaultOperator,
+	formatDate,
+	isMulti,
+	kindOf,
+	numberPairValues,
+	numberQuickValues,
+	numberPreview,
+	operatorRows,
+	parseDatePhrase,
+	parseNumber,
+	parsePeriod,
+	spanFromText,
+	pathOf,
+	SPAN_GRAINS,
+	periodKey,
+	periodLabel,
+	periodLists,
+	periodMonths,
+	periodRule,
+	periodStart,
+	QUARTER_OF,
+	YEAR_OF,
+	relativeDirections,
+	relativeRow,
+	selectedRowKey,
+	spanOf,
+	splitPair,
+	summaryParts,
+	textRule,
+	unitRows,
+	type Filter,
+	type ListItem,
+	type OperatorDef,
+	type Period,
+	type PeriodList,
+	type PeriodUnit,
+	type SpanDirection,
+	type SpanUnit,
+	type Stage,
+	type ValuesProvider,
+} from './filter_picker'
+import FilterPickerCalendar from './FilterPickerCalendar.vue'
+import FilterPickerList from './FilterPickerList.vue'
+
+// the root is reka's combobox, and an attribute that fell through onto it would
+// overwrite the model this file hands it
+defineOptions({ inheritAttrs: false })
+
+const props = defineProps<{
+	columns: QueryResultColumn[]
+	valuesProvider: ValuesProvider
+	/** The smallest and largest a numeric column goes, for the presets it lists. */
+	rangeProvider?: (column: QueryResultColumn) => Promise<[number, number] | undefined>
+	column?: QueryResultColumn
+	filters: Filter[]
+	initial?: Filter
+}>()
+const emit = defineEmits<{
+	commit: [filter: Filter, replacing?: Filter]
+	remove: [filter: Filter]
+	close: []
+}>()
+
+type Draft = { operator: FilterOperator; value: FilterValue }
+
+const stage = ref<Stage>('column')
+const history = ref<Stage[]>([])
+const column = ref<QueryResultColumn | undefined>(props.column)
+const op = ref<OperatorDef | undefined>()
+const search = ref('')
+// shallow, so it is the host's own object: the host finds the rule to replace or
+// remove by identity, and a deep ref would hand back a proxy of it
+const editing = shallowRef<Filter | undefined>()
+
+const picked = ref<string[]>([])
+/** the values already ticked when the multi stage opened, in tick order */
+const sticky = ref<string[]>([])
+const relative = reactive<{ direction: SpanDirection; unit: SpanUnit; includeCurrent: boolean }>({
+	direction: 'last',
+	unit: 'day',
+	includeCurrent: false,
+})
+
+/** the period list the reader opened, and the year whose quarters they opened in it */
+const period = reactive<{ list?: PeriodList; year?: string }>({})
+
+const kind = computed(() => (column.value ? kindOf(column.value.type) : undefined))
+const multi = computed(
+	() => stage.value === 'value' && kind.value === 'text' && isMulti('text', op.value),
+)
+const between = computed(() => op.value?.operator === 'between')
+/** the calendar an operator opens sits under the list, not inside a row */
+const calendar = computed(() =>
+	stage.value === 'value' && kind.value === 'date' && op.value ? calendarOf(op.value) : undefined,
+)
+/** the count the relative stages read off the input; an empty input, or one that
+ * reads zero, is 1 — a span of no periods ends before it begins. The span grammar
+ * counts whole periods: every reader of it takes an integer, so a typed fraction
+ * is rounded rather than written into a phrase the engine cannot read. */
+const relCount = computed(() => Math.max(1, Math.round(parseNumber(search.value) ?? 1)))
+const relativeForm = computed(() => ({
+	direction: relative.direction,
+	count: relCount.value,
+	unit: relative.unit,
+	includeCurrent: relative.includeCurrent,
+}))
+
+/** reka holds the ticks on the text `=` / `≠` stage, and the key of the edited rule's row on every other stage */
+const comboModel = computed(() =>
+	multi.value ? picked.value : editing.value && selectedRowKey(editing.value, stage.value),
+)
+function onComboModel(value: unknown) {
+	if (multi.value) picked.value = (value as string[]) || []
+}
+
+function clearValue() {
+	picked.value = []
+	sticky.value = []
+	relative.direction = 'last'
+	relative.unit = 'day'
+	relative.includeCurrent = false
+	period.list = undefined
+	period.year = undefined
+}
+
+function go(next: Stage) {
+	history.value.push(stage.value)
+	stage.value = next
+	search.value = ''
+}
+
+function reset() {
+	history.value = []
+	column.value = props.column
+	op.value = undefined
+	editing.value = undefined
+	search.value = ''
+	clearValue()
+	// Most dashboard filters keep the default operator, so its values come first.
+	if (props.column) {
+		op.value = defaultOperator(kindOf(props.column.type))
+		history.value = ['operator']
+		stage.value = 'value'
+		return
+	}
+	stage.value = props.filters.length ? 'overview' : 'column'
+}
+
+function load(filter: Filter) {
+	reset()
+	const path = pathOf(filter)
+	editing.value = filter
+	column.value = path.column
+	op.value = path.op
+	picked.value = path.picked
+	sticky.value = [...path.picked]
+	search.value = multi.value ? '' : path.text
+	// An operator that takes no value has no value stage to reopen on: opening one
+	// would list a value the operator ignores, and store it when the reader picks.
+	const needsValue = path.op.needsValue
+	history.value = props.column ? [] : ['overview', 'column']
+	if (needsValue) history.value.push('operator')
+	stage.value = needsValue ? 'value' : 'operator'
+	if (path.period) {
+		const year = YEAR_OF[path.period.unit]
+		period.list = year || (path.period.unit as PeriodList)
+		history.value.push('value')
+		stage.value = 'period'
+		if (year) {
+			period.year = periodStart(year, path.period.start)
+			history.value.push('period')
+			stage.value = 'quarter'
+		}
+		highlight(periodKey(path.period))
+	}
+	if (path.relative) {
+		relative.direction = path.relative.direction
+		relative.unit = path.relative.unit
+		relative.includeCurrent = path.relative.includeCurrent
+		history.value.push('value', 'relative')
+		stage.value = 'unit'
+		// the stage opens on the span the filter already reads, so Enter commits
+		// the rule the reader came in with
+		highlight(`span:${spanOf(relativeForm.value)}`)
+	}
+}
+
+if (props.initial) load(props.initial)
+else reset()
+
+const distinct = ref<string[]>([])
+const fetching = ref(false)
+let request = 0
+let asked: string | undefined
+
+// Each ask is a `SELECT DISTINCT` on the source, so typing waits for a pause
+// while opening a column asks at once. Opening one also clears the search,
+// which the debounced watch then hears as the same ask a second time.
+async function fetchDistinct() {
+	if (!multi.value || !column.value) {
+		asked = undefined
+		distinct.value = []
+		return
+	}
+	const text = search.value
+	const key = JSON.stringify([column.value.name, text])
+	if (key === asked) return
+	asked = key
+
+	const id = ++request
+	fetching.value = true
+	const values = await props
+		.valuesProvider(column.value)(text)
+		.catch(() => {
+			// a failed ask is not an answer, so the same one may be asked again
+			if (id === request) asked = undefined
+			return []
+		})
+	if (id !== request) return
+	// reka's ComboboxItem throws on an empty value
+	distinct.value = values.filter(Boolean)
+	fetching.value = false
+}
+
+watch([() => column.value?.name, multi], fetchDistinct, { immediate: true })
+watchDebounced(search, fetchDistinct, { debounce: 300 })
+
+// The column's own range, for the numbers the value stage lists. Fetched when
+// the stage opens on a number column and not before: a range is one aggregate
+// over the whole result, and a text column has no use for one.
+const range = ref<[number, number] | undefined>()
+let rangeRequest = 0
+
+watch(
+	[() => column.value?.name, kind, stage],
+	async () => {
+		range.value = undefined
+		if (kind.value !== 'number' || stage.value !== 'value') return
+		if (!props.rangeProvider || !column.value) return
+
+		const id = ++rangeRequest
+		const fetched = await props.rangeProvider(column.value).catch((error) => {
+			if (id === rangeRequest) showErrorToast(error, false)
+			return undefined
+		})
+		if (id === rangeRequest) range.value = fetched
+	},
+	{ immediate: true },
+)
+
+// The periods a list shows, by grain. Asked once per grain while the panel is
+// open: a period list is short, and the reader narrows it by typing.
+const periods = ref<Partial<Record<string, string[]>>>({})
+const periodsFetching = ref(false)
+const periodsFailed = ref(false)
+let periodsRequest = 0
+
+/** the unit the list on screen shows */
+const periodUnit = computed<PeriodUnit | undefined>(() => {
+	if (stage.value === 'period') return period.list
+	if (stage.value === 'quarter' && period.list && period.list !== 'month')
+		return QUARTER_OF[period.list]
+	return undefined
+})
+
+watch(
+	[() => column.value?.name, periodUnit],
+	async ([name], [previousName]) => {
+		// any change retires the ask in flight: it answers for a list no longer open,
+		// and for another column it would fill this one's lists
+		const id = ++periodsRequest
+		periodsFetching.value = false
+		if (name !== previousName) periods.value = {}
+		const unit = periodUnit.value
+		if (!unit || !column.value) return
+		const grain = SPAN_GRAINS[unit]
+		if (periods.value[grain]) return
+
+		periodsFetching.value = true
+		periodsFailed.value = false
+		const starts = await props
+			.valuesProvider(column.value)('', grain)
+			.catch((error) => {
+				if (id === periodsRequest) showErrorToast(error, false)
+				return undefined
+			})
+		if (id !== periodsRequest) return
+		periodsFetching.value = false
+		periodsFailed.value = !starts
+		// a failed ask is not an answer, so the list asks again when it is opened again
+		if (!starts) return
+		// a datetime column answers a timestamp, and the rows go by the day
+		periods.value = { ...periods.value, [grain]: starts.map((s) => String(s).slice(0, 10)) }
+		// the reopened period's row exists only now, so the highlight can land on it
+		if (editing.value) highlight(selectedRowKey(editing.value, stage.value) || '')
+	},
+	{ immediate: true },
+)
+
+function periodRows(): ListItem[] {
+	const unit = periodUnit.value
+	if (!unit) return []
+	const starts = periods.value[SPAN_GRAINS[unit]] || []
+
+	if (stage.value === 'period') {
+		return starts
+			.map((start) => ({ unit, start }))
+			.filter((p) => matches(periodLabel(p.unit, p.start)))
+			.map((p) => ({
+				key: periodKey(p),
+				label: periodLabel(p.unit, p.start),
+				opens: p.unit !== 'month',
+			}))
+	}
+
+	// a year's quarters, in the order the year runs
+	const year = period.year!
+	const end = dayjs(year).add(1, 'year').format('YYYY-MM-DD')
+	return starts
+		.filter((start) => start >= year && start < end)
+		.sort()
+		.map((start) => ({ unit, start }))
+		.filter((p) => matches(periodLabel(p.unit, p.start)))
+		.map((p) => ({
+			key: periodKey(p),
+			label: periodLabel(p.unit, p.start).split(' ')[0],
+			note: periodMonths(p),
+		}))
+}
+
+/** a period's own label, typed, is that period: a `within` rule, so only `within` reads it */
+const typedPeriod = computed(() =>
+	stage.value === 'value' && kind.value === 'date' && !calendar.value
+		? parsePeriod(search.value)
+		: undefined,
+)
+
+/** The rule the typed text spells, where the stage has a place for one. */
+const typed = computed<(Draft & { label: string }) | undefined>(() => {
+	const text = search.value.trim()
+	if (stage.value !== 'value' || !text || !op.value) return undefined
+
+	if (kind.value === 'text') {
+		if (multi.value) return undefined
+		return { operator: op.value.operator, value: text, label: __('Use “{0}”', text) }
+	}
+
+	if (kind.value === 'number') {
+		if (between.value) {
+			const pair = splitPair(text)
+			const from = pair && parseNumber(pair[0])
+			const to = pair && parseNumber(pair[1])
+			if (from === undefined || to === undefined) return undefined
+			const range: [number, number] = [from, to]
+			return { operator: 'between', value: range, label: numberPreview(op.value, range) }
+		}
+		const value = parseNumber(text)
+		if (value === undefined) return undefined
+		return { operator: op.value.operator, value, label: numberPreview(op.value, value) }
+	}
+
+	if (kind.value !== 'date') return undefined
+
+	if (typedPeriod.value)
+		return {
+			...periodRule(typedPeriod.value),
+			label: __('Use “{0}”', periodLabel(typedPeriod.value.unit, typedPeriod.value.start)),
+		}
+
+	if (!calendar.value) {
+		const span = spanFromText(text)
+		if (!span || datePresets().some((p) => p.label.toLowerCase() === text.toLowerCase()))
+			return undefined
+		return {
+			operator: 'within',
+			value: { span },
+			label: __('Use “{0}”', text),
+		}
+	}
+
+	const phrase = parseDatePhrase(text)
+	if (!phrase) return undefined
+	if (calendar.value === 'range') {
+		if (phrase.operator !== 'between') return undefined
+		const [from, to] = phrase.value as string[]
+		return { ...phrase, label: `${__('between')} ${formatDate(from, to)}` }
+	}
+	if (phrase.operator !== '=') return undefined
+	const day = String(phrase.value)
+	return {
+		operator: op.value.operator,
+		value: day,
+		label: `${op.value.sign} ${formatDate(day)}`,
+	}
+})
+
+const draft = computed<Draft | undefined>(() => {
+	if (stage.value !== 'value' || !op.value) return undefined
+	if (kind.value === 'text' && multi.value)
+		return picked.value.length ? textRule(op.value, picked.value) : undefined
+	if (typed.value) return { operator: typed.value.operator, value: typed.value.value }
+	return undefined
+})
+
+const q = computed(() => search.value.trim().toLowerCase())
+const matches = (label: string) => !q.value || label.toLowerCase().includes(q.value)
+
+const rows = computed<ListItem[]>(() => {
+	if (stage.value === 'overview') {
+		const applied = props.filters
+			.map((filter, index) => ({ filter, index }))
+			.filter(({ filter }) => matches(summaryParts(filter).label))
+			.map(({ filter, index }) => ({
+				key: `filter:${index}`,
+				...summaryParts(filter),
+				icon: columnIcon(filter.column.type),
+				removable: true,
+				filter,
+			}))
+		// the rows already in the list, then Add filter under a divider
+		return [
+			...applied,
+			{ key: 'add', label: __('Add filter'), icon: Plus, separated: applied.length > 0 },
+		]
+	}
+
+	if (stage.value === 'column') {
+		return props.columns
+			.filter((c) => matches(c.name))
+			.map((c) => ({ key: c.name, label: c.name, icon: columnIcon(c.type) }))
+	}
+
+	if (stage.value === 'operator') {
+		// a row reads as its word, the sign beside it
+		return operatorRows(kind.value!)
+			.filter((o) => matches(o.sign) || matches(o.word))
+			.map((o) => ({
+				key: o.operator,
+				label: o.word,
+				note: o.sign === o.word ? undefined : o.sign,
+			}))
+	}
+
+	if (stage.value === 'relative') {
+		return relativeDirections()
+			.filter((d) => matches(d.label))
+			.map((d) => ({
+				key: `dir:${d.key}`,
+				label: d.label,
+			}))
+	}
+
+	if (stage.value === 'unit') {
+		const form = relativeForm.value
+		// a count in the input is the count, not a filter over the unit rows
+		const typing = search.value.trim() && parseNumber(search.value) === undefined
+		const units = unitRows(form)
+			.filter((row) => !typing || matches(row.label))
+			.map((row) => ({
+				key: `span:${row.span}`,
+				label: row.label,
+			}))
+		if (form.direction === 'current') return units
+		return [
+			...units,
+			{
+				key: 'include',
+				label: __('Include current period'),
+				checked: relative.includeCurrent,
+			},
+		]
+	}
+
+	if (stage.value === 'period' || stage.value === 'quarter') return periodRows()
+
+	if (multi.value) {
+		const top = sticky.value.filter((v) => matches(v))
+		const rest = distinct.value.filter((v) => !top.includes(v))
+		return [...top, ...rest].map((v) => ({
+			key: `v:${v}`,
+			label: v,
+			tick: true,
+			checked: picked.value.includes(v),
+		}))
+	}
+
+	const use: ListItem[] = typed.value ? [{ key: 'use', label: typed.value.label }] : []
+
+	if (kind.value === 'text') return use
+
+	if (kind.value === 'number') {
+		if (search.value.trim()) return use
+		// Cut from the column's own range, so a column with no range (not
+		// fetched yet, or every row the same number) lists nothing to pick and
+		// the reader types.
+		return between.value
+			? numberPairValues(range.value).map((pair) => ({
+					key: `pair:${pair[0]}:${pair[1]}`,
+					label: numberPreview(op.value!, pair),
+			  }))
+			: numberQuickValues(range.value).map((v) => ({
+					key: `n:${v}`,
+					label: numberPreview(op.value!, v),
+			  }))
+	}
+
+	// dates: the input and the highlighted grid already read the draft
+	if (calendar.value) return []
+	// a time of day has no periods
+	const lists: ListItem[] = (column.value?.type === 'Time' ? [] : periodLists())
+		.filter((list) => matches(list.label))
+		.map((list) => ({ key: `list:${list.unit}`, label: list.label, next: true }))
+	const presets = datePresets()
+		.filter((p) => matches(p.label))
+		.map((p) => ({
+			key: `span:${p.span}`,
+			label: p.label,
+		}))
+	const row = relativeRow()
+	const relativeRows: ListItem[] = matches(row.label)
+		? [{ key: row.key, label: row.label, next: true }]
+		: []
+	return [
+		...use,
+		...grouped(presets, __('Presets')),
+		...grouped(lists, __('Periods')),
+		...grouped(relativeRows, __('Custom')),
+	]
+})
+
+/** The rows under one heading: the first carries it, so a search that hides the group hides its heading. */
+function grouped(rows: ListItem[], group: string): ListItem[] {
+	return rows.map((row, i) => (i ? row : { ...row, group }))
+}
+
+const emptyText = computed(() => {
+	if (stage.value === 'column') return __('No columns found')
+	if (stage.value === 'operator') return __('No operators found')
+	if (stage.value === 'relative' || stage.value === 'unit') return __('Nothing matches')
+	if (stage.value === 'period' || stage.value === 'quarter')
+		return periodsFetching.value
+			? ''
+			: periodsFailed.value
+			  ? __('Could not load dates')
+			  : __('No dates found')
+	if (multi.value) return fetching.value ? '' : __('No values found')
+	if (kind.value === 'text') return ''
+	if (kind.value === 'number') return ''
+	if (kind.value === 'date' && calendar.value) return ''
+	if (kind.value === 'date') return __('Nothing matches')
+	return ''
+})
+
+/**
+ * The prompt shows what the path tokens used to. A value stage names the
+ * column and the operator it is filling in, because the operator is what says
+ * how much to type; the operator stage names the column alone, the operator
+ * being the thing the reader is there to pick.
+ */
+const placeholder = computed(() => {
+	const name = column.value?.name ?? ''
+	const word = op.value?.word ?? ''
+	if (stage.value === 'overview') return __('Filters…')
+	if (stage.value === 'column') return __('Filter by…')
+	if (stage.value === 'operator') return name ? `${name}…` : __('Operator…')
+	if (stage.value === 'relative')
+		return word
+			? __('{0} Last, Next or This…', word.charAt(0).toUpperCase() + word.slice(1))
+			: __('Last, Next or This…')
+	if (stage.value === 'unit') {
+		if (relative.direction === 'current') return __('This week, month, quarter…')
+		const label = relativeDirections().find((d) => d.key === relative.direction)!.label
+		return __('{0} how many?', label)
+	}
+	if (stage.value === 'period' || stage.value === 'quarter') return __('{0} within…', name)
+	if (!name || !op.value) return __('Type a value…')
+	// numbers read by their sign, and a range keeps its example: `between 30 and
+	// 50` would teach a separator the input does not parse
+	if (kind.value === 'number')
+		return between.value ? __('{0} between, e.g. 30 to 50', name) : `${name} ${op.value.sign} …`
+	return `${name} ${word}…`
+})
+
+function pick(item: ListItem) {
+	if (stage.value === 'overview') {
+		if (item.key === 'add') go('column')
+		else if (item.filter) load(item.filter)
+		return
+	}
+	if (stage.value === 'column') {
+		column.value = props.columns.find((c) => c.name === item.key)
+		op.value = undefined
+		clearValue()
+		go('operator')
+		return
+	}
+	if (stage.value === 'operator') {
+		const chosen = operatorRows(kind.value!).find((o) => o.operator === item.key)!
+		op.value = chosen
+		clearValue()
+		if (!chosen.needsValue) return commit({ operator: chosen.operator, value: undefined })
+		go('value')
+		return
+	}
+	if (stage.value === 'relative') {
+		relative.direction = item.key.slice(4) as SpanDirection
+		go('unit')
+		return
+	}
+	if (stage.value === 'unit') {
+		if (item.key === 'include') {
+			relative.includeCurrent = !relative.includeCurrent
+			// the row is rendered again with its new tick, so the highlight is put back
+			highlight('include')
+			return
+		}
+		return commit({ operator: 'within', value: { span: item.key.slice(5) } })
+	}
+	if (stage.value === 'period' || stage.value === 'quarter') {
+		const [, unit, start] = item.key.split(':')
+		return commit(periodRule({ unit, start } as Period))
+	}
+	pickValue(item)
+}
+
+/** A year's › opens its quarters; every other row has none. */
+function open(item: ListItem) {
+	if (!item.opens || stage.value !== 'period') return
+	period.year = item.key.split(':')[2]
+	go('quarter')
+}
+
+function pickValue(item: ListItem) {
+	if (item.key === 'use') return commit(typed.value)
+
+	// reka has already ticked the row by the time this runs
+	if (multi.value) {
+		search.value = ''
+		return
+	}
+
+	if (kind.value === 'number') {
+		if (item.key.startsWith('n:'))
+			return commit({ operator: op.value!.operator, value: Number(item.key.slice(2)) })
+		if (item.key.startsWith('pair:')) {
+			const [a, b] = item.key.slice(5).split(':').map(Number)
+			return commit({ operator: 'between', value: [a, b] })
+		}
+		return
+	}
+
+	if (item.key === relativeRow().key) return go('relative')
+	if (item.key.startsWith('list:')) {
+		period.list = item.key.slice(5) as PeriodList
+		return go('period')
+	}
+	if (item.key.startsWith('span:'))
+		return commit({ operator: 'within', value: { span: item.key.slice(5) } })
+}
+
+function commit(rule: Draft | undefined = draft.value) {
+	if (!column.value || !rule) return
+	emit(
+		'commit',
+		{
+			column: column.value,
+			operator: rule.operator,
+			value: rule.value,
+		},
+		editing.value,
+	)
+	if (props.column) {
+		editing.value = undefined
+		picked.value = []
+		emit('close')
+		return
+	}
+	reset()
+	stage.value = 'overview'
+	focusInput()
+}
+
+/**
+ * Whether the reader said no.
+ *
+ * Closing the panel by clicking away is the reader done picking, so the pick
+ * they left open is taken — a tick on the multi stage, the days the calendar
+ * wrote into the input. Escape is the other answer, and it has to be one the
+ * panel can tell apart: reka closes the popover on it, and the close is what
+ * runs the commit below.
+ */
+const cancelled = ref(false)
+
+// a pick left open commits when the popover closes: a tick on the multi stage,
+// or the days the calendar wrote into the input
+onBeforeUnmount(() => {
+	// a range still on its way belongs to a picker the reader has closed
+	rangeRequest++
+	if (cancelled.value) return
+	if (!draft.value) {
+		// A list the reader emptied is the filter taken off, not a pick half made.
+		// Left alone, the trigger goes on printing values the list no longer holds.
+		const emptied = stage.value === 'value' && multi.value && !picked.value.length
+		if (emptied && editing.value) emit('remove', editing.value)
+		return
+	}
+	if (multi.value ? picked.value.length > 0 : !!calendar.value) commit()
+})
+
+function back() {
+	const previous = history.value.pop()
+	if (!previous) return
+	const left = { stage: stage.value, list: period.list, year: period.year }
+	if (stage.value === 'value') clearValue()
+	if (stage.value === 'period') period.list = undefined
+	if (stage.value === 'quarter') period.year = undefined
+	if (previous === 'column') {
+		op.value = undefined
+		column.value = undefined
+	}
+	if (previous === 'overview') {
+		column.value = undefined
+		editing.value = undefined
+	}
+	stage.value = previous
+	search.value = ''
+	if (previous === 'operator' && op.value) highlight(op.value.operator)
+	// the reader lands back on the row they opened
+	if (left.stage === 'period') highlight(`list:${left.list}`)
+	if (left.stage === 'quarter' && left.list && left.year)
+		highlight(periodKey({ unit: left.list, start: left.year }))
+}
+
+function onKeydown(event: KeyboardEvent) {
+	if (event.isComposing) return
+	if (event.key === 'Escape') {
+		// reka closes the popover from here; the draft goes with it
+		cancelled.value = true
+		return
+	}
+	// → opens a year's quarters, the way its › does, and ← comes back out
+	if (event.key === 'ArrowRight' && !search.value && highlightedRow()?.opens) {
+		event.preventDefault()
+		open(highlightedRow()!)
+		return
+	}
+	if (event.key === 'ArrowLeft' && !search.value && stage.value === 'quarter') {
+		event.preventDefault()
+		back()
+		return
+	}
+	if (event.key === 'Backspace' && !search.value) {
+		event.preventDefault()
+		// the row under the highlight already shows a Remove button, so the key
+		// takes the row where there is one and the stage where there is not
+		const row = highlightedRow()
+		if (row?.removable && row.filter) emit('remove', row.filter)
+		else back()
+		return
+	}
+	// reka answers Enter by clicking the highlighted row and marks the event
+	// handled; what is left over is the stage's own commit. A multi stage never
+	// commits on Enter — its rows only tick.
+	if (
+		event.key === 'Enter' &&
+		!event.repeat &&
+		!event.defaultPrevented &&
+		!multi.value &&
+		draft.value
+	) {
+		event.preventDefault()
+		commit()
+	}
+}
+
+/**
+ * What the keys do here, named for the stage in front of the reader. Enter is
+ * the row under the highlight, so it says `Apply` only where there is no row to
+ * take it. `Mod+Enter` stands apart because a multi stage's Enter ticks rather
+ * than commits, and Backspace leaves the text alone while there is text.
+ *
+ * A stage with nothing behind it says nothing. Enter on the row under the
+ * highlight is the only key it takes, and a list a reader is already arrowing
+ * through does not need a line under it to say so. A column mount opens on the
+ * values with the operators behind it, so it says Back from the start.
+ */
+const keyHints = computed(() => {
+	if (!history.value.length) return []
+	const hints: { combo: string; label: string; run: () => void }[] = []
+	if (!search.value)
+		hints.push({
+			combo: 'Backspace',
+			label: __('Back'),
+			run: back,
+		})
+	if (rows.value.length)
+		hints.push({
+			combo: 'Enter',
+			label: __('Select'),
+			// the click reka answers Enter with, so a multi stage ticks the row
+			run: () => comboRef.value?.highlightedElement?.click(),
+		})
+	const apply = multi.value ? 'Mod+Enter' : rows.value.length ? undefined : 'Enter'
+	if (apply && draft.value)
+		hints.push({
+			combo: apply,
+			label: __('Apply'),
+			run: () => commit(),
+		})
+	return hints
+})
+
+/** Escape cancels, and Mod+Enter commits the stage's draft before reka reads the Enter as a pick */
+function onEnterCapture(event: KeyboardEvent) {
+	// Escape anywhere in the panel, not only in the input: the calendar and the
+	// rows take focus too, and the reader means the same thing from each of them.
+	if (event.key === 'Escape') {
+		cancelled.value = true
+		return
+	}
+	if (event.key !== 'Enter' || event.isComposing || event.repeat) return
+	if (!(isMac ? event.metaKey : event.ctrlKey)) return
+	event.preventDefault()
+	event.stopPropagation()
+	if (draft.value) commit()
+}
+
+const comboRef = ref<any>(null)
+
+function highlight(value: string) {
+	nextTick(() => comboRef.value?.highlightItem?.(value))
+}
+
+/**
+ * The row under reka's highlight. The combobox hands out the element and no way
+ * back to the item behind it (`getItems` is a listbox thing, not a combobox
+ * one), so the row writes its key onto itself for this.
+ */
+function highlightedRow(): ListItem | undefined {
+	const key = (comboRef.value?.highlightedElement as HTMLElement | undefined)?.dataset.rowKey
+	if (!key) return undefined
+	return rows.value.find((row) => row.key === key)
+}
+
+// a stage change, a commit or a late batch of values leaves the highlight on a
+// row that is gone. The nextTick here runs after any highlight() this tick
+// asked for, so a restored row stands.
+watch(rows, () => {
+	nextTick(() => {
+		const el = comboRef.value?.highlightedElement
+		if (!el?.isConnected) comboRef.value?.highlightFirstItem?.()
+	})
+})
+
+const inputRef = ref<any>(null)
+function focusInput() {
+	nextTick(() => inputRef.value?.$el?.focus({ preventScroll: true }))
+}
+// The opening focus is reka's: it focuses the first tabbable in the panel, which
+// is the input. Taking it by hand here instead lands too early for a panel inside
+// a dialog — the dialog's focus trap is released only once the popover's own
+// focus scope is on the stack, and until then it pulls the caret back out.
+</script>
+
+<template>
+	<ComboboxRoot
+		ref="comboRef"
+		:model-value="comboModel"
+		:open="true"
+		:multiple="multi"
+		ignore-filter
+		highlight-on-hover
+		:reset-search-term-on-select="false"
+		:reset-search-term-on-blur="false"
+		class="flex w-60 flex-col overflow-hidden rounded-6 bg-surface-elevation-2 shadow-lg ring-1 ring-outline-gray-1"
+		@update:model-value="onComboModel"
+		@keydown.capture="onEnterCapture"
+	>
+		<div class="flex items-center gap-2 border-b border-outline-gray-1 px-3">
+			<Search v-if="!column" class="size-4 shrink-0 text-ink-gray-5" stroke-width="1.5" />
+			<ComboboxInput
+				ref="inputRef"
+				v-model="search"
+				class="min-w-20 flex-1 border-0 bg-transparent px-0 py-2 text-base text-ink-gray-8 outline-none placeholder:text-ink-gray-4 focus:ring-0"
+				:placeholder="placeholder"
+				@keydown="onKeydown"
+			/>
+			<!-- the count alone: the word "selected" is what the checkboxes below
+			     already say, and the row has 240px to hold the input as well -->
+			<Tooltip
+				v-if="multi && picked.length"
+				:text="__('{0} selected', String(picked.length))"
+			>
+				<Badge
+					variant="subtle"
+					theme="gray"
+					size="sm"
+					class="shrink-0"
+					:label="String(picked.length)"
+				/>
+			</Tooltip>
+			<Tooltip v-else-if="history.length && !search" :text="__('Back')">
+				<Button
+					variant="ghost"
+					size="xs"
+					:label="__('Back')"
+					class="-me-1.5 shrink-0"
+					@mousedown.prevent
+					@click="back()"
+				>
+					<template #icon>
+						<Delete class="size-4 text-ink-gray-4" stroke-width="1.5" />
+					</template>
+				</Button>
+			</Tooltip>
+		</div>
+
+		<!-- A range calendar sits above its rows: they go as the reader types a
+		     range, and the days must stay where the first click found them. -->
+		<div class="flex flex-col" :class="calendar === 'range' ? 'flex-col-reverse' : ''">
+			<FilterPickerList
+				v-if="rows.length || fetching || periodsFetching || emptyText"
+				:items="rows"
+				:stage="stage"
+				:loading="fetching || periodsFetching"
+				:empty="emptyText"
+				@pick="pick"
+				@open="open"
+				@remove="emit('remove', $event.filter!)"
+			/>
+
+			<div
+				v-if="calendar"
+				:class="
+					rows.length
+						? calendar === 'range'
+							? 'border-b border-outline-gray-1'
+							: 'border-t border-outline-gray-1'
+						: ''
+				"
+			>
+				<FilterPickerCalendar :mode="calendar" :text="search" @write="search = $event" />
+			</div>
+		</div>
+
+		<!-- The row grows in rather than appearing: it arrives a stage after the
+		     panel opened, under a list the reader is already reading. The rows of
+		     the grid are what is animated, so the height comes from the line
+		     itself and no number here stands for it. -->
+		<Transition
+			enter-active-class="transition-[grid-template-rows,opacity] duration-150 ease-out"
+			enter-from-class="grid-rows-[0fr] opacity-0"
+			enter-to-class="grid-rows-[1fr] opacity-100"
+			leave-active-class="transition-[grid-template-rows,opacity] duration-100 ease-in"
+			leave-from-class="grid-rows-[1fr] opacity-100"
+			leave-to-class="grid-rows-[0fr] opacity-0"
+		>
+			<div v-if="keyHints.length" class="grid">
+				<div class="overflow-hidden">
+					<div
+						class="flex items-center justify-between border-t border-outline-gray-1 p-1"
+					>
+						<Button
+							v-for="hint in keyHints"
+							:key="hint.combo"
+							variant="ghost"
+							size="xs"
+							@mousedown.prevent
+							@click="hint.run()"
+						>
+							<span class="flex items-center gap-1.5">
+								<!-- the component sets its own `text-sm`, so the smaller size
+								     has to outrank it -->
+								<KeyboardShortcut :combo="hint.combo" class="!text-xs" />
+								{{ hint.label }}
+							</span>
+						</Button>
+					</div>
+				</div>
+			</div>
+		</Transition>
+	</ComboboxRoot>
+</template>

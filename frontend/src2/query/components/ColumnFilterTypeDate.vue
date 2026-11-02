@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { wheneverChanges } from '../../helpers'
+import session from '../../session'
 import { __ } from '../../translation'
 import dayjs from '../../helpers/dayjs'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-import useSettings from '../../settings/settings'
 import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 import DatePicker from './DatePicker.vue'
 
@@ -27,8 +27,6 @@ wheneverChanges(currentSection, () => {
 	}
 })
 
-const settings = useSettings()
-
 const getValue = (date: Date) =>
 	date.toLocaleDateString('en-US', {
 		month: 'short',
@@ -39,7 +37,7 @@ const getRange = (start: Day, end: Day) => `${getValue(start.toDate())} - ${getV
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 function startOfWeek() {
-	const weekStartsOn = WEEKDAYS.indexOf(settings.doc.week_starts_on || 'Monday')
+	const weekStartsOn = WEEKDAYS.indexOf(session.site.week_starts_on)
 	// dayjs counts days from Sunday, WEEKDAYS from Monday
 	const today = dayjs()
 	const dayOfWeek = (today.day() + 6) % 7
@@ -48,7 +46,7 @@ function startOfWeek() {
 
 const predefinedRanges = computed(() => {
 	const weekStart = startOfWeek()
-	const fyStart = dayjs(settings.doc.fiscal_year_start || '04-01-1999')
+	const fyStart = dayjs(session.site.fiscal_year_start)
 	return [
 		{ label: __('Today'), value: 'Day', description: getValue(new Date()) },
 		{
@@ -124,7 +122,7 @@ function onDatePickerInput(value: string[]) {
 	<div class="flex w-[210px] flex-col divide-y text-base">
 		<div class="flex flex-col gap-1 pb-2">
 			<div
-				class="flex cursor-pointer items-center justify-between text-sm text-gray-600 hover:underline"
+				class="flex cursor-pointer items-center justify-between text-sm text-ink-gray-5 hover:underline"
 				@click="currentSection = currentSection == 'presets' ? '' : 'presets'"
 			>
 				<span> Presets </span>
@@ -138,16 +136,16 @@ function onDatePickerInput(value: string[]) {
 				<div
 					v-for="range in predefinedRanges"
 					:key="range.value"
-					class="-mx-1 flex cursor-pointer items-center justify-between gap-8 rounded px-1 py-1"
+					class="-mx-1 flex cursor-pointer items-center justify-between gap-8 rounded-4 px-1 py-1"
 					@click="onPredefinedRangeInput(range.value)"
 					:class="
 						isRangeSelected(range.value)
 							? 'outline outline-gray-500'
-							: 'hover:bg-gray-100'
+							: 'hover:bg-surface-gray-2'
 					"
 				>
 					<span>{{ range.label }}</span>
-					<span class="text-sm text-gray-600">{{ range.description }}</span>
+					<span class="text-sm text-ink-gray-5">{{ range.description }}</span>
 				</div>
 			</div>
 		</div>
@@ -155,7 +153,7 @@ function onDatePickerInput(value: string[]) {
 		<div>
 			<div class="flex flex-col gap-1 py-2">
 				<div
-					class="flex cursor-pointer items-center justify-between text-sm text-gray-600 hover:underline"
+					class="flex cursor-pointer items-center justify-between text-sm text-ink-gray-5 hover:underline"
 					@click="currentSection = currentSection == 'relative' ? '' : 'relative'"
 				>
 					<span> Relative Dates </span>
@@ -198,7 +196,7 @@ function onDatePickerInput(value: string[]) {
 		<div class="">
 			<div class="flex flex-col gap-2 pt-2">
 				<div
-					class="flex cursor-pointer items-center justify-between text-sm text-gray-600 hover:underline"
+					class="flex cursor-pointer items-center justify-between text-sm text-ink-gray-5 hover:underline"
 					@click="currentSection = currentSection == 'specific' ? '' : 'specific'"
 				>
 					<span> Specific Dates </span>

@@ -1,8 +1,9 @@
-import { call } from 'frappe-ui'
+import { call, toast } from 'frappe-ui'
 import { __ } from '../translation'
 import { reactive, ref } from 'vue'
 import { showErrorToast, toOptions } from '../helpers'
-import { createToast } from '../helpers/toasts'
+import type { AppliedUserPermission } from '../charts/scoped_by'
+import type { Refusable } from '../not_permitted'
 import { QueryResultColumn, QueryResultRow } from '../types/query.types'
 
 export type DataSourceTable = {
@@ -31,23 +32,32 @@ export async function getTables(data_source?: string, search_term?: string, limi
 }
 
 const fetchingTable = ref(false)
-export type DataSourceTablePreview = {
+// When the caller may not read the table, nothing runs and the columns and
+// rows are empty. The page then shows Not Permitted, not an empty grid.
+export type DataSourceTablePreview = Refusable<{
 	table_name: string
 	data_source: string
 	columns: QueryResultColumn[]
 	rows: QueryResultRow[]
-}
+	// the reader's User Permissions that filtered the rows, in a card's format
+	user_permissions?: AppliedUserPermission[]
+	narrowed_by_permissions?: boolean
+}>
+// A failure resolves to undefined instead of rejecting. The page has four
+// states: preview, Not Permitted, failure and loading. A rejected promise would
+// leave it loading forever.
 async function fetchTable(
 	data_source: string,
-	table_name: string
-): Promise<DataSourceTablePreview> {
+	table_name: string,
+): Promise<DataSourceTablePreview | undefined> {
 	fetchingTable.value = true
 	return call('insights.api.data_sources.get_data_source_table', {
 		data_source,
 		table_name,
 	})
 		.catch((e: Error) => {
-			showErrorToast(e)
+			showErrorToast(e, false)
+			return undefined
 		})
 		.finally(() => {
 			fetchingTable.value = false
@@ -66,27 +76,35 @@ async function getTableColumns(data_source: string, table_name: string) {
 	})
 }
 
-export async function getRowCount(data_source: string, table_name: string) {
+/**
+ * The row count of a table, or undefined when the caller may not read it.
+ *
+ * An empty count is a real zero, so the endpoint throws instead of returning
+ * one (see `insights/not_permitted.py`). Resolving to undefined lets the caller
+ * clear the count it shows. Otherwise the previous table's count stays on
+ * screen under this table's name.
+ */
+export async function getRowCount(
+	data_source: string,
+	table_name: string,
+): Promise<number | undefined> {
 	return call('insights.api.data_sources.get_data_source_table_row_count', {
 		data_source,
 		table_name,
+	}).catch((e: Error) => {
+		showErrorToast(e, false)
+		return undefined
 	})
 }
 
 const updatingDataSourceTables = ref(false)
 async function updateDataSourceTables(data_source: string) {
 	updatingDataSourceTables.value = true
-	createToast({
-		message: `Updating tables for ${data_source}`,
-		variant: 'info',
-	})
+	toast.info(__('Updating tables for {0}', data_source))
 	return call('insights.api.data_sources.update_data_source_tables', { data_source })
 		.then(() => {
 			getTables(data_source)
-			createToast({
-				message: `Tables updated for ${data_source}`,
-				variant: 'success',
-			})
+			toast.success(__('Tables updated for {0}', data_source))
 		})
 		.catch((e: Error) => {
 			showErrorToast(e)
@@ -105,7 +123,7 @@ type TableLink = {
 async function getTableLinks(
 	data_source: string,
 	left_table: string,
-	right_table: string
+	right_table: string,
 ): Promise<TableLink[]> {
 	return call('insights.api.data_sources.get_table_links', {
 		data_source,
@@ -115,16 +133,11 @@ async function getTableLinks(
 }
 
 async function updateTableLinks(data_source: string) {
-	createToast({
-		title: __('Updating table links'),
-		message: __('Updating table links for {0}. This may take a while.', data_source),
-		variant: 'info',
+	toast.info(__('Updating table links'), {
+		description: __('Updating table links for {0}. This may take a while.', data_source),
 	})
 	return call('insights.api.data_sources.update_table_links', { data_source }).then(() => {
-		createToast({
-			message: __('Table links updated for {0}', data_source),
-			variant: 'success',
-		})
+		toast.success(__('Table links updated for {0}', data_source))
 	})
 }
 

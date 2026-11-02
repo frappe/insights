@@ -1,4 +1,4 @@
-"""Every event carries the app version and the site's entry cohort.
+"""Every event includes the app version and the site's entry cohort.
 
 An analysis that reads a series by version or by cohort needs both properties on
 every row. No answer is worth failing the action that reported it.
@@ -22,20 +22,20 @@ class TestTelemetryDefaults(InsightsIntegrationTestCase):
             patch("frappe.utils.telemetry.capture") as sender,
             patch("frappe.get_installed_apps", return_value=list(installed_apps)),
         ):
-            capture("workbook_created", interval="1d", from_template=True)
+            capture("workbook_opened", interval="1d", via="link")
         return sender.call_args
 
     # @feature telemetry.defaults
-    def test_an_event_carries_the_app_version_and_the_entry_cohort(self):
+    def test_an_event_includes_the_app_version_and_the_entry_cohort(self):
         args, kwargs = self.sent()
-        self.assertEqual(args, ("workbook_created", "insights"))
+        self.assertEqual(args, ("workbook_opened", "insights"))
         self.assertEqual(kwargs["interval"], "1d")
         self.assertEqual(
             kwargs["properties"],
             {
                 "app_version": insights.__version__,
                 "entry": "insights_site",
-                "from_template": True,
+                "via": "link",
             },
         )
 

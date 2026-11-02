@@ -20,6 +20,7 @@ import { h } from 'vue'
 import { copy } from '../helpers'
 import { FIELDTYPES, getDefaultGranularity, GranularityType } from '../helpers/constants'
 import dayjs from '../helpers/dayjs'
+import { SPAN_STEPS, type SpanUnit } from '../helpers/span_grammar'
 import useSettings from '../settings/settings'
 import {
 	Cast,
@@ -52,6 +53,7 @@ import {
 	PivotWiderArgs,
 	QueryResult,
 	QueryResultColumn,
+	QueryResultRow,
 	QueryTableArgs,
 	Remove,
 	RemoveArgs,
@@ -109,7 +111,7 @@ export const currencyColumnName = (measure_name: string) => `${measure_name}__cu
 // `undefined`: the measure names no column. `null`: the row mixes currencies.
 export function getRowCurrency(row: any, measure_name: string): string | null | undefined {
 	const key = currencyColumnName(measure_name)
-	return key in (row || {}) ? (row[key] ?? null) : undefined
+	return key in (row || {}) ? row[key] ?? null : undefined
 }
 
 // export const window_operation = (options: WindowOperationArgs): WindowOperation => ({
@@ -120,21 +122,55 @@ export function getRowCurrency(row: any, measure_name: string): string | null | 
 // 	order_by: options.order_by,
 // })
 
+// Here rather than in the query store: the island renders a result without ever
+// building a query, and importing the store for a blank one pulls the whole
+// execution path — socket, queue, autosave — into the island bundle.
+// A function and not a const: every reset of a shared const hands out the same
+// `rows`, `columns` and `formattedRows` arrays and the same import-time
+// `lastExecutedAt`, so two results that were reset are one result.
+export function emptyResult(): QueryResult {
+	return {
+		executedSQL: '',
+		totalRowCount: 0,
+		rows: [],
+		formattedRows: [],
+		columns: [],
+		columnOptions: [],
+		timeTaken: 0,
+		lastExecutedAt: new Date(),
+	}
+}
+
 export function getFormattedRows(result: QueryResult, operations: Operation[]) {
+	return formatResultRows(result, getColumnGranularity(operations))
+}
+
+// The grain a date column was grouped by, per column. A reader never receives
+// the operations, so the server sends it this map instead — same shape, so the
+// formatting below stays one implementation.
+export function getColumnGranularity(operations: Operation[]) {
+	// The last of each kind: a later operation regroups what an earlier one grouped, so
+	// its grain is the one the result columns have.
+	const reversed = [...operations].reverse()
+	const summarize_step = reversed.find((op) => op.type === 'summarize')
+	const pivot_step = reversed.find((op) => op.type === 'pivot_wider')
+
+	const granularity: Record<string, string> = {}
+	const dimensions = [...(summarize_step?.dimensions || []), ...(pivot_step?.rows || [])]
+	dimensions.forEach((dim) => {
+		if (dim.granularity && !granularity[dim.dimension_name]) {
+			granularity[dim.dimension_name] = dim.granularity
+		}
+	})
+	return granularity
+}
+
+export function formatResultRows(result: QueryResult, granularityByColumn: Record<string, string>) {
 	if (!result.rows?.length || !result.columns?.length) return []
 
 	const rows = copy(result.rows)
 	const columns = copy(result.columns)
-	const _operations = copy(operations)
-	const summarize_step = _operations.reverse().find((op) => op.type === 'summarize')
-	const pivot_step = _operations.reverse().find((op) => op.type === 'pivot_wider')
-
-	const getGranularity = (column_name: string) => {
-		const dim =
-			summarize_step?.dimensions.find((dim) => dim.dimension_name === column_name) ||
-			pivot_step?.rows.find((dim) => dim.dimension_name === column_name)
-		return dim ? dim.granularity : null
-	}
+	const getGranularity = (column_name: string) => granularityByColumn[column_name] || null
 
 	const formattedRows = rows.map((row) => {
 		const formattedRow = { ...row }
@@ -142,6 +178,9 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 			if (FIELDTYPES.DATE.includes(column.type) && getGranularity(column.name)) {
 				const granularity = getGranularity(column.name) as GranularityType
 				formattedRow[column.name] = getFormattedDate(row[column.name], granularity)
+			} else if (column.type === 'Date' && typeof row[column.name] === 'string') {
+				// the server sends a date as a timestamp at midnight
+				formattedRow[column.name] = row[column.name].slice(0, 10)
 			}
 
 			if (
@@ -163,7 +202,82 @@ export function getFormattedRows(result: QueryResult, operations: Operation[]) {
 	})
 	return formattedRows
 }
+/**
+ * The row `formatResultRows` produced this one from. A surface that renders the
+ * formatted rows — a table — reports the row it rendered, and everything downstream
+ * of a click reads the raw values, so the crossing happens once, here.
+ *
+ * The two are parallel arrays, so the raw row is the formatted one's position.
+ * A row from anywhere else has no position and reads as nothing.
+ */
+export function rawRowOf(
+	result: QueryResult,
+	formattedRow: QueryResultRow,
+): QueryResultRow | undefined {
+	return positionsIn(result).get(formattedRow)
+}
+
+/**
+ * Where each formatted row sits, built once per set of formatted rows.
+ *
+ * A table asks this per cell, so a scan of the rows for each of them is the
+ * whole result walked once a cell. Keyed on `formattedRows` rather than on the
+ * result: an execution writes fresh rows into the same result object, so a
+ * result-keyed map would answer the next run from the last run's rows. The map
+ * is held weakly, so it goes when the rows do.
+ */
+const positions = new WeakMap<QueryResultRow[], Map<QueryResultRow, QueryResultRow>>()
+function positionsIn(result: QueryResult) {
+	let found = positions.get(result.formattedRows)
+	if (!found) {
+		found = new Map()
+		result.formattedRows.forEach((formatted, index) => {
+			if (result.rows[index]) found!.set(formatted, result.rows[index])
+		})
+		positions.set(result.formattedRows, found)
+	}
+	return found
+}
+
+/** How a date reads in a cell, a tooltip or a header — spelled out in full. */
+const LONG_DATE_FORMATS: Record<string, string> = {
+	second: 'MMMM D, YYYY h:mm:ss A',
+	minute: 'MMMM D, YYYY h:mm A',
+	hour: 'MMMM D, YYYY h:00 A',
+	day: 'MMMM D, YYYY',
+	week: 'MMM Do, YYYY',
+	month: 'MMMM, YYYY',
+	year: 'YYYY',
+	quarter: '[Q]Q, YYYY',
+}
+
+/**
+ * How the same date reads on an axis. A category axis shows a label per column,
+ * so a spelled-out month is dropped by the overlap rule and the reader is left
+ * with a bare grid. Everything is abbreviated, and the year is kept: a category
+ * has no neighbors to read it against.
+ */
+const AXIS_DATE_FORMATS: Record<string, string> = {
+	second: 'MMM D, YYYY h:mm:ss A',
+	minute: 'MMM D, YYYY h:mm A',
+	hour: 'MMM D, YYYY h A',
+	day: 'MMM D, YYYY',
+	week: 'MMM D, YYYY',
+	month: 'MMM YYYY',
+	year: 'YYYY',
+	quarter: '[Q]Q YYYY',
+}
+
 export function getFormattedDate(date: string, granularity: string) {
+	return formatDateBy(date, granularity, LONG_DATE_FORMATS)
+}
+
+/** `getFormattedDate`, abbreviated for an axis tick. */
+export function getAxisDate(date: string, granularity: string) {
+	return formatDateBy(date, granularity, AXIS_DATE_FORMATS)
+}
+
+function formatDateBy(date: string, granularity: string, formats: Record<string, string>) {
 	if (!date) return ''
 
 	const isTimeOnlyValue = /^\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(date)
@@ -180,32 +294,85 @@ export function getFormattedDate(date: string, granularity: string) {
 		return parsed.isValid() ? parsed.format(timeFormats[granularity]) : date
 	}
 
-	if (granularity === 'fiscal_year') {
-		const d = dayjs(date)
-		const fiscalYearStart = session.user.fiscal_year_start
-		const fiscalStartMonth = dayjs(fiscalYearStart).month()
-		const fiscalStartDay = dayjs(fiscalYearStart).date()
+	if (granularity === 'fiscal_year') return `FY ${fiscalYearName(dayjs(date))}`
+	if (granularity === 'fiscal_quarter') return fiscalQuarterName(date)
 
-		const fiscalStartThisYear = d.month(fiscalStartMonth).date(fiscalStartDay)
-		const startYear = d.isBefore(fiscalStartThisYear) ? d.year() - 1 : d.year()
-		const endYear = startYear + 1
+	if (!formats[granularity]) return date
+	return dayjs(date).format(formats[granularity])
+}
 
-		return `FY ${startYear}-${String(endYear).slice(-2)}`
-	}
+/** `2025-26` for the fiscal year `d` falls in. */
+function fiscalYearName(d: ReturnType<typeof dayjs>): string {
+	const startYear = dayjs(fiscalPeriodStart(d.format('YYYY-MM-DD'), 12)).year()
+	return `${startYear}-${String(startYear + 1).slice(-2)}`
+}
 
-	const dayjsFormat: Record<string, string> = {
-		second: 'MMMM D, YYYY h:mm:ss A',
-		minute: 'MMMM D, YYYY h:mm A',
-		hour: 'MMMM D, YYYY h:00 A',
-		day: 'MMMM D, YYYY',
-		week: 'MMM Do, YYYY',
-		month: 'MMMM, YYYY',
-		year: 'YYYY',
-		quarter: '[Q]Q, YYYY',
-	}
+/**
+ * The first day of the fiscal year (12 months) or quarter (3) `date` falls in,
+ * or of the one `shift` periods away. Periods start on the configured fiscal
+ * start day, every `months` months from it, as the server's `get_fiscal_period`
+ * counts them.
+ */
+export function fiscalPeriodStart(date: string, months: number, shift = 0): string {
+	const start = dayjs(session.site.fiscal_year_start)
+	const fiscalDay = (month: ReturnType<typeof dayjs>) =>
+		Math.min(start.date(), month.daysInMonth())
+	const d = dayjs(date)
+	let monthsIn = d.year() * 12 + d.month() - start.month()
+	if (d.date() < fiscalDay(d)) monthsIn -= 1
+	const index = start.month() + monthsIn - (monthsIn % months) + shift * months
+	const month = dayjs(new Date(Math.floor(index / 12), index % 12, 1))
+	return month.date(fiscalDay(month)).format('YYYY-MM-DD')
+}
 
-	if (!dayjsFormat[granularity]) return date
-	return dayjs(date).format(dayjsFormat[granularity])
+/**
+ * The first day of the period of `unit` `count` periods after the one `start`
+ * opens. A fiscal period is counted, never reached by adding months to a start
+ * that a shorter month moved.
+ */
+export function periodStartAfter(unit: SpanUnit, start: string, count: number): string {
+	const [size, step] = SPAN_STEPS[unit]
+	if (unit === 'fiscal year' || unit === 'fiscal quarter')
+		return fiscalPeriodStart(start, size, count)
+	return dayjs(start)
+		.add(size * count, step)
+		.format('YYYY-MM-DD')
+}
+
+/**
+ * `date` moved `count` periods of `unit`, as the server's `shift_anchor` moves
+ * it: a fiscal date keeps its day, held inside the period it moved to.
+ */
+export function shiftDate(date: string, unit: SpanUnit, count: number): string {
+	const [size, step] = SPAN_STEPS[unit]
+	const moved = dayjs(date)
+		.add(size * count, step)
+		.format('YYYY-MM-DD')
+	if (unit !== 'fiscal year' && unit !== 'fiscal quarter') return moved
+	const start = fiscalPeriodStart(date, size, count)
+	const end = dayjs(fiscalPeriodStart(date, size, count + 1))
+		.subtract(1, 'day')
+		.format('YYYY-MM-DD')
+	return moved < start ? start : moved > end ? end : moved
+}
+
+/** The first day of the fiscal year that starts in calendar year `year`. */
+export function fiscalYearStarting(year: number): string {
+	const start = dayjs(session.site.fiscal_year_start)
+	return fiscalPeriodStart(
+		dayjs(new Date(year, start.month(), 1))
+			.endOf('month')
+			.format('YYYY-MM-DD'),
+		12,
+	)
+}
+
+/** `Q2 FY25-26`: the fiscal quarter `date` falls in. */
+export function fiscalQuarterName(date: string): string {
+	const quarter = dayjs(fiscalPeriodStart(date, 3))
+	const year = dayjs(fiscalPeriodStart(date, 12))
+	const monthsIn = quarter.year() * 12 + quarter.month() - (year.year() * 12 + year.month())
+	return `Q${monthsIn / 3 + 1} FY${fiscalYearName(year).slice(2)}`
 }
 
 export function getMeasures(columns: QueryResultColumn[]): Measure[] {
@@ -246,7 +413,7 @@ export const query_operation_types = {
 		type: 'source',
 		icon: DatabaseZap,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SourceArgs): Source => ({ type: 'source', ...args }),
 		getDescription: (op: Source) => {
 			return op.table.type == 'table' ? `${op.table.table_name}` : `${op.table.query_name}`
@@ -257,7 +424,7 @@ export const query_operation_types = {
 		type: 'join',
 		icon: h(BlendIcon, { class: '-rotate-45' }),
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: JoinArgs): Join => ({ type: 'join', ...args }),
 		getDescription: (op: Join) => {
 			return op.table.type == 'table' ? `${op.table.table_name}` : `${op.table.query_name}`
@@ -268,7 +435,7 @@ export const query_operation_types = {
 		type: 'union',
 		icon: BetweenHorizonalStart,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: UnionArgs): Union => ({ type: 'union', ...args }),
 		getDescription: (op: Union) => {
 			return op.table.type == 'table' ? `${op.table.table_name}` : `${op.table.query_name}`
@@ -279,7 +446,7 @@ export const query_operation_types = {
 		type: 'select',
 		icon: ColumnsIcon,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SelectArgs): Select => ({ type: 'select', ...args }),
 		getDescription: (op: Select) => {
 			return `${op.column_names.length} columns`
@@ -290,7 +457,7 @@ export const query_operation_types = {
 		type: 'remove',
 		icon: XSquareIcon,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: RemoveArgs): Remove => ({ type: 'remove', ...args }),
 		getDescription: (op: Remove) => {
 			if (op.column_names.length < 3) {
@@ -304,7 +471,7 @@ export const query_operation_types = {
 		type: 'rename',
 		icon: TextCursorInput,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: RenameArgs): Rename => ({ type: 'rename', ...args }),
 		getDescription: (op: Rename) => {
 			return `${op.column.column_name} -> ${op.new_name}`
@@ -315,7 +482,7 @@ export const query_operation_types = {
 		type: 'cast',
 		icon: Repeat,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: CastArgs): Cast => ({ type: 'cast', ...args }),
 		getDescription: (op: Cast) => {
 			return `${op.column.column_name} -> ${op.data_type}`
@@ -326,7 +493,7 @@ export const query_operation_types = {
 		type: 'filter',
 		icon: FilterIcon,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: FilterArgs): Filter => ({ type: 'filter', ...args }),
 		getDescription: (op: Filter) => {
 			// @ts-ignore
@@ -340,7 +507,7 @@ export const query_operation_types = {
 		type: 'filter_group',
 		icon: FilterIcon,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: FilterGroupArgs): FilterGroup => ({ type: 'filter_group', ...args }),
 		getDescription: (op: FilterGroup) => {
 			if (!op.filters.length) return __('empty')
@@ -357,7 +524,7 @@ export const query_operation_types = {
 		type: 'mutate',
 		icon: FunctionSquare,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: MutateArgs): Mutate => ({ type: 'mutate', ...args }),
 		getDescription: (op: Mutate) => {
 			return `${op.new_name}`
@@ -369,7 +536,7 @@ export const query_operation_types = {
 		type: 'sql_column',
 		icon: ScrollText,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SQLColumnArgs): SQLColumn => ({ type: 'sql_column', ...args }),
 		getDescription: (op: SQLColumn) => {
 			return `${op.new_name}`
@@ -380,7 +547,7 @@ export const query_operation_types = {
 		type: 'summarize',
 		icon: Combine,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SummarizeArgs): Summarize => ({ type: 'summarize', ...args }),
 		getDescription: (op: Summarize) => {
 			const measures = op.measures.map((m) => m.measure_name).join(', ')
@@ -393,7 +560,7 @@ export const query_operation_types = {
 		type: 'pivot_wider',
 		icon: GitBranch,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: PivotWiderArgs): PivotWider => ({ type: 'pivot_wider', ...args }),
 		getDescription: (op: PivotWider) => {
 			return __('Pivot Wider')
@@ -404,7 +571,7 @@ export const query_operation_types = {
 		type: 'order_by',
 		icon: ArrowUpDown,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: OrderByArgs): OrderBy => ({ type: 'order_by', ...args }),
 		getDescription: (op: OrderBy) => {
 			return `${op.column.column_name} ${op.direction}`
@@ -415,7 +582,7 @@ export const query_operation_types = {
 		type: 'limit',
 		icon: Indent,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (limit: number): Limit => ({ type: 'limit', limit }),
 		getDescription: (op: Limit) => {
 			return `${op.limit}`
@@ -426,7 +593,7 @@ export const query_operation_types = {
 		type: 'custom_operation',
 		icon: Braces,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: CustomOperationArgs): CustomOperation => ({
 			type: 'custom_operation',
 			...args,
@@ -440,7 +607,7 @@ export const query_operation_types = {
 		type: 'sql',
 		icon: ScrollText,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: SQLArgs): SQL => ({ type: 'sql', ...args }),
 		getDescription: (op: SQL) => {
 			return __('SQL')
@@ -451,7 +618,7 @@ export const query_operation_types = {
 		type: 'code',
 		icon: Braces,
 		color: 'gray',
-		class: 'text-gray-600 bg-gray-100',
+		class: 'text-ink-gray-5 bg-surface-gray-2',
 		init: (args: CodeArgs): Code => ({ type: 'code', ...args }),
 		getDescription: (op: Code) => {
 			return __('Code')
@@ -477,59 +644,3 @@ export const limit = query_operation_types.limit.init
 export const custom_operation = query_operation_types.custom_operation.init
 export const sql = query_operation_types.sql.init
 export const code = query_operation_types.code.init
-
-// ─── Inline column filter utilities ──────────────────────────────────────────
-
-// Operators checked longest-first so ">=" is not mistaken for ">"
-const NUMERIC_OPERATORS = ['>=', '<=', '!=', '>', '<', '='] as const
-export type NumericOperator = (typeof NUMERIC_OPERATORS)[number]
-
-export type ParsedFilter =
-	| { kind: 'numeric'; operator: NumericOperator; num: number }
-	| { kind: 'text'; text: string }
-
-/**
- * Parse a raw filter string (e.g. ">= 100", "foo") into a structured form.
- * Returns null when the string is empty or the numeric part cannot be parsed.
- */
-export function parseFilterString(filterStr: string): ParsedFilter | null {
-	if (!filterStr) return null
-
-	const op = NUMERIC_OPERATORS.find((o) => filterStr.startsWith(o))
-	if (op) {
-		const rest = filterStr.slice(op.length).trim()
-		const num = Number(rest)
-		if (rest === '' || isNaN(num)) return null
-		return { kind: 'numeric', operator: op, num }
-	}
-
-	return { kind: 'text', text: filterStr }
-}
-
-/**
- * Test whether a single cell value matches a parsed filter.
- * Used for client-side (in-memory) filtering.
- */
-export function matchesFilter(value: any, parsed: ParsedFilter): boolean {
-	if (parsed.kind === 'numeric') {
-		const num = Number(value)
-		switch (parsed.operator) {
-			case '>':
-				return num > parsed.num
-			case '<':
-				return num < parsed.num
-			case '>=':
-				return num >= parsed.num
-			case '<=':
-				return num <= parsed.num
-			case '=':
-				return num === parsed.num
-			case '!=':
-				return num !== parsed.num
-		}
-	}
-	// text: case-insensitive substring match
-	return String(value ?? '')
-		.toLowerCase()
-		.includes(parsed.text.toLowerCase())
-}
