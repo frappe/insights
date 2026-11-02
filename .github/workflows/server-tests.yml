@@ -66,12 +66,17 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:10.6
+        # Frappe version-16 runs its own CI on 11.8, and a uuid `name` needs 10.7 or later
+        image: mariadb:11.8
         env:
           MYSQL_ROOT_PASSWORD: root
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=10
 
     steps:
       - name: Clone
