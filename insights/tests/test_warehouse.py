@@ -56,9 +56,13 @@ from insights.insights.doctype.insights_data_source_v3.web_tier import WebTierSe
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
+    DT,
+    UUID_DOCTYPE,
     as_user,
     create_test_query,
     create_test_workbook,
+    create_uuid_doctype,
+    delete_uuid_doctype,
     delete_workbooks,
 )
 
@@ -1197,6 +1201,67 @@ print("held", flush=True)
 time.sleep(float(sys.argv[2]))
 con.close()
 """
+
+
+class TestUUIDNameImport(InsightsIntegrationTestCase):
+    """A DocType named by a MariaDB `uuid` imports to the data store with its names intact."""
+
+    TABLE = f"tab{UUID_DOCTYPE}"
+
+    @classmethod
+    def before_class(cls):
+        create_uuid_doctype()
+
+    @classmethod
+    def after_class(cls):
+        delete_uuid_doctype()
+
+    def before_test(self):
+        tmpdir = tempfile.mkdtemp(prefix="insights_uuid_name_test_")
+        self.addCleanup(shutil.rmtree, tmpdir, ignore_errors=True)
+        self.path = str(Path(tmpdir) / "store.duckdb")
+        self.enterContext(patch.object(insights.warehouse, "get_db_path", return_value=self.path))
+        self.enterContext(patch.object(insights, "create_toast"))
+        self.enterContext(patch("frappe.utils.telemetry.capture"))
+        insights.db_connections.pop("insights", None)
+
+    def add_rows(self, count):
+        for i in range(count):
+            frappe.get_doc({"doctype": UUID_DOCTYPE, "title": f"row #{i}"}).insert()
+        frappe.db.commit()  # nosemgrep - the import reads the source on its own connection
+
+    def assert_stored_as_source(self):
+        db = open_local_duckdb(self.path)
+        try:
+            stored = db.table(frappe.scrub(self.TABLE), database="site_db")
+            self.assertTrue(stored.schema()["name"].is_uuid())
+            names = sorted(str(name) for name in stored.name.execute())
+        finally:
+            db.disconnect()
+        self.assertEqual(names, sorted(frappe.get_all(UUID_DOCTYPE, pluck="name")))
+
+    # @feature data-store.import-table
+    def test_a_uuid_named_table_imports_with_its_uuid_names(self):
+        self.add_rows(3)
+        execute_warehouse_table_import("Site DB", self.TABLE)
+        self.assert_stored_as_source()
+
+        # an incremental sync appends the rows made after the last one stored
+        frappe.db.set_value(
+            DT.TABLE,
+            {"data_source": "Site DB", "table": self.TABLE},
+            {
+                "sync_mode": "Incremental",
+                "sync_strategy": "Append Only",
+                "sync_cursor_column": "creation",
+                "last_sync_bookmark": str(
+                    frappe.get_all(UUID_DOCTYPE, pluck="creation", order_by="creation desc", limit=1)[0]
+                ),
+            },
+        )
+        self.add_rows(2)
+        execute_warehouse_table_import("Site DB", self.TABLE)
+        self.assert_stored_as_source()
 
 
 class TestIncrementalImport(InsightsIntegrationTestCase):

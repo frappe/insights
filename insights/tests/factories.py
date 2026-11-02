@@ -22,6 +22,7 @@ TEST_WORKBOOK_TITLE = "Workbook Flow Test Workbook"
 TEST_QUERY_TITLE = "Workbook Flow Test Query"
 TEST_CHART_TITLE = "Workbook Flow Test Chart"
 TEST_DASHBOARD_TITLE = "Workbook Flow Test Dashboard"
+UUID_DOCTYPE = "Insights Test UUID Name"
 
 
 @contextmanager
@@ -962,3 +963,34 @@ def delete_test_workbooks():
 def cleanup_workbook_flow_fixtures():
     delete_test_workbooks()
     delete_test_users()
+
+
+def create_uuid_doctype(name=UUID_DOCTYPE):
+    """A DocType named by a MariaDB `uuid`, whose rows an Insights User reads only when they own them."""
+    if not frappe.db.exists("DocType", name):
+        frappe.get_doc(
+            {
+                "doctype": "DocType",
+                "name": name,
+                "module": "Insights",
+                "custom": 1,
+                "autoname": "UUID",
+                "fields": [{"fieldname": "title", "fieldtype": "Data", "label": "Title"}],
+                "permissions": [
+                    {"role": "System Manager", "read": 1, "write": 1, "create": 1},
+                    {"role": "Insights User", "read": 1, "if_owner": 1},
+                ],
+            }
+        ).insert()
+
+    table = {"data_source": "Site DB", "table": f"tab{name}"}
+    if not frappe.db.exists(DT.TABLE, table):
+        frappe.get_doc({"doctype": DT.TABLE, "label": name, **table}).insert(ignore_permissions=True)
+
+
+def delete_uuid_doctype(name=UUID_DOCTYPE):
+    frappe.db.delete("Insights Table Import Log", {"data_source": "Site DB", "table_name": f"tab{name}"})
+    frappe.db.delete(DT.TABLE, {"data_source": "Site DB", "table": f"tab{name}"})
+    frappe.delete_doc("DocType", name, force=True, ignore_permissions=True)
+    # deleting a DocType keeps its table, and the next run would read its rows
+    frappe.db.sql_ddl(f"drop table if exists `tab{name}`")
