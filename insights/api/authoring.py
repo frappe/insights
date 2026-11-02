@@ -44,10 +44,7 @@ from insights.insights.doctype.insights_chart_v3.chart_drill import (
     drill_rows_range,
     drill_rows_values,
 )
-from insights.insights.doctype.insights_chart_v3.chart_query import (
-    column_granularity,
-    config_errors,
-)
+from insights.insights.doctype.insights_chart_v3.chart_query import column_granularity
 from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
     can_filter_card,
@@ -115,7 +112,7 @@ def get_chart_data(
     )
     chart_type, config = chart.chart_type, frappe.parse_json(chart.config)
 
-    errors = config_errors(chart_type, chart.query, config)
+    errors = chart.setup_errors(config)
     if errors:
         return {"errors": errors}
 
@@ -203,7 +200,7 @@ def get_chart_count(
     chart, adhoc_filters = drilled_shape(
         query, chart_type, config, chart_name, dashboard_items, filters, card_filters
     )
-    if config_errors(chart.chart_type, chart.query, frappe.parse_json(chart.config)):
+    if chart.setup_errors():
         return 0
     return chart.count_rows(adhoc_filters, force=force)
 

@@ -1,12 +1,14 @@
 """Standard content filters rows for its reader like any other chart.
 
-On site data, a reader gets the rows that desk permissions or a team grant
-allow, whichever allows more. So a desk user in no team can still read a
-standard chart.
+On site data, a reader gets the rows that desk permissions allow, whatever
+their team grants. So a desk user in no team can read a standard chart.
 """
+
+import unittest
 
 import frappe
 
+from insights.api.view import get_chart_data, get_dashboard
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 from insights.insights.doctype.insights_team.insights_team import clear_cache as clear_team_cache
@@ -51,8 +53,9 @@ class AStandardChartReadsAsAnyChart(InsightsIntegrationTestCase):
         create_user(UNGRANTED, first_name="Standard", last_name="Ungranted", roles="Insights User")
 
         # each ToDo is allocated to its reader, so desk permissions allow the
-        # reader and the tests observe only the team grant. Only the ungranted
-        # reader has a cancelled ToDo, and the team's restriction allows it
+        # reader their own. Only the ungranted reader has a cancelled ToDo, which
+        # the team's restriction would allow, and the granted reader's closed
+        # ToDo is one the restriction would cut
         cls.todos = [
             frappe.get_doc(
                 {
@@ -196,10 +199,69 @@ class AStandardChartReadsAsAnyChart(InsightsIntegrationTestCase):
         self.assertEqual(self.statuses_read_by(self.plain, UNGRANTED), ["Cancelled", "Closed", "Open"])
         self.assertEqual(self.statuses_read_by(self.shipped, UNGRANTED), ["Cancelled", "Closed", "Open"])
 
-    # @feature standard.read-rules permissions.team-grant
-    def test_a_standard_chart_is_widened_by_a_teams_grant_as_any_chart_is(self):
-        """Protects `view.get_chart_data` for a reader in a team. The grant's
-        rows, here the other reader's cancelled ToDo, add to what desk allows,
-        whether or not the chart is standard."""
-        self.assertEqual(self.statuses_read_by(self.plain, GRANTED), ["Cancelled", "Closed", "Open"])
-        self.assertEqual(self.statuses_read_by(self.shipped, GRANTED), ["Cancelled", "Closed", "Open"])
+    # @feature standard.read-rules permissions.team-grant permissions.table-row-restriction
+    def test_a_teams_grant_changes_no_site_row_of_any_chart(self):
+        """Protects `view.get_chart_data` for a reader in a team. The grant adds
+        no row, here the other reader's cancelled ToDo, and its restriction cuts
+        none, here the reader's own closed ToDo, whether or not the chart is
+        standard."""
+        self.assertEqual(self.statuses_read_by(self.plain, GRANTED), ["Closed", "Open"])
+        self.assertEqual(self.statuses_read_by(self.shipped, GRANTED), ["Closed", "Open"])
+
+
+ACCOUNTS_USER = "standard-read-rules-accounts@test.com"
+
+
+class AnAccountsUserReadsTheAccountsBoard(InsightsIntegrationTestCase):
+    """The Accounts board ERPNext ships, read by a desk user with no Insights
+    role and in no team, on a site with team permissions on. Runs only where
+    ERPNext is installed."""
+
+    @classmethod
+    def before_class(cls):
+        if "erpnext" not in frappe.get_installed_apps():
+            raise unittest.SkipTest("ERPNext ships the Accounts board")
+        delete_users(ACCOUNTS_USER)
+        create_user(ACCOUNTS_USER, first_name="Standard", last_name="Accounts", roles="Accounts User")
+        cls.enable_permissions_was = frappe.db.get_single_value(DT.SETTINGS, "enable_permissions")
+        frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", 1)
+        clear_team_cache()
+
+    @classmethod
+    def after_class(cls):
+        frappe.db.set_single_value(DT.SETTINGS, "enable_permissions", cls.enable_permissions_was)
+        clear_team_cache()
+        delete_users(ACCOUNTS_USER)
+
+    # @feature standard.read-rules permissions.site-user-permissions
+    def test_every_card_runs_with_the_rows_desk_gives_them(self):
+        """A User Permission on a company narrows every card that reads a
+        company's rows, and the card names it."""
+        company = frappe.get_all("Company", pluck="name", limit=1)[0]
+        permission = frappe.get_doc(
+            {"doctype": "User Permission", "user": ACCOUNTS_USER, "allow": "Company", "for_value": company}
+        ).insert(ignore_permissions=True)
+        self.addCleanup(
+            frappe.delete_doc, "User Permission", permission.name, force=True, ignore_permissions=True
+        )
+
+        with as_user(ACCOUNTS_USER):
+            board = get_dashboard("accounts")
+        charts = [item["chart"] for item in board["items"] if item.get("type") == "chart"]
+        self.assertTrue(charts)
+
+        answers = {}
+        for chart in charts:
+            with as_user(ACCOUNTS_USER), db_connections():
+                answers[chart] = get_chart_data(chart=chart)
+
+        refused = {
+            chart: answer["not_permitted"] for chart, answer in answers.items() if answer.get("not_permitted")
+        }
+        self.assertEqual(refused, {})
+        narrowed = [
+            chart
+            for chart, answer in answers.items()
+            if {"doctype": "Company", "documents": [company]} in answer.get("user_permissions", [])
+        ]
+        self.assertTrue(narrowed)

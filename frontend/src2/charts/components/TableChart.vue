@@ -67,6 +67,10 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 		     card clips the overhang. The chrome names its own padding in
 		     `--chart-card-inset`, and a table with no card around it bleeds by
 		     nothing.
+		     The footer runs to the card's bottom edge the same way. frappe-ui pads
+		     a chart with no legend by 0.75rem to stand in for one, and a table
+		     never has a legend, so the grid covers that pad and the card's bottom
+		     padding (`--chart-card-inset-bottom`).
 		     The last column drops its own right border once it is flush: the
 		     card's border is already that line, and both rendered is a double rule.
 		     A box of its own, not classes on the table: DataTable renders a
@@ -75,7 +79,7 @@ function onDrilldown(column: QueryResultColumn, row: QueryResultRow) {
 		     The card renders the one loading veil, over the whole card: the grid
 		     does not know a run is in flight and never veils itself. -->
 		<div
-			class="relative mt-1 h-full [&_tr>*:last-child]:border-r-0 [margin-inline:calc(var(--chart-card-inset,0px)*-1)] [width:calc(100%_+_2_*_var(--chart-card-inset,0px))]"
+			class="relative [&_tr>*:last-child]:border-r-0 [margin-inline:calc(var(--chart-card-inset,0px)*-1)] [width:calc(100%_+_2_*_var(--chart-card-inset,0px))] [height:calc(100%_+_0.75rem_+_var(--chart-card-inset-bottom,0px))] [margin-bottom:calc(-0.75rem_-_var(--chart-card-inset-bottom,0px))]"
 		>
 			<DataTable
 				:columns="props.columns"

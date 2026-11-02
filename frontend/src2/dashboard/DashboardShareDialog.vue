@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { Badge, toast, Tooltip } from 'frappe-ui'
-import { computed, inject, ref } from 'vue'
+import { Alert, toast, Tooltip } from 'frappe-ui'
+import { computed, inject, ref, watch } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
 import VisibilitySelector from '../components/VisibilitySelector.vue'
-import { copy, copyToClipboard } from '../helpers'
+import { copy, copyToClipboard, showErrorToast } from '../helpers'
 import session from '../session'
 import { Visibility } from '../types/workbook.types'
 import useUserStore from '../users/users'
+import ShareUserRow from '../workbook/ShareUserRow.vue'
 import { Dashboard } from './dashboard'
+import { rolesWithoutReadLines, type RolesWithoutRead } from './roles_without_read'
 import { __ } from '../translation'
 
 const show = defineModel()
@@ -37,7 +39,37 @@ const hasChanged = computed(() => {
 	return JSON.stringify(prev) !== JSON.stringify(next)
 })
 
+// The chosen roles that can't read what the dashboard's charts read. Save
+// names them once, and the next Save saves anyway.
+const rolesWithoutRead = ref<RolesWithoutRead>()
+watch([visibility, visibleToRoles], () => (rolesWithoutRead.value = undefined), { deep: true })
+const warning = computed(() => rolesWithoutReadLines(rolesWithoutRead.value || {}))
+
+// the roles this Save adds: those already saved were checked when they were
+const addedRoles = computed(() => {
+	if (visibility.value !== 'Roles') return []
+	const saved =
+		dashboard.doc.visibility === 'Roles'
+			? (dashboard.doc.visible_to_roles || []).map((r) => r.role)
+			: []
+	return visibleToRoles.value.filter((role) => !saved.includes(role))
+})
+
 async function saveChanges() {
+	if (!rolesWithoutRead.value && addedRoles.value.length) {
+		try {
+			rolesWithoutRead.value = await dashboard.call(
+				'get_roles_without_read',
+				{ roles: addedRoles.value },
+				{ showError: false },
+			)
+		} catch (error) {
+			// a check that failed saves nothing unchecked
+			showErrorToast(error as Error)
+			return
+		}
+		if (warning.value.length) return
+	}
 	dashboard.doc.visibility = visibility.value
 	dashboard.doc.visible_to_roles = visibleToRoles.value.map((role) => ({ role }))
 	await dashboard.save()
@@ -50,6 +82,18 @@ async function saveChanges() {
 
 const selectedUserEmail = ref<string>('')
 const userStore = useUserStore()
+
+const owner = computed(() =>
+	dashboard.doc.owner === session.user.email
+		? {
+				full_name: session.user.full_name || session.user.email,
+				user_image: session.user.user_image,
+		  }
+		: {
+				full_name: userStore.getName(dashboard.doc.owner) || dashboard.doc.owner,
+				user_image: userStore.getImage(dashboard.doc.owner),
+		  },
+)
 function addSharedUser() {
 	if (!selectedUserEmail.value) return
 	if (!peopleWithAccess.value) peopleWithAccess.value = []
@@ -68,7 +112,7 @@ function addSharedUser() {
 		:title="__('Share Dashboard')"
 		:actions="[
 			{
-				label: __('Done'),
+				label: warning.length ? __('Save anyway') : __('Save'),
 				variant: 'solid',
 				disabled: !hasChanged,
 				onClick: saveChanges,
@@ -98,6 +142,17 @@ function addSharedUser() {
 					}}
 				</p>
 
+				<Alert
+					v-if="warning.length"
+					theme="amber"
+					:title="warning.join(' ')"
+					:description="
+						__(
+							'People with only these roles see Not Permitted in place of the charts that read them.',
+						)
+					"
+				/>
+
 				<hr class="my-1 border-t border-outline-gray-1" />
 
 				<div class="flex flex-col">
@@ -107,6 +162,7 @@ function addSharedUser() {
 								v-model="selectedUserEmail"
 								placeholder="Search by name or email"
 								:hide-users="peopleWithAccess.map((u) => u.email)"
+								shares-with-roles
 							/>
 						</div>
 						<Button
@@ -119,16 +175,12 @@ function addSharedUser() {
 					</div>
 					<span class="mb-2 text-sm text-ink-gray-5">People with access</span>
 					<div class="flex flex-col gap-1 overflow-y-auto">
-						<div class="flex w-full items-center gap-2 py-1">
-							<Avatar size="xl" label="You" :image="session.user.user_image" />
-							<div class="flex flex-1 flex-col">
-								<div class="leading-5">You</div>
-								<div class="text-xs text-ink-gray-5">
-									{{ session.user.email }}
-								</div>
-							</div>
-							<Badge size="lg" theme="orange">Owner</Badge>
-						</div>
+						<ShareUserRow
+							:full-name="owner.full_name"
+							:email="dashboard.doc.owner"
+							:image="owner.user_image"
+							access="owner"
+						/>
 						<div
 							v-for="user in peopleWithAccess"
 							:key="user.email"

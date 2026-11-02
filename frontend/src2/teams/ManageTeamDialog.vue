@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
+import ShareUserRow from '../workbook/ShareUserRow.vue'
 import { copy } from '../helpers'
 import session from '../session'
 import { __ } from '../translation'
@@ -132,32 +133,21 @@ const activeTab = ref('Members')
 						<div v-if="userStore.loading" class="flex items-center justify-center py-8">
 							<LoadingIndicator class="h-6 w-6 text-ink-gray-5" />
 						</div>
-						<div
+						<ShareUserRow
 							v-else-if="currentTeam.team_members.length"
 							v-for="member in currentTeam.team_members"
 							:key="member.user"
-							class="flex w-full items-center gap-2 py-1"
+							:full-name="userStore.getUser(member.user)?.full_name || member.user"
+							:email="userStore.getUser(member.user)?.email || member.user"
+							:image="userStore.getUser(member.user)?.user_image"
 						>
-							<Avatar
-								size="xl"
-								:label="userStore.getUser(member.user)?.full_name || member.user"
-								:image="userStore.getUser(member.user)?.user_image"
-							/>
-							<div class="flex flex-1 flex-col">
-								<div class="leading-5">
-									{{ userStore.getUser(member.user)?.full_name || member.user }}
-								</div>
-								<div class="text-xs text-ink-gray-5">
-									{{ userStore.getUser(member.user)?.email || member.user }}
-								</div>
-							</div>
 							<Button
 								variant="ghost"
 								icon="lucide-x"
 								class="flex-shrink-0"
 								@click="removeMember(member.user)"
 							/>
-						</div>
+						</ShareUserRow>
 						<div
 							v-else
 							class="rounded-4 border border-dashed border-outline-gray-2 px-32 py-6 text-center text-sm text-ink-gray-4"

@@ -17,7 +17,6 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 from duckdb import CatalogException, DependencyException, OutOfMemoryException
-from frappe.concurrency_limiter import web_tier_settings
 from frappe.query_builder.functions import IfNull, Max, Min
 from frappe.utils import add_days, cint, get_datetime, get_files_path, now, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
@@ -39,6 +38,7 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
     open_local_duckdb,
 )
 from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import read_pyarrow_batches
+from insights.insights.doctype.insights_data_source_v3.web_tier import web_tier_settings
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
 from insights.resources import ResourcePool, cpu_budget, server_busy
 from insights.utils import InsightsDataSourcev3, InsightsTablev3

@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures'
-import { CREDENTIALS, INSIGHTS_PATH } from '../helpers/auth'
+import { CREDENTIALS, INSIGHTS_PATH, VIEWER_EMAIL } from '../helpers/auth'
 
 /**
  * The one flow that starts signed out.
@@ -58,5 +58,21 @@ test.describe('settings', () => {
 		// send a visitor without one but the login page.
 		await expect(guestPage).toHaveURL(/\/login/)
 		await expect(guestPage.locator('form.form-login').getByLabel('Email')).toBeVisible()
+	})
+
+	// @feature settings.users-list
+	test('an admin searches the users and the list narrows to the match', async ({ page }) => {
+		await page.goto(INSIGHTS_PATH)
+		await page.getByText('Settings', { exact: true }).click()
+		const settings = page.getByRole('dialog')
+		await settings.getByText('Users', { exact: true }).click()
+		const search = settings.getByPlaceholder('Search')
+		await expect(settings.getByText(VIEWER_EMAIL)).toBeVisible()
+
+		await search.fill('nobody is named this')
+		await expect(settings.getByText(VIEWER_EMAIL)).toBeHidden()
+
+		await search.fill(VIEWER_EMAIL)
+		await expect(settings.getByText(VIEWER_EMAIL)).toBeVisible()
 	})
 })

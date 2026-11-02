@@ -35,10 +35,14 @@ setRouter({
 	// named SPA route gives an empty href, and the island shows no link for it.
 	resolveHref: (to) =>
 		typeof to === 'string' ? `${window.location.origin}${APP_PATH}${to}` : '',
-	// the host owns the page, so leaving the island is a full page load
+	// The host owns the page, so the Insights page opens in a tab of its own and
+	// the host stays where the reader left it. Every way into Insights from desk
+	// opens this way, desk's own Edit included. A blocked tab falls back to
+	// leaving the host
 	navigate: (to) => {
-		if (typeof to === 'string')
-			window.location.assign(`${window.location.origin}${APP_PATH}${to}`)
+		if (typeof to !== 'string') return
+		const url = `${window.location.origin}${APP_PATH}${to}`
+		if (!window.open(url, '_blank')) window.location.assign(url)
 	},
 })
 

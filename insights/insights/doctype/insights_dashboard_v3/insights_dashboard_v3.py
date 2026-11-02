@@ -1,8 +1,10 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import hashlib
 import re
 from collections.abc import Callable
+from urllib.parse import urlencode
 
 import frappe
 import requests
@@ -18,9 +20,10 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     derive_operations,
     result_column,
 )
-from insights.insights.query_utils import transitive_closure
-from insights.not_permitted import answers_refusal
+from insights.insights.query_utils import reachable_operations, transitive_closure
+from insights.not_permitted import answers_refusal, refused_doctypes, roles_without_read
 from insights.permission_user import runs_as
+from insights.permissions import same_rows_for_every_reader
 from insights.preview_key import generate_preview_key
 from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File, get_app_url
@@ -33,9 +36,38 @@ DEFAULT_CELL = {"chart": (10, 20), "text": (10, 5), "filter": (4, 2)}
 # A Number chart's one card with no comparison, as `numberCardRows` sizes it. The
 # grid sets the height from the chart's config when it renders.
 NUMBER_CELL = (4, 4)
+# the grid's width, as `GRID_COLUMNS` in `grid_placement.ts`
+GRID_COLUMNS = 20
 
 # Which page the view came from, as `docs/telemetry.md` names them.
 VIEW_SURFACES = {"workbook", "shared", "dashboards", "desk"}
+
+
+def filter_default_value(item: dict):
+    """A filter's default. `default_user_key` makes it the reader's own user
+    default, so a shipped dashboard opens on each reader's company."""
+    if key := item.get("default_user_key"):
+        return user_default(key)
+    return item.get("default_value")
+
+
+def user_default(key: str):
+    """The session user's default for `key`, as desk's `frappe.defaults.get_user_default`
+    reads it, so a dashboard opens on the company an ERPNext report opens on.
+
+    The Python `frappe.defaults.get_user_default` takes the global default before
+    the user's default User Permission, then refuses it as not permitted: a user
+    limited to one company gets no default at all.
+    """
+    defaults = frappe.defaults.get_defaults()
+    value = defaults.get(key)
+    if not value and frappe.defaults.is_a_user_permission_key(key):
+        value = frappe.defaults.get_user_permission_default(key, defaults) or defaults.get(frappe.scrub(key))
+    if isinstance(value, list | tuple):
+        value = value[0] if value else None
+    if frappe.defaults.not_in_user_permission(key, value):
+        return None
+    return value
 
 
 class InsightsDashboardv3(Document):
@@ -207,6 +239,7 @@ class InsightsDashboardv3(Document):
 
     def after_delete(self):
         standard.export_member(self)
+        delete_preview_file(self.name)
 
     @frappe.whitelist()
     def track_view(self, surface: str | None = None):
@@ -243,6 +276,12 @@ class InsightsDashboardv3(Document):
         if d.can_share:
             d.people_with_access = self.get_people_with_access()
         d.has_workbook_access = frappe.has_permission("Insights Workbook", ptype="read", doc=self.workbook)
+        # the stored items keep the key, not a value: the builder saves them back
+        d.user_defaults = {
+            item.get("filter_name"): filter_default_value(item)
+            for item in frappe.parse_json(self.items or "[]")
+            if item.get("type") == "filter" and item.get("default_user_key")
+        }
         return d
 
     def after_insert(self):
@@ -251,12 +290,7 @@ class InsightsDashboardv3(Document):
         # lands without a preview. Generate the initial one here when it has content.
         if frappe.flags.in_patch or not frappe.parse_json(self.items):
             return
-        frappe.enqueue_doc(
-            doctype=self.doctype,
-            name=self.name,
-            method="generate_dashboard_preview",
-            enqueue_after_commit=True,
-        )
+        self.enqueue_preview("generate_dashboard_preview")
 
     def before_save(self):
         self.set_route()
@@ -468,14 +502,24 @@ class InsightsDashboardv3(Document):
             return
 
         prev_doc = self.get_doc_before_save()
-        frappe.enqueue_doc(
-            doctype=self.doctype,
-            name=self.name,
-            method="update_dashboard_preview",
-            new_doc=self.as_dict(),
-            prev_doc=prev_doc.as_dict(),
-            enqueue_after_commit=True,
-        )
+        self.enqueue_preview("update_dashboard_preview", new_doc=self.as_dict(), prev_doc=prev_doc.as_dict())
+
+    def enqueue_preview(self, method, **kwargs):
+        """Enqueue a preview job, unless the job queue is full.
+
+        A preview is only a picture of the dashboard, so a full queue costs the
+        picture and never the save. Frappe refuses a full queue with
+        `QueueOverloaded`, or with `PermissionError` for a user who is not a
+        System Manager, raised while it looks up the System Health Report the
+        refusal links to. The refusal's message goes with it.
+        """
+        messages = len(frappe.local.message_log)
+        try:
+            frappe.enqueue_doc(
+                doctype=self.doctype, name=self.name, method=method, enqueue_after_commit=True, **kwargs
+            )
+        except (frappe.QueueOverloaded, frappe.PermissionError):
+            del frappe.local.message_log[messages:]
 
     def update_dashboard_preview(self, new_doc, prev_doc):
         new_doc = frappe.parse_json(new_doc)
@@ -487,7 +531,11 @@ class InsightsDashboardv3(Document):
         self.generate_dashboard_preview()
 
     def generate_dashboard_preview(self):
-        with generate_preview_key(self.name) as key:
+        if preview_refusal(self):
+            return None
+
+        version = preview_versions([self.name])[self.name]
+        with generate_preview_key(self.name, self.owner) as key:
             preview = get_page_preview(
                 # The browser runs on the server and passes a preview key, so
                 # the page it opens is the site's own, not one a request header
@@ -500,9 +548,8 @@ class InsightsDashboardv3(Document):
                     "X-Insights-Preview-Key": key,
                 },
             )
-            file_url = create_preview_file(preview, self.name)
-            random_hash = frappe.generate_hash()[0:4]
-            file_url = f"{file_url}?{random_hash}"
+            # the random part makes each render a new URL, so a browser does not show a cached one
+            file_url = f"{create_preview_file(preview, self.name)}?{version}.{frappe.generate_hash()[:4]}"
             self.db_set("preview_image", file_url)
             return file_url
 
@@ -525,6 +572,17 @@ class InsightsDashboardv3(Document):
             .where((DocShare.read == 1) | (DocShare.write == 1))
             .run(as_dict=True)
         )
+
+    @frappe.whitelist()
+    def get_roles_without_read(self, roles: list[str]) -> dict[str, list[str]]:
+        """Which of `roles` can't read the doctypes this dashboard's charts read,
+        and what each needs. The share dialog warns of them before it saves:
+        a role that reads nothing on the dashboard gets No Access."""
+        if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
+            frappe.throw(
+                frappe._("You do not have permission to share this dashboard"), frappe.PermissionError
+            )
+        return roles_without_read(self.name, frappe.parse_json(roles) or [])
 
     @frappe.whitelist()
     def update_access(self, data: dict | str):
@@ -588,6 +646,61 @@ def is_grid_number(value) -> bool:
 def layout_bottom(layout: dict) -> int:
     y, h = layout.get("y"), layout.get("h")
     return y + h if is_grid_number(y) and is_grid_number(h) else 0
+
+
+def follow_readings(items: list, chart: str, was: list[str], now: list[str]) -> bool:
+    """Give each reading `chart` gained since `was` a cell, and drop the cells
+    of those it lost, in place. Whether `items` changed.
+
+    A cell that names no reading shows the first one. A new cell goes beside
+    the chart's last cell while the row has room, else `place_unplaced_items`
+    puts it under every cell. The chart keeps one cell, naming no reading,
+    when it loses every reading its cells showed.
+    """
+    cells = [item for item in items if item.get("type") == "chart" and item.get("chart") == chart]
+    if not cells:
+        return False
+
+    def shows(cell: dict, readings: list[str]) -> str | None:
+        return cell.get("reading") or (readings[0] if readings else None)
+
+    changed = False
+    for cell in [cell for cell in cells if shows(cell, was) and shows(cell, was) not in now]:
+        if len(cells) > 1:
+            cells.remove(cell)
+            items.remove(cell)
+        else:
+            cell.pop("reading", None)
+        changed = True
+
+    on_board = {shows(cell, now) for cell in cells}
+    w, h = NUMBER_CELL
+    last = max(
+        (cell.get("layout") or {} for cell in cells),
+        key=lambda layout: (layout.get("y", 0), layout.get("x", 0)),
+    )
+    for reading in now:
+        if reading in was or reading in on_board:
+            continue
+        cell = {"type": "chart", "chart": chart, "reading": reading}
+        beside = {"x": last.get("x", 0) + last.get("w", 0), "y": last.get("y", 0), "w": w, "h": h}
+        if beside["x"] + w <= GRID_COLUMNS and not any(
+            overlaps(beside, item.get("layout") or {}) for item in items
+        ):
+            cell["layout"] = last = beside
+        items.append(cell)
+        on_board.add(reading)
+        changed = True
+    return changed
+
+
+def overlaps(a: dict, b: dict) -> bool:
+    return (
+        a["x"] < b.get("x", 0) + b.get("w", 0)
+        and a["x"] + a["w"] > b.get("x", 0)
+        and a["y"] < b.get("y", 0) + b.get("h", 0)
+        and a["y"] + a["h"] > b.get("y", 0)
+    )
 
 
 def filter_not_available():
@@ -799,7 +912,25 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     return routed
 
 
+def preview_refusal(dashboard) -> str | None:
+    """Why `dashboard` gets no preview image, or None when it may have one.
+
+    Every reader of the list sees the preview, and it shows the rows of the
+    user it is rendered for: the owner, whoever asks for it. Under the rule
+    nobody else reads the dashboard, or every chart on it shows the owner's
+    rows anyway. And the owner must be able to open it: the page refuses a
+    dashboard on which none of their charts would run, and the browser
+    captures the sign-in page it falls back to.
+    """
+    if dashboard.name not in same_rows_for_every_reader([dashboard.name], user=dashboard.owner):
+        return frappe._("Each viewer sees their own data, so there's no shared preview")
+    if refused_doctypes(dashboard.name, dashboard.owner) is not None:
+        return frappe._("The owner of this dashboard can't read its data, so there's no preview")
+    return None
+
+
 def get_page_preview(url: str, headers: dict | None = None) -> bytes:
+    check_page_answers(url, headers)
     # Newer Frappe renders previews in-process via headless Chromium — no
     # external service, and the site's own /assets and /files resolve locally.
     # Older versions fall back to the preview_generator HTTP service.
@@ -809,6 +940,22 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
         return get_page_preview_via_service(url, headers)
 
     return get_preview_from_url(url, wait_for=1000, headers=headers or {}, format="jpeg")
+
+
+def check_page_answers(url: str, headers: dict | None = None) -> None:
+    """Refuse to capture a page the site does not serve.
+
+    Chromium captures its own error page as readily as the dashboard, and the
+    capture would be saved as the preview.
+    """
+    try:
+        requests.get(url, headers=headers or {}, timeout=30).raise_for_status()
+    except requests.RequestException as e:
+        frappe.throw(
+            frappe._("The preview was not captured, because {0} did not answer: {1}").format(
+                frappe.utils.escape_html(url), frappe.utils.escape_html(str(e))
+            )
+        )
 
 
 def get_page_preview_via_service(url: str, headers: dict | None = None) -> bytes:
@@ -833,27 +980,115 @@ def get_page_preview_via_service(url: str, headers: dict | None = None) -> bytes
         frappe.throw("Failed to generate preview")
 
 
+PREVIEW_FILE_SUFFIX = "-preview.jpeg"
+
+
 def create_preview_file(content: bytes, dashboard_name: str):
-    file_name = f"{dashboard_name}-preview.jpeg"
-    file = File.get_or_create_doc(
-        attached_to_doctype="Insights Dashboard v3",
-        attached_to_name=dashboard_name,
-        file_name=file_name,
-        is_private=1,
-    )
-    if file.name:
-        file.content = content
-        file.save_file(overwrite=True)
-        file.save()
-    else:
-        # insert file while ensuring file name is same as the one we want
-        # first insert without content to reserve the file name (ignoring validate_file_on_disk)
-        # then overwrite the file with the content
+    """Save a preview as a private file that belongs to no document.
+
+    Frappe lets every reader of a document download its attachments, and
+    lets a file's owner download it. A preview shows the rows of the user it
+    was rendered for, so Administrator owns it and only
+    `insights.api.view.get_dashboard_preview` serves it.
+    """
+    file = File.get_or_create_doc(file_name=f"{dashboard_name}{PREVIEW_FILE_SUFFIX}", is_private=1)
+    if not file.name:
+        # insert without content first to reserve the file name (ignoring validate_file_on_disk)
         file.flags.ignore_validate = True
         file.insert()
         file.flags.ignore_validate = False
-        file.content = content
-        file.save_file(overwrite=True)
-        file.save()
+    file.content = content
+    file.save_file(overwrite=True)
+    file.save()
+    if file.owner != "Administrator":
+        file.db_set("owner", "Administrator", update_modified=False)
 
     return file.file_url
+
+
+def delete_preview_file(dashboard_name: str):
+    for file in frappe.get_all(
+        "File", filters={"file_name": f"{dashboard_name}{PREVIEW_FILE_SUFFIX}", "is_private": 1}, pluck="name"
+    ):
+        frappe.delete_doc("File", file, ignore_permissions=True)
+
+
+def preview_versions(dashboards: list[str]) -> dict[str, str]:
+    """A hash of what decides the rows each of `dashboards` shows: its owner,
+    whose rows a preview is drawn with, its charts and their owners, and every
+    query they read."""
+    owners = dict(
+        frappe.get_all(
+            "Insights Dashboard v3",
+            filters={"name": ("in", dashboards)},
+            fields=["name", "owner"],
+            as_list=True,
+        )
+    )
+    charts_of: dict[str, set[str]] = {}
+    for row in frappe.get_all(
+        "Insights Dashboard Chart v3",
+        filters={"parenttype": "Insights Dashboard v3", "parent": ("in", dashboards)},
+        fields=["parent", "chart"],
+    ):
+        charts_of.setdefault(row.parent, set()).add(row.chart)
+    charts = {
+        chart.name: chart
+        for chart in frappe.get_all(
+            "Insights Chart v3",
+            filters={"name": ("in", list(set().union(*charts_of.values())))},
+            fields=["name", "owner", "query", "config", "run_as_owner"],
+        )
+    }
+    operations = reachable_operations({chart.query for chart in charts.values()})
+
+    def state(chart_name: str) -> list:
+        chart = charts.get(chart_name)
+        if not chart:
+            return [chart_name]
+        queries = {chart.query, *transitive_closure(chart.query, operations_by_name=operations)}
+        return [
+            chart_name,
+            chart.owner,
+            chart.config,
+            chart.run_as_owner,
+            {q: operations.get(q) for q in sorted(queries)},
+        ]
+
+    return {
+        name: hashlib.sha256(
+            frappe.as_json(
+                [owners.get(name), *(state(chart) for chart in sorted(charts_of.get(name, ())))]
+            ).encode()
+        ).hexdigest()[:16]
+        for name in dashboards
+    }
+
+
+def current_previews(dashboards: list[str]) -> set[str]:
+    """The `dashboards` whose preview was drawn from the charts and queries
+    they have now. A chart may since read other rows than the image shows."""
+    if not dashboards:
+        return set()
+    versions = preview_versions(dashboards)
+    return {
+        dashboard.name
+        for dashboard in frappe.get_all(
+            "Insights Dashboard v3",
+            filters={"name": ("in", dashboards), "preview_image": ("is", "set")},
+            fields=["name", "preview_image"],
+        )
+        if dashboard.preview_image.partition("?")[2].partition(".")[0] == versions[dashboard.name]
+    }
+
+
+def preview_url(dashboard_name: str, preview_image: str | None) -> str | None:
+    """Where the browser fetches a dashboard's preview from.
+
+    `preview_image` ends in a version that changes with each render, which
+    the URL keeps so a new render is not served from the browser's cache.
+    """
+    if not preview_image:
+        return None
+    query = urlencode({"dashboard": dashboard_name, "v": preview_image.partition("?")[2]})
+    return f"/api/method/insights.api.view.get_dashboard_preview?{query}"

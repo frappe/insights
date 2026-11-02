@@ -6,7 +6,7 @@ Date: 2026-09-19
 
 Accepted.
 
-Amended 2026-09-24: Frappe's experimental standard-document functions were removed. Insights uses Frappe's existing `importable_doctypes` import instead, which works from Frappe 16.
+Amended 2026-09-24: Frappe's experimental standard-document functions were removed. Insights uses Frappe's existing `importable_doctypes` import instead, which works from Frappe v16.
 
 Amended again on 2026-09-24: Insights finds the files itself and imports each one with Frappe's `import_file_by_path`. Frappe's own import goes through apps in install order. So the files of an app installed before Insights are imported before the schema of Insights Workbook is synced, and they are not imported when Insights is installed later.
 

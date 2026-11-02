@@ -11,7 +11,8 @@ data", which a reader takes for zero. See
 `docs/adr/a-reader-never-sees-a-false-empty.md`.
 
 The reader was already allowed on the chart, so naming the doctypes it needs
-reveals nothing. **Not Found** is the answer for the content itself.
+reveals nothing. Content the reader may not read is refused without them
+(`resolver.no_access`).
 """
 
 from functools import wraps
@@ -107,53 +108,156 @@ def answers_refusal(empty):
     return decorate
 
 
-def unreadable_doctypes(table_name: str, user: str | None = None) -> list[str]:
+def unreadable_doctypes(table_name: str, user: str | None = None, reads=None) -> list[str]:
     """The doctypes `user` would need read on to read `table_name`. Empty if none.
 
     A child table has no permissions of its own. It needs read on one of its
     parents, so every parent is named, and any one of them is enough.
+
+    `reads` answers whether a doctype is readable in place of desk's check for
+    `user`, as `role_reads` does for a role.
     """
     from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_parents
 
+    reads = reads or (lambda doctype: frappe.has_permission(doctype, "read", user=user))
     doctype = table_name.removeprefix("tab")
     if not frappe.get_meta(doctype).istable:
-        return [] if frappe.has_permission(doctype, "read", user=user) else [doctype]
+        return [] if reads(doctype) else [doctype]
 
     parents = get_parents(doctype)
-    if any(frappe.has_permission(parent, "read", user=user) for parent in parents):
+    if any(reads(parent) for parent in parents):
         return []
     return sorted(parents) or [doctype]
 
 
-def has_permitted_chart(dashboard: str, user: str | None = None) -> bool:
-    """Whether any chart on `dashboard` would run for `user`.
+# the roles desk gives every signed-in desk user besides their own
+ROLES_EVERY_DESK_USER_HOLDS = ("All", "Guest", "Desk User")
 
-    A dashboard is Not Found when every chart on it is Not Permitted, or when
-    `user` may not read any of them. Nothing on it is for this reader, and Not
-    Found is the one answer for content a reader may not read. A partly
-    permitted dashboard opens with its Not Permitted cards in place, so the
-    layout never shifts. A chart is readable when `may_read` says so, the same
-    check `view.charts_on` makes on the same cells.
+
+def role_reads(role: str):
+    """Whether a desk user who holds only `role` may read a doctype: whether a
+    role permission at level 0 gives `role`, or a role every desk user holds,
+    read on it. Rows a User Permission narrows still leave the doctype readable.
+    A column above level 0 is not checked, so its chart can still say Not
+    Permitted."""
+    held = {role, *ROLES_EVERY_DESK_USER_HOLDS}
+    return lambda doctype: any(
+        perm.read and perm.role in held and not perm.permlevel
+        for perm in frappe.get_meta(doctype).permissions
+    )
+
+
+def roles_without_read(dashboard: str, roles: list[str]) -> dict[str, list[str]]:
+    """The doctypes each of `roles` would need read on for every chart on
+    `dashboard` to run for a reader who holds only that role. A role that
+    reads them all is left out.
+
+    A chart that runs as its owner needs nothing of its reader, as
+    `permission_user_for` decides. Off the site database a role grants nothing
+    on its own, and a team may still grant its holders a table, so only desk's
+    doctypes are named.
+    """
+    from insights.permission_user import declared_owner
+
+    charts = frappe.get_all(
+        "Insights Dashboard Chart v3",
+        filters={"parent": dashboard, "parenttype": "Insights Dashboard v3"},
+        pluck="chart",
+    )
+    tables = set()
+    for chart in frappe.get_all(
+        "Insights Chart v3", filters={"name": ("in", charts or [""])}, fields=["name", "query"]
+    ):
+        if chart.query and not declared_owner(frappe._dict(doctype="Insights Chart v3", name=chart.name)):
+            tables |= query_tables(chart.query)
+
+    needed = {}
+    for role in roles:
+        reads = role_reads(role)
+        if doctypes := sorted(
+            {doctype for table in tables for doctype in site_table_doctypes(*table, reads=reads)}
+        ):
+            needed[role] = doctypes
+    return needed
+
+
+def site_table_doctypes(data_source: str, table_name: str, user: str | None = None, reads=None) -> list[str]:
+    """The doctypes `user` would need read on to read a table. Empty off the
+    site database, where no doctype grants a table, and for a table that has
+    no doctype. `reads` is as for `unreadable_doctypes`."""
+    from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
+        is_site_db,
+        strip_schema_prefix,
+    )
+
+    table = strip_schema_prefix(table_name)
+    if not is_site_db(data_source) or table == "tabSingles":
+        return []
+    try:
+        return unreadable_doctypes(table, user, reads)
+    except frappe.DoesNotExistError:
+        return []  # nosemgrep - a table without a doctype names no doctype to grant
+
+
+def query_tables(query: str) -> set[tuple[str, str]]:
+    """The `(data_source, table_name)` of every table `query` reads, its sources' included."""
+    from insights.insights.query_utils import table_references, transitive_closure
+
+    operations = frappe.get_all(
+        "Insights Query v3", filters={"name": ("in", [query, *transitive_closure(query)])}, pluck="operations"
+    )
+    return {
+        (ref["data_source"], ref["table_name"])
+        for pipeline in operations
+        for ref in table_references(pipeline)
+    }
+
+
+def query_refusal(query: str, user: str) -> list[str] | None:
+    """None when `user` may read every table `query` reads. Otherwise the
+    doctypes they would need read on, which is empty off the site database.
+
+    Every table is checked, not only up to the first refusal, so the answer
+    names everything the query needs.
+    """
+    from insights.insights.doctype.insights_team.insights_team import check_table_permission
+
+    refused = [
+        table
+        for table in query_tables(query)
+        if not check_table_permission(*table, user=user, raise_error=False)
+    ]
+    if not refused:
+        return None
+    return sorted({doctype for table in refused for doctype in site_table_doctypes(*table, user)})
+
+
+def refused_doctypes(dashboard: str, user: str | None = None) -> list[str] | None:
+    """None when a chart on `dashboard` would run for `user`. Otherwise the
+    doctypes they would need read on, which is empty when they may read none
+    of its charts.
+
+    A dashboard on which no chart would run is refused: nothing on it is for
+    this reader. A partly permitted dashboard opens with its Not Permitted
+    cards in place, so the layout never shifts. A chart is readable when
+    `may_read` says so, the same check `view.charts_on` makes on the same cells.
 
     Nothing runs. A chart's tables come from the operations of its query and of
-    every query that query sources. They come from the query's own row, not
-    from the `Insights Query Reference` table, because a background job
-    rebuilds that table after the save commits. Each chart is checked as the
-    user it would run as, and `permission_user_for` decides that user: the
-    owner while Run as owner is on, the key's user during a preview render, the
-    reader otherwise.
+    every query that query sources. They come from the query's own row, the
+    source the `Insights Query Reference` table is derived from. Each chart is
+    checked as the user it would run as, and `permission_user_for` decides that
+    user: the owner while Run as owner is on, the key's user during a preview
+    render, the reader otherwise.
 
     A table is readable when `check_table_permission` says so, the same rule
-    the engine reads rows by: desk or a team grant on the site database, a team
-    grant elsewhere.
+    the engine reads rows by: desk on the site database, a team grant
+    elsewhere.
 
     A dashboard with no charts is permitted, because nothing on it was refused.
     So is one whose charts were all deleted, and one with a chart that names no
     query. That is a normal saved state, and the card asks its author to
     configure it.
     """
-    from insights.insights.doctype.insights_team.insights_team import check_table_permission
-    from insights.insights.query_utils import table_references, transitive_closure
     from insights.resolver import may_read
 
     charts = frappe.get_all(
@@ -162,41 +266,28 @@ def has_permitted_chart(dashboard: str, user: str | None = None) -> bool:
         pluck="chart",
     )
     if not charts:
-        return True
+        return None
 
     reader = user or frappe.session.user
-    answered: dict[tuple[str, str], bool] = {}
-
-    def readable(data_source: str, table_name: str, as_user: str) -> bool:
-        key = (f"{data_source}.{table_name}", as_user)
-        if key not in answered:
-            answered[key] = check_table_permission(data_source, table_name, user=as_user, raise_error=False)
-        return answered[key]
-
+    needed: set[str] = set()
     rows = frappe.get_all("Insights Chart v3", filters={"name": ("in", charts)}, fields=["name", "query"])
     if not rows:
-        return True
+        return None
     for chart in rows:
         if not may_read(frappe.get_cached_doc("Insights Chart v3", chart.name), reader):
             continue
         if not chart.query:
             # nothing to refuse: the card asks this reader, as it asks the
             # author, to pick a chart type and configure it
-            return True
+            return None
         with permission_user(reader):
             as_user = permission_user_for(frappe._dict(doctype="Insights Chart v3", name=chart.name))
-        queries = {chart.query, *transitive_closure(chart.query)}
-        operations = frappe.get_all(
-            "Insights Query v3", filters={"name": ("in", list(queries))}, pluck="operations"
-        )
-        if all(
-            readable(ref["data_source"], ref["table_name"], as_user)
-            for pipeline in operations
-            for ref in table_references(pipeline)
-        ):
-            return True
+        refusal = query_refusal(chart.query, as_user)
+        if refusal is None:
+            return None
+        needed.update(refusal)
 
-    return False
+    return sorted(needed)
 
 
 def hold_back(columns: dict[str, str]) -> None:

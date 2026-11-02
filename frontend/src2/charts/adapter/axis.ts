@@ -27,7 +27,7 @@ import type {
 } from '../../types/chart.types'
 import type { Dimension, QueryResultRow } from '../../types/query.types'
 import { hasBarsOnBothAxes } from '../helpers'
-import { numberFormatter, type NumberFormatter } from '../number_format'
+import { axisFormatter, numberFormatter, type NumberFormatter } from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // Bar, Line and Row. One family, because they differ in two values: the mark an
@@ -100,10 +100,11 @@ function adaptAxisChart(
 	const onRight = (column: string) => seriesByColumn.get(column)?.align === 'Right'
 	const right = columns.filter(onRight)
 
+	const { plotted, resultRowOf } = blankMissingCategories(dimension, x, input.result.rows)
 	const props: BarChartProps = {
 		title: input.title,
 		subtitle: input.description,
-		data: input.result.rows,
+		data: plotted,
 		x,
 		y: columns.filter((column) => !onRight(column)),
 		xAxis: xAxisFor(dimension, x, input.result.rows),
@@ -117,12 +118,12 @@ function adaptAxisChart(
 	// One formatter per axis, not per series: v2 prints a value against the axis
 	// it is read on, and an axis has one scale. The first series plotted on it
 	// says how that scale reads.
-	const primary = numberFormatter(config, measureOn(config, 'Left'), input.result.rows)
+	const primary = axisFormatter(config, measureOn(config, 'Left'), input.result.rows)
 	props.yAxis = valueAxisFor(y_axis, stacking === 'normalized', primary)
 
 	const rightMeasure = measureOn(config, 'Right')
 	const secondary = rightMeasure
-		? numberFormatter(config, rightMeasure, input.result.rows)
+		? axisFormatter(config, rightMeasure, input.result.rows)
 		: undefined
 	if (secondary) props.y2Axis = { format: secondary }
 
@@ -183,10 +184,29 @@ function adaptAxisChart(
 			// back onto the result.
 			select: (event: ChartDatapointEvent) => ({
 				column: event.name,
-				row: event.row,
+				row: resultRowOf(event.row),
 			}),
 		},
 	}
+}
+
+/**
+ * The rows a category axis plots. echarts labels a null category "null", so a
+ * missing one is plotted blank. A drill reads the result's own row, which still
+ * holds the null.
+ */
+function blankMissingCategories(dimension: Dimension, x: string, rows: QueryResultRow[]) {
+	const resultRows = new Map<QueryResultRow, QueryResultRow>()
+	const plotted =
+		xAxisTypeFor(dimension) === 'category'
+			? rows.map((row) => {
+					if (row[x] !== null && row[x] !== undefined) return row
+					const blank = { ...row, [x]: '' }
+					resultRows.set(blank, row)
+					return blank
+			  })
+			: rows
+	return { plotted, resultRowOf: (row: QueryResultRow) => resultRows.get(row) ?? row }
 }
 
 /**
@@ -593,6 +613,8 @@ function trendLinesFor(
 				show: true,
 				position: 'insideEndTop',
 				formatter: () => label,
+				// echarts' default ink is near-black, unread on a dark plot
+				color: tokens?.dataLabel,
 				fontSize: DATA_LABEL_FONT_SIZE,
 				backgroundColor: tokens
 					? `color-mix(in srgb, ${tokens.backdrop} ${LABEL_PLATE_OPACITY}%, transparent)`

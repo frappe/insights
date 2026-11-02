@@ -51,25 +51,24 @@ wheneverChanges(
 )
 
 dataSourceStore.getSources().then(() => {
-	tabGroups.value[0].tabs = dataSourceStore.sources
-		.map((source) => ({
-			label: source.title,
-			icon: DatabaseIcon,
-			component: () => (
-				<DataSourceTableList
-					v-model:selectedTable={selectedTable.value}
-					data_source={source.name}
-				/>
-			),
-		}))
-		.sort((a, b) => a.label.localeCompare(b.label))
+	// the site's own database first: it is where most first queries start
+	const sources = [...dataSourceStore.sources].sort(
+		(a, b) => Number(b.is_site_db) - Number(a.is_site_db) || a.title.localeCompare(b.title),
+	)
+	tabGroups.value[0].tabs = sources.map((source) => ({
+		label: source.title,
+		icon: DatabaseIcon,
+		component: () => (
+			<DataSourceTableList
+				v-model:selectedTable={selectedTable.value}
+				data_source={source.name}
+			/>
+		),
+	}))
 
-	activeTab.value = tabGroups.value[0].tabs[0]
-	if (props.source && props.source.table.type == 'table') {
-		const source_data_source = props.source.table.data_source
-		const tab = tabGroups.value[0].tabs.find((tab) => tab.label == source_data_source)
-		if (tab) activeTab.value = tab
-	}
+	const current = props.source?.table.type == 'table' ? props.source.table.data_source : ''
+	const index = sources.findIndex((source) => source.name == current)
+	activeTab.value = tabGroups.value[0].tabs[Math.max(index, 0)]
 })
 
 const selectedQuery = ref<QueryTableArgs>(

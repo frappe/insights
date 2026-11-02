@@ -26,8 +26,8 @@ const props = defineProps<{
 // renders them in its header.
 const body = ref<InstanceType<typeof DashboardBody>>()
 
-// A loading dashboard and a Not Found one get the same title, so the header
-// never says whether the dashboard exists.
+// A loading, Not Found or No Access dashboard gets the same title, so the header
+// says nothing about the dashboard.
 const pageTitle = computed(() => props.dashboard.title || __('Dashboard'))
 
 const crumbs = computed(() => [...(props.breadcrumbs || []), { label: pageTitle.value }])
@@ -45,9 +45,9 @@ watch(pageTitle, (title) => (document.title = `${title} | Insights`), { immediat
 			<div class="flex min-w-0 items-baseline gap-2">
 				<Breadcrumbs :items="crumbs" />
 			</div>
-			<!-- No actions until the dashboard loads, and none on Not Found. -->
+			<!-- No actions until the dashboard loads, and none on Not Found or No Access. -->
 			<div
-				v-if="!dashboard.loading && !dashboard.notFound"
+				v-if="!dashboard.loading && !dashboard.notFound && !dashboard.noAccess"
 				class="flex flex-shrink-0 items-center gap-1"
 			>
 				<DashboardActions :actions="body?.actions || []" />

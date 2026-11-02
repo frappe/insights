@@ -17,13 +17,12 @@ const props = defineProps<{ dashboard_name: string }>()
 // hold: a route, a docname, or the v2 name.
 const dashboard = useDashboardView(() => props.dashboard_name, 'shared')
 
-// On Not Found, a guest is sent to sign in, because a signed-in user may be
-// able to read the dashboard. A missing dashboard and one that is no longer
-// public both answer Not Found, so the redirect does not say which it was.
+// On No Access, a guest is sent to sign in, because a signed-in user may be
+// able to read the dashboard.
 watch(
-	() => dashboard.notFound,
-	(notFound) => {
-		if (!notFound || session.isLoggedIn) return
+	() => dashboard.noAccess,
+	(noAccess) => {
+		if (!noAccess || session.isLoggedIn) return
 		session.resetSession()
 		router.push('/login')
 	},

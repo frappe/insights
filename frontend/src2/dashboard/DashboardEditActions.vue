@@ -15,7 +15,6 @@ import { BREAKPOINTS } from './grid_placement'
 const dashboard = inject('dashboard') as Dashboard
 const charts = inject(chartOptionsKey, [] as WorkbookChart[])
 
-const showChartSelectorDialog = ref(false)
 const showShareDialog = ref(false)
 
 // Widest first, because the owner arranges the widest layout first. Built from
@@ -36,7 +35,7 @@ const widths = computed(() =>
 	<Button
 		v-if="!dashboard.editing && dashboard.doc.can_share"
 		variant="outline"
-		:label="__('Share')"
+		:label="__('Share Dashboard')"
 		@click="showShareDialog = true"
 	>
 		<template #prefix>
@@ -56,7 +55,7 @@ const widths = computed(() =>
 
 	<template v-if="dashboard.editing">
 		<TabButtons v-model="dashboard.arranging" :options="widths" />
-		<Button variant="outline" icon-left="lucide-plus" @click="showChartSelectorDialog = true">
+		<Button variant="outline" icon-left="lucide-plus" @click="dashboard.pickingCharts = true">
 			{{ __('Chart') }}
 		</Button>
 		<Button variant="outline" icon-left="lucide-plus" @click="() => dashboard.addFilter()">
@@ -75,7 +74,7 @@ const widths = computed(() =>
 		</Button>
 	</template>
 
-	<DashboardChartSelectorDialog v-model="showChartSelectorDialog" :chartOptions="charts" />
+	<DashboardChartSelectorDialog v-model="dashboard.pickingCharts" :chartOptions="charts" />
 
 	<DashboardShareDialog v-if="showShareDialog" v-model="showShareDialog" />
 </template>

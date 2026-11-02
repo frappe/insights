@@ -107,7 +107,7 @@ const userDropdownOptions = computed(() => {
 		},
 	]
 
-	if (session.user.is_admin) {
+	if (session.user.is_admin || session.user.has_desk_access) {
 		options.push({
 			label: __('Switch to Desk'),
 			icon: h(ToggleRight),

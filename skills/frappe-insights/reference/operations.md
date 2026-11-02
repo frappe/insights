@@ -36,7 +36,7 @@ A query's `operations` is a JSON array executed top to bottom. The first operati
 
 `data_type`: `String | Integer | Decimal | Date | Datetime | Time | Text`. Measures take `String | Integer | Decimal`. Dimensions take `String | Date | Datetime | Time`.
 
-A measure's `format` is `currency` or `percent`. A `currency` measure prints the symbol of `currency_column`, read per group. A group that mixes codes prints the number bare. With no `currency_column` it prints the site's currency. A summarize adds a hidden `<measure_name>__currency` column for it. A `percent` measure holds a ratio: Insights multiplies it by 100 and prints `%`.
+A measure's `format` is `currency` or `percent`. A `currency` measure prints the symbol of `currency_column`, read per group. A group that mixes codes prints the number bare. `currency_column` can also name a linked document's currency in the options form of frappe's Currency field, `Company:company:default_currency`: each row prints the `default_currency` of the Company its `company` column names, and the reader needs no read on Company. The field must link to Currency. With no `currency_column` it prints the site's currency. A summarize adds a hidden `<measure_name>__currency` column for it. A `percent` measure holds a ratio: Insights multiplies it by 100 and prints `%`.
 
 Datetime columns also accept `second`, `minute` and `hour` granularity. A Time column accepts only those three. Anything else fails with an "Unsupported Granularity" error that names the list.
 

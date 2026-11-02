@@ -81,6 +81,8 @@ export type ResolvedNumberFormat = NumberFormat & {
 	scale: number
 	/** The currency's Frappe number format, such as `#,###.##`. */
 	frappe_number_format?: string
+	/** The places the unit prints when no layer states any: a currency's, as in Desk. */
+	unit_decimals?: number
 }
 
 /** Decimal places a shortened number prints when no layer states one. v2's default. */
@@ -109,7 +111,12 @@ export function numberFormatOf(
 			measure?.measure_name ? config?.number_formats?.[measure.measure_name] : null,
 		),
 	])
-	return { ...merged, scale: unit.scale, frappe_number_format: unit.frappe_number_format }
+	return {
+		...merged,
+		scale: unit.scale,
+		frappe_number_format: unit.frappe_number_format,
+		unit_decimals: unit.decimals,
+	}
 }
 
 /**
@@ -136,7 +143,8 @@ export function inheritedNumberFormat(
  * The precision an unstated one prints as, under the format in effect.
  *
  * A shortened number falls back to one place. An unshortened one leaves the
- * places to the locale, which no single number states, so this names none.
+ * places to its currency, or to the number itself, which no single format
+ * states, so this names none.
  *
  * A field shows this when it inherits no precision of its own. It takes the
  * effective `shorten` rather than reading a layer, because a form states that
@@ -154,6 +162,19 @@ export function numberFormatter(
 	rows?: QueryResultRow[],
 ): NumberFormatter {
 	const format = numberFormatOf(config, measure, rows)
+	return (value: any) => printNumber(value, format)
+}
+
+/**
+ * How an axis prints a Measure. Its ticks are round numbers, so an amount drops
+ * the places its currency states and keeps only the ones it has.
+ */
+export function axisFormatter(
+	config?: NumberFormatConfigSource | null,
+	measure?: FormattedMeasure | null,
+	rows?: QueryResultRow[],
+): NumberFormatter {
+	const format = { ...numberFormatOf(config, measure, rows), unit_decimals: undefined }
 	return (value: any) => printNumber(value, format)
 }
 
@@ -192,7 +213,7 @@ export function printNumber(value: any, format: ResolvedNumberFormat): string {
 			  )
 			: formatNumber(
 					magnitude,
-					format.decimals ?? guessPrecision(Math.abs(scaled)),
+					format.decimals ?? format.unit_decimals ?? guessPrecision(Math.abs(scaled)),
 					format.frappe_number_format,
 			  )
 	const printed = print(Math.abs(scaled))

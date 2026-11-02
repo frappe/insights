@@ -11,6 +11,8 @@ const props = defineProps<{
 	// only for pickers whose server side rejects an address that belongs to
 	// nobody - otherwise a typo becomes a silent grant
 	allowCustomEmail?: boolean
+	// the dialog can share with a role, which reaches users the picker never lists
+	sharesWithRoles?: boolean
 }>()
 const selectedUserEmail = defineModel<string>()
 
@@ -54,10 +56,24 @@ const options = computed(() => {
 })
 
 const emptyText = computed(() =>
-	props.allowCustomEmail
-		? __('No matches. Type a full email address to share.')
-		: __('No matches.'),
+	query.value.trim() ? __('No matching users') : __('No other Insights users'),
 )
+
+// the picker lists Insights users only, so a colleague missing from it is
+// usually one without an Insights role
+const footerText = computed(() => {
+	if (props.allowCustomEmail) {
+		return __(
+			'Only users with an Insights role are listed. Type a full email address to share with anyone else.',
+		)
+	}
+	if (props.sharesWithRoles) {
+		return __(
+			'Only users with an Insights role are listed. To reach desk users, pick Anyone with a selected role above.',
+		)
+	}
+	return __('Only users with an Insights role are listed.')
+})
 </script>
 
 <template>
@@ -78,6 +94,14 @@ const emptyText = computed(() =>
 
 		<template #item-prefix="{ item }">
 			<Avatar size="sm" :label="item.label" :image="item.user_image" />
+		</template>
+
+		<template #footer>
+			<div
+				class="w-0 min-w-full border-t border-outline-gray-1 px-3 py-2 text-sm text-ink-gray-5"
+			>
+				{{ footerText }}
+			</div>
 		</template>
 	</Combobox>
 </template>

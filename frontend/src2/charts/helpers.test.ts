@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
 	dataSelection,
 	ensureConfigSlots,
+	firstMeasure,
 	getGranularity,
 	moveNumberReadingOptions,
 	normalizeChartConfig,
 	removeNumberReading,
 	resetChartConfig,
+	switchChartType,
 } from './helpers'
 
 const measure = (name: string) => ({
@@ -351,4 +353,48 @@ describe('a config saved in an older shape', () => {
 			expect(normalizeChartConfig(structuredClone(once), chart_type)).toEqual(once)
 		})
 	}
+})
+
+describe('firstMeasure', () => {
+	// @feature charts.type-bar
+	it('plots a grouped query by its first measure, not by counting its groups', () => {
+		const columns = [
+			{ label: 'customer', value: 'customer', query: 'q', data_type: 'String' },
+			{
+				label: 'sum_of_total',
+				value: 'sum_of_total',
+				query: 'q',
+				data_type: 'Decimal',
+				is_measure: true,
+			},
+			{ label: 'count', value: 'count', query: 'q', data_type: 'Integer', is_measure: true },
+		] as any[]
+
+		expect(firstMeasure(columns)).toEqual({
+			column_name: 'sum_of_total',
+			data_type: 'Decimal',
+			aggregation: 'sum',
+			measure_name: 'sum_of_total',
+		})
+		expect(firstMeasure(columns.slice(0, 1))).toBeUndefined()
+	})
+})
+
+describe('switchChartType', () => {
+	// @feature charts.type-number charts.type-bar
+	it('keeps the axes a bar chart had through a switch to a number card and back', () => {
+		const x_axis = { dimension: { column_name: 'customer', dimension_name: 'customer' } }
+		const bar = ensureConfigSlots(
+			{ x_axis, y_axis: { series: [{ measure: measure('total') }] }, order_by: [{}] },
+			'Bar',
+		)
+
+		const number = switchChartType(bar, 'Bar', 'Number')
+		expect(number.order_by).toEqual([])
+		expect(number.number_columns).toEqual([{}])
+
+		const back = switchChartType(number, 'Number', 'Bar')
+		expect(back.x_axis).toEqual(x_axis)
+		expect(back.y_axis.series).toEqual([{ measure: measure('total') }])
+	})
 })

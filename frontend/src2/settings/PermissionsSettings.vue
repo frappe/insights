@@ -61,8 +61,8 @@ const listOptions = ref({
 			showEditTeamDialog.value = true
 		},
 		emptyState: {
-			title: __('No teams.'),
-			description: __('No teams to display.'),
+			title: __('No teams'),
+			description: __('A team gives its members access to data sources and tables.'),
 			button: session.user.is_admin
 				? {
 						label: __('Create Team'),

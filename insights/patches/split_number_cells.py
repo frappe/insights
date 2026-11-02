@@ -7,6 +7,7 @@ from insights.patches.resize_dashboard_cells import (
     card_rows,
     number_chart_configs,
     number_readings,
+    rescale_items,
     settle_items,
 )
 
@@ -48,6 +49,15 @@ def execute():
         frappe.db.set_value(
             "Insights Dashboard v3", name, "items", frappe.as_json(items), update_modified=False
         )
+
+
+def upgrade_cells(items: list, configs: dict) -> list:
+    """Cells arranged on the grid before v3.50, as `resize_dashboard_cells` and this
+    patch leave a dashboard the site already had."""
+    items = rescale_items(items, configs) or items
+    if expand_items(items, configs):
+        settle_items(items)
+    return items
 
 
 def expand_items(items: list, configs: dict) -> bool:

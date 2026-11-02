@@ -1,6 +1,7 @@
 import frappe
 import sqlglot as sg
 
+from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.tests.base import InsightsIntegrationTestCase
 
@@ -174,6 +175,15 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
             with self.subTest(raw_sql=raw_sql):
                 with self.assertRaises(frappe.ValidationError):
                     self.execute([self.sql_column("smuggled", raw_sql)])
+
+    # @feature query.sql-column
+    def test_a_function_that_runs_a_query_is_rejected(self):
+        # the query it runs is a string, so the column check sees no table
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        statement = """SELECT *, query_to_xml('select * from "tabUser"', true, true, '') AS x FROM _insights_sql_column"""
+
+        with self.assertRaises(QueryRefused):
+            builder._validate_sql_column_statement(statement, "postgres")
 
     # @feature query.sql-column
     def test_an_unparsable_expression_is_rejected(self):

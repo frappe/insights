@@ -202,27 +202,31 @@ function saveEdit() {
 								<label class="text-xs text-ink-gray-5">{{
 									__('Linked Charts')
 								}}</label>
-								<div
-									v-for="link in linkOptions"
-									:key="link.name"
-									class="flex h-8 w-full items-center gap-2"
-								>
-									<Toggle
-										:modelValue="enabledLinks.includes(link.name)"
-										@update:modelValue="toggleLink(link.name)"
-									/>
-									<p class="flex-1 truncate text-base">{{ link.title }}</p>
+								<div class="flex max-h-40 flex-col gap-1 overflow-y-auto">
 									<div
-										v-if="enabledLinks.includes(link.name)"
-										class="ml-auto flex-shrink-0"
+										v-for="link in linkOptions"
+										:key="link.name"
+										class="flex h-8 w-full flex-shrink-0 items-center gap-2"
 									>
-										<Combobox
-											class="min-w-[10rem]"
-											:placeholder="__('Select a column')"
-											:options="link.columns"
-											:modelValue="filter.links[link.name]"
-											@update:modelValue="filter.links[link.name] = $event"
+										<Toggle
+											:modelValue="enabledLinks.includes(link.name)"
+											@update:modelValue="toggleLink(link.name)"
 										/>
+										<p class="flex-1 truncate text-base">{{ link.title }}</p>
+										<div
+											v-if="enabledLinks.includes(link.name)"
+											class="ml-auto flex-shrink-0"
+										>
+											<Combobox
+												class="min-w-[10rem]"
+												:placeholder="__('Select a column')"
+												:options="link.columns"
+												:modelValue="filter.links[link.name]"
+												@update:modelValue="
+													filter.links[link.name] = $event
+												"
+											/>
+										</div>
 									</div>
 								</div>
 							</div>

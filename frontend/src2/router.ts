@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { call } from 'frappe-ui'
+import { createRouter, createWebHistory, RouteLocationNormalized } from 'vue-router'
 import { APP_PATH } from './app_path.ts'
 import session from './session.ts'
 
@@ -59,6 +60,13 @@ const routes = [
 		],
 	},
 	{
+		// a link to an old Insights template, such as ERPNext's old workspace banner
+		path: '/template/:app/:folder',
+		name: 'Template',
+		component: () => import('./workbook/WorkbookList.vue'),
+		beforeEnter: openTemplateWorkbook,
+	},
+	{
 		path: '/data-source',
 		name: 'DataSourceList',
 		component: () => import('./data_source/DataSourceList.vue'),
@@ -107,6 +115,18 @@ const routes = [
 	},
 ]
 
+async function openTemplateWorkbook(to: RouteLocationNormalized) {
+	const workbook = await call('insights.api.upgrade.get_template_workbook', {
+		template: `${to.params.app}/${to.params.folder}`,
+		// eslint-disable-next-line no-restricted-syntax -- an old link that resolves to nothing opens the workbooks list, where the user would look next
+	}).catch(() => null)
+	return workbook
+		? { name: 'Workbook', params: { workbook_name: workbook } }
+		: { name: 'WorkbookList' }
+}
+
+const READER_ROUTES = ['DashboardList', 'Dashboard', 'SharedChart', 'SharedDashboard']
+
 let router = createRouter({
 	history: createWebHistory(APP_PATH),
 	// @ts-ignore
@@ -132,7 +152,14 @@ router.beforeEach(async (to, _, next) => {
 		return next(false)
 	}
 
-	to.path === '/login' ? next('/') : next()
+	if (to.path === '/login') return next('/')
+
+	// A user without an Insights role reads the dashboards they may open, and
+	// nothing else. Every other page would call endpoints that refuse them
+	if (!session.isAuthorized && !READER_ROUTES.includes(to.name as string)) {
+		return next({ name: 'DashboardList' })
+	}
+	next()
 })
 
 const _fetch = window.fetch

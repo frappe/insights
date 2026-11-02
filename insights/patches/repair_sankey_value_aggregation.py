@@ -34,12 +34,13 @@ def execute():
     other four return the value itself. A chart that holds one of them shows
     what the author sees today, so the patch leaves it alone.
 
-    And only over a numeric value column. A count is listed over every column,
-    a `sum` only over `Integer` and `Decimal` — the engine has no `sum` for a
-    string or a date and would throw where the chart merely plots flat today. A
-    column whose type the config does not state is left alone for the same
-    reason: the premise above, a column that is already a `COUNT(*)`, is one
-    only a numeric column can meet.
+    And only over a value column that can be summed. A count is listed over
+    every column, a `sum` only over `Integer` and `Decimal` — the engine has no
+    `sum` for a string or a date and would throw where the chart merely plots
+    flat today. A column whose type the config does not state is summed: the
+    Sankey drew its values as ribbon widths, which only a number can be, and a
+    config written outside the picker, by the API or an import, often states no
+    type.
 
     `measure_name` moves with the aggregation, because it is the name of the
     column the summarize writes and the name the renderer looks the value up by.
@@ -57,29 +58,14 @@ def execute():
 
     for chart in frappe.get_all(DOCTYPE, filters={"chart_type": "Sankey"}, fields=["name", "config"]):
         config = frappe.parse_json(chart.config)
-        if not isinstance(config, dict):
+        aggregation = repair_value_aggregation(config)
+        if not aggregation:
             continue
-
-        value_column = config.get("value_column")
-        if not isinstance(value_column, dict):
-            continue
-
-        aggregation = value_column.get("aggregation")
-        if aggregation not in COLLAPSING:
-            continue
-
-        if value_column.get("data_type") not in NUMERIC:
-            continue
-
-        column_name = value_column.get("column_name")
-        value_column["aggregation"] = REPAIRED
-        if value_column.get("measure_name") == f"{aggregation}_of_{column_name}":
-            value_column["measure_name"] = f"{REPAIRED}_of_{column_name}"
 
         # written past the document so the standard-content guard, which reads a
         # save, has nothing to block — a shipped Sankey is repaired like any other
         frappe.db.set_value(DOCTYPE, chart.name, "config", frappe.as_json(config), update_modified=False)
-        repaired.append((chart.name, aggregation, value_column["measure_name"]))
+        repaired.append((chart.name, aggregation, config["value_column"]["measure_name"]))
 
     if not repaired:
         return
@@ -87,3 +73,26 @@ def execute():
     print(f"Insights: repaired the value aggregation of {len(repaired)} Sankey chart(s)")
     for name, aggregation, measure_name in repaired:
         print(f"  {name}: {aggregation} -> {REPAIRED}, measure {measure_name}")
+
+
+def repair_value_aggregation(config) -> str | None:
+    """Repair a Sankey config in place. Answers the function it replaced, or None."""
+    if not isinstance(config, dict):
+        return None
+
+    value_column = config.get("value_column")
+    if not isinstance(value_column, dict):
+        return None
+
+    aggregation = value_column.get("aggregation")
+    if aggregation not in COLLAPSING:
+        return None
+
+    if value_column.get("data_type") and value_column["data_type"] not in NUMERIC:
+        return None
+
+    column_name = value_column.get("column_name")
+    value_column["aggregation"] = REPAIRED
+    if value_column.get("measure_name") == f"{aggregation}_of_{column_name}":
+        value_column["measure_name"] = f"{REPAIRED}_of_{column_name}"
+    return aggregation

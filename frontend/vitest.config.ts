@@ -1,14 +1,16 @@
 import vue from '@vitejs/plugin-vue'
+import vueJsx from '@vitejs/plugin-vue-jsx'
 import { lucideIcons } from 'frappe-ui/vite'
 import { defineConfig } from 'vitest/config'
 
 // Deliberately not `vite.config.js`: that one starts a proxy to the bench site
 // and reads boot data, which a unit test has no use for. What is left is what a
 // pure function needs — a resolver, the SFC compiler because the adapter names
-// the chart components it returns, and frappe-ui's icon resolver because its
-// components reach for `~icons/lucide/*`.
+// the chart components it returns, the JSX compiler for components whose script
+// is TSX, and frappe-ui's icon resolver because its components reach for
+// `~icons/lucide/*`.
 export default defineConfig({
-	plugins: [vue(), lucideIcons()],
+	plugins: [vue(), vueJsx(), lucideIcons()],
 	resolve: {
 		// frappe-ui is linked from the framework checkout and carries its own
 		// node_modules, so anything with a single-instance contract has to

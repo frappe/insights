@@ -9,8 +9,8 @@ them, and finding them used to take one document read per hop.
 
 Every read goes through `frappe.get_list`, so a document the caller may not read
 is never named or counted, and the walk does not pass through it. What reads a
-query comes from `Insights Query Reference`, which a job rebuilds after each
-save, so a query saved a moment ago may not show downstream yet.
+query comes from `Insights Query Reference`, which each save of a query
+rewrites.
 """
 
 import frappe

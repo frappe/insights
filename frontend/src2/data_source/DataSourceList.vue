@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import CSVIcon from '../components/Icons/CSVIcon.vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
 import SelectTypeDialog from '../components/SelectTypeDialog.vue'
+import session from '../session'
 import useUserStore from '../users/users'
 import ConnectMariaDBDialog from './ConnectMariaDBDialog.vue'
 import ConnectPostgreSQLDialog from './ConnectPostgreSQLDialog.vue'
@@ -29,6 +30,7 @@ const filteredDataSources = computed(() => {
 	)
 })
 
+const canConnect = session.user.is_admin
 const showNewSourceDialog = ref(false)
 const showNewMariaDBDialog = ref(false)
 const showNewPostgreSQLDialog = ref(false)
@@ -131,11 +133,13 @@ const listOptions = ref({
 		emptyState: {
 			title: __('No data sources.'),
 			description: __('No data sources to display.'),
-			button: {
-				label: __('New Data Source'),
-				variant: 'solid',
-				onClick: () => (showNewSourceDialog.value = true),
-			},
+			button: canConnect
+				? {
+						label: __('New Data Source'),
+						variant: 'solid',
+						onClick: () => (showNewSourceDialog.value = true),
+				  }
+				: undefined,
 		},
 	},
 })
@@ -148,6 +152,7 @@ document.title = __('Data Sources | Insights')
 		<Breadcrumbs :items="[{ label: __('Data Sources'), route: '/data-source' }]" />
 		<div class="flex items-center gap-2">
 			<Button
+				v-if="canConnect"
 				:label="__('New Data Source')"
 				variant="solid"
 				@click="showNewSourceDialog = true"

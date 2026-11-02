@@ -178,15 +178,22 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
 
     def make_status_permlevel(self):
         """Put `ToDo.status` behind permlevel 1, which no role here holds."""
+        self.set_status_property("permlevel", 1, "Int")
+
+    def make_status_masked(self):
+        """Mask `ToDo.status`. No role here holds the mask permission."""
+        self.set_status_property("mask", 1, "Check")
+
+    def set_status_property(self, property, value, property_type):
         setter = frappe.get_doc(
             {
                 "doctype": "Property Setter",
                 "doctype_or_field": "DocField",
                 "doc_type": "ToDo",
                 "field_name": "status",
-                "property": "permlevel",
-                "value": 1,
-                "property_type": "Int",
+                "property": property,
+                "value": value,
+                "property_type": property_type,
             }
         ).insert(ignore_permissions=True)
         frappe.clear_cache(doctype="ToDo")

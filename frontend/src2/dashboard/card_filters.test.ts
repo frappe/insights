@@ -83,4 +83,30 @@ describe('what narrows a card', () => {
 		expect(dashboard.cardFiltersOn('chart-1')).toEqual([])
 		expect(dashboard.cardIsFiltered('chart-1')).toBe(false)
 	})
+
+	// @feature charts.reset-filters dashboard.filter-default
+	it('takes a grid filter back to the default the owner set, and counts the default as no filter', () => {
+		const dashboard = newDashboard()
+		dashboard.doc.items = [
+			{
+				type: 'filter',
+				filter_name: 'region',
+				filter_type: 'String',
+				links: { 'chart-1': 'region' },
+				default_operator: '=',
+				default_value: 'north',
+				layout: { i: 'filter-region', x: 0, y: 0, w: 4, h: 2 },
+			} as unknown as WorkbookDashboardItem,
+		]
+		dashboard.filterStates = { region: { operator: '=', value: 'north' } }
+		expect(dashboard.cardIsFiltered('chart-1')).toBe(false)
+
+		dashboard.updateFilterState('region', '=', 'south')
+		expect(dashboard.cardIsFiltered('chart-1')).toBe(true)
+
+		dashboard.resetCardFilters('chart-1')
+
+		expect(dashboard.filterStates).toEqual({ region: { operator: '=', value: 'north' } })
+		expect(dashboard.cardIsFiltered('chart-1')).toBe(false)
+	})
 })

@@ -718,6 +718,27 @@ class TestQuerying(InsightsIntegrationTestCase):
             ],
         )
 
+    # @feature query.native-sql-error-text
+    def test_a_sql_typo_is_refused_in_plain_words(self):
+        """sqlglot underlines the token it stopped at with terminal codes, which a
+        browser prints as `[4m`. The refusal is a sentence written for the author,
+        so its class name adds nothing."""
+        workbook = create_test_workbook(USER_1)
+        typo = create_test_query(
+            USER_1,
+            workbook.name,
+            title="Workbook Flow Test Query SQL Typo",
+            operations=[{"type": "sql", "data_source": "Site DB", "raw_sql": "SELEC name FROM `tabToDo`"}],
+        )
+
+        frappe.clear_messages()
+        with as_user(USER_1), self.assertRaises(QueryRefused):
+            execute_test_query(typo.name)
+        [message] = [m["message"] for m in frappe.local.message_log]
+        self.assertTrue(message.startswith("Operation 1 (sql): Failed to parse the SQL query: "), message)
+        self.assertIn("SELEC name FROM `tabToDo`", message)
+        self.assertNotIn("\x1b", message)
+
     def seed_todo_without_a_date(self):
         todo = frappe.get_doc(
             {
@@ -1173,6 +1194,24 @@ class TestQuerying(InsightsIntegrationTestCase):
                 for name in ("Closed Beta", "Open Alpha", "Open Gamma")
             ],
         )
+
+    # @feature query.expression-sandbox
+    def test_an_expression_runs_without_a_name_this_frappe_lacks(self):
+        # Frappe v15's safe globals have no `frappe.number_format`
+        from frappe.utils.safe_exec import get_safe_globals
+
+        from insights.insights.doctype.insights_data_source_v3 import sandbox
+
+        def without_number_format():
+            safe_globals = get_safe_globals()
+            del safe_globals["frappe"]["number_format"]
+            return safe_globals
+
+        with patch.object(sandbox, "get_safe_globals", without_number_format):
+            names = sandbox.expression_globals()
+
+        self.assertNotIn("number_format", names["frappe"])
+        self.assertIn("format_date", names["frappe"])
 
     # @feature query.expression-sandbox
     def test_an_expression_reads_only_what_its_reader_may_and_writes_nothing(self):

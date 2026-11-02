@@ -26,13 +26,28 @@ insights.patches.normalize_number_card_comparisons #2
 insights.patches.resize_dashboard_cells
 insights.patches.split_number_cells
 insights.patches.close_dashboard_layout_gaps
+insights.patches.drop_unapplied_date_range_defaults
 # after the number card patches: this one mints a reading's id, which those patches read
 insights.patches.normalize_chart_configs
 insights.patches.set_visibility_from_org_shares
+insights.patches.drop_underscore_from_table_restrictions
+# before queries are copied across workbooks, so a copy reads the rewritten expression
+insights.patches.rewrite_backend_attribute_names
+# before the setting it reads is deleted
+insights.patches.report_site_data_follows_desk
 insights.patches.retire_site_apply_user_permissions
 insights.patches.retire_content_permission_user
 insights.patches.copy_cross_workbook_query_sources
 insights.patches.number_duplicate_folder_titles
+# before member shares are reshaped, which reads the workbook shares this adds
+insights.patches.share_workbooks_with_member_owners
 insights.patches.reshape_member_shares
+# after the shares, which decide who may edit an alert's workbook
+insights.patches.move_alert_run_as
+# after the shares and the alerts' new owners, which decide who may edit what
+insights.patches.report_upgrade_items
 insights.patches.delete_orphaned_variable_secrets
 insights.patches.set_max_export_rows
+insights.patches.mark_v3_users
+insights.patches.clear_standard_dashboard_previews
+insights.patches.detach_dashboard_previews

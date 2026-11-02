@@ -15,6 +15,20 @@ type SessionUser = {
 	locale: string
 	has_desk_access?: boolean
 	has_demo_data: boolean
+	/** Whether the site has a workbook of its own, not one an app ships. */
+	has_workbooks: boolean
+	/** Whether the user used Insights before v3.50 and has not yet closed the upgrade dialog. */
+	upgrade_unseen: boolean
+	/** Whether the user owns a workbook, so the upgrade wizard explains how sharing changed. */
+	owns_workbooks?: boolean
+	/** Open upgrade items the user works through. */
+	upgrade_item_count: number
+	/** Whether the user works through every open upgrade item, not only their own. */
+	is_upgrade_admin?: boolean
+	/** Whether the user may open a dashboard an app ships. */
+	reads_standard_dashboards?: boolean
+	/** Whether the user may create the desk document Show in Desk makes for a chart. */
+	can_show_in_desk?: boolean
 }
 
 // Settings of the site, not of whoever is reading it. A guest opening a public
@@ -32,6 +46,8 @@ type SiteInfo = {
 	currency: string | null
 	// starts with the site currency; each result adds its codes
 	currency_symbols: Record<string, Currency>
+	/** System Settings' places for every amount, as Desk prints them. Unset, the number format states them. */
+	currency_precision: number | null
 	/** The two properties `docs/telemetry.md` puts on every event. */
 	app_version: string
 	entry: string
@@ -44,6 +60,7 @@ const emptySite: SiteInfo = {
 	week_starts_on: 'Monday',
 	fiscal_year_start: '1995-04-01',
 	currency: null,
+	currency_precision: null,
 	currency_symbols: {},
 	app_version: '',
 	entry: '',
@@ -62,6 +79,9 @@ const emptyUser: SessionUser = {
 	can_write_trusted_code: false,
 	locale: 'en-US',
 	has_demo_data: false,
+	has_workbooks: false,
+	upgrade_unseen: false,
+	upgrade_item_count: 0,
 }
 
 const session = reactive({
@@ -101,8 +121,14 @@ async function fetchSessionInfo() {
 		is_user: Boolean(userInfo.is_user),
 		has_desk_access: Boolean(userInfo.has_desk_access),
 		has_demo_data: Boolean(userInfo.has_demo_data),
+		has_workbooks: Boolean(userInfo.has_workbooks),
 		can_download: Boolean(userInfo.can_download),
 		can_write_trusted_code: Boolean(userInfo.can_write_trusted_code),
+		upgrade_unseen: Boolean(userInfo.upgrade_unseen),
+		owns_workbooks: Boolean(userInfo.owns_workbooks),
+		is_upgrade_admin: Boolean(userInfo.is_upgrade_admin),
+		reads_standard_dashboards: Boolean(userInfo.reads_standard_dashboards),
+		can_show_in_desk: Boolean(userInfo.can_show_in_desk),
 	})
 }
 
