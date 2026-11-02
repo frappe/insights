@@ -284,6 +284,9 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         try:
             db: BaseBackend = self._get_db_connection()
+        except frappe.ServiceUnavailableError:
+            # a busy answer, such as a full data store, is not a failed connection: the client retries it
+            raise
         except Exception as e:
             self.throw_connection_error(e)
 
