@@ -672,11 +672,17 @@ def permitted_names(t: Table, data_source, table_name, permission_query):
         # `t` is on DuckDB but the permission query must run against the live site-db (a
         # different backend), so execute it separately and materialize the permitted names.
         db = InsightsDataSourcev3.get_doc(data_source)._get_ibis_backend()
-        return ibis.memtable(db.sql(permission_query).select("name"))
+        names = ibis.memtable(db.sql(permission_query).select("name"))
+    else:
+        # Same backend: keep it lazy so it compiles to a single SQL statement (a
+        # subquery) — no extra DB round trip.
+        names = t.sql(permission_query).select("name")
 
-    # Same backend: keep it lazy so it compiles to a single SQL statement (a
-    # subquery) — no extra DB round trip.
-    return t.sql(permission_query).select("name")
+    if t.name.type().is_uuid():
+        # a MariaDB uuid `name` is uuid on `t` but binary on the raw query, and ibis
+        # refuses to compare the two
+        names = names.select(name=names.name.cast("string").cast(t.name.type()))
+    return names
 
 
 def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
