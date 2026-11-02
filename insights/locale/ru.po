@@ -77,7 +77,7 @@ msgstr "Принято в"
 
 #: frontend/src2/settings/Settings.vue:10
 msgid "Account"
-msgstr "Аккаунт"
+msgstr "Профиль"
 
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
@@ -2160,7 +2160,7 @@ msgstr "Открыть в Desk"
 #. Label of the operations (JSON) field in DocType 'Insights Query v3'
 #: insights/insights/doctype/insights_query_v3/insights_query_v3.json
 msgid "Operations"
-msgstr "Эксплуатация"
+msgstr "Операции"
 
 #: frontend/src2/query/components/FormatRule.vue:416
 msgid "Operator"
@@ -2382,7 +2382,7 @@ msgstr ""
 
 #: frontend/src2/dashboard/DashboardList.vue:27
 msgid "Recents"
-msgstr "Рецензии"
+msgstr "Недавние"
 
 #. Label of the recipients (Small Text) field in DocType 'Insights Alert'
 #: frontend/src2/query/components/AlertSetupDialog.vue:181
@@ -2470,7 +2470,7 @@ msgstr ""
 #. Label of the result_name (Data) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
 msgid "Result"
-msgstr "Итог"
+msgstr "Результат"
 
 #. Label of the results_row_count (Int) field in DocType 'Insights Query'
 #: insights/insights/doctype/insights_query/insights_query.json
@@ -2722,7 +2722,7 @@ msgstr "Настройки"
 
 #: frontend/src2/dashboard/DashboardFilterEditor.vue:29
 msgid "Setup"
-msgstr "Настраивать"
+msgstr "Настройка"
 
 #: frontend/src2/query/components/AlertSetupDialog.vue:113
 msgid "Setup Alert"
@@ -2816,13 +2816,13 @@ msgstr ""
 #. Option for the 'Status' (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Started"
-msgstr "Началось"
+msgstr "Запущено"
 
 #. Label of the started_at (Datetime) field in DocType 'Insights Table Import
 #. Log'
 #: insights/insights/doctype/insights_table_import_log/insights_table_import_log.json
 msgid "Started At"
-msgstr "Началось с"
+msgstr "Время запуска"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:27
 msgid "Starting..."
@@ -3012,7 +3012,7 @@ msgstr ""
 
 #: frontend/src2/teams/TeamList.vue:83
 msgid "Teams"
-msgstr "Команда"
+msgstr "Команды"
 
 #. Option for the 'Channel' (Select) field in DocType 'Insights Alert'
 #: insights/insights/doctype/insights_alert/insights_alert.json
