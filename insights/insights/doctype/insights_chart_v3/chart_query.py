@@ -787,9 +787,8 @@ def comparison_timespans(chart_type: str, config: dict | None) -> dict[str, dict
 def plotted_measures(chart_type: str, config: dict | None) -> list[dict]:
     """The measures a card plots, which is fewer than a Number card summarizes.
 
-    A target and a comparison are measures of the card's own result, read off
-    its row and never plotted, so a surface asking what the card shows wants the
-    readings alone. Every other chart type plots every measure it names, and
+    A target that names a Measure reads it off the card's own row and never
+    plots it, so a surface asking what the card shows wants the readings alone. Every other chart type plots every measure it names, and
     says so by answering with nothing for this question.
     """
     if chart_type != "Number":
@@ -1283,7 +1282,9 @@ def _comparison_to_target(options: dict) -> bool:
     A comparison reads a period, and a fixed number or a Measure is a target.
     Without a target of its own, the reading takes the number as its target and
     prints the gap the comparison printed, under the caption it had. A reading
-    that already aims at a target keeps it, and its comparison is dropped: a
+    that already aims at the same number was using the comparison to print its
+    gap to the target, so the target takes over that gap and caption. A reading
+    that aims at a different target keeps it, and its comparison is dropped: a
     card that wants a target and a second fixed number is two cards. A
     comparison naming no number printed nothing, so it goes too.
     """
@@ -1296,14 +1297,24 @@ def _comparison_to_target(options: dict) -> bool:
     if not against:
         return True
 
-    if named_number(options.get("target")):
+    target = options.get("target")
+    if named_number(target) and not _same_number(named_number(target), against):
         return True
 
-    target = {**against, "gap": "delta" if comparison.get("show") == "delta" else "change"}
+    target = dict(target) if named_number(target) else dict(against)
+    target["gap"] = "delta" if comparison.get("show") == "delta" else "change"
     if comparison.get("label"):
         target["label"] = comparison["label"]
     options["target"] = target
     return True
+
+
+def _same_number(one: dict, other: dict) -> bool:
+    """Whether two named numbers are the same value, or Measures that compute
+    the same fold."""
+    if "value" in one or "value" in other:
+        return one.get("value") == other.get("value")
+    return _computation(one["measure"]) == _computation(other["measure"])
 
 
 def named_number(against) -> dict:

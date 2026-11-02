@@ -178,8 +178,8 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
 
     # @feature upgrade.number-older-shapes
     def test_a_comparison_with_a_number_beside_a_target_is_dropped(self):
-        """The reading keeps the target it aims at. A second fixed number is a
-        second card, so the comparison goes."""
+        """The reading keeps the target it aims at. A second, different fixed
+        number is a second card, so the comparison goes."""
         chart = config(
             "Tickets",
             "Revenue",
@@ -197,6 +197,41 @@ class TestNumberCardComparisons(InsightsIntegrationTestCase):
         self.assertEqual(
             options_of(chart),
             [{"target": {"value": 100}}, {"target": {"measure": measure("Budget")}}],
+        )
+
+    # @feature charts.number-target-gap upgrade.number-older-shapes
+    def test_a_comparison_with_the_targets_own_number_becomes_its_gap(self):
+        """A comparison naming the number the reading already aims at was the
+        only way to print the gap to that target, so the target prints it now,
+        under the comparison's caption."""
+        budget = measure("Budget")
+        chart = config(
+            "Tickets",
+            "Revenue",
+            options=[
+                {
+                    "target": {"value": 100},
+                    "comparison": {"source": "constant", "value": 100, "label": "vs plan"},
+                },
+                {
+                    "target": {"measure": budget},
+                    "comparison": {
+                        "source": "measure",
+                        "measure": {**budget, "measure_name": "Budget (shown)"},
+                        "show": "delta",
+                    },
+                },
+            ],
+        )
+
+        self.assertTrue(normalize(chart))
+
+        self.assertEqual(
+            options_of(chart),
+            [
+                {"target": {"value": 100, "gap": "change", "label": "vs plan"}},
+                {"target": {"measure": budget, "gap": "delta"}},
+            ],
         )
 
     # @feature upgrade.number-older-shapes

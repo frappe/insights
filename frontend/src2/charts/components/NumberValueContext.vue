@@ -65,8 +65,24 @@ const comparisonSourceOptions = computed(() => [
 	},
 ])
 
+// Why some period choices cannot be picked, shown under the list so a disabled
+// row is never left unexplained.
+const comparisonHint = computed(() => {
+	if (target.value?.gap)
+		return __('The card shows the gap to the target. Set Gap to None to compare with a period.')
+	if (!props.period) return __('Pick a period for the card to compare it with another one.')
+	if (!props.period.span) return __('Same period last year needs a period that names a span.')
+	return ''
+})
+
 // The delta row holds one gap, so a reading compared with a period has no room
 // for the target's.
+const gapHint = computed(() =>
+	comparison.value
+		? __('The card shows the comparison. Set Compare with to None to show the gap.')
+		: '',
+)
+
 const gapOptions = computed(() => [
 	{ label: __('None'), value: 'none' },
 	{ label: __('% change'), value: 'change', disabled: Boolean(comparison.value) },
@@ -194,6 +210,7 @@ function blankMeasure(): Measure {
 					@update:modelValue="setGap($event)"
 				/>
 			</InlineFormControlLabel>
+			<p v-if="gapHint" class="text-p-xs text-ink-gray-5">{{ gapHint }}</p>
 
 			<InlineFormControlLabel v-if="target.gap" :label="__('Caption')">
 				<FormControl
@@ -225,6 +242,7 @@ function blankMeasure(): Measure {
 				@update:modelValue="setComparisonSource($event)"
 			/>
 		</InlineFormControlLabel>
+		<p v-if="comparisonHint" class="text-p-xs text-ink-gray-5">{{ comparisonHint }}</p>
 
 		<template v-if="comparison">
 			<InlineFormControlLabel :label="__('Show')">
