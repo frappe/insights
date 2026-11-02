@@ -581,7 +581,7 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
         for user in ("one@example.com", "two@example.com"):
             with patch.object(frappe.local, "session", frappe._dict(user=user)):
                 self.assertTrue(pool.acquire())
-        error_logs = frappe.db.count("Error Log")
+        started = frappe.utils.now_datetime()
 
         # its tables live in the data store, so it connects with a data store slot
         with patch.object(data_warehouse, "SLOT_WAIT", 0), self.request():
@@ -595,7 +595,7 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
             retry_after = frappe.local.response_headers.get("Retry-After")
 
         self.assertEqual((response.status_code, retry_after), (503, "2"))
-        self.assertEqual(frappe.db.count("Error Log"), error_logs)
+        self.assertFalse(frappe.get_all("Error Log", filters={"creation": [">=", started]}, pluck="name"))
         self.assertNotIn(source.name, insights.db_connections)
 
     # @feature data-store.query-slots
