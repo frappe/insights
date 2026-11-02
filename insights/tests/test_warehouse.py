@@ -16,8 +16,16 @@ from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import 
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
     WarehouseTable,
     WarehouseTableWriter,
+    execute_warehouse_table_import,
 )
 from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import (
+    DT,
+    UUID_DOCTYPE,
+    create_uuid_doctype,
+    delete_uuid_doctype,
+    skip_without_uuid_type,
+)
 
 # A reader in this process shares the DuckDB instance, so it never conflicts.
 # Only a second process reproduces the lock the web workers take in production.
@@ -181,6 +189,62 @@ class TestWarehouse(InsightsIntegrationTestCase):
             self.assertEqual(
                 row.isna().to_dict("records"), [{"positive": True, "negative": True, "undefined": True}]
             )
+
+
+class TestUUIDNameImport(InsightsIntegrationTestCase):
+    """A DocType named by a MariaDB `uuid` imports to the data store with its names intact."""
+
+    TABLE = f"tab{UUID_DOCTYPE}"
+
+    @classmethod
+    def setUpClass(cls):
+        skip_without_uuid_type()
+        super().setUpClass()
+
+    @classmethod
+    def before_class(cls):
+        create_uuid_doctype()
+
+    @classmethod
+    def after_class(cls):
+        delete_uuid_doctype()
+
+    def add_rows(self, count):
+        for i in range(count):
+            frappe.get_doc({"doctype": UUID_DOCTYPE, "title": f"row #{i}"}).insert()
+        frappe.db.commit()
+
+    def assert_stored_as_source(self):
+        stored = WarehouseTable("Site DB", self.TABLE).get_ibis_table(import_if_not_exists=False)
+        self.assertTrue(stored.schema()["name"].is_uuid())
+        self.assertEqual(
+            sorted(str(name) for name in stored.name.execute()),
+            sorted(frappe.get_all(UUID_DOCTYPE, pluck="name")),
+        )
+
+    def test_a_uuid_named_table_imports_with_its_uuid_names(self):
+        self.add_rows(3)
+        with patch.object(insights, "create_toast"):
+            execute_warehouse_table_import("Site DB", self.TABLE)
+        self.assert_stored_as_source()
+
+        # an incremental sync appends the rows made after the last one stored
+        frappe.db.set_value(
+            DT.TABLE,
+            {"data_source": "Site DB", "table": self.TABLE},
+            {
+                "sync_mode": "Incremental",
+                "sync_strategy": "Append Only",
+                "sync_cursor_column": "creation",
+                "last_sync_bookmark": str(
+                    frappe.get_all(UUID_DOCTYPE, pluck="creation", order_by="creation desc", limit=1)[0]
+                ),
+            },
+        )
+        self.add_rows(2)
+        with patch.object(insights, "create_toast"):
+            execute_warehouse_table_import("Site DB", self.TABLE)
+        self.assert_stored_as_source()
 
 
 class TestWarehouseWriteLock(InsightsIntegrationTestCase):
