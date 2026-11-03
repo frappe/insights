@@ -26,6 +26,7 @@ import {
 	getFormattedDate,
 } from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
+import session from '../../session'
 import type {
 	ColumnDataType,
 	FilterArgs,
@@ -287,6 +288,14 @@ export function numberPreview(op: OperatorDef, value: number | [number, number])
 }
 
 const DATE_FORMAT = 'YYYY-MM-DD'
+
+function startOfConfiguredWeek(date: string): ReturnType<typeof dayjs> {
+	const weekStartsOn = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].indexOf(
+		session.site.week_starts_on,
+	)
+	const dayOfWeek = (dayjs(date).day() + 6) % 7
+	return dayjs(date).subtract((dayOfWeek - Math.max(weekStartsOn, 0) + 7) % 7, 'day').startOf('day')
+}
 
 export { SPAN_GRAINS, SPAN_UNITS, type SpanUnit } from '../../helpers/span_grammar'
 /** The unit a typed word names, as the picker's own vocabulary calls it. */
@@ -630,6 +639,13 @@ export function parseDatePhrase(raw: string): ParsedDate | null {
 		const unit = unitOf(match[2])
 		if (!unit) return null
 		const anchor = shiftDate(dayjs().format(DATE_FORMAT), unit, -Number(match[1]))
+		if (unit === 'week') {
+			const start = startOfConfiguredWeek(anchor)
+			return {
+				operator: 'between',
+				value: [start.format(DATE_FORMAT), start.add(6, 'day').format(DATE_FORMAT)],
+			}
+		}
 		return { operator: 'within', value: { span: `current ${unit}`, anchor } }
 	}
 

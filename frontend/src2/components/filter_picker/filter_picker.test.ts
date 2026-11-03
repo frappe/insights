@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import session from '../../session'
 import type { QueryResultColumn } from '../../types/query.types'
 import {
@@ -11,6 +11,7 @@ import {
 	periodLabel,
 	periodMonths,
 	periodStart,
+	parseDatePhrase,
 	selectedRowKey,
 	summaryParts,
 	spanLabel,
@@ -73,6 +74,24 @@ describe('what a host sends', () => {
 			column: { type: 'column', column_name: 'posting_date' },
 			operator: 'within',
 			value: { span: 'last 3 months' },
+		})
+	})
+})
+
+describe('typed date phrases', () => {
+	afterEach(() => {
+		vi.useRealTimers()
+	})
+
+	// @feature query.filter-relative-date
+	it('keeps an anchored week as a concrete date range', () => {
+		vi.useFakeTimers()
+		vi.setSystemTime(new Date('2026-11-03T12:00:00Z'))
+		session.site.week_starts_on = 'Monday'
+
+		expect(parseDatePhrase('2 weeks ago')).toEqual({
+			operator: 'between',
+			value: ['2026-10-19', '2026-10-25'],
 		})
 	})
 })
