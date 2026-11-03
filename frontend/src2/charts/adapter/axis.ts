@@ -14,7 +14,7 @@ import type {
 } from 'frappe-ui/charts'
 import type { Component } from 'vue'
 import { toNumber } from '../../helpers'
-import { FIELDTYPES, isCalendarDateType } from '../../helpers/constants'
+import { AUTO_GRANULARITY, FIELDTYPES, isCalendarDateType } from '../../helpers/constants'
 import { getFormattedDate } from '../../query/helpers'
 import type {
 	MixedChartConfig,
@@ -364,7 +364,12 @@ function xAxisFor(dimension: Dimension, x: string, rows: QueryResultRow[]): Char
 			},
 		}
 	}
-	if (dimension.granularity) return { type, timeGrain: dimension.granularity as TimeGrain }
+	// `auto` is a grain only the server can resolve. The chart read swaps in the
+	// one it grouped by (`withServerGrain`), so an `auto` left here has no rows
+	// that say it
+	if (dimension.granularity && dimension.granularity !== AUTO_GRANULARITY) {
+		return { type, timeGrain: dimension.granularity as TimeGrain }
+	}
 	return { type }
 }
 

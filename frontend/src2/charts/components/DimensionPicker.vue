@@ -4,7 +4,13 @@ import { computed, watchEffect } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import LazyTextInput from '../../components/LazyTextInput.vue'
 import { isDate } from '../../helpers'
-import { COLUMN_TYPES, getDefaultGranularity, getGranularityOptions } from '../../helpers/constants'
+import {
+	AUTO_GRANULARITY,
+	autoGranularityOption,
+	COLUMN_TYPES,
+	getDefaultGranularity,
+	getGranularityOptions,
+} from '../../helpers/constants'
 import { asDimension } from '../../helpers/typed_input'
 import { Dimension, DimensionOption } from '../../types/query.types'
 
@@ -19,8 +25,14 @@ const props = withDefaults(
 		 * the card silently drops.
 		 */
 		enableGranularity?: boolean
+		/**
+		 * On for an axis chart's x axis, the one place the server resolves `auto`
+		 * to the grain that fits the span the chart is read over. It is the
+		 * default there, so a new date axis follows the dashboard's filters.
+		 */
+		autoGranularity?: boolean
 	}>(),
-	{ enableGranularity: true },
+	{ enableGranularity: true, autoGranularity: false },
 )
 
 const dimension = defineModel<Dimension>({
@@ -38,7 +50,10 @@ if (!dimension.value.dimension_name && dimension.value.column_name) {
 	dimension.value.dimension_name = dimension.value.column_name
 }
 
-const granularityOptions = computed(() => getGranularityOptions(dimension.value.data_type))
+const granularityOptions = computed(() => {
+	const options = getGranularityOptions(dimension.value.data_type)
+	return props.autoGranularity && options.length ? [autoGranularityOption, ...options] : options
+})
 
 watchEffect(() => {
 	const allowedGranularities = new Set(
@@ -53,7 +68,9 @@ watchEffect(() => {
 	}
 
 	if (!dimension.value.granularity || !allowedGranularities.has(dimension.value.granularity)) {
-		dimension.value.granularity = getDefaultGranularity(dimension.value.data_type)
+		dimension.value.granularity = props.autoGranularity
+			? AUTO_GRANULARITY
+			: getDefaultGranularity(dimension.value.data_type)
 	}
 })
 

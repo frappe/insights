@@ -43,7 +43,7 @@ import {
 	fetchViewDrillRowsValues,
 } from './drill/drill_api'
 import { sortBy } from './adapter/table'
-import { normalizeChartConfig } from './helpers'
+import { normalizeChartConfig, withServerGrain } from './helpers'
 import { labelWindowRows, withLentPeriod, type NumberPeriod } from './window'
 
 /**
@@ -208,10 +208,14 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	// option does not change the request, so it shows at once. An edit that
 	// changes the rows waits for them.
 	const lentPeriod = shallowRef<NumberPeriod>()
+	// the grain the server grouped each date column by, which is the only place
+	// an `auto` axis says what it was resolved to
+	const granularity = shallowRef<Record<string, string>>()
 	const doc = computed(() => {
 		const shown = answered.value
 		const answers = !shown || source.requestKey?.(filterContext()) === shown.key
-		return withLentPeriod(answers ? current.value : shown.doc, lentPeriod.value)
+		const chart = withLentPeriod(answers ? current.value : shown.doc, lentPeriod.value)
+		return withServerGrain(chart, granularity.value)
 	})
 	const result = ref<QueryResult>(emptyResult())
 	const sparklineResult = ref<QueryResult>()
@@ -278,6 +282,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		sparklineResult.value = undefined
 		comparisonRows.value = undefined
 		lentPeriod.value = undefined
+		granularity.value = undefined
 	}
 
 	async function load(force = false) {
@@ -416,6 +421,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 			recordLinks.value = response.record_links
 			comparisonRows.value = response.comparison_rows
 			lentPeriod.value = response.period
+			granularity.value = response.granularity
 			scopedBy.value = response.user_permissions
 			narrowedByPermissions.value = Boolean(response.narrowed_by_permissions)
 			readOn.value = response.read_on

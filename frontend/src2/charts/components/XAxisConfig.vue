@@ -21,6 +21,7 @@ const x_axis = defineModel<AxisChartConfig['x_axis']>({
 			<DimensionPicker
 				:label="__('Column')"
 				:options="props.dimensions"
+				auto-granularity
 				:modelValue="x_axis.dimension"
 				@update:modelValue="x_axis.dimension = $event || {}"
 				@remove="x_axis.dimension = {} as Dimension"
