@@ -13,7 +13,6 @@ import ibis
 import numpy as np
 import pandas as pd
 from ibis.backends.clickhouse import Backend as ClickHouseBackend
-from ibis.backends.postgres import Backend as PostgresBackend
 from ibis.backends.sql.compilers.base import SQLGlotCompiler
 from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
 from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
@@ -29,7 +28,10 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
 from insights.insights.doctype.insights_data_source_v3.connectors.bigquery import get_bigquery_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.clickhouse import get_clickhouse_connection
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import connect_duckdb
-from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import get_postgres_connection
+from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import (
+    InsightsPostgresBackend,
+    get_postgres_connection,
+)
 from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
     date_diff,
     percentage_change,
@@ -505,7 +507,7 @@ class TestIbisDivision(IbisQueryBuilderTestCase):
                 ),
             ]
         )
-        with patch("ibis.postgres.connect", return_value=PostgresBackend()):
+        with patch.object(InsightsPostgresBackend, "do_connect"):
             connection = get_postgres_connection(FakeDataSource())
         sql = connection.compile(query.unbind())
         self.assertEqual(sql.count('NULLIF("t0"."income", 0)'), len(mutations))
