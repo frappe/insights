@@ -85,10 +85,15 @@ def _fetch_chunks(
     db: MySQLBackend, query: Table, schema: Schema, chunk_size: int
 ) -> Iterator[pa.RecordBatch]:
     arrow_schema = schema.to_pyarrow()
+    # ibis converts a uuid to `uuid.UUID` but types it as an Arrow string, which refuses
+    # the object (https://github.com/ibis-project/ibis/issues/8532)
+    uuids = [name for name, dtype in schema.items() if dtype.is_uuid()]
     db._run_pre_execute_hooks(query)
     with db.con.cursor(MySQLdb.cursors.SSCursor) as cursor:
         cursor.execute(db.compile(query))
         while rows := cursor.fetchmany(chunk_size):
             frame = pd.DataFrame.from_records(rows, columns=schema.names, coerce_float=True)
             frame = MySQLPandasData.convert_table(frame, schema)
+            for name in uuids:
+                frame[name] = frame[name].map(str, na_action="ignore")
             yield pa.RecordBatch.from_pandas(frame, schema=arrow_schema, preserve_index=False)
