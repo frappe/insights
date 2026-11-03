@@ -1048,9 +1048,9 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                 self.assertEqual(self.buckets(february), ["2024-02-15", "2024-02-16", "2024-02-17"])
 
     # @feature charts.auto-grain
-    def test_an_auto_axis_under_a_date_filter_takes_the_filters_window_and_runs_no_span_query(self):
+    def test_an_auto_axis_under_a_date_filter_takes_the_filters_stretch_and_runs_no_span_query(self):
         """1 to 31 October holds none of the dated fixtures, and still reads
-        daily: the window is what the reader asked for, not where rows fell."""
+        daily: the stretch is what the reader asked for, not where rows fell."""
         query, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
         self.add_period_filter(dashboard, chart, query)
         periods = {
@@ -1084,6 +1084,22 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                 self.assertEqual(result["granularity"], {"date": "day"})
 
         self.assertEqual(spans.call_count, 2)
+
+    # @feature charts.auto-grain
+    def test_an_edit_of_the_source_query_reaches_the_grain_an_auto_axis_kept(self):
+        """A year of rows reads weekly. Narrowed to February in the query
+        itself, the same card reads daily on its next load, not tomorrow."""
+        query, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with as_user(OWNER), db_connections():
+            year = get_chart_data(chart=chart.name, dashboard=dashboard.name)
+        operations = todo_operations(TIMELINE_PREFIX) + todo_operations("february")[1:]
+        frappe.db.set_value(DT.QUERY, query.name, "operations", frappe.as_json(operations))
+        with as_user(OWNER), db_connections():
+            february = get_chart_data(chart=chart.name, dashboard=dashboard.name)
+
+        self.assertEqual(year["granularity"], {"date": "week"})
+        self.assertEqual(february["granularity"], {"date": "day"})
 
     # @feature charts.auto-grain
     def test_the_builder_previews_an_auto_axis_at_the_grain_a_reader_gets(self):

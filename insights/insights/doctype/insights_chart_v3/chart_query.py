@@ -35,7 +35,7 @@ from frappe import _
 from frappe.utils import add_to_date, get_datetime
 
 from insights.insights.doctype.insights_chart_v3.chart_grain import AUTO
-from insights.insights.doctype.insights_data_source_v3.ibis_utils import parse_bare_date
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import parse_bare_date, sanitize_name
 from insights.insights.query_builders.sql_functions import get_fiscal_period, resolve_timespan, span_unit
 
 AXIS_CHARTS = ("Bar", "Line", "Row")
@@ -53,7 +53,7 @@ CHART_TYPES = (
 
 DEFAULT_MAX_COLUMN_VALUES = 10
 
-# how many points an `auto` axis is cut into at most, over the window the reader
+# how many points an `auto` axis is cut into at most, over the stretch the reader
 # asked for: the stretch the chart's filters bound (`bounded_span`), or the span
 # of its rows when they bound none. A month at day is 31 and a quarter at day
 # is 92, so a month reads daily, a quarter weekly (14) and a year weekly (53).
@@ -384,8 +384,8 @@ def bounded_span(
     Three sets of filters reach the rows a chart groups: the dashboard's, routed
     to the chart's query; the chart's own; and the source query's filter steps,
     read only back to the last step that could redefine the column. Where they
-    agree the rows must lie in a stretch, that stretch is the window the reader
-    asked for, and an `auto` axis is cut to fit it without reading the rows.
+    agree the rows must lie in a stretch, that is the stretch the reader asked
+    for, and an `auto` axis is cut to fit it without reading the rows.
     The end is exclusive.
     """
     if column.get("type") not in ("Date", "Datetime"):
@@ -419,8 +419,10 @@ def _steps_since_defined(operations: list[dict], name: str) -> list[dict]:
     for step in reversed(operations):
         kind = step.get("type")
         if kind in NAME_A_COLUMN:
+            # the engine names a column as `sanitize_name` writes it, so
+            # "Posting Date" lands on `posting_date`
             named = {step.get("new_name"), (step.get("column") or {}).get("column_name")}
-            if name in named:
+            if sanitize_name(name) in {sanitize_name(n) for n in named if n}:
                 break
         elif kind not in KEEP_COLUMNS:
             break

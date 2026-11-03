@@ -46,8 +46,8 @@ def on_date(operator, value, column="posting_date"):
     }
 
 
-def window(dashboard=(), chart=(), query=(), logical_operator="And"):
-    """The window `bounded_span` reads off filters on the dashboard, the
+def stretch(dashboard=(), chart=(), query=(), logical_operator="And"):
+    """The stretch `bounded_span` reads off filters on the dashboard, the
     chart's config and the source query's own steps."""
     adhoc = {"q": {"type": "filter_group", "logical_operator": logical_operator, "filters": list(dashboard)}}
     config = {"filters": {"logical_operator": "And", "filters": list(chart)}}
@@ -368,7 +368,7 @@ class TestChartDerivation(unittest.TestCase):
                 self.assertEqual(derived_grain(dates, span * DAY, AUTO_AXIS_POINTS), grain)
 
     # @feature charts.auto-grain
-    def test_an_auto_axis_reads_its_window_off_each_shape_of_date_filter(self):
+    def test_an_auto_axis_reads_its_stretch_off_each_shape_of_date_filter(self):
         """A bare date names its whole day, as the engine reads it, so 1 to 31
         October is the 31 days up to 1 November whichever way it is written."""
         shapes = {
@@ -379,29 +379,29 @@ class TestChartDerivation(unittest.TestCase):
         }
         for shape, rules in shapes.items():
             with self.subTest(shape=shape), read_on("2026-11-03"):
-                self.assertEqual(window(dashboard=rules), OCTOBER)
+                self.assertEqual(stretch(dashboard=rules), OCTOBER)
 
         self.assertEqual(
-            window(dashboard=[on_date("=", "2026-10-05")]), (datetime(2026, 10, 5), datetime(2026, 10, 6))
+            stretch(dashboard=[on_date("=", "2026-10-05")]), (datetime(2026, 10, 5), datetime(2026, 10, 6))
         )
         self.assertEqual(
-            window(dashboard=[on_date("between", ["2026-10-05 09:00:00", "2026-10-05 17:30:00"])]),
+            stretch(dashboard=[on_date("between", ["2026-10-05 09:00:00", "2026-10-05 17:30:00"])]),
             (datetime(2026, 10, 5, 9), datetime(2026, 10, 5, 17, 30)),
         )
 
     # @feature charts.auto-grain
     def test_an_auto_axis_over_one_month_of_filter_reads_daily(self):
-        start, end = window(dashboard=[on_date("between", ["2026-10-01", "2026-10-31"])])
+        start, end = stretch(dashboard=[on_date("between", ["2026-10-01", "2026-10-31"])])
 
         self.assertEqual(
             derived_grain(GRAINS["Date"], (end - start).total_seconds(), AUTO_AXIS_POINTS), "day"
         )
 
     # @feature charts.auto-grain
-    def test_an_auto_axis_window_is_where_the_dashboard_the_chart_and_the_query_agree(self):
+    def test_an_auto_axis_stretch_is_where_the_dashboard_the_chart_and_the_query_agree(self):
         """Each set of filters may close a different end, and the narrower one
         wins where two close the same end."""
-        span = window(
+        span = stretch(
             dashboard=[on_date(">=", "2026-01-01")],
             chart=[on_date("<", "2026-11-01")],
             query=[
@@ -419,6 +419,18 @@ class TestChartDerivation(unittest.TestCase):
         steps = {
             "mutate": {"type": "mutate", "new_name": "posting_date", "data_type": "Date", "expression": {}},
             "rename": {"type": "rename", "column": {"column_name": "due_date"}, "new_name": "posting_date"},
+            # the engine writes a typed name as `posting_date`
+            "mutate as typed": {
+                "type": "mutate",
+                "new_name": "Posting Date",
+                "data_type": "Date",
+                "expression": {},
+            },
+            "rename as typed": {
+                "type": "rename",
+                "column": {"column_name": "due_date"},
+                "new_name": "Posting Date",
+            },
             "cast": {"type": "cast", "column": {"column_name": "posting_date"}, "data_type": "Date"},
             "summarize": {"type": "summarize", "measures": [], "dimensions": []},
             "join": {"type": "join", "table": {}, "join_type": "left"},
@@ -428,18 +440,18 @@ class TestChartDerivation(unittest.TestCase):
         }
         for kind, step in steps.items():
             with self.subTest(step=kind):
-                span = window(
+                span = stretch(
                     chart=[on_date("<", "2026-11-01")],
                     query=[on_date("between", ["2026-10-01", "2026-10-31"]), step],
                 )
                 self.assertIsNone(span)
 
         other_column = {"type": "mutate", "new_name": "net", "data_type": "Decimal", "expression": {}}
-        span = window(query=[on_date("between", ["2026-10-01", "2026-10-31"]), other_column])
+        span = stretch(query=[on_date("between", ["2026-10-01", "2026-10-31"]), other_column])
         self.assertEqual(span, OCTOBER)
 
     # @feature charts.auto-grain
-    def test_an_auto_axis_with_an_open_end_has_no_window_of_filters(self):
+    def test_an_auto_axis_with_an_open_end_has_no_stretch_of_filters(self):
         """The rows' own span stands in for an end no filter closes."""
         cases = {
             "one end": dict(dashboard=[on_date(">=", "2026-10-01")]),
@@ -456,7 +468,7 @@ class TestChartDerivation(unittest.TestCase):
         }
         for case, filters in cases.items():
             with self.subTest(case=case):
-                self.assertIsNone(window(**filters))
+                self.assertIsNone(stretch(**filters))
 
         self.assertIsNone(
             bounded_span(

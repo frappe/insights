@@ -318,9 +318,9 @@ class InsightsChartv3(Document):
     def take_auto_grain(
         self, adhoc_filters: dict | None, force: bool = False, drawn: str | None = None
     ) -> None:
-        """Group an `auto` date axis by the grain that fits the window the reader asked for.
+        """Group an `auto` date axis by the grain that fits the stretch the reader asked for.
 
-        The window is the stretch the chart's filters bound on the axis column
+        It is the stretch the chart's filters bound on the axis column
         (`bounded_span`): a dashboard Period of one month reads daily and a year
         reads weekly, whatever rows fall inside, and no query runs to find it.
         When the filters leave an end open, the span of the rows the chart is
@@ -355,11 +355,20 @@ class InsightsChartv3(Document):
             return derived_grain(grains, (span[1] - span[0]).total_seconds(), AUTO_AXIS_POINTS)
 
         # the rows' span moves only as rows arrive, and a grain a day old still
-        # fits them. A relative filter resolves against the reading day, which
-        # the key holds, and the reader's Refresh reads them again
+        # fits them. A relative filter resolves against the reading day and an
+        # edit of the source query changes its operations, both of which the
+        # key holds, and a Refresh reads the rows again
         user = permission_user_for(self)
         key = make_digest(
-            "auto_grain", self.name, config, adhoc_filters, reading_day(), user, frappe.get_roles(user)
+            "auto_grain",
+            self.name,
+            self.query,
+            query_operations,
+            config,
+            adhoc_filters,
+            reading_day(),
+            user,
+            frappe.get_roles(user),
         )
 
         def from_rows():
