@@ -393,6 +393,9 @@ def apply_row_permissions(t: Table, data_source, table_name, permission_query):
         # subquery) — no extra DB round trip.
         names_expr = t.sql(permission_query).select("name")
 
+    if t.name.type().is_uuid():
+        # a MariaDB uuid `name` is uuid on `t` but binary on the raw query: cast to agree
+        return t.filter(t.name.isin(names_expr.name.cast("string").cast(t.name.type())))
     return t.semi_join(names_expr, "name")
 
 

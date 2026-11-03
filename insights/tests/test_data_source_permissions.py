@@ -5,7 +5,18 @@ from insights.api.data_sources import (
     get_data_source_table_columns,
     get_data_source_table_row_count,
 )
+from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
+    execute_warehouse_table_import,
+)
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3
 from insights.tests.base import InsightsIntegrationTestCase
+from insights.tests.factories import (
+    UUID_DOCTYPE,
+    as_user,
+    create_uuid_doctype,
+    delete_uuid_doctype,
+    skip_without_uuid_type,
+)
 
 SITE_DB = "Site DB"
 USER_A = "row-perm-a@example.com"
@@ -87,3 +98,52 @@ class TestSiteDBRowPermissions(InsightsIntegrationTestCase):
             columns = get_data_source_table_columns(SITE_DB, "tabToDo")
 
         self.assertTrue(any(column.column == "description" for column in columns))
+
+
+class TestUUIDNameRowPermissions(InsightsIntegrationTestCase):
+    """A DocType named by a MariaDB `uuid` is filtered per user, read live and from the data store."""
+
+    TABLE = f"tab{UUID_DOCTYPE}"
+
+    @classmethod
+    def setUpClass(cls):
+        skip_without_uuid_type()
+        super().setUpClass()
+
+    @classmethod
+    def before_class(cls):
+        cls.settings_was = frappe.db.get_single_value("Insights Settings", "apply_user_permissions")
+        frappe.db.set_single_value("Insights Settings", "apply_user_permissions", 1)
+
+        create_user(USER_A)
+        create_user(USER_B)
+        create_uuid_doctype()
+        for user, count in ((USER_A, 2), (USER_B, 3)):
+            with as_user(user):
+                for i in range(count):
+                    frappe.get_doc({"doctype": UUID_DOCTYPE, "title": f"{user} #{i}"}).insert()
+
+    @classmethod
+    def after_class(cls):
+        delete_uuid_doctype()
+        for email in (USER_A, USER_B):
+            frappe.delete_doc("User", email, force=True, ignore_permissions=True)
+        frappe.db.set_single_value("Insights Settings", "apply_user_permissions", cls.settings_was)
+
+    def assert_each_user_reads_only_their_rows(self, use_live_connection):
+        for user, count in ((USER_A, 2), (USER_B, 3)):
+            with self.as_user(user):
+                allowed = set(frappe.get_list(UUID_DOCTYPE, pluck="name", limit_page_length=0))
+                table = InsightsTablev3.get_ibis_table(
+                    SITE_DB, self.TABLE, use_live_connection=use_live_connection
+                )
+                names = {str(name) for name in table.name.execute()}
+
+            self.assertEqual(len(allowed), count)
+            self.assertEqual(names, allowed)
+
+    def test_a_uuid_named_table_shows_each_user_only_the_rows_they_may_read(self):
+        self.assert_each_user_reads_only_their_rows(use_live_connection=True)
+
+        execute_warehouse_table_import(SITE_DB, self.TABLE)
+        self.assert_each_user_reads_only_their_rows(use_live_connection=False)
