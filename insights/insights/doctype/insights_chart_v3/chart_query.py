@@ -453,7 +453,7 @@ def _rule_bounds(operator: str, value):
         try:
             first, last = resolve_timespan(value)
         except Exception:
-            return None
+            return None  # nosemgrep - a span that does not resolve bounds nothing; the rows are read instead
         return _midnight(first), _midnight(last) + datetime.timedelta(days=1)
 
     if operator == "between":
@@ -490,7 +490,7 @@ def _instant(value) -> tuple[datetime.datetime, datetime.datetime] | None:
     try:
         moment = datetime.datetime.fromisoformat(str(value))
     except ValueError:
-        return None
+        return None  # nosemgrep - a value that is no date bounds nothing
     moment = moment.replace(tzinfo=None)
     return moment, moment
 
