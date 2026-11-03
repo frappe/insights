@@ -26,7 +26,7 @@ import type {
 	QueryResultColumn,
 	SortDirection,
 } from '../types/query.types'
-import type { ChartType } from '../types/chart.types'
+import { AXIS_CHARTS, type ChartType } from '../types/chart.types'
 import type { InsightsChartv3, FilterValues, WorkbookDashboardItem } from '../types/workbook.types'
 import type { RecordLinks } from './record_link'
 import type {
@@ -489,12 +489,16 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	// even while an edit waits for its rows.
 	const drillSubject = computed<DrillSubject>(() => {
 		const rendered = doc.value
+		const x = AXIS_CHARTS.includes(rendered.chart_type)
+			? (rendered.config as any).x_axis?.dimension
+			: undefined
 		return {
 			chart: { chart_type: rendered.chart_type as ChartType, config: rendered.config },
 			title: rendered.title,
 			dimensions: drillDimensions.value,
 			canRows: drillCanRows.value,
 			readOn: readOn.value,
+			drawnGrain: x ? granularity.value?.[x.dimension_name || x.column_name] : undefined,
 			// the version of the rows. The document being edited does not hold it
 			modified: answered.value?.doc.modified,
 			fetch: (levels) => source.fetchDrillData(levels, filterContext(), rendered),

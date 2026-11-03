@@ -115,6 +115,7 @@ function descend(action: DrillAction) {
 			segment_filters: menu.segment.filters,
 			action,
 			read_on: props.subject.readOn,
+			drawn_grain: props.subject.drawnGrain,
 			// the chart as the card showed it, so the server refuses a drill if it
 			// changed since
 			modified: props.subject.modified,

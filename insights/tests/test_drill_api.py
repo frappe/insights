@@ -1072,6 +1072,21 @@ class TestDrillAPI(InsightsIntegrationTestCase):
 
         self.assertEqual(self.descriptions(result), [f"{TIMELINE_PREFIX} february two"])
 
+    # @feature charts.auto-grain charts.drill-date-segment
+    def test_a_drill_keeps_the_grain_the_card_was_drawn_at(self):
+        """The span can move after the card is drawn: rows arrive, or a relative
+        filter rolls over to the next day. A bar the card drew for February is
+        still all of February, though the span now resolves to days."""
+        _, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+        level = {**rows_level(filters=[equals("date", "2024-02-01")]), "drawn_grain": "month"}
+
+        with as_user(OWNER), db_connections():
+            result = get_drill_data(
+                chart=chart.name, dashboard=dashboard.name, filters=FEBRUARY_ONLY, drill_stack=[level]
+            )
+
+        self.assertEqual(self.descriptions(result), FEBRUARY)
+
     # @feature charts.drill-number-card
     def test_a_number_cards_breakdown_includes_its_readings_and_not_its_targets(self):
         """A card names no measure when it is clicked, so the level keeps them all

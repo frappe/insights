@@ -30,7 +30,7 @@ A query's `operations` is a JSON array executed top to bottom. The first operati
 { "measure_name": "Revenue", "column_name": "grand_total", "data_type": "Decimal", "aggregation": "sum",
   "format": "currency", "currency_column": "currency" }
 
-// Dimension (granularity applies to Date/Datetime only: day | week | month | quarter | year | fiscal_year | fiscal_quarter)
+// Dimension (granularity applies to Date/Datetime only: day | week | month | quarter | year | fiscal_year | fiscal_quarter; `auto` only on an axis chart's x_axis, see charts.md)
 { "dimension_name": "posting_date", "column_name": "posting_date", "data_type": "Date", "granularity": "month" }
 ```
 

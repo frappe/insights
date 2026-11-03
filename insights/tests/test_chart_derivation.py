@@ -19,7 +19,9 @@ import unittest
 
 from frappe import _
 
+from insights.insights.doctype.insights_chart_v3.chart_grain import DAY, GRAINS, derived_grain
 from insights.insights.doctype.insights_chart_v3.chart_query import (
+    AUTO_AXIS_POINTS,
     comparison_timespans,
     config_errors,
     derive_operations,
@@ -331,6 +333,15 @@ class TestChartDerivation(unittest.TestCase):
             (op["column"]["column_name"], op["direction"]) for op in operations if op["type"] == "order_by"
         ]
         self.assertEqual(sorts, [("posting_date", "asc")])
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_reads_a_month_daily_a_quarter_weekly_and_two_years_monthly(self):
+        dates = GRAINS["Date"]
+        days = {30: "day", 61: "week", 91: "week", 365: "week", 730: "month"}
+
+        for span, grain in days.items():
+            with self.subTest(days=span):
+                self.assertEqual(derived_grain(dates, span * DAY, AUTO_AXIS_POINTS), grain)
 
     # @feature charts.auto-grain
     def test_an_auto_axis_nothing_resolved_is_derived_at_a_grain_the_engine_has(self):

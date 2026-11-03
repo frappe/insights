@@ -60,8 +60,9 @@ AUTO_AXIS_POINTS = 60
 
 # the grain an `auto` axis groups by when nothing resolved it: a reader that
 # builds the pipeline without running it, such as a check of a chart's sorts.
-# It is the grain a new date axis defaulted to before `auto` existed
-UNRESOLVED_AUTO_GRAIN = "month"
+# It is the grain a new date axis defaulted to before `auto` existed, and a
+# time of day has no month
+UNRESOLVED_AUTO_GRAINS = {"Date": "month", "Datetime": "month", "Time": "hour"}
 
 # A dimension that has an order of its own is plotted in that order. One that
 # has none is left in the order the result arrived in. Dates and times are
@@ -409,7 +410,8 @@ def _add_axis_operation(operations: list[dict], config: dict):
 
     x_dimension = (config.get("x_axis") or {}).get("dimension") or {}
     if x_dimension.get("granularity") == AUTO:
-        x_dimension = {**x_dimension, "granularity": UNRESOLVED_AUTO_GRAIN}
+        grain = UNRESOLVED_AUTO_GRAINS.get(x_dimension.get("data_type"), "month")
+        x_dimension = {**x_dimension, "granularity": grain}
     split_by = (config.get("split_by") or {}).get("dimension") or {}
 
     if split_by.get("column_name"):

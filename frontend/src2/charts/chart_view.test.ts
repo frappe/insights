@@ -442,6 +442,7 @@ describe('the builder rendering an axis at the Auto grain', () => {
 		const drilled = calls.find((c) => c.method === 'insights.api.authoring.get_drill_data')
 		expect((read.doc.config as any).x_axis.dimension.granularity).toBe('day')
 		expect(drilled.args.config.x_axis.dimension.granularity).toBe('day')
+		expect(read.drillSubject.drawnGrain).toBe('day')
 		expect((chart.doc.config as any).x_axis.dimension.granularity).toBe('auto')
 	})
 })

@@ -310,7 +310,9 @@ class InsightsChartv3(Document):
             self.flags.dashboard_period = window
         return adhoc_filters
 
-    def take_auto_grain(self, adhoc_filters: dict | None) -> None:
+    def take_auto_grain(
+        self, adhoc_filters: dict | None, force: bool = False, drawn: str | None = None
+    ) -> None:
         """Group an `auto` date axis by the grain that fits the span it is read over.
 
         The span is read off the rows the chart is about to group, under the
@@ -319,9 +321,10 @@ class InsightsChartv3(Document):
         config where routed filters meet the chart, so derivation, the
         response's `granularity`, an export and a drill all read one grain.
 
-        The span query is cached like any run. A drill resolves again on its own
-        request and so gets the grain the card was drawn at, unless the cache
-        expired and the rows moved the span across a grain since.
+        `drawn` is the grain a card was drawn at, which a drill sends back. The
+        span can move after the card is drawn, as rows arrive or a relative
+        filter rolls over to the next day, and a clicked bucket stands for the
+        stretch the card counted, so the drill keeps that grain instead.
         """
         config = frappe.parse_json(self.config or "{}")
         dimension = auto_axis(self.chart_type, config)
@@ -329,13 +332,16 @@ class InsightsChartv3(Document):
         if not grains or self.setup_errors(config):
             return
 
-        operations = self.get_operations()
-        index = next(i for i, op in enumerate(operations) if op["type"] in ("summarize", "pivot_wider"))
-        column = {"name": dimension["column_name"], "type": dimension["data_type"]}
-        with runs_as(self):
-            seconds = span_seconds(self, operations[:index], column, adhoc_filters, force=False)
+        if drawn in grains:
+            dimension["granularity"] = drawn
+        else:
+            operations = self.get_operations()
+            index = next(i for i, op in enumerate(operations) if op["type"] in ("summarize", "pivot_wider"))
+            column = {"name": dimension["column_name"], "type": dimension["data_type"]}
+            with runs_as(self):
+                seconds = span_seconds(self, operations[:index], column, adhoc_filters, force=force)
+            dimension["granularity"] = derived_grain(grains, seconds, AUTO_AXIS_POINTS)
 
-        dimension["granularity"] = derived_grain(grains, seconds, AUTO_AXIS_POINTS)
         self.config = frappe.as_json(config)
 
     def count_rows(

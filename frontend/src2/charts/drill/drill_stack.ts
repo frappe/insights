@@ -67,6 +67,12 @@ export type DrillLevel = {
 	 */
 	read_on?: string
 	modified?: string
+	/**
+	 * The grain an Auto date axis was drawn at. The span it was resolved from
+	 * can move after the card is drawn, and a clicked bucket stands for the
+	 * stretch the card counted.
+	 */
+	drawn_grain?: string
 }
 
 /** A candidate for "break down by", as `get_chart_data` reports it. */
@@ -573,6 +579,7 @@ export type DrillSubject = {
 	canRows?: boolean
 	readOn?: string
 	modified?: string
+	drawnGrain?: string
 	fetch: (levels: DrillLevel[]) => Promise<DrillLevelData>
 	rows?: (levels: DrillLevel[]) => DrillRowsSource
 }
