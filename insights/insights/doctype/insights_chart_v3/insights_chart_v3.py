@@ -7,6 +7,7 @@ from frappe.model.document import Document
 from frappe.utils import get_datetime, getdate
 
 from insights import standard, user_permissions
+from insights.cache_utils import get_or_set_cache, make_digest
 from insights.desk import can_show_in_desk, claims_on, refuse_delete_while_claimed, show_in_desk
 from insights.insights.doctype.insights_chart_v3.chart_drill import check_rows
 from insights.insights.doctype.insights_chart_v3.chart_grain import GRAINS, derived_grain, span_seconds
@@ -14,6 +15,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     AUTO_AXIS_POINTS,
     adjacent_bucket,
     auto_axis,
+    bounded_span,
     column_granularity,
     comparison_sources,
     comparison_timespans,
@@ -31,7 +33,7 @@ from insights.insights.doctype.insights_chart_v3.record_link import record_links
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_card_filters
 from insights.insights.doctype.insights_query_v3.insights_query_v3 import import_query
 from insights.insights.query_builders.sql_functions import reading_day, resolve_timespan
-from insights.permission_user import runs_as
+from insights.permission_user import permission_user_for, runs_as
 from insights.permissions import can_export, can_read_rows
 from insights.utils import deep_convert_dict_to_dict, refuse_delete_while_linked
 
@@ -41,6 +43,9 @@ QUERY = "Insights Query v3"
 # card's own page size would stop short of the number it is plotted under. This is
 # the bound instead: more periods than any period a card is read over.
 SPARKLINE_MAX_POINTS = 1000
+
+# how long the grain an `auto` axis takes from its rows' span is kept
+AUTO_GRAIN_EXPIRY = 24 * 60 * 60
 
 
 class InsightsChartv3(Document):
@@ -313,13 +318,16 @@ class InsightsChartv3(Document):
     def take_auto_grain(
         self, adhoc_filters: dict | None, force: bool = False, drawn: str | None = None
     ) -> None:
-        """Group an `auto` date axis by the grain that fits the span it is read over.
+        """Group an `auto` date axis by the grain that fits the window the reader asked for.
 
-        The span is read off the rows the chart is about to group, under the
-        dashboard's filters, so one month of a dashboard reads daily and a year
-        reads weekly. Like `take_dashboard_period`, it is written into the
-        config where routed filters meet the chart, so derivation, the
-        response's `granularity`, an export and a drill all read one grain.
+        The window is the stretch the chart's filters bound on the axis column
+        (`bounded_span`): a dashboard Period of one month reads daily and a year
+        reads weekly, whatever rows fall inside, and no query runs to find it.
+        When the filters leave an end open, the span of the rows the chart is
+        about to group stands in for it. Like `take_dashboard_period`, the grain
+        is written into the config where routed filters meet the chart, so
+        derivation, the response's `granularity`, an export and a drill all read
+        one grain.
 
         `drawn` is the grain a card was drawn at, which a drill sends back. The
         span can move after the card is drawn, as rows arrive or a relative
@@ -335,14 +343,33 @@ class InsightsChartv3(Document):
         if drawn in grains:
             dimension["granularity"] = drawn
         else:
-            operations = self.get_operations()
-            index = next(i for i, op in enumerate(operations) if op["type"] in ("summarize", "pivot_wider"))
             column = {"name": dimension["column_name"], "type": dimension["data_type"]}
-            with runs_as(self):
-                seconds = span_seconds(self, operations[:index], column, adhoc_filters, force=force)
-            dimension["granularity"] = derived_grain(grains, seconds, AUTO_AXIS_POINTS)
+            dimension["granularity"] = self.auto_grain(config, column, grains, adhoc_filters, force)
 
         self.config = frappe.as_json(config)
+
+    def auto_grain(self, config: dict, column: dict, grains: dict, adhoc_filters, force: bool) -> str:
+        query_operations = frappe.parse_json(frappe.db.get_value(QUERY, self.query, "operations") or "[]")
+        span = bounded_span(self.query, query_operations, config, adhoc_filters, column)
+        if span:
+            return derived_grain(grains, (span[1] - span[0]).total_seconds(), AUTO_AXIS_POINTS)
+
+        # the rows' span moves only as rows arrive, and a grain a day old still
+        # fits them. A relative filter resolves against the reading day, which
+        # the key holds, and the reader's Refresh reads them again
+        user = permission_user_for(self)
+        key = make_digest(
+            "auto_grain", self.name, config, adhoc_filters, reading_day(), user, frappe.get_roles(user)
+        )
+
+        def from_rows():
+            operations = self.get_operations()
+            index = next(i for i, op in enumerate(operations) if op["type"] in ("summarize", "pivot_wider"))
+            with runs_as(self):
+                seconds = span_seconds(self, operations[:index], column, adhoc_filters, force=force)
+            return derived_grain(grains, seconds, AUTO_AXIS_POINTS)
+
+        return get_or_set_cache(key, from_rows, force=force, expiry=AUTO_GRAIN_EXPIRY)
 
     def count_rows(
         self,

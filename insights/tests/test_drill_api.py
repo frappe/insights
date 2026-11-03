@@ -27,6 +27,7 @@ from insights.api.view import (
     get_drill_rows_values,
 )
 from insights.insights.doctype.insights_chart_v3.chart_drill import drill_data, drill_dimensions
+from insights.insights.doctype.insights_chart_v3.chart_grain import span_seconds
 from insights.insights.doctype.insights_chart_v3.insights_chart_v3 import InsightsChartv3
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
@@ -240,6 +241,9 @@ def auto_config(split_by=None):
     return config
 
 
+# where an `auto` axis reads the span of its rows, for a test to count the reads
+SPAN_SECONDS = "insights.insights.doctype.insights_chart_v3.insights_chart_v3.span_seconds"
+
 # the dashboard filter that narrows the dated fixtures from a year to three days
 FEBRUARY_ONLY = {"Description": {"operator": "contains", "value": "february"}}
 
@@ -445,6 +449,20 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def buckets(self, result, column="date"):
         """The dimension values of a breakdown, in the order they came back."""
         return [str(row[column])[:10] for row in result["rows"]]
+
+    def add_period_filter(self, dashboard, chart, query):
+        """A date filter on the dashboard, linked to the dated fixtures' `date`."""
+        items = frappe.parse_json(dashboard.items)
+        items.append(
+            {
+                "type": "filter",
+                "filter_name": "Period",
+                "filter_type": "Date",
+                "links": {chart.name: f"`{query.name}`.`date`"},
+                "layout": {"i": "filter-2", "x": 4, "y": 0, "w": 4, "h": 1},
+            }
+        )
+        frappe.db.set_value(DT.DASHBOARD, dashboard.name, "items", frappe.as_json(items))
 
     def timeline(self, **kwargs):
         """A chart over the dated fixtures, which is what the ordered tests click."""
@@ -1028,6 +1046,44 @@ class TestDrillAPI(InsightsIntegrationTestCase):
                 self.assertEqual(len(year["rows"]), 4)
                 self.assertEqual(february["granularity"], {"date": "day"})
                 self.assertEqual(self.buckets(february), ["2024-02-15", "2024-02-16", "2024-02-17"])
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_under_a_date_filter_takes_the_filters_window_and_runs_no_span_query(self):
+        """1 to 31 October holds none of the dated fixtures, and still reads
+        daily: the window is what the reader asked for, not where rows fell."""
+        query, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+        self.add_period_filter(dashboard, chart, query)
+        periods = {
+            "day": ["2024-10-01", "2024-10-31"],
+            "week": ["2024-01-01", "2024-12-31"],
+        }
+
+        for grain, value in periods.items():
+            with self.subTest(grain=grain), patch(SPAN_SECONDS, wraps=span_seconds) as spans:
+                with as_user(OWNER), db_connections():
+                    result = get_chart_data(
+                        chart=chart.name,
+                        dashboard=dashboard.name,
+                        filters={"Period": {"operator": "between", "value": value}},
+                    )
+
+                self.assertEqual(result["granularity"], {"date": grain})
+                spans.assert_not_called()
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_its_filters_leave_open_reads_its_rows_span_once_a_day(self):
+        """The rows' span moves only as rows arrive, so the grain it gives is
+        kept, and the reader's Refresh reads it again."""
+        _, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with patch(SPAN_SECONDS, wraps=span_seconds) as spans, as_user(OWNER), db_connections():
+            for force in (False, False, True):
+                result = get_chart_data(
+                    chart=chart.name, dashboard=dashboard.name, filters=FEBRUARY_ONLY, force=force
+                )
+                self.assertEqual(result["granularity"], {"date": "day"})
+
+        self.assertEqual(spans.call_count, 2)
 
     # @feature charts.auto-grain
     def test_the_builder_previews_an_auto_axis_at_the_grain_a_reader_gets(self):
