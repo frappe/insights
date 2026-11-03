@@ -34,6 +34,7 @@ import secrets
 from frappe import _
 from frappe.utils import add_to_date, get_datetime
 
+from insights.insights.doctype.insights_chart_v3.chart_grain import AUTO
 from insights.insights.query_builders.sql_functions import get_fiscal_period, span_unit
 
 AXIS_CHARTS = ("Bar", "Line", "Row")
@@ -50,6 +51,17 @@ CHART_TYPES = (
 )
 
 DEFAULT_MAX_COLUMN_VALUES = 10
+
+# how many points an `auto` axis is cut into at most. A month at day is 31 and
+# a quarter at day is 92, so a month reads daily, a quarter weekly (14) and a
+# year weekly (53). A card a few hundred pixels wide still has room between
+# 60 bars
+AUTO_AXIS_POINTS = 60
+
+# the grain an `auto` axis groups by when nothing resolved it: a reader that
+# builds the pipeline without running it, such as a check of a chart's sorts.
+# It is the grain a new date axis defaulted to before `auto` existed
+UNRESOLVED_AUTO_GRAIN = "month"
 
 # A dimension that has an order of its own is plotted in that order. One that
 # has none is left in the order the result arrived in. Dates and times are
@@ -160,6 +172,23 @@ def column_granularity(operations: list[dict]) -> dict:
                 granularity[result_column(dimension)] = dimension["granularity"]
 
     return granularity
+
+
+def auto_axis(chart_type: str, config: dict | None) -> dict | None:
+    """The date x axis of an axis chart left at the `auto` grain, or nothing.
+
+    The grain follows the span the chart is read over, so it is resolved where
+    the chart runs with its dashboard's filters (`InsightsChartv3.take_auto_grain`)
+    and written into the config before derivation reads it.
+    """
+    if chart_type not in AXIS_CHARTS:
+        return None
+
+    dimension = ((config or {}).get("x_axis") or {}).get("dimension") or {}
+    if dimension.get("granularity") != AUTO or not dimension.get("column_name"):
+        return None
+
+    return dimension
 
 
 def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]:
@@ -379,6 +408,8 @@ def _add_axis_operation(operations: list[dict], config: dict):
     values = _named_measures(s.get("measure") for s in series) or [count_of_rows()]
 
     x_dimension = (config.get("x_axis") or {}).get("dimension") or {}
+    if x_dimension.get("granularity") == AUTO:
+        x_dimension = {**x_dimension, "granularity": UNRESOLVED_AUTO_GRAIN}
     split_by = (config.get("split_by") or {}).get("dimension") or {}
 
     if split_by.get("column_name"):

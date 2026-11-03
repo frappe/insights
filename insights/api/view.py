@@ -498,10 +498,14 @@ def routed_chart(chart: str, dashboard: str | None, filters: dict | None):
     filter state routed to it.
 
     A Number card that states no Period reads the dashboard's span as its own
-    (`take_dashboard_period`), so every reader below gets that config.
+    (`take_dashboard_period`), and an `auto` date axis takes the grain that
+    fits the span under those filters (`take_auto_grain`), so every reader below
+    gets that config.
     """
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
-    return doc, doc.take_dashboard_period(routed_filters(doc.name, dashboard, filters))
+    adhoc_filters = doc.take_dashboard_period(routed_filters(doc.name, dashboard, filters))
+    doc.take_auto_grain(adhoc_filters)
+    return doc, adhoc_filters
 
 
 def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> dict | None:

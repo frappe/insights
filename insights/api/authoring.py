@@ -455,6 +455,7 @@ def drilled_shape(query, chart_type, config, chart_name, dashboard_items, filter
     chart = chart_to_run(chart_type, query, config, chart_name)
     adhoc_filters = route_filters(dashboard_items, chart_name, filters) if chart_name else None
     adhoc_filters = chart.take_dashboard_period(adhoc_filters)
+    chart.take_auto_grain(adhoc_filters)
     adhoc_filters = route_card_filters(chart.name, card_filters, adhoc_filters) if chart_name else None
     return chart, adhoc_filters
 

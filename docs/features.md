@@ -134,6 +134,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.measure-unit | A measure prints as a plain number, a percent, or a currency read from the site or from a column. |
 | charts.dimension-label | A user relabels a dimension. |
 | charts.dimension-grain | A user sets a date dimension's grain and the chart groups by it. |
+| charts.auto-grain | A date x-axis at the Auto grain groups by the finest grain that fits the span it is read over, under the dashboard's filters, and every reader of the chart reads that grain. |
 | charts.split-by | A user splits the series by a dimension and sees one series per value. |
 | charts.split-by-max-values | A user caps how many split values are plotted; the rest fold into Others. |
 | charts.tooltip-measures | A user adds measures that print in the tooltip only. |

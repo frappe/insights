@@ -13,6 +13,7 @@ Read `insights/insights/doctype/insights_chart_v3/chart_query.py` for what is
 being derived.
 """
 
+import copy
 import json
 import unittest
 
@@ -330,6 +331,20 @@ class TestChartDerivation(unittest.TestCase):
             (op["column"]["column_name"], op["direction"]) for op in operations if op["type"] == "order_by"
         ]
         self.assertEqual(sorts, [("posting_date", "asc")])
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_nothing_resolved_is_derived_at_a_grain_the_engine_has(self):
+        """The engine has no `auto` grain, so a reader that derives a chart
+        without running it, such as the check of a chart's sorts, would build a
+        pipeline that refuses to compile."""
+        case = derivation_case("Line")
+        config = copy.deepcopy(case["config"])
+        config["x_axis"]["dimension"]["granularity"] = "auto"
+
+        operations = derive_operations("Line", case["query"], config)
+
+        summarize = next(op for op in operations if op["type"] == "summarize")
+        self.assertEqual(summarize["dimensions"][0]["granularity"], "month")
 
     # @feature charts.sort
     def test_an_axis_chart_on_a_category_is_left_in_the_order_it_arrived(self):

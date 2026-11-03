@@ -19,6 +19,7 @@ from insights.api.authoring import get_drill_data as get_authoring_drill_data
 from insights.api.authoring import get_drill_rows_range as get_authoring_drill_rows_range
 from insights.api.authoring import get_drill_rows_values as get_authoring_drill_rows_values
 from insights.api.view import (
+    download_chart_rows,
     download_drill_rows,
     get_chart_data,
     get_drill_data,
@@ -223,6 +224,24 @@ def bar_config(measures=None):
         "y_axis": {"series": [{"measure": measure} for measure in measures or []]},
         "order_by": [],
     }
+
+
+def auto_config(split_by=None):
+    """The dated fixtures over time, at the grain that fits the span they are read over."""
+    config = {
+        "limit": 50,
+        "x_axis": {"dimension": dimension("date", "Date", granularity="auto")},
+        "y_axis": {"series": []},
+        "order_by": [],
+    }
+    if split_by:
+        config["split_by"] = {"dimension": dimension(split_by)}
+
+    return config
+
+
+# the dashboard filter that narrows the dated fixtures from a year to three days
+FEBRUARY_ONLY = {"Description": {"operator": "contains", "value": "february"}}
 
 
 def pivot_config(values=None):
@@ -990,6 +1009,68 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertTrue(result["ordered"])
         # the fixtures are created within one second, so the derivation floors on its finest grain
         self.assertEqual(result["granularity"], "second")
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_groups_by_the_grain_that_fits_the_dashboard_filter(self):
+        """A year of rows reads weekly. The February a filter leaves reads daily,
+        where the month the axis used to default to plotted one point."""
+        for config in (auto_config(), auto_config(split_by="priority")):
+            with self.subTest(split=bool(config.get("split_by"))):
+                _, chart, dashboard = self.timeline(chart_type="Line", config=config)
+
+                with as_user(OWNER), db_connections():
+                    year = get_chart_data(chart=chart.name, dashboard=dashboard.name)
+                    february = get_chart_data(
+                        chart=chart.name, dashboard=dashboard.name, filters=FEBRUARY_ONLY
+                    )
+
+                self.assertEqual(year["granularity"], {"date": "week"})
+                self.assertEqual(len(year["rows"]), 4)
+                self.assertEqual(february["granularity"], {"date": "day"})
+                self.assertEqual(self.buckets(february), ["2024-02-15", "2024-02-16", "2024-02-17"])
+
+    # @feature charts.auto-grain
+    def test_the_builder_previews_an_auto_axis_at_the_grain_a_reader_gets(self):
+        query, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with as_user(OWNER), db_connections():
+            preview = get_authoring_chart_data(
+                query=query.name,
+                chart_type="Line",
+                config=auto_config(),
+                chart_name=chart.name,
+                dashboard_items=frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "items")),
+                filters=FEBRUARY_ONLY,
+            )
+
+        self.assertEqual(preview["granularity"], {"date": "day"})
+        self.assertEqual(self.buckets(preview), ["2024-02-15", "2024-02-16", "2024-02-17"])
+
+    # @feature charts.auto-grain
+    def test_a_download_of_an_auto_axis_has_the_rows_the_card_plots(self):
+        _, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with as_user(OWNER), db_connections():
+            csv = download_chart_rows(chart=chart.name, dashboard=dashboard.name, filters=FEBRUARY_ONLY)
+
+        # a header and one line a day
+        self.assertEqual(len([line for line in csv.splitlines() if line.strip()]), 4)
+
+    # @feature charts.auto-grain charts.drill-date-segment
+    def test_a_click_on_an_auto_axis_drills_into_the_bucket_it_was_drawn_at(self):
+        """Under the February filter the axis is daily, so a click on the 16th is
+        that one day and not the month the axis defaulted to before."""
+        _, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with as_user(OWNER), db_connections():
+            result = get_drill_data(
+                chart=chart.name,
+                dashboard=dashboard.name,
+                filters=FEBRUARY_ONLY,
+                drill_stack=[rows_level(filters=[equals("date", "2024-02-16")])],
+            )
+
+        self.assertEqual(self.descriptions(result), [f"{TIMELINE_PREFIX} february two"])
 
     # @feature charts.drill-number-card
     def test_a_number_cards_breakdown_includes_its_readings_and_not_its_targets(self):

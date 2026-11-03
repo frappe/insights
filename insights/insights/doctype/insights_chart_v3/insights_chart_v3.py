@@ -9,8 +9,11 @@ from frappe.utils import get_datetime, getdate
 from insights import standard, user_permissions
 from insights.desk import can_show_in_desk, claims_on, refuse_delete_while_claimed, show_in_desk
 from insights.insights.doctype.insights_chart_v3.chart_drill import check_rows
+from insights.insights.doctype.insights_chart_v3.chart_grain import GRAINS, derived_grain, span_seconds
 from insights.insights.doctype.insights_chart_v3.chart_query import (
+    AUTO_AXIS_POINTS,
     adjacent_bucket,
+    auto_axis,
     column_granularity,
     comparison_sources,
     comparison_timespans,
@@ -306,6 +309,34 @@ class InsightsChartv3(Document):
             self.config = frappe.as_json({**config, "window": window})
             self.flags.dashboard_period = window
         return adhoc_filters
+
+    def take_auto_grain(self, adhoc_filters: dict | None) -> None:
+        """Group an `auto` date axis by the grain that fits the span it is read over.
+
+        The span is read off the rows the chart is about to group, under the
+        dashboard's filters, so one month of a dashboard reads daily and a year
+        reads weekly. Like `take_dashboard_period`, it is written into the
+        config where routed filters meet the chart, so derivation, the
+        response's `granularity`, an export and a drill all read one grain.
+
+        The span query is cached like any run. A drill resolves again on its own
+        request and so gets the grain the card was drawn at, unless the cache
+        expired and the rows moved the span across a grain since.
+        """
+        config = frappe.parse_json(self.config or "{}")
+        dimension = auto_axis(self.chart_type, config)
+        grains = GRAINS.get((dimension or {}).get("data_type")) or {}
+        if not grains or self.setup_errors(config):
+            return
+
+        operations = self.get_operations()
+        index = next(i for i, op in enumerate(operations) if op["type"] in ("summarize", "pivot_wider"))
+        column = {"name": dimension["column_name"], "type": dimension["data_type"]}
+        with runs_as(self):
+            seconds = span_seconds(self, operations[:index], column, adhoc_filters, force=False)
+
+        dimension["granularity"] = derived_grain(grains, seconds, AUTO_AXIS_POINTS)
+        self.config = frappe.as_json(config)
 
     def count_rows(
         self,
