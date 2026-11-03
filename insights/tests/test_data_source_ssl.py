@@ -79,7 +79,7 @@ def connect_kwargs(connector, backend, **fields):
 
 
 def postgres_kwargs(**fields):
-    return connect_kwargs(get_postgres_connection, "ibis.postgres.connect", **fields)
+    return connect_kwargs(get_postgres_connection, "ibis.backends.postgres.Backend.connect", **fields)
 
 
 def mariadb_kwargs(**fields):
