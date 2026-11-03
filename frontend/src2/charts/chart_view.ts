@@ -26,7 +26,7 @@ import type {
 	QueryResultColumn,
 	SortDirection,
 } from '../types/query.types'
-import type { ChartType } from '../types/chart.types'
+import { AXIS_CHARTS, type ChartType } from '../types/chart.types'
 import type { InsightsChartv3, FilterValues, WorkbookDashboardItem } from '../types/workbook.types'
 import type { RecordLinks } from './record_link'
 import type {
@@ -43,7 +43,7 @@ import {
 	fetchViewDrillRowsValues,
 } from './drill/drill_api'
 import { sortBy } from './adapter/table'
-import { normalizeChartConfig } from './helpers'
+import { normalizeChartConfig, withServerGrain } from './helpers'
 import { labelWindowRows, withLentPeriod, type NumberPeriod } from './window'
 
 /**
@@ -208,10 +208,14 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	// option does not change the request, so it shows at once. An edit that
 	// changes the rows waits for them.
 	const lentPeriod = shallowRef<NumberPeriod>()
+	// the grain the server grouped each date column by, which is the only place
+	// an `auto` axis says what it was resolved to
+	const granularity = shallowRef<Record<string, string>>()
 	const doc = computed(() => {
 		const shown = answered.value
 		const answers = !shown || source.requestKey?.(filterContext()) === shown.key
-		return withLentPeriod(answers ? current.value : shown.doc, lentPeriod.value)
+		const chart = withLentPeriod(answers ? current.value : shown.doc, lentPeriod.value)
+		return withServerGrain(chart, granularity.value)
 	})
 	const result = ref<QueryResult>(emptyResult())
 	const sparklineResult = ref<QueryResult>()
@@ -278,6 +282,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		sparklineResult.value = undefined
 		comparisonRows.value = undefined
 		lentPeriod.value = undefined
+		granularity.value = undefined
 	}
 
 	async function load(force = false) {
@@ -416,6 +421,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 			recordLinks.value = response.record_links
 			comparisonRows.value = response.comparison_rows
 			lentPeriod.value = response.period
+			granularity.value = response.granularity
 			scopedBy.value = response.user_permissions
 			narrowedByPermissions.value = Boolean(response.narrowed_by_permissions)
 			readOn.value = response.read_on
@@ -483,12 +489,16 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	// even while an edit waits for its rows.
 	const drillSubject = computed<DrillSubject>(() => {
 		const rendered = doc.value
+		const x = AXIS_CHARTS.includes(rendered.chart_type)
+			? (rendered.config as any).x_axis?.dimension
+			: undefined
 		return {
 			chart: { chart_type: rendered.chart_type as ChartType, config: rendered.config },
 			title: rendered.title,
 			dimensions: drillDimensions.value,
 			canRows: drillCanRows.value,
 			readOn: readOn.value,
+			drawnGrain: x ? granularity.value?.[x.dimension_name || x.column_name] : undefined,
 			// the version of the rows. The document being edited does not hold it
 			modified: answered.value?.doc.modified,
 			fetch: (levels) => source.fetchDrillData(levels, filterContext(), rendered),

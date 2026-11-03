@@ -8,7 +8,7 @@
 // something.
 
 import type { Component, ComponentOptions } from 'vue'
-import type { GranularityType } from '../../helpers/constants'
+import type { DimensionGranularity, GranularityType } from '../../helpers/constants'
 import type { ConditionalColor, FormatGroupArgs } from '../../query/components/formatting_utils'
 import type {
 	AxisChartType,
@@ -29,7 +29,9 @@ import type {
 import { formatResultRows } from '../../query/helpers'
 import type { ChartAdapterInput } from './types'
 
-type DimensionSpec = string | { name: string; type?: ColumnDataType; granularity?: GranularityType }
+type DimensionSpec =
+	| string
+	| { name: string; type?: ColumnDataType; granularity?: DimensionGranularity }
 
 type MeasureSpec =
 	| string

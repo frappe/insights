@@ -1,4 +1,5 @@
 import { AXIS_CHARTS, ChartConfig } from '../types/chart.types'
+import { AUTO_GRANULARITY } from '../helpers/constants'
 import type { ColumnMeasure, ColumnOption, MeasureDataType } from '../types/query.types'
 
 // What a Chart's config needs doing to it before anything reads it. Rendering is
@@ -326,4 +327,28 @@ export function getGranularity(dimension_name: string, config: ChartConfig) {
 		(candidate) => candidate.dimension_name === dimension_name,
 	)
 	return dimension?.granularity
+}
+
+/**
+ * The chart as the server ran it: an `auto` date axis at the grain the server
+ * resolved it to, read off the response's `granularity`. The axis, its labels
+ * and a drill from a clicked bucket all read the grain the rows were grouped
+ * by. The config an author edits keeps `auto`, so the next run resolves again.
+ */
+export function withServerGrain<T extends { chart_type: string; config: any }>(
+	chart: T,
+	granularity?: Record<string, string>,
+): T {
+	if (!AXIS_CHARTS.includes(chart.chart_type)) return chart
+	const dimension = chart.config?.x_axis?.dimension
+	if (dimension?.granularity !== AUTO_GRANULARITY) return chart
+	const grain = granularity?.[dimension.dimension_name || dimension.column_name]
+	if (!grain) return chart
+	return {
+		...chart,
+		config: {
+			...chart.config,
+			x_axis: { ...chart.config.x_axis, dimension: { ...dimension, granularity: grain } },
+		},
+	}
 }

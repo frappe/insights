@@ -404,6 +404,49 @@ describe('the builder grid rendering a card the dashboard lent a Period', () => 
 	})
 })
 
+describe('the builder rendering an axis at the Auto grain', () => {
+	// @feature charts.auto-grain charts.preview
+	it('renders and drills the axis at the grain the server grouped by, and leaves the edited config at Auto', async () => {
+		// `authoring.get_chart_data` resolves `auto` under the dashboard's
+		// filters and says which grain it used in `granularity`.
+		const chart = reactive({
+			doc: {
+				name: 'chart-37',
+				title: 'Traffic',
+				chart_type: 'Line',
+				query: 'query-37',
+				config: {
+					x_axis: {
+						dimension: {
+							column_name: 'date',
+							dimension_name: 'date',
+							data_type: 'Date',
+							granularity: 'auto',
+						},
+					},
+					y_axis: { series: [] },
+				} as any,
+			},
+		}) as unknown as Chart
+		answers.set('insights.api.authoring.get_chart_data', () =>
+			Promise.resolve({
+				columns: [{ name: 'date', type: 'Date' }],
+				rows: [{ date: '2026-10-01' }, { date: '2026-10-02' }],
+				granularity: { date: 'day' },
+			}),
+		)
+		const read = useChartPreview(chart)
+		await read.load()
+		await read.drillSubject.fetch([{ segment_filters: [], action: { rows: true } }])
+
+		const drilled = calls.find((c) => c.method === 'insights.api.authoring.get_drill_data')
+		expect((read.doc.config as any).x_axis.dimension.granularity).toBe('day')
+		expect(drilled.args.config.x_axis.dimension.granularity).toBe('day')
+		expect(read.drillSubject.drawnGrain).toBe('day')
+		expect((chart.doc.config as any).x_axis.dimension.granularity).toBe('auto')
+	})
+})
+
 describe('the builder drilling a chart its author is editing', () => {
 	// @feature charts.drill-changed-chart charts.preview
 	it('drills the version its rows ran as, not the one the document being edited holds', async () => {

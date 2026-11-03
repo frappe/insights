@@ -24,7 +24,7 @@ the same walk either way.
 """
 
 import ast
-from datetime import date, datetime, time, timedelta
+from datetime import time, timedelta
 
 import frappe
 from frappe import _
@@ -32,6 +32,12 @@ from frappe.utils import add_to_date, get_datetime, get_time
 
 from insights import user_permissions
 from insights.cache_utils import get_or_set_cache, make_digest
+from insights.insights.doctype.insights_chart_v3.chart_grain import (
+    GRAINS,
+    derived_grain,
+    moment,
+    span_seconds,
+)
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     ORDERED_TYPES,
     adjacent_bucket,
@@ -74,58 +80,6 @@ RANKABLE_TYPES = ("Integer", "Decimal")
 FINDABLE_TYPES = ("String", "Integer", "Decimal")
 
 SORT_DIRECTIONS = ("asc", "desc")
-
-SECOND = 1
-MINUTE = 60 * SECOND
-HOUR = 60 * MINUTE
-DAY = 24 * HOUR
-WEEK = 7 * DAY
-MONTH = 30 * DAY
-QUARTER = 91 * DAY
-YEAR = 365 * DAY
-
-# Every grain an ordered column can be grouped by, coarsest last, against the
-# length the derivation reckons it in. One table does both jobs: it is the
-# order a derived grain coarsens through, and it is what a caller-named grain is
-# checked against. A `Time` has no date part, so the calendar grains cannot
-# apply to it.
-#
-# The lengths are deliberately approximate. They only decide which grain a span
-# lands on, never a bucket boundary, which the engine's calendar owns. A grain
-# with no length is one a reader may ask for and the derivation will never pick:
-# a second-by-second breakdown reads as noise at any span, and which year a
-# business counts by is its own decision rather than a consequence of how much
-# time a segment covers. A `Date` has no time part, so it lists no sub-day grain
-# at all: the engine cannot truncate one to an hour.
-GRAINS = {
-    "Date": {
-        "day": DAY,
-        "week": WEEK,
-        "month": MONTH,
-        "quarter": QUARTER,
-        "year": YEAR,
-        "fiscal_year": None,
-        "fiscal_quarter": None,
-    },
-    "Datetime": {
-        "second": None,
-        "minute": MINUTE,
-        "hour": HOUR,
-        "day": DAY,
-        "week": WEEK,
-        "month": MONTH,
-        "quarter": QUARTER,
-        "year": YEAR,
-        "fiscal_year": None,
-        "fiscal_quarter": None,
-    },
-    "Time": {"second": SECOND, "minute": MINUTE, "hour": HOUR},
-}
-
-# the two ends of the segment a grain is derived from, named so the aggregate
-# that reads them can be told apart from anything the surface already includes
-SPAN_START = "drill_span_start"
-SPAN_END = "drill_span_end"
 
 # a filter can only narrow what the surface already exposes, so the whole
 # operator set is open. Naming one the engine does not have is a caller error
@@ -763,7 +717,7 @@ def _granularity(chart, segment: list[dict], column: dict, named: str | None, ad
     if not grains:
         return None
 
-    return _derived_grain(grains, _span_seconds(chart, segment, column, adhoc_filters))
+    return derived_grain(grains, span_seconds(chart, segment, column, adhoc_filters), BREAKDOWN_SIZE)
 
 
 def _allowed_grain(column: dict, granularity: str) -> str:
@@ -772,71 +726,6 @@ def _allowed_grain(column: dict, granularity: str) -> str:
         frappe.throw(_("{0} cannot be broken down by {1}").format(column["name"], granularity))
 
     return granularity
-
-
-def _derived_grain(grains: dict, seconds: float) -> str:
-    """The finest grain whose buckets fit the span into one page.
-
-    Coarsen until they do: a page holds `BREAKDOWN_SIZE` buckets, and a span
-    that starts partway through one spills into another. Nothing coarser than
-    the last grain exists, so a span that outgrows it is exactly what the page
-    is there for.
-    """
-    ladder = {grain: length for grain, length in grains.items() if length}
-
-    for grain, length in ladder.items():
-        if seconds / length + 1 <= BREAKDOWN_SIZE:
-            return grain
-
-    return list(ladder)[-1]
-
-
-def _span_seconds(chart, segment: list[dict], column: dict, adhoc_filters) -> float:
-    """How much time the segment covers.
-
-    One aggregate over the rows the breakdown is about to group: the segment's
-    span and not the chart's, so drilling one month of a ten-year series gets a
-    grain that fits the month.
-    """
-    measures = [
-        {
-            "measure_name": name,
-            "column_name": column["name"],
-            "aggregation": aggregation,
-            "data_type": column["type"],
-        }
-        for name, aggregation in ((SPAN_START, "min"), (SPAN_END, "max"))
-    ]
-    query = chart.get_query(
-        operations=[*segment, {"type": "summarize", "measures": measures, "dimensions": []}]
-    )
-    rows = query.execute(adhoc_filters=adhoc_filters, page_size=1, force=True, include_sql=False)["rows"]
-    ends = rows[0] if rows else {}
-
-    start, end = ends.get(SPAN_START), ends.get(SPAN_END)
-    if start is None or end is None:
-        return 0
-
-    return abs((_moment(end) - _moment(start)).total_seconds())
-
-
-def _moment(value) -> datetime:
-    """A value read off an ordered column, as one point on a line.
-
-    A `Time` comes back as an offset into a day rather than a moment, which
-    subtraction will not mix with the rest, and which day it is offset into
-    does not matter to a difference.
-    """
-    if isinstance(value, timedelta):
-        return datetime.min + value
-    if isinstance(value, datetime):
-        return value
-    if isinstance(value, time):
-        return datetime.combine(datetime.min, value)
-    if isinstance(value, date):
-        return datetime.combine(value, time.min)
-
-    return get_datetime(str(value))
 
 
 def _segment_filters(
@@ -1014,7 +903,7 @@ def _grain_bucket(granularity: str, value, data_type: str) -> tuple:
         start = get_datetime(value)
         return (start, adjacent_bucket(granularity, start))
 
-    start = _moment(get_time(value))
+    start = moment(get_time(value))
     end = adjacent_bucket(granularity, start)
     return (start.time(), end.time() if end.date() == start.date() else None)
 

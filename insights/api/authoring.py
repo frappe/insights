@@ -108,7 +108,7 @@ def get_chart_data(
         )
 
     chart, adhoc_filters = drilled_shape(
-        query, chart_type, config, chart_name, dashboard_items, filters, card_filters
+        query, chart_type, config, chart_name, dashboard_items, filters, card_filters, force=force
     )
     chart_type, config = chart.chart_type, frappe.parse_json(chart.config)
 
@@ -448,13 +448,14 @@ def get_drill_rows_range(
     )
 
 
-def drilled_shape(query, chart_type, config, chart_name, dashboard_items, filters, card_filters):
+def drilled_shape(query, chart_type, config, chart_name, dashboard_items, filters, card_filters, force=False):
     """The chart this request runs, and what narrows it."""
     check_read_access(query, chart_name)
 
     chart = chart_to_run(chart_type, query, config, chart_name)
     adhoc_filters = route_filters(dashboard_items, chart_name, filters) if chart_name else None
     adhoc_filters = chart.take_dashboard_period(adhoc_filters)
+    chart.take_auto_grain(adhoc_filters, force=force)
     adhoc_filters = route_card_filters(chart.name, card_filters, adhoc_filters) if chart_name else None
     return chart, adhoc_filters
 

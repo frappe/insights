@@ -34,7 +34,9 @@ import secrets
 from frappe import _
 from frappe.utils import add_to_date, get_datetime
 
-from insights.insights.query_builders.sql_functions import get_fiscal_period, span_unit
+from insights.insights.doctype.insights_chart_v3.chart_grain import AUTO
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import parse_bare_date, sanitize_name
+from insights.insights.query_builders.sql_functions import get_fiscal_period, resolve_timespan, span_unit
 
 AXIS_CHARTS = ("Bar", "Line", "Row")
 CHART_TYPES = (
@@ -50,6 +52,19 @@ CHART_TYPES = (
 )
 
 DEFAULT_MAX_COLUMN_VALUES = 10
+
+# how many points an `auto` axis is cut into at most, over the stretch the reader
+# asked for: the stretch the chart's filters bound (`bounded_span`), or the span
+# of its rows when they bound none. A month at day is 31 and a quarter at day
+# is 92, so a month reads daily, a quarter weekly (14) and a year weekly (53).
+# A card a few hundred pixels wide still has room between 60 bars
+AUTO_AXIS_POINTS = 60
+
+# the grain an `auto` axis groups by when nothing resolved it: a reader that
+# builds the pipeline without running it, such as a check of a chart's sorts.
+# It is the grain a new date axis defaulted to before `auto` existed, and a
+# time of day has no month
+UNRESOLVED_AUTO_GRAINS = {"Date": "month", "Datetime": "month", "Time": "hour"}
 
 # A dimension that has an order of its own is plotted in that order. One that
 # has none is left in the order the result arrived in. Dates and times are
@@ -160,6 +175,23 @@ def column_granularity(operations: list[dict]) -> dict:
                 granularity[result_column(dimension)] = dimension["granularity"]
 
     return granularity
+
+
+def auto_axis(chart_type: str, config: dict | None) -> dict | None:
+    """The date x axis of an axis chart left at the `auto` grain, or nothing.
+
+    The grain follows the span the chart is read over, so it is resolved where
+    the chart runs with its dashboard's filters (`InsightsChartv3.take_auto_grain`)
+    and written into the config before derivation reads it.
+    """
+    if chart_type not in AXIS_CHARTS:
+        return None
+
+    dimension = ((config or {}).get("x_axis") or {}).get("dimension") or {}
+    if dimension.get("granularity") != AUTO or not dimension.get("column_name"):
+        return None
+
+    return dimension
 
 
 def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]:
@@ -331,6 +363,142 @@ def _span_of(value) -> dict | None:
     return {key: value[key] for key in ("span", "anchor") if value.get(key)}
 
 
+# the steps of a source query a filter on a column still holds through: each
+# leaves the column's rows as they are, or names the columns it leaves. Any
+# other step can make the column a different one from the column filtered
+KEEP_COLUMNS = ("filter", "filter_group", "order_by", "limit", "select", "remove")
+# the steps that keep every column but the one they name
+NAME_A_COLUMN = ("mutate", "sql_column", "rename", "cast")
+
+
+def bounded_span(
+    query: str,
+    query_operations: list[dict] | None,
+    config: dict | None,
+    adhoc_filters: dict | None,
+    column: dict,
+) -> tuple[datetime.datetime, datetime.datetime] | None:
+    """The stretch of `column` the filters on a chart let through, when they
+    bound both ends of it, or nothing.
+
+    Three sets of filters reach the rows a chart groups: the dashboard's, routed
+    to the chart's query; the chart's own; and the source query's filter steps,
+    read only back to the last step that could redefine the column. Where they
+    agree the rows must lie in a stretch, that is the stretch the reader asked
+    for, and an `auto` axis is cut to fit it without reading the rows.
+    The end is exclusive.
+    """
+    if column.get("type") not in ("Date", "Datetime"):
+        return None
+
+    name = column["name"]
+    groups = [(adhoc_filters or {}).get(query), (config or {}).get("filters")]
+    groups += _steps_since_defined(query_operations or [], name)
+
+    start, end = None, None
+    for rule in _and_rules(groups):
+        if (rule.get("column") or {}).get("column_name") != name:
+            continue
+        bounds = _rule_bounds(rule.get("operator"), rule.get("value"))
+        if not bounds:
+            continue
+        first, last = bounds
+        if first is not None:
+            start = first if start is None else max(start, first)
+        if last is not None:
+            end = last if end is None else min(end, last)
+
+    if start is None or end is None:
+        return None
+    return start, max(start, end)
+
+
+def _steps_since_defined(operations: list[dict], name: str) -> list[dict]:
+    """The filter steps of a query that apply to the column it ends with."""
+    steps = []
+    for step in reversed(operations):
+        kind = step.get("type")
+        if kind in NAME_A_COLUMN:
+            # the engine names a column as `sanitize_name` writes it, so
+            # "Posting Date" lands on `posting_date`
+            named = {step.get("new_name"), (step.get("column") or {}).get("column_name")}
+            if sanitize_name(name) in {sanitize_name(n) for n in named if n}:
+                break
+        elif kind not in KEEP_COLUMNS:
+            break
+        if kind in ("filter", "filter_group"):
+            steps.append(step)
+    return steps
+
+
+def _and_rules(groups):
+    """The rules every row must pass: a lone filter, or the rules of an And
+    group. An Or group bounds nothing on its own, so it is skipped whole."""
+    for group in groups:
+        if not group:
+            continue
+        if group.get("type") != "filter_group" and "filters" not in group:
+            yield group
+            continue
+        rules = group.get("filters") or []
+        if group.get("logical_operator", "And") == "And" or len(rules) == 1:
+            yield from rules
+
+
+def _rule_bounds(operator: str, value):
+    """The (start, end) one rule cuts, either open as None, or nothing for a
+    rule that bounds no stretch. A bare date names a whole day, as the engine
+    reads it (`DAY_OPERATORS`)."""
+    if operator == "within":
+        try:
+            first, last = resolve_timespan(value)
+        except Exception:
+            return None  # nosemgrep - a span that does not resolve bounds nothing; the rows are read instead
+        return _midnight(first), _midnight(last) + datetime.timedelta(days=1)
+
+    if operator == "between":
+        if not isinstance(value, list | tuple) or len(value) != 2:
+            return None
+        first, last = _instant(value[0]), _instant(value[1])
+        if not first or not last:
+            return None
+        return first[0], last[1]
+
+    day = _instant(value)
+    if not day:
+        return None
+    start, end = day
+    return {
+        "=": (start, end),
+        ">=": (start, None),
+        ">": (end, None),
+        "<=": (None, end),
+        "<": (None, start),
+    }.get(operator)
+
+
+def _instant(value) -> tuple[datetime.datetime, datetime.datetime] | None:
+    """The stretch a filter value names: a whole day for a bare date, one
+    moment for a timestamp, nothing for a value that is not a date."""
+    if isinstance(value, dict | list) or not value:
+        return None
+    if isinstance(value, datetime.datetime):
+        return value, value
+    day = value if isinstance(value, datetime.date) else parse_bare_date(value)
+    if day:
+        return _midnight(day), _midnight(day) + datetime.timedelta(days=1)
+    try:
+        moment = datetime.datetime.fromisoformat(str(value))
+    except ValueError:
+        return None  # nosemgrep - a value that is no date bounds nothing
+    moment = moment.replace(tzinfo=None)
+    return moment, moment
+
+
+def _midnight(day) -> datetime.datetime:
+    return datetime.datetime.combine(day, datetime.time.min)
+
+
 def _window_errors(config: dict) -> list[str]:
     """Why a card with a period cannot be derived, empty when it can.
 
@@ -379,6 +547,9 @@ def _add_axis_operation(operations: list[dict], config: dict):
     values = _named_measures(s.get("measure") for s in series) or [count_of_rows()]
 
     x_dimension = (config.get("x_axis") or {}).get("dimension") or {}
+    if x_dimension.get("granularity") == AUTO:
+        grain = UNRESOLVED_AUTO_GRAINS.get(x_dimension.get("data_type"), "month")
+        x_dimension = {**x_dimension, "granularity": grain}
     split_by = (config.get("split_by") or {}).get("dimension") or {}
 
     if split_by.get("column_name"):

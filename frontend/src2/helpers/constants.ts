@@ -76,6 +76,13 @@ export const granularityOptions = [
 
 export type GranularityType = (typeof granularityOptions)[number]['value']
 
+// An axis chart's date axis at the grain that fits the span it is read over. The
+// server resolves it to one of the grains above where the chart runs, and the
+// response's `granularity` says which.
+export const AUTO_GRANULARITY = 'auto'
+export const autoGranularityOption = { label: __('Auto'), value: AUTO_GRANULARITY } as const
+export type DimensionGranularity = GranularityType | typeof AUTO_GRANULARITY
+
 export const timeGranularityOptions = granularityOptions.slice(0, 3)
 
 // A Date has no time part, so the engine cannot truncate one to a sub-day grain.

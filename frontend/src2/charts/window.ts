@@ -13,7 +13,7 @@
 // strings they write have to be the same list.
 
 import dayjs from 'dayjs'
-import type { GranularityType } from '../helpers/constants'
+import { AUTO_GRANULARITY, type GranularityType } from '../helpers/constants'
 import { getFormattedDate, periodStartAfter } from '../query/helpers'
 import { __, translatedTable } from '../translation'
 import type { ChartConfig, NumberChartConfig } from '../types/chart.types'
@@ -237,7 +237,8 @@ export function periodOf(config: NumberChartConfig): NumberPeriod | undefined {
 	if (config.window?.span || config.window?.grain) return config.window
 
 	const grain = config.date_column?.granularity
-	return grain ? { grain } : undefined
+	// only an axis follows its span, and a card's picker writes no grain at all
+	return grain && grain !== AUTO_GRANULARITY ? { grain } : undefined
 }
 
 /**

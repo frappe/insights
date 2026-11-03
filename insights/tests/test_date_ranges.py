@@ -4,7 +4,7 @@ from unittest.mock import patch
 import ibis
 from frappe.utils.data import get_date_str, get_datetime, getdate
 
-from insights.insights.doctype.insights_chart_v3.chart_drill import GRAINS
+from insights.insights.doctype.insights_chart_v3.chart_grain import GRAINS
 from insights.insights.doctype.insights_chart_v3.chart_query import _comparison_shift, adjacent_bucket
 from insights.insights.doctype.insights_data_source_v3.ibis.functions import (
     _DATE_GRAINS,

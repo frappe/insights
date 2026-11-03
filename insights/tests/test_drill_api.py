@@ -19,6 +19,7 @@ from insights.api.authoring import get_drill_data as get_authoring_drill_data
 from insights.api.authoring import get_drill_rows_range as get_authoring_drill_rows_range
 from insights.api.authoring import get_drill_rows_values as get_authoring_drill_rows_values
 from insights.api.view import (
+    download_chart_rows,
     download_drill_rows,
     get_chart_data,
     get_drill_data,
@@ -26,6 +27,7 @@ from insights.api.view import (
     get_drill_rows_values,
 )
 from insights.insights.doctype.insights_chart_v3.chart_drill import drill_data, drill_dimensions
+from insights.insights.doctype.insights_chart_v3.chart_grain import span_seconds
 from insights.insights.doctype.insights_chart_v3.insights_chart_v3 import InsightsChartv3
 from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import route_filters
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
@@ -223,6 +225,27 @@ def bar_config(measures=None):
         "y_axis": {"series": [{"measure": measure} for measure in measures or []]},
         "order_by": [],
     }
+
+
+def auto_config(split_by=None):
+    """The dated fixtures over time, at the grain that fits the span they are read over."""
+    config = {
+        "limit": 50,
+        "x_axis": {"dimension": dimension("date", "Date", granularity="auto")},
+        "y_axis": {"series": []},
+        "order_by": [],
+    }
+    if split_by:
+        config["split_by"] = {"dimension": dimension(split_by)}
+
+    return config
+
+
+# where an `auto` axis reads the span of its rows, for a test to count the reads
+SPAN_SECONDS = "insights.insights.doctype.insights_chart_v3.insights_chart_v3.span_seconds"
+
+# the dashboard filter that narrows the dated fixtures from a year to three days
+FEBRUARY_ONLY = {"Description": {"operator": "contains", "value": "february"}}
 
 
 def pivot_config(values=None):
@@ -426,6 +449,20 @@ class TestDrillAPI(InsightsIntegrationTestCase):
     def buckets(self, result, column="date"):
         """The dimension values of a breakdown, in the order they came back."""
         return [str(row[column])[:10] for row in result["rows"]]
+
+    def add_period_filter(self, dashboard, chart, query):
+        """A date filter on the dashboard, linked to the dated fixtures' `date`."""
+        items = frappe.parse_json(dashboard.items)
+        items.append(
+            {
+                "type": "filter",
+                "filter_name": "Period",
+                "filter_type": "Date",
+                "links": {chart.name: f"`{query.name}`.`date`"},
+                "layout": {"i": "filter-2", "x": 4, "y": 0, "w": 4, "h": 1},
+            }
+        )
+        frappe.db.set_value(DT.DASHBOARD, dashboard.name, "items", frappe.as_json(items))
 
     def timeline(self, **kwargs):
         """A chart over the dated fixtures, which is what the ordered tests click."""
@@ -990,6 +1027,137 @@ class TestDrillAPI(InsightsIntegrationTestCase):
         self.assertTrue(result["ordered"])
         # the fixtures are created within one second, so the derivation floors on its finest grain
         self.assertEqual(result["granularity"], "second")
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_groups_by_the_grain_that_fits_the_dashboard_filter(self):
+        """A year of rows reads weekly. The February a filter leaves reads daily,
+        where the month the axis used to default to plotted one point."""
+        for config in (auto_config(), auto_config(split_by="priority")):
+            with self.subTest(split=bool(config.get("split_by"))):
+                _, chart, dashboard = self.timeline(chart_type="Line", config=config)
+
+                with as_user(OWNER), db_connections():
+                    year = get_chart_data(chart=chart.name, dashboard=dashboard.name)
+                    february = get_chart_data(
+                        chart=chart.name, dashboard=dashboard.name, filters=FEBRUARY_ONLY
+                    )
+
+                self.assertEqual(year["granularity"], {"date": "week"})
+                self.assertEqual(len(year["rows"]), 4)
+                self.assertEqual(february["granularity"], {"date": "day"})
+                self.assertEqual(self.buckets(february), ["2024-02-15", "2024-02-16", "2024-02-17"])
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_under_a_date_filter_takes_the_filters_stretch_and_runs_no_span_query(self):
+        """1 to 31 October holds none of the dated fixtures, and still reads
+        daily: the stretch is what the reader asked for, not where rows fell."""
+        query, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+        self.add_period_filter(dashboard, chart, query)
+        periods = {
+            "day": ["2024-10-01", "2024-10-31"],
+            "week": ["2024-01-01", "2024-12-31"],
+        }
+
+        for grain, value in periods.items():
+            with self.subTest(grain=grain), patch(SPAN_SECONDS, wraps=span_seconds) as spans:
+                with as_user(OWNER), db_connections():
+                    result = get_chart_data(
+                        chart=chart.name,
+                        dashboard=dashboard.name,
+                        filters={"Period": {"operator": "between", "value": value}},
+                    )
+
+                self.assertEqual(result["granularity"], {"date": grain})
+                spans.assert_not_called()
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_its_filters_leave_open_reads_its_rows_span_once_a_day(self):
+        """The rows' span moves only as rows arrive, so the grain it gives is
+        kept, and the reader's Refresh reads it again."""
+        _, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with patch(SPAN_SECONDS, wraps=span_seconds) as spans, as_user(OWNER), db_connections():
+            for force in (False, False, True):
+                result = get_chart_data(
+                    chart=chart.name, dashboard=dashboard.name, filters=FEBRUARY_ONLY, force=force
+                )
+                self.assertEqual(result["granularity"], {"date": "day"})
+
+        self.assertEqual(spans.call_count, 2)
+
+    # @feature charts.auto-grain
+    def test_an_edit_of_the_source_query_reaches_the_grain_an_auto_axis_kept(self):
+        """A year of rows reads weekly. Narrowed to February in the query
+        itself, the same card reads daily on its next load, not tomorrow."""
+        query, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with as_user(OWNER), db_connections():
+            year = get_chart_data(chart=chart.name, dashboard=dashboard.name)
+        operations = todo_operations(TIMELINE_PREFIX) + todo_operations("february")[1:]
+        frappe.db.set_value(DT.QUERY, query.name, "operations", frappe.as_json(operations))
+        with as_user(OWNER), db_connections():
+            february = get_chart_data(chart=chart.name, dashboard=dashboard.name)
+
+        self.assertEqual(year["granularity"], {"date": "week"})
+        self.assertEqual(february["granularity"], {"date": "day"})
+
+    # @feature charts.auto-grain
+    def test_the_builder_previews_an_auto_axis_at_the_grain_a_reader_gets(self):
+        query, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with as_user(OWNER), db_connections():
+            preview = get_authoring_chart_data(
+                query=query.name,
+                chart_type="Line",
+                config=auto_config(),
+                chart_name=chart.name,
+                dashboard_items=frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "items")),
+                filters=FEBRUARY_ONLY,
+            )
+
+        self.assertEqual(preview["granularity"], {"date": "day"})
+        self.assertEqual(self.buckets(preview), ["2024-02-15", "2024-02-16", "2024-02-17"])
+
+    # @feature charts.auto-grain
+    def test_a_download_of_an_auto_axis_has_the_rows_the_card_plots(self):
+        _, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with as_user(OWNER), db_connections():
+            csv = download_chart_rows(chart=chart.name, dashboard=dashboard.name, filters=FEBRUARY_ONLY)
+
+        # a header and one line a day
+        self.assertEqual(len([line for line in csv.splitlines() if line.strip()]), 4)
+
+    # @feature charts.auto-grain charts.drill-date-segment
+    def test_a_click_on_an_auto_axis_drills_into_the_bucket_it_was_drawn_at(self):
+        """Under the February filter the axis is daily, so a click on the 16th is
+        that one day and not the month the axis defaulted to before."""
+        _, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+
+        with as_user(OWNER), db_connections():
+            result = get_drill_data(
+                chart=chart.name,
+                dashboard=dashboard.name,
+                filters=FEBRUARY_ONLY,
+                drill_stack=[rows_level(filters=[equals("date", "2024-02-16")])],
+            )
+
+        self.assertEqual(self.descriptions(result), [f"{TIMELINE_PREFIX} february two"])
+
+    # @feature charts.auto-grain charts.drill-date-segment
+    def test_a_drill_keeps_the_grain_the_card_was_drawn_at(self):
+        """The span can move after the card is drawn: rows arrive, or a relative
+        filter rolls over to the next day. A bar the card drew for February is
+        still all of February, though the span now resolves to days."""
+        _, chart, dashboard = self.timeline(chart_type="Line", config=auto_config())
+        level = {**rows_level(filters=[equals("date", "2024-02-01")]), "drawn_grain": "month"}
+
+        with as_user(OWNER), db_connections():
+            result = get_drill_data(
+                chart=chart.name, dashboard=dashboard.name, filters=FEBRUARY_ONLY, drill_stack=[level]
+            )
+
+        self.assertEqual(self.descriptions(result), FEBRUARY)
 
     # @feature charts.drill-number-card
     def test_a_number_cards_breakdown_includes_its_readings_and_not_its_targets(self):

@@ -1,4 +1,4 @@
-import { GranularityType } from '../helpers/constants'
+import { DimensionGranularity } from '../helpers/constants'
 import { SPAN_UNITS } from '../helpers/span_grammar'
 
 export type TableArgs = { type: 'table'; data_source: string; table_name: string }
@@ -34,7 +34,7 @@ export type Dimension = {
 	dimension_name: string
 	column_name: string
 	data_type: DimensionDataType
-	granularity?: GranularityType
+	granularity?: DimensionGranularity
 	/**
 	 * Groups by span membership rather than by a grain: one row per span,
 	 * named by the date the span starts on. The engine resolves them, so a

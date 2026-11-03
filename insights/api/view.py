@@ -203,7 +203,7 @@ def get_chart_data(
     **Not Permitted**: it does not run, and the answer names the doctypes it
     needs.
     """
-    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters, force=force)
 
     return chart_answer(doc, adhoc_filters, card_filters, force, page, order_by)
 
@@ -221,7 +221,7 @@ def get_chart_count(
     For readers `can_read_rows` allows. A refusal raises, because the card asks
     for the count only when its data answer allowed it.
     """
-    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters, force=force)
 
     return doc.count_rows(adhoc_filters, card_filters, force=force)
 
@@ -376,7 +376,7 @@ def get_drill_data(
     """
     check_can_drill()
 
-    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters, drill_stack=drill_stack)
 
     answer = drill_data(
         doc,
@@ -410,7 +410,7 @@ def download_drill_rows(
     download row limit. The request includes no more than that one does: the
     chart, the segments, and how to read them.
     """
-    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters, drill_stack=drill_stack)
     if not can_export(doc):
         frappe.throw(_("You are not allowed to download data"), exc=frappe.PermissionError)
 
@@ -445,7 +445,7 @@ def get_drill_rows_values(
     """
     check_can_drill()
 
-    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters, drill_stack=drill_stack)
 
     return drill_rows_values(
         doc,
@@ -471,7 +471,7 @@ def get_drill_rows_range(
     """The range shown by a number filter on a rows level, limited like its values."""
     check_can_drill()
 
-    doc, adhoc_filters = routed_chart(chart, dashboard, filters)
+    doc, adhoc_filters = routed_chart(chart, dashboard, filters, drill_stack=drill_stack)
 
     return drill_rows_range(
         doc,
@@ -493,15 +493,27 @@ def check_can_drill():
         frappe.throw(_("Sign in to see what is behind this chart"), exc=frappe.PermissionError)
 
 
-def routed_chart(chart: str, dashboard: str | None, filters: dict | None):
+def routed_chart(
+    chart: str,
+    dashboard: str | None,
+    filters: dict | None,
+    force: bool = False,
+    drill_stack: list | None = None,
+):
     """The chart a reference names, as the dashboard shows it, and the dashboard
     filter state routed to it.
 
     A Number card that states no Period reads the dashboard's span as its own
-    (`take_dashboard_period`), so every reader below gets that config.
+    (`take_dashboard_period`), and an `auto` date axis takes the grain that
+    fits the span under those filters (`take_auto_grain`), so every reader below
+    gets that config. A drill keeps the grain the card was drawn at, which its
+    levels carry as `drawn_grain`.
     """
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
-    return doc, doc.take_dashboard_period(routed_filters(doc.name, dashboard, filters))
+    adhoc_filters = doc.take_dashboard_period(routed_filters(doc.name, dashboard, filters))
+    drawn = next((level.get("drawn_grain") for level in drill_stack or [] if level.get("drawn_grain")), None)
+    doc.take_auto_grain(adhoc_filters, force=force, drawn=drawn)
+    return doc, adhoc_filters
 
 
 def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> dict | None:

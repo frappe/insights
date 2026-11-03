@@ -156,6 +156,17 @@ describe('the category axis', () => {
 		).toEqual({ type: 'time', timeGrain: 'month' })
 	})
 
+	// @feature charts.auto-grain
+	it('hands the renderer no grain for an Auto axis no answer resolved', () => {
+		expect(
+			propsOf({
+				type: 'Line',
+				dimension: { name: 'order_date', type: 'Date', granularity: 'auto' },
+				measures: ['revenue'],
+			}).xAxis,
+		).toEqual({ type: 'time' })
+	})
+
 	// @feature charts.x-axis
 	it('reads a fiscal year as a timeline, printed with its own label', () => {
 		const xAxis = propsOf({
