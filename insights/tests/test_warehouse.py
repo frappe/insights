@@ -547,7 +547,7 @@ finally:
         closed, failed = Connection(), Connection(fails=True)
         connections.update(failed=failed, closed=closed)
 
-        with patch("insights.request_cleanup.release_data_store_slot") as release_slot:
+        with patch("insights.insights.doctype.insights_data_source_v3.data_warehouse.release_data_store_slot") as release_slot:
             with patch.object(frappe, "log_error") as log_error:
                 after_request()
 

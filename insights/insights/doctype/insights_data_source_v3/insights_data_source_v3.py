@@ -4,6 +4,8 @@
 
 import os
 import re
+from contextlib import contextmanager
+
 import frappe
 from frappe.model.document import Document
 from ibis import BaseBackend
@@ -16,7 +18,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 from insights.insights.doctype.insights_table_v3.table_rename import rename_tables
-from insights.request_cleanup import after_request, db_connections
+from insights.request_cleanup import after_request, db_connections  # noqa: F401
 from insights.telemetry import capture, error_kind
 
 from .connectors.bigquery import get_bigquery_connection

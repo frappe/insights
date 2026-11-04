@@ -3,6 +3,7 @@ import os
 import shutil
 import socket
 import tempfile
+import threading
 import time
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager, suppress
@@ -40,7 +41,6 @@ from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import
 from insights.insights.doctype.insights_data_source_v3.web_tier import web_tier_settings
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
 from insights.resources import ResourcePool, cpu_budget, server_busy
-from insights.request_cleanup import ProcessSlot, process_slots, release_data_store_slot
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
@@ -102,7 +102,35 @@ SLOT_RETRY_AFTER = 2
 WEB_TIMEOUT_SHARE = 0.75
 
 
-_process_slot = process_slots
+class ProcessSlot:
+    """The data store slots one process may hold. DuckDB's memory limit and
+    threads are per process and sized for the slots it may hold; the pool alone
+    would let one gthread worker take every slot, and its queries would share
+    one query's memory.
+
+    A hold ends with its pool lease, so a request whose release never ran does
+    not lock its process out for good."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._holders = {}
+
+    def acquire(self, capacity: int, hold: float) -> object | None:
+        with self._lock:
+            now = time.monotonic()
+            self._holders = {h: until for h, until in self._holders.items() if until > now}
+            if len(self._holders) >= capacity:
+                return None
+            holder = object()
+            self._holders[holder] = now + hold
+            return holder
+
+    def release(self, holder: object):
+        with self._lock:
+            self._holders.pop(holder, None)
+
+
+_process_slot = ProcessSlot()
 
 
 def data_store_slots() -> int:
@@ -158,6 +186,17 @@ def take_data_store_slot():
         raise server_busy(SLOT_RETRY_AFTER)
     started = getattr(frappe.local, "insights_data_store_started", None) or time.monotonic()
     frappe.local.insights_data_store_slot = (pool, lease, started, process_slot)
+
+
+def release_data_store_slot():
+    frappe.local.insights_data_store_started = None
+    if slot := getattr(frappe.local, "insights_data_store_slot", None):
+        frappe.local.insights_data_store_slot = None
+        pool, lease, _started, process_slot = slot
+        try:
+            pool.release(lease)
+        finally:
+            _process_slot.release(process_slot)
 
 
 def yield_data_store_slot():
