@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-10-05 11:28\n"
+"PO-Revision-Date: 2026-11-02 11:49\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Bosnian\n"
 "MIME-Version: 1.0\n"
@@ -82,7 +82,7 @@ msgstr "Račun"
 #. Label of the if_exists (Select) field in DocType 'Insights Table Import'
 #: insights/insights/doctype/insights_table_import/insights_table_import.json
 msgid "Action if table exists"
-msgstr "Akcija ako tabela postoji"
+msgstr "Radnjaako tabela postoji"
 
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source'
 #. Option for the 'Status' (Select) field in DocType 'Insights Data Source v3'
@@ -514,7 +514,7 @@ msgstr "Kolone"
 #. Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Comma seperated URLs to whitelist for embedding charts & dashboards"
-msgstr "URL-ovi odvojeni zarezima za bijelu listu za ugrađivanje grafikona i kontrolnih ploča"
+msgstr "URL-ovi odvojeni zarezima za bijelu listu za ugrađivanje grafikona i kontrolnih tabla"
 
 #: frontend/src2/dashboard/DashboardBuilder.vue:163
 msgid "Compact Layout"
@@ -2069,7 +2069,7 @@ msgstr "Nema izvora podataka."
 
 #: frontend/src2/dashboard/DashboardList.vue:98
 msgid "No folders or dashboards to display."
-msgstr "Nema mapa ni nadzornih ploča za prikaz."
+msgstr "Nema mapa ni nadzornih tabla za prikaz."
 
 #: frontend/src2/workbook/WorkbookList.vue:162
 msgid "No folders or workbooks here."
