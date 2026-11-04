@@ -27,7 +27,6 @@ import {
 	startOfConfiguredWeek,
 } from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
-import session from '../../session'
 import type {
 	ColumnDataType,
 	FilterArgs,
