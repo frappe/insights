@@ -3,6 +3,7 @@ import { wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { __ } from '../../translation'
 import dayjs from '../../helpers/dayjs'
+import { startOfConfiguredWeek } from '../helpers'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
@@ -35,17 +36,8 @@ const getValue = (date: Date) =>
 type Day = ReturnType<typeof dayjs>
 const getRange = (start: Day, end: Day) => `${getValue(start.toDate())} - ${getValue(end.toDate())}`
 
-const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-function startOfWeek() {
-	const weekStartsOn = WEEKDAYS.indexOf(session.site.week_starts_on)
-	// dayjs counts days from Sunday, WEEKDAYS from Monday
-	const today = dayjs()
-	const dayOfWeek = (today.day() + 6) % 7
-	return today.subtract((dayOfWeek - weekStartsOn + 7) % 7, 'day')
-}
-
 const predefinedRanges = computed(() => {
-	const weekStart = startOfWeek()
+	const weekStart = startOfConfiguredWeek()
 	const fyStart = dayjs(session.site.fiscal_year_start)
 	return [
 		{ label: __('Today'), value: 'Day', description: getValue(new Date()) },

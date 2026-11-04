@@ -24,6 +24,7 @@ import {
 	periodStartAfter,
 	shiftDate,
 	getFormattedDate,
+	startOfConfiguredWeek,
 } from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
 import type {
@@ -630,6 +631,13 @@ export function parseDatePhrase(raw: string): ParsedDate | null {
 		const unit = unitOf(match[2])
 		if (!unit) return null
 		const anchor = shiftDate(dayjs().format(DATE_FORMAT), unit, -Number(match[1]))
+		if (unit === 'week') {
+			const start = startOfConfiguredWeek(anchor)
+			return {
+				operator: 'between',
+				value: [start.format(DATE_FORMAT), start.add(6, 'day').format(DATE_FORMAT)],
+			}
+		}
 		return { operator: 'within', value: { span: `current ${unit}`, anchor } }
 	}
 

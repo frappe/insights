@@ -325,6 +325,17 @@ export function fiscalPeriodStart(date: string, months: number, shift = 0): stri
 	return month.date(fiscalDay(month)).format('YYYY-MM-DD')
 }
 
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+export function startOfConfiguredWeek(
+	date?: string | Date | ReturnType<typeof dayjs>,
+): ReturnType<typeof dayjs> {
+	const weekStartsOn = WEEKDAYS.indexOf(session.site.week_starts_on)
+	const current = date ? dayjs(date) : dayjs()
+	const dayOfWeek = (current.day() + 6) % 7
+	return current.subtract((dayOfWeek - Math.max(weekStartsOn, 0) + 7) % 7, 'day').startOf('day')
+}
+
 /**
  * The first day of the period of `unit` `count` periods after the one `start`
  * opens. A fiscal period is counted, never reached by adding months to a start
