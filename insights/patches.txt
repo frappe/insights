@@ -20,8 +20,8 @@ insights.patches.set_visibility_from_is_public
 insights.patches.run_public_charts_as_owner
 insights.patches.repair_sankey_value_aggregation
 insights.patches.retire_chart_query_cache
-# re-run: the first pass left a chart-level direction flag and short option lists
-insights.patches.normalize_number_card_comparisons #2
+# re-run: a comparison with a fixed number or a Measure becomes the reading's target
+insights.patches.normalize_number_card_comparisons #3
 # after the comparisons are normalized: a reading's comparison decides how tall its cell is
 insights.patches.resize_dashboard_cells
 insights.patches.split_number_cells

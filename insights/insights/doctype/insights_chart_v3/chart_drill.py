@@ -1081,8 +1081,8 @@ def _clicked_measures(clicked: str | None, step: dict, chart) -> list[dict]:
     the one the level names. A number card names none and keeps all of its own.
 
     Its own is what it plots and not everything it summarizes: a card includes a
-    measure for every target and every comparison it reads off its own row, and
-    those are the reading's second half rather than readings. Broken down they
+    measure for every target that names one, read off its own row, and those
+    are the reading's second half rather than readings. Broken down they
     are columns nobody clicked, and one average among them makes the whole level
     non-additive.
 
