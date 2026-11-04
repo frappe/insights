@@ -18,6 +18,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     InsightsTablev3,
 )
 from insights.insights.doctype.insights_table_v3.table_rename import rename_tables
+from insights.request_cleanup import after_request, db_connections  # noqa: F401
 from insights.telemetry import capture, error_kind
 
 from .connectors.bigquery import get_bigquery_connection
@@ -591,33 +592,6 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         if self.type == "REST API":
             return remote_db.table(table_name, database=self.schema)
         return remote_db.table(table_name)
-
-
-def after_request():
-    from insights.insights.doctype.insights_data_source_v3.data_warehouse import release_data_store_slot
-
-    closed = {}
-    for name, db in insights.db_connections.items():
-        try:
-            db.disconnect()
-            closed[name] = True
-        except Exception:
-            frappe.log_error(title=f"Failed to disconnect db connection for {name}")
-
-    for name in closed:
-        del insights.db_connections[name]
-
-    # after the store is closed, so the next holder does not meet this one's memory
-    release_data_store_slot()
-
-
-@contextmanager
-def db_connections():
-    """Context manager to ensure database connections are cleaned up."""
-    try:
-        yield
-    finally:
-        after_request()
 
 
 def db_type_to_sqlglot_dialect(db_type: str) -> str | None:

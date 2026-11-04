@@ -454,6 +454,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.slot-pool | No one user, guest address or site holds every data store slot while another user or site reads, though one alone may; a slot a killed worker held comes back when its lease ends, and a changed slot count applies at once. |
 | data-store.single-flight | Requests that ask the same query while it runs, from a reload, a second tab or another reader with the same rows, wait for that one run's answer instead of running it again, and hold no data store slot while they wait; a refresh joins a run in flight; if the run fails, each waiter runs it itself. |
 | data-store.cancel | A chart's query stops when its reader leaves the dashboard, changes its filters or reloads the page: a data store query is interrupted and a live MariaDB query killed, and its slot is freed; a reader stops only their own requests. |
+| data-store.request-cleanup | A request that does not use Insights does not load its data-source and analytics stack for connection cleanup, while Insights connections still close at the end of a request. |
 | data-store.time-limit | A data store query stops at Max Execution Time, and before the web tier's timeout would kill its worker, with the message a live query gives; the connection runs the next query. |
 | data-store.compaction | The store file is compacted without losing data, and small files are left alone. |
 | data-store.spill-cleanup | The weekly cleanup drops the spill folders of processes that stopped without closing the store. |

@@ -491,6 +491,73 @@ class TestDataStoreSlots(InsightsIntegrationTestCase):
     def holders(self):
         return [h for h in data_store_pool().holders() if h.startswith(f"{frappe.local.site}|")]
 
+    # @feature data-store.request-cleanup
+    def test_an_unrelated_request_runs_cleanup_without_loading_the_data_source_stack(self):
+        script = """
+import sys
+import frappe
+
+site, sites_path = sys.argv[1:]
+frappe.init(site, sites_path=sites_path)
+try:
+    hooks = frappe.get_hooks("after_request")
+    cleanup_hook = "insights.request_cleanup.after_request"
+    assert cleanup_hook in hooks, hooks
+    frappe.get_attr(cleanup_hook)()
+    heavy_modules = [
+        name for name in sys.modules
+        if name == "ibis"
+        or name.startswith("insights.insights.doctype.insights_data_source_v3")
+        or name.startswith("insights.insights.doctype.insights_table_v3")
+        or name.startswith("insights.insights.doctype.insights_data_source_v3.connectors")
+    ]
+    assert not heavy_modules, heavy_modules
+finally:
+    frappe.destroy()
+"""
+        env = os.environ.copy()
+        env["PYTHONPATH"] = os.pathsep.join(sys.path)
+        result = subprocess.run(
+            [sys.executable, "-c", script, frappe.local.site, frappe.local.sites_path],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    # @feature data-store.request-cleanup
+    def test_request_cleanup_removes_closed_connections_and_keeps_failed_ones(self):
+        class Connection:
+            def __init__(self, fails=False):
+                self.fails = fails
+                self.disconnected = False
+
+            def disconnect(self):
+                if self.fails:
+                    raise RuntimeError("disconnect failed")
+                self.disconnected = True
+
+        connections = insights.db_connections
+        previous_connections = connections.copy()
+        connections.clear()
+        self.addCleanup(connections.update, previous_connections)
+        self.addCleanup(connections.clear)
+
+        closed, failed = Connection(), Connection(fails=True)
+        connections.update(failed=failed, closed=closed)
+
+        with patch(
+            "insights.insights.doctype.insights_data_source_v3.data_warehouse.release_data_store_slot"
+        ) as release_slot:
+            with patch.object(frappe, "log_error") as log_error:
+                after_request()
+
+        self.assertTrue(closed.disconnected)
+        self.assertEqual(connections, {"failed": failed})
+        log_error.assert_called_once_with(title="Failed to disconnect db connection for failed")
+        release_slot.assert_called_once_with()
+
     # @feature data-store.query-slots
     def test_a_request_holds_its_slot_from_opening_the_store_until_it_ends(self):
         with self.request():
