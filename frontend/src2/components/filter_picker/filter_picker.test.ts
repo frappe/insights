@@ -79,7 +79,10 @@ describe('what a host sends', () => {
 })
 
 describe('typed date phrases', () => {
+	const originalWeekStartsOn = session.site.week_starts_on
+
 	afterEach(() => {
+		session.site.week_starts_on = originalWeekStartsOn
 		vi.useRealTimers()
 	})
 
@@ -87,11 +90,17 @@ describe('typed date phrases', () => {
 	it('keeps an anchored week as a concrete date range', () => {
 		vi.useFakeTimers()
 		vi.setSystemTime(new Date('2026-11-03T12:00:00Z'))
-		session.site.week_starts_on = 'Monday'
 
+		session.site.week_starts_on = 'Monday'
 		expect(parseDatePhrase('2 weeks ago')).toEqual({
 			operator: 'between',
 			value: ['2026-10-19', '2026-10-25'],
+		})
+
+		session.site.week_starts_on = 'Sunday'
+		expect(parseDatePhrase('2 weeks ago')).toEqual({
+			operator: 'between',
+			value: ['2026-10-18', '2026-10-24'],
 		})
 	})
 })

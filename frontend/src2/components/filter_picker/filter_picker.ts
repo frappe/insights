@@ -24,6 +24,7 @@ import {
 	periodStartAfter,
 	shiftDate,
 	getFormattedDate,
+	startOfConfiguredWeek,
 } from '../../query/helpers'
 import { __, translatedTable } from '../../translation'
 import session from '../../session'
@@ -288,22 +289,6 @@ export function numberPreview(op: OperatorDef, value: number | [number, number])
 }
 
 const DATE_FORMAT = 'YYYY-MM-DD'
-
-function startOfConfiguredWeek(date: string): ReturnType<typeof dayjs> {
-	const weekStartsOn = [
-		'Monday',
-		'Tuesday',
-		'Wednesday',
-		'Thursday',
-		'Friday',
-		'Saturday',
-		'Sunday',
-	].indexOf(session.site.week_starts_on)
-	const dayOfWeek = (dayjs(date).day() + 6) % 7
-	return dayjs(date)
-		.subtract((dayOfWeek - Math.max(weekStartsOn, 0) + 7) % 7, 'day')
-		.startOf('day')
-}
 
 export { SPAN_GRAINS, SPAN_UNITS, type SpanUnit } from '../../helpers/span_grammar'
 /** The unit a typed word names, as the picker's own vocabulary calls it. */
