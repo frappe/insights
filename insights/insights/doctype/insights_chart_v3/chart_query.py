@@ -1324,7 +1324,7 @@ def named_number(against) -> dict:
     if not isinstance(against, dict):
         return {}
     value = against.get("value")
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
+    if isinstance(value, int | float) and not isinstance(value, bool):
         return {"value": value}
     measure = against.get("measure")
     if isinstance(measure, dict) and measure.get("measure_name"):
