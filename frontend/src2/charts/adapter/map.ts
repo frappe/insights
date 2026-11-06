@@ -22,6 +22,17 @@ export type MapRegion = {
 	value: number | null
 }
 
+/** One row drawn as a circle, where its coordinates say. */
+export type MapPoint = {
+	/** The row's location, which names the point in the tooltip and resolves a click. */
+	name: string
+	value: number | null
+	/** Longitude then latitude, in degrees: the order echarts plots a coordinate in. */
+	coord: [number, number]
+	/** The circle's diameter in pixels: its area follows the value. */
+	size: number
+}
+
 /**
  * One class of the natural-breaks scale. Open at `min` and closed at `max`,
  * except the lowest, which holds its own `min` — that is the smallest value
@@ -35,8 +46,10 @@ export type MapChartProps = {
 	map: NonNullable<MapChartConfig['map_type']>
 	/** Names the measure in the tooltip. */
 	measure: string
-	/** Descending by value, the way the classification reads them. */
+	/** Descending by value, the way the classification reads them. Empty when the style is points. */
 	regions: MapRegion[]
+	/** Largest first, so a small circle is drawn over a large one. Empty when the style is regions. */
+	points: MapPoint[]
 	/** Ascending. Empty when nothing can be classified. */
 	buckets: MapBucket[]
 	/** Prints every number the map shows: the tooltip, and the scale's ends. */
@@ -44,9 +57,12 @@ export type MapChartProps = {
 }
 
 const DEFAULT_MAP = 'world'
+/** The diameters a circle is drawn between, in pixels: the smallest still takes a click. */
+export const POINT_SIZES = { min: 6, max: 36 }
 
 export function adaptMapChart(input: ChartAdapterInput): ChartFiller | undefined {
 	const config = input.config as MapChartConfig
+	if (config.map_style === 'points') return adaptMapPoints(input, config)
 
 	// The columns the plot reads, not the ones the config names. A
 	// Dimension renames its output column, so the config's spelling and the
@@ -67,6 +83,7 @@ export function adaptMapChart(input: ChartAdapterInput): ChartFiller | undefined
 		map,
 		measure: measure.name,
 		regions,
+		points: [],
 		buckets: naturalBreaks(regions.map((region) => region.value)),
 		format: numberFormatter(config, config.value_column, input.result.rows),
 	}
@@ -81,6 +98,97 @@ export function adaptMapChart(input: ChartAdapterInput): ChartFiller | undefined
 			},
 		},
 	}
+}
+
+/**
+ * One circle per row, at the latitude and longitude its row holds, sized by its
+ * value. A point is a row, not a region: two rows at one place are two circles,
+ * and nothing is matched against the geography's names, so a point needs no
+ * region mapping. A row whose coordinates are missing or off the globe is left
+ * out — it has nowhere to be drawn — and so is a row with no location to name it.
+ *
+ * The columns are found by the names the config gives its Measures, because a
+ * points map reads three of them and the result's column types cannot tell the
+ * value from the coordinates.
+ */
+function adaptMapPoints(input: ChartAdapterInput, config: MapChartConfig): ChartFiller | undefined {
+	const columns = input.result.columns
+	const named = (name?: string) => (name ? columns.find((c) => c.name === name) : undefined)
+	const measure = named(config.value_column?.measure_name)
+	const latitude = named(config.latitude_column?.measure_name)
+	const longitude = named(config.longitude_column?.measure_name)
+	const location = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+	if (!measure || !latitude || !longitude || !location) return
+
+	const placed: {
+		name: string
+		value: number | null
+		coord: [number, number]
+		row: QueryResultRow
+	}[] = []
+	for (const row of input.result.rows) {
+		const raw = row[location.name]
+		const lat = toNumber(row[latitude.name])
+		const lon = toNumber(row[longitude.name])
+		if (raw === null || raw === undefined || raw === '') continue
+		if (lat === null || lon === null || Math.abs(lat) > 90 || Math.abs(lon) > 180) continue
+		placed.push({
+			name: String(raw),
+			value: toNumber(row[measure.name]),
+			coord: [lon, lat],
+			row,
+		})
+	}
+	const sizes = pointSizes(placed.map((p) => p.value))
+	const points: MapPoint[] = placed
+		.map(({ name, value, coord }, i) => ({ name, value, coord, size: sizes[i] }))
+		.sort((a, b) => b.size - a.size)
+
+	const byName = new Map<string, QueryResultRow[]>()
+	for (const { name, row } of placed) byName.set(name, [...(byName.get(name) || []), row])
+
+	const props: MapChartProps = {
+		title: input.title,
+		subtitle: input.description,
+		map: config.map_type || DEFAULT_MAP,
+		measure: measure.name,
+		regions: [],
+		points,
+		buckets: [],
+		format: numberFormatter(config, config.value_column, input.result.rows),
+	}
+
+	return {
+		component: MapChart,
+		props,
+		drillDown: {
+			regionClick: (name: string) => {
+				const rows = byName.get(name)
+				if (!rows) return undefined
+				const row =
+					rows.length === 1
+						? rows[0]
+						: { ...rows[0], [location.name]: rows.map((r) => r[location.name]) }
+				return { column: measure.name, row }
+			},
+		},
+	}
+}
+
+/**
+ * Each circle's diameter, scaled so its area follows its value — a circle twice
+ * the value covers twice the ground, which a reader compares by eye. Scaled to
+ * the largest magnitude, so a loss draws a circle as large as a profit of the
+ * same size. A row with no number, or a zero, takes the smallest circle: it is
+ * still a place the query returned.
+ */
+export function pointSizes(values: (number | null)[]): number[] {
+	const largest = Math.max(0, ...values.map((v) => (v === null || isNaN(v) ? 0 : Math.abs(v))))
+	return values.map((v) => {
+		if (!largest || v === null || isNaN(v)) return POINT_SIZES.min
+		const share = Math.sqrt(Math.abs(v) / largest)
+		return POINT_SIZES.min + share * (POINT_SIZES.max - POINT_SIZES.min)
+	})
 }
 
 /** A region the geography can plot, its total, and every row behind it. */

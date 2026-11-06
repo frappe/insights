@@ -234,6 +234,21 @@ class TestChartDerivation(unittest.TestCase):
                 config = {**case["config"], slot: {}}
                 self.assertTrue(config_errors("Heatmap", case["query"], config))
 
+    # @feature charts.map-points
+    def test_a_points_map_needs_both_coordinates_and_a_regions_map_none(self):
+        case = next(c for c in chart_derivation_fixtures() if c["config"].get("map_style") == "points")
+
+        for slot, error in (
+            ("latitude_column", _("Latitude column is required")),
+            ("longitude_column", _("Longitude column is required")),
+        ):
+            with self.subTest(slot=slot):
+                config = {**case["config"], slot: {}}
+                self.assertIn(error, config_errors("Map", case["query"], config))
+
+        regions = {**case["config"], "map_style": "regions", "latitude_column": {}, "longitude_column": {}}
+        self.assertEqual(config_errors("Map", case["query"], regions), [])
+
     # @feature charts.missing-slot-message
     def test_a_new_axis_chart_is_only_told_its_x_axis_is_missing(self):
         """Two empty slots name the same nothing, which is not a clash."""

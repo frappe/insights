@@ -102,6 +102,8 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 	if (chart_type === 'Map') {
 		config.location_column = config.location_column || {}
 		config.value_column = config.value_column || {}
+		config.latitude_column = config.latitude_column || {}
+		config.longitude_column = config.longitude_column || {}
 	}
 
 	if (chart_type === 'Bubble') {
@@ -192,7 +194,14 @@ export function configDimensions(config: any): any[] {
 }
 
 /** The single-Measure slots a config can have, over every chart type. */
-const MEASURE_SLOTS = ['value_column', 'size_column', 'xAxis', 'yAxis']
+const MEASURE_SLOTS = [
+	'value_column',
+	'size_column',
+	'xAxis',
+	'yAxis',
+	'latitude_column',
+	'longitude_column',
+]
 
 /** The Measure-list slots a config can have, over every chart type. */
 const MEASURE_LIST_SLOTS = ['number_columns', 'measures', 'values']

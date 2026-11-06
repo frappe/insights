@@ -757,6 +757,50 @@ export function mapChart(spec: MapChartSpec): ChartAdapterInput {
 	}
 }
 
+export type MapPointsSpec = {
+	/** One row per place, as the query returns it: its name, its value and where it is. */
+	points: { place: any; value: any; lat: any; lon: any }[]
+	measure?: string
+	mapType?: 'world' | 'india'
+}
+
+/** A Map drawn as points: a circle per row, at its latitude and longitude. */
+export function mapPointsChart(spec: MapPointsSpec): ChartAdapterInput {
+	const location_column = toDimension('place')
+	const value_column = toMeasure(spec.measure ?? 'visits')
+	const latitude_column = toMeasure('latitude')
+	const longitude_column = toMeasure('longitude')
+	const map_type = spec.mapType ?? 'world'
+
+	const config = {
+		location_column,
+		value_column,
+		latitude_column,
+		longitude_column,
+		map_type,
+		map_style: 'points',
+	} as unknown as ChartConfig
+
+	return {
+		chart_type: 'Map',
+		config,
+		result: resultWith(
+			[
+				columnOfDimension(location_column),
+				columnOfMeasure(value_column),
+				columnOfMeasure(latitude_column),
+				columnOfMeasure(longitude_column),
+			],
+			spec.points.map((point) => ({
+				[location_column.dimension_name]: point.place,
+				[value_column.measure_name]: point.value,
+				[latitude_column.measure_name]: point.lat,
+				[longitude_column.measure_name]: point.lon,
+			})),
+		),
+	}
+}
+
 type TableMeasureSpec = string | { name: string; format?: DataFormat }
 
 export type TableChartSpec = {
