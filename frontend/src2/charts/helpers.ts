@@ -902,6 +902,134 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 	}
 }
 
+const MAP_PROJECTION = {
+	project: (point: [number, number]) => [
+		(point[0] / 180) * Math.PI,
+		-Math.log(Math.tan((Math.PI / 2 + (point[1] / 180) * Math.PI) / 2)),
+	],
+	unproject: (point: [number, number]) => [
+		(point[0] * 180) / Math.PI,
+		((2 * 180) / Math.PI) * Math.atan(Math.exp(point[1])) - 90,
+	],
+}
+const POINT_SIZES = { min: 6, max: 36 }
+// The World map's extent in projected units: longitude -180 to 180, latitude -60 to 84
+const WORLD_EXTENT = { width: 2 * Math.PI, height: 4.27 }
+
+// The view that frames the points: centered on their extent and zoomed to it, so
+// a chart of one country opens on that country. Undefined when they spread over
+// most of the map, which the default view already shows. The center is in
+// projected units, as echarts reads a geo's center once it has a projection.
+function fitPointsView(coords: [number, number][]) {
+	if (!coords.length) return undefined
+	const xy = coords.map((c) => MAP_PROJECTION.project(c))
+	const xs = xy.map((p) => p[0])
+	const ys = xy.map((p) => p[1])
+	const [minX, maxX] = [Math.min(...xs), Math.max(...xs)]
+	const [minY, maxY] = [Math.min(...ys), Math.max(...ys)]
+	// a lone point, or points in one town, still show the country around them
+	const width = Math.max(maxX - minX, 0.15)
+	const height = Math.max(maxY - minY, 0.15)
+	const zoom = Math.min(
+		20,
+		0.7 * Math.min(WORLD_EXTENT.width / width, WORLD_EXTENT.height / height),
+	)
+	if (zoom <= 1.5) return undefined
+	return { center: [(minX + maxX) / 2, (minY + maxY) / 2], zoom }
+}
+
+// A circle per row at its latitude and longitude, its area following its value
+// (as frappe/insights#1574 does on develop). A row with no place or no valid
+// coordinates is left out.
+function getMapPointsOptions(config: MapChartConfig, result: QueryResult) {
+	const named = (name?: string) => result.columns.find((c) => c.name === name)
+	const measure = named(config.value_column?.measure_name)
+	const latitude = named(config.latitude_column?.measure_name)
+	const longitude = named(config.longitude_column?.measure_name)
+	const location = result.columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+	if (!measure || !latitude || !longitude || !location) return null
+
+	const num = (v: any) =>
+		v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v)
+	const points = []
+	for (const row of result.rows) {
+		const name = row[location.name]
+		const lat = num(row[latitude.name])
+		const lon = num(row[longitude.name])
+		if (name === null || name === undefined || name === '') continue
+		if (lat === null || lon === null || Math.abs(lat) > 90 || Math.abs(lon) > 180) continue
+		points.push({ name: String(name), value: num(row[measure.name]), coord: [lon, lat] })
+	}
+	const largest = Math.max(0, ...points.map((p) => Math.abs(p.value ?? 0)))
+	const sized = points
+		.map((p) => ({
+			...p,
+			size:
+				!largest || p.value === null
+					? POINT_SIZES.min
+					: POINT_SIZES.min +
+					  Math.sqrt(Math.abs(p.value) / largest) * (POINT_SIZES.max - POINT_SIZES.min),
+		}))
+		.sort((a, b) => b.size - a.size)
+
+	return {
+		height: '100%',
+		animation: true,
+		animationDuration: 300,
+		tooltip: {
+			trigger: 'item',
+			formatter: (params: any) => {
+				const value = params.value?.[2]
+				return `<div class="flex items-center justify-between gap-5">
+					<div>${params.name}</div>
+					<div class="font-bold">${
+						value === null || value === undefined ? '' : getShortNumber(value, 2)
+					}</div>
+				</div>`
+			},
+		},
+		geo: {
+			map: config.map_type || 'world',
+			projection: MAP_PROJECTION,
+			// the wheel or a pinch zooms, a drag moves the map
+			roam: true,
+			scaleLimit: { min: 1, max: 40 },
+			...fitPointsView(sized.map((p) => p.coord as [number, number])),
+			// the regions are a backdrop: no highlight, no selection, no tooltip
+			// (not silent, which would also stop the zoom)
+			emphasis: { disabled: true },
+			selectedMode: false,
+			tooltip: { show: false },
+			itemStyle: {
+				areaColor: 'rgb(243, 243, 243)',
+				borderWidth: 0.5,
+				borderColor: 'rgb(124, 124, 124)',
+			},
+		},
+		series: [
+			{
+				type: 'scatter',
+				name: measure.name,
+				coordinateSystem: 'geo',
+				data: sized.map((p) => ({
+					name: p.name,
+					value: [...p.coord, p.value],
+					symbolSize: p.size,
+				})),
+				itemStyle: {
+					color: '#4aabff',
+					opacity: 0.75,
+					borderColor: '#ffffff',
+					borderWidth: 1,
+				},
+				emphasis: { scale: false },
+				// the geo backdrop's tooltip is off, and a series on it would follow it
+				tooltip: { show: true },
+			},
+		],
+	}
+}
+
 function getMapChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
@@ -1048,6 +1176,7 @@ function mapPieces(values: number[]) {
 export function getMapChartOptions(config: MapChartConfig, result: QueryResult) {
 	const columns = result.columns
 	const rows = result.rows
+	if (config.map_style === 'points') return getMapPointsOptions(config, result)
 
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	const locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
