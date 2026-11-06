@@ -902,6 +902,100 @@ export function getFunnelChartOptions(config: FunnelChartConfig, result: QueryRe
 	}
 }
 
+const MAP_PROJECTION = {
+	project: (point: [number, number]) => [
+		(point[0] / 180) * Math.PI,
+		-Math.log(Math.tan((Math.PI / 2 + (point[1] / 180) * Math.PI) / 2)),
+	],
+	unproject: (point: [number, number]) => [
+		(point[0] * 180) / Math.PI,
+		((2 * 180) / Math.PI) * Math.atan(Math.exp(point[1])) - 90,
+	],
+}
+const POINT_SIZES = { min: 6, max: 36 }
+
+// A circle per row at its latitude and longitude, its area following its value
+// (as frappe/insights#1574 does on develop). A row with no place or no valid
+// coordinates is left out.
+function getMapPointsOptions(config: MapChartConfig, result: QueryResult) {
+	const named = (name?: string) => result.columns.find((c) => c.name === name)
+	const measure = named(config.value_column?.measure_name)
+	const latitude = named(config.latitude_column?.measure_name)
+	const longitude = named(config.longitude_column?.measure_name)
+	const location = result.columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
+	if (!measure || !latitude || !longitude || !location) return null
+
+	const num = (v: any) =>
+		v === null || v === undefined || v === '' || isNaN(Number(v)) ? null : Number(v)
+	const points = []
+	for (const row of result.rows) {
+		const name = row[location.name]
+		const lat = num(row[latitude.name])
+		const lon = num(row[longitude.name])
+		if (name === null || name === undefined || name === '') continue
+		if (lat === null || lon === null || Math.abs(lat) > 90 || Math.abs(lon) > 180) continue
+		points.push({ name: String(name), value: num(row[measure.name]), coord: [lon, lat] })
+	}
+	const largest = Math.max(0, ...points.map((p) => Math.abs(p.value ?? 0)))
+	const sized = points
+		.map((p) => ({
+			...p,
+			size:
+				!largest || p.value === null
+					? POINT_SIZES.min
+					: POINT_SIZES.min +
+					  Math.sqrt(Math.abs(p.value) / largest) * (POINT_SIZES.max - POINT_SIZES.min),
+		}))
+		.sort((a, b) => b.size - a.size)
+
+	return {
+		height: '100%',
+		animation: true,
+		animationDuration: 300,
+		tooltip: {
+			trigger: 'item',
+			formatter: (params: any) => {
+				const value = params.value?.[2]
+				return `<div class="flex items-center justify-between gap-5">
+					<div>${params.name}</div>
+					<div class="font-bold">${
+						value === null || value === undefined ? '' : getShortNumber(value, 2)
+					}</div>
+				</div>`
+			},
+		},
+		geo: {
+			map: config.map_type || 'world',
+			projection: MAP_PROJECTION,
+			silent: true,
+			itemStyle: {
+				areaColor: 'rgb(243, 243, 243)',
+				borderWidth: 0.5,
+				borderColor: 'rgb(124, 124, 124)',
+			},
+		},
+		series: [
+			{
+				type: 'scatter',
+				name: measure.name,
+				coordinateSystem: 'geo',
+				data: sized.map((p) => ({
+					name: p.name,
+					value: [...p.coord, p.value],
+					symbolSize: p.size,
+				})),
+				itemStyle: {
+					color: '#4aabff',
+					opacity: 0.75,
+					borderColor: '#ffffff',
+					borderWidth: 1,
+				},
+				emphasis: { scale: false },
+			},
+		],
+	}
+}
+
 function getMapChartData(
 	columns: QueryResultColumn[],
 	rows: QueryResultRow[],
@@ -1048,6 +1142,7 @@ function mapPieces(values: number[]) {
 export function getMapChartOptions(config: MapChartConfig, result: QueryResult) {
 	const columns = result.columns
 	const rows = result.rows
+	if (config.map_style === 'points') return getMapPointsOptions(config, result)
 
 	const measureColumn = columns.find((c) => FIELDTYPES.MEASURE.includes(c.type))
 	const locationColumn = columns.find((c) => FIELDTYPES.DIMENSION.includes(c.type))
