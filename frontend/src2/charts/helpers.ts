@@ -913,6 +913,30 @@ const MAP_PROJECTION = {
 	],
 }
 const POINT_SIZES = { min: 6, max: 36 }
+// The World map's extent in projected units: longitude -180 to 180, latitude -60 to 84
+const WORLD_EXTENT = { width: 2 * Math.PI, height: 4.27 }
+
+// The view that frames the points: centered on their extent and zoomed to it, so
+// a chart of one country opens on that country. Undefined when they spread over
+// most of the map, which the default view already shows. The center is in
+// projected units, as echarts reads a geo's center once it has a projection.
+function fitPointsView(coords: [number, number][]) {
+	if (!coords.length) return undefined
+	const xy = coords.map((c) => MAP_PROJECTION.project(c))
+	const xs = xy.map((p) => p[0])
+	const ys = xy.map((p) => p[1])
+	const [minX, maxX] = [Math.min(...xs), Math.max(...xs)]
+	const [minY, maxY] = [Math.min(...ys), Math.max(...ys)]
+	// a lone point, or points in one town, still show the country around them
+	const width = Math.max(maxX - minX, 0.15)
+	const height = Math.max(maxY - minY, 0.15)
+	const zoom = Math.min(
+		20,
+		0.7 * Math.min(WORLD_EXTENT.width / width, WORLD_EXTENT.height / height),
+	)
+	if (zoom <= 1.5) return undefined
+	return { center: [(minX + maxX) / 2, (minY + maxY) / 2], zoom }
+}
 
 // A circle per row at its latitude and longitude, its area following its value
 // (as frappe/insights#1574 does on develop). A row with no place or no valid
@@ -967,7 +991,15 @@ function getMapPointsOptions(config: MapChartConfig, result: QueryResult) {
 		geo: {
 			map: config.map_type || 'world',
 			projection: MAP_PROJECTION,
-			silent: true,
+			// the wheel or a pinch zooms, a drag moves the map
+			roam: true,
+			scaleLimit: { min: 1, max: 40 },
+			...fitPointsView(sized.map((p) => p.coord as [number, number])),
+			// the regions are a backdrop: no highlight, no selection, no tooltip
+			// (not silent, which would also stop the zoom)
+			emphasis: { disabled: true },
+			selectedMode: false,
+			tooltip: { show: false },
 			itemStyle: {
 				areaColor: 'rgb(243, 243, 243)',
 				borderWidth: 0.5,
@@ -991,6 +1023,8 @@ function getMapPointsOptions(config: MapChartConfig, result: QueryResult) {
 					borderWidth: 1,
 				},
 				emphasis: { scale: false },
+				// the geo backdrop's tooltip is off, and a series on it would follow it
+				tooltip: { show: true },
 			},
 		],
 	}
