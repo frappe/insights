@@ -256,6 +256,11 @@ def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]
             errors.append(_("Location column is required"))
         if not (config.get("value_column") or {}).get("measure_name"):
             errors.append(_("Value column is required"))
+        if config.get("map_style") == "points":
+            if not (config.get("latitude_column") or {}).get("measure_name"):
+                errors.append(_("Latitude column is required"))
+            if not (config.get("longitude_column") or {}).get("measure_name"):
+                errors.append(_("Longitude column is required"))
 
     if chart_type == "Bubble":
         if not (config.get("xAxis") or {}).get("measure_name"):
@@ -985,9 +990,14 @@ def _add_table_operation(operations: list[dict], config: dict):
 
 
 def _add_map_operation(operations: list[dict], config: dict):
+    # a point is drawn where its row says, so its coordinates are summarized with
+    # its value, one row per location
+    measures = [config.get("value_column") or {}]
+    if config.get("map_style") == "points":
+        measures += [config.get("latitude_column") or {}, config.get("longitude_column") or {}]
     operations.append(
         _summarize(
-            measures=[config.get("value_column") or {}],
+            measures=measures,
             dimensions=[config.get("location_column") or {}],
         )
     )
@@ -1407,7 +1417,7 @@ DIMENSION_SLOTS = (
     "quadrant_column",
     "location_column",
 )
-MEASURE_SLOTS = ("value_column", "size_column", "xAxis", "yAxis")
+MEASURE_SLOTS = ("value_column", "size_column", "xAxis", "yAxis", "latitude_column", "longitude_column")
 MEASURE_LIST_SLOTS = ("number_columns", "measures", "values")
 
 # What a picker left in a slot beside the Dimension or the Measure it wrote
@@ -1731,6 +1741,8 @@ SLOT_SHAPES = {
     "xAxis": {},
     "yAxis": {},
     "size_column": {},
+    "latitude_column": {},
+    "longitude_column": {},
     "dimension": {},
     "quadrant_column": {},
     "filters": {"filters": [{}]},
@@ -1780,6 +1792,8 @@ SLOT_WORDS = {
     "xAxis": "X-axis",
     "yAxis": "Y-axis",
     "size_column": "Size",
+    "latitude_column": "Latitude column",
+    "longitude_column": "Longitude column",
     "dimension": "Dimension",
     "quadrant_column": "Quadrant",
     "filters": "Filters",

@@ -2,7 +2,8 @@ import { use } from 'echarts/core'
 import { registerChartModules } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
 import { adaptChart } from './index'
-import { mapChart, type MapChartSpec } from './fixtures'
+import { mapChart, mapPointsChart, type MapChartSpec, type MapPointsSpec } from './fixtures'
+import { POINT_SIZES, project } from './map'
 
 // Everything here asserts on the props the plot is handed, and on the point a
 // click resolves to. How the plot renders them is the component's concern.
@@ -238,5 +239,143 @@ describe('the natural-breaks scale', () => {
 	// @feature charts.map-color-scale
 	it('classifies nothing when the query returned no region at all', () => {
 		expect(bucketsFor([])).toEqual([])
+	})
+})
+
+describe('points', () => {
+	const pointsOf = (spec: MapPointsSpec) => {
+		const filler = adaptChart(mapPointsChart(spec))
+		if (!filler) throw new Error('the adapter rendered nothing for this Chart')
+		return filler
+	}
+
+	// @feature charts.map-points
+	it('draws a circle per row at its longitude and latitude, and shades no region', () => {
+		const props = pointsOf({
+			points: [
+				{ place: 'Central Prison', value: 12, lat: 33.3, lon: 44.4 },
+				{ place: 'North Camp', value: 3, lat: 36.2, lon: 43.1 },
+			],
+		}).props
+		expect(props.regions).toEqual([])
+		expect(props.buckets).toEqual([])
+		expect(props.points.map((p: any) => [p.name, p.value, p.coord])).toEqual([
+			['Central Prison', 12, [44.4, 33.3]],
+			['North Camp', 3, [43.1, 36.2]],
+		])
+	})
+
+	// @feature charts.map-points
+	it('leaves out a row with no coordinates, coordinates off the globe, or no place', () => {
+		const props = pointsOf({
+			points: [
+				{ place: 'Placed', value: 1, lat: '10.5', lon: '20.25' },
+				{ place: 'No latitude', value: 1, lat: null, lon: 20 },
+				{ place: 'Past the pole', value: 1, lat: 91, lon: 20 },
+				{ place: 'Past the date line', value: 1, lat: 10, lon: -181 },
+				{ place: 'Not a number', value: 1, lat: 'north', lon: 20 },
+				{ place: '', value: 1, lat: 10, lon: 20 },
+			],
+		}).props
+		expect(props.points.map((p: any) => [p.name, p.coord])).toEqual([['Placed', [20.25, 10.5]]])
+	})
+
+	// @feature charts.map-points
+	it('sizes a circle so its area follows its value, the largest magnitude at full size', () => {
+		const props = pointsOf({
+			points: [
+				{ place: 'Full', value: 100, lat: 0, lon: 0 },
+				{ place: 'Quarter', value: 25, lat: 1, lon: 1 },
+				{ place: 'Loss', value: -100, lat: 2, lon: 2 },
+				{ place: 'Nothing', value: null, lat: 3, lon: 3 },
+			],
+		}).props
+		const size = Object.fromEntries(props.points.map((p: any) => [p.name, p.size]))
+		const span = POINT_SIZES.max - POINT_SIZES.min
+		expect(size).toEqual({
+			Full: POINT_SIZES.max,
+			// a quarter of the value is a quarter of the area: half the diameter's span
+			Quarter: POINT_SIZES.min + span / 2,
+			Loss: POINT_SIZES.max,
+			Nothing: POINT_SIZES.min,
+		})
+	})
+
+	// @feature charts.map-points
+	it('draws the largest circle first, so a smaller one stays on top of it', () => {
+		const props = pointsOf({
+			points: [
+				{ place: 'Small', value: 1, lat: 0, lon: 0 },
+				{ place: 'Large', value: 50, lat: 0, lon: 0 },
+			],
+		}).props
+		expect(props.points.map((p: any) => p.name)).toEqual(['Large', 'Small'])
+	})
+
+	// @feature charts.map-points
+	it('resolves a click on a point to its row, and on a name two rows share to both', () => {
+		const filler = pointsOf({
+			points: [
+				{ place: 'Central Prison', value: 12, lat: 33.3, lon: 44.4 },
+				{ place: 'Twin', value: 2, lat: 1, lon: 1 },
+				{ place: 'Twin', value: 3, lat: 2, lon: 2 },
+			],
+		})
+		const click = filler.drillDown!.regionClick!
+		expect(click('Central Prison')).toEqual({
+			column: 'visits',
+			row: { place: 'Central Prison', visits: 12, latitude: 33.3, longitude: 44.4 },
+		})
+		expect(click('Twin')!.row.place).toEqual(['Twin', 'Twin'])
+		expect(click('Nowhere')).toBeUndefined()
+	})
+
+	// @feature charts.map-points-view
+	it('opens on the area its points cover, centered between them', () => {
+		const props = pointsOf({
+			points: [
+				{ place: 'West', value: 1, lat: 50, lon: 14 },
+				{ place: 'East', value: 1, lat: 54, lon: 24 },
+			],
+		}).props
+		const [x, y] = props.view.center
+		expect(x).toBeCloseTo(project([19, 0])[0])
+		// north is up, so the projected north lies below the south
+		expect(y).toBeLessThan(project([0, 50])[1])
+		expect(y).toBeGreaterThan(project([0, 54])[1])
+		expect(props.view.zoom).toBeGreaterThan(1.5)
+	})
+
+	// @feature charts.map-points-view
+	it('keeps the whole map when the points spread over the world', () => {
+		const props = pointsOf({
+			points: [
+				{ place: 'Bogota', value: 1, lat: 4.7, lon: -74.1 },
+				{ place: 'Kabul', value: 1, lat: 34.5, lon: 69.2 },
+				{ place: 'Sydney', value: 1, lat: -33.9, lon: 151.2 },
+				{ place: 'Ottawa', value: 1, lat: 45.4, lon: -75.7 },
+			],
+		}).props
+		expect(props.view).toBeUndefined()
+	})
+
+	// @feature charts.map-points-view
+	it('frames a lone point as it frames points in one town, with the country around them', () => {
+		const lone = pointsOf({ points: [{ place: 'A', value: 1, lat: 33.3, lon: 44.4 }] }).props
+		const town = pointsOf({
+			points: [
+				{ place: 'A', value: 1, lat: 33.3, lon: 44.4 },
+				{ place: 'B', value: 1, lat: 33.31, lon: 44.41 },
+			],
+		}).props
+		expect(Number.isFinite(lone.view.zoom)).toBe(true)
+		expect(town.view.zoom).toBe(lone.view.zoom)
+	})
+
+	// @feature charts.map-points
+	it('renders nothing when the result has no latitude or longitude column', () => {
+		const input = mapPointsChart({ points: [{ place: 'A', value: 1, lat: 0, lon: 0 }] })
+		input.result.columns = input.result.columns.filter((c) => c.name !== 'latitude')
+		expect(adaptChart(input)).toBeUndefined()
 	})
 })

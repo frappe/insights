@@ -197,6 +197,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.map-type | A user picks the world or India map. |
 | charts.map-region-mapping | A user maps a region name the data uses to the name the map knows, and clicks resolve back to the rows. |
 | charts.map-color-scale | A map colors regions in classes cut where the data parts. |
+| charts.map-points | A user shows a query as circles on a map, each at its row's latitude and longitude and sized by its value. |
+| charts.map-points-view | A points map opens on the area its points cover, and a user zooms and moves it. |
 | charts.bubble-size-name-color | A user sizes bubbles by a measure, names them by a column and colors them by a dimension. |
 | charts.bubble-data-labels | A user prints each bubble's name beside it. |
 | charts.bubble-quadrants | A user cuts the bubble plot into quadrants at a value on each scale. |
