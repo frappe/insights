@@ -12,7 +12,7 @@ import {
 import type { ChartTooltipItem } from 'frappe-ui/charts'
 import { computed, reactive, ref, watch } from 'vue'
 import { __ } from '../../translation'
-import type { MapChartProps } from '../adapter/map'
+import { project, type MapChartProps } from '../adapter/map'
 
 // The map Insights renders itself: a choropleth, or circles at coordinates.
 // Everything around the plot is v2's, so a Map card on a dashboard reads as one
@@ -89,10 +89,7 @@ function colorOf(value: number | null) {
 // unless it is told how to project them. A point is projected the same way, so
 // it lands on the shape it is in.
 const projection = {
-	project: (point: [number, number]) => [
-		(point[0] / 180) * Math.PI,
-		-Math.log(Math.tan((Math.PI / 2 + (point[1] / 180) * Math.PI) / 2)),
-	],
+	project,
 	unproject: (point: [number, number]) => [
 		(point[0] * 180) / Math.PI,
 		((2 * 180) / Math.PI) * Math.atan(Math.exp(point[1])) - 90,
@@ -146,7 +143,15 @@ function pointsOption() {
 		geo: {
 			map: props.map,
 			projection,
-			silent: true,
+			// the wheel or a pinch zooms, a drag moves the map; it opens on the
+			// area its points cover (adapter/map.ts)
+			roam: true,
+			scaleLimit: { min: 1, max: 40 },
+			...props.view,
+			// a backdrop: no highlight and no selection, and not silent, which would
+			// also stop the zoom
+			emphasis: { disabled: true },
+			selectedMode: false,
 			itemStyle: {
 				areaColor: tokens.value.gridline,
 				borderColor: tokens.value.backdrop,

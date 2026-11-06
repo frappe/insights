@@ -3,7 +3,7 @@ import { registerChartModules } from 'frappe-ui/charts'
 import { describe, expect, it } from 'vitest'
 import { adaptChart } from './index'
 import { mapChart, mapPointsChart, type MapChartSpec, type MapPointsSpec } from './fixtures'
-import { POINT_SIZES } from './map'
+import { POINT_SIZES, project } from './map'
 
 // Everything here asserts on the props the plot is handed, and on the point a
 // click resolves to. How the plot renders them is the component's concern.
@@ -328,6 +328,48 @@ describe('points', () => {
 		})
 		expect(click('Twin')!.row.place).toEqual(['Twin', 'Twin'])
 		expect(click('Nowhere')).toBeUndefined()
+	})
+
+	// @feature charts.map-points-view
+	it('opens on the area its points cover, centered between them', () => {
+		const props = pointsOf({
+			points: [
+				{ place: 'West', value: 1, lat: 50, lon: 14 },
+				{ place: 'East', value: 1, lat: 54, lon: 24 },
+			],
+		}).props
+		const [x, y] = props.view.center
+		expect(x).toBeCloseTo(project([19, 0])[0])
+		// north is up, so the projected north lies below the south
+		expect(y).toBeLessThan(project([0, 50])[1])
+		expect(y).toBeGreaterThan(project([0, 54])[1])
+		expect(props.view.zoom).toBeGreaterThan(1.5)
+	})
+
+	// @feature charts.map-points-view
+	it('keeps the whole map when the points spread over the world', () => {
+		const props = pointsOf({
+			points: [
+				{ place: 'Bogota', value: 1, lat: 4.7, lon: -74.1 },
+				{ place: 'Kabul', value: 1, lat: 34.5, lon: 69.2 },
+				{ place: 'Sydney', value: 1, lat: -33.9, lon: 151.2 },
+				{ place: 'Ottawa', value: 1, lat: 45.4, lon: -75.7 },
+			],
+		}).props
+		expect(props.view).toBeUndefined()
+	})
+
+	// @feature charts.map-points-view
+	it('frames a lone point as it frames points in one town, with the country around them', () => {
+		const lone = pointsOf({ points: [{ place: 'A', value: 1, lat: 33.3, lon: 44.4 }] }).props
+		const town = pointsOf({
+			points: [
+				{ place: 'A', value: 1, lat: 33.3, lon: 44.4 },
+				{ place: 'B', value: 1, lat: 33.31, lon: 44.41 },
+			],
+		}).props
+		expect(Number.isFinite(lone.view.zoom)).toBe(true)
+		expect(town.view.zoom).toBe(lone.view.zoom)
 	})
 
 	// @feature charts.map-points

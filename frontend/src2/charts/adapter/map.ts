@@ -50,6 +50,8 @@ export type MapChartProps = {
 	regions: MapRegion[]
 	/** Largest first, so a small circle is drawn over a large one. Empty when the style is regions. */
 	points: MapPoint[]
+	/** Where a points map opens: on the area its points cover. Unset for the whole map. */
+	view?: MapView
 	/** Ascending. Empty when nothing can be classified. */
 	buckets: MapBucket[]
 	/** Prints every number the map shows: the tooltip, and the scale's ends. */
@@ -57,6 +59,9 @@ export type MapChartProps = {
 }
 
 const DEFAULT_MAP = 'world'
+/** The view a map opens on: its center in projected units, and its zoom over the whole map. */
+export type MapView = { center: [number, number]; zoom: number }
+
 /** The diameters a circle is drawn between, in pixels: the smallest still takes a click. */
 export const POINT_SIZES = { min: 6, max: 36 }
 
@@ -154,6 +159,7 @@ function adaptMapPoints(input: ChartAdapterInput, config: MapChartConfig): Chart
 		measure: measure.name,
 		regions: [],
 		points,
+		view: fitView(points.map((p) => p.coord)),
 		buckets: [],
 		format: numberFormatter(config, config.value_column, input.result.rows),
 	}
@@ -173,6 +179,45 @@ function adaptMapPoints(input: ChartAdapterInput, config: MapChartConfig): Chart
 			},
 		},
 	}
+}
+
+/**
+ * Web Mercator, from degrees to the units the map is drawn in. The plot projects
+ * the geography with it, so a view centered here lands where the points are.
+ */
+export function project([lon, lat]: [number, number]): [number, number] {
+	return [(lon / 180) * Math.PI, -Math.log(Math.tan((Math.PI / 2 + (lat / 180) * Math.PI) / 2))]
+}
+
+/** The world geography's extent once projected: longitude -180 to 180, latitude -60 to 84. */
+const WORLD = { width: 2 * Math.PI, height: 4.27 }
+/** The smallest extent a view frames, so a lone point still shows the country around it. */
+const MIN_SPAN = 0.15
+/** The zoom past which a view frames the points rather than the whole map. */
+const FRAMES_AT = 1.5
+
+/**
+ * The view that frames the points: centered on their extent and zoomed so it
+ * fills most of the plot. A chart of one country opens on that country. Points
+ * spread over most of the world are left the whole map, which frames them
+ * already, and so are no points at all.
+ */
+export function fitView(coords: [number, number][]): MapView | undefined {
+	if (!coords.length) return undefined
+	const xy = coords.map(project)
+	const xs = xy.map(([x]) => x)
+	const ys = xy.map(([, y]) => y)
+	const [minX, maxX, minY, maxY] = [
+		Math.min(...xs),
+		Math.max(...xs),
+		Math.min(...ys),
+		Math.max(...ys),
+	]
+	const width = Math.max(maxX - minX, MIN_SPAN)
+	const height = Math.max(maxY - minY, MIN_SPAN)
+	const zoom = Math.min(20, 0.7 * Math.min(WORLD.width / width, WORLD.height / height))
+	if (zoom <= FRAMES_AT) return undefined
+	return { center: [(minX + maxX) / 2, (minY + maxY) / 2], zoom }
 }
 
 /**
