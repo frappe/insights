@@ -1193,6 +1193,15 @@ class TestImportRowLimit(InsightsIntegrationTestCase):
         self.assertEqual(capped.settings.row_limit, 2)
         self.assertEqual(self.rows_kept_by(capped), 2)
 
+    # @feature settings.data-store-enable
+    def test_a_fresh_sites_settings_show_the_limits_an_import_uses(self):
+        frappe.db.set_single_value("Insights Settings", {"max_records_to_sync": 0, "max_memory_usage": 0})
+        fresh = frappe.new_doc("Insights Settings")
+
+        uncapped = self.importer_for(self.UNCAPPED)
+        self.assertEqual(fresh.max_records_to_sync, uncapped.settings.row_limit)
+        self.assertEqual(fresh.max_memory_usage, uncapped.settings.memory_limit)
+
 
 class TestSiteDBImport(InsightsIntegrationTestCase):
     """An import from MariaDB reads each batch a chunk at a time."""

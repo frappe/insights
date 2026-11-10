@@ -116,6 +116,7 @@
    "label": "Allowed Origins"
   },
   {
+   "default": "1000000",
    "fieldname": "max_records_to_sync",
    "fieldtype": "Int",
    "label": "Max Records To Sync",
@@ -134,6 +135,7 @@
    "label": "Legacy"
   },
   {
+   "default": "512",
    "fieldname": "max_memory_usage",
    "fieldtype": "Int",
    "label": "Max Memory Usage",
@@ -163,7 +165,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-31 12:00:00.000000",
+ "modified": "2026-11-10 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Settings",
