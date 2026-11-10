@@ -1525,6 +1525,24 @@ class TestIncrementalImport(InsightsIntegrationTestCase):
         self.assertEqual(self.stored_names(), ["a", "b", "c", "d", "e"])
 
     # @feature data-store.import-cursor
+    def test_each_batch_query_sorts_a_window_of_the_source_not_all_of_it(self):
+        read_batch, sorted_rows = WarehouseTableImporter.read_batch, []
+
+        def counting_read_batch(importer, writer, query, chunk_size):
+            sorted_rows.append(query.op().parent.to_expr().count().execute())
+            return read_batch(importer, writer, query, chunk_size)
+
+        names = ["a", "b", "c", "d", "e", "f", "g", "h"]
+        with (
+            patch.object(WarehouseTableImporter, "calculate_batch_size", return_value=2),
+            patch.object(WarehouseTableImporter, "read_batch", counting_read_batch),
+        ):
+            self.run_import(names, [f"2026-02-0{day} 10:00:00" for day in range(1, 9)])
+
+        self.assertEqual(self.stored_names(), names)
+        self.assertLessEqual(max(sorted_rows), 3)
+
+    # @feature data-store.import-cursor
     def test_a_row_committed_later_at_the_stored_cursor_is_copied_once(self):
         self.run_import(["a", "b"], ["2026-02-01", "2026-02-02"])
         self.run_import(["a", "b", "c"], ["2026-02-01", "2026-02-02", "2026-02-02"])
