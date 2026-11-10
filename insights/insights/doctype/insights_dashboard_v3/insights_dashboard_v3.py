@@ -886,6 +886,10 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     every surface, public included. It lands under the chart's own name, which is
     what the chart's derived query is called, so the rule falls after the chart's
     summarize — on the columns the card shows, measures included.
+
+    A dimension grouped by a date grain is the exception: its rule lands on the
+    card's query, on the column the dimension reads, so a period finer than the
+    grain still finds its rows instead of missing the bucket.
     """
     rules = []
     for card_filter in frappe.parse_json(card_filters) or []:
@@ -906,9 +910,29 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
         return adhoc_filters
 
     check_card_filter(chart)
+    query, chart_type, config = frappe.db.get_value(
+        "Insights Chart v3", chart, ["query", "chart_type", "config"]
+    ) or (None, None, None)
+    grained = {}
+    for operation in derive_operations(chart_type, query, frappe.parse_json(config or "{}")):
+        if operation["type"] == "summarize":
+            dimensions = operation["dimensions"]
+        elif operation["type"] == "pivot_wider":
+            dimensions = [*operation["rows"], *operation["columns"]]
+        else:
+            continue
+        for dimension in dimensions:
+            if dimension and dimension.get("granularity"):
+                grained[result_column(dimension)] = dimension.get("column_name")
+
     routed = dict(adhoc_filters or {})
-    group = routed.setdefault(chart, {"type": "filter_group", "logical_operator": "And", "filters": []})
-    group["filters"] = [*group["filters"], *rules]
+    for rule in rules:
+        target = chart
+        if query and (source_column := grained.get(rule["column"]["column_name"])):
+            target = query
+            rule["column"]["column_name"] = source_column
+        group = routed.get(target) or {"type": "filter_group", "logical_operator": "And", "filters": []}
+        routed[target] = {**group, "filters": [*group["filters"], rule]}
     return routed
 
 

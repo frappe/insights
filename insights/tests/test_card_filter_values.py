@@ -11,7 +11,7 @@ column, so they list no values rather than refusing a reader mid-action.
 
 import frappe
 
-from insights.api.view import get_card_range, get_card_values
+from insights.api.view import get_card_range, get_card_values, get_chart_data
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, as_user, create_user, delete_users, delete_workbooks
@@ -94,7 +94,7 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
 
         create_user(AUTHOR, first_name="Card", last_name="Author", roles="Insights User")
         for description, status in TODOS.items():
-            frappe.get_doc(
+            todo = frappe.get_doc(
                 {
                     "doctype": "ToDo",
                     "description": description,
@@ -103,6 +103,7 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
                     "assigned_by": "Administrator",
                 }
             ).insert(ignore_permissions=True)
+            frappe.db.set_value("ToDo", todo.name, "creation", "2025-08-15 10:00:00", update_modified=False)
 
         with as_user(AUTHOR):
             workbook = frappe.get_doc({"doctype": DT.WORKBOOK, "title": WORKBOOK_TITLE}).insert()
@@ -243,3 +244,25 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
     def test_a_column_the_card_does_not_show_is_refused(self):
         with self.assertRaises(frappe.DoesNotExistError):
             self.values(self.bar, "status")
+
+    # @feature dashboard.card-filter
+    def test_a_period_filter_on_a_date_grain_card_reads_the_rows_not_the_buckets(self):
+        quarter = {**dimension("creation", "Datetime"), "granularity": "quarter"}
+        with as_user(AUTHOR):
+            chart = self.make_chart(
+                "Table",
+                {
+                    "filters": open_only(),
+                    "order_by": [],
+                    "rows": [quarter],
+                    "columns": [],
+                    "values": [count()],
+                },
+            )
+        august = {"span": "month to date", "anchor": "2025-08-20"}
+        card_filter = {"column": "creation", "operator": "within", "value": august}
+
+        with as_user(AUTHOR), db_connections():
+            result = get_chart_data(chart, card_filters=[card_filter])
+
+        self.assertEqual([row["Todos"] for row in result["rows"]], [len(OPEN_TODOS)])
