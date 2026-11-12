@@ -429,9 +429,10 @@ def bounded_grain(
     adhoc_filters: dict | None,
     column: dict,
     grains: dict,
-) -> str | None:
+) -> tuple[str | None, bool]:
     """The grain an `auto` axis on `column` reads at, from the stretch its
-    filters bound (`bounded_span`), or nothing when they bound none.
+    filters bound (`bounded_span`), or nothing when they bound none, and
+    whether it was cut at `TIMED_AXIS_POINTS`.
 
     A stretch some rule wrote in minutes or hours (`timed_rule`) reads at
     `TIMED_AXIS_POINTS` while a minute or an hour fits it; any other at
@@ -439,14 +440,14 @@ def bounded_grain(
     """
     span = bounded_span(query, query_operations, config, adhoc_filters, column)
     if not span:
-        return None
+        return None, False
     seconds = (span[1] - span[0]).total_seconds()
     rules = _bounding_rules(query, query_operations, config, adhoc_filters, column)
     if any(timed_rule(rule.get("operator"), rule.get("value")) for rule in rules):
         grain = timed_grain(grains, seconds, TIMED_GRAINS, TIMED_AXIS_POINTS)
         if grain:
-            return grain
-    return derived_grain(grains, seconds, AUTO_AXIS_POINTS)
+            return grain, True
+    return derived_grain(grains, seconds, AUTO_AXIS_POINTS), False
 
 
 def timed_rule(operator: str, value) -> bool:

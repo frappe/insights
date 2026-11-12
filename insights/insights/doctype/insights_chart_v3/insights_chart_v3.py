@@ -14,7 +14,6 @@ from insights.insights.doctype.insights_chart_v3.chart_grain import GRAINS, deri
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     AUTO_AXIS_POINTS,
     TIMED_AXIS_POINTS,
-    TIMED_GRAINS,
     adjacent_bucket,
     auto_axis,
     bounded_grain,
@@ -349,23 +348,24 @@ class InsightsChartv3(Document):
         else:
             column = {"name": dimension["column_name"], "type": dimension["data_type"]}
             dimension["granularity"] = self.auto_grain(config, column, grains, adhoc_filters, force)
-        self.flags.timed_axis = dimension["granularity"] in TIMED_GRAINS
 
         self.config = frappe.as_json(config)
 
     def rows_to_read(self, limit: int) -> int:
         """The rows one fetch reads: the chart's `limit`, or every point of an
-        `auto` axis that `take_auto_grain` cut by the minute or the hour, which
-        reaches `TIMED_AXIS_POINTS` where the 100 a chart defaults to would cut
-        off the end of the window."""
+        `auto` axis cut at `TIMED_AXIS_POINTS` (`bounded_grain`), where the 100
+        a chart defaults to would cut off the end of the window. Only a window
+        written in minutes or hours gets there, so a Limit set on any other
+        chart holds."""
         if self.flags.timed_axis:
             return max(limit, TIMED_AXIS_POINTS)
         return limit
 
     def auto_grain(self, config: dict, column: dict, grains: dict, adhoc_filters, force: bool) -> str:
         query_operations = frappe.parse_json(frappe.db.get_value(QUERY, self.query, "operations") or "[]")
-        grain = bounded_grain(self.query, query_operations, config, adhoc_filters, column, grains)
+        grain, timed = bounded_grain(self.query, query_operations, config, adhoc_filters, column, grains)
         if grain:
+            self.flags.timed_axis = timed
             return grain
 
         # the rows' span moves only as rows arrive, and a grain a day old still

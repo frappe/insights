@@ -62,7 +62,7 @@ def datetime_grain(dashboard=()):
     the dashboard's filters."""
     adhoc = {"q": {"type": "filter_group", "logical_operator": "And", "filters": list(dashboard)}}
     column = {"name": "posting_date", "type": "Datetime"}
-    return bounded_grain("q", [], {}, adhoc, column, GRAINS["Datetime"])
+    return bounded_grain("q", [], {}, adhoc, column, GRAINS["Datetime"])[0]
 
 
 def timed_chart():
@@ -451,14 +451,19 @@ class TestChartDerivation(unittest.TestCase):
     def test_an_axis_read_by_the_minute_reads_every_point_past_the_charts_limit(self):
         """14:00 to 16:30 by the minute is 151 points, and the 100 rows a chart
         reads by default cut off its last 50 minutes."""
-        window = {"14:00 to 16:30": ["2026-10-04 14:00", "2026-10-04 16:30"], "ten days": None}
-        for name, value in window.items():
+        cases = {
+            "14:00 to 16:30": (["2026-10-04 14:00", "2026-10-04 16:30"], 181),
+            # an hour grain from a day span keeps the author's Limit
+            "one day": (["2026-10-04", "2026-10-04"], 10),
+            "ten days": (["2026-09-25", "2026-10-04"], 10),
+        }
+        for name, (value, rows) in cases.items():
             with self.subTest(name):
                 chart = timed_chart()
-                adhoc = {"q": on_date("between", value or ["2026-09-25", "2026-10-04"], "sampled_at")}
+                adhoc = {"q": on_date("between", value, "sampled_at")}
                 with patch.object(type(chart), "setup_errors", return_value=[]):
                     chart.take_auto_grain(adhoc)
-                self.assertEqual(chart.rows_to_read(100), 181 if value else 100)
+                self.assertEqual(chart.rows_to_read(10), rows)
 
     # @feature charts.auto-grain
     def test_an_auto_axis_over_days_keeps_its_grain_on_a_datetime_column(self):
