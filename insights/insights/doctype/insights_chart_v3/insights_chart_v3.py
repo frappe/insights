@@ -13,6 +13,8 @@ from insights.insights.doctype.insights_chart_v3.chart_drill import check_rows
 from insights.insights.doctype.insights_chart_v3.chart_grain import GRAINS, derived_grain, span_seconds
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     AUTO_AXIS_POINTS,
+    TIMED_AXIS_POINTS,
+    TIMED_GRAINS,
     adjacent_bucket,
     auto_axis,
     bounded_grain,
@@ -257,7 +259,7 @@ class InsightsChartv3(Document):
         if not can_read_rows(self):
             page = 1
             order_by = None
-        page_size = frappe.parse_json(self.config or "{}").get("limit") or 100
+        page_size = self.rows_to_read(frappe.parse_json(self.config or "{}").get("limit") or 100)
         # every span in this fetch resolves against this day. A drill sends it
         # back, so the drill cuts rows for the same day
         read_on = str(getdate(reading_day()))
@@ -347,8 +349,18 @@ class InsightsChartv3(Document):
         else:
             column = {"name": dimension["column_name"], "type": dimension["data_type"]}
             dimension["granularity"] = self.auto_grain(config, column, grains, adhoc_filters, force)
+        self.flags.timed_axis = dimension["granularity"] in TIMED_GRAINS
 
         self.config = frappe.as_json(config)
+
+    def rows_to_read(self, limit: int) -> int:
+        """The rows one fetch reads: the chart's `limit`, or every point of an
+        `auto` axis that `take_auto_grain` cut by the minute or the hour, which
+        reaches `TIMED_AXIS_POINTS` where the 100 a chart defaults to would cut
+        off the end of the window."""
+        if self.flags.timed_axis:
+            return max(limit, TIMED_AXIS_POINTS)
+        return limit
 
     def auto_grain(self, config: dict, column: dict, grains: dict, adhoc_filters, force: bool) -> str:
         query_operations = frappe.parse_json(frappe.db.get_value(QUERY, self.query, "operations") or "[]")

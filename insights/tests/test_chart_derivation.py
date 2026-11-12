@@ -19,6 +19,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import patch
 
+import frappe
 from frappe import _
 
 from insights.insights.doctype.insights_chart_v3.chart_grain import DAY, GRAINS, derived_grain
@@ -62,6 +63,15 @@ def datetime_grain(dashboard=()):
     adhoc = {"q": {"type": "filter_group", "logical_operator": "And", "filters": list(dashboard)}}
     column = {"name": "posting_date", "type": "Datetime"}
     return bounded_grain("q", [], {}, adhoc, column, GRAINS["Datetime"])
+
+
+def timed_chart():
+    """An unsaved Line chart on query `q` with an `auto` Datetime axis."""
+    axis = {"column_name": "sampled_at", "data_type": "Datetime", "granularity": "auto"}
+    config = {"x_axis": {"dimension": axis}, "y_axis": {"series": []}}
+    return frappe.get_doc(
+        {"doctype": "Insights Chart v3", "chart_type": "Line", "query": "q", "config": frappe.as_json(config)}
+    )
 
 
 CHART_TYPES = {
@@ -436,6 +446,19 @@ class TestChartDerivation(unittest.TestCase):
                 patch("insights.insights.query_builders.sql_functions.now_datetime", return_value=now),
             ):
                 self.assertEqual(datetime_grain(dashboard=[on_date(operator, value)]), grain)
+
+    # @feature dashboard.filter-datetime
+    def test_an_axis_read_by_the_minute_reads_every_point_past_the_charts_limit(self):
+        """14:00 to 16:30 by the minute is 151 points, and the 100 rows a chart
+        reads by default cut off its last 50 minutes."""
+        window = {"14:00 to 16:30": ["2026-10-04 14:00", "2026-10-04 16:30"], "ten days": None}
+        for name, value in window.items():
+            with self.subTest(name):
+                chart = timed_chart()
+                adhoc = {"q": on_date("between", value or ["2026-09-25", "2026-10-04"], "sampled_at")}
+                with patch.object(type(chart), "setup_errors", return_value=[]):
+                    chart.take_auto_grain(adhoc)
+                self.assertEqual(chart.rows_to_read(100), 181 if value else 100)
 
     # @feature charts.auto-grain
     def test_an_auto_axis_over_days_keeps_its_grain_on_a_datetime_column(self):
