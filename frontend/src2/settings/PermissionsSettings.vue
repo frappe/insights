@@ -6,7 +6,7 @@ import { ListView } from 'frappe-ui/experimental'
 import { Plus } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import NumberInput from '../components/NumberInput.vue'
-import { copy } from '../helpers'
+import { copy, formatNumber } from '../helpers'
 import session from '../session'
 import CreateTeamDialog from '../teams/CreateTeamDialog.vue'
 import ManageTeamDialog from '../teams/ManageTeamDialog.vue'
@@ -99,7 +99,10 @@ const editTeam = ref<Team | null>(null)
 
 		<SettingItem
 			label="Export Row Limit"
-			description="Maximum number of rows in a CSV or Excel download. Set to 0 for no limit. Default is 1,00,000"
+			:description="`Maximum number of rows in a CSV or Excel download. Set to 0 for no limit. Default is ${formatNumber(
+				100_000,
+				0,
+			)}`"
 		>
 			<NumberInput v-model="settings.doc.max_export_rows" class="w-28" />
 		</SettingItem>

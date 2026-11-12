@@ -631,7 +631,7 @@ def card_source(chart: str, dashboard: str | None, column: str):
     show is Not Found.
     """
     doc = frappe.get_doc(CHART, resolve_chart(chart, dashboard))
-    query, column_name, card_filters = card_filter_source(doc.name, column)
+    query, column_name, _, card_filters = card_filter_source(doc.name, column)
     if not query:
         not_found()
     if not column_name:
