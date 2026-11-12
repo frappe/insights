@@ -670,7 +670,14 @@ function formatDateTime(from: string, to?: string): string {
  * minute at the start and its last at the end, so a range of days typed alone
  * keeps them whole.
  */
-export type TimedRange = { from: string; fromTime: string; to: string; toTime: string }
+export type TimedRange = {
+	from: string
+	fromTime: string
+	to: string
+	toTime: string
+	/** a time the reader wrote that names no time of day, such as 25:00 */
+	badTime?: string
+}
 
 const TIMED =
 	/^(\S+)(?:\s+(\d{1,2}:\d{2})(?::\d{2})?)?(?:\s+to(?:\s+(\S+)(?:\s+(\d{1,2}:\d{2})(?::\d{2})?)?)?)?$/
@@ -685,12 +692,30 @@ export function timedRangeOf(text: string): TimedRange {
 	const match = text.trim().match(TIMED)
 	const from = match && isDay(match[1]) ? match[1] : ''
 	const to = from && match![3] && isDay(match![3]) ? match![3] : ''
+	const badTime = [match?.[2], match?.[4]].find((time) => time && !clock(time))
 	return {
 		from,
 		fromTime: clock(match?.[2]) || '00:00',
 		to,
 		toTime: clock(match?.[4]) || '23:59',
+		...(badTime ? { badTime } : {}),
 	}
+}
+
+/**
+ * Why typed text keeps no rule, where the reader has written something whole.
+ * A range still waiting for its end is not a problem yet.
+ */
+export function timedRangeProblem(text: string, mode: 'range' | 'day'): string | undefined {
+	if (!text.trim() || /\sto\s*$/.test(text)) return undefined
+	const range = timedRangeOf(text)
+	if (range.badTime) return __('{0} is not a time of day', range.badTime)
+	if (!range.from || (mode === 'range' && !range.to))
+		return mode === 'range'
+			? __('Write a range as {0}', '2026-11-12 14:00 to 2026-11-12 16:30')
+			: __('Write a time as {0}', '2026-11-12 14:00')
+	if (mode === 'range' && !timedRangeValue(range)) return __('The range ends before it starts')
+	return undefined
 }
 
 /** What the input reads for a range; a day mode writes the start alone. */
@@ -707,7 +732,7 @@ export function timedRangeText(range: TimedRange, mode: 'range' | 'day'): string
  * is none.
  */
 export function timedRangeValue(range: TimedRange): [string, string] | undefined {
-	if (!range.from || !range.to) return undefined
+	if (!range.from || !range.to || range.badTime) return undefined
 	const start = `${range.from} ${range.fromTime}:00`
 	const end = `${range.to} ${range.toTime}:59`
 	return start <= end ? [start, end] : undefined

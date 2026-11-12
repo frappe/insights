@@ -16,6 +16,7 @@ import {
 	selectedRowKey,
 	spanFromText,
 	timedRangeOf,
+	timedRangeProblem,
 	timedRangeValue,
 	summaryParts,
 	spanLabel,
@@ -84,11 +85,18 @@ describe('a Datetime filter', () => {
 			'2026-11-12 00:00:00',
 			'2026-11-13 23:59:59',
 		])
-		// a range that ends before it starts is none
-		expect(
-			timedRangeValue(timedRangeOf('2026-11-12 16:00 to 2026-11-12 09:00')),
-		).toBeUndefined()
-		expect(timedRangeOf('2026-11-12 25:00 to 2026-11-12 09:00').fromTime).toBe('00:00')
+		// a range that ends before it starts, or names no time of day, is none, and says why
+		const inverted = '2026-11-12 16:00 to 2026-11-12 09:00'
+		expect(timedRangeValue(timedRangeOf(inverted))).toBeUndefined()
+		expect(timedRangeProblem(inverted, 'range')).toBe('The range ends before it starts')
+		const late = '2026-11-11 25:00 to 2026-11-11 26:00'
+		expect(timedRangeValue(timedRangeOf(late))).toBeUndefined()
+		expect(timedRangeProblem(late, 'range')).toBe('25:00 is not a time of day')
+		expect(timedRangeProblem('2026-11-11 2pm to 2026-11-11 4pm', 'range')).toMatch(
+			/^Write a range/,
+		)
+		// a range still waiting for its end is not wrong yet
+		expect(timedRangeProblem('2026-11-11 14:00 to ', 'range')).toBeUndefined()
 
 		const filter = {
 			column: at,

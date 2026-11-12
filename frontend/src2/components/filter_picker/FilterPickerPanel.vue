@@ -47,6 +47,7 @@ import {
 	summaryParts,
 	textRule,
 	timedRangeOf,
+	timedRangeProblem,
 	timedRangeValue,
 	unitRows,
 	type Filter,
@@ -416,7 +417,7 @@ const typed = computed<(Draft & { label: string }) | undefined>(() => {
 			if (!value) return undefined
 			return { operator: 'between', value, label: `${__('between')} ${formatDate(...value)}` }
 		}
-		if (!range.from) return undefined
+		if (!range.from || range.badTime) return undefined
 		const at = `${range.from} ${range.fromTime}:00`
 		return {
 			operator: op.value.operator,
@@ -507,8 +508,7 @@ const rows = computed<ListItem[]>(() => {
 				key: `span:${row.span}`,
 				label: row.label,
 			}))
-		// a minute or an hour has no current period to take in
-		if (form.direction === 'current' || ['minute', 'hour'].includes(relative.unit)) return units
+		if (form.direction === 'current') return units
 		return [
 			...units,
 			{
@@ -597,7 +597,9 @@ const emptyText = computed(() => {
 	if (multi.value) return fetching.value ? '' : __('No values found')
 	if (kind.value === 'text') return ''
 	if (kind.value === 'number') return ''
-	if (kind.value === 'date' && calendar.value) return ''
+	// a range typed whole that keeps no rule says why, where a list would be
+	if (kind.value === 'date' && calendar.value)
+		return (props.withTime && timedRangeProblem(search.value, calendar.value)) || ''
 	if (kind.value === 'date') return __('Nothing matches')
 	return ''
 })

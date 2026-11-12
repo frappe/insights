@@ -126,17 +126,21 @@ const dateRangeVal = computed({
 
 // A Datetime default is a range of two instants, or one of the presets a reader
 // sees first. The date controls above would drop the time of day.
+// The end minute is kept whole, as the reader's picker keeps it, so a range to
+// 16:30 holds a row stamped 16:30:30 whichever of the two wrote it.
 function setDefaultEnd(index: 0 | 1, value: string) {
 	const range = Array.isArray(filter.default_value) ? [...filter.default_value] : ['', '']
-	range[index] = value
+	range[index] = index && value ? `${value.slice(0, 16)}:59` : value
 	filter.default_value = range as string[]
 }
 
-// a range with one end would reach every linked chart as a comparison against nothing
-const halfRange = computed(() => {
-	if (filter.filter_type !== 'Datetime' || filter.default_operator !== 'between') return false
+// A range with one end, or one that ends before it starts, would reach every
+// linked chart as a filter no row passes.
+const rangeProblem = computed(() => {
+	if (filter.filter_type !== 'Datetime' || filter.default_operator !== 'between') return
 	const [from, to] = Array.isArray(filter.default_value) ? filter.default_value : []
-	return !from !== !to
+	if (!from !== !to) return __('Set both ends of the range')
+	if (from && to && from > to) return __('The range ends before it starts')
 })
 
 const datetimePresetOptions = computed(() =>
@@ -169,7 +173,7 @@ const editDisabled = computed(() => {
 	return (
 		!filter.filter_name ||
 		!filter.filter_type ||
-		halfRange.value ||
+		Boolean(rangeProblem.value) ||
 		JSON.stringify(filter) === JSON.stringify(props.item)
 	)
 })
@@ -325,6 +329,12 @@ function saveEdit() {
 															setDefaultEnd(1, $event)
 														"
 													/>
+													<p
+														v-if="rangeProblem"
+														class="text-xs text-ink-gray-5"
+													>
+														{{ rangeProblem }}
+													</p>
 												</div>
 												<FormControl
 													v-else-if="

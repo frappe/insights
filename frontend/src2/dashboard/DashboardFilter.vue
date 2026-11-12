@@ -120,6 +120,7 @@ function clear() {
 				<Button
 					variant="outline"
 					class="flex w-full !justify-start overflow-hidden text-sm [&>span]:truncate"
+					:title="applied ? `${filter.filter_name} ${summary(applied)}` : undefined"
 					:class="applied ? 'pe-7' : ''"
 				>
 					<template #prefix>
