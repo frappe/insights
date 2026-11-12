@@ -490,6 +490,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | settings.demo-banner-dismiss | A user dismisses the demo data banner and it stays hidden. |
 | settings.security-update-notice | An admin sees a sidebar notice while a newer Insights release fixes security issues. |
 | settings.invite-users | An admin invites users by email; the link includes a key stored only hashed, and accepting signs in only a new account. |
+| settings.desk-access | A user with an Insights role, invited or upgraded, is a desk user, so OAuth clients such as frappectl and the site's MCP accept them, and a migrate keeps it. |
 | settings.users-list | An admin searches the user list by name or email. |
 | settings.permissions-toggle | An admin turns team-based permissions on. |
 | settings.allow-download | An admin allows or blocks downloads site-wide. |

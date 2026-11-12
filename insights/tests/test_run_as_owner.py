@@ -555,13 +555,26 @@ class TestRunAsOwner(InsightsIntegrationTestCase):
         self.assertEqual(narrowed, user_permissions.narrowing("User", ADMIN))
 
     # @feature permissions.card-says-it-is-scoped
+    def test_a_role_that_only_selects_the_doctype_names_the_grant(self):
+        """Frappe applies User Permissions to a role with `select` alone, as it
+        does to one with `read`. Desk User only selects User."""
+        on_user = self.grant(READER, "Gender", "Male")
+        role_permissions = frappe.permissions.get_role_permissions("User", user=READER)
+        self.assertEqual((role_permissions.get("read"), role_permissions.get("select")), (0, 1))
+
+        self.assertEqual(user_permissions.narrowing("User", READER), {"Gender": [on_user]})
+
+    # @feature permissions.card-says-it-is-scoped
     def test_no_grant_is_named_where_frappe_cut_the_rows_by_sharing(self):
         """Without a role that reads the doctype, Frappe filters rows by shares and
         applies no User Permission. If the card named the grant, it would blame
-        the reader's restriction for rows that sharing removed."""
-        self.grant(READER, "Gender", "Male")
+        the reader's restriction for rows that sharing removed. Only System
+        Manager and Administrator read User Type, and it links Role."""
+        self.grant(READER, "Role", "System Manager")
+        role_permissions = frappe.permissions.get_role_permissions("User Type", user=READER)
+        self.assertFalse(role_permissions.get("read") or role_permissions.get("select"))
 
-        self.assertEqual(user_permissions.narrowing("User", READER), {})
+        self.assertEqual(user_permissions.narrowing("User Type", READER), {})
 
     def grant(self, user, doctype, document):
         permission = frappe.get_doc(
