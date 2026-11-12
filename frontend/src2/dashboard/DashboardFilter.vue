@@ -34,6 +34,7 @@ const filter = computed(() => ({
 function columnTypeOf(filter_type: FilterType): ColumnDataType {
 	if (filter_type === 'Number') return 'Decimal'
 	if (filter_type === 'Date') return 'Date'
+	if (filter_type === 'Datetime') return 'Datetime'
 	return 'String'
 }
 
@@ -113,6 +114,7 @@ function clear() {
 			:columns="[column]"
 			:values-provider="stringValuesProvider"
 			:range-provider="rangeProvider"
+			:with-time="filter.filter_type === 'Datetime'"
 		>
 			<template #trigger="{ filter: applied }">
 				<Button

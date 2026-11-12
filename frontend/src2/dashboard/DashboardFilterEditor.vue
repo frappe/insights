@@ -16,7 +16,8 @@ import { ColumnOption, FilterOperator } from '../types/query.types'
 import { WorkbookDashboardFilter } from '../types/workbook.types'
 import { Dashboard, parseFilterLink } from './dashboard'
 import { __ } from '../translation'
-import { Tabs, DatePicker, DateRangePicker } from 'frappe-ui'
+import { presetsFor } from '../components/filter_picker/filter_picker'
+import { Tabs, DatePicker, DateRangePicker, DateTimePicker } from 'frappe-ui'
 
 const dashboard = inject<Dashboard>('dashboard')!
 const props = defineProps<{ item: WorkbookDashboardFilter }>()
@@ -84,6 +85,7 @@ const FILTER_TYPES = {
 	String: FIELDTYPES.TEXT,
 	Number: FIELDTYPES.NUMBER,
 	Date: FIELDTYPES.DATE,
+	Datetime: ['Datetime'],
 }
 function disableColumnOptions(options: ColumnOption[]) {
 	return options.map((o) => {
@@ -122,6 +124,25 @@ const dateRangeVal = computed({
 	},
 })
 
+// A Datetime default is a range of two instants, or one of the presets a reader
+// sees first. The date controls above would drop the time of day.
+function setDefaultEnd(index: 0 | 1, value: string) {
+	const range = Array.isArray(filter.default_value) ? [...filter.default_value] : ['', '']
+	range[index] = value
+	filter.default_value = range as string[]
+}
+
+// a range with one end would reach every linked chart as a comparison against nothing
+const halfRange = computed(() => {
+	if (filter.filter_type !== 'Datetime' || filter.default_operator !== 'between') return false
+	const [from, to] = Array.isArray(filter.default_value) ? filter.default_value : []
+	return !from !== !to
+})
+
+const datetimePresetOptions = computed(() =>
+	presetsFor(true).map((preset) => ({ label: preset.label, value: preset.span })),
+)
+
 function clearDefault() {
 	filter.default_operator = undefined
 	filter.default_value = undefined
@@ -148,6 +169,7 @@ const editDisabled = computed(() => {
 	return (
 		!filter.filter_name ||
 		!filter.filter_type ||
+		halfRange.value ||
 		JSON.stringify(filter) === JSON.stringify(props.item)
 	)
 })
@@ -270,8 +292,56 @@ function saveEdit() {
 											@update:modelValue="onDefaultOperatorChange($event)"
 										/>
 										<template v-if="defaultValueSelectorType">
+											<template v-if="filter.filter_type === 'Datetime'">
+												<DateTimePicker
+													v-if="defaultValueSelectorType === 'date'"
+													class="flex-1"
+													:modelValue="filter.default_value as string"
+													@update:modelValue="
+														filter.default_value = $event
+													"
+												/>
+												<div
+													v-else-if="
+														defaultValueSelectorType === 'date_range'
+													"
+													class="flex flex-1 flex-col gap-2"
+												>
+													<DateTimePicker
+														:placeholder="__('From')"
+														:modelValue="
+															(filter.default_value as string[])?.[0]
+														"
+														@update:modelValue="
+															setDefaultEnd(0, $event)
+														"
+													/>
+													<DateTimePicker
+														:placeholder="__('To')"
+														:modelValue="
+															(filter.default_value as string[])?.[1]
+														"
+														@update:modelValue="
+															setDefaultEnd(1, $event)
+														"
+													/>
+												</div>
+												<FormControl
+													v-else-if="
+														defaultValueSelectorType === 'relative_date'
+													"
+													class="flex-1"
+													type="select"
+													:placeholder="__('Select a span...')"
+													:options="datetimePresetOptions"
+													:modelValue="filter.default_value"
+													@update:modelValue="
+														filter.default_value = $event
+													"
+												/>
+											</template>
 											<DatePicker
-												v-if="defaultValueSelectorType === 'date'"
+												v-else-if="defaultValueSelectorType === 'date'"
 												class="flex-1"
 												:modelValue="filter.default_value as string"
 												@update:modelValue="filter.default_value = $event"

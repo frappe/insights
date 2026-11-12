@@ -8,12 +8,17 @@ import { FIELDTYPES, type FilterType, type GranularityType } from '../../helpers
 import dayjs from '../../helpers/dayjs'
 import {
 	buildSpan,
+	buildTimeSpan,
 	parseSpan,
+	parseTimeSpan,
 	SPAN_STEPS,
 	SPAN_UNITS,
 	spanUnitOf,
+	TIME_UNITS,
+	timeUnitOf,
 	type SpanShape,
 	type SpanUnit,
+	type TimeUnit,
 } from '../../helpers/span_grammar'
 import {
 	column,
@@ -139,6 +144,7 @@ export const FILTER_TYPE_KINDS: Record<FilterType, FilterKind> = {
 	String: 'text',
 	Number: 'number',
 	Date: 'date',
+	Datetime: 'date',
 }
 
 /** No kind's table holds every operator, so a rule written elsewhere may name one it has not. */
@@ -293,7 +299,12 @@ export { SPAN_GRAINS, SPAN_UNITS, type SpanUnit } from '../../helpers/span_gramm
 /** The unit a typed word names, as the picker's own vocabulary calls it. */
 export const unitOf = spanUnitOf
 
-const unitLabels = translatedTable<Record<SpanUnit, [string, string]>>(() => ({
+/** A unit a relative span counts in: a whole period, or a minute or an hour. */
+export type RelativeUnit = SpanUnit | TimeUnit
+
+const unitLabels = translatedTable<Record<RelativeUnit, [string, string]>>(() => ({
+	minute: [__('minute'), __('minutes')],
+	hour: [__('hour'), __('hours')],
 	day: [__('day'), __('days')],
 	week: [__('week'), __('weeks')],
 	month: [__('month'), __('months')],
@@ -303,7 +314,7 @@ const unitLabels = translatedTable<Record<SpanUnit, [string, string]>>(() => ({
 	'fiscal quarter': [__('fiscal quarter'), __('fiscal quarters')],
 }))
 
-function unitWords(unit: SpanUnit, count: number): string {
+function unitWords(unit: RelativeUnit, count: number): string {
 	const [one, many] = unitLabels()[unit]
 	return count === 1 ? one : `${count} ${many}`
 }
@@ -339,7 +350,7 @@ export type SpanDirection = Extract<SpanShape, 'last' | 'next' | 'current'>
 export type RelativeForm = {
 	direction: SpanDirection
 	count: number
-	unit: SpanUnit
+	unit: RelativeUnit
 	includeCurrent: boolean
 }
 
@@ -360,19 +371,50 @@ export const datePresets = translatedTable<Array<{ label: string; span: string }
 	{ label: __('Fiscal year to date'), span: 'fiscal year to date' },
 ])
 
+/**
+ * The presets a Datetime dashboard filter lists before the date ones. Each is
+ * a span `parse_time_span` reads on the server, so it ends when the chart is read.
+ */
+export const timePresets = translatedTable<Array<{ label: string; span: string }>>(() => [
+	{ label: __('Last 15 minutes'), span: 'last 15 minutes' },
+	{ label: __('Last 1 hour'), span: 'last 1 hour' },
+	{ label: __('Last 6 hours'), span: 'last 6 hours' },
+	{ label: __('Last 24 hours'), span: 'last 24 hours' },
+])
+
+/** The presets the `within` stage lists: the time ones first where the filter keeps a time. */
+export function presetsFor(withTime?: boolean) {
+	return withTime ? [...timePresets(), ...datePresets()] : datePresets()
+}
+
 export function isPreset(span: string): boolean {
-	return datePresets().some((p) => p.span === span)
+	return presetsFor(true).some((p) => p.span === span)
 }
 
-/** The span a relative form is written as. */
+function isTimeUnit(unit: RelativeUnit): unit is TimeUnit {
+	return (TIME_UNITS as readonly string[]).includes(unit)
+}
+
+/** The span a relative form is written as. A minute or an hour span has no current period. */
 export function spanOf(form: RelativeForm): string {
-	return buildSpan({ ...form, shape: form.direction })
+	const unit = form.unit
+	if (isTimeUnit(unit)) {
+		const shape = form.direction === 'next' ? 'next' : 'last'
+		return buildTimeSpan({ shape, count: form.count, unit })
+	}
+	return buildSpan({ ...form, unit, shape: form.direction })
 }
 
-/** A span in the picker's words: `Today`, `Last 7 days`, `Next 2 weeks`. */
+/** A span in the picker's words: `Today`, `Last 7 days`, `Next 2 weeks`, `Last 90 minutes`. */
 export function spanLabel(span: string): string {
-	const preset = datePresets().find((p) => p.span === span)
+	const preset = presetsFor(true).find((p) => p.span === span)
 	if (preset) return preset.label
+
+	const time = parseTimeSpan(span)
+	if (time) {
+		const phrase = unitWords(time.unit, time.count)
+		return time.shape === 'last' ? __('Last {0}', phrase) : __('Next {0}', phrase)
+	}
 
 	const form = parseSpan(span)
 	if (!form) return span
@@ -393,9 +435,18 @@ export const relativeDirections = translatedTable<Array<{ key: SpanDirection; la
 	],
 )
 
-/** The unit rows the last stage of a relative span lists, the count folded in. */
-export function unitRows(form: RelativeForm): Array<{ label: string; span: string }> {
-	return SPAN_UNITS.map((unit) => {
+/**
+ * The unit rows the last stage of a relative span lists, the count folded in.
+ * Minutes and hours come first where the filter keeps a time, and only for a
+ * `last` or `next` span.
+ */
+export function unitRows(
+	form: RelativeForm,
+	withTime?: boolean,
+): Array<{ label: string; span: string }> {
+	const units: RelativeUnit[] =
+		withTime && form.direction !== 'current' ? [...TIME_UNITS, ...SPAN_UNITS] : [...SPAN_UNITS]
+	return units.map((unit) => {
 		const words =
 			form.direction === 'current' ? unitLabels()[unit][0] : unitWords(unit, form.count)
 		return {
@@ -557,11 +608,17 @@ export function calendarOf(op: OperatorDef): 'range' | 'day' | undefined {
  * "current") are answered here, and everything past them is the grammar's own
  * parse. "last 0 days" spans nothing, and `buildSpan` floors the count at one.
  */
-export function spanFromText(text: string): string | undefined {
-	const preset = datePresets().find((p) => p.label.toLowerCase() === text.trim().toLowerCase())
+export function spanFromText(text: string, withTime?: boolean): string | undefined {
+	const preset = presetsFor(withTime).find(
+		(p) => p.label.toLowerCase() === text.trim().toLowerCase(),
+	)
 	if (preset) return preset.span
 
 	const words = text.trim().toLowerCase().split(/\s+/)
+	if (withTime && words.length === 3 && timeUnitOf(words[2])) {
+		const time = parseTimeSpan(words.join(' '))
+		return time && buildTimeSpan(time)
+	}
 	if (words[0] === 'today') return 'current day'
 	if (words[0] === 'yesterday') return 'last 1 day'
 
@@ -577,6 +634,7 @@ export function spanFromText(text: string): string | undefined {
  * `5 – 11 Sep 2026`, `5 Sep – 11 Sep 2026`, `21 Mar 2023 – 11 Sep 2026`.
  */
 export function formatDate(from: string, to?: string): string {
+	if (hasTime(from) || hasTime(to)) return formatDateTime(from, to)
 	const start = dayjs(from)
 	if (!start.isValid()) return from ?? ''
 	if (!to || to === from) return start.format('D MMM YYYY')
@@ -587,6 +645,72 @@ export function formatDate(from: string, to?: string): string {
 		return `${start.format('D MMM YYYY')} – ${end.format('D MMM YYYY')}`
 	if (start.month() === end.month()) return `${start.format('D')} – ${end.format('D MMM YYYY')}`
 	return `${start.format('D MMM')} – ${end.format('D MMM YYYY')}`
+}
+
+function hasTime(value?: string): boolean {
+	return typeof value === 'string' && /\d \d{1,2}:\d{2}/.test(value)
+}
+
+/** `12 Nov 2026 14:00`, and a range that drops its day where both ends share one: `12 Nov 2026 14:00 – 16:30`. */
+function formatDateTime(from: string, to?: string): string {
+	const start = dayjs(from)
+	if (!start.isValid()) return from ?? ''
+	const first = start.format('D MMM YYYY HH:mm')
+	if (!to) return first
+	const end = dayjs(to)
+	if (!end.isValid()) return `${first} – ${to}`
+	return end.isSame(start, 'day')
+		? `${first} – ${end.format('HH:mm')}`
+		: `${first} – ${end.format('D MMM YYYY HH:mm')}`
+}
+
+/**
+ * A day and a time of day on each end, as a Datetime filter's input reads them:
+ * `2026-11-12 14:00 to 2026-11-12 16:30`. A missing time is the day's first
+ * minute at the start and its last at the end, so a range of days typed alone
+ * keeps them whole.
+ */
+export type TimedRange = { from: string; fromTime: string; to: string; toTime: string }
+
+const TIMED =
+	/^(\S+)(?:\s+(\d{1,2}:\d{2})(?::\d{2})?)?(?:\s+to(?:\s+(\S+)(?:\s+(\d{1,2}:\d{2})(?::\d{2})?)?)?)?$/
+
+function clock(text?: string): string | undefined {
+	const match = text?.match(/^(\d{1,2}):(\d{2})$/)
+	if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return undefined
+	return `${match[1].padStart(2, '0')}:${match[2]}`
+}
+
+export function timedRangeOf(text: string): TimedRange {
+	const match = text.trim().match(TIMED)
+	const from = match && isDay(match[1]) ? match[1] : ''
+	const to = from && match![3] && isDay(match![3]) ? match![3] : ''
+	return {
+		from,
+		fromTime: clock(match?.[2]) || '00:00',
+		to,
+		toTime: clock(match?.[4]) || '23:59',
+	}
+}
+
+/** What the input reads for a range; a day mode writes the start alone. */
+export function timedRangeText(range: TimedRange, mode: 'range' | 'day'): string {
+	if (!range.from) return ''
+	const start = `${range.from} ${range.fromTime}`
+	if (mode === 'day') return start
+	return range.to ? `${start} to ${range.to} ${range.toTime}` : `${start} to `
+}
+
+/**
+ * The values a whole range is stored as. The end minute is kept whole, so a
+ * range to 16:30 holds a row stamped 16:30:30; one that ends before it starts
+ * is none.
+ */
+export function timedRangeValue(range: TimedRange): [string, string] | undefined {
+	if (!range.from || !range.to) return undefined
+	const start = `${range.from} ${range.fromTime}:00`
+	const end = `${range.to} ${range.toTime}:59`
+	return start <= end ? [start, end] : undefined
 }
 
 export type ParsedDate = { operator: FilterOperator; value: FilterValue }
@@ -798,12 +922,14 @@ export function pathOf(filter: Filter): Path {
 		if (period) return { ...base, op: operatorOf('date', 'within') || base.op, period }
 		const span = timespan?.span || ''
 		const parsed = isPreset(span) ? undefined : parseSpan(span)
+		const time = isPreset(span) ? undefined : parseTimeSpan(span)
 		// The relative row shows a direction, so a `to date` span is not one of
 		// its forms: the overview prints it through `spanLabel` instead.
-		const relative: RelativeForm | undefined =
-			parsed && parsed.shape !== 'to date'
-				? { ...parsed, direction: parsed.shape }
-				: undefined
+		const relative: RelativeForm | undefined = time
+			? { direction: time.shape, count: time.count, unit: time.unit, includeCurrent: false }
+			: parsed && parsed.shape !== 'to date'
+			  ? { ...parsed, direction: parsed.shape }
+			  : undefined
 		return {
 			...base,
 			op: operatorOf('date', 'within') || base.op,
@@ -816,7 +942,8 @@ export function pathOf(filter: Filter): Path {
 		return {
 			...base,
 			op: operatorOf('date', 'between') || base.op,
-			text: from && to ? `${from} to ${to}` : '',
+			// a stored end keeps its whole minute, which the input does not print
+			text: from && to ? `${from} to ${to}`.replace(/(\d{2}:\d{2}):\d{2}/g, '$1') : '',
 		}
 	}
 	const op = operatorOf('date', operator) || base.op
