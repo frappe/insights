@@ -17,6 +17,8 @@ from functools import cache
 
 import frappe
 
+from insights.compat import ServiceUnavailableError
+
 CGROUP_ROOT = "/sys/fs/cgroup"
 
 
@@ -252,9 +254,7 @@ def server_busy(retry_after: int):
     """The error a full pool answers with: a 503 the client can retry."""
     if (headers := getattr(frappe.local, "response_headers", None)) is not None:
         headers.set("Retry-After", str(retry_after))
-    exc = frappe.exceptions.ServiceUnavailableError(
-        frappe._("Server is busy. Please try again in a few seconds.")
-    )
+    exc = ServiceUnavailableError(frappe._("Server is busy. Please try again in a few seconds."))
     exc.retry_after = retry_after
     # an answer, not a failure: Frappe would write an Error Log row for each one
     exc.skip_error_log = True

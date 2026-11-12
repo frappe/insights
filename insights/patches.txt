@@ -15,7 +15,7 @@ execute:frappe.db.set_single_value("Insights Settings", "allow_download", 1)
 insights.patches.strip_default_schema_from_table_names
 insights.patches.hash_invitation_keys
 insights.patches.backfill_permission_user
-insights.patches.backfill_table_columns
+insights.patches.backfill_table_columns #2026-11-12
 insights.patches.set_visibility_from_is_public
 insights.patches.run_public_charts_as_owner
 insights.patches.repair_sankey_value_aggregation

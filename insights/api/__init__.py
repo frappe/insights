@@ -9,6 +9,7 @@ from frappe.handler import is_valid_http_method, is_whitelisted
 from frappe.monitor import add_data_to_monitor
 
 import insights
+from insights.compat import get_currency_precision
 from insights.decorators import insights_whitelist
 from insights.desk import can_show_charts_in_desk
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
@@ -90,7 +91,7 @@ def get_site_info():
         # through the server's own fallback, so an unset field does not put the
         # two calendars a quarter apart
         "fiscal_year_start": get_fiscal_year_start_date().isoformat(),
-        "currency_precision": frappe.utils.get_currency_precision(),
+        "currency_precision": get_currency_precision(),
         # Datetime values are stored, shown and filtered in it, and the browser
         # does not convert them, so a time picker names it
         "time_zone": frappe.utils.get_system_timezone(),

@@ -35,6 +35,7 @@ from insights.cancellation import (
     raise_cancelled,
     was_cancelled,
 )
+from insights.compat import ServiceUnavailableError
 from insights.exceptions import (
     ExpressionSyntaxError,
     QueryCancelled,
@@ -368,7 +369,7 @@ class IbisQueryBuilder:
                 except (
                     CircularQueryReferenceError,
                     not_permitted.NotPermitted,
-                    frappe.ServiceUnavailableError,
+                    ServiceUnavailableError,
                     QueryTimeout,
                     QueryCancelled,
                 ):
