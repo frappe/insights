@@ -1124,6 +1124,7 @@ class TestImportRowLimit(InsightsIntegrationTestCase):
     @classmethod
     def before_class(cls):
         cls.site_limit_was = frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
+        cls.memory_limit_was = frappe.db.get_single_value("Insights Settings", "max_memory_usage")
         for table_name, row_limit in ((cls.CAPPED, 2), (cls.UNCAPPED, 0)):
             doc = frappe.get_doc(
                 {
@@ -1140,7 +1141,10 @@ class TestImportRowLimit(InsightsIntegrationTestCase):
 
     @classmethod
     def after_class(cls):
-        frappe.db.set_single_value("Insights Settings", "max_records_to_sync", cls.site_limit_was)
+        frappe.db.set_single_value(
+            "Insights Settings",
+            {"max_records_to_sync": cls.site_limit_was, "max_memory_usage": cls.memory_limit_was},
+        )
         from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_table_name
 
         for table_name in (cls.CAPPED, cls.UNCAPPED):
@@ -1192,6 +1196,33 @@ class TestImportRowLimit(InsightsIntegrationTestCase):
         capped = self.importer_for(self.CAPPED)
         self.assertEqual(capped.settings.row_limit, 2)
         self.assertEqual(self.rows_kept_by(capped), 2)
+
+    # @feature settings.data-store-enable
+    def test_a_fresh_sites_settings_show_the_limits_an_import_uses(self):
+        frappe.db.set_single_value("Insights Settings", {"max_records_to_sync": 0, "max_memory_usage": 0})
+        fresh = frappe.new_doc("Insights Settings")
+
+        uncapped = self.importer_for(self.UNCAPPED)
+        self.assertEqual(fresh.max_records_to_sync, uncapped.settings.row_limit)
+        self.assertEqual(fresh.max_memory_usage, uncapped.settings.memory_limit)
+
+    # @feature settings.data-store-enable
+    def test_an_upgraded_site_shows_the_default_limits_and_keeps_the_ones_an_admin_set(self):
+        from insights.patches.set_data_store_limits import execute
+
+        fresh = frappe.new_doc("Insights Settings")
+
+        frappe.db.set_single_value("Insights Settings", "max_records_to_sync", 0)
+        frappe.db.delete("Singles", {"doctype": "Insights Settings", "field": "max_memory_usage"})
+        execute()
+        settings = frappe.get_doc("Insights Settings")
+        self.assertEqual(settings.max_records_to_sync, fresh.max_records_to_sync)
+        self.assertEqual(settings.max_memory_usage, fresh.max_memory_usage)
+
+        frappe.db.set_single_value("Insights Settings", {"max_records_to_sync": 3, "max_memory_usage": 1024})
+        execute()
+        settings = frappe.get_doc("Insights Settings")
+        self.assertEqual((settings.max_records_to_sync, settings.max_memory_usage), (3, 1024))
 
 
 class TestSiteDBImport(InsightsIntegrationTestCase):
