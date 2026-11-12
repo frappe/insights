@@ -38,6 +38,9 @@ const rangeProvider = (column: QueryResultColumn) =>
 
 const findText = ref('')
 provide(tableFindKey, findText)
+// Expand mounts a second TableCardActions, so the page holds what the reader opened
+const findOpen = ref(false)
+const actionsActive = ref(false)
 </script>
 
 <template>
@@ -45,12 +48,15 @@ provide(tableFindKey, findText)
 		<ChartView
 			:chart="chart"
 			:filtered="cardFilters.length > 0"
+			:actions-revealed="actionsActive"
 			@reset-filters="setCardFilters([])"
 		>
 			<template v-if="chart.doc.chart_type === 'Table'" #actions>
 				<TableCardActions
 					:filters="cardFilters"
 					v-model:find-text="findText"
+					v-model:find-open="findOpen"
+					v-model:active="actionsActive"
 					:filterable="chart.canFilter !== false"
 					:columns="chart.result.columns || []"
 					:values-provider="valuesProvider"
