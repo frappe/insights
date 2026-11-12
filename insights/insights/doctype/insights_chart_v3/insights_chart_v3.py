@@ -15,7 +15,7 @@ from insights.insights.doctype.insights_chart_v3.chart_query import (
     AUTO_AXIS_POINTS,
     adjacent_bucket,
     auto_axis,
-    bounded_span,
+    bounded_grain,
     column_granularity,
     comparison_sources,
     comparison_timespans,
@@ -321,8 +321,10 @@ class InsightsChartv3(Document):
         """Group an `auto` date axis by the grain that fits the stretch the reader asked for.
 
         It is the stretch the chart's filters bound on the axis column
-        (`bounded_span`): a dashboard Period of one month reads daily and a year
+        (`bounded_grain`): a dashboard Period of one month reads daily and a year
         reads weekly, whatever rows fall inside, and no query runs to find it.
+        A window written in minutes or hours reads finer, by the minute up to
+        three hours.
         When the filters leave an end open, the span of the rows the chart is
         about to group stands in for it. Like `take_dashboard_period`, the grain
         is written into the config where routed filters meet the chart, so
@@ -350,9 +352,9 @@ class InsightsChartv3(Document):
 
     def auto_grain(self, config: dict, column: dict, grains: dict, adhoc_filters, force: bool) -> str:
         query_operations = frappe.parse_json(frappe.db.get_value(QUERY, self.query, "operations") or "[]")
-        span = bounded_span(self.query, query_operations, config, adhoc_filters, column)
-        if span:
-            return derived_grain(grains, (span[1] - span[0]).total_seconds(), AUTO_AXIS_POINTS)
+        grain = bounded_grain(self.query, query_operations, config, adhoc_filters, column, grains)
+        if grain:
+            return grain
 
         # the rows' span moves only as rows arrive, and a grain a day old still
         # fits them. A relative filter resolves against the reading day and an

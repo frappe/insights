@@ -24,6 +24,7 @@ from frappe import _
 from insights.insights.doctype.insights_chart_v3.chart_grain import DAY, GRAINS, derived_grain
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     AUTO_AXIS_POINTS,
+    bounded_grain,
     bounded_span,
     comparison_timespans,
     config_errors,
@@ -53,6 +54,14 @@ def stretch(dashboard=(), chart=(), query=(), logical_operator="And"):
     adhoc = {"q": {"type": "filter_group", "logical_operator": logical_operator, "filters": list(dashboard)}}
     config = {"filters": {"logical_operator": "And", "filters": list(chart)}}
     return bounded_span("q", list(query), config, adhoc, AXIS_DATE)
+
+
+def datetime_grain(dashboard=()):
+    """The grain `bounded_grain` gives an `auto` axis on a Datetime column under
+    the dashboard's filters."""
+    adhoc = {"q": {"type": "filter_group", "logical_operator": "And", "filters": list(dashboard)}}
+    column = {"name": "posting_date", "type": "Datetime"}
+    return bounded_grain("q", [], {}, adhoc, column, GRAINS["Datetime"])
 
 
 CHART_TYPES = {
@@ -406,6 +415,41 @@ class TestChartDerivation(unittest.TestCase):
                 self.assertEqual(bounds, (start, now))
                 seconds = (bounds[1] - bounds[0]).total_seconds()
                 self.assertEqual(derived_grain(GRAINS["Datetime"], seconds, AUTO_AXIS_POINTS), grain)
+
+    # @feature dashboard.filter-datetime
+    def test_an_auto_axis_over_a_window_in_minutes_reads_by_the_minute_up_to_three_hours(self):
+        """An incident window, relative or written to the minute, reads by the
+        minute: hourly it would be two or three points."""
+        now = datetime(2026, 10, 5, 14, 20, 30)
+        cases = {
+            "last 1 hour": ("within", "last 1 hour", "minute"),
+            "last 3 hours": ("within", "last 3 hours", "minute"),
+            "last 6 hours": ("within", "last 6 hours", "hour"),
+            "last 24 hours": ("within", "last 24 hours", "hour"),
+            "14:00 to 16:30": ("between", ["2026-10-04 14:00", "2026-10-04 16:30"], "minute"),
+            "a day to the minute": ("between", ["2026-10-04 00:00", "2026-10-04 23:59"], "hour"),
+            "ten days to the minute": ("between", ["2026-09-25 00:00", "2026-10-04 23:59"], "day"),
+        }
+        for name, (operator, value, grain) in cases.items():
+            with (
+                self.subTest(name),
+                patch("insights.insights.query_builders.sql_functions.now_datetime", return_value=now),
+            ):
+                self.assertEqual(datetime_grain(dashboard=[on_date(operator, value)]), grain)
+
+    # @feature charts.auto-grain
+    def test_an_auto_axis_over_days_keeps_its_grain_on_a_datetime_column(self):
+        """Only a window written in minutes or hours reads finer: a day span, a
+        range of days and a range of full timestamps keep `AUTO_AXIS_POINTS`."""
+        cases = {
+            "current day": ("within", "current day", "hour"),
+            "last 7 days": ("within", "last 7 days", "day"),
+            "one day": ("between", ["2026-10-04", "2026-10-04"], "hour"),
+            "timestamps": ("between", ["2026-10-04 14:00:00", "2026-10-04 16:30:00"], "hour"),
+        }
+        for name, (operator, value, grain) in cases.items():
+            with self.subTest(name), read_on("2026-10-05"):
+                self.assertEqual(datetime_grain(dashboard=[on_date(operator, value)]), grain)
 
     # @feature charts.auto-grain
     def test_an_auto_axis_over_one_month_of_filter_reads_daily(self):
