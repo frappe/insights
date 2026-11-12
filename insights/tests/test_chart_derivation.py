@@ -17,6 +17,7 @@ import copy
 import json
 import unittest
 from datetime import datetime
+from unittest.mock import patch
 
 from frappe import _
 
@@ -387,6 +388,24 @@ class TestChartDerivation(unittest.TestCase):
             stretch(dashboard=[on_date("between", ["2026-10-05 09:00:00", "2026-10-05 17:30:00"])]),
             (datetime(2026, 10, 5, 9), datetime(2026, 10, 5, 17, 30)),
         )
+
+    # @feature charts.auto-grain dashboard.filter-datetime
+    def test_an_auto_axis_over_a_span_in_minutes_or_hours_reads_by_the_clock(self):
+        """A span in minutes or hours bounds the instants up to the read, not
+        whole days, so its axis groups by the minute or the hour."""
+        now = datetime(2026, 10, 5, 14, 20)
+        cases = {
+            "last 15 minutes": (datetime(2026, 10, 5, 14, 5), "minute"),
+            "last 24 hours": (datetime(2026, 10, 4, 14, 20), "hour"),
+        }
+        for span, (start, grain) in cases.items():
+            with self.subTest(span=span):
+                with patch("insights.insights.query_builders.sql_functions.now_datetime", return_value=now):
+                    bounds = stretch(dashboard=[on_date("within", {"span": span})])
+
+                self.assertEqual(bounds, (start, now))
+                seconds = (bounds[1] - bounds[0]).total_seconds()
+                self.assertEqual(derived_grain(GRAINS["Datetime"], seconds, AUTO_AXIS_POINTS), grain)
 
     # @feature charts.auto-grain
     def test_an_auto_axis_over_one_month_of_filter_reads_daily(self):

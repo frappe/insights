@@ -36,7 +36,7 @@ from frappe.utils import add_to_date, get_datetime
 
 from insights.insights.doctype.insights_chart_v3.chart_grain import AUTO
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import parse_bare_date, sanitize_name
-from insights.insights.query_builders.sql_functions import get_fiscal_period, resolve_timespan, span_unit
+from insights.insights.query_builders.sql_functions import get_fiscal_period, resolve_instants, span_unit
 
 AXIS_CHARTS = ("Bar", "Line", "Row")
 CHART_TYPES = (
@@ -451,10 +451,9 @@ def _rule_bounds(operator: str, value):
     reads it (`DAY_OPERATORS`)."""
     if operator == "within":
         try:
-            first, last = resolve_timespan(value)
+            return resolve_instants(value)
         except Exception:
             return None  # nosemgrep - a span that does not resolve bounds nothing; the rows are read instead
-        return _midnight(first), _midnight(last) + datetime.timedelta(days=1)
 
     if operator == "between":
         if not isinstance(value, list | tuple) or len(value) != 2:
