@@ -492,6 +492,20 @@ class TestIbisDateFilterOnDatetime(IbisQueryBuilderTestCase):
         self.assertEqual(self.filtered("between", ["2026-08-05 17:00", "2026-08-05 17:30"]), [evening])
         self.assertEqual(self.filtered("between", ["2026-08-05 17:00", "2026-08-05 17:29"]), [])
 
+        # a time to the minute names that whole minute, whichever operator compares it
+        stamps = (
+            "2026-08-05 17:29:59.600000",
+            "2026-08-05 17:30:00",
+            "2026-08-05 17:30:30",
+            "2026-08-05 17:31:00",
+        )
+        late, on, within, after = stamps
+        cases = {"=": [on, within], "!=": [late, after], "<=": [late, on, within], ">": [after], "<": [late]}
+        for operator, expected in cases.items():
+            with self.subTest(operator=operator):
+                self.assertEqual(self.filtered(operator, "2026-08-05 17:30", stamps), expected)
+        self.assertEqual(self.filtered("between", ["2026-08-05 17:00", "2026-08-05 17:29"], stamps), [late])
+
         now = "insights.insights.query_builders.sql_functions.now_datetime"
         with patch(now, return_value=datetime(2026, 8, 5, 18, 0)):
             self.assertEqual(self.filtered("within", {"span": "last 1 hour"}), [evening])

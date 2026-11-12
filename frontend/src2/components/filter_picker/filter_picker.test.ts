@@ -77,13 +77,13 @@ describe('a Datetime filter', () => {
 	})
 
 	// @feature dashboard.filter-datetime
-	it('keeps a range to the minute, the end minute whole', () => {
+	it('keeps a range to the minute', () => {
 		const range = timedRangeOf('2026-11-12 14:00 to 2026-11-12 16:30')
-		expect(timedRangeValue(range)).toEqual(['2026-11-12 14:00:00', '2026-11-12 16:30:59'])
+		expect(timedRangeValue(range)).toEqual(['2026-11-12 14:00', '2026-11-12 16:30'])
 		// days alone are kept whole
 		expect(timedRangeValue(timedRangeOf('2026-11-12 to 2026-11-13'))).toEqual([
-			'2026-11-12 00:00:00',
-			'2026-11-13 23:59:59',
+			'2026-11-12 00:00',
+			'2026-11-13 23:59',
 		])
 		// a range that ends before it starts, or names no time of day, is none, and says why
 		const inverted = '2026-11-12 16:00 to 2026-11-12 09:00'
@@ -101,7 +101,7 @@ describe('a Datetime filter', () => {
 		const filter = {
 			column: at,
 			operator: 'between' as const,
-			value: ['2026-11-12 14:00:00', '2026-11-12 16:30:59'],
+			value: ['2026-11-12 14:00', '2026-11-12 16:30'],
 		}
 		expect(summaryParts(filter).value).toBe('12 Nov 2026 14:00 – 16:30')
 		expect(pathOf(filter).text).toBe('2026-11-12 14:00 to 2026-11-12 16:30')

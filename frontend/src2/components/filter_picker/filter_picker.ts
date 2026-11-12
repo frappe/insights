@@ -727,14 +727,14 @@ export function timedRangeText(range: TimedRange, mode: 'range' | 'day'): string
 }
 
 /**
- * The values a whole range is stored as. The end minute is kept whole, so a
- * range to 16:30 holds a row stamped 16:30:30; one that ends before it starts
- * is none.
+ * The values a whole range is stored as, to the minute: the server reads such a
+ * value as the whole minute (`parse_bare_minute`), so a range to 16:30 holds a
+ * row stamped 16:30:30. One that ends before it starts is none.
  */
 export function timedRangeValue(range: TimedRange): [string, string] | undefined {
 	if (!range.from || !range.to || range.badTime) return undefined
-	const start = `${range.from} ${range.fromTime}:00`
-	const end = `${range.to} ${range.toTime}:59`
+	const start = `${range.from} ${range.fromTime}`
+	const end = `${range.to} ${range.toTime}`
 	return start <= end ? [start, end] : undefined
 }
 

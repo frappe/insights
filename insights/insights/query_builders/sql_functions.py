@@ -722,6 +722,22 @@ def within_days(column, first, last):
     return (column >= start) & (column < end)
 
 
+def minute_bounds(column, first, last):
+    """The column, the start of minute `first` and the start of the minute after
+    `last`: a time written to the minute names that whole minute, as a bare date
+    names its whole day. See `day_bounds`."""
+    refuse_time_column(column)
+    end = last + datetime.timedelta(minutes=1)
+    if not is_calendar(column):
+        return column, first.isoformat(" "), end.isoformat(" ")
+    return column, typed_instant(column, first), typed_instant(column, end)
+
+
+def within_minutes(column, first, last):
+    column, start, end = minute_bounds(column, first, last)
+    return (column >= start) & (column < end)
+
+
 def within_instants(column, start, end):
     """The rows from `start` to `end`, both included: the last minute of a
     rolling span ends now, and a row stamped now is in it."""

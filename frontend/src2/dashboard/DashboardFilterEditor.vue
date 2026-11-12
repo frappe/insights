@@ -126,12 +126,17 @@ const dateRangeVal = computed({
 
 // A Datetime default is a range of two instants, or one of the presets a reader
 // sees first. The date controls above would drop the time of day.
-// The end minute is kept whole, as the reader's picker keeps it, so a range to
-// 16:30 holds a row stamped 16:30:30 whichever of the two wrote it.
+// A time is kept to the minute, as the reader's picker writes it: the server
+// reads such a value as the whole minute. A range with both ends cleared is no
+// default.
+function toMinute(value: string) {
+	return value ? value.slice(0, 16) : value
+}
+
 function setDefaultEnd(index: 0 | 1, value: string) {
 	const range = Array.isArray(filter.default_value) ? [...filter.default_value] : ['', '']
-	range[index] = index && value ? `${value.slice(0, 16)}:59` : value
-	filter.default_value = range as string[]
+	range[index] = toMinute(value)
+	filter.default_value = range.some(Boolean) ? (range as string[]) : undefined
 }
 
 // A range with one end, or one that ends before it starts, would reach every
@@ -302,7 +307,7 @@ function saveEdit() {
 													class="flex-1"
 													:modelValue="filter.default_value as string"
 													@update:modelValue="
-														filter.default_value = $event
+														filter.default_value = toMinute($event)
 													"
 												/>
 												<div

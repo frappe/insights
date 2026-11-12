@@ -71,7 +71,7 @@ describe('what narrows a card', () => {
 				links: {},
 				...rest,
 			}) as unknown as WorkbookDashboardItem
-		const range = ['2026-11-12 14:00:00', '2026-11-12 16:30:59']
+		const range = ['2026-11-12 14:00', '2026-11-12 16:30']
 
 		expect(
 			defaultFilterStates([

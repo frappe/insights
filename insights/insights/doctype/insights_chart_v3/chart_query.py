@@ -35,7 +35,11 @@ from frappe import _
 from frappe.utils import add_to_date, get_datetime
 
 from insights.insights.doctype.insights_chart_v3.chart_grain import AUTO
-from insights.insights.doctype.insights_data_source_v3.ibis_utils import parse_bare_date, sanitize_name
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+    parse_bare_date,
+    parse_bare_minute,
+    sanitize_name,
+)
 from insights.insights.query_builders.sql_functions import get_fiscal_period, resolve_instants, span_unit
 
 AXIS_CHARTS = ("Bar", "Line", "Row")
@@ -486,6 +490,9 @@ def _instant(value) -> tuple[datetime.datetime, datetime.datetime] | None:
     day = value if isinstance(value, datetime.date) else parse_bare_date(value)
     if day:
         return _midnight(day), _midnight(day) + datetime.timedelta(days=1)
+    minute = parse_bare_minute(value)
+    if minute:
+        return minute, minute + datetime.timedelta(minutes=1)
     try:
         moment = datetime.datetime.fromisoformat(str(value))
     except ValueError:

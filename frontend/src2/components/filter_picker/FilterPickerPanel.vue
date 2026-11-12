@@ -418,7 +418,7 @@ const typed = computed<(Draft & { label: string }) | undefined>(() => {
 			return { operator: 'between', value, label: `${__('between')} ${formatDate(...value)}` }
 		}
 		if (!range.from || range.badTime) return undefined
-		const at = `${range.from} ${range.fromTime}:00`
+		const at = `${range.from} ${range.fromTime}`
 		return {
 			operator: op.value.operator,
 			value: at,
