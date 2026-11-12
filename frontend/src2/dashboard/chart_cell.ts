@@ -46,7 +46,9 @@ export function useChartCell(props: ChartCellProps) {
 	// The filter uses the card's result columns, because the server applies it
 	// after the chart's summarize. A dimension shows under the chart's label for
 	// it. A measure is a column too, so "count over 5" filters on the total on
-	// screen.
+	// screen. A dimension with a date grain is the exception: the server applies
+	// its filter to the source column before the summarize, so a date range
+	// finds the rows inside a bucket.
 	const columns = computed<QueryResultColumn[]>(() => {
 		if (!isTable.value) return []
 		return read.value?.result.columns || []
