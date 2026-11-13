@@ -1,96 +1,132 @@
 <script setup lang="tsx">
-import { BarChart2, Clock, Eye, Heart, MoreVertical, RefreshCw } from 'lucide-vue-next'
+import { Avatar } from 'frappe-ui'
+import { Eye, LayoutDashboard, MoreVertical, Star } from 'lucide-vue-next'
+import { computed, ref, watch } from 'vue'
+import { __ } from '../translation'
+import useUserStore from '../users/users'
 import { DashboardListItem } from './dashboards'
 
-interface Props {
+const props = defineProps<{
 	dashboard: DashboardListItem
 	dropdownOptions: any[]
-	previewLoading?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
-	previewLoading: false,
-})
+}>()
 
 const emit = defineEmits<{
 	'toggle-favorite': []
-	'update-preview': []
 }>()
+
+// a reader without an Insights role cannot list users, and gets the owner's name
+const userStore = props.dashboard.owner_name === undefined ? useUserStore() : null
+const ownerName = computed(
+	() =>
+		props.dashboard.owner_name ||
+		(props.dashboard.owner && userStore?.getName(props.dashboard.owner)) ||
+		props.dashboard.owner ||
+		'',
+)
+const noSharedPreview = __("Each viewer sees their own data, so there's no shared preview")
+const previewFailed = ref(false)
+watch(
+	() => props.dashboard.preview_image,
+	() => (previewFailed.value = false),
+)
 </script>
 
 <template>
-	<div class="group relative flex w-full cursor-pointer flex-col gap-2 rounded bg-white">
+	<div class="group/card relative flex w-full flex-col gap-2 rounded-4 bg-surface-base">
 		<router-link
 			:to="`/dashboards/${dashboard.name}`"
-			class="flex h-[150px] overflow-hidden rounded shadow transition-transform duration-200 group-hover:scale-[1.01]"
+			class="flex h-[150px] overflow-hidden rounded-4 border border-outline-gray-2 transition-transform duration-200 group-hover/card:scale-[1.01]"
 		>
 			<img
-				v-if="dashboard.preview_image"
+				v-if="dashboard.preview_image && !previewFailed"
 				:src="dashboard.preview_image"
 				:alt="`Preview of ${dashboard.title}`"
 				loading="lazy"
 				decoding="async"
-				onerror="this.src = ''"
-				class="object-cover opacity-80"
+				@error="previewFailed = true"
+				class="h-full w-full object-cover object-top opacity-80"
 			/>
-			<div v-else class="flex h-full w-full items-center justify-center bg-gray-50/70">
-				<Button
-					variant="ghost"
-					@click.prevent.stop="emit('update-preview')"
-					:loading="previewLoading"
+			<Tooltip
+				v-else
+				:text="noSharedPreview"
+				:disabled="dashboard.same_rows_for_every_reader"
+			>
+				<div
+					class="flex h-full w-full items-center justify-center bg-surface-gray-1"
+					:aria-label="dashboard.same_rows_for_every_reader ? undefined : noSharedPreview"
 				>
-					<template #prefix>
-						<RefreshCw class="h-3.5 w-3.5 text-gray-500" />
-					</template>
-					<span class="text-gray-500">Load Preview</span>
-				</Button>
-			</div>
+					<LayoutDashboard class="size-8 text-ink-gray-3" stroke-width="1.25" />
+				</div>
+			</Tooltip>
 		</router-link>
+		<Button
+			v-if="dropdownOptions.length"
+			class="absolute right-2 top-2"
+			:class="
+				dashboard.is_favourite
+					? ''
+					: 'opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100'
+			"
+			variant="subtle"
+			:label="dashboard.is_favourite ? __('Remove from favorites') : __('Add to favorites')"
+			@click.stop="emit('toggle-favorite')"
+		>
+			<template #icon>
+				<Star
+					class="h-4 w-4"
+					:class="
+						dashboard.is_favourite
+							? 'fill-ink-amber-4 text-ink-amber-4'
+							: 'text-ink-gray-3 hover:text-ink-gray-6'
+					"
+				/>
+			</template>
+		</Button>
 
 		<div class="flex items-center justify-between gap-2">
-			<div class="flex-1 min-w-0">
-				<div class="flex items-start gap-1">
-					<p class="truncate text-sm" :title="dashboard.title">
-						{{ dashboard.title }}
-					</p>
+			<router-link :to="`/dashboards/${dashboard.name}`" class="min-w-0 flex-1">
+				<p class="truncate text-sm" :title="dashboard.title">
+					{{ dashboard.title }}
+				</p>
+				<div class="mt-1.5 flex items-center gap-3">
+					<div v-if="dashboard.shipped_by" class="flex min-w-0 items-center gap-1.5">
+						<Avatar
+							class="shrink-0"
+							size="xs"
+							shape="square"
+							:label="dashboard.shipped_by"
+							:image="dashboard.shipped_by_logo ?? undefined"
+						/>
+						<span class="truncate text-xs text-ink-gray-5">
+							{{ dashboard.shipped_by }}
+						</span>
+					</div>
+					<div v-else class="flex min-w-0 items-center gap-1.5">
+						<Avatar
+							class="shrink-0"
+							size="xs"
+							:label="ownerName"
+							:image="dashboard.owner && userStore?.getImage(dashboard.owner)"
+						/>
+						<span class="truncate text-xs text-ink-gray-5">
+							{{ ownerName }}
+						</span>
+					</div>
+					<div class="flex shrink-0 items-center gap-1">
+						<Eye class="h-3 w-3 text-ink-gray-5" stroke-width="1.5" />
+						<span class="text-xs text-ink-gray-5">{{ dashboard.views }}</span>
+					</div>
+					<span class="shrink-0 text-xs text-ink-gray-5">
+						{{ dashboard.modified_from_now }}
+					</span>
 				</div>
-				<div class="mt-1.5 flex gap-2">
-					<div class="flex items-center gap-1">
-						<Eye class="h-3 w-3 text-gray-600" stroke-width="1.5" />
-						<span class="text-xs text-gray-600">
-							{{ dashboard.views }}
-						</span>
-					</div>
-					<div class="flex items-center gap-1">
-						<BarChart2 class="h-3 w-3 text-gray-600" stroke-width="1.5" />
-						<span class="text-xs text-gray-600">
-							{{ dashboard.charts }}
-						</span>
-					</div>
-					<div class="flex items-center gap-1">
-						<Clock class="h-3 w-3 text-gray-600" stroke-width="1.5" />
-						<span class="text-xs text-gray-600">
-							{{ dashboard.modified_from_now }}
-						</span>
-					</div>
-				</div>
-			</div>
-			<div class="flex flex-shrink-0 items-center">
-				<button @click.stop="emit('toggle-favorite')">
-					<Heart
-						class="h-4 w-4"
-						:class="{
-							'fill-blue-500 text-blue-500 transition-all hover:scale-110 active:scale-90':
-								dashboard.is_favourite,
-							'text-[#9CA3AF] transition-all hover:scale-110 hover:text-[#374151] active:scale-90':
-								!dashboard.is_favourite,
-						}"
-					/>
-				</button>
+			</router-link>
+			<div v-if="dropdownOptions.length" class="flex flex-shrink-0 items-center">
 				<Dropdown :options="dropdownOptions">
 					<Button variant="ghost">
 						<template #icon>
-							<MoreVertical class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							<MoreVertical class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
 					</Button>
 				</Dropdown>

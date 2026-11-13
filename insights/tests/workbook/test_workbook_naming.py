@@ -27,24 +27,28 @@ class TestWorkbookNaming(InsightsIntegrationTestCase):
     def after_test(self):
         cleanup_test_workbooks(USER_1)
 
+    # @feature upgrade.older-export-imports
     def test_name_column_is_varchar(self):
         # the migration this doctype went through; an unmigrated site fails here first.
         # mariadb reports "varchar(140)", postgres "character varying"
         column_type = str(frappe.db.get_column_type(DT.WORKBOOK, "name")).lower()
         self.assertIn("char", column_type, f"expected a varchar name column, got {column_type!r}")
 
+    # @feature workbook.create
     def test_workbook_is_named_with_a_number_as_a_string(self):
         workbook = create_test_workbook(USER_1)
 
         self.assertIsInstance(workbook.name, str)
         self.assertTrue(workbook.name.isdigit(), f"expected a plain number, got {workbook.name!r}")
 
+    # @feature workbook.create
     def test_names_keep_counting_up(self):
         first = create_test_workbook(USER_1, title="Naming Test One")
         second = create_test_workbook(USER_1, title="Naming Test Two")
 
         self.assertEqual(int(second.name), int(first.name) + 1)
 
+    # @feature workbook.folders
     def test_children_are_found_without_casting_the_name(self):
         workbook = create_test_workbook(USER_1)
         folder = frappe.get_doc(

@@ -1,0 +1,167 @@
+import type { ChartTokens } from 'frappe-ui/charts'
+import type { Component } from 'vue'
+import type { ChartConfig, ChartType } from '../../types/chart.types'
+import type { QueryResult, QueryResultRow, SortDirection } from '../../types/query.types'
+import type { RecordLinks } from '../record_link'
+
+// The contract every chart type is adapted against.
+
+export type ChartAdapterInput = {
+	chart_type: ChartType
+	/** The Chart's stored config, as the type it belongs to reads it. */
+	config: ChartConfig
+	/** The rows and columns the server ran for it. A split's series live here. */
+	result: QueryResult
+	/**
+	 * A second run, for a span card alone: the same measures over the
+	 * card's own span at a finer grain, oldest first. The card's own rows are
+	 * one per period, which is a two-point sparkline, so the trend is asked for
+	 * rather than read off them.
+	 */
+	sparklineResult?: QueryResult
+	/**
+	 * Which row answers each of a number card's comparisons, keyed by the source
+	 * that asks it. The server names them: a card fetches one stretch per
+	 * distinct comparison, and which row is which is a question of dates the
+	 * browser never sees. `null` names a question the card asked and got no row
+	 * for. A source left out is one the card's period cannot be asked at all.
+	 */
+	comparisonRows?: Record<string, number | null>
+	/**
+	 * Which result columns name a desk document, when the rows are documents.
+	 * Only a filler that renders the values themselves — the grid — has anywhere
+	 * to put them.
+	 */
+	recordLinks?: RecordLinks
+	/** Printed by the chrome. It belongs to the Chart, not to its config. */
+	title?: string
+	/** The line under the title, printed by the chrome as v2's `subtitle`. */
+	description?: string
+	/**
+	 * The plot's colors, resolved against the page and again on a theme flip. A
+	 * trend line's label plate reads them, because v2 draws the line through no
+	 * rule of its own. Left out by a surface that draws no trend line, a drill's
+	 * breakdown.
+	 */
+	tokens?: ChartTokens
+	/**
+	 * The one reading to show, by its `id`, for the type that states several — a
+	 * Number Chart. A dashboard cell is one reading, so the cell names it. A
+	 * surface that names none gets every reading the config states, which is what
+	 * the workbook editor previews.
+	 */
+	reading?: string
+	/**
+	 * `false`: the host draws the card and its label, so the filler draws
+	 * neither.
+	 */
+	card?: boolean
+	/**
+	 * The surface cannot change the Chart. A control that rewrites the config —
+	 * a table's sort — is left out rather than rendered dead, unless `sort`
+	 * gives the reader one of their own.
+	 */
+	readonly?: boolean
+	/**
+	 * Where a reader's sort goes, on a `readonly` surface that can re-run the
+	 * Chart in another order. The config it was handed already holds that order.
+	 */
+	// eslint-disable-next-line no-unused-vars
+	sort?: (column_name: string, direction: SortDirection) => void
+	/**
+	 * The surface can answer a drill. Inspecting a cell changes nothing about the
+	 * Chart, so it is not `readonly` that decides this — it is whether the source
+	 * behind the card has a level to hand back.
+	 */
+	drillable?: boolean
+	/**
+	 * The next run is in flight. Only a filler that keeps its last chart while
+	 * it reloads has anything to say about this. The rest are replaced by the
+	 * card's loading state before they are asked.
+	 */
+	executing?: boolean
+	/** Which page of the rows this is, for the filler that pages them — the grid. */
+	page?: ResultPage
+	/** Every row as a file, for the filler that allows one — the grid. */
+	download?: ResultDownload
+}
+
+/** A chart's rows as a file. */
+export type ResultDownload = {
+	downloading: boolean
+	// eslint-disable-next-line no-unused-vars
+	exportResults: (format: string, filename: string) => void
+	cancelDownload: () => void
+}
+
+/** One page of a chart's rows, and the way to the others. */
+export type ResultPage = {
+	current: number
+	/** Only a Table is paged. */
+	size?: number
+	/** Known once the reader asked for it. */
+	totalRowCount?: number
+	// eslint-disable-next-line no-unused-vars
+	goTo?: (page: number) => void
+	fetchCount?: () => Promise<void>
+}
+
+/** The point a reader clicked, as a drill reads it. */
+export type DrillDownTarget = {
+	/** Name of the result column the value came from. */
+	column: string
+	/** The row behind the point, as it stands in `result.rows`. */
+	row: QueryResultRow
+}
+
+/**
+ * Keyed by the event the filler emits — `select` for every v2 chart, and its
+ * own name for a plot Insights renders itself. Each entry turns that event's
+ * payload into the point behind it, or `undefined` when the click landed on
+ * nothing drillable.
+ */
+export type DrillDownResolvers = Record<
+	string,
+	// eslint-disable-next-line no-unused-vars
+	(event: any) => DrillDownTarget | undefined
+>
+
+/**
+ * What a surface says when the chart behind it did not load: one line that fits
+ * any card, and the reason under it.
+ */
+export type ChartFailure = {
+	/**
+	 * Not Permitted is an answer, not an error. The card shows a lock instead of
+	 * the red mark and shows no retry, because the reader cannot change their
+	 * own permissions. Undefined means `failed`.
+	 */
+	kind?: 'failed' | 'notPermitted'
+	/** What happened, in one line. It is the part that survives the smallest card. */
+	headline: string
+	/** Left out when the reader cannot act on it. */
+	detailText?: string
+}
+
+/**
+ * The loading and failure states, handed to a filler that renders its own cards.
+ * Every other type renders them on the chrome around the plot. A filler with its
+ * own cards has no chrome, so it renders them inside each card.
+ */
+export type ChartStateProps = {
+	loading: boolean
+	failure: ChartFailure | null
+	/** Runs the chart again. The action beside the message. */
+	onRetry: () => void
+}
+
+/** What fills the chart chrome, and everything the card needs to mount it. */
+export type ChartFiller = {
+	component: Component
+	/** `v-bind`-ready. Typed at the point each adapter builds it. */
+	props: Record<string, any>
+	drillDown?: DrillDownResolvers
+}
+
+// eslint-disable-next-line no-unused-vars
+export type ChartAdapter = (input: ChartAdapterInput) => ChartFiller | undefined

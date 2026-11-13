@@ -5,7 +5,8 @@ import TabbedSidebarLayout, { Tab, TabGroup } from '../../../components/TabbedSi
 import useDataSourceStore from '../../../data_source/data_source'
 import { wheneverChanges } from '../../../helpers'
 import { QueryTableArgs, SourceArgs, TableArgs } from '../../../types/query.types'
-import { Workbook, workbookKey } from '../../../workbook/workbook'
+import type { Workbook } from '../../../workbook/workbook'
+import { workbookKey } from '../../../workbook/workbook_key'
 import { query_table, table } from '../../helpers'
 import DataSourceTableList from './DataSourceTableList.vue'
 import WorkbookQueryList from './WorkbookQueryList.vue'
@@ -50,25 +51,24 @@ wheneverChanges(
 )
 
 dataSourceStore.getSources().then(() => {
-	tabGroups.value[0].tabs = dataSourceStore.sources
-		.map((source) => ({
-			label: source.title,
-			icon: DatabaseIcon,
-			component: () => (
-				<DataSourceTableList
-					v-model:selectedTable={selectedTable.value}
-					data_source={source.name}
-				/>
-			),
-		}))
-		.sort((a, b) => a.label.localeCompare(b.label))
+	// the site's own database first: it is where most first queries start
+	const sources = [...dataSourceStore.sources].sort(
+		(a, b) => Number(b.is_site_db) - Number(a.is_site_db) || a.title.localeCompare(b.title),
+	)
+	tabGroups.value[0].tabs = sources.map((source) => ({
+		label: source.title,
+		icon: DatabaseIcon,
+		component: () => (
+			<DataSourceTableList
+				v-model:selectedTable={selectedTable.value}
+				data_source={source.name}
+			/>
+		),
+	}))
 
-	activeTab.value = tabGroups.value[0].tabs[0]
-	if (props.source && props.source.table.type == 'table') {
-		const source_data_source = props.source.table.data_source
-		const tab = tabGroups.value[0].tabs.find((tab) => tab.label == source_data_source)
-		if (tab) activeTab.value = tab
-	}
+	const current = props.source?.table.type == 'table' ? props.source.table.data_source : ''
+	const index = sources.findIndex((source) => source.name == current)
+	activeTab.value = tabGroups.value[0].tabs[Math.max(index, 0)]
 })
 
 const selectedQuery = ref<QueryTableArgs>(
@@ -118,8 +118,8 @@ function onConfirm() {
 </script>
 
 <template>
-	<Dialog v-model="showDialog" :options="{ size: '4xl' }">
-		<template #body>
+	<Dialog v-model:open="showDialog" size="4xl" bare>
+		<template #default>
 			<div class="relative flex pb-10" :style="{ height: 'calc(100vh - 12rem)' }">
 				<TabbedSidebarLayout
 					:title="__('Pick Starting Data')"

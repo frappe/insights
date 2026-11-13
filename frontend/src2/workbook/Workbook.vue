@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { AlertOctagon } from 'lucide-vue-next'
-import { provide, watch, watchEffect } from 'vue'
+import { computed, provide, watch, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import LoadFailure from '../components/LoadFailure.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { waitUntil } from '../helpers'
-import useWorkbook, { workbookKey } from './workbook'
+import { __ } from '../translation'
+import useWorkbook from './workbook'
+import { workbookKey } from './workbook_key'
 import WorkbookNavbar from './WorkbookNavbar.vue'
 import WorkbookSidebar from './WorkbookSidebar.vue'
 import useChart from '../charts/chart'
+import { invalidateChart } from '../charts/chart_view'
 import useDashboard from '../dashboard/dashboard'
 
 defineOptions({ inheritAttrs: false })
@@ -19,18 +23,18 @@ const workbook = useWorkbook(props.workbook_name)
 provide(workbookKey, workbook)
 window.workbook = workbook
 
-await waitUntil(() => workbook.isloaded)
-
-if (workbook.doc.queries.length === 0) {
-	workbook.addQuery()
-}
-
 const router = useRouter()
 const route = useRoute()
-if (route.name === 'Workbook' && workbook.doc.queries.length) {
-	const query = workbook.doc.queries[0]
-	router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
-}
+
+waitUntil(() => !workbook.pending).then(() => {
+	if (workbook.doc.queries.length === 0) {
+		workbook.addQuery()
+	}
+	if (route.name === 'Workbook' && workbook.doc.queries.length) {
+		const query = workbook.doc.queries[0]
+		router.replace(`/workbook/${workbook.doc.name}/query/${query.name}`)
+	}
+})
 
 // when we navigate from query to chart of the same query, refresh the chart
 watch(
@@ -38,8 +42,11 @@ watch(
 	(newRoute, oldRoute) => {
 		if (newRoute.name === 'WorkbookChart' && oldRoute.name === 'WorkbookQuery') {
 			const chart = useChart(newRoute.params.chart_name as string)
+			// every read of the chart, not only its own: a dashboard beside it
+			// renders the same chart, and its read asks the same question it
+			// asked before the query changed under it
 			if (chart.doc.query === oldRoute.params.query_name) {
-				chart.refresh(true)
+				invalidateChart(String(chart.doc.name))
 			}
 		}
 	},
@@ -69,32 +76,48 @@ whenever(cmdV, () => {
 })
 
 watchEffect(() => {
-	document.title = `${workbook.doc.title} | Workbook`
+	document.title = workbook.loadFailure
+		? __('Workbook | Insights')
+		: `${workbook.doc.title} | Workbook`
 })
+
+const loadFailureTitle = computed(
+	() =>
+		({
+			notFound: __('Workbook not found'),
+			noAccess: __("You don't have access to this workbook"),
+			failed: __('Could not load the workbook. Refresh to try again.'),
+		})[workbook.loadFailure!],
+)
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col gap-0.5">
-		<LoadingOverlay v-if="!workbook.isloaded" />
+	<div v-if="workbook.loadFailure" class="flex h-full w-full">
+		<LoadFailure :title="loadFailureTitle">
+			<Button class="mt-2" :label="__('Go to Workbooks')" :route="{ path: '/workbook' }" />
+		</LoadFailure>
+	</div>
+	<div v-else class="flex h-full w-full flex-col">
+		<LoadingOverlay v-if="workbook.pending" />
 		<WorkbookNavbar />
 		<div
 			class="relative flex w-full flex-1 overflow-hidden"
 			:class="workbook.showSidebar ? 'flex-row' : 'flex-col'"
 		>
 			<WorkbookSidebar />
-			<RouterView v-if="workbook.isloaded" :key="route.fullPath" v-slot="{ Component }">
+			<RouterView v-if="!workbook.pending" :key="route.fullPath" v-slot="{ Component }">
 				<component :is="Component" />
 				<div v-if="false" class="flex flex-1 items-center justify-center">
 					<div class="flex flex-col items-center gap-4">
-						<AlertOctagon class="h-16 w-16 text-gray-400" stroke-width="1" />
+						<AlertOctagon class="h-16 w-16 text-ink-gray-3" stroke-width="1" />
 						<p
 							v-if="workbook.doc.queries.length"
-							class="text-center text-lg leading-4 text-gray-500"
+							class="text-center text-lg leading-4 text-ink-gray-4"
 						>
 							This tab doesn't exist <br />
 							Try switching to another tab
 						</p>
-						<p v-else class="text-center text-lg leading-5 text-gray-500">
+						<p v-else class="text-center text-lg leading-5 text-ink-gray-4">
 							You haven't added any queries yet <br />
 							Click on the "+" button to add a new query
 						</p>

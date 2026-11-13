@@ -40,60 +40,75 @@ class TestJsonFunctions(unittest.TestCase):
     def _values(self, expr):
         return self.table.select(v=expr).to_pandas()["v"].tolist()
 
+    # @feature query.expression-json
     def test_reads_a_key_from_pretty_printed_json(self):
         self.assertEqual(self._values(json_value(self.table.p, "product"))[0], "erpnext")
 
+    # @feature query.expression-json
     def test_explicit_json_null_becomes_empty_not_the_text_null(self):
         # casting JSON to string otherwise yields the literal 'null', which then
         # counts as a real value in filters and group-bys
         self.assertIsNone(self._values(json_value(self.table.p, "product"))[1])
 
+    # @feature query.expression-json
     def test_the_string_null_stays_text(self):
         self.assertEqual(self._values(json_value(self.table.p, "product"))[5], "null")
 
+    # @feature query.expression-json
     def test_missing_key_is_empty(self):
         self.assertEqual(self._values(json_value(self.table.p, "nope")), [None] * len(ROWS))
 
+    # @feature query.expression-json
     def test_reads_a_python_dict_row_next_to_json_rows(self):
         self.assertEqual(self._values(json_value(self.table.p, "product"))[2], "crm")
         self.assertEqual(self._values(json_value(self.table.p, "note"))[2], "it's fine")
 
+    # @feature query.expression-json
     def test_valid_json_is_read_as_written(self):
         self.assertEqual(self._values(json_value(self.table.p, "product"))[3], "rock 'n', roll")
 
+    # @feature query.expression-json
     def test_a_row_that_is_not_json_is_empty(self):
         self.assertIsNone(self._values(json_value(self.table.p, "product"))[4])
 
+    # @feature query.expression-json
     def test_reads_list_positions_from_the_end(self):
         self.assertEqual(self._values(json_value(self.table.p, "items.-1.n"))[1], "first")
 
+    # @feature query.expression-json
     def test_reads_nested_keys_and_list_positions(self):
         self.assertEqual(self._values(json_value(self.table.p, "address.city"))[1], "Pune")
         self.assertEqual(self._values(json_value(self.table.p, "items.0.n"))[1], "first")
 
     @unittest.skipUnless(is_safe_exec_enabled(), "expression execution requires server scripts enabled")
+    # @feature query.expression-json
     def test_validates_inside_a_summary(self):
         # the measure dialog validates on a table with no backend
         columns = [{"value": "p", "description": "String"}]
         result = validate_types("sum(json_value(p, 'amount', 'float'))", columns)
         self.assertTrue(result["is_valid"], result)
 
+    # @feature query.expression-json
     def test_returns_a_typed_value(self):
         self.assertEqual(self._values(json_value(self.table.p, "amount", "float"))[1], 12.5)
         self.assertTrue(self._values(json_value(self.table.p, "ok", "bool"))[1])
 
+    # @feature query.expression-json
     def test_composes_inside_a_filter(self):
         # the point of json_value over json_extract: it is a value, not a query
         matched = self.table.filter(json_value(self.table.p, "product") == "erpnext")
         self.assertEqual(matched.count().to_pandas(), 1)
 
+    # @feature query.expression-json
     def test_rejects_an_unknown_type(self):
         with self.assertRaises(Exception):
             json_value(self.table.p, "amount", "monetary")
 
+    # @feature query.expression-json
     def test_null_if_blanks_a_placeholder_value(self):
         self.assertEqual(self._values(null_if(self.table.team, ""))[:2], ["abc", None])
 
+    # @feature query.expression-json
     def test_json_extract_infers_a_type_from_the_values_that_are_set(self):
         table = self.con.create_table(
             "json_extract_fixture", ibis.memtable({"p": ['{"n": 5}', '{"n": null}', '{"k": null}']})
@@ -125,8 +140,10 @@ class TestJsonFunctionsOutsideDuckDB(unittest.TestCase):
     def _values(self, expr):
         return self.table.select(v=expr).to_pandas()["v"].tolist()
 
+    # @feature query.expression-json
     def test_explicit_json_null_is_empty_and_the_string_null_stays_text(self, _):
         self.assertEqual(self._values(json_value(self.table.p, "product"))[:2], [None, "null"])
 
+    # @feature query.expression-json
     def test_numeric_segments_read_list_positions(self, _):
         self.assertEqual(self._values(json_value(self.table.p, "items.0.n"))[2], "first")

@@ -1,6 +1,8 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+from urllib.parse import quote
+
 import frappe
 from frappe.utils import split_emails, validate_email_address
 from frappe.utils.user import get_users_with_role
@@ -14,8 +16,9 @@ from insights.insights.doctype.insights_user_invitation.insights_user_invitation
     get_invitation_by_key,
 )
 from insights.permissions import get_insights_users
+from insights.utils import get_app_url
 
-# the roster is a directory to share from, so it carries what a picker shows
+# the roster is a directory to share from, so it includes what a picker shows
 # and nothing else
 USER_FIELDS = ["name", "full_name", "email", "last_active", "user_image", "enabled"]
 
@@ -45,7 +48,7 @@ def get_users(search_term: str | None = None):
 
     or_filters = {}
     if search_term:
-        # a name or an address, not both - the picker offers "search by name or
+        # a name or an address, not both - the picker shows "search by name or
         # email", so a match on either is a hit
         or_filters = {
             "full_name": ["like", f"%{search_term}%"],
@@ -99,6 +102,23 @@ def get_users(search_term: str | None = None):
 
 
 @insights_whitelist()
+def get_roles():
+    """Roles a writer can name at the `Roles` visibility level.
+
+    The picker lists what the server accepts: `UNNAMEABLE_ROLES` is where the
+    rule lives, and `validate_visibility` is what enforces it.
+    """
+    from insights.permissions import UNNAMEABLE_ROLES
+
+    return frappe.get_all(
+        "Role",
+        filters={"disabled": 0, "name": ["not in", UNNAMEABLE_ROLES]},
+        pluck="name",
+        order_by="name asc",
+    )
+
+
+@insights_whitelist()
 def get_teams(search_term: str | None = None):
     teams = frappe.get_list(
         "Insights Team",
@@ -112,6 +132,9 @@ def get_teams(search_term: str | None = None):
             "creation",
         ],
     )
+    # the queries below match on `IN (...)`, which an empty list makes invalid SQL
+    if not teams:
+        return []
 
     members = frappe.get_all(
         "Insights Team Member",
@@ -240,14 +263,14 @@ def accept_invitation(key: str):
     if not account_was_created:
         # the address already had an account. The invitation grants it access to
         # Insights; signing in is for the account holder to do. The login page
-        # carries them the rest of the way, so the link still ends in Insights.
-        frappe.local.response["location"] = "/login?redirect-to=/insights"
+        # takes them the rest of the way, so the link still ends in Insights.
+        frappe.local.response["location"] = f"/login?redirect-to={quote(get_app_url())}"
         return
 
     # a new account has no password yet, so the invitation link is how the
     # invitee gets in the first time
     frappe.local.login_manager.login_as(invitation.email)
-    frappe.local.response["location"] = "/insights"
+    frappe.local.response["location"] = get_app_url()
 
 
 @insights_whitelist(role="Insights Admin", methods=["POST"])

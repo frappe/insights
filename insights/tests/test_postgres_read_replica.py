@@ -15,6 +15,7 @@ from frappe.tests import UnitTestCase
 
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import (
     InsightsPostgresBackend,
+    InsightsPostgresCompiler,
     get_postgres_connection,
 )
 
@@ -71,6 +72,7 @@ def replica(*columns):
 
 
 class TestPostgresReadReplica(UnitTestCase):
+    # @feature query.native-sql-read-only-source
     def test_a_replica_reads_the_columns_of_native_sql_off_a_zero_row_run(self):
         db = replica(
             ("name", TEXT_OID, -1, "text"),
@@ -86,12 +88,14 @@ class TestPostgresReadReplica(UnitTestCase):
         self.assertNotIn(";", first)
         self.assertIn("format_type", catalog_read)
 
+    # @feature query.native-sql-read-only-source
     def test_two_result_columns_with_one_name_are_refused_by_name(self):
         db = replica(("name", TEXT_OID, -1, "text"), ("name", TEXT_OID, -1, "text"))
 
         with self.assertRaisesRegex(frappe.ValidationError, "more than one column named name"):
             db._get_schema_using_query("SELECT a.name, b.name FROM a, b")
 
+    # @feature data-source.connect-postgres query.native-sql-read-only-source
     def test_a_connection_string_source_connects_with_its_decoded_parts_on_the_same_backend(self):
         source = frappe._dict(connection_string="postgresql://reader:p%40ss@replica.internal:5433/shop")
 
@@ -99,6 +103,7 @@ class TestPostgresReadReplica(UnitTestCase):
             db = get_postgres_connection(source)
 
         self.assertIsInstance(db, InsightsPostgresBackend)
+        self.assertIsInstance(db.compiler, InsightsPostgresCompiler)
         do_connect.assert_called_once_with(
             user="reader",
             password="p@ss",

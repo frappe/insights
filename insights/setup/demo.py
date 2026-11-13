@@ -2,7 +2,6 @@
 # For license information, please see license.txt
 
 import os
-import shutil
 
 import frappe
 
@@ -14,6 +13,15 @@ from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 imp
     InsightsTableLinkv3,
 )
 from insights.insights.doctype.insights_workbook.insights_workbook import import_workbook
+from insights.setup.demo_data import generate as generate_demo_data
+
+
+def use_generated_data():
+    """Tests and CI build the demo dataset from `insights.setup.demo_data`.
+
+    An install downloads the production dataset instead.
+    """
+    return bool(frappe.flags.in_test or os.environ.get("CI"))
 
 
 def update_progress(message, progress):
@@ -27,6 +35,9 @@ def update_progress(message, progress):
             "user": frappe.session.user,
         },
     )
+
+
+SAMPLE_WORKBOOK_TITLE = "Order Analysis"
 
 
 class DemoDataFactory:
@@ -53,9 +64,8 @@ class DemoDataFactory:
         self.db_file_path = os.path.join(self.files_folder, self.db_filename)
 
         self.setup_demo_data_source()
-        if frappe.flags.in_test or os.environ.get("CI"):
-            test_db_path = os.path.join(os.path.dirname(__file__), self.db_filename)
-            shutil.copyfile(test_db_path, self.db_file_path)
+        if use_generated_data():
+            generate_demo_data(self.db_file_path)
 
     def setup_demo_data_source(self):
         if not frappe.db.exists("Insights Data Source v3", "demo_data"):
@@ -87,7 +97,7 @@ class DemoDataFactory:
         return tables_exists and links_exists
 
     def download_demo_data(self):
-        if frappe.flags.in_test or os.environ.get("CI"):
+        if use_generated_data():
             return
 
         import requests
@@ -170,7 +180,7 @@ class DemoDataFactory:
             )
 
     def create_sample_workbook(self):
-        if frappe.db.exists("Insights Workbook", {"title": "Order Analysis"}):
+        if frappe.db.exists("Insights Workbook", {"title": SAMPLE_WORKBOOK_TITLE}):
             return
 
         fixture_path = frappe.get_app_path("insights", "setup")

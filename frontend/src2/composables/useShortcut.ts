@@ -1,7 +1,7 @@
 import { useMagicKeys } from '@vueuse/core'
 import { onUnmounted, watch } from 'vue'
 
-const isMac = navigator.platform.toUpperCase().includes('MAC')
+export const isMac = navigator.platform.toUpperCase().includes('MAC')
 
 export function formatShortcut(shortcut: string): string {
 	return shortcut
