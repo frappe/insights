@@ -232,6 +232,7 @@ const detail = computed(() => {
 		return refusalDetail(
 			props.chart.notPermitted,
 			__('You do not have access to the data behind this chart'),
+			props.chart.notPermittedRunAs,
 		)
 	}
 	if (state.value !== 'failed' || readonly.value) return ''

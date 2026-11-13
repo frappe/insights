@@ -100,11 +100,15 @@ export async function getRowCount(
 const updatingDataSourceTables = ref(false)
 async function updateDataSourceTables(data_source: string) {
 	updatingDataSourceTables.value = true
-	toast.info(__('Updating tables for {0}', data_source))
+	toast.info(__('Updating Tables'), {
+		description: __('Updating tables for {0}', data_source),
+	})
 	return call('insights.api.data_sources.update_data_source_tables', { data_source })
 		.then(() => {
 			getTables(data_source)
-			toast.success(__('Tables updated for {0}', data_source))
+			toast.success(__('Tables Updated'), {
+				description: __('Tables updated for {0}', data_source),
+			})
 		})
 		.catch((e: Error) => {
 			showErrorToast(e)

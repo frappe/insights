@@ -179,6 +179,25 @@ export function axisFormatter(
 }
 
 /**
+ * How an axis prints its tick labels: a thousand and over shortened, as Insights
+ * printed them before frappe-ui charts, so a scale of crores reads `4Cr`. A tick
+ * under a thousand prints as `axisFormatter` does, so `0.05` stays `0.05`. The
+ * places an author stated hold only where they also shortened: a `0` meant for
+ * whole amounts would print `2.5M` as `3M`. A tooltip prints in full.
+ */
+export function axisTickFormatter(
+	config?: NumberFormatConfigSource | null,
+	measure?: FormattedMeasure | null,
+	rows?: QueryResultRow[],
+): NumberFormatter {
+	const format = numberFormatOf(config, measure, rows)
+	const full = { ...format, unit_decimals: undefined }
+	const short = { ...full, shorten: true, decimals: format.shorten ? format.decimals : undefined }
+	return (value: any) =>
+		printNumber(value, Math.abs(Number(value) * format.scale) < 1000 ? full : short)
+}
+
+/**
  * The currency code a Measure's rows carry, under `<measure>__currency`.
  * `undefined` when the Measure names no currency column, so the site's stands
  * in. `null` when the rows mix codes: a total over amounts in different
