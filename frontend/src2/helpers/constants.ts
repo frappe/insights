@@ -30,7 +30,7 @@ export const COLUMN_TYPES = [
 	{ label: __('Array'), value: 'Array' },
 ] as const
 
-export const FILTER_TYPES = ['String', 'Number', 'Date'] as const
+export const FILTER_TYPES = ['String', 'Number', 'Date', 'Datetime'] as const
 export type FilterType = (typeof FILTER_TYPES)[number]
 
 export const joinTypes = [

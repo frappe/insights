@@ -92,6 +92,9 @@ def get_site_info():
         # two calendars a quarter apart
         "fiscal_year_start": get_fiscal_year_start_date().isoformat(),
         "currency_precision": get_currency_precision(),
+        # Datetime values are stored, shown and filtered in it, and the browser
+        # does not convert them, so a time picker names it
+        "time_zone": frappe.utils.get_system_timezone(),
         **get_currency_info(),
     }
 

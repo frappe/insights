@@ -13,6 +13,15 @@
 // A `last` or `next` span that names no count covers one period: "last month"
 // reads as "last 1 month". `<unit>` is one of `SPAN_UNITS`, singular or plural.
 //
+// A span counted in a `TIME_UNITS` unit has a grammar of its own:
+//
+//   `last <N> minutes|hours`    the N units up to the moment it is read
+//   `next <N> minutes|hours`    the N units from that moment
+//
+// It covers no whole periods ("last 1 hour" at 14:20 starts at 13:20), so it has
+// no `current`, `to date` or `(include current)` form. The server reads it in
+// `parse_time_span`.
+//
 // The server reads the same grammar, in `parse_span`
 // (`insights/insights/query_builders/sql_functions.py`), and `get_window` there
 // is what a span finally resolves against. Two parsers, one grammar: a span this
@@ -111,4 +120,28 @@ export function parseSpan(span?: string): Span | undefined {
 	const count = Number.isFinite(counted) && counted > 0 ? counted : 1
 	const unit = spanUnitOf((Number.isFinite(counted) ? words.slice(1) : words).join(' '))
 	return unit ? { shape: first, unit, count, includeCurrent } : undefined
+}
+
+export const TIME_UNITS = ['minute', 'hour'] as const
+export type TimeUnit = (typeof TIME_UNITS)[number]
+
+export type TimeSpan = { shape: 'last' | 'next'; count: number; unit: TimeUnit }
+
+export function timeUnitOf(word?: string): TimeUnit | undefined {
+	const unit = word?.trim().toLowerCase().replace(/s$/, '')
+	return TIME_UNITS.find((candidate) => candidate === unit)
+}
+
+export function buildTimeSpan(span: TimeSpan): string {
+	const count = Math.max(1, Math.round(span.count || 1))
+	return `${span.shape} ${count} ${span.unit}${count === 1 ? '' : 's'}`
+}
+
+/** A span counted in minutes or hours, or nothing where the string is not one. */
+export function parseTimeSpan(span?: string): TimeSpan | undefined {
+	const words = span?.trim().toLowerCase().split(/\s+/) || []
+	if (words.length !== 3 || (words[0] !== 'last' && words[0] !== 'next')) return undefined
+	if (!/^\d+$/.test(words[1])) return undefined
+	const unit = timeUnitOf(words[2])
+	return unit ? { shape: words[0], count: Math.max(1, Number(words[1])), unit } : undefined
 }
