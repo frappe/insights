@@ -5,7 +5,9 @@ import type {
 	ScatterPointEvent,
 } from 'frappe-ui/charts'
 import type { BubbleChartConfig } from '../../types/chart.types'
-import { numberFormatter, type NumberFormatter } from '../number_format'
+import type { QueryResultRow } from '../../types/query.types'
+import { axisTickFormatter, numberFormatter, type NumberFormatter } from '../number_format'
+import { ticksOf } from './axis'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 const ScatterChart = defineAsyncComponent(() => import('./lazy_charts').then((m) => m.ScatterChart))
@@ -25,10 +27,21 @@ export function adaptBubbleChart(input: ChartAdapterInput): ChartFiller | undefi
 		// Three Measures, each printed in its own units: the two axes keep their
 		// own formatter, and `format` is what is left — the size, which has no
 		// axis to hang one on.
-		xAxis: { format: numberFormatter(config, config.xAxis, input.result.rows) },
-		yAxis: { format: numberFormatter(config, config.yAxis, input.result.rows) },
+		xAxis: {
+			format: numberFormatter(config, config.xAxis, input.result.rows),
+			echartOptions: ticksOf(axisTickFormatter(config, config.xAxis, input.result.rows)),
+		},
+		yAxis: {
+			format: numberFormatter(config, config.yAxis, input.result.rows),
+			echartOptions: ticksOf(axisTickFormatter(config, config.yAxis, input.result.rows)),
+		},
 		format: numberFormatter(config, config.size_column, input.result.rows),
 	}
+
+	// v2 fits a scatter's scales to the cloud, and its inset then carries a scale
+	// of amounts below zero. Insights started such a scale at zero.
+	if (nonNegative(input.result.rows, x)) props.xAxis!.min = 0
+	if (nonNegative(input.result.rows, y)) props.yAxis!.min = 0
 
 	const size = config.size_column?.measure_name
 	if (size) props.size = size
@@ -98,4 +111,8 @@ function quadrantLines(
 			label: format(line.value as number),
 			dashed: true,
 		}))
+}
+
+function nonNegative(rows: QueryResultRow[], column: string) {
+	return rows.every((row) => !(Number(row[column]) < 0))
 }
