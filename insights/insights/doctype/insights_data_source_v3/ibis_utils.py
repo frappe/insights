@@ -2046,7 +2046,8 @@ def publish_script_logs():
             user=frappe.session.user,
             message={
                 "user": frappe.session.user,
-                "logs": frappe.debug_log,
+                # a list, not the `frappe.debug_log` proxy, which serializes as one string
+                "logs": list(frappe.local.debug_log),
             },
         )
     except Exception:
