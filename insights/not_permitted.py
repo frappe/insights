@@ -19,7 +19,12 @@ from functools import wraps
 
 import frappe
 
-from insights.permission_user import get_permission_user, permission_user, permission_user_for
+from insights.permission_user import (
+    declared_owner,
+    declaring_document,
+    permission_user,
+    permission_user_for,
+)
 
 # The columns this request's builds held back, each with its doctype. A chart
 # that never reads such a column keeps running. The refusal comes only when a
@@ -44,13 +49,15 @@ def refuse(doctypes: list[str] | None = None, message: str | None = None) -> Non
     response includes the exception's own text only where tracebacks are
     allowed. Without the message log, the reader would see only an endpoint's URL.
 
-    A read that runs as somebody else, such as a chart's owner, names them: the
-    reader could not fix it with any access of their own. It names their full
-    name, because a Guest may read it.
+    A read of content that runs as its owner names the owner: the reader could
+    not fix it with any access of their own. It names their full name, because
+    a Guest may read it. A preview render or an alert runs as somebody else
+    too, but as the content's reader, so it names nobody.
     """
     doctypes = doctypes or []
-    runner = get_permission_user()
-    run_as = frappe.utils.get_fullname(runner) if runner != frappe.session.user else None
+    declaring = declaring_document()
+    owner = declared_owner(declaring) if declaring else None
+    run_as = frappe.utils.get_fullname(owner) if owner and owner != frappe.session.user else None
     if not message:
         named = ", ".join(frappe.bold(doctype) for doctype in doctypes)
         if doctypes and run_as:
