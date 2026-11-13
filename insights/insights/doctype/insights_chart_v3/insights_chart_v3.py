@@ -13,9 +13,10 @@ from insights.insights.doctype.insights_chart_v3.chart_drill import check_rows
 from insights.insights.doctype.insights_chart_v3.chart_grain import GRAINS, derived_grain, span_seconds
 from insights.insights.doctype.insights_chart_v3.chart_query import (
     AUTO_AXIS_POINTS,
+    TIMED_AXIS_POINTS,
     adjacent_bucket,
     auto_axis,
-    bounded_span,
+    bounded_grain,
     column_granularity,
     comparison_sources,
     comparison_timespans,
@@ -257,7 +258,7 @@ class InsightsChartv3(Document):
         if not can_read_rows(self):
             page = 1
             order_by = None
-        page_size = frappe.parse_json(self.config or "{}").get("limit") or 100
+        page_size = self.rows_to_read(frappe.parse_json(self.config or "{}").get("limit") or 100)
         # every span in this fetch resolves against this day. A drill sends it
         # back, so the drill cuts rows for the same day
         read_on = str(getdate(reading_day()))
@@ -321,8 +322,10 @@ class InsightsChartv3(Document):
         """Group an `auto` date axis by the grain that fits the stretch the reader asked for.
 
         It is the stretch the chart's filters bound on the axis column
-        (`bounded_span`): a dashboard Period of one month reads daily and a year
+        (`bounded_grain`): a dashboard Period of one month reads daily and a year
         reads weekly, whatever rows fall inside, and no query runs to find it.
+        A window written in minutes or hours reads finer, by the minute up to
+        three hours.
         When the filters leave an end open, the span of the rows the chart is
         about to group stands in for it. Like `take_dashboard_period`, the grain
         is written into the config where routed filters meet the chart, so
@@ -348,11 +351,22 @@ class InsightsChartv3(Document):
 
         self.config = frappe.as_json(config)
 
+    def rows_to_read(self, limit: int) -> int:
+        """The rows one fetch reads: the chart's `limit`, or every point of an
+        `auto` axis cut at `TIMED_AXIS_POINTS` (`bounded_grain`), where the 100
+        a chart defaults to would cut off the end of the window. Only a window
+        written in minutes or hours gets there, so a Limit set on any other
+        chart holds."""
+        if self.flags.timed_axis:
+            return max(limit, TIMED_AXIS_POINTS)
+        return limit
+
     def auto_grain(self, config: dict, column: dict, grains: dict, adhoc_filters, force: bool) -> str:
         query_operations = frappe.parse_json(frappe.db.get_value(QUERY, self.query, "operations") or "[]")
-        span = bounded_span(self.query, query_operations, config, adhoc_filters, column)
-        if span:
-            return derived_grain(grains, (span[1] - span[0]).total_seconds(), AUTO_AXIS_POINTS)
+        grain, timed = bounded_grain(self.query, query_operations, config, adhoc_filters, column, grains)
+        if grain:
+            self.flags.timed_axis = timed
+            return grain
 
         # the rows' span moves only as rows arrive, and a grain a day old still
         # fits them. A relative filter resolves against the reading day and an

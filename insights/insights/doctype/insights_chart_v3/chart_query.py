@@ -34,9 +34,19 @@ import secrets
 from frappe import _
 from frappe.utils import add_to_date, get_datetime
 
-from insights.insights.doctype.insights_chart_v3.chart_grain import AUTO
-from insights.insights.doctype.insights_data_source_v3.ibis_utils import parse_bare_date, sanitize_name
-from insights.insights.query_builders.sql_functions import get_fiscal_period, resolve_timespan, span_unit
+from insights.insights.doctype.insights_chart_v3.chart_grain import AUTO, derived_grain, timed_grain
+from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
+    parse_bare_date,
+    parse_bare_minute,
+    sanitize_name,
+)
+from insights.insights.query_builders.sql_functions import (
+    get_fiscal_period,
+    parse_time_span,
+    read_timespan,
+    resolve_instants,
+    span_unit,
+)
 
 AXIS_CHARTS = ("Bar", "Line", "Row")
 CHART_TYPES = (
@@ -59,6 +69,14 @@ DEFAULT_MAX_COLUMN_VALUES = 10
 # is 92, so a month reads daily, a quarter weekly (14) and a year weekly (53).
 # A card a few hundred pixels wide still has room between 60 bars
 AUTO_AXIS_POINTS = 60
+
+# a window a reader wrote in minutes or hours (`timed_rule`) is one they watch
+# closely, such as an incident, so it reads by the minute up to three hours:
+# 180 minutes and the one a window starting partway through a minute spills
+# into. Past that it reads by the hour, and past what hours fit it falls back
+# to `AUTO_AXIS_POINTS`. Day spans keep that rule, so no existing chart moves
+TIMED_AXIS_POINTS = 181
+TIMED_GRAINS = ("minute", "hour")
 
 # the grain an `auto` axis groups by when nothing resolved it: a reader that
 # builds the pipeline without running it, such as a check of a chart's sorts.
@@ -391,18 +409,9 @@ def bounded_span(
     if column.get("type") not in ("Date", "Datetime"):
         return None
 
-    name = column["name"]
-    groups = [(adhoc_filters or {}).get(query), (config or {}).get("filters")]
-    groups += _steps_since_defined(query_operations or [], name)
-
     start, end = None, None
-    for rule in _and_rules(groups):
-        if (rule.get("column") or {}).get("column_name") != name:
-            continue
-        bounds = _rule_bounds(rule.get("operator"), rule.get("value"))
-        if not bounds:
-            continue
-        first, last = bounds
+    for rule in _bounding_rules(query, query_operations, config, adhoc_filters, column):
+        first, last = _rule_bounds(rule.get("operator"), rule.get("value"))
         if first is not None:
             start = first if start is None else max(start, first)
         if last is not None:
@@ -411,6 +420,64 @@ def bounded_span(
     if start is None or end is None:
         return None
     return start, max(start, end)
+
+
+def bounded_grain(
+    query: str,
+    query_operations: list[dict] | None,
+    config: dict | None,
+    adhoc_filters: dict | None,
+    column: dict,
+    grains: dict,
+) -> tuple[str | None, bool]:
+    """The grain an `auto` axis on `column` reads at, from the stretch its
+    filters bound (`bounded_span`), or nothing when they bound none, and
+    whether it was cut at `TIMED_AXIS_POINTS`.
+
+    A stretch some rule wrote in minutes or hours (`timed_rule`) reads at
+    `TIMED_AXIS_POINTS` while a minute or an hour fits it; any other at
+    `AUTO_AXIS_POINTS`.
+    """
+    span = bounded_span(query, query_operations, config, adhoc_filters, column)
+    if not span:
+        return None, False
+    seconds = (span[1] - span[0]).total_seconds()
+    rules = _bounding_rules(query, query_operations, config, adhoc_filters, column)
+    if any(timed_rule(rule.get("operator"), rule.get("value")) for rule in rules):
+        grain = timed_grain(grains, seconds, TIMED_GRAINS, TIMED_AXIS_POINTS)
+        if grain:
+            return grain, True
+    return derived_grain(grains, seconds, AUTO_AXIS_POINTS), False
+
+
+def timed_rule(operator: str, value) -> bool:
+    """A rule written finer than a day: a span of minutes or hours, or a range
+    between two times written to the minute, as a Datetime filter sends them."""
+    if operator == "within":
+        try:
+            return bool(parse_time_span(read_timespan(value)[0]))
+        except Exception:
+            return False  # nosemgrep - a span that does not read is no time span
+    if operator == "between" and isinstance(value, list | tuple) and len(value) == 2:
+        return all(isinstance(v, str) and parse_bare_minute(v) for v in value)
+    return False
+
+
+def _bounding_rules(query, query_operations, config, adhoc_filters, column):
+    """The And rules on `column` that cut a stretch of it, from the three sets
+    of filters `bounded_span` reads."""
+    if column.get("type") not in ("Date", "Datetime"):
+        return
+
+    name = column["name"]
+    groups = [(adhoc_filters or {}).get(query), (config or {}).get("filters")]
+    groups += _steps_since_defined(query_operations or [], name)
+
+    for rule in _and_rules(groups):
+        if (rule.get("column") or {}).get("column_name") != name:
+            continue
+        if _rule_bounds(rule.get("operator"), rule.get("value")):
+            yield rule
 
 
 def _steps_since_defined(operations: list[dict], name: str) -> list[dict]:
@@ -451,10 +518,9 @@ def _rule_bounds(operator: str, value):
     reads it (`DAY_OPERATORS`)."""
     if operator == "within":
         try:
-            first, last = resolve_timespan(value)
+            return resolve_instants(value)
         except Exception:
             return None  # nosemgrep - a span that does not resolve bounds nothing; the rows are read instead
-        return _midnight(first), _midnight(last) + datetime.timedelta(days=1)
 
     if operator == "between":
         if not isinstance(value, list | tuple) or len(value) != 2:
@@ -487,6 +553,9 @@ def _instant(value) -> tuple[datetime.datetime, datetime.datetime] | None:
     day = value if isinstance(value, datetime.date) else parse_bare_date(value)
     if day:
         return _midnight(day), _midnight(day) + datetime.timedelta(days=1)
+    minute = parse_bare_minute(value)
+    if minute:
+        return minute, minute + datetime.timedelta(minutes=1)
     try:
         moment = datetime.datetime.fromisoformat(str(value))
     except ValueError:

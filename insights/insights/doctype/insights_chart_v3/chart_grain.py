@@ -84,6 +84,16 @@ def derived_grain(grains: dict, seconds: float, buckets: int) -> str:
     return list(ladder)[-1]
 
 
+def timed_grain(grains: dict, seconds: float, names: tuple, buckets: int) -> str | None:
+    """The finest of the grains `names` whose buckets fit the span into
+    `buckets`, or nothing when none does, unlike `derived_grain`."""
+    for name in names:
+        length = grains.get(name)
+        if length and seconds / length + 1 <= buckets:
+            return name
+    return None
+
+
 def span_seconds(chart, operations: list[dict], column: dict, adhoc_filters, force: bool = True) -> float:
     """How much time the rows `operations` return cover on `column`.
 

@@ -12,7 +12,12 @@ import {
 	periodMonths,
 	periodStart,
 	parseDatePhrase,
+	pathOf,
 	selectedRowKey,
+	spanFromText,
+	timedRangeOf,
+	timedRangeProblem,
+	timedRangeValue,
 	summaryParts,
 	spanLabel,
 	toFilterArgs,
@@ -49,6 +54,70 @@ describe('the words a span is written in', () => {
 		expect(isPreset('current day')).toBe(true)
 		expect(isPreset('last 7 days')).toBe(true)
 		expect(isPreset('last 3 months')).toBe(false)
+	})
+})
+
+describe('a Datetime filter', () => {
+	const at: QueryResultColumn = { name: 'sampled_at', type: 'Datetime' }
+	const posted: QueryResultColumn = { name: 'posting_date', type: 'Date' }
+
+	// @feature dashboard.filter-datetime
+	it('writes a span in minutes or hours the server reads, and reads it back', () => {
+		expect(spanFromText('Last 1 hour', true)).toBe('last 1 hour')
+		expect(spanFromText('last 90 minutes', true)).toBe('last 90 minutes')
+		expect(spanFromText('next 2 hours', true)).toBe('next 2 hours')
+		expect(spanLabel('last 15 minutes')).toBe('Last 15 minutes')
+		expect(spanLabel('last 90 minutes')).toBe('Last 90 minutes')
+		expect(spanLabel('next 1 hour')).toBe('Next hour')
+		expect(isPreset('last 24 hours')).toBe(true)
+		// a custom count reopens on the relative stage, at its unit
+		expect(
+			pathOf({ column: at, operator: 'within', value: 'last 90 minutes' }).relative,
+		).toEqual({ direction: 'last', count: 90, unit: 'minute', includeCurrent: false })
+	})
+
+	// @feature dashboard.filter-datetime
+	it('keeps a range to the minute', () => {
+		const range = timedRangeOf('2026-11-12 14:00 to 2026-11-12 16:30')
+		expect(timedRangeValue(range)).toEqual(['2026-11-12 14:00', '2026-11-12 16:30'])
+		// days alone are kept whole
+		expect(timedRangeValue(timedRangeOf('2026-11-12 to 2026-11-13'))).toEqual([
+			'2026-11-12 00:00',
+			'2026-11-13 23:59',
+		])
+		// a range that ends before it starts, or names no time of day, is none, and says why
+		const inverted = '2026-11-12 16:00 to 2026-11-12 09:00'
+		expect(timedRangeValue(timedRangeOf(inverted))).toBeUndefined()
+		expect(timedRangeProblem(inverted, 'range')).toBe('The range ends before it starts')
+		const late = '2026-11-11 25:00 to 2026-11-11 26:00'
+		expect(timedRangeValue(timedRangeOf(late))).toBeUndefined()
+		expect(timedRangeProblem(late, 'range')).toBe('25:00 is not a time of day')
+		expect(timedRangeProblem('2026-11-11 2pm to 2026-11-11 4pm', 'range')).toMatch(
+			/^Write a range/,
+		)
+		// a range still waiting for its end is not wrong yet
+		expect(timedRangeProblem('2026-11-11 14:00 to ', 'range')).toBeUndefined()
+
+		const filter = {
+			column: at,
+			operator: 'between' as const,
+			value: ['2026-11-12 14:00', '2026-11-12 16:30'],
+		}
+		expect(summaryParts(filter).value).toBe('12 Nov 2026 14:00 – 16:30')
+		expect(pathOf(filter).text).toBe('2026-11-12 14:00 to 2026-11-12 16:30')
+	})
+
+	// @feature dashboard.filter-datetime query.filter-relative-date
+	it('leaves a Date filter to its days', () => {
+		expect(spanFromText('last 15 minutes')).toBeUndefined()
+		expect(spanFromText('last 7 days')).toBe('last 7 days')
+		const days = {
+			column: posted,
+			operator: 'between' as const,
+			value: ['2026-09-05', '2026-09-11'],
+		}
+		expect(summaryParts(days).value).toBe('5 – 11 Sep 2026')
+		expect(pathOf(days).text).toBe('2026-09-05 to 2026-09-11')
 	})
 })
 
