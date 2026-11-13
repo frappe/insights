@@ -1039,6 +1039,9 @@ class WarehouseTableImporter:
         A full batch keeps the rows before its last cursor value, and the next batch
         starts at that value. One query per batch: a second one would scan a source
         whose cursor has no index twice.
+
+        Each query also stops at the end of a cursor window sized to hold about one
+        batch, so the source sorts that window and not every row up to now.
         """
         chunk_size = self.calculate_chunk_size(batch_size)
         if not self.cursor_column:
@@ -1050,14 +1053,23 @@ class WarehouseTableImporter:
         ordered = ibis.asc(self.cursor_column, nulls_first=True)
         remaining = self.remote_table
         total_rows = 0
+        low, high, step = self.get_cursor_window(batch_size)
+        bound = None if step is None else low + step
 
         while True:
-            query = remaining.order_by(ordered).head(batch_size)
+            # the last window stays open, so a bound the SQL literal rounds keeps the newest rows
+            last_window = bound is None or bound > high
+            window = remaining if last_window else remaining.filter(cursor.isnull() | (cursor < bound))
+            query = window.order_by(ordered).head(batch_size)
             batch = CursorBatch(self.read_batch(writer, query, chunk_size), self.cursor_column, batch_size)
             written = self.write_batch(writer, batch.rows())
             total_rows += written
             if not batch.full:
-                break
+                if last_window:
+                    break
+                remaining = self.remote_table.filter(cursor >= bound)
+                bound += step
+                continue
 
             last = batch.last
             # free the rows it held back before the next batch reads them again
@@ -1074,6 +1086,21 @@ class WarehouseTableImporter:
 
         self._log(f"Total Batches: {writer.batch_count} Total Rows: {total_rows}")
         return total_rows
+
+    def get_cursor_window(self, batch_size: int) -> tuple:
+        """The cursor's range, and a window width that holds about one batch of it.
+
+        One aggregate per import, which sorts nothing. A cursor that cannot be
+        subtracted, like a string, gets no window and reads as before.
+        """
+        cursor = _[self.cursor_column]
+        span = self.remote_table.aggregate(low=cursor.min(), high=cursor.max(), rows=cursor.count())
+        low, high, rows = span.execute().iloc[0]
+        try:
+            step = (high - low) * (batch_size / rows) if rows > batch_size else None
+        except TypeError:
+            step = None
+        return low, high, step or None
 
     def get_group_filters(self, value) -> tuple[Expr, Expr]:
         """Filters for the rows at a cursor value and the rows after it."""
