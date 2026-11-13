@@ -2,13 +2,15 @@ import math
 
 import frappe
 import ibis
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.selectors as s
+import pandas as pd
 from frappe.utils import now_datetime
-from ibis import _
 
-from insights.insights.doctype.insights_query.utils import infer_type_from_list
+from insights.exceptions import QueryRefused
 from insights.insights.query_builders.sql_functions import (
+    get_fiscal_year_start_date,
     get_week_start_day_index,
     handle_timespan,
 )
@@ -36,7 +38,7 @@ def count(
     if column is None:
         query = frappe.flags.current_ibis_query
         column = query.columns[0]
-        column = getattr(query, column)
+        column = query[column]
 
     if group_by is not None:
         return column.count(where=where).over(group_by=group_by, order_by=order_by)
@@ -619,8 +621,7 @@ def _backend_name(column: ir.Column) -> str | None:
     try:
         return column.get_backend().name
     except ibis.common.exceptions.IbisError:
-        # expression validation builds on an unbound table
-        return None
+        return None  # nosemgrep - expression validation builds on an unbound table, which has no backend
 
 
 @ibis.udf.scalar.builtin(name="json_valid")
@@ -901,16 +902,30 @@ def format_date(column: ir.DateValue, format_str: str):
     return column.strftime(format_str)
 
 
+_SECONDS_PER_UNIT = {"hour": 3600, "minute": 60, "second": 1}
+
+
 def date_diff(column: ir.DateValue, other: ir.DateValue, unit: str = "day"):
     """
     def date_diff(column, other, unit)
 
-    Calculate the difference between two date columns. The unit can be year, quarter, month, week, or day.
+    Calculate `column` minus `other`. The unit can be year, quarter, month, week, day, hour, minute, or second. Hour, minute and second count the whole units elapsed between the two datetimes. Day counts the days between the two dates. Larger units compare the dates, and each database counts them its own way: DuckDB, which the data store runs on, counts the month, quarter and year boundaries crossed and the whole weeks elapsed. MariaDB and MySQL count the whole units elapsed. Postgres counts the whole months and years elapsed, and rounds weeks and quarters to the nearest whole unit. SQLite has only day and smaller units.
 
     Examples:
-    - date_diff(order_date, delivery_date, 'day')
-    - date_diff(order_date, delivery_date, 'week')
+    - date_diff(delivery_date, order_date, 'day')
+    - date_diff(delivery_date, order_date, 'week')
+    - date_diff(resolved_on, opened_on, 'hour')
     """
+
+    if unit in _SECONDS_PER_UNIT:
+        if not column.type().is_timestamp():
+            column = column.cast("timestamp")
+        if not other.type().is_timestamp():
+            other = other.cast("timestamp")
+        # not by epoch: SQLite's drops each side's fraction, and MariaDB's is null
+        # before 1970. SQLite keeps no part finer than a millisecond
+        seconds = _whole_seconds_between(column, other) + (column.millisecond() - other.millisecond()) / 1000
+        return (seconds.abs() // _SECONDS_PER_UNIT[unit] * seconds.sign()).cast("int64")
 
     if not column.type().is_date():
         column = column.cast("date")
@@ -918,6 +933,13 @@ def date_diff(column: ir.DateValue, other: ir.DateValue, unit: str = "day"):
         other = other.cast("date")
 
     return column.delta(other, unit=unit)
+
+
+def _whole_seconds_between(column: ir.TimestampValue, other: ir.TimestampValue):
+    def second_of_day(value):
+        return value.hour() * 3600 + value.minute() * 60 + value.second()
+
+    return date_diff(column, other, "day") * 86400 + second_of_day(column) - second_of_day(other)
 
 
 def time_diff(
@@ -928,7 +950,7 @@ def time_diff(
     """
     def time_diff(column, other, unit)
 
-    Calculate the difference between two time columns. The unit can be hour, minute, second, millisecond, microsecond, nanosecond
+    Calculate the difference between the times of day of two columns, ignoring their dates. The unit can be hour, minute, second, millisecond, microsecond, nanosecond. Use date_diff for the time between two datetimes.
 
     Examples:
     - time_diff(start_time, end_time, 'hour')
@@ -974,7 +996,7 @@ def within(column: ir.DateValue, timespan: str):
     def within(column, timespan)
 
     Filter rows within a timespan. The timespan can be 'Last [N] [Parts]', 'Current [Parts]', or 'Next [N] [Parts]'.
-    Parts can be 'day', 'week', 'month', 'quarter', 'year' or 'fiscal year'.
+    Parts can be 'day', 'week', 'month', 'quarter', 'year', 'fiscal year' or 'fiscal quarter'.
 
     Examples:
     - within(order_date, 'Last 7 days')
@@ -1072,18 +1094,6 @@ def row_number():
     return ibis.row_number()
 
 
-def sql(query):
-    """
-    def sql(query)
-
-    Execute a SQL query.
-
-    Examples:
-    - sql('SELECT * FROM table')
-    """
-    return _.sql(query)
-
-
 def coalesce(*args):
     """
     def coalesce(*args)
@@ -1177,67 +1187,192 @@ def next_value(column: ir.Column, group_by=None, order_by=None, offset=1):
     return column.lead(offset).over(group_by=group_by, order_by=order_by)
 
 
-def previous_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1):
-    """
-    def previous_period_value(column, date_column, offset=1)
+_DATE_GRAINS = ("day", "week", "month", "quarter", "year", "fiscal_year", "fiscal_quarter")
+_DATETIME_GRAINS = ("second", "minute", "hour", *_DATE_GRAINS)
 
-    Get the value of a column in the previous period. If the date values are at month level then the previous month value will be returned. Similarly, at year level, the previous year value will be returned.
+
+def _grains(dtype):
+    return _DATETIME_GRAINS if dtype.is_timestamp() else _DATE_GRAINS
+
+
+def _apply_granularity(column, granularity, data_type=None):
+    """`column` moved to the start of its `granularity` period, keeping its name.
+    The underscore keeps it out of the expression functions."""
+    if granularity not in _DATETIME_GRAINS:
+        supported = ", ".join(_DATETIME_GRAINS)
+        frappe.throw(
+            frappe._("Granularity {0} is not supported for {1} columns. Supported granularities: {2}").format(
+                granularity, data_type, supported
+            ),
+            QueryRefused,
+            title=frappe._("Unsupported Granularity"),
+        )
+
+    if granularity == "week":
+        return week_start(column).name(column.get_name())
+    if granularity == "fiscal_year":
+        return fiscal_year_start(column).name(column.get_name())
+    if granularity == "fiscal_quarter":
+        return _fiscal_period_start(column, 3).name(column.get_name())
+
+    truncate_unit = {
+        "second": "s",
+        "minute": "m",
+        "hour": "h",
+        "day": "D",
+        "quarter": "Q",
+        "month": "M",
+        "year": "Y",
+    }
+    return column.truncate(truncate_unit[granularity]).name(column.get_name())
+
+
+def _period_grain(date_column: ir.Value):
+    """The grain a summarize or a granularity function grouped `date_column` at,
+    read from the expressions that made the column, or None when nothing did."""
+    node = date_column.op()
+    while True:
+        if isinstance(node, ops.Alias | ops.Cast):
+            node = node.arg
+            continue
+        if not isinstance(node, ops.Field):
+            break
+        rel = node.rel
+        while not isinstance(rel, ops.Project | ops.Aggregate | ops.JoinChain) and hasattr(rel, "parent"):
+            rel = rel.parent
+        if not isinstance(rel, ops.Project | ops.Aggregate | ops.JoinChain) or node.name not in rel.values:
+            break
+        node = rel.values[node.name]
+
+    for value in node.find((ops.Field, ops.Cast)):
+        if not value.dtype.is_temporal():
+            continue
+        for grain in _grains(value.dtype):
+            if _apply_granularity(value.to_expr(), grain, value.dtype).op().arg == node:
+                return grain
+
+
+def _period_key(date_column, grain):
+    """A number for each period, and the step between two periods' numbers.
+    It uses no backend's date difference above a day: SQLite has none, and Postgres
+    rounds a quarter's."""
+    if grain == "week":
+        # not by week_start: SQLite before 3.46 cannot subtract a computed number of days.
+        # 1970-01-01 is a Thursday, day 3 of a week that starts on Monday
+        days = date_diff(date_column, ibis.date(1970, 1, 1), "day")
+        return days - ((days + 3 - get_week_start_day_index()) % 7 + 7) % 7, 7
+    period_start = _apply_granularity(date_column, grain, date_column.type())
+    if grain in _SECONDS_PER_UNIT:
+        return _whole_seconds_between(period_start, ibis.timestamp("1970-01-01 00:00:00")), _SECONDS_PER_UNIT[
+            grain
+        ]
+    if grain in ("year", "fiscal_year"):
+        return period_start.year(), 1
+    if grain in ("month", "quarter", "fiscal_quarter"):
+        return period_start.year() * 12 + period_start.month(), 1 if grain == "month" else 3
+    return date_diff(period_start, ibis.date(1970, 1, 1), "day"), 1
+
+
+def _period_window(column: ir.Column, date_column, offset, grain):
+    """The value of `column` in the period `offset` grains away from each row's:
+    before it for a positive offset, after it for a negative one."""
+    if isinstance(date_column, str):
+        date_column = frappe.flags.current_ibis_query[date_column]
+    date_column_name = date_column.get_name()
+    grain = grain or _period_grain(date_column)
+    if not grain:
+        raise ValueError(
+            f"cannot tell the period of {date_column_name}. Summarize it by a granularity, or pass the grain, such as 'month'"
+        )
+    if grain not in _grains(date_column.type()):
+        raise ValueError(
+            f"{date_column_name} has no {grain} period. Pass one of: {', '.join(_grains(date_column.type()))}"
+        )
+    period, step = _period_key(date_column, grain)
+    window = column.max().over(
+        group_by=(~s.numeric() & ~s.cols(date_column_name)),
+        # MariaDB takes a RANGE frame only over a single sort key, and a nulls-last
+        # order compiles to a second one
+        order_by=ibis.asc(period, nulls_first=True),
+        range=(-offset * step, -offset * step),
+    )
+    # a null key's RANGE frame is its null peers, whatever the offset
+    return ibis.cases((period.notnull(), window))
+
+
+def previous_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1, grain=None):
+    """
+    def previous_period_value(column, date_column, offset=1, grain=None)
+
+    Get the value of a column in the period `offset` periods before the row's own, or null when that period has no row or the row has no date. The period is the granularity `date_column` was summarized by, such as month or year. Pass `grain`, such as 'day' or 'month', for a date nothing summarized, such as a table's own date column or one read after a union or a join. Rows are compared within groups of the same values in every column that is neither numeric nor `date_column`, so expect one row per period in each group.
 
     Examples:
     - previous_period_value(amount, date)
     - previous_period_value(amount, date, 2)
+    - previous_period_value(amount, date, 1, 'month')
     """
-    date_column_name = date_column.get_name() if hasattr(date_column, "get_name") else date_column
-    return column.lag(offset).over(
-        group_by=(~s.numeric() & ~s.matches(date_column_name)),
-        order_by=ibis.asc(date_column_name),
-    )
+    return _period_window(column, date_column, offset, grain)
 
 
-def next_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1):
+def next_period_value(column: ir.Column, date_column: ir.DateColumn, offset=1, grain=None):
     """
-    def next_period_value(column, date_column, offset=1)
+    def next_period_value(column, date_column, offset=1, grain=None)
 
-    Get the value of a column in the next period. If the date values are at month level then the next month value will be returned. Similarly, at year level, the next year value will be returned.
+    Get the value of a column in the period `offset` periods after the row's own, or null when that period has no row or the row has no date. The period is the granularity `date_column` was summarized by, such as month or year. Pass `grain`, such as 'day' or 'month', for a date nothing summarized, such as a table's own date column or one read after a union or a join. Rows are compared within groups of the same values in every column that is neither numeric nor `date_column`, so expect one row per period in each group.
 
     Examples:
     - next_period_value(amount, date)
     - next_period_value(amount, date, 2)
+    - next_period_value(amount, date, 1, 'month')
     """
-    date_column_name = date_column.get_name() if hasattr(date_column, "get_name") else date_column
-    return column.lead(offset).over(
-        group_by=(~s.numeric() & ~s.matches(date_column_name)),
-        order_by=ibis.asc(date_column_name),
-    )
+    return _period_window(column, date_column, -offset, grain)
 
 
-def percentage_change(column: ir.Column, date_column: ir.DateColumn, offset=1):
+def percentage_change(column: ir.Column, date_column: ir.DateColumn, offset=1, grain=None):
     """
-    def percentage_change(column, date_column, offset=1)
+    def percentage_change(column, date_column, offset=1, grain=None)
 
-    Calculate the percentage change of a column in the previous period. If the date values are at month level then percentage change from the previous month will be calculated. Similarly, at year level, percentage change from the previous year will be calculated.
+    Calculate the percentage change of a column from its value in the period `offset` periods before, as previous_period_value reads it. Null when that value is null or zero.
 
     Examples:
     - percentage_change(amount, date)
     - percentage_change(amount, date, 2)
+    - percentage_change(amount, date, 1, 'month')
     """
-    prev_value = previous_period_value(column, date_column, offset)
-    return ((column - prev_value) * 100) / abs(prev_value)
+    prev_value = previous_period_value(column, date_column, offset, grain)
+    return ibis.cases((prev_value != 0, ((column - prev_value) * 100) / abs(prev_value)))
+
+
+def _row_order(order_by, sort_order, reverse=False):
+    keys = order_by if isinstance(order_by, list | tuple) else [order_by]
+    row_order = []
+    for key in keys:
+        if key is None:
+            continue
+        if isinstance(key, ir.Value) and isinstance(key.op(), ibis.expr.operations.SortKey):
+            sort_key = key.op()
+        else:
+            sort_key = ibis.asc(key).op() if sort_order == "asc" else ibis.desc(key).op()
+        if reverse:
+            sort_key = sort_key.copy(ascending=not sort_key.ascending)
+        row_order.append(sort_key.to_expr())
+    if not row_order:
+        raise ValueError("pass order_by, such as order_by=date, to say which row is first")
+    return row_order
 
 
 def is_first_row(group_by=None, order_by=None, sort_order="asc"):
     """
     def is_first_row(group_by=None, order_by=None, sort_order="asc")
 
-    Check if the row is the first row in the group. Provide group_by and order_by columns for partitioning and ordering.
+    Return 1 for the first row in each group and 0 for the other rows. order_by sets the row order and is required, and group_by the groups. sort_order sets the direction of an order_by column. A column wrapped in asc() or desc() keeps its own direction.
 
     Examples:
-    - is_first_row()
     - is_first_row(group_by=user_id, order_by=date)
-    - is_first_row(group_by=[user_id, month(date)], order_by=asc(date))
+    - is_first_row(group_by=user_id, order_by=desc(date))
+    - is_first_row(group_by=[user_id, month(date)], order_by=[priority, desc(date)])
     """
-    _order_by = ibis.asc(order_by) if sort_order == "asc" else ibis.desc(order_by)
-    index = row_number().over(group_by=group_by, order_by=_order_by)
+    index = row_number().over(group_by=group_by, order_by=_row_order(order_by, sort_order))
     return if_else(index == 0, 1, 0)
 
 
@@ -1245,15 +1380,14 @@ def is_last_row(group_by=None, order_by=None, sort_order="asc"):
     """
     def is_last_row(group_by=None, order_by=None, sort_order="asc")
 
-    Check if the row is the last row in the group. Provide group_by and order_by columns for partitioning and ordering.
+    Return 1 for the last row in each group and 0 for the other rows. order_by sets the row order and is required, and group_by the groups. sort_order sets the direction of an order_by column. A column wrapped in asc() or desc() keeps its own direction.
 
     Examples:
-    - is_last_row()
     - is_last_row(group_by=user_id, order_by=date)
-    - is_last_row(group_by=[user_id, month(date)], order_by=asc(date))
+    - is_last_row(group_by=user_id, order_by=desc(date))
+    - is_last_row(group_by=[user_id, month(date)], order_by=[priority, desc(date)])
     """
-    _order_by = ibis.desc(order_by) if sort_order == "asc" else ibis.asc(order_by)
-    index = row_number().over(group_by=group_by, order_by=_order_by)
+    index = row_number().over(group_by=group_by, order_by=_row_order(order_by, sort_order, reverse=True))
     return if_else(index == 0, 1, 0)
 
 
@@ -1261,15 +1395,14 @@ def filter_first_row(group_by=None, order_by=None, sort_order="asc"):
     """
     def filter_first_row(group_by=None, order_by=None, sort_order="asc")
 
-    Filter to keep only the first row of each group. Provide group_by and order_by columns for partitioning and ordering.
+    Filter to keep only the first row of each group. order_by sets the row order and is required, and group_by the groups. sort_order sets the direction of an order_by column. A column wrapped in asc() or desc() keeps its own direction.
 
     Examples:
-    - filter_first_row()
     - filter_first_row(group_by=user_id, order_by=date)
-    - filter_first_row(group_by=[user_id, month(date)], order_by=asc(date))
+    - filter_first_row(group_by=user_id, order_by=desc(date))
+    - filter_first_row(group_by=[user_id, month(date)], order_by=[priority, desc(date)])
     """
-    _order_by = ibis.asc(order_by) if sort_order == "asc" else ibis.desc(order_by)
-    index = row_number().over(group_by=group_by, order_by=_order_by)
+    index = row_number().over(group_by=group_by, order_by=_row_order(order_by, sort_order))
     return index == 0
 
 
@@ -1376,22 +1509,29 @@ def fiscal_year_start(column: ir.DateValue):
     - fiscal_year_start(order_date)
     """
 
-    fy_start = frappe.db.get_single_value("Insights Settings", "fiscal_year_start")
-    if not fy_start:
-        from datetime import date
+    return _fiscal_period_start(column, 12)
 
-        fy_start = date(date.today().year - 1, 4, 1)
-    fiscal_year_start_month = fy_start.month
-    fiscal_year_start_day = fy_start.day
 
-    year = column.year()
-    month = column.month()
+def _fiscal_period_start(column: ir.DateValue, months: int):
+    """The first day of the fiscal year (12 months) or quarter (3) of each date,
+    by the rule of `get_fiscal_period`. Built with `ibis.date` rather than a
+    month interval, which SQLite cannot subtract."""
+    fy_start = get_fiscal_year_start_date()
+    year, month = column.year(), column.month()
+    before_start = column.day() < _fiscal_day(year, month, fy_start.day)
+    months_in = year * 12 + month - fy_start.month - ibis.ifelse(before_start, 1, 0)
+    index = fy_start.month - 1 + months_in - months_in % months
+    start_year, start_month = index // 12, index % 12 + 1
+    return ibis.date(start_year, start_month, _fiscal_day(start_year, start_month, fy_start.day)).cast("date")
 
-    return if_else(
-        month < fiscal_year_start_month,
-        ibis.date(year - 1, fiscal_year_start_month, fiscal_year_start_day),
-        ibis.date(year, fiscal_year_start_month, fiscal_year_start_day),
-    ).cast("date")
+
+def _fiscal_day(year, month, day: int):
+    # every month has the first 28 days
+    if day <= 28:
+        return day
+    leap = ((year % 4 == 0) & (year % 100 != 0)) | (year % 400 == 0)
+    days = ibis.cases((month == 2, ibis.ifelse(leap, 29, 28)), (month.isin([4, 6, 9, 11]), 30), else_=31)
+    return ibis.least(day, days)
 
 
 def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: str):
@@ -1409,10 +1549,10 @@ def get_retention_data(date_column: ir.DateValue, id_column: ir.Column, unit: st
         frappe.throw("Query not found")
 
     if isinstance(date_column, str):
-        date_column = getattr(query, date_column)
+        date_column = query[date_column]
 
     if isinstance(id_column, str):
-        id_column = getattr(query, id_column)
+        id_column = query[id_column]
 
     if date_column.type().is_timestamp():
         date_column = date_column.cast("date")
@@ -1466,3 +1606,33 @@ def pad_number(number: ir.NumericValue, digits: int):
         zero_literal.repeat(digits - string_number.length()).concat(string_number),
         string_number,
     )
+
+
+def infer_type(value):
+    try:
+        # test if decimal
+        val = pd.to_numeric(value)
+        if val % 1 == 0:
+            return "Integer"
+        return "Decimal"
+    except Exception:
+        try:
+            # test if datetime
+            pd.to_datetime(value)
+            return "Datetime"
+        except Exception:
+            return "String"
+
+
+def infer_type_from_list(values):
+    inferred_types = [infer_type(v) for v in values]
+    if "String" in inferred_types:
+        return "String"
+    elif "Datetime" in inferred_types:
+        return "Datetime"
+    elif "Decimal" in inferred_types:
+        return "Decimal"
+    elif "Integer" in inferred_types:
+        return "Integer"
+    else:
+        return "String"

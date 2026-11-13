@@ -14,7 +14,7 @@ const props = defineProps<{
 <template>
 	<div class="flex -space-x-2">
 		<Avatar
-			class="outline outline-2 outline-white"
+			class="outline outline-2 outline-base"
 			v-for="(avatar, idx) in avatars"
 			:key="idx"
 			v-bind="avatar"

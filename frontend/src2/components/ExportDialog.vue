@@ -32,8 +32,8 @@ function submit() {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: __('Export Data'), size: 'sm' }">
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Export Data')" size="sm">
+		<template #default>
 			<div class="space-y-4">
 				<div>
 					<div class="space-y-2">

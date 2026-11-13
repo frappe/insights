@@ -7,6 +7,10 @@ export interface QueryVariable {
 	variable_value: string
 }
 
+// narrowest first: each level includes the readers of the one before it
+export type Visibility = 'Private' | 'Roles' | 'Everyone' | 'Public'
+export type VisibleToRole = { role: string }
+
 export type WorkbookListItem = {
 	title: string
 	name: string
@@ -15,9 +19,16 @@ export type WorkbookListItem = {
 	modified: string
 	created_from_now: string
 	modified_from_now: string
-	views: number
 	shared_with: string[]
+	data_sources: string[]
+	last_opened: string | null
+	last_opened_from_now: string
 	shared_with_organization?: boolean
+	/** The title of the app that ships the workbook, when one does. */
+	shipped_by: string | null
+	shipped_by_logo: string | null
+	/** The roles its dashboards show to. An app shares its workbook this way. */
+	visible_to_roles: string[]
 }
 
 export type WorkbookFolder = {
@@ -61,12 +72,22 @@ export type InsightsWorkbook = {
 	charts: WorkbookChart[]
 	dashboards: WorkbookDashboard[]
 	read_only: boolean
+	/** A read-only workbook the reader may duplicate instead. */
+	can_copy?: boolean
+	/** Whether the reader may change who the workbook is shared with. */
+	can_share?: boolean
+	/** Set when an app ships the workbook. `module` is the module it ships in. */
+	is_standard?: boolean
+	shipped_by?: string | null
+	shipped_by_logo?: string | null
+	module?: string | null
 }
 
 export type InsightsQueryv3 = {
 	doctype: 'Insights Query v3'
 	name: string
 	owner: string
+	modified?: string
 	title: string
 	workbook: string
 	operations: Operation[]
@@ -85,13 +106,21 @@ export type InsightsChartv3 = {
 	name: string
 	owner: string
 	title: string
+	description: string | null
+	info: string | null
 	workbook: string
 	query: string
-	data_query: string
 	chart_type: ChartType
 	sort_order: number
 	folder?: string | null
-	is_public: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
+	run_as_owner: boolean
+	/** Whether the caller may change the saved `run_as_owner`. The owner or an admin may tick it. Any writer may clear it. */
+	can_move_run_as_owner?: boolean
+	/** Whether the caller may widen the chart's Visibility (the server's `can_share`). */
+	can_share?: boolean
+	can_show_in_desk?: boolean
 	operations: Operation[]
 	use_live_connection?: boolean
 	config: ChartConfig & {
@@ -111,16 +140,20 @@ export type InsightsDashboardv3 = {
 	items: WorkbookDashboardItem[]
 	preview_image?: string
 	share_link?: string
-	is_public: boolean
-	is_shared_with_organization: boolean
+	visibility: Visibility
+	visible_to_roles: VisibleToRole[]
 	people_with_access: {
 		email: string
 		full_name: string
 		user_image: string
 	}[]
 	read_only: boolean
-	vertical_compact: boolean
+	/** Whether the caller may widen the dashboard's Visibility or share it with a user. */
+	can_share?: boolean
+	vertical_compact_layout: boolean
 	has_workbook_access: boolean
+	/** The reader's value for each filter's `default_user_key`, by filter name. */
+	user_defaults?: Record<string, FilterValue>
 }
 
 export type WorkbookDashboardItem =
@@ -128,33 +161,80 @@ export type WorkbookDashboardItem =
 	| WorkbookDashboardText
 	| WorkbookDashboardFilter
 
-export type Layout = {
-	i: string
+/** Where a cell sits: a column, a row, and a span of each. */
+export type Placement = {
 	x: number
 	y: number
 	w: number
 	h: number
 }
-export type WorkbookDashboardChart = {
+
+/** A placement with the cell it belongs to. What a grid is rendered from. */
+export type Layout = Placement & {
+	/** The cell's identity, stable across a move. */
+	i: string
+}
+
+/**
+ * The widths a dashboard is laid out for, narrowest first.
+ *
+ * A key names a layout an author can arrange, not a screen — the grid picks one
+ * by its own box, so a dashboard in a narrow desk panel is served the same
+ * layout as one on a phone. Another width is another key here, and the table in
+ * `grid_placement.ts` that says how wide each one is.
+ */
+export type BreakpointKey = 'sm' | 'lg'
+
+/**
+ * What every dashboard item keeps about where it sits.
+ *
+ * `layout` is the placement at the widest breakpoint, and it is the one every
+ * item has — it is what a dashboard authored before there was more than one
+ * width already holds, and what a new item is given. `layouts` holds the
+ * narrower ones, and only the ones an author arranged: a breakpoint an
+ * item says nothing about is derived from the next wider one, so a dashboard
+ * nobody has laid out for a phone still reads on a phone.
+ *
+ * Both are read through `placementsFor` and written through `writePlacement`.
+ * Nothing else may reach for either field, because those two functions are what
+ * knows that the widest breakpoint is stored apart from the rest.
+ */
+export type WorkbookDashboardItemLayout = {
+	layout: Layout
+	layouts?: Partial<Record<BreakpointKey, Placement>>
+}
+
+export type WorkbookDashboardChart = WorkbookDashboardItemLayout & {
 	type: 'chart'
 	chart: string
-	layout: Layout
+	/**
+	 * The reading this cell shows, by its `id`. Only a Number chart states
+	 * several, so only its cells name one, and a cell written before this field
+	 * existed names none and shows the first.
+	 */
+	reading?: string
 }
-export type WorkbookDashboardFilter = {
+export type WorkbookDashboardFilter = WorkbookDashboardItemLayout & {
 	type: 'filter'
 	filter_name: string
 	filter_type: FilterType
 	links: Record<string, string>
 	default_operator?: FilterOperator
 	default_value?: FilterValue
+	// a user default key, such as `Company`. The server sends the reader's value
+	// for it as `default_value` to a view, and in `user_defaults` to the builder
+	default_user_key?: string
 	icon?: string
-	layout: Layout
 }
-export type WorkbookDashboardText = {
+export type WorkbookDashboardText = WorkbookDashboardItemLayout & {
 	type: 'text'
 	text: string
-	layout: Layout
 }
+
+// dashboard filter state, keyed by filter name. Which query a filter lands on is
+// the server's concern — every surface sends the state and the grid it sits
+// on, and the links are read there.
+export type FilterValues = Record<string, { operator: FilterOperator; value: FilterValue }>
 
 export type ShareAccess = 'view' | 'edit' | undefined
 export type WorkbookSharePermission = {

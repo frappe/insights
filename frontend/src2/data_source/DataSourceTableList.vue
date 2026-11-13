@@ -1,6 +1,7 @@
 <script setup lang="tsx">
 import { watchDebounced } from '@vueuse/core'
-import { Breadcrumbs, ListView } from 'frappe-ui'
+import { Breadcrumbs } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { MoreHorizontal, RefreshCcw, SearchIcon } from 'lucide-vue-next'
 import { h, ref, watchEffect } from 'vue'
 import useDataSourceStore from './data_source'
@@ -41,7 +42,7 @@ const listOptions = ref({
 			description: __('No tables found for the selected data source.'),
 			button: {
 				label: __('Refresh'),
-				iconLeft: 'refresh-ccw',
+				iconLeft: 'lucide-refresh-ccw',
 				variant: 'outline',
 				loading: tableStore.updatingDataSourceTables,
 				onClick: () =>
@@ -73,7 +74,7 @@ watchEffect(() => {
 		<div class="flex gap-2 overflow-visible py-1">
 			<FormControl placeholder="Search by Title" v-model="searchQuery" :debounce="300">
 				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" />
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
 			<Dropdown
@@ -86,7 +87,7 @@ watchEffect(() => {
 								.then(() => updateTablesList()),
 						icon: () =>
 							h(RefreshCcw, {
-								class: 'h-4 w-4 text-gray-700',
+								class: 'h-4 w-4 text-ink-gray-6',
 								'stroke-width': '1.5',
 							}),
 					},
@@ -96,7 +97,7 @@ watchEffect(() => {
 								onClick: () => tableStore.updateTableLinks(props.name),
 								icon: () =>
 									h(RefreshCcw, {
-										class: 'h-4 w-4 text-gray-700',
+										class: 'h-4 w-4 text-ink-gray-6',
 										'stroke-width': '1.5',
 									}),
 						  }
@@ -105,7 +106,7 @@ watchEffect(() => {
 			>
 				<Button>
 					<template #icon>
-						<MoreHorizontal class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<MoreHorizontal class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</Dropdown>

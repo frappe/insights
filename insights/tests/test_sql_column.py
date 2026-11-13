@@ -1,6 +1,7 @@
 import frappe
 import sqlglot as sg
 
+from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.tests.base import InsightsIntegrationTestCase
 
@@ -49,6 +50,7 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
     def execute(self, operations):
         return self.build_query([*self.source_operations(), *operations]).execute()
 
+    # @feature query.sql-column
     def test_plain_expression_adds_a_column(self):
         result = self.execute(
             [
@@ -59,6 +61,7 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
 
         self.assertEqual(list(result["double_amount"]), [20, 40, 60, 80])
 
+    # @feature query.sql-column
     def test_name_may_contain_spaces(self):
         # unlike `mutate` and `rename`, the name is not sanitized: a migrated
         # column keeps the name the v2 charts and filters already use
@@ -66,6 +69,7 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
 
         self.assertIn("Count of records ", result.columns)
 
+    # @feature query.sql-column
     def test_window_expression(self):
         result = self.execute(
             [
@@ -79,6 +83,7 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
 
         self.assertEqual(list(result["previous_amount"].fillna(-1).astype(int)), [-1, 10, -1, 30])
 
+    # @feature query.sql-column
     def test_a_semicolon_inside_a_string_is_allowed(self):
         result = self.execute(
             [
@@ -89,6 +94,7 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
 
         self.assertEqual(list(result["clean_note"]), ["a,b"] * 4)
 
+    # @feature query.sql-column
     def test_expression_mid_pipeline_sees_derived_columns(self):
         # the case that needs `.alias()`: a filter and a mutate come first, and the
         # expression reads the mutated column
@@ -113,6 +119,7 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
 
         self.assertEqual(list(result["tripled_plus_one"]), [61, 91, 121])
 
+    # @feature query.sql-column
     def test_aggregate_composes_after_a_sql_column(self):
         result = self.execute(
             [
@@ -140,6 +147,7 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
 
         self.assertEqual(dict(zip(result["team"], result["total"], strict=False)), {"alpha": 60, "beta": 140})
 
+    # @feature query.sql-column
     def test_expression_is_transpiled_from_the_source_dialect(self):
         source = frappe.get_doc("Insights Data Source v3", "Site DB")
         dialect = source.get_sqlglot_dialect()
@@ -153,6 +161,7 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
 
         self.assertEqual(list(result["a_at"]), [1, 1, 4, 4])
 
+    # @feature query.sql-column
     def test_a_statement_is_rejected(self):
         cases = [
             "1; drop table something",
@@ -167,12 +176,33 @@ class TestSQLColumnOperation(InsightsIntegrationTestCase):
                 with self.assertRaises(frappe.ValidationError):
                     self.execute([self.sql_column("smuggled", raw_sql)])
 
+    # @feature query.sql-column
+    def test_a_function_that_runs_a_query_is_rejected(self):
+        # the query it runs is a string, so the column check sees no table
+        builder = IbisQueryBuilder(self.make_query_doc([]))
+        statement = """SELECT *, query_to_xml('select * from "tabUser"', true, true, '') AS x FROM _insights_sql_column"""
+
+        with self.assertRaises(QueryRefused):
+            builder._validate_sql_column_statement(statement, "postgres")
+
+    # @feature query.sql-column
     def test_an_unparsable_expression_is_rejected(self):
         with self.assertRaises(frappe.ValidationError):
             self.execute([self.sql_column("broken", "amount ) * 2")])
 
+    # @feature query.sql-column
     def test_a_missing_data_source_is_rejected(self):
         # without it the expression is parsed and transpiled in the wrong dialect,
         # which silently changes what the column means
         with self.assertRaises(frappe.ValidationError):
             self.execute([self.sql_column("orphan", "amount * 2", data_source="")])
+
+    # @feature query.unknown-operation-refused
+    def test_an_operation_this_version_does_not_know_is_refused(self):
+        """A newer client's operation must fail, not return different numbers.
+
+        `sql_column` is the first operation to reach a release that predates it,
+        so the answer to an unknown type is settled here rather than per type.
+        """
+        with self.assertRaises(frappe.ValidationError):
+            self.execute([{"type": "operation_from_the_future", "new_name": "x"}])

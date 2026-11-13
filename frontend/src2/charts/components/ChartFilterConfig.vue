@@ -41,8 +41,8 @@ function getFilterLabel(filter: FilterArgs) {
 <template>
 	<div class="flex flex-col gap-2">
 		<div v-if="filterGroup.filters.length" class="flex flex-col gap-1">
-			<div v-for="(filter, idx) in filterGroup.filters" :key="idx" class="flex rounded">
-				<div class="flex-1 overflow-hidden">
+			<div v-for="(filter, idx) in filterGroup.filters" :key="idx" class="flex rounded-4">
+				<div class="min-w-0 flex-1">
 					<Button
 						class="w-full !justify-start rounded-r-none [&>span]:truncate"
 						@click="showFiltersSelectorDialog = true"
@@ -61,7 +61,7 @@ function getFilterLabel(filter: FilterArgs) {
 					@click="filterGroup.filters.splice(idx, 1)"
 				>
 					<template #icon>
-						<X class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<X class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</div>
@@ -70,7 +70,7 @@ function getFilterLabel(filter: FilterArgs) {
 		<!-- add filter button -->
 		<Button class="w-full" @click="showFiltersSelectorDialog = true">
 			<template #prefix>
-				<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
 			Add Filter
 		</Button>

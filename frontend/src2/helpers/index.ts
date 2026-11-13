@@ -1,9 +1,8 @@
 import { watchDebounced } from '@vueuse/core'
 import { __ } from '../translation'
-import domtoimage from 'dom-to-image'
-import { isEqual } from 'es-toolkit'
-import { call, debounce } from 'frappe-ui'
-import { Socket } from 'socket.io-client'
+import { debounce, isEqual } from 'es-toolkit'
+import { call, toast } from 'frappe-ui'
+import type { Socket } from 'socket.io-client'
 import {
 	inject,
 	watch,
@@ -11,7 +10,7 @@ import {
 	watch as vueWatch,
 	WatchCallback,
 	WatchSource,
-	WatchStopHandle
+	WatchStopHandle,
 } from 'vue'
 import { getFormattedDate } from '../query/helpers'
 import session from '../session'
@@ -23,20 +22,9 @@ import {
 	QueryResultColumn,
 } from '../types/query.types'
 import { FIELDTYPES } from './constants'
-import { createToast } from './toasts'
 
 export function getUniqueId(length = 8) {
 	return (+new Date() * Math.random()).toString(36).substring(0, length)
-}
-
-export function titleCase(str: string) {
-	return str
-		.toLowerCase()
-		.split(' ')
-		.map(function (word) {
-			return word.charAt(0).toUpperCase() + word.slice(1)
-		})
-		.join(' ')
 }
 
 export function copy<T>(obj: T) {
@@ -49,11 +37,12 @@ export function wheneverChanges(source: WatchSource, callback: WatchCallback, op
 	return watchDebounced(
 		source,
 		(val, _, onCleanup) => {
-			if (isEqual(val, preVal)) return
+			// against a clone, because `preVal` is one — see `isDirty` in ./resource
+			if (isEqual(copy(val), preVal)) return
 			preVal = copy(val)
 			callback(val, preVal, onCleanup)
 		},
-		options
+		options,
 	)
 }
 
@@ -63,7 +52,11 @@ export type WatchOptions = {
 	debounce?: number
 	toggleCondition?: () => boolean
 }
-export function watchToggle(source: WatchSource, callback: WatchCallback, options: WatchOptions = {}) {
+export function watchToggle(
+	source: WatchSource,
+	callback: WatchCallback,
+	options: WatchOptions = {},
+) {
 	const attachSourceWatcher = () => _watch(source, callback, options)
 
 	if (!options.toggleCondition) {
@@ -89,7 +82,7 @@ export function watchToggle(source: WatchSource, callback: WatchCallback, option
 			},
 			{
 				immediate: true,
-			}
+			},
 		)
 	}
 }
@@ -97,11 +90,19 @@ export function watchToggle(source: WatchSource, callback: WatchCallback, option
 function _watch(source: WatchSource, callback: WatchCallback, options: WatchOptions = {}) {
 	let _callback = callback
 
-	if (options.debounce) {
-		_callback = debounce(_callback, options.debounce)
-	}
+	const debounced = options.debounce ? debounce(_callback, options.debounce) : undefined
+	if (debounced) _callback = debounced
 
-	return vueWatch(source, _callback, options)
+	// A debounced callback outlives the watcher: detaching the source leaves the
+	// queued call to fire. So the stop handle drops the queue as well, and a
+	// `toggleCondition` that has gone false gets no further callback — an
+	// autosave queued before an author started editing would otherwise write
+	// their arrangement mid-edit.
+	const stop = vueWatch(source, _callback, options)
+	return () => {
+		debounced?.cancel()
+		stop()
+	}
 }
 
 export function waitUntil(fn: () => boolean) {
@@ -120,67 +121,113 @@ export function waitUntil(fn: () => boolean) {
 }
 
 export function store<T>(key: string, value: () => T) {
-	const stored = localStorage.getItem(key)
-	watchDebounced(value, (val) => localStorage.setItem(key, JSON.stringify(val)), {
+	// vitest has no localStorage; the value still works, it is just not remembered
+	const storage = globalThis.localStorage
+	if (!storage) return value()
+
+	const stored = storage.getItem(key)
+	watchDebounced(value, (val) => storage.setItem(key, JSON.stringify(val)), {
 		debounce: 500,
 		deep: true,
 	})
 	return stored ? JSON.parse(stored) : value()
 }
 
+// what frappe-ui puts in `messages` when the server sent no message
+const NO_SENTENCE = 'Internal Server Error'
+
+/**
+ * The message to show the user for a failed request.
+ *
+ * The server's own message comes first. Frappe sends it to every user, but
+ * sends the traceback in `exc` only to a System User. The traceback's exception
+ * line is used only when the server sent no message. Frappe writes the message
+ * as HTML for desk. This app shows it as text, so the markup is removed.
+ */
 export function getErrorMessage(err: any) {
-	// the exception line is not always last: DuckDB appends the offending SQL and a caret
+	const sentence = err.messages?.filter((message: string) => message !== NO_SENTENCE).at(-1)
+	if (sentence) return asText(sentence)
+
+	// the exception line is not always last: DuckDB appends the offending SQL and a caret.
+	// It is found by the class raised, because a chained traceback lists its causes first
 	const lines: string[] = err.exc?.split('\n') ?? []
-	const excLine = lines.filter((line) => /^[\w.]+(Error|Exception): /.test(line)).at(-1)
+	const raised = err.exc_type || '\\w*(Error|Exception)'
+	const excLine = lines.filter((line) => new RegExp(`^([\\w]+\\.)*${raised}: `).test(line)).at(-1)
 	if (!excLine) return err.message || err.toString()
 	const message = excLine.split(': ').slice(1).join(': ')
 	const details = lines.slice(lines.lastIndexOf(excLine) + 1)
 	return [message, ...details].join('\n').trim()
 }
 
+function asText(html: string) {
+	return html
+		.replace(/<[^>]*>/g, '')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;/g, '"')
+		.replace(/&#39;/g, "'")
+		.replace(/&amp;/g, '&')
+}
+
+export function showErrorToast(err: Error, raise: false): void
+export function showErrorToast(err: Error, raise?: true): never
 export function showErrorToast(err: Error, raise = true) {
-	createToast({
-		variant: 'error',
-		title: __('Error'),
-		message: getErrorMessage(err),
-	})
+	toast.error(getErrorMessage(err))
 	if (raise) throw err
 }
 
 export function downloadImage(element: HTMLElement, filename: string, scale = 2, options = {}) {
-	return domtoimage
-		.toPng(element, {
-			height: element.scrollHeight * scale,
-			width: element.scrollWidth * scale,
-			style: {
-				transform: 'scale(' + scale + ')',
-				transformOrigin: 'top left',
-				width: element.scrollWidth + 'px',
-				height: element.scrollHeight + 'px',
-			},
-			bgColor: 'white',
-			...options,
+	return import('html-to-image')
+		.then(({ toPng }) =>
+			toPng(element, {
+				width: element.scrollWidth,
+				height: element.scrollHeight,
+				pixelRatio: scale,
+				backgroundColor: 'white',
+				style: {
+					width: `${element.scrollWidth}px`,
+					height: `${element.scrollHeight}px`,
+					overflow: 'visible',
+				},
+				...options,
+			}),
+		)
+		.then((dataUrl) => {
+			const link = document.createElement('a')
+			link.download = filename
+			link.href = dataUrl
+			link.click()
 		})
-		.then(function (dataUrl: string) {
-			const img = new Image()
-			img.src = dataUrl
-			img.onload = async () => {
-				const link = document.createElement('a')
-				link.download = filename
-				link.href = img.src
-				link.click()
-			}
-		})
+		.catch((err) => showErrorToast(err, false))
 }
 
-export function formatNumber(number: number, precision = 0) {
-	if (isNaN(number)) return number
-	precision = precision || guessPrecision(number)
-	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
-	return new Intl.NumberFormat(locale || 'en-US', {
+/** A cell read as a number, or nothing: null, blank and text are not zero. */
+export function toNumber(value: any): number | null {
+	if (value === null || value === undefined || value === '') return null
+	const number = Number(value)
+	return Number.isNaN(number) ? null : number
+}
+
+// `precision` is left out, not zeroed, when nobody states one: a caller asking
+// for no decimals means no decimals, and `0 || guess` swallowed that.
+export function formatNumber(
+	number: number,
+	precision?: number,
+	frappeNumberFormat?: string,
+): string {
+	if (isNaN(number)) return String(number)
+	precision = precision ?? guessPrecision(number)
+	return new Intl.NumberFormat(getLocale(frappeNumberFormat), {
 		minimumFractionDigits: precision,
 		maximumFractionDigits: precision,
 	}).format(number)
+}
+
+// Frappe's number format, such as `#,##,###.##`, picks the grouping, as in Desk.
+// A currency that states none groups by the site's.
+function getLocale(frappeNumberFormat?: string) {
+	if ((frappeNumberFormat || session.site?.number_format) == '#,##,###.##') return 'en-IN'
+	return session.user?.locale || 'en-US'
 }
 
 export type FormatUnits = {
@@ -188,6 +235,9 @@ export type FormatUnits = {
 	scale: number
 	prefix: string
 	suffix: string
+	frappe_number_format?: string
+	// the places an amount prints when nothing states its own
+	decimals?: number
 }
 
 const NO_UNITS: FormatUnits = { scale: 1, prefix: '', suffix: '' }
@@ -202,10 +252,28 @@ export function getFormatUnits(format?: DataFormat, code?: string | null): Forma
 
 	const resolved = code === undefined ? session.site?.currency : code
 	const currency = resolved ? session.site?.currency_symbols?.[resolved] : undefined
-	if (!currency?.symbol) return NO_UNITS
+	if (!currency) return NO_UNITS
+	const units = {
+		...NO_UNITS,
+		frappe_number_format: currency.number_format,
+		decimals:
+			session.site?.currency_precision ??
+			numberFormatPlaces(currency.number_format || session.site?.number_format),
+	}
+	if (!currency.symbol) return units
 	return currency.symbol_on_right
-		? { scale: 1, prefix: '', suffix: ` ${currency.symbol}` }
-		: { scale: 1, prefix: `${currency.symbol} `, suffix: '' }
+		? { ...units, suffix: ` ${currency.symbol}` }
+		: { ...units, prefix: `${currency.symbol} ` }
+}
+
+// Desk's `get_number_format_info`: the digits after the format's decimal mark.
+const NO_DECIMAL_MARK = ['#.###', '#,###']
+const COMMA_DECIMAL_MARK = ['#.###,##', '# ###,##']
+function numberFormatPlaces(format?: string) {
+	if (!format) return 2
+	if (NO_DECIMAL_MARK.includes(format)) return 0
+	const mark = COMMA_DECIMAL_MARK.includes(format) ? ',' : '.'
+	return format.split(mark)[1]?.length ?? 0
 }
 
 export function guessPrecision(number: number) {
@@ -217,10 +285,9 @@ export function guessPrecision(number: number) {
 	return Math.min(str.length - decimalIndex - 1, 2)
 }
 
-
-export function getShortNumber(number: number, precision = 0) {
-	const locale = session.user?.country == 'India' ? 'en-IN' : session.user?.locale
-	let formatted = new Intl.NumberFormat(locale || 'en-US', {
+export function getShortNumber(number: number, precision = 0, frappeNumberFormat?: string) {
+	const locale = getLocale(frappeNumberFormat)
+	let formatted = new Intl.NumberFormat(locale, {
 		notation: 'compact',
 		maximumFractionDigits: precision,
 	}).format(number)
@@ -270,10 +337,7 @@ export function safeJSONParse(str: string, defaultValue = null) {
 		console.log(str)
 		console.error(e)
 		console.groupEnd()
-		createToast({
-			message: __('Error parsing JSON'),
-			variant: 'error',
-		})
+		toast.error(__('Error parsing JSON'))
 		return defaultValue
 	}
 }
@@ -297,10 +361,11 @@ export function copyToClipboard(text: string | Promise<string>) {
 }
 
 function showCopyToast(success: boolean) {
-	createToast({
-		variant: success ? 'success' : 'error',
-		title: success ? __('Copied to clipboard') : __('Failed to copy to clipboard'),
-	})
+	if (success) {
+		toast.success(__('Copied to clipboard'))
+	} else {
+		toast.error(__('Failed to copy to clipboard'))
+	}
 }
 
 export function ellipsis(value: string, length: number) {
@@ -311,25 +376,25 @@ export function ellipsis(value: string, length: number) {
 }
 
 export function flattenOptions(
-	options: DropdownOption[] | GroupedDropdownOption[]
+	options: DropdownOption[] | GroupedDropdownOption[],
 ): DropdownOption[] {
 	if (!options.length) return []
 	return 'group' in options[0]
-		? (options as GroupedDropdownOption[]).map((c) => c.items).flat()
+		? (options as GroupedDropdownOption[]).map((c) => c.options).flat()
 		: (options as DropdownOption[])
 }
 
 export function groupOptions<T extends DropdownOption>(
 	options: T[],
-	groupBy: keyof T
+	groupBy: keyof T,
 ): GroupedDropdownOption[] {
 	return options.reduce((acc, option) => {
 		const group = option[groupBy] as string
 		const index = acc.findIndex((g) => g.group === group)
 		if (index === -1) {
-			acc.push({ group, items: [option] })
+			acc.push({ group, options: [option] })
 		} else {
-			acc[index].items.push(option)
+			acc[index].options.push(option)
 		}
 		return acc
 	}, [] as GroupedDropdownOption[])
@@ -384,7 +449,11 @@ export function attachRealtimeListener(event: string, callback: (...args: any[])
 	})
 }
 
-export function createHeaders(columns: QueryResultColumn[]) {
+/** `columnLabel` names a plain column's header. A pivoted column is named by its parts. */
+export function createHeaders(
+	columns: QueryResultColumn[],
+	columnLabel: (name: string) => string = (name) => name,
+) {
 	const nestedColumns = columns.filter((column) => column.name.includes('___'))
 	const levels = nestedColumns.length ? nestedColumns[0].name.split('___').length : 1
 
@@ -392,9 +461,9 @@ export function createHeaders(columns: QueryResultColumn[]) {
 		return {
 			...column,
 			isNested: column.name.includes('___'),
-			// ibis returns nested columns as value1___column1, value2___column1, value3___column1
-			// using the columns as it is will show the value1 on the top and column1, column2, column3 as nested columns
-			// so we reverse the parts to show column1 on the top and value1, value2, value3 as nested columns
+			// ibis pivots to measure___value1___value2, deepest value last. A
+			// header reads the other way round, the outermost dimension on the
+			// top row and the measure on the bottom, so the parts are reversed.
 			parts: column.name.split('___').reverse(),
 		}
 	})
@@ -409,7 +478,7 @@ export function createHeaders(columns: QueryResultColumn[]) {
 			const isLast = level === levels - 1
 
 			headerRow.push({
-				label: isNested ? column.parts[level] : isLast ? column.name : '',
+				label: isNested ? column.parts[level] : isLast ? columnLabel(column.name) : '',
 				level,
 				isLast,
 				column: column,
@@ -457,7 +526,9 @@ export function createHeaders(columns: QueryResultColumn[]) {
 		const areDates = areValidDates(headerRow.map((header) => header.label))
 		if (!areDates) continue
 
-		const areFirstOfFiscalYear = areFirstDayOfFiscalYear(headerRow.map((header) => header.label))
+		const areFirstOfFiscalYear = areFirstDayOfFiscalYear(
+			headerRow.map((header) => header.label),
+		)
 		const areFirstOfYear = areFirstDayOfYear(headerRow.map((header) => header.label))
 		const areFirstOfMonth = areFirstDayOfMonth(headerRow.map((header) => header.label))
 
@@ -480,7 +551,7 @@ export function createHeaders(columns: QueryResultColumn[]) {
 }
 
 function areFirstDayOfFiscalYear(data: string[]) {
-	const fiscalYearStart = session.user?.fiscal_year_start
+	const fiscalYearStart = session.site?.fiscal_year_start
 	if (!fiscalYearStart) return false
 
 	const start = new Date(fiscalYearStart)
@@ -546,7 +617,7 @@ export function toTitleCase(str: string): string {
 		.replace(/&/g, 'and')
 		.toLowerCase()
 		.split(' ')
-		.map(word => {
+		.map((word) => {
 			if (word === 'and') return 'and'
 			return word.charAt(0).toUpperCase() + word.slice(1)
 		})

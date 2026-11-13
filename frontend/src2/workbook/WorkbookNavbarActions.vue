@@ -1,83 +1,96 @@
 <script setup lang="ts">
-import { GitFork, Share2 } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { GitFork, PackagePlus, Share2 } from 'lucide-vue-next'
+import { computed, inject, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { waitUntil } from '../helpers'
+import router from '../router'
 import session from '../session'
 import { __ } from '../translation'
-import { Workbook, workbookKey } from './workbook'
+import { canExportToApp } from './export_to_app'
+import type { Workbook } from './workbook'
+import { workbookKey } from './workbook_key'
+import WorkbookExportToAppDialog from './WorkbookExportToAppDialog.vue'
 import WorkbookLineageDialog from './WorkbookLineageDialog.vue'
 import WorkbookShareDialog from './WorkbookShareDialog.vue'
 
 const workbook = inject(workbookKey) as Workbook
 
 const showShareDialog = ref(false)
+const canOpenShare = computed(() => workbook.canShare && !workbook.isdirty && !workbook.islocal)
+// The upgrade wizard links here to change who may open the workbook.
+// `can_share` arrives with the loaded document. A chart's link with the same
+// query opens the chart's own share dialog instead. The query goes once read,
+// so a reload doesn't open the dialog again.
+const route = useRoute()
+if (route.name === 'Workbook' && route.query.share) {
+	waitUntil(() => Boolean(workbook.doc.owner)).then(() => {
+		showShareDialog.value = canOpenShare.value
+		router.replace({ query: { ...route.query, share: undefined } })
+	})
+}
 const showLineageDialog = ref(false)
+const showExportDialog = ref(false)
+
+const canExport = computed(() => canExportToApp(workbook.doc))
+
+function afterMarked(name: string) {
+	// The workbook and its queries, charts and dashboards now have new names, so
+	// every resource in this tab points at a document that is gone. Reload the
+	// workbook instead of patching each resource. Duplicate does the same.
+	window.location.href = router.resolve({
+		name: 'Workbook',
+		params: { workbook_name: name },
+	}).href
+}
 </script>
 
 <template>
 	<div v-if="workbook" class="flex gap-2">
-		<Button
-			v-if="workbook.canShare && !workbook.isdirty && !workbook.islocal"
-			variant="outline"
-			@click="showShareDialog = true"
-		>
+		<Button v-if="canOpenShare" variant="outline" @click="showShareDialog = true">
 			<template #prefix>
-				<Share2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<Share2 class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
 			Share
 		</Button>
-		<!-- <Button
-			v-show="!workbook.islocal && workbook.isdirty"
-			variant="outline"
-			@click="workbook.discard()"
-		>
-			<template #prefix>
-				<Undo2 class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-			</template>
-			Discard
-		</Button>
-		<Button
-			v-show="workbook.islocal || workbook.isdirty"
-			variant="solid"
-			:loading="workbook.saving"
-			@click="workbook.save()"
-		>
-			<template #prefix>
-				<Check class="h-4 w-4 text-gray-100" stroke-width="1.5" />
-			</template>
-			Save
-		</Button> -->
 		<Dropdown
-			:button="{ icon: 'more-horizontal', variant: 'outline' }"
-			placement="right"
+			:button="{ icon: 'lucide-more-horizontal', variant: 'outline' }"
+			align="end"
 			:options="[
 				{
 					label: __('View Lineage'),
 					icon: GitFork,
 					onClick: () => (showLineageDialog = true),
 				},
-				!workbook.doc.read_only
+				!workbook.doc.read_only || workbook.doc.can_copy
 					? {
 							label: __('Duplicate'),
-							icon: 'copy',
+							icon: 'lucide-copy',
 							onClick: () => workbook.duplicate(),
 					  }
 					: null,
 				{
 					label: __('Copy JSON'),
-					icon: 'copy',
+					icon: 'lucide-copy',
 					onClick: () => workbook.copy(),
 				},
+				canExport && !workbook.islocal
+					? {
+							label: __('Export to app…'),
+							icon: PackagePlus,
+							onClick: () => (showExportDialog = true),
+					  }
+					: null,
 				!workbook.islocal
 					? {
 							label: __('Delete'),
-							icon: 'trash-2',
+							icon: 'lucide-trash-2',
 							onClick: () => workbook.delete(),
 					  }
 					: null,
 				session.user.has_desk_access
 					? {
 							label: __('Open in Desk'),
-							icon: 'external-link',
+							icon: 'lucide-external-link',
 							onClick: () => workbook.openInDesk(),
 					  }
 					: null,
@@ -87,4 +100,9 @@ const showLineageDialog = ref(false)
 
 	<WorkbookShareDialog v-if="workbook.canShare && showShareDialog" v-model="showShareDialog" />
 	<WorkbookLineageDialog v-if="showLineageDialog" v-model="showLineageDialog" />
+	<WorkbookExportToAppDialog
+		v-if="showExportDialog"
+		v-model="showExportDialog"
+		@marked="afterMarked"
+	/>
 </template>

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { watchEffect } from 'vue'
 import { __ } from '../../translation'
 import { SankeyChartConfig } from '../../types/chart.types'
-import { ColumnOption, Dimension, DimensionOption, Measure } from '../../types/query.types'
+import { ColumnOption, DimensionOption } from '../../types/query.types'
 import CollapsibleSection from './CollapsibleSection.vue'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 
 const props = defineProps<{
 	dimensions: DimensionOption[]
@@ -20,57 +21,49 @@ const config = defineModel<SankeyChartConfig>({
 		value_column: {},
 	}),
 })
-
-watchEffect(() => {
-	if (!config.value.source_column) {
-		config.value.source_column = {} as Dimension
-	}
-	if (!config.value.target_column) {
-		config.value.target_column = {} as Dimension
-	}
-	if (!config.value.value_column) {
-		config.value.value_column = {} as Measure
-	}
-})
 </script>
 
 <template>
-	<CollapsibleSection title="Options">
+	<CollapsibleSection :title="__('Options')">
 		<div class="flex flex-col gap-3 pt-1">
 			<DimensionPicker
-				label="Source"
+				:label="__('Source')"
 				v-model="config.source_column"
 				:options="props.dimensions"
 			/>
 			<DimensionPicker
-				label="Target"
+				:label="__('Target')"
 				v-model="config.target_column"
 				:options="props.dimensions"
 			/>
 			<MeasurePicker
-				label="Value"
+				:label="__('Value')"
 				v-model="config.value_column"
 				:column-options="props.columnOptions"
 			/>
-			<FormControl
-				v-model="config.orient"
-				label="Orientation"
-				type="select"
-				:options="[
-					{ label: __('Horizontal'), value: 'horizontal' },
-					{ label: __('Vertical'), value: 'vertical' },
-				]"
-			/>
-			<FormControl
-				v-model="config.node_align"
-				label="Node Alignment"
-				type="select"
-				:options="[
-					{ label: __('Justify'), value: 'justify' },
-					{ label: __('Left'), value: 'left' },
-					{ label: __('Right'), value: 'right' },
-				]"
-			/>
+			<InlineFormControlLabel :label="__('Orientation')" control-width="7rem">
+				<FormControl
+					v-model="config.orient"
+					type="select"
+					:options="[
+						{ label: __('Horizontal'), value: 'horizontal' },
+						{ label: __('Vertical'), value: 'vertical' },
+					]"
+				/>
+			</InlineFormControlLabel>
+			<InlineFormControlLabel :label="__('Align')" control-width="6rem">
+				<FormControl
+					v-model="config.node_align"
+					type="select"
+					:options="[
+						{ label: __('Justify'), value: 'justify' },
+						{ label: __('Left'), value: 'left' },
+						{ label: __('Right'), value: 'right' },
+					]"
+				/>
+			</InlineFormControlLabel>
 		</div>
 	</CollapsibleSection>
+
+	<NumberFormatSection :config="config" :sole-measure-name="config.value_column?.measure_name" />
 </template>
