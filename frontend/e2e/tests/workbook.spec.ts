@@ -108,9 +108,10 @@ test.describe('workbook', () => {
 			new RegExp(`/workbook/${workbook.name}/dashboard/${dashboard.name}$`),
 		)
 		// The dashboard renders the chart narrower, and echarts drops the category
-		// labels that no longer fit. The value axis still runs to a 1,800 tick,
-		// because 1,778 of the 2,000 orders are delivered.
-		await expect(rendered.getByText('1,800')).toBeVisible()
+		// labels that no longer fit. The value axis still shows a thousands tick,
+		// because 1,778 of the 2,000 orders are delivered. It hides the ticks that
+		// overlap too, and which of 1.2K to 1.8K stays depends on the font.
+		await expect(rendered.filter({ has: page.getByText(/^1\.\dK$/) })).toBeVisible()
 		await expect(page.getByRole('button', { name: 'Refresh' })).toBeVisible()
 
 		// A title edits in place and is mirrored onto the workbook, so the

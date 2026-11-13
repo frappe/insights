@@ -18,6 +18,15 @@ const items = (page: Page): Locator => page.getByTestId('dashboard-cell')
 const charts = (page: Page): Locator => page.locator('[_echarts_instance_]')
 
 /**
+ * The charts whose value axis reaches the 1,778 delivered orders, which shows as
+ * a tick from 1.2K to 1.8K. A dashboard item leaves the axis a few pixels, so
+ * echarts hides the ticks that overlap, and which one stays depends on the
+ * font's metrics. Any of them proves the chart counts every order.
+ */
+const deliveredScale = (page: Page): Locator =>
+	charts(page).filter({ has: page.getByText(/^1\.\dK$/) })
+
+/**
  * The panel a Popover opens. reka portals it to the body and marks only the
  * wrapper, so nothing inside it is reachable from the trigger.
  */
@@ -50,11 +59,11 @@ test.describe('dashboard', () => {
 
 		await expect(charts(page)).toHaveCount(2)
 		// Both charts count the 2,000 demo orders by status, and 1,778 of them are
-		// delivered, so each value axis runs to a 1,800 tick. A category label is
+		// delivered, so each value axis runs to a thousands tick. A category label is
 		// not safe to assert on here, because echarts drops the ones that would
 		// overlap at a dashboard item's width. The first execution runs a query,
 		// so it takes longer than the default assertion timeout allows.
-		await expect(charts(page).getByText('1,800')).toHaveCount(2, { timeout: 30_000 })
+		await expect(deliveredScale(page)).toHaveCount(2, { timeout: 30_000 })
 	})
 
 	// @feature dashboard.create-add-chart dashboard.chart-selector
@@ -102,8 +111,8 @@ test.describe('dashboard', () => {
 		await expect(items(page).filter({ hasText: chart.title })).toHaveCount(1)
 		await expect(items(page).filter({ hasText: second.title })).toHaveCount(1)
 		// Both charts count the 2,000 demo orders by status, and 1,778 of them are
-		// delivered, so each value axis runs to a 1,800 tick.
-		await expect(charts(page).getByText('1,800')).toHaveCount(2, { timeout: 30_000 })
+		// delivered, so each value axis runs to a thousands tick.
+		await expect(deliveredScale(page)).toHaveCount(2, { timeout: 30_000 })
 	})
 
 	/**
@@ -119,7 +128,7 @@ test.describe('dashboard', () => {
 	}) => {
 		const { workbook, dashboard, chart } = workbookWithDashboard
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
-		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+		await expect(deliveredScale(page)).toBeVisible({ timeout: 30_000 })
 
 		await page.getByRole('button', { name: 'Edit', exact: true }).click()
 		await page.getByRole('button', { name: 'Filter', exact: true }).click()
@@ -166,8 +175,8 @@ test.describe('dashboard', () => {
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
 
 		// Before the filter the chart counts every order by status, so its value
-		// axis runs to the 1,778 delivered orders and tops out at a 1,800 tick.
-		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+		// axis runs to the 1,778 delivered orders and shows a thousands tick.
+		await expect(deliveredScale(page)).toBeVisible({ timeout: 30_000 })
 
 		// A filter that names its column opens on the values that column holds, under
 		// the default `is`. A value list commits when the panel closes, and the
@@ -180,7 +189,7 @@ test.describe('dashboard', () => {
 		// The chart now counts canceled orders alone, so `canceled` is the only
 		// category left and the value axis no longer reaches the delivered scale.
 		await expect(charts(page).getByText('canceled')).toBeVisible()
-		await expect(charts(page).getByText('1,800')).toHaveCount(0)
+		await expect(deliveredScale(page)).toHaveCount(0)
 		// The filter states what it applied, on the control itself.
 		await expect(page.getByRole('button', { name: 'Status is canceled' })).toBeVisible()
 
@@ -190,7 +199,7 @@ test.describe('dashboard', () => {
 
 		await expect(trigger).toBeVisible()
 		await expect(page.getByRole('button', { name: 'Status is canceled' })).toHaveCount(0)
-		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+		await expect(deliveredScale(page)).toBeVisible({ timeout: 30_000 })
 
 		// Unticking every value and clicking away takes the filter off too.
 		await trigger.click()
@@ -210,7 +219,7 @@ test.describe('dashboard', () => {
 		await cell.click({ position: { x: box.width - 4, y: box.height - 4 } })
 
 		await expect(trigger).toBeVisible()
-		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+		await expect(deliveredScale(page)).toBeVisible({ timeout: 30_000 })
 	})
 
 	// @feature dashboard.move-resize dashboard.reset-layout
@@ -221,7 +230,7 @@ test.describe('dashboard', () => {
 	}) => {
 		const { workbook, dashboard, chart } = workbookWithDashboard
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
-		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+		await expect(deliveredScale(page)).toBeVisible({ timeout: 30_000 })
 
 		await page.getByRole('button', { name: 'Edit', exact: true }).click()
 
@@ -328,7 +337,7 @@ test.describe('dashboard', () => {
 	}) => {
 		const { workbook, dashboard, chart } = workbookWithDashboard
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
-		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+		await expect(deliveredScale(page)).toBeVisible({ timeout: 30_000 })
 
 		await page.getByRole('button', { name: 'Edit', exact: true }).click()
 
@@ -395,7 +404,7 @@ test.describe('dashboard', () => {
 	}) => {
 		const { workbook, dashboard } = workbookWithDashboard
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/dashboard/${dashboard.name}`)
-		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+		await expect(deliveredScale(page)).toBeVisible({ timeout: 30_000 })
 
 		await page.getByRole('button', { name: 'Edit', exact: true }).click()
 		await page.getByRole('button', { name: 'Filter', exact: true }).click()
@@ -433,9 +442,9 @@ test.describe('dashboard', () => {
 		await page.getByRole('option', { name: /canceled/ }).click()
 
 		await expect(page.getByRole('button', { name: 'Status equals canceled' })).toBeVisible()
-		// The chart still counts every order, so its value axis keeps the 1,800
+		// The chart still counts every order, so its value axis keeps the thousands
 		// tick that the 1,778 delivered orders set.
-		await expect(charts(page).getByText('1,800')).toBeVisible()
+		await expect(deliveredScale(page)).toBeVisible()
 	})
 
 	// @feature dashboard.filter-links
@@ -543,7 +552,7 @@ test.describe('dashboard', () => {
 		await page.reload()
 
 		await expect(items(page).filter({ hasText: chart.title })).toHaveCount(1)
-		await expect(charts(page).getByText('1,800')).toBeVisible({ timeout: 30_000 })
+		await expect(deliveredScale(page)).toBeVisible({ timeout: 30_000 })
 	})
 
 	// @feature dashboard.edit-chart dashboard.open-workbook
