@@ -171,6 +171,16 @@ describe('a card the reader may not read the data behind', () => {
 		// a retry cannot help, because the reader cannot change their permissions
 		expect(html).not.toContain('Retry')
 	})
+
+	// @feature permissions.not-permitted-chart permissions.chart-run-as-owner
+	it('names the owner a Run-as-owner chart ran as, not the reader', async () => {
+		const html = await renderCard({
+			not_permitted: { doctypes: ['Sales Invoice'], run_as: 'Alice Fixture' },
+		})
+
+		expect(html).toContain('Runs as Alice Fixture, who can&#39;t read Sales Invoice')
+		expect(html).not.toContain('Needs read access')
+	})
 })
 
 const DESCRIPTION = 'Trials started this month'

@@ -19,7 +19,7 @@ from functools import wraps
 
 import frappe
 
-from insights.permission_user import permission_user, permission_user_for
+from insights.permission_user import get_permission_user, permission_user, permission_user_for
 
 # The columns this request's builds held back, each with its doctype. A chart
 # that never reads such a column keeps running. The refusal comes only when a
@@ -28,11 +28,13 @@ HELD_BACK = "insights_columns_held_back"
 
 
 class NotPermitted(frappe.PermissionError):
-    """Holds the doctypes the reader would need read on."""
+    """Holds the doctypes the reader would need read on, and the full name of
+    the user the read ran as when that is not the reader."""
 
-    def __init__(self, message, doctypes: list[str] | None = None):
+    def __init__(self, message, doctypes: list[str] | None = None, run_as: str | None = None):
         super().__init__(message)
         self.doctypes = doctypes or []
+        self.run_as = run_as
 
 
 def refuse(doctypes: list[str] | None = None, message: str | None = None) -> None:
@@ -41,16 +43,23 @@ def refuse(doctypes: list[str] | None = None, message: str | None = None) -> Non
     It throws through `frappe.throw`, so the message reaches the message log. A
     response includes the exception's own text only where tracebacks are
     allowed. Without the message log, the reader would see only an endpoint's URL.
+
+    A read that runs as somebody else, such as a chart's owner, names them: the
+    reader could not fix it with any access of their own. It names their full
+    name, because a Guest may read it.
     """
     doctypes = doctypes or []
+    runner = get_permission_user()
+    run_as = frappe.utils.get_fullname(runner) if runner != frappe.session.user else None
     if not message:
         named = ", ".join(frappe.bold(doctype) for doctype in doctypes)
-        message = (
-            frappe._("Needs read access to {0}").format(named)
-            if doctypes
-            else frappe._("You do not have access to the data behind this chart")
-        )
-    frappe.throw(message, exc=NotPermitted(message, doctypes))
+        if doctypes and run_as:
+            message = frappe._("Runs as {0}, who can't read {1}").format(run_as, named)
+        elif doctypes:
+            message = frappe._("Needs read access to {0}").format(named)
+        else:
+            message = frappe._("You do not have access to the data behind this chart")
+    frappe.throw(message, exc=NotPermitted(message, doctypes, run_as))
 
 
 def forget_refusal(refusal: NotPermitted) -> None:
@@ -101,6 +110,8 @@ def answers_refusal(empty):
                 nothing = empty()
                 if isinstance(nothing, dict):
                     nothing["not_permitted"] = {"doctypes": refusal.doctypes}
+                    if refusal.run_as:
+                        nothing["not_permitted"]["run_as"] = refusal.run_as
                 return nothing
 
         return answer

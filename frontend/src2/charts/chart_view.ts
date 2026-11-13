@@ -231,6 +231,8 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	// an empty array, not undefined, so the card shows Not Permitted even when the
 	// server names no doctypes
 	const notPermitted = ref<string[]>()
+	// the full name of the owner a Run-as-owner chart was refused as
+	const notPermittedRunAs = ref<string>()
 	const scopedBy = ref<{ doctype: string; documents: string[] }[]>()
 	const narrowedByPermissions = ref(false)
 	// a drill sends it back, so the rows behind the number are for the date the
@@ -307,6 +309,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		serverBusy.value = false
 		failure.value = ''
 		notPermitted.value = undefined
+		notPermittedRunAs.value = undefined
 		scopedBy.value = undefined
 		narrowedByPermissions.value = false
 
@@ -350,6 +353,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 
 			if (response.not_permitted) {
 				notPermitted.value = response.not_permitted.doctypes || []
+				notPermittedRunAs.value = response.not_permitted.run_as
 				clearChart()
 				ready.value = true
 				return
@@ -534,6 +538,7 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		recordLinks,
 		comparisonRows,
 		notPermitted,
+		notPermittedRunAs,
 		scopedBy,
 		narrowedByPermissions,
 		drillSubject,
