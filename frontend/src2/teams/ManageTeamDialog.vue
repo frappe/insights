@@ -176,7 +176,7 @@ const activeTab = ref('Members')
 					>
 						{{
 							__(
-								'Site DB data follows each member’s desk permissions, so tables and filters picked under Site DB have no effect. Pick tables of the other data sources to give members access to them.',
+								"Site DB data follows each member's desk permissions, so tables and filters picked under Site DB have no effect. Pick tables of the other data sources to give members access to them.",
 							)
 						}}
 					</div>
