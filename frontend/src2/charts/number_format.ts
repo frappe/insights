@@ -179,6 +179,20 @@ export function axisFormatter(
 }
 
 /**
+ * How an axis prints its tick labels: shortened, as Insights printed them before
+ * frappe-ui charts, so a scale of crores reads `4Cr`. A tooltip prints the value
+ * it carries through `axisFormatter`, in full.
+ */
+export function axisTickFormatter(
+	config?: NumberFormatConfigSource | null,
+	measure?: FormattedMeasure | null,
+	rows?: QueryResultRow[],
+): NumberFormatter {
+	const format = { ...numberFormatOf(config, measure, rows), shorten: true }
+	return (value: any) => printNumber(value, format)
+}
+
+/**
  * The currency code a Measure's rows carry, under `<measure>__currency`.
  * `undefined` when the Measure names no currency column, so the site's stands
  * in. `null` when the rows mix codes: a total over amounts in different
