@@ -170,7 +170,17 @@ const activeTab = ref('Members')
 						team are allowed to manage teams, users, and other admin settings
 					</div>
 
-					<Suspense v-else>
+					<div
+						v-if="currentTeam.name != 'Admin'"
+						class="rounded-4 bg-surface-gray-1 p-2 text-p-sm text-ink-gray-5"
+					>
+						{{
+							__(
+								'Site DB data follows each member’s desk permissions, so tables and filters picked under Site DB have no effect. Pick tables of the other data sources to give members access to them.',
+							)
+						}}
+					</div>
+					<Suspense v-if="currentTeam.name != 'Admin'">
 						<TeamResourceSelector v-model="currentTeam.team_permissions" />
 						<template #fallback>
 							<div class="flex h-32 items-center justify-center">

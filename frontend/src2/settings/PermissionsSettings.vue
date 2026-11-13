@@ -85,7 +85,7 @@ const editTeam = ref<Team | null>(null)
 
 		<SettingItem
 			label="Enable"
-			description="Enable permissions to restrict access to data sources & tables based on teams and users."
+			description="Restrict data sources and tables to the teams given access to them. Site DB data always follows desk permissions, whatever this setting."
 		>
 			<Toggle v-model="settings.doc.enable_permissions" />
 		</SettingItem>
