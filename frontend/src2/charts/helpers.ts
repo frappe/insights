@@ -1,4 +1,4 @@
-import { graphic } from 'echarts/core'
+import { format, graphic } from 'echarts/core'
 import { ellipsis, formatNumber, getShortNumber, toTitleCase } from '../helpers'
 import { FIELDTYPES, isCalendarDateType } from '../helpers/constants'
 import { getFormattedDate } from '../query/helpers'
@@ -18,7 +18,7 @@ import {
 	SeriesLine,
 	XAxis,
 } from '../types/chart.types'
-import { QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
+import { Measure, QueryResult, QueryResultColumn, QueryResultRow } from '../types/query.types'
 import { getColors } from './colors'
 
 interface GeoJSONFeature {
@@ -913,15 +913,26 @@ const MAP_PROJECTION = {
 	],
 }
 const POINT_SIZES = { min: 6, max: 36 }
-// The World map's extent in projected units: longitude -180 to 180, latitude -60 to 84
-const WORLD_EXTENT = { width: 2 * Math.PI, height: 4.27 }
+// Each map's extent in projected units, which its default view fits:
+// the World map spans longitude -180 to 180 and latitude -60 to 84, the India map
+// longitude 68.2 to 97.4 and latitude 6.8 to 37.1
+const MAP_EXTENTS = {
+	world: { width: 2 * Math.PI, height: 4.27 },
+	india: { width: 0.509, height: 0.579 },
+}
 
 // The view that frames the points: centered on their extent and zoomed to it, so
-// a chart of one country opens on that country. Undefined when they spread over
-// most of the map, which the default view already shows. The center is in
-// projected units, as echarts reads a geo's center once it has a projection.
-function fitPointsView(coords: [number, number][]) {
+// a chart of one country opens on that country. The zoom is relative to the map
+// the chart draws on, as echarts' default view fits that map. Undefined when the
+// points spread over most of the map, which the default view already shows. The
+// center is in projected units, as echarts reads a geo's center once it has a
+// projection.
+export function fitPointsView(
+	coords: [number, number][],
+	mapType: MapChartConfig['map_type'] = 'world',
+) {
 	if (!coords.length) return undefined
+	const extent = MAP_EXTENTS[mapType] || MAP_EXTENTS.world
 	const xy = coords.map((c) => MAP_PROJECTION.project(c))
 	const xs = xy.map((p) => p[0])
 	const ys = xy.map((p) => p[1])
@@ -932,10 +943,20 @@ function fitPointsView(coords: [number, number][]) {
 	const height = Math.max(maxY - minY, 0.15)
 	const zoom = Math.min(
 		20,
-		0.7 * Math.min(WORLD_EXTENT.width / width, WORLD_EXTENT.height / height),
+		0.7 * Math.min(extent.width / width, extent.height / height),
 	)
 	if (zoom <= 1.5) return undefined
 	return { center: [(minX + maxX) / 2, (minY + maxY) / 2], zoom }
+}
+
+// The aggregations that keep a coordinate a place among the rows it summarizes.
+// A sum or a count of latitudes is no latitude, and would draw the point where no
+// row is. An unset measure passes, as "is required" already says what is missing;
+// an expression measure passes, as its aggregation is inside the expression.
+const COORDINATE_AGGREGATIONS = ['avg', 'min', 'max']
+export function isCoordinateMeasure(measure?: Measure) {
+	if (!measure?.measure_name || !('aggregation' in measure)) return true
+	return COORDINATE_AGGREGATIONS.includes(measure.aggregation)
 }
 
 // A circle per row at its latitude and longitude, its area following its value
@@ -978,10 +999,11 @@ function getMapPointsOptions(config: MapChartConfig, result: QueryResult) {
 		animationDuration: 300,
 		tooltip: {
 			trigger: 'item',
+			// a location name is data, so it is escaped before it is drawn as HTML
 			formatter: (params: any) => {
 				const value = params.value?.[2]
 				return `<div class="flex items-center justify-between gap-5">
-					<div>${params.name}</div>
+					<div>${format.encodeHTML(params.name)}</div>
 					<div class="font-bold">${
 						value === null || value === undefined ? '' : getShortNumber(value, 2)
 					}</div>
@@ -994,7 +1016,10 @@ function getMapPointsOptions(config: MapChartConfig, result: QueryResult) {
 			// the wheel or a pinch zooms, a drag moves the map
 			roam: true,
 			scaleLimit: { min: 1, max: 40 },
-			...fitPointsView(sized.map((p) => p.coord as [number, number])),
+			...fitPointsView(
+				sized.map((p) => p.coord as [number, number]),
+				config.map_type || 'world',
+			),
 			// the regions are a backdrop: no highlight, no selection, no tooltip
 			// (not silent, which would also stop the zoom)
 			emphasis: { disabled: true },
