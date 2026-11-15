@@ -11,6 +11,7 @@ from frappe.model.document import Document
 from ibis import BaseBackend
 
 import insights
+from insights.compat import ServiceUnavailableError
 from insights.insights.doctype.insights_table_link_v3.insights_table_link_v3 import (
     InsightsTableLinkv3,
 )
@@ -285,7 +286,7 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
 
         try:
             db: BaseBackend = self._get_db_connection()
-        except frappe.ServiceUnavailableError:
+        except ServiceUnavailableError:
             # a busy answer, such as a full data store, is not a failed connection: the client retries it
             raise
         except Exception as e:

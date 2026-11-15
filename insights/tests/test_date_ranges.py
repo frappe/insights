@@ -25,6 +25,7 @@ from insights.tests.base import InsightsIntegrationTestCase
 
 # 2022-11-26 is a Saturday
 NOW = "insights.insights.query_builders.sql_functions.nowdate"
+NOW_DATETIME = "insights.insights.query_builders.sql_functions.now_datetime"
 
 ERPNEXT_FY = "insights.insights.query_builders.sql_functions.get_erpnext_fiscal_year_start"
 
@@ -264,6 +265,27 @@ class TestTimespanFilter(InsightsIntegrationTestCase):
             sql = self.compiled({"span": "month to date", "shift": {"unit": "year", "count": -1}})
             self.assertIn(">= '2025-08-01 00:00:00'", sql)
             self.assertIn("< '2025-08-11 00:00:00'", sql)
+
+    # @feature dashboard.filter-datetime
+    def test_a_span_in_minutes_or_hours_ends_at_the_time_it_is_read(self):
+        """Not whole periods: the last hour at 14:20 starts at 13:20. Read a
+        minute later, the same span starts a minute later."""
+        cases = {
+            "last 15 minutes": "2026-08-10 14:05:30",
+            "Last 1 Hour": "2026-08-10 13:20:30",
+            "last 6 hours": "2026-08-10 08:20:30",
+            "last 24 hours": "2026-08-09 14:20:30",
+        }
+        for span, start in cases.items():
+            with self.subTest(span=span):
+                with patch(NOW_DATETIME, return_value=datetime.datetime(2026, 8, 10, 14, 20, 30, 999)):
+                    sql = self.compiled({"span": span})
+                self.assertIn(f">= '{start}'", sql)
+                self.assertIn("<= '2026-08-10 14:20:30'", sql)
+
+        with patch(NOW_DATETIME, return_value=datetime.datetime(2026, 8, 10, 14, 21, 30)):
+            sql = self.compiled("last 1 hour")
+        self.assertIn(">= '2026-08-10 13:21:30'", sql)
 
     # @feature query.filter-relative-date
     def test_a_value_naming_no_span_is_rejected(self):

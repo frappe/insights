@@ -20,7 +20,7 @@ def execute():
     search matches fewer tables and nothing else.
     """
     frappe.enqueue(
-        backfill_table_columns,
+        "insights.patches.backfill_table_columns.backfill_table_columns",
         queue="long",
         timeout=3600,
         job_id="insights::backfill_table_columns",

@@ -15,7 +15,6 @@ import { __ } from '../../translation'
 import type { FilterOperator, FilterValue, QueryResultColumn } from '../../types/query.types'
 import {
 	calendarOf,
-	datePresets,
 	defaultOperator,
 	formatDate,
 	isMulti,
@@ -23,6 +22,7 @@ import {
 	numberPairValues,
 	numberQuickValues,
 	numberPreview,
+	operatorOf,
 	operatorRows,
 	parseDatePhrase,
 	parseNumber,
@@ -36,6 +36,7 @@ import {
 	periodMonths,
 	periodRule,
 	periodStart,
+	presetsFor,
 	QUARTER_OF,
 	YEAR_OF,
 	relativeDirections,
@@ -45,6 +46,9 @@ import {
 	splitPair,
 	summaryParts,
 	textRule,
+	timedRangeOf,
+	timedRangeProblem,
+	timedRangeValue,
 	unitRows,
 	type Filter,
 	type ListItem,
@@ -52,8 +56,8 @@ import {
 	type Period,
 	type PeriodList,
 	type PeriodUnit,
+	type RelativeUnit,
 	type SpanDirection,
-	type SpanUnit,
 	type Stage,
 	type ValuesProvider,
 } from './filter_picker'
@@ -72,6 +76,8 @@ const props = defineProps<{
 	column?: QueryResultColumn
 	filters: Filter[]
 	initial?: Filter
+	/** a date column read to the minute: time presets, and a time on each calendar day */
+	withTime?: boolean
 }>()
 const emit = defineEmits<{
 	commit: [filter: Filter, replacing?: Filter]
@@ -93,7 +99,11 @@ const editing = shallowRef<Filter | undefined>()
 const picked = ref<string[]>([])
 /** the values already ticked when the multi stage opened, in tick order */
 const sticky = ref<string[]>([])
-const relative = reactive<{ direction: SpanDirection; unit: SpanUnit; includeCurrent: boolean }>({
+const relative = reactive<{
+	direction: SpanDirection
+	unit: RelativeUnit
+	includeCurrent: boolean
+}>({
 	direction: 'last',
 	unit: 'day',
 	includeCurrent: false,
@@ -155,8 +165,11 @@ function reset() {
 	search.value = ''
 	clearValue()
 	// Most dashboard filters keep the default operator, so its values come first.
+	// A filter read to the minute is mostly set to a recent span, so it opens on those.
 	if (props.column) {
-		op.value = defaultOperator(kindOf(props.column.type))
+		op.value = props.withTime
+			? operatorOf('date', 'within')
+			: defaultOperator(kindOf(props.column.type))
 		history.value = ['operator']
 		stage.value = 'value'
 		return
@@ -386,13 +399,30 @@ const typed = computed<(Draft & { label: string }) | undefined>(() => {
 		}
 
 	if (!calendar.value) {
-		const span = spanFromText(text)
-		if (!span || datePresets().some((p) => p.label.toLowerCase() === text.toLowerCase()))
+		const span = spanFromText(text, props.withTime)
+		const presets = presetsFor(props.withTime)
+		if (!span || presets.some((p) => p.label.toLowerCase() === text.toLowerCase()))
 			return undefined
 		return {
 			operator: 'within',
 			value: { span },
 			label: __('Use “{0}”', text),
+		}
+	}
+
+	if (props.withTime) {
+		const range = timedRangeOf(text)
+		if (calendar.value === 'range') {
+			const value = timedRangeValue(range)
+			if (!value) return undefined
+			return { operator: 'between', value, label: `${__('between')} ${formatDate(...value)}` }
+		}
+		if (!range.from || range.badTime) return undefined
+		const at = `${range.from} ${range.fromTime}`
+		return {
+			operator: op.value.operator,
+			value: at,
+			label: `${op.value.sign} ${formatDate(at)}`,
 		}
 	}
 
@@ -472,7 +502,7 @@ const rows = computed<ListItem[]>(() => {
 		const form = relativeForm.value
 		// a count in the input is the count, not a filter over the unit rows
 		const typing = search.value.trim() && parseNumber(search.value) === undefined
-		const units = unitRows(form)
+		const units = unitRows(form, props.withTime)
 			.filter((row) => !typing || matches(row.label))
 			.map((row) => ({
 				key: `span:${row.span}`,
@@ -528,16 +558,19 @@ const rows = computed<ListItem[]>(() => {
 	const lists: ListItem[] = (column.value?.type === 'Time' ? [] : periodLists())
 		.filter((list) => matches(list.label))
 		.map((list) => ({ key: `list:${list.unit}`, label: list.label, next: true }))
-	const presets = datePresets()
+	const presets = presetsFor(props.withTime)
 		.filter((p) => matches(p.label))
 		.map((p) => ({
 			key: `span:${p.span}`,
 			label: p.label,
 		}))
 	const row = relativeRow()
-	const relativeRows: ListItem[] = matches(row.label)
-		? [{ key: row.key, label: row.label, next: true }]
-		: []
+	const relativeRows: ListItem[] = [
+		row,
+		...(props.withTime ? [{ key: 'range', label: __('Date and time range') }] : []),
+	]
+		.filter((custom) => matches(custom.label))
+		.map((custom) => ({ key: custom.key, label: custom.label, next: true }))
 	return [
 		...use,
 		...grouped(presets, __('Presets')),
@@ -564,7 +597,9 @@ const emptyText = computed(() => {
 	if (multi.value) return fetching.value ? '' : __('No values found')
 	if (kind.value === 'text') return ''
 	if (kind.value === 'number') return ''
-	if (kind.value === 'date' && calendar.value) return ''
+	// a range typed whole that keeps no rule says why, where a list would be
+	if (kind.value === 'date' && calendar.value)
+		return (props.withTime && timedRangeProblem(search.value, calendar.value)) || ''
 	if (kind.value === 'date') return __('Nothing matches')
 	return ''
 })
@@ -668,6 +703,10 @@ function pickValue(item: ListItem) {
 	}
 
 	if (item.key === relativeRow().key) return go('relative')
+	if (item.key === 'range') {
+		op.value = operatorOf('date', 'between')
+		return go('value')
+	}
 	if (item.key.startsWith('list:')) {
 		period.list = item.key.slice(5) as PeriodList
 		return go('period')
@@ -740,6 +779,8 @@ function back() {
 		column.value = undefined
 		editing.value = undefined
 	}
+	// the range row opens a value stage of its own, under the presets it was picked from
+	if (previous === 'value' && left.stage === 'value') op.value = operatorOf('date', 'within')
 	stage.value = previous
 	search.value = ''
 	if (previous === 'operator' && op.value) highlight(op.value.operator)
@@ -957,7 +998,12 @@ function focusInput() {
 						: ''
 				"
 			>
-				<FilterPickerCalendar :mode="calendar" :text="search" @write="search = $event" />
+				<FilterPickerCalendar
+					:mode="calendar"
+					:text="search"
+					:with-time="withTime"
+					@write="search = $event"
+				/>
 			</div>
 		</div>
 

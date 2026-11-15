@@ -95,7 +95,7 @@ function makeWorkbook(name: string) {
 	function addChart(query_name?: string) {
 		const chart = newChart()
 		const query = query_name ? useQuery(query_name) : undefined
-		chart.doc.title = query?.doc.title || 'Chart ' + (workbook.doc.charts.length + 1)
+		chart.doc.title = 'Chart ' + (workbook.doc.charts.length + 1)
 		chart.doc.workbook = workbook.doc.name
 		chart.doc.query = query_name || ''
 		chart.doc.chart_type = 'Bar'

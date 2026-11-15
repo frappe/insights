@@ -484,6 +484,34 @@ class TestIbisDateFilterOnDatetime(IbisQueryBuilderTestCase):
         _, midnight, evening, next_day = self.STAMPS
         self.assertEqual(self.filtered(">", "2026-08-05 00:00:00"), [evening, next_day])
 
+    # @feature dashboard.filter-datetime
+    def test_a_datetime_filter_keeps_the_rows_inside_its_minutes(self):
+        """The two values a Datetime dashboard filter routes: a range to the
+        minute, and a span of the last hours that ends when the query runs."""
+        _, midnight, evening, next_day = self.STAMPS
+        self.assertEqual(self.filtered("between", ["2026-08-05 17:00", "2026-08-05 17:30"]), [evening])
+        self.assertEqual(self.filtered("between", ["2026-08-05 17:00", "2026-08-05 17:29"]), [])
+
+        # a time to the minute names that whole minute, whichever operator compares it
+        stamps = (
+            "2026-08-05 17:29:59.600000",
+            "2026-08-05 17:30:00",
+            "2026-08-05 17:30:30",
+            "2026-08-05 17:31:00",
+        )
+        late, on, within, after = stamps
+        cases = {"=": [on, within], "!=": [late, after], "<=": [late, on, within], ">": [after], "<": [late]}
+        for operator, expected in cases.items():
+            with self.subTest(operator=operator):
+                self.assertEqual(self.filtered(operator, "2026-08-05 17:30", stamps), expected)
+        self.assertEqual(self.filtered("between", ["2026-08-05 17:00", "2026-08-05 17:29"], stamps), [late])
+
+        now = "insights.insights.query_builders.sql_functions.now_datetime"
+        with patch(now, return_value=datetime(2026, 8, 5, 18, 0)):
+            self.assertEqual(self.filtered("within", {"span": "last 1 hour"}), [evening])
+            self.assertEqual(self.filtered("within", {"span": "last 15 minutes"}), [])
+            self.assertEqual(self.filtered("within", {"span": "last 18 hours"}), [midnight, evening])
+
 
 class TestIbisDivision(IbisQueryBuilderTestCase):
     # @feature data-source.division-by-zero

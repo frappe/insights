@@ -911,6 +911,27 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         self.assertEqual(answer["rows"], [])
         self.assertEqual(answer["columns"], [])
 
+    # @feature permissions.not-permitted-chart permissions.chart-run-as-owner
+    def test_a_chart_that_runs_as_its_owner_names_the_owner_who_cannot_read(self):
+        """Every reader, Administrator and Guest included, gets the owner's
+        refusal, so it names the owner instead of asking the reader for access."""
+        update_share_permissions(self.workbook, [{"user": READER, "read": 1, "write": 1}])
+        self.addCleanup(update_share_permissions, self.workbook, [{"user": READER, "read": 1, "write": 0}])
+        frappe.db.set_value(DT.CHART, self.unreadable_chart, {"owner": READER, "run_as_owner": 1})
+        self.addCleanup(
+            frappe.db.set_value,
+            DT.CHART,
+            self.unreadable_chart,
+            {"owner": "Administrator", "run_as_owner": 0},
+        )
+
+        with db_connections():
+            answer = get_chart_data(self.unreadable_chart)
+
+        self.assertEqual(
+            answer["not_permitted"], {"doctypes": ["Deleted Document"], "run_as": "Not Permitted"}
+        )
+
     # @feature permissions.not-permitted-chart
     def test_the_pickers_behind_a_card_answer_a_refusal_too(self):
         """A partly permitted dashboard opens, so its value and range pickers get

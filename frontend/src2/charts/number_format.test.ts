@@ -13,6 +13,7 @@ import { adaptChart } from './adapter'
 import type { ChartAdapterInput } from './adapter/types'
 import {
 	axisFormatter,
+	axisTickFormatter,
 	defaultDecimals,
 	printNumber,
 	numberFormatOf,
@@ -358,6 +359,17 @@ describe('the places an amount prints', () => {
 			INR: { symbol: '₹', symbol_on_right: false, number_format: '#,###.##' },
 		}
 		expect(axisFormatter(null, measure('revenue', 'currency'))(200000)).toBe('₹ 200,000')
+	})
+
+	// @feature charts.axis-short-numbers
+	it("shortens an axis's ticks of a thousand and over, whatever places the author kept unshortened", () => {
+		const whole = axisTickFormatter({ number_format: { decimals: 0 } }, measure('revenue'))
+		expect([0, 2500000, 7500000].map(whole)).toEqual(['0', '2.5M', '7.5M'])
+		expect([0.02, 0.05, 1500].map(axisTickFormatter(null, measure('rate')))).toEqual([
+			'0.02',
+			'0.05',
+			'1.5K',
+		])
 	})
 
 	// @feature charts.currency-decimals

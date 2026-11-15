@@ -35,6 +35,7 @@ from insights.cancellation import (
     raise_cancelled,
     was_cancelled,
 )
+from insights.compat import ServiceUnavailableError
 from insights.exceptions import (
     ExpressionSyntaxError,
     QueryCancelled,
@@ -61,9 +62,11 @@ from insights.insights.query_builders.sql_functions import (
     day_bounds,
     handle_timespan,
     is_calendar,
+    minute_bounds,
     resolve_timespan,
     typed_instant,
     within_days,
+    within_minutes,
 )
 from insights.insights.query_utils import (
     alias_qualified_tables,
@@ -248,6 +251,23 @@ class CircularQueryReferenceError(frappe.ValidationError):
     pass
 
 
+BARE_MINUTE = re.compile(r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$")
+
+
+def parse_bare_minute(value):
+    """The minute a `YYYY-MM-DD HH:MM` value names, or None for anything else.
+
+    A Datetime filter writes a time to the minute, and like a bare date it names
+    the whole of it, so `<= 16:30` keeps the row stamped 16:30:30.
+    """
+    if not isinstance(value, str) or not BARE_MINUTE.match(value):
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None  # nosemgrep - a value that does not parse names no minute
+
+
 def parse_bare_date(value):
     """The date a `YYYY-MM-DD` value names, or None for anything else."""
     if not isinstance(value, str):
@@ -349,7 +369,7 @@ class IbisQueryBuilder:
                 except (
                     CircularQueryReferenceError,
                     not_permitted.NotPermitted,
-                    frappe.ServiceUnavailableError,
+                    ServiceUnavailableError,
                     QueryTimeout,
                     QueryCancelled,
                 ):
@@ -802,6 +822,9 @@ class IbisQueryBuilder:
             first, last = parse_bare_date(start), parse_bare_date(end)
             if first and last:
                 return within_days(left, first, last)
+            first, last = parse_bare_minute(start), parse_bare_minute(end)
+            if first and last and is_calendar(left):
+                return within_minutes(left, first, last)
 
             if isinstance(start, str) and isinstance(end, str):
                 contains_time = ":" in start or ":" in end
@@ -814,6 +837,9 @@ class IbisQueryBuilder:
         day = parse_bare_date(filter_value) if right_column is None else None
         if day and filter_operator in DAY_OPERATORS and is_calendar(left):
             return DAY_OPERATORS[filter_operator](*day_bounds(left, day, day))
+        minute = parse_bare_minute(filter_value) if right_column is None else None
+        if minute and filter_operator in DAY_OPERATORS and is_calendar(left):
+            return DAY_OPERATORS[filter_operator](*minute_bounds(left, minute, minute))
 
         right_value = right_column if right_column is not None else typed_value(left, filter_value)
         return operator_fn(left, right_value)
@@ -2045,7 +2071,8 @@ def publish_script_logs():
             user=frappe.session.user,
             message={
                 "user": frappe.session.user,
-                "logs": frappe.debug_log,
+                # a list, not the `frappe.debug_log` proxy, which serializes as one string
+                "logs": list(frappe.local.debug_log),
             },
         )
     except Exception:

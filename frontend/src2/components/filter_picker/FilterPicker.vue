@@ -24,6 +24,8 @@ const props = defineProps<{
 	/** The smallest and largest a numeric column goes, for the presets it lists. */
 	rangeProvider?: (column: QueryResultColumn) => Promise<[number, number] | undefined>
 	column?: QueryResultColumn
+	/** the column is read to the minute: see the panel's prop */
+	withTime?: boolean
 }>()
 const model = defineModel<Filter[]>({ default: () => [] })
 
@@ -120,6 +122,7 @@ const valueText = computed(() => {
 				:values-provider="valuesProvider"
 				:range-provider="rangeProvider"
 				:column="column"
+				:with-time="withTime"
 				:filters="model"
 				:initial="initial"
 				@commit="onCommit"

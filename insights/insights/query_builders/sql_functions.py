@@ -16,6 +16,7 @@ from frappe.utils.data import (
     get_year_ending,
     get_year_start,
     getdate,
+    now_datetime,
     nowdate,
 )
 from sqlalchemy import Column, select, table
@@ -231,6 +232,9 @@ class Functions:
 
 
 def handle_timespan(column, timespan):
+    window = time_window(read_timespan(timespan)[0])
+    if window:
+        return within_instants(column, *window)
     return within_days(column, *resolve_timespan(timespan))
 
 
@@ -241,6 +245,17 @@ def resolve_timespan(timespan) -> tuple[datetime.date, datetime.date]:
     read a span the same way.
     """
     return get_window(*read_timespan(timespan))
+
+
+def resolve_instants(timespan) -> tuple[datetime.datetime, datetime.datetime]:
+    """The stretch a `within` value covers, from its first instant to the first
+    instant past it: a day span from midnight, a time span to the minute."""
+    span, anchor = read_timespan(timespan)
+    window = time_window(span)
+    if window:
+        return window
+    first, last = get_window(span, anchor)
+    return midnight(first), midnight(last + datetime.timedelta(days=1))
 
 
 def reading_day():
@@ -480,7 +495,8 @@ def parse_span(span: str) -> Span | None:
         … (include current)     extends a "last" or "next" span over the current
 
     A "last" or "next" span that names no count covers one period: "last month"
-    reads as "last 1 month".
+    reads as "last 1 month". A span counted in minutes or hours is read by
+    `parse_time_span` instead.
 
     One parser for this runtime. The browser reads the same grammar, in
     `frontend/src2/helpers/span_grammar.ts`, which is also where the grammar is
@@ -513,6 +529,47 @@ def parse_span(span: str) -> Span | None:
     count = max(1, int(tail[0])) if counted else 1
     unit = _span_unit_word(" ".join(tail[1:] if counted else tail))
     return Span(head, unit, count, include_current) if unit else None
+
+
+TIME_UNITS = ("minute", "hour")
+
+
+def parse_time_span(span) -> tuple[str, int, str] | None:
+    """A span counted in minutes or hours, read as (shape, count, unit).
+
+        last <N> minutes|hours  the N units up to now
+        next <N> minutes|hours  the N units from now
+
+    Unlike a day span, it does not cover whole periods: "last 1 hour" at 14:20
+    starts at 13:20, which is what a reader watching a live system means. So it
+    has no "current", "to date" or "(include current)" form.
+    """
+    if not isinstance(span, str):
+        return None
+    words = " ".join(span.lower().split()).split(" ")
+    if len(words) != 3 or words[0] not in ("last", "next") or not words[1].isdigit():
+        return None
+    unit = words[2][:-1] if words[2].endswith("s") else words[2]
+    if unit not in TIME_UNITS:
+        return None
+    return words[0], max(1, int(words[1])), unit
+
+
+def time_window(span) -> tuple[datetime.datetime, datetime.datetime] | None:
+    """The instants a minute or hour span covers, as (start, end), or nothing
+    for any other span.
+
+    It resolves against the time the chart is read, in the system time zone
+    that `now()` and the stored Datetime values use, so a refresh moves it. A
+    pinned `reading_day` names a day, not a time, and does not move it.
+    """
+    parsed = parse_time_span(span)
+    if not parsed:
+        return None
+    shape, count, unit = parsed
+    now = now_datetime().replace(microsecond=0)
+    length = datetime.timedelta(**{f"{unit}s": count})
+    return (now - length, now) if shape == "last" else (now, now + length)
 
 
 def _span_unit_word(words: str) -> str | None:
@@ -635,13 +692,7 @@ def typed_instant(column, instant: datetime.datetime):
     return ibis.literal(instant, type=column.type())
 
 
-def day_bounds(column, first, last):
-    """The column, the start of day `first` and the start of the day after `last`.
-
-    A column that holds dates as text is compared as text, against bare dates:
-    ISO text sorts as the dates it spells, and a cast fails the whole query on
-    one value that is not a date.
-    """
+def refuse_time_column(column):
     if column.type().is_time():
         frappe.throw(
             frappe._("{0} is a Time column and names no day, so no span can filter it").format(
@@ -649,6 +700,16 @@ def day_bounds(column, first, last):
             ),
             QueryRefused,
         )
+
+
+def day_bounds(column, first, last):
+    """The column, the start of day `first` and the start of the day after `last`.
+
+    A column that holds dates as text is compared as text, against bare dates:
+    ISO text sorts as the dates it spells, and a cast fails the whole query on
+    one value that is not a date.
+    """
+    refuse_time_column(column)
     start = midnight(getdate(first))
     end = midnight(getdate(last) + datetime.timedelta(days=1))
     if not is_calendar(column):
@@ -659,6 +720,31 @@ def day_bounds(column, first, last):
 def within_days(column, first, last):
     column, start, end = day_bounds(column, first, last)
     return (column >= start) & (column < end)
+
+
+def minute_bounds(column, first, last):
+    """The column, the start of minute `first` and the start of the minute after
+    `last`: a time written to the minute names that whole minute, as a bare date
+    names its whole day. See `day_bounds`."""
+    refuse_time_column(column)
+    end = last + datetime.timedelta(minutes=1)
+    if not is_calendar(column):
+        return column, first.isoformat(" "), end.isoformat(" ")
+    return column, typed_instant(column, first), typed_instant(column, end)
+
+
+def within_minutes(column, first, last):
+    column, start, end = minute_bounds(column, first, last)
+    return (column >= start) & (column < end)
+
+
+def within_instants(column, start, end):
+    """The rows from `start` to `end`, both included: the last minute of a
+    rolling span ends now, and a row stamped now is in it."""
+    refuse_time_column(column)
+    if not is_calendar(column):
+        return (column >= start.isoformat(" ")) & (column <= end.isoformat(" "))
+    return (column >= typed_instant(column, start)) & (column <= typed_instant(column, end))
 
 
 class BinaryOperations:

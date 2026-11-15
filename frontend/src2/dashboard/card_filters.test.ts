@@ -61,6 +61,29 @@ describe('what narrows a card', () => {
 		})
 	})
 
+	// @feature dashboard.filter-datetime dashboard.filter-default
+	it('seeds a Datetime filter with a span in hours or a range to the minute', () => {
+		const filter = (filter_name: string, rest: any) =>
+			({
+				type: 'filter',
+				filter_name,
+				filter_type: 'Datetime',
+				links: {},
+				...rest,
+			}) as unknown as WorkbookDashboardItem
+		const range = ['2026-11-12 14:00', '2026-11-12 16:30']
+
+		expect(
+			defaultFilterStates([
+				filter('recent', { default_operator: 'within', default_value: 'last 1 hour' }),
+				filter('incident', { default_operator: 'between', default_value: range }),
+			]),
+		).toEqual({
+			recent: { operator: 'within', value: 'last 1 hour' },
+			incident: { operator: 'between', value: range },
+		})
+	})
+
 	// @feature dashboard.card-filter
 	it('is one card at a time', () => {
 		const dashboard = newDashboard()

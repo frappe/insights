@@ -232,7 +232,7 @@ def table_reference(table_exp: sg.exp.Table) -> str:
     return f"{table_exp.db}.{table_exp.name}" if table_exp.db else table_exp.name
 
 
-def real_table_refs(parsed: sg.Expression) -> list[sg.exp.Table]:
+def real_table_refs(parsed: sg.exp.Expression) -> list[sg.exp.Table]:
     """Every table reference in a statement that names a real table. The
     permission check and the rewrite that replaces each reference both use it.
 
@@ -292,7 +292,7 @@ ROW_FUNCTION_NAME = re.compile(
 )
 
 
-def unbound_reads(parsed: sg.Expression) -> list[str]:
+def unbound_reads(parsed: sg.exp.Expression) -> list[str]:
     """What `parsed` reads without naming a table, so no binding can replace it.
 
     A FROM source such as DuckDB's `query_table('tabUser')`, or a function such
@@ -317,7 +317,7 @@ def function_name(func: sg.exp.Func) -> str:
     return func.name if isinstance(func, sg.exp.Anonymous) else func.sql_name()
 
 
-def makes_rows(source: sg.Expression) -> bool:
+def makes_rows(source: sg.exp.Expression) -> bool:
     return isinstance(source, ROW_FUNCTIONS) or (
         isinstance(source, sg.exp.Anonymous) and bool(ROW_FUNCTION_NAME.fullmatch(source.name))
     )

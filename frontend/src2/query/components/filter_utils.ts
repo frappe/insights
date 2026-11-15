@@ -29,7 +29,7 @@ export function getValueSelectorType(operator: FilterOperator, filterType: Filte
 	if (filterType === 'Number') {
 		return operator === 'between' ? 'text' : 'number'
 	}
-	if (filterType === 'Date') {
+	if (filterType === 'Date' || filterType === 'Datetime') {
 		return operator === 'between'
 			? 'date_range'
 			: operator === 'within'

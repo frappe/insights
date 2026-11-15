@@ -16,6 +16,7 @@ from frappe.utils.password import delete_all_passwords_for
 from ibis import _
 
 from insights import standard
+from insights.compat import ServiceUnavailableError
 from insights.decorators import insights_whitelist
 from insights.exceptions import QueryCancelled, QueryRefused, UnknownColumn
 from insights.insights.doctype.insights_data_source_v3.ibis.functions import _apply_granularity
@@ -268,7 +269,7 @@ class InsightsQueryv3(Document):
         """
         from insights.telemetry import caller, capture, error_kind
 
-        if isinstance(exc, frappe.ServiceUnavailableError | QueryCancelled):
+        if isinstance(exc, ServiceUnavailableError | QueryCancelled):
             # the server was too busy to start the run, and the client retries
             # it, or the reader left and asked it to stop
             return

@@ -27,7 +27,12 @@ import type {
 } from '../../types/chart.types'
 import type { Dimension, QueryResultRow } from '../../types/query.types'
 import { hasBarsOnBothAxes } from '../helpers'
-import { axisFormatter, numberFormatter, type NumberFormatter } from '../number_format'
+import {
+	axisFormatter,
+	axisTickFormatter,
+	numberFormatter,
+	type NumberFormatter,
+} from '../number_format'
 import type { ChartAdapterInput, ChartFiller } from './types'
 
 // Bar, Line and Row. One family, because they differ in two values: the mark an
@@ -118,14 +123,22 @@ function adaptAxisChart(
 	// One formatter per axis, not per series: v2 prints a value against the axis
 	// it is read on, and an axis has one scale. The first series plotted on it
 	// says how that scale reads.
-	const primary = axisFormatter(config, measureOn(config, 'Left'), input.result.rows)
-	props.yAxis = valueAxisFor(y_axis, stacking === 'normalized', primary)
+	const leftMeasure = measureOn(config, 'Left')
+	const primary = axisFormatter(config, leftMeasure, input.result.rows)
+	props.yAxis = {
+		...valueAxisFor(y_axis, stacking === 'normalized', primary),
+		echartOptions: ticksOf(axisTickFormatter(config, leftMeasure, input.result.rows)),
+	}
 
 	const rightMeasure = measureOn(config, 'Right')
 	const secondary = rightMeasure
 		? axisFormatter(config, rightMeasure, input.result.rows)
 		: undefined
-	if (secondary) props.y2Axis = { format: secondary }
+	if (secondary)
+		props.y2Axis = {
+			format: secondary,
+			echartOptions: ticksOf(axisTickFormatter(config, rightMeasure, input.result.rows)),
+		}
 
 	// The form asks the same question of each Series, so a line is drawn exactly
 	// where a toggle offers one.
@@ -401,6 +414,15 @@ function valueAxisFor(
 	if (typeof y_axis?.min === 'number') axis.min = y_axis.min
 	if (typeof y_axis?.max === 'number') axis.max = y_axis.max
 	return axis
+}
+
+/**
+ * The tick labels of a value axis. v2 prints them with the axis's `format`, which
+ * is also what its tooltip prints, so the shortened ticks go in as an echarts
+ * label formatter, which wins over `format` for the ticks alone.
+ */
+export function ticksOf(format: NumberFormatter) {
+	return { axisLabel: { formatter: (value: any) => format(Number(value)) } }
 }
 
 /**

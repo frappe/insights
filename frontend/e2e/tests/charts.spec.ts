@@ -160,8 +160,8 @@ test.describe('charts', () => {
 		await expect(chart.getByText('delivered')).toBeVisible()
 		await expect(chart.getByText('canceled')).toBeVisible()
 		// The measure is the count of orders, and 1,778 of the 2,000 are
-		// delivered, so the value axis runs to a 1,800 tick.
-		await expect(chart.getByText('1,800')).toBeVisible()
+		// delivered, so the value axis runs to a 1.8K tick.
+		await expect(chart.getByText('1.8K', { exact: true })).toBeVisible()
 	})
 
 	// @feature charts.type-number
@@ -289,13 +289,13 @@ test.describe('charts', () => {
 
 		const rendered = chartOf(page)
 		await expect(rendered.getByText('delivered')).toBeVisible()
-		await expect(rendered.getByText('1,800')).toBeVisible()
+		await expect(rendered.getByText('1.8K', { exact: true })).toBeVisible()
 
 		// Bar and Line are both axis charts, so the axis config is kept whole
 		// and the new chart plots the same categories and the same value scale.
 		await page.getByRole('button', { name: 'Line', exact: true }).click()
 		await expect(rendered.getByText('delivered')).toBeVisible()
-		await expect(rendered.getByText('1,800')).toBeVisible()
+		await expect(rendered.getByText('1.8K', { exact: true })).toBeVisible()
 
 		// Donut is not an axis chart, so crossing that boundary drops the axis
 		// config and leaves the chart with nothing to plot. The card says which
@@ -332,9 +332,9 @@ test.describe('charts', () => {
 		await page.goto(`${INSIGHTS_PATH}/workbook/${workbook.name}/chart/${chart.name}`)
 
 		// The demo orders run from 2016 to 2018, so a yearly grain gives three
-		// rows and a value axis that reaches 1,000.
+		// rows and a value axis that reaches 1K.
 		await expect(page.getByRole('cell', { name: '2016', exact: true })).toBeVisible()
-		await expect(chartOf(page).getByText('1,000')).toBeVisible()
+		await expect(chartOf(page).getByText('1K', { exact: true })).toBeVisible()
 
 		const xAxis = section(page, 'X Axis')
 		// locator: the settings button beside the column picker is icon-only and
@@ -351,10 +351,10 @@ test.describe('charts', () => {
 		await page.getByRole('option', { name: 'Month', exact: true }).click()
 
 		// A month grain reads as "September, 2016", and the largest month holds
-		// fewer than 100 orders, so the 1,000 tick is gone.
+		// fewer than 100 orders, so the 1K tick is gone.
 		await expect(page.getByRole('cell', { name: 'September, 2016' })).toBeVisible()
 		await expect(page.getByRole('cell', { name: '2016', exact: true })).toHaveCount(0)
-		await expect(chartOf(page).getByText('1,000')).toHaveCount(0)
+		await expect(chartOf(page).getByText('1K', { exact: true })).toHaveCount(0)
 
 		// The preview table's own date menu writes the same grain the gear does.
 		// locator: a header cell is a <td data-column-name>. Its two buttons are
@@ -364,12 +364,12 @@ test.describe('charts', () => {
 		// "Fiscal Year" holds the same word, so match the whole string.
 		await page.getByRole('menuitem', { name: 'Year', exact: true }).click()
 
-		// Back to three rows, and the value axis reaches 1,000 again.
+		// Back to three rows, and the value axis reaches 1K again.
 		await expect(page.getByRole('cell', { name: '2016', exact: true })).toBeVisible()
 		await expect(page.getByRole('cell', { name: '2017', exact: true })).toBeVisible()
 		await expect(page.getByRole('cell', { name: '2018', exact: true })).toBeVisible()
 		await expect(page.getByRole('cell', { name: 'September, 2016' })).toHaveCount(0)
-		await expect(chartOf(page).getByText('1,000')).toBeVisible()
+		await expect(chartOf(page).getByText('1K', { exact: true })).toBeVisible()
 	})
 
 	// @feature charts.split-by

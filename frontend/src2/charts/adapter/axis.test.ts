@@ -7,8 +7,10 @@ import { normalizeChartConfig, setStack } from '../helpers'
 import { adaptChart } from './index'
 import { axisChart, type AxisChartSpec } from './fixtures'
 import { buildAxisChartOption } from '../../../node_modules/frappe-ui/src/charts/axisChartOptions'
+import { applyAxisFormatters } from '../../../node_modules/frappe-ui/src/charts/axisFormat'
 import { normalizeAxisChartProps } from '../../../node_modules/frappe-ui/src/charts/seriesData'
 import { resolveChartTokens } from '../../../node_modules/frappe-ui/src/charts/tokens'
+import session from '../../session'
 
 // Everything here asserts on the props a chart is handed. What echarts renders
 // from them is v2's concern, and v2 tests it.
@@ -87,12 +89,13 @@ const fiscalYear = {
 	granularity: 'fiscal_year' as const,
 }
 
-/** The x axis labels echarts draws from the option frappe-ui builds of `props`. */
-function drawnLabels(props: any): string[] {
+/** The axis labels echarts draws from the option frappe-ui builds of `props`. */
+function drawnLabels(props: any, axis: 'xAxis' | 'yAxis' = 'xAxis'): string[] {
 	const tokens = resolveChartTokens()
 	const normalized = normalizeAxisChartProps(props)
+	// the formatters go on the way `useAxisChart` puts them on
 	const option = buildAxisChartOption(
-		{ ...normalized.config, type: 'line' },
+		applyAxisFormatters({ ...normalized.config, type: 'line' }, normalized.format),
 		{ tokens, hiddenSeries: [], width: 600, format: normalized.format },
 	)
 	const chart = echarts.init(null as any, null as any, {
@@ -104,7 +107,7 @@ function drawnLabels(props: any): string[] {
 	chart.setOption({ ...option, animation: false })
 	const labels = (chart as any)
 		.getModel()
-		.getComponent('xAxis')
+		.getComponent(axis)
 		.axis.getViewLabels()
 		.map((label: any) => label.formattedLabel)
 	chart.dispose()
@@ -479,9 +482,9 @@ describe('the value axis', () => {
 		})
 		expect(props.stacked).toBe('normalized')
 		// The axis shows a percentage now, so a bound set for the raw magnitude
-		// would cut the plot off. What is left is the formatter, which every axis
+		// would cut the plot off. What is left is the formatters, which every axis
 		// has.
-		expect(Object.keys(props.yAxis)).toEqual(['format'])
+		expect(Object.keys(props.yAxis)).toEqual(['format', 'echartOptions'])
 	})
 
 	// @feature charts.axis-min-max
@@ -499,7 +502,7 @@ describe('the value axis', () => {
 		// A bound nobody set is no bound: echarts fits the axis to the data, and a
 		// key holding `undefined` would pin it to nothing.
 		const free = propsOf({ type: 'Bar', dimension: 'region', measures: ['revenue'] }).yAxis
-		expect(Object.keys(free)).toEqual(['format'])
+		expect(Object.keys(free)).toEqual(['format', 'echartOptions'])
 	})
 
 	// @feature charts.bar-stack
@@ -550,7 +553,27 @@ describe('the value axis', () => {
 			min: '' as any,
 			max: '' as any,
 		})
-		expect(Object.keys(props.yAxis)).toEqual(['format'])
+		expect(Object.keys(props.yAxis)).toEqual(['format', 'echartOptions'])
+	})
+
+	// The frappe-ui rebuild printed the ticks through the tooltip's formatter, so a
+	// scale of crores read `4,00,00,000` where it had read `4Cr`.
+	// @feature charts.axis-short-numbers
+	it('prints its ticks shortened and the value it carries in full', () => {
+		const numberFormat = session.site.number_format
+		session.site.number_format = '#,##,###.##'
+		try {
+			const props = propsOf({
+				type: 'Bar',
+				dimension: 'region',
+				measures: ['revenue'],
+				readings: { revenue: [14000000, 40000000] },
+			})
+			expect(drawnLabels(props, 'yAxis')).toEqual(['0', '1Cr', '2Cr', '3Cr', '4Cr'])
+			expect(props.yAxis.format(14000000)).toBe('1,40,00,000')
+		} finally {
+			session.site.number_format = numberFormat
+		}
 	})
 })
 

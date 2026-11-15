@@ -167,6 +167,40 @@ describe('a run the server refuses', () => {
 			vi.useRealTimers()
 		}
 	})
+
+	async function loadCountWhileBusy(retryAnswers: boolean) {
+		vi.useFakeTimers()
+		try {
+			const query = makeAdhocQuery()
+			query.setSource(ordersTable)
+			await query.execute()
+			server.refusal = Object.assign(new Error('ServiceUnavailableError'), {
+				status: 503,
+				exc_type: 'ServiceUnavailableError',
+				messages: ['The server is busy. Try again in a moment.'],
+			})
+			const count = query.fetchResultCount()
+			await vi.advanceTimersByTimeAsync(0)
+			if (retryAnswers) server.refusal = null
+			await vi.runAllTimersAsync()
+			await count
+		} finally {
+			vi.useRealTimers()
+		}
+	}
+
+	// @feature query.row-count
+	it('says nothing about a busy Load Count that a retry then answers', async () => {
+		await loadCountWhileBusy(true)
+		expect(calls.filter((c) => c.args.method === 'get_count')).toHaveLength(2)
+		expect(server.toasts).toEqual([])
+	})
+
+	// @feature query.row-count
+	it('says once that the server stayed busy for a Load Count, not on every retry', async () => {
+		await loadCountWhileBusy(false)
+		expect(server.toasts).toEqual(['The server is busy. Try again in a moment.'])
+	})
 })
 
 describe('a script the author runs', () => {

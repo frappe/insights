@@ -27,6 +27,7 @@ from ibis.common.exceptions import TableNotFound
 from ibis.expr.types import Expr, Table
 
 import insights
+from insights.compat import ServiceUnavailableError
 from insights.exceptions import TableNotStored
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     IMPORT_WRITE_LOCK_TIMEOUT,
@@ -610,7 +611,7 @@ class WarehouseTable:
                     ),
                     TableNotStored,
                 )
-        except frappe.ServiceUnavailableError:
+        except ServiceUnavailableError:
             # every data store slot is taken: the client retries a 503
             raise
         except Exception as e:

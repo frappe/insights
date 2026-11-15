@@ -5,7 +5,8 @@
 // any endpoint behind that dashboard can meet a table the reader may not read:
 // a filter's value list, a card's range, a drill, a table preview. When such an
 // endpoint returns an object, it adds `not_permitted` to it. That names the
-// doctypes the reader needs read access on.
+// doctypes the reader needs read access on, and the user a Run-as-owner chart
+// ran as when that is not the reader.
 //
 // It is an answer, not a failure. The reader cannot fix it, and a retry cannot
 // succeed. So the page shows it in place of the content. A page that ignores it
@@ -13,7 +14,7 @@
 
 import { __ } from './translation'
 
-export type NotPermitted = { doctypes: string[] }
+export type NotPermitted = { doctypes: string[]; run_as?: string }
 
 /** The answer of an endpoint that can refuse. */
 export type Refusable<T> = T & { not_permitted?: NotPermitted }
@@ -29,10 +30,13 @@ export function refusalHeadline() {
 /**
  * Uses the wording of the site's permission page. An author and a reader get
  * the same line, because neither of them can grant access. `fallback` is the
- * line when the server named no doctype.
+ * line when the server named no doctype. A chart that ran as its owner names
+ * the owner, `runAs`: no access of the reader's own would fix it.
  */
-export function refusalDetail(doctypes: string[] | undefined, fallback: string) {
-	return doctypes?.length ? __('Needs read access to {0}', doctypes.join(', ')) : fallback
+export function refusalDetail(doctypes: string[] | undefined, fallback: string, runAs?: string) {
+	if (!doctypes?.length) return fallback
+	if (runAs) return __("Runs as {0}, who can't read {1}", runAs, doctypes.join(', '))
+	return __('Needs read access to {0}', doctypes.join(', '))
 }
 
 /**

@@ -806,11 +806,12 @@ def routed_filter_links(items, chart: str, filter_states: dict | None, exclude_f
             yield filter_name, *match.groups(), state
 
 
-def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None, dict | None]:
+def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None, str | None, dict | None]:
     """Where a card filter lands: the card's query, the source column the named
-    column reads, and the narrowing the card itself already applies.
+    column reads, the date grain the card groups that column by, and the
+    narrowing the card itself already applies.
 
-    The card's own operations answer all three, so every chart type is read the
+    The card's own operations answer all four, so every chart type is read the
     same way. Its aggregating operation names every column the chart holds
     (the dimensions it groups by, under the names they come back as, and the
     measures it states), and a column no operation names is not one the card
@@ -831,7 +832,7 @@ def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None,
         "Insights Chart v3", chart, ["query", "chart_type", "config"]
     ) or (None, None, None)
     if not query:
-        return None, None, None
+        return None, None, None, None
 
     config = frappe.parse_json(config or "{}")
     filter_group = config_filter_group(config)
@@ -848,15 +849,15 @@ def card_filter_source(chart: str, column: str) -> tuple[str | None, str | None,
         for dimension in dimensions:
             if dimension and result_column(dimension) == column:
                 check_card_filter(chart)
-                return query, dimension.get("column_name"), card_filters
+                return query, dimension.get("column_name"), dimension.get("granularity"), card_filters
 
         if any(measure and measure.get("measure_name") == column for measure in measures):
-            return query, None, card_filters
+            return query, None, None, card_filters
 
         if operation["type"] == "pivot_wider":
-            return query, None, card_filters
+            return query, None, None, card_filters
 
-    return None, None, None
+    return None, None, None, None
 
 
 def can_filter_card(chart: str) -> bool:
@@ -886,6 +887,11 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     every surface, public included. It lands under the chart's own name, which is
     what the chart's derived query is called, so the rule falls after the chart's
     summarize — on the columns the card shows, measures included.
+
+    A dimension grouped by a date grain is the exception: its rule lands on the
+    card's query, on the column the dimension reads, so a period finer than the
+    grain still finds its rows instead of missing the bucket. `card_filter_source`
+    says which column that is.
     """
     rules = []
     for card_filter in frappe.parse_json(card_filters) or []:
@@ -907,8 +913,14 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
 
     check_card_filter(chart)
     routed = dict(adhoc_filters or {})
-    group = routed.setdefault(chart, {"type": "filter_group", "logical_operator": "And", "filters": []})
-    group["filters"] = [*group["filters"], *rules]
+    for rule in rules:
+        query, source_column, grain, _ = card_filter_source(chart, rule["column"]["column_name"])
+        target = chart
+        if source_column and grain:
+            target = query
+            rule["column"]["column_name"] = source_column
+        group = routed.get(target) or {"type": "filter_group", "logical_operator": "And", "filters": []}
+        routed[target] = {**group, "filters": [*group["filters"], rule]}
     return routed
 
 

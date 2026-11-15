@@ -125,7 +125,7 @@ def get_chart_data(
         result = chart_query.execute(
             force=force,
             page=page,
-            page_size=page_size or (config or {}).get("limit") or 100,
+            page_size=chart.rows_to_read(page_size or (config or {}).get("limit") or 100),
             adhoc_filters=adhoc_filters,
         )
         # read before the sparkline runs, because its build clears this record

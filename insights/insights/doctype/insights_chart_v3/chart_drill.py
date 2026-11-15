@@ -51,7 +51,12 @@ from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
     folded_a_tail,
     get_columns_from_schema,
 )
-from insights.insights.query_builders.sql_functions import read_on, resolve_timespan
+from insights.insights.query_builders.sql_functions import (
+    read_on,
+    read_timespan,
+    resolve_timespan,
+    time_window,
+)
 from insights.not_permitted import refuse
 from insights.permission_user import permission_user_for, runs_as
 from insights.permissions import can_read_rows
@@ -275,7 +280,9 @@ def _span_fixed(step: dict) -> dict:
     if step.get("type") not in ("filter", None) or step.get("operator") != "within":
         return step
 
-    start, end = resolve_timespan(step["value"])
+    # a minute or hour span would move between the card and its rows
+    instants = time_window(read_timespan(step["value"])[0])
+    start, end = instants or resolve_timespan(step["value"])
     return {**step, "operator": "between", "value": [str(start), str(end)]}
 
 

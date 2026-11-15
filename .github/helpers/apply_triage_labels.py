@@ -32,6 +32,7 @@ SUGGESTIONS = {"fix", "backlog", "needs-info", "discussion", "close"}
 
 
 def gh(*args):
+    # nosemgrep - argv list, no shell; args are an issue number and allow-listed labels
     return subprocess.run(["gh", *args], check=True, capture_output=True, text=True).stdout
 
 

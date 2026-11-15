@@ -8,6 +8,7 @@ import {
 	getErrorMessage,
 	getUniqueId,
 	safeJSONParse,
+	showErrorToast,
 	waitUntil,
 	watchToggle,
 	wheneverChanges,
@@ -304,10 +305,14 @@ export function makeQuery(name: string) {
 		return (
 			scheduleQueryExecution(() =>
 				// Load Count is the reader's own click, and nothing else answers it
-				query.call('get_count', {
-					active_operation_idx: activeOperationIdx.value,
-					adhoc_filters: adhocFilters.value,
-				}),
+				query.call(
+					'get_count',
+					{
+						active_operation_idx: activeOperationIdx.value,
+						adhoc_filters: adhocFilters.value,
+					},
+					{ showError: false },
+				),
 			)
 				.then((count: number) => {
 					result.value.totalRowCount = count || 0
@@ -315,7 +320,8 @@ export function makeQuery(name: string) {
 				// An empty count is a real zero, so the endpoint throws when the
 				// reader may not read the data. Without this, the previous run's
 				// total stays on screen.
-				.catch(() => {
+				.catch((err) => {
+					showErrorToast(err, false)
 					result.value.totalRowCount = 0
 				})
 				.finally(() => {

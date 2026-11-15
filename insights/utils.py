@@ -10,6 +10,7 @@ import pandas as pd
 from frappe.model.base_document import BaseDocument
 from frappe.website.page_renderers.template_page import TemplatePage
 
+from insights.compat import ServiceUnavailableError
 from insights.hooks import insights_path
 
 
@@ -150,7 +151,7 @@ def log_failed_execution(sql=None, query_name=None, data_store=False, cache=None
 
     try:
         yield
-    except (frappe.ServiceUnavailableError, QueryCancelled):
+    except (ServiceUnavailableError, QueryCancelled):
         raise
     except Exception as e:
         with suppress(Exception):  # nosemgrep - the run's own error is the one to raise

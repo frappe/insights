@@ -144,6 +144,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | charts.series-data-labels | A user shows value labels on one series or on the whole axis. |
 | charts.axis-label | A user shows and names the y-axis label. |
 | charts.axis-min-max | A user pins the y-axis scale bounds. |
+| charts.axis-short-numbers | A value axis prints its ticks shortened, such as `4Cr` or `1.2M`; a tooltip prints the value in full. |
 | charts.bar-stack | A user stacks the bars; a chart with bars on both axes cannot stack. |
 | charts.bar-normalize | A user normalizes stacked bars to shares of the whole. |
 | charts.bar-overlap | A user overlaps bars instead of grouping them. |
@@ -257,6 +258,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.filter-links | A user links a dashboard filter to a chart's column and the chart refilters; an unlinked chart is left alone. |
 | dashboard.filter-values | A dashboard filter lists the distinct values, or the number range, of the column it links. |
 | dashboard.filter-date-periods | A date filter lists the years, fiscal years and months its column has rows in under the other filters, a year opens onto its quarters, and a pick keeps that whole period. |
+| dashboard.filter-datetime | A Datetime dashboard filter keeps a from–to range to the minute, or a span of the last minutes or hours that ends when the chart is read, so a refresh moves it. An Auto axis under such a window reads by the minute up to three hours, then by the hour. |
 | dashboard.filter-default | A user sets a filter's default operator and value. |
 | dashboard.filter-user-default | A filter's default is the reader's own user default, such as their company. |
 | dashboard.filter-icon | A user picks an icon for a filter's trigger. |
@@ -492,6 +494,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | settings.demo-banner-dismiss | A user dismisses the demo data banner and it stays hidden. |
 | settings.security-update-notice | An admin sees a sidebar notice while a newer Insights release fixes security issues. |
 | settings.invite-users | An admin invites users by email; the link includes a key stored only hashed, and accepting signs in only a new account. |
+| settings.desk-access | A user with an Insights role, invited or upgraded, is a desk user, so OAuth clients such as frappectl and the site's MCP accept them, and a migrate keeps it. |
 | settings.users-list | An admin searches the user list by name or email. |
 | settings.permissions-toggle | An admin turns team-based permissions on. |
 | settings.allow-download | An admin allows or blocks downloads site-wide. |

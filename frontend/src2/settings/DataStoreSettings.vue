@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import NumberInput from '../components/NumberInput.vue'
+import { formatNumber } from '../helpers'
 import SettingItem from './SettingItem.vue'
 import useSettings from './settings'
 
@@ -20,7 +21,10 @@ settings.load()
 
 		<SettingItem
 			label="Row Limit"
-			description="Set the maximum number of rows per table that will be imported into the data store. Default is 10,00,000"
+			:description="`Set the maximum number of rows per table that will be imported into the data store. Default is ${formatNumber(
+				1_000_000,
+				0,
+			)}`"
 		>
 			<NumberInput v-model="settings.doc.max_records_to_sync" class="w-28" />
 		</SettingItem>
