@@ -279,6 +279,10 @@ def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]
                 errors.append(_("Latitude column is required"))
             if not (config.get("longitude_column") or {}).get("measure_name"):
                 errors.append(_("Longitude column is required"))
+            if not _is_coordinate_measure(config.get("latitude_column")):
+                errors.append(_("Latitude must be an average, a minimum, or a maximum"))
+            if not _is_coordinate_measure(config.get("longitude_column")):
+                errors.append(_("Longitude must be an average, a minimum, or a maximum"))
 
     if chart_type == "Bubble":
         if not (config.get("xAxis") or {}).get("measure_name"):
@@ -1056,6 +1060,22 @@ def _add_table_operation(operations: list[dict], config: dict):
         return
 
     operations.append(_summarize(measures=values, dimensions=rows))
+
+
+# The aggregations that keep a coordinate a place among the rows it summarizes.
+# A sum or a count of latitudes is no latitude, and would draw the point where no
+# row is.
+COORDINATE_AGGREGATIONS = ("avg", "min", "max")
+
+
+def _is_coordinate_measure(measure: dict | None) -> bool:
+    """Whether a coordinate Measure reads as a place. An unset one passes, as
+    "is required" already says what is missing; an expression passes, as its
+    aggregation is inside the expression."""
+    measure = measure or {}
+    if not measure.get("measure_name") or "aggregation" not in measure:
+        return True
+    return measure["aggregation"] in COORDINATE_AGGREGATIONS
 
 
 def _add_map_operation(operations: list[dict], config: dict):

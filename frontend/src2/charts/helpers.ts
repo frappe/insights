@@ -260,6 +260,9 @@ export function dataSelection(config: any) {
 		// both are bounded in SQL
 		max_split_values: config.split_by?.max_split_values,
 		max_column_values: config.max_column_values,
+		// a points Map fetches each row's coordinates beside its value, a regions
+		// Map does not, so the same slots fetch different columns under each
+		map_style: config.map_style,
 	}
 }
 

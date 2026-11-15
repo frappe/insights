@@ -153,6 +153,19 @@ describe('the half of a config that decides which rows come back', () => {
 			dataSelection(card({ source: 'last year' })),
 		)
 	})
+
+	// @feature charts.map-points
+	it('moves when a Map switches between regions and points, which fetch different columns', () => {
+		const map = (map_style: string) => ({
+			location_column: { column_name: 'place', dimension_name: 'place' },
+			value_column: measure('visits'),
+			latitude_column: measure('latitude'),
+			longitude_column: measure('longitude'),
+			map_style,
+			limit: 100,
+		})
+		expect(dataSelection(map('points'))).not.toEqual(dataSelection(map('regions')))
+	})
 })
 
 // Taking the options back is not taking the chart back: the query the card runs

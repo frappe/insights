@@ -152,14 +152,18 @@ function adaptMapPoints(input: ChartAdapterInput, config: MapChartConfig): Chart
 	const byName = new Map<string, QueryResultRow[]>()
 	for (const { name, row } of placed) byName.set(name, [...(byName.get(name) || []), row])
 
+	const map = config.map_type || DEFAULT_MAP
 	const props: MapChartProps = {
 		title: input.title,
 		subtitle: input.description,
-		map: config.map_type || DEFAULT_MAP,
+		map,
 		measure: measure.name,
 		regions: [],
 		points,
-		view: fitView(points.map((p) => p.coord)),
+		view: fitView(
+			points.map((p) => p.coord),
+			map,
+		),
 		buckets: [],
 		format: numberFormatter(config, config.value_column, input.result.rows),
 	}
@@ -189,8 +193,18 @@ export function project([lon, lat]: [number, number]): [number, number] {
 	return [(lon / 180) * Math.PI, -Math.log(Math.tan((Math.PI / 2 + (lat / 180) * Math.PI) / 2))]
 }
 
-/** The world geography's extent once projected: longitude -180 to 180, latitude -60 to 84. */
-const WORLD = { width: 2 * Math.PI, height: 4.27 }
+/**
+ * Each geography's extent once projected, which the map's default view fits: the
+ * world spans longitude -180 to 180 and latitude -60 to 84, India longitude 68.2
+ * to 97.4 and latitude 6.8 to 37.1.
+ */
+const EXTENTS: Record<
+	NonNullable<MapChartConfig['map_type']>,
+	{ width: number; height: number }
+> = {
+	world: { width: 2 * Math.PI, height: 4.27 },
+	india: { width: 0.509, height: 0.579 },
+}
 /** The smallest extent a view frames, so a lone point still shows the country around it. */
 const MIN_SPAN = 0.15
 /** The zoom past which a view frames the points rather than the whole map. */
@@ -198,12 +212,17 @@ const FRAMES_AT = 1.5
 
 /**
  * The view that frames the points: centered on their extent and zoomed so it
- * fills most of the plot. A chart of one country opens on that country. Points
- * spread over most of the world are left the whole map, which frames them
+ * fills most of the plot. A chart of one country opens on that country. The zoom
+ * is over the map the points are drawn on, as echarts' default view fits that
+ * map. Points spread over most of it are left the whole map, which frames them
  * already, and so are no points at all.
  */
-export function fitView(coords: [number, number][]): MapView | undefined {
+export function fitView(
+	coords: [number, number][],
+	map: NonNullable<MapChartConfig['map_type']> = DEFAULT_MAP,
+): MapView | undefined {
 	if (!coords.length) return undefined
+	const extent = EXTENTS[map] ?? EXTENTS[DEFAULT_MAP]
 	const xy = coords.map(project)
 	const xs = xy.map(([x]) => x)
 	const ys = xy.map(([, y]) => y)
@@ -215,7 +234,7 @@ export function fitView(coords: [number, number][]): MapView | undefined {
 	]
 	const width = Math.max(maxX - minX, MIN_SPAN)
 	const height = Math.max(maxY - minY, MIN_SPAN)
-	const zoom = Math.min(20, 0.7 * Math.min(WORLD.width / width, WORLD.height / height))
+	const zoom = Math.min(20, 0.7 * Math.min(extent.width / width, extent.height / height))
 	if (zoom <= FRAMES_AT) return undefined
 	return { center: [(minX + maxX) / 2, (minY + maxY) / 2], zoom }
 }

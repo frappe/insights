@@ -360,6 +360,22 @@ describe('points', () => {
 	})
 
 	// @feature charts.map-points-view
+	it('keeps the whole India map when the points spread across India', () => {
+		const props = pointsOf({
+			mapType: 'india',
+			points: [
+				{ place: 'Mumbai', value: 1, lat: 19.08, lon: 72.88 },
+				{ place: 'Delhi', value: 1, lat: 28.61, lon: 77.21 },
+				{ place: 'Kolkata', value: 1, lat: 22.57, lon: 88.36 },
+				{ place: 'Chennai', value: 1, lat: 13.08, lon: 80.27 },
+				{ place: 'Thiruvananthapuram', value: 1, lat: 8.52, lon: 76.95 },
+				{ place: 'Srinagar', value: 1, lat: 34.08, lon: 74.8 },
+			],
+		}).props
+		expect(props.view).toBeUndefined()
+	})
+
+	// @feature charts.map-points-view
 	it('frames a lone point as it frames points in one town, with the country around them', () => {
 		const lone = pointsOf({ points: [{ place: 'A', value: 1, lat: 33.3, lon: 44.4 }] }).props
 		const town = pointsOf({
