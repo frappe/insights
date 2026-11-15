@@ -44,11 +44,25 @@ watchEffect(() => {
 	if (!config.value.value_column) {
 		config.value.value_column = {} as Measure
 	}
+	if (!config.value.latitude_column) {
+		config.value.latitude_column = {} as Measure
+	}
+	if (!config.value.longitude_column) {
+		config.value.longitude_column = {} as Measure
+	}
 })
 
 const discrete_dimensions = computed(() =>
 	props.dimensions.filter((d) => FIELDTYPES.DISCRETE.includes(d.data_type)),
 )
+
+// Regions shade each region by its value; points draw a circle at each row's
+// coordinates, which needs no region names the geography knows.
+const style_options = [
+	{ label: __('Regions'), value: 'regions' },
+	{ label: __('Points'), value: 'points' },
+]
+const points = computed(() => config.value.map_style === 'points')
 
 const map_options = [
 	{ label: __('World Map'), value: 'world' },
@@ -152,10 +166,21 @@ watch(
 					:options="map_options"
 				/>
 
+				<FormControl
+					:model-value="config.map_style || 'regions'"
+					:label="__('Map Style')"
+					type="select"
+					:options="style_options"
+					@update:model-value="(style: any) => (config.map_style = style)"
+				/>
+
 				<div class="flex flex-col gap-1">
 					<div class="flex justify-start items-center">
-						<label class="text-xs text-gray-600">Region Column</label>
+						<label class="text-xs text-gray-600">{{
+							points ? __('Point Column') : __('Region Column')
+						}}</label>
 						<Button
+							v-if="!points"
 							variant="ghost"
 							:icon="InfoIcon"
 							@click="openRegionMappingDialog"
@@ -176,6 +201,19 @@ watch(
 					:column-options="props.columnOptions"
 					label="Value"
 				/>
+
+				<template v-if="points">
+					<MeasurePicker
+						v-model="config.latitude_column!"
+						:column-options="props.columnOptions"
+						:label="__('Latitude')"
+					/>
+					<MeasurePicker
+						v-model="config.longitude_column!"
+						:column-options="props.columnOptions"
+						:label="__('Longitude')"
+					/>
+				</template>
 			</div>
 		</CollapsibleSection>
 

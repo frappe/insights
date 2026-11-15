@@ -40,9 +40,10 @@ wheneverChanges(() => props.options, setChartOptions, { deep: true })
 async function setChartOptions() {
 	if (!eChart) return
 	const series = props.options?.series?.find((s) => s.type === 'map')
-	const isMap = series && series.type === 'map'
-	if (isMap) {
-		await registerMap(series.map)
+	// a points map draws on a geo component rather than a map series
+	const mapName = series?.map || props.options?.geo?.map
+	if (mapName) {
+		await registerMap(mapName)
 	}
 	eChart.setOption({ ...props.options })
 }

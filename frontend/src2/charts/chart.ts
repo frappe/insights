@@ -31,6 +31,7 @@ import {
 	ensureConfigSlots,
 	handleOldXAxisConfig,
 	handleOldYAxisConfig,
+	isCoordinateMeasure,
 	setDimensionNames,
 } from './helpers'
 
@@ -189,6 +190,36 @@ function makeChart(name: string) {
 					message: __('Value column is required'),
 				})
 			}
+
+			if (config.map_style === 'points' && !config.latitude_column?.measure_name) {
+				messages.push({
+					variant: 'error',
+					message: __('Latitude column is required'),
+				})
+			}
+
+			if (config.map_style === 'points' && !config.longitude_column?.measure_name) {
+				messages.push({
+					variant: 'error',
+					message: __('Longitude column is required'),
+				})
+			}
+
+			// a sum or a count of coordinates is no place: the point would be drawn
+			// where no row is, so only an aggregation that keeps a row's place is accepted
+			if (config.map_style === 'points' && !isCoordinateMeasure(config.latitude_column)) {
+				messages.push({
+					variant: 'error',
+					message: __('Latitude must be an average, a minimum, or a maximum'),
+				})
+			}
+
+			if (config.map_style === 'points' && !isCoordinateMeasure(config.longitude_column)) {
+				messages.push({
+					variant: 'error',
+					message: __('Longitude must be an average, a minimum, or a maximum'),
+				})
+			}
 		}
 
 		if (chart.doc.chart_type === 'Bubble') {
@@ -320,8 +351,13 @@ function makeChart(name: string) {
 	function addMapChartOperation(query: Query) {
 		const config = chart.doc.config as MapChartConfig
 		let dimensions = [config.location_column]
+		const measures = [config.value_column]
+		// a point is drawn where its row says: its coordinates are summarized with its value
+		if (config.map_style === 'points') {
+			measures.push(config.latitude_column!, config.longitude_column!)
+		}
 		query.addSummarize({
-			measures: [config.value_column],
+			measures: measures,
 			dimensions: dimensions,
 		})
 	}
