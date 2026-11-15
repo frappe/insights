@@ -274,6 +274,15 @@ def config_errors(chart_type: str, query: str, config: dict | None) -> list[str]
             errors.append(_("Location column is required"))
         if not (config.get("value_column") or {}).get("measure_name"):
             errors.append(_("Value column is required"))
+        if config.get("map_style") == "points":
+            if not (config.get("latitude_column") or {}).get("measure_name"):
+                errors.append(_("Latitude column is required"))
+            if not (config.get("longitude_column") or {}).get("measure_name"):
+                errors.append(_("Longitude column is required"))
+            if not _is_coordinate_measure(config.get("latitude_column")):
+                errors.append(_("Latitude must be an average, a minimum, or a maximum"))
+            if not _is_coordinate_measure(config.get("longitude_column")):
+                errors.append(_("Longitude must be an average, a minimum, or a maximum"))
 
     if chart_type == "Bubble":
         if not (config.get("xAxis") or {}).get("measure_name"):
@@ -1053,10 +1062,31 @@ def _add_table_operation(operations: list[dict], config: dict):
     operations.append(_summarize(measures=values, dimensions=rows))
 
 
+# The aggregations that keep a coordinate a place among the rows it summarizes.
+# A sum or a count of latitudes is no latitude, and would draw the point where no
+# row is.
+COORDINATE_AGGREGATIONS = ("avg", "min", "max")
+
+
+def _is_coordinate_measure(measure: dict | None) -> bool:
+    """Whether a coordinate Measure reads as a place. An unset one passes, as
+    "is required" already says what is missing; an expression passes, as its
+    aggregation is inside the expression."""
+    measure = measure or {}
+    if not measure.get("measure_name") or "aggregation" not in measure:
+        return True
+    return measure["aggregation"] in COORDINATE_AGGREGATIONS
+
+
 def _add_map_operation(operations: list[dict], config: dict):
+    # a point is drawn where its row says, so its coordinates are summarized with
+    # its value, one row per location
+    measures = [config.get("value_column") or {}]
+    if config.get("map_style") == "points":
+        measures += [config.get("latitude_column") or {}, config.get("longitude_column") or {}]
     operations.append(
         _summarize(
-            measures=[config.get("value_column") or {}],
+            measures=measures,
             dimensions=[config.get("location_column") or {}],
         )
     )
@@ -1476,7 +1506,7 @@ DIMENSION_SLOTS = (
     "quadrant_column",
     "location_column",
 )
-MEASURE_SLOTS = ("value_column", "size_column", "xAxis", "yAxis")
+MEASURE_SLOTS = ("value_column", "size_column", "xAxis", "yAxis", "latitude_column", "longitude_column")
 MEASURE_LIST_SLOTS = ("number_columns", "measures", "values")
 
 # What a picker left in a slot beside the Dimension or the Measure it wrote
@@ -1800,6 +1830,8 @@ SLOT_SHAPES = {
     "xAxis": {},
     "yAxis": {},
     "size_column": {},
+    "latitude_column": {},
+    "longitude_column": {},
     "dimension": {},
     "quadrant_column": {},
     "filters": {"filters": [{}]},
@@ -1849,6 +1881,8 @@ SLOT_WORDS = {
     "xAxis": "X-axis",
     "yAxis": "Y-axis",
     "size_column": "Size",
+    "latitude_column": "Latitude column",
+    "longitude_column": "Longitude column",
     "dimension": "Dimension",
     "quadrant_column": "Quadrant",
     "filters": "Filters",
