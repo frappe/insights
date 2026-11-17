@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Table2 } from 'lucide-vue-next'
+import { computed } from 'vue'
 import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import { wheneverChanges } from '../../helpers'
 import useQuery from '../../query/query'
@@ -15,27 +16,30 @@ wheneverChanges(
 	query,
 	() => {
 		if (query.value) {
-			const q = useQuery(query.value)
-			if (q && !q.result.executedSQL) {
-				q.execute()
-			}
+			useQuery(query.value)?.ensureResult()
 		}
 	},
-	{ immediate: true }
+	{ immediate: true },
 )
+
+// the query's own pane is not on screen, so a failed run is told here or nowhere
+const failure = computed(() => (query.value ? useQuery(query.value)?.executionError : ''))
 </script>
 
 <template>
-	<InlineFormControlLabel label="Query">
-		<Autocomplete
-			:showFooter="true"
+	<InlineFormControlLabel :label="__('Query')">
+		<Combobox
+			class="w-full"
 			:options="props.queries"
 			:modelValue="query"
-			@update:modelValue="query = $event?.value"
+			@update:modelValue="query = $event"
 		>
 			<template #prefix>
-				<Table2 class="mr-1.5 h-4 w-4 text-gray-700" stroke-width="1.5" />
+				<Table2 class="mr-1.5 h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 			</template>
-		</Autocomplete>
+		</Combobox>
 	</InlineFormControlLabel>
+	<p v-if="failure" class="whitespace-pre-wrap font-mono text-xs leading-5 text-ink-red-4">
+		{{ failure }}
+	</p>
 </template>

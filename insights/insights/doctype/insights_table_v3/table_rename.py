@@ -1,6 +1,6 @@
 """Move a `Insights Table v3` record on to another spelling of the table it names.
 
-Every referrer names a table by the string the record stores, so a rename has to carry
+Every referrer names a table by the string the record stores, so a rename has to take
 the queries, the references, the links, the grants and the imported copy with it. See
 `InsightsDataSourcev3.table_identity` for why the spelling changes at all.
 
@@ -17,6 +17,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import get_ta
 # the Data Store copy. Nothing else holds them, and only a person can type them again.
 IMPORT_SETTINGS_FIELDS = (
     "sync_mode",
+    "sync_schedule",
     "sync_from",
     "sync_cursor_column",
     "sync_primary_key_column",
@@ -175,7 +176,7 @@ def move_grants(old_name: str, new_name: str) -> None:
     """Point the grants of `old_name` at `new_name`, dropping the ones already there.
 
     A grant is an `Insights Resource Permission` row a team holds against the record, and
-    it carries that team's row restrictions. Deleting the rows instead would revoke the
+    it holds that team's row restrictions. Deleting the rows instead would revoke the
     table from every team that reads it.
     """
     granted_to = frappe.get_all(
@@ -217,7 +218,7 @@ def rename_warehouse_table(data_source: str, old_table: str, new_table: str) -> 
             db.raw_sql(f"ALTER TABLE {old_name} RENAME TO {new_name}")
         return True
     except Exception:
-        return False
+        return False  # nosemgrep - the caller marks the table for a fresh import
 
 
 def drop_warehouse_table(data_source: str, table: str) -> None:
@@ -225,8 +226,7 @@ def drop_warehouse_table(data_source: str, table: str) -> None:
 
     `WarehouseTable.drop` waits on the write lock. A Table Import holds that lock for its
     whole run. A rename that raised here would roll back the records it already moved. An
-    undropped table costs disk until someone removes it. A half-renamed set of records
-    cannot be recovered at all.
+    undropped table is harmless, because `drop_orphan_warehouse_tables` collects it.
     """
     try:
         insights.warehouse.get_table(data_source, table).drop()
@@ -296,7 +296,7 @@ def update_table_links(data_source: str, renames: dict[str, str]) -> None:
 def rename_column_values(doctype: str, data_source: str, field: str, renames: dict[str, str]) -> None:
     """Rewrite `field` from every old name to its new one, in a single statement.
 
-    Every row holding a given old name takes the same new one, so the rows themselves carry
+    Every row holding a given old name takes the same new one, so the rows themselves hold
     nothing a rename needs. `frappe.db.bulk_update` matches by document name, so it would
     have to read them all first — and an import log keeps a row per import forever.
     """

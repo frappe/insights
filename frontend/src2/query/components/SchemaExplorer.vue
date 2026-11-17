@@ -9,22 +9,12 @@ import {
 	TypeIcon,
 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
-
-interface Column {
-	label: string
-	detail: string
-	type: string
-}
-
-interface TableSchema {
-	[key: string]: {
-		label?: string
-		columns: Column[]
-	}
-}
+import type { SourceSchema } from '../../data_source/data_source'
 
 interface Props {
-	schema: TableSchema
+	schema: SourceSchema
+	loading?: boolean
+	failed?: boolean
 }
 
 interface Emits {
@@ -72,7 +62,7 @@ const filteredSchema = computed(() => {
 	}
 
 	const query = searchQuery.value.toLowerCase()
-	const filtered: TableSchema = {}
+	const filtered: SourceSchema = {}
 
 	Object.entries(props.schema).forEach(([tableName, tableData]) => {
 		const tableMatches = tableName.toLowerCase().includes(query)
@@ -99,7 +89,7 @@ const filteredSchema = computed(() => {
 <template>
 	<div class="flex flex-1 flex-col overflow-hidden px-3.5 py-3">
 		<div class="mb-2 flex h-6 flex-shrink-0 items-center justify-between">
-			<div class="text-sm font-medium">Tables</div>
+			<div class="text-sm-medium">Tables</div>
 		</div>
 		<div class="mb-2 flex-shrink-0">
 			<FormControl
@@ -109,17 +99,30 @@ const filteredSchema = computed(() => {
 				autocomplete="off"
 			>
 				<template #prefix>
-					<SearchIcon class="h-3.5 w-3.5 text-gray-500" />
+					<SearchIcon class="h-3.5 w-3.5 text-ink-gray-4" />
 				</template>
 			</FormControl>
 		</div>
 		<div class="flex-1 overflow-y-auto text-base">
-			<div v-if="!Object.keys(schema).length" class="py-4 text-center text-sm text-gray-500">
-				Select a data source to explore tables
+			<div
+				v-if="loading"
+				class="flex items-center justify-center gap-2 py-4 text-sm text-ink-gray-4"
+			>
+				<LoadingIndicator class="size-3.5" />
+				{{ __('Loading tables…') }}
+			</div>
+			<div v-else-if="failed" class="py-4 text-center text-sm text-ink-gray-4">
+				{{ __('Could not load the tables') }}
+			</div>
+			<div
+				v-else-if="!Object.keys(schema).length"
+				class="py-4 text-center text-sm text-ink-gray-4"
+			>
+				{{ __('Select a data source to explore tables') }}
 			</div>
 			<div
 				v-else-if="!Object.keys(filteredSchema).length"
-				class="py-4 text-center text-sm text-gray-500"
+				class="py-4 text-center text-sm text-ink-gray-4"
 			>
 				No tables or columns match your search
 			</div>
@@ -129,18 +132,18 @@ const filteredSchema = computed(() => {
 					:key="tableName"
 				>
 					<div
-						class="flex w-full cursor-pointer select-none items-center gap-1.5 rounded py-1.5 text-gray-700 hover:bg-gray-50"
+						class="flex w-full cursor-pointer select-none items-center gap-1.5 rounded-4 py-1.5 text-ink-gray-6 hover:bg-surface-gray-1"
 						@click="toggleTable(tableName)"
 					>
 						<ChevronDown
 							v-if="expandedTables.has(tableName)"
-							class="h-4 w-4 flex-shrink-0 text-gray-400"
+							class="h-4 w-4 flex-shrink-0 text-ink-gray-3"
 						/>
-						<ChevronRight v-else class="h-4 w-4 flex-shrink-0 text-gray-400" />
+						<ChevronRight v-else class="h-4 w-4 flex-shrink-0 text-ink-gray-3" />
 
 						<button
 							@click.stop="insertTableName(tableName)"
-							class="truncate text-start font-medium text-gray-700 hover:text-blue-600"
+							class="truncate text-start font-medium text-ink-gray-6 hover:text-ink-blue-6"
 						>
 							{{ tableName }}
 						</button>
@@ -153,15 +156,15 @@ const filteredSchema = computed(() => {
 							v-for="column in tableData.columns"
 							:key="column.label"
 							@click="insertColumnName(column.label)"
-							class="flex w-full items-center gap-1.5 rounded py-1.5 pl-2 text-left text-gray-600 hover:bg-gray-50"
+							class="flex w-full items-center gap-1.5 rounded-4 py-1.5 pl-2 text-left text-ink-gray-5 hover:bg-surface-gray-1"
 							:title="`${column.label} (${column.detail || column.type})`"
 						>
 							<component
 								:is="getColumnIcon(column.detail || column.type)"
-								class="h-4 w-4 flex-shrink-0 text-gray-600"
+								class="h-4 w-4 flex-shrink-0 text-ink-gray-5"
 							/>
-							<span class="truncate text-gray-700">{{ column.label }}</span>
-							<span class="ml-auto flex-shrink-0 pr-1 text-xs text-gray-500">{{
+							<span class="truncate text-ink-gray-6">{{ column.label }}</span>
+							<span class="ml-auto flex-shrink-0 pr-1 text-xs text-ink-gray-4">{{
 								column.detail || column.type
 							}}</span>
 						</button>

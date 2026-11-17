@@ -92,8 +92,8 @@ const submitButton = computed(() => {
 </script>
 
 <template>
-	<Dialog v-model="show" :options="{ title: __('Connect to DuckDB') }">
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Connect to DuckDB')">
+		<template #default>
 			<Form
 				ref="form"
 				class="flex-1"

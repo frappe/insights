@@ -124,6 +124,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
 
     # tests
 
+    # @feature data-source.update-tables
     def test_a_re_spelled_table_is_renamed_not_duplicated(self):
         self.create_table("public.orders", stored=1)
 
@@ -136,6 +137,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
             frappe.db.exists("Insights Table v3", get_table_name(self.data_source.name, "orders"))
         )
 
+    # @feature data-source.update-tables
     def test_a_re_spelled_table_keeps_its_import(self):
         self.create_table("public.orders", stored=1, sync_mode="Full", row_limit=500)
 
@@ -150,6 +152,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual(record.stored, 1)
         self.assertEqual(record.row_limit, 500)
 
+    # @feature data-source.update-tables
     def test_a_re_spelled_table_that_cannot_move_its_data_re_imports(self):
         self.create_table("public.orders", stored=1)
         self.warehouse_moves = False
@@ -161,6 +164,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         )
         self.assertEqual(stored, 0)
 
+    # @feature data-source.update-tables
     def test_an_existing_duplicate_pair_is_merged(self):
         self.create_table("public.orders", stored=1, row_limit=900)
         self.create_table("orders", stored=0)
@@ -178,6 +182,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual(survivor.stored, 1)
         self.assertEqual(survivor.row_limit, 900)
 
+    # @feature data-source.update-tables
     def test_a_merge_keeps_the_survivors_own_import(self):
         self.create_table("public.orders", stored=1, row_limit=900)
         self.create_table("orders", stored=1, row_limit=100)
@@ -195,6 +200,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         # one remote table, one Data Store copy; the loser's is dropped
         self.assertEqual(self.dropped, ["public.orders"])
 
+    # @feature data-source.update-tables
     def test_a_rename_follows_the_queries_that_name_the_table(self):
         self.create_table("public.orders")
         workbook = create_test_workbook("Administrator", "Reconcile Test Workbook")
@@ -219,6 +225,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         operations = frappe.parse_json(frappe.db.get_value("Insights Query v3", query.name, "operations"))
         self.assertEqual(operations[0]["table"]["table_name"], "orders")
 
+    # @feature data-source.update-tables
     def test_a_new_table_is_still_created(self):
         self.create_table("orders")
 
@@ -227,6 +234,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual(self.stored_tables(), ["invoices", "orders"])
         self.assertEqual(self.renamed, [])
 
+    # @feature data-source.update-tables
     def test_a_table_gaining_a_prefix_is_renamed_too(self):
         self.data_source.db_set("schema", "public, sales")
         self.data_source.reload()
@@ -237,6 +245,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual(self.stored_tables(), ["public.orders", "sales.leads"])
         self.assertEqual(self.renamed, [("orders", "public.orders")])
 
+    # @feature data-source.update-tables
     def test_a_table_name_holding_a_dot_is_not_read_as_a_schema(self):
         self.create_table("v1.2 metrics")
 
@@ -245,6 +254,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual(self.stored_tables(), ["v1.2 metrics"])
         self.assertEqual(self.renamed, [])
 
+    # @feature data-source.update-tables
     def test_a_merge_keeps_the_import_settings_when_the_data_cannot_move(self):
         self.create_table("public.orders", stored=1, sync_mode="Incremental", sync_cursor_column="modified")
         self.create_table("orders", stored=0)
@@ -263,6 +273,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual(survivor.sync_mode, "Incremental")
         self.assertEqual(survivor.sync_cursor_column, "modified")
 
+    # @feature data-source.update-tables
     def test_a_merge_keeps_the_teams_that_read_the_table(self):
         loser = self.create_table("public.orders", stored=1)
         self.create_table("orders")
@@ -279,6 +290,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual([g.resource_name for g in grants], [survivor_name])
         self.assertEqual(grants[0].table_restrictions, '[{"column": "region"}]')
 
+    # @feature data-source.update-tables
     def test_a_merge_does_not_grant_a_team_the_same_table_twice(self):
         loser = self.create_table("public.orders", stored=1)
         survivor = self.create_table("orders")
@@ -294,6 +306,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         )
         self.assertEqual(grants, [get_table_name(self.data_source.name, "orders")])
 
+    # @feature data-source.update-tables
     def test_a_rename_follows_the_sync_history(self):
         self.create_table("public.orders", stored=1)
         frappe.get_doc(
@@ -316,6 +329,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         )
         self.assertEqual(logs, ["orders"])
 
+    # @feature data-source.update-tables
     def test_a_merge_keeps_settings_the_user_typed_on_the_survivor(self):
         self.create_table("public.orders", stored=1, sync_mode="Full")
         # the user found the duplicate the sync made and set it up — no import has run yet
@@ -334,6 +348,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         # the copy belongs to settings the survivor does not share
         self.assertEqual(self.dropped, ["public.orders"])
 
+    # @feature data-source.update-tables
     def test_a_merge_keeps_a_label_the_user_wrote(self):
         loser = self.create_table("public.orders")
         frappe.db.set_value("Insights Table v3", loser.name, "label", "Orders 2026")
@@ -346,6 +361,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         )
         self.assertEqual(label, "Orders 2026")
 
+    # @feature data-source.update-tables
     def test_a_rename_clears_the_cached_team_grants(self):
         loser = self.create_table("public.orders", stored=1)
         self.create_table("orders")
@@ -362,6 +378,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         survivor_name = get_table_name(self.data_source.name, "orders")
         self.assertEqual(get_allowed_resources_for_user("Insights Table v3", user.name), [survivor_name])
 
+    # @feature data-source.update-tables
     def test_a_rename_follows_a_link_on_either_side(self):
         self.create_table("public.orders")
         self.create_table("public.customers")
@@ -386,6 +403,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual(link.left_table, "customers")
         self.assertEqual(link.right_table, "orders")
 
+    # @feature data-source.update-tables
     def test_a_rename_leaves_the_other_side_of_a_link_alone(self):
         self.create_table("public.orders")
         self.create_table("regions")
@@ -410,6 +428,7 @@ class TestTableNameReconcile(InsightsIntegrationTestCase):
         self.assertEqual(link.left_table, "regions")
         self.assertEqual(link.right_table, "orders")
 
+    # @feature data-source.update-tables
     def test_a_merge_inherits_when_the_survivor_came_from_a_bulk_insert(self):
         self.create_table("public.orders", stored=1, sync_cursor_column="modified")
         # the sync writes records through `bulk_insert`, which names no sync field

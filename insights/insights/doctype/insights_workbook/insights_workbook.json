@@ -5,10 +5,9 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
-  "data_backup",
-  "from_template",
-  "imported_version",
-  "imported_checksum"
+  "is_standard",
+  "module",
+  "data_backup"
  ],
  "fields": [
   {
@@ -19,31 +18,26 @@
    "reqd": 1
   },
   {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard",
+   "read_only": 1
+  },
+  {
+   "depends_on": "is_standard",
+   "fieldname": "module",
+   "fieldtype": "Link",
+   "label": "Module",
+   "mandatory_depends_on": "is_standard",
+   "options": "Module Def",
+   "read_only": 1
+  },
+  {
    "fieldname": "data_backup",
    "fieldtype": "JSON",
    "hidden": 1,
    "label": "Data Backup",
-   "read_only": 1
-  },
-  {
-   "fieldname": "from_template",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "From Template",
-   "read_only": 1
-  },
-  {
-   "fieldname": "imported_version",
-   "fieldtype": "Int",
-   "hidden": 1,
-   "label": "Imported Version",
-   "read_only": 1
-  },
-  {
-   "fieldname": "imported_checksum",
-   "fieldtype": "Data",
-   "hidden": 1,
-   "label": "Imported Checksum",
    "read_only": 1
   }
  ],
@@ -62,7 +56,7 @@
    "link_fieldname": "workbook"
   }
  ],
- "modified": "2026-08-06 10:12:33.482915",
+ "modified": "2026-09-24 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Workbook",

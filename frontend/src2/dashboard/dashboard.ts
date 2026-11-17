@@ -1,43 +1,94 @@
-import { reactive, ref, toRefs } from 'vue'
-// @ts-ignore
-import { useTelemetry } from '../telemetry'
-import useChart from '../charts/chart'
-import {
-	getUniqueId,
-	safeJSONParse,
-	showErrorToast,
-	store,
-	waitUntil,
-	wheneverChanges,
-} from '../helpers'
+import { useWindowSize } from '@vueuse/core'
+import { call } from 'frappe-ui'
+import { computed, effectScope, reactive, ref, shallowRef, toRefs, watch, watchEffect } from 'vue'
+import { numberCardRows, numberReadings } from '../charts/adapter/number'
+import useChart, { type Chart } from '../charts/chart'
+import { type Filter } from '../components/filter_picker/filter_picker'
+import useChartPreview, { type ChartPreviewContext } from '../charts/chart_preview'
+import { type DashboardFilterContext } from '../charts/chart_view'
+import { getUniqueId, safeJSONParse, showErrorToast, waitUntil } from '../helpers'
+import { withStoredCells } from './stored_cells'
+import { confirmDialog } from '../helpers/confirm_dialog'
+import { __ } from '../translation'
 import useDocumentResource from '../helpers/resource'
-import { isFilterValid } from '../query/components/filter_utils'
-import { column, filter_group } from '../query/helpers'
 import router from '../router'
-import { AdhocFilters, FilterArgs, FilterGroup, FilterOperator, FilterValue } from '../types/query.types'
+import { useTelemetry } from '../telemetry'
+import type { NumberChartConfig } from '../types/chart.types'
+import { FilterOperator, FilterValue } from '../types/query.types'
 import {
+	BreakpointKey,
+	FilterValues,
 	InsightsDashboardv3,
+	Layout,
 	WorkbookChart,
 	WorkbookDashboardFilter,
 	WorkbookDashboardItem,
 } from '../types/workbook.types'
-import useWorkbook from '../workbook/workbook'
+import {
+	BASE_BREAKPOINT,
+	derivedPlacement,
+	GRID_COLUMNS,
+	layoutRank,
+	placeNewChart,
+	placeNewFilter,
+	sameBox,
+	writePlacement,
+} from './grid_placement'
+import {
+	cellRulesFor,
+	defaultFilterStates,
+	FILTER_ROWS,
+	filtersOffDefault,
+	invalidateDashboard,
+	withDefaults,
+} from './view'
+import type { GranularityType } from '../helpers/constants'
+
+/**
+ * A filter link, `` `query`.`column` ``, split back into its two halves.
+ *
+ * The only client-side reader of the format, and only the filter editor needs
+ * it: it previews values for a link the document has not saved, and the server
+ * will not serve those — nothing has made that column a filter yet. Every other
+ * surface names the filter and lets the server find the column behind it.
+ */
+export function parseFilterLink(link: string) {
+	const match = link?.match(/^`([^`]+)`\.`([^`]+)`$/)
+	return match ? { query: match[1], column: match[2] } : null
+}
+
+/**
+ * The narrowest window the grid can be arranged in. Below it the layout is the
+ * derived one, which is not the author's to save.
+ */
+const ARRANGEABLE_WIDTH = 1058
+
+/** Columns a Number cell is dropped at: a fifth of the grid, so five read as a row of cards. */
+const NUMBER_CARD_COLUMNS = 4
+
+/** Columns a chart cell is dropped at: half the grid, so two read side by side. */
+const CHART_COLUMNS = 10
+
+/** Columns a filter cell takes. */
+const FILTER_WIDTH = 4
 
 const dashboards = new Map<string, Dashboard>()
 
+/** The store the builder edits a dashboard through, one per dashboard. */
 export default function useDashboard(name: string) {
-	const key = String(name)
+	const key = name
 	const existingDashboard = dashboards.get(key)
 	if (existingDashboard) return existingDashboard
 
-	const dashboard = makeDashboard(name)
+	// A store is always first asked for inside a component's `setup`, and it
+	// outlives that component. Its own effects (autosave, the chart map, the
+	// saved filter states) would stop when the page it was first rendered on
+	// unmounts, leaving a store that reads current and saves nothing. Detached,
+	// so they live as long as the store does: the map never drops an entry.
+	const scope = effectScope(true)
+	const dashboard = scope.run(() => makeDashboard(name)) as Dashboard
 	dashboards.set(key, dashboard)
 	return dashboard
-}
-
-export type FilterState = {
-	operator: FilterOperator
-	value: FilterValue
 }
 
 function makeDashboard(name: string) {
@@ -46,40 +97,210 @@ function makeDashboard(name: string) {
 
 	const editing = ref(false)
 	const editingItemIndex = ref<number>()
+	// the chart picker is open. The edit actions and an empty grid both open it
+	const pickingCharts = ref(false)
+
+	// Which breakpoint's layout the author is arranging. Every edit session starts
+	// at the widest, because that is the layout every item has and the one the
+	// others are derived from.
+	const arranging = ref<BreakpointKey>(BASE_BREAKPOINT.key)
+	watch(editing, (on) => {
+		if (!on) arranging.value = BASE_BREAKPOINT.key
+	})
 
 	function isEditingItem(item: WorkbookDashboardItem) {
 		return editing.value && editingItemIndex.value === dashboard.doc.items.indexOf(item)
 	}
 
+	// When the document saves itself, derived from the state that answers it.
+	//
+	// A reader never writes, an author mid-edit saves when they are done, and a
+	// window too narrow to arrange the grid in would save a layout the author
+	// never laid out. Held here because every one of those is this store's own
+	// state — a host that set the flag was one more writer of it, and a host that
+	// forgot to unset it turned autosave back on for a reader.
+	const { width: windowWidth } = useWindowSize()
+	watchEffect(() => {
+		dashboard.autoSave =
+			!dashboard.doc.read_only && !editing.value && windowWidth.value >= ARRANGEABLE_WIDTH
+	})
 
-	const filters = ref<Record<string, FilterArgs[]>>({})
-	const filterStates = ref<Record<string, FilterState>>({})
+	const filterStates = ref<FilterValues>({})
+	// a reader's user default stands in for the owner's
+	const filterDefaults = computed(() => {
+		const userDefaults = dashboard.doc.user_defaults || {}
+		const items = dashboard.doc.items.map((item) =>
+			item.type == 'filter' && item.filter_name in userDefaults
+				? { ...item, default_value: userDefaults[item.filter_name] }
+				: item,
+		)
+		return defaultFilterStates(items)
+	})
 
-	function addChart(charts: WorkbookChart[], via: 'selector' | 'drag') {
+	// What a reader filtered one card down to, per chart. It is a filter the
+	// reader owns and the document never holds: not saved with the dashboard, and
+	// not stored beside the filter states, so a reload clears it.
+	const cardFilters = ref<Record<string, Filter[]>>({})
+
+	function cardFiltersOn(chart_name: string): Filter[] {
+		return cardFilters.value[chart_name] || []
+	}
+
+	function setCardFilters(chart_name: string, filters: Filter[]) {
+		cardFilters.value[chart_name] = filters
+		refreshChart(chart_name)
+	}
+
+	async function addChart(charts: WorkbookChart[], via: 'selector' | 'drag') {
 		const maxY = getMaxY()
 		let added = 0
-		charts.forEach((chart) => {
-			if (
-				!dashboard.doc.items.some((item) => item.type === 'chart' && item.chart === chart.name)
-			) {
-				dashboard.doc.items.push({
-					type: 'chart',
-					chart: chart.name,
-					layout: {
-						i: getUniqueId(),
-						x: 0,
-						y: maxY,
-						w: chart.chart_type === 'Number' ? 20 : 10,
-						h: chart.chart_type === 'Number' ? 3 : 8,
-					},
-				})
-				added++
-			}
-		})
+		for (const chart of charts) {
+			const placed = dashboard.doc.items.some(
+				(item) => item.type === 'chart' && item.chart === chart.name,
+			)
+			if (placed) continue
+			dashboard.doc.items.push(...(await cellsFor(chart, maxY)))
+			added++
+		}
 		if (added) {
 			capture('dashboard_chart_added', { via, count: added })
 		}
 	}
+
+	/**
+	 * The cells a chart is dropped as.
+	 *
+	 * Every type is one cell except a Number chart: a cell renders one card, so a
+	 * chart stating five readings arrives as five cells side by side, each at the
+	 * height its own card needs. How many there are is in the config and not in
+	 * the list entry, so the chart's document is waited for rather than guessed
+	 * at.
+	 */
+	async function cellsFor(chart: WorkbookChart, y: number): Promise<WorkbookDashboardItem[]> {
+		if (chart.chart_type !== 'Number') {
+			const layouts = (filters: boolean) =>
+				dashboard.doc.items
+					.filter((item) => (item.type === 'filter') === filters)
+					.map((item) => item.layout)
+			return [
+				{
+					type: 'chart',
+					chart: chart.name,
+					layout: placeNewChart(
+						getUniqueId(),
+						CHART_COLUMNS,
+						20,
+						layouts(false),
+						layouts(true),
+					),
+				},
+			]
+		}
+
+		const doc = useChart(chart.name)
+		await waitUntil(() => doc.isloaded)
+		const config = doc.doc.config as NumberChartConfig
+		// A chart nobody has configured yet is one cell, which is the cell it keeps
+		// once its first reading is named.
+		const readings: (string | undefined)[] = numberReadings(config)
+		if (!readings.length) readings.push(undefined)
+
+		const cells: WorkbookDashboardItem[] = []
+		let x = 0
+		let rowY = y
+		let rowHeight = 0
+		for (const reading of readings) {
+			if (x + NUMBER_CARD_COLUMNS > GRID_COLUMNS) {
+				x = 0
+				rowY += rowHeight
+				rowHeight = 0
+			}
+			const h = numberCardRows(config, reading)
+			cells.push({
+				type: 'chart',
+				chart: chart.name,
+				...(reading ? { reading } : {}),
+				layout: { i: getUniqueId(), x, y: rowY, w: NUMBER_CARD_COLUMNS, h },
+			})
+			x += NUMBER_CARD_COLUMNS
+			rowHeight = Math.max(rowHeight, h)
+		}
+		return cells
+	}
+
+	// A chart store registers itself when it is made (a document resource, an
+	// autosave watcher, a debounced history), so it cannot be resolved in a
+	// computed, which Vue is free to evaluate, discard or run again. The stores
+	// the rules below read are resolved here, once per chart the grid names, the
+	// way a cell resolves the one it renders. It is handed out for the same reason:
+	// a surface inside the dashboard reads a chart through this map.
+	const chartsByName = shallowRef<Record<string, Chart>>({})
+	watch(
+		() =>
+			dashboard.doc.items
+				.map((item) => (item.type === 'chart' ? item.chart : ''))
+				.filter(Boolean)
+				.join(','),
+		(names) => {
+			const resolved = { ...chartsByName.value }
+			let added = false
+			for (const chart_name of names ? names.split(',') : []) {
+				if (resolved[chart_name]) continue
+				resolved[chart_name] = useChart(chart_name)
+				added = true
+			}
+			if (added) chartsByName.value = resolved
+		},
+		{ immediate: true },
+	)
+
+	// A Number chart's save gives a reading it added a cell on every dashboard
+	// that shows it, and takes a removed one's cell (`keep_reading_cells`). This
+	// store read the grid before that save, so it reads it again. Mid-edit, Done
+	// saves the whole grid, so the author's grid takes the stored cells of those
+	// charts instead (`withStoredCells`).
+	async function takeStoredCells(charts: string[]) {
+		const stored: { items: string | WorkbookDashboardItem[] } = await call(
+			'insights.api.get_doc',
+			{
+				doctype: 'Insights Dashboard v3',
+				name: dashboard.doc.name,
+			},
+		)
+		const storedItems: WorkbookDashboardItem[] =
+			typeof stored.items === 'string' ? safeJSONParse(stored.items) || [] : stored.items
+		dashboard.doc.items = withStoredCells(dashboard.doc.items, storedItems, charts)
+	}
+
+	const savedReadings = new Map<string, string>()
+	watch(
+		() =>
+			Object.values(chartsByName.value)
+				.filter((chart) => chart.isloaded && chart.originalDoc.chart_type === 'Number')
+				.map((chart) => [
+					chart.originalDoc.name,
+					numberReadings(chart.originalDoc.config as NumberChartConfig).join(','),
+				]),
+		(charts) => {
+			const changed: string[] = []
+			for (const [name, readings] of charts) {
+				if (savedReadings.has(name) && savedReadings.get(name) !== readings)
+					changed.push(name)
+				savedReadings.set(name, readings)
+			}
+			if (!changed.length) return
+			if (editing.value) takeStoredCells(changed).catch(showErrorToast)
+			else dashboard.load()
+		},
+	)
+
+	/**
+	 * Grid rules for each cell beyond its layout, from `cellRulesFor`. The builder
+	 * derives them from the chart stores it already holds.
+	 */
+	const cellRules = computed(() =>
+		cellRulesFor(dashboard.doc.items, (chart) => chartsByName.value[chart]?.doc),
+	)
 
 	function getMaxY() {
 		return Math.max(...dashboard.doc.items.map((item) => item.layout.y + item.layout.h), 0)
@@ -95,15 +316,11 @@ function makeDashboard(name: string) {
 				x: 0,
 				y: maxY,
 				w: 10,
-				h: 1,
+				h: 5,
 			},
 		})
 		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
-
-	const grid_cols = 20 // for 5 columns
-	const filter_w = 4
-	const filter_h = 1
 
 	function addFilter() {
 		const newFilter: WorkbookDashboardItem = {
@@ -115,169 +332,147 @@ function makeDashboard(name: string) {
 				i: getUniqueId(),
 				x: 0,
 				y: 0,
-				w: filter_w,
-				h: filter_h,
+				w: FILTER_WIDTH,
+				h: FILTER_ROWS,
 			},
 		}
-		dashboard.doc.items.push(newFilter)
-		positionNewFilter(newFilter)
-		editingItemIndex.value = dashboard.doc.items.length - 1
-	}
-
-	function positionNewFilter(newFilter: WorkbookDashboardItem) {
 		const items = dashboard.doc.items
-		const existingFilters = items.filter(
-			(item) => item.type === 'filter' && item !== newFilter
+		placeNewFilter(
+			newFilter.layout,
+			items.filter((item) => item.type === 'filter').map((item) => item.layout),
+			items.filter((item) => item.type !== 'filter').map((item) => item.layout),
+			FILTER_ROWS,
 		)
-
-		if (existingFilters.length === 0) {
-			newFilter.layout.x = 0
-			newFilter.layout.y = 0
-			return
-		}
-
-		const topRowY = Math.min(...existingFilters.map((item) => item.layout.y))
-		const topRowFilters = existingFilters.filter((item) => item.layout.y === topRowY)
-		const rightmostX = Math.max(
-			...topRowFilters.map((item) => item.layout.x + (item.layout.w || filter_w)),
-			0
-		)
-
-		if (rightmostX + newFilter.layout.w <= grid_cols) {
-			newFilter.layout.x = rightmostX
-			newFilter.layout.y = topRowY
-		} else {
-			newFilter.layout.x = 0
-			newFilter.layout.y = 0
-
-			existingFilters.forEach((item) => {
-				item.layout.y += filter_h
-			})
-
-			const otherItems = items.filter((item) => item.type !== 'filter')
-			if (otherItems.length > 0) {
-				const minOtherY = Math.min(...otherItems.map((item) => item.layout.y))
-				if (minOtherY <= filter_h) {
-					otherItems.forEach((item) => {
-						item.layout.y = Math.max(0, item.layout.y + filter_h)
-					})
-				}
-			}
-		}
+		items.push(newFilter)
+		editingItemIndex.value = dashboard.doc.items.length - 1
 	}
 
 	function removeItem(index: number) {
 		dashboard.doc.items.splice(index, 1)
+		// The edit cursor is an index into the same list, so a cell removed at or
+		// before it leaves it pointing at the cell that moved up.
+		if (editingItemIndex.value !== undefined && index <= editingItemIndex.value) {
+			editingItemIndex.value = undefined
+		}
 	}
 
-	function normalizeLayout() {
+	// A drag names the breakpoint it arranged. Every breakpoint is dragged on the
+	// same grid, so the gesture cannot tell the store where to store it.
+	//
+	// Only the cells that moved are written, and a cell put back where the
+	// breakpoint derives it has its entry dropped. A narrower breakpoint derives
+	// every cell it has nothing stored for, and storing a cell that landed where
+	// the derived layout puts it would pin it there — one nudge would stop the
+	// narrow layout following the wide one, for good.
+	//
+	// What moved is measured against `before`, the grid the gesture started from,
+	// which the grid hands over: a stored layout is not always the layout on
+	// screen, and comparing against the stored one calls every cell compaction
+	// moved a cell the author moved.
+	function moveItems(
+		key: BreakpointKey,
+		layouts: Layout[],
+		before: Layout[],
+		verticalCompact = true,
+	) {
 		const items = dashboard.doc.items
-		const filters = items.filter((item) => item.type === 'filter')
-		if (filters.length === 0) return
+		// Every reference is read before the first one is written: `writePlacement`
+		// changes the grid the next reference would be derived against, and a card
+		// the author never touched would pick up an entry out of it.
+		const references = items.map((_, index) =>
+			derivedPlacement(items, key, index, cellRules.value, { verticalCompact }),
+		)
 
-		let currentX = 0
-		let currentY = 0
-
-		filters.forEach((item) => {
-			const itemWidth = item.layout.w || filter_w
-
-			// if filter doesn't fit in current row then move to next row
-			if (currentX + itemWidth > grid_cols && currentX > 0) {
-				currentX = 0
-				currentY += filter_h
-			}
-
-			item.layout.x = currentX
-			item.layout.y = currentY
-			item.layout.h = filter_h
-
-			if (!item.layout.w) item.layout.w = filter_w
-
-			currentX += itemWidth
-		})
-
-		const topRow = currentY + filter_h
-
-		const otherItems = items.filter((item) => item.type !== 'filter')
-		if (otherItems.length === 0) return
-		const minY = Math.min(...otherItems.map((item) => item.layout.y))
-		const topRowHeight = topRow - minY
-
-		if (topRowHeight === 0) return
-		otherItems.forEach((item) => {
-			item.layout.y = Math.max(0, item.layout.y + topRowHeight)
+		items.forEach((item, index) => {
+			const layout = layouts[index]
+			if (!layout) return
+			const reference = references[index]
+			const stood = before[index] && sameBox(before[index], layout)
+			// A cell the gesture left where it stood is not written again, with one
+			// exception: a stored entry that pins it where the breakpoint already
+			// puts it. Compaction can hide that entry's effect, so the drag that
+			// releases it is a drag that moves nothing on screen.
+			const releases = key !== BASE_BREAKPOINT.key && reference && sameBox(reference, layout)
+			if (stood && !releases) return
+			writePlacement(item, key, layout, reference)
 		})
 	}
 
 	function refresh(force = false) {
-		dashboard.doc.items
-			.filter((item) => item.type === 'chart')
-			.forEach((item) => refreshChart(item.chart, force))
+		// By chart and not by cell: several cells can read one chart, and the read
+		// behind them is one.
+		linkedCharts().forEach((chart_name) => refreshChart(chart_name, force))
+	}
+
+	/** Every chart the grid names, once each. */
+	function linkedCharts() {
+		const items = dashboard.doc.items.filter((item) => item.type === 'chart')
+		return [...new Set(items.map((item) => item.chart))]
+	}
+
+	// The card sends what the grid holds, not what it worked out from it: which
+	// query a filter lands on is read off the links server-side, the one place it
+	// is read for every surface. The items are sent because the builder is editing
+	// ones the document has not saved.
+	//
+	// A card filter goes along as an item and a state of its own. The server has
+	// one router for both, so a filter the reader made on a card lands in the
+	// chart's query group beside the grid's own, `And`-composed.
+	// A card filter is the reader's own, on a column the card shows, so it travels
+	// as itself rather than as a filter item the grid never held. The server lands
+	// it on the chart's own derived query, which is what the chart's name reaches:
+	// the rule falls after the chart's summarize, on the columns the card shows,
+	// measures included.
+	function filterContextFor(chart_name: string): DashboardFilterContext {
+		return {
+			chart: chart_name,
+			dashboard: dashboard.doc.name,
+			items: dashboard.doc.items,
+			filters: filterStates.value,
+			cardFilters: cardFiltersOn(chart_name).map((filter) => ({
+				column: filter.column.name,
+				operator: filter.operator,
+				value: filter.value,
+			})),
+		}
+	}
+
+	// The builder's grid renders its cards from the config being edited, not the
+	// saved chart, so an unsaved edit shows on the grid too. The reads belong to
+	// this dashboard, because its filters narrow their rows. Another dashboard
+	// with the same chart has its own reads.
+	const readContext: ChartPreviewContext = {
+		id: `dashboard:${name}`,
+		filterContext: filterContextFor,
+		canWrite: () => dashboard.doc.has_workbook_access,
+	}
+
+	function chartView(chart_name: string) {
+		return useChartPreview(useChart(chart_name), readContext)
 	}
 
 	function refreshChart(chart_name: string, force = false) {
-		const chart = useChart(chart_name)
-		chart.dataQuery.adhocFilters = getAdhocFilters(chart_name)
-		chart.dataQuery.executionPriority = getLayoutRank(chart_name)
-		chart.refresh(force)
+		const read = chartView(chart_name)
+		read.executionPriority = getLayoutRank(chart_name)
+		read.load(force)
 	}
 
-	// charts reach the queue in whatever order their docs finish loading, so rank
-	// them by grid position instead: top row first, left to right within a row
+	// The chart runs once for every cell that reads it, so it is the cell that
+	// reads first that says when — the topmost, leftmost one.
 	function getLayoutRank(chart_name: string) {
-		const item = dashboard.doc.items.find(
-			(item) => item.type === 'chart' && item.chart === chart_name
-		)
-		if (!item) return undefined
-		return item.layout.y * grid_cols + item.layout.x
+		const ranks = dashboard.doc.items
+			.filter((item) => item.type === 'chart' && item.chart === chart_name)
+			.map((item) => layoutRank(item.layout))
+		return ranks.length ? Math.min(...ranks) : undefined
 	}
 
-	function getAdhocFilters(chart_name: string, exclude_filter_name?: string) {
-		const filtersApplied = dashboard.doc.items.filter(
-			(item) =>
-				item.type === 'filter' &&
-				'links' in item &&
-				item.links[chart_name] &&
-				(!exclude_filter_name || item.filter_name !== exclude_filter_name)
-		)
-
-		if (filtersApplied.length === 0) return
-
-		const filtersByQuery = {} as AdhocFilters
-
-		function addFilterToQuery(query_name: string, filter: FilterArgs) {
-			if (!filtersByQuery[query_name]) {
-				filtersByQuery[query_name] = filter_group({
-					logical_operator: 'And',
-					filters: [],
-				})
-			}
-			filtersByQuery[query_name].filters.push(filter)
-		}
-
-		filtersApplied.forEach((item) => {
-			const filterItem = item as WorkbookDashboardFilter
-			const linkedColumn = getColumnFromFilterLink(filterItem.links[chart_name])
-			if (!linkedColumn) return
-
-			const filterState = filterStates.value[filterItem.filter_name] || {}
-
-			const filter = {
-				column: column(linkedColumn.column),
-				operator: filterState.operator,
-				value: filterState.value,
-			}
-
-			if (isFilterValid(filter, filterItem.filter_type)) {
-				addFilterToQuery(linkedColumn.query, filter)
-			}
-		})
-		return filtersByQuery
-	}
-
-	function updateFilterState(filter_name: string, operator?: FilterOperator, value?: FilterValue) {
+	function updateFilterState(
+		filter_name: string,
+		operator?: FilterOperator,
+		value?: FilterValue,
+	) {
 		const filter = dashboard.doc.items.find(
-			(item) => item.type === 'filter' && item.filter_name === filter_name
+			(item) => item.type === 'filter' && item.filter_name === filter_name,
 		)
 		if (!filter) return
 
@@ -293,96 +488,143 @@ function makeDashboard(name: string) {
 		applyFilter(filter_name)
 	}
 
+	function filtersOffDefaultOn(chart_name: string): string[] {
+		const reaching = dashboard.doc.items.filter(
+			(item) =>
+				item.type === 'filter' && (item as WorkbookDashboardFilter).links?.[chart_name],
+		) as WorkbookDashboardFilter[]
+		return filtersOffDefault(reaching, filterStates.value, filterDefaults.value)
+	}
+
+	/**
+	 * Whether this card's rows are narrowed by something the reader can undo:
+	 * the grid's own filters that reach it, moved off their defaults, and the
+	 * filter the reader put on the card. What the author filtered the chart by is
+	 * the chart, not a filter.
+	 */
+	function cardIsFiltered(chart_name: string): boolean {
+		return Boolean(filtersOffDefaultOn(chart_name).length || cardFiltersOn(chart_name).length)
+	}
+
+	/** Everything `cardIsFiltered` counts, taken back to its default. */
+	function resetCardFilters(chart_name: string) {
+		const moved = filtersOffDefaultOn(chart_name)
+		filterStates.value = withDefaults(filterStates.value, filterDefaults.value, moved)
+		delete cardFilters.value[chart_name]
+		// A grid filter links several cards, so resetting one from this card is a
+		// change to every card it reaches — the same act as answering it, run the
+		// same way. The card's own filter reaches nothing else, which is what the
+		// last line is for.
+		moved.forEach(applyFilter)
+		refreshChart(chart_name)
+	}
+
 	function applyFilter(filter_name: string) {
 		const item = dashboard.doc.items.find(
-			(item) => item.type === 'filter' && item.filter_name === filter_name
+			(item) => item.type === 'filter' && item.filter_name === filter_name,
 		)
 		if (!item) return
 
 		const filterItem = item as WorkbookDashboardFilter
 		const filteredCharts = Object.keys(filterItem.links).filter(
-			(chart_name) => filterItem.links[chart_name]
+			(chart_name) => filterItem.links[chart_name],
 		)
 		filteredCharts.forEach((chart_name) => refreshChart(chart_name))
 	}
 
-	function getColumnFromFilterLink(linkedColumn: string) {
-		const sep = '`'
-		// `query`.`column`
-		const pattern = new RegExp(`^${sep}([^${sep}]+)${sep}\\.${sep}([^${sep}]+)${sep}$`)
-		const match = linkedColumn.match(pattern)
-		if (!match || match.length < 3) return null
-
-		return {
-			query: match[1],
-			column: match[2],
-		}
-	}
-
+	// The filter names itself and the server finds the column behind it. What the
+	// rest of the grid holds goes along unrouted, so the list narrows to what the
+	// other filters leave — the server leaves this filter out of its own list.
 	function getDistinctColumnValues(
-		query: string,
-		column: string,
+		filter_name: string,
 		search_term?: string,
-		adhocFilters?: Record<string, FilterGroup>
+		chart_name?: string,
+		granularity?: GranularityType,
 	) {
 		return dashboard.call('get_distinct_column_values', {
-			query: query,
-			column_name: column,
+			filter_name,
 			search_term,
-			adhoc_filters: adhocFilters,
+			filter_context: chart_name ? filterContextFor(chart_name) : undefined,
+			granularity,
 		})
 	}
 
-	function getShareLink() {
-		return (
-			dashboard.doc.share_link ||
-			`${window.location.origin}/insights/shared/dashboard/${dashboard.doc.name}`
-		)
+	// the view endpoints: card values and ranges come from the saved grid, so the
+	// builder needs none of its own
+	function getCardColumnValues(
+		chart_name: string,
+		column: string,
+		search_term?: string,
+		granularity?: GranularityType,
+	) {
+		return call('insights.api.view.get_card_values', {
+			dashboard: dashboard.doc.name,
+			chart: chart_name,
+			column,
+			search_term,
+			granularity,
+		})
 	}
 
-	function updateAccess(data: {
-		is_public: boolean
-		is_shared_with_organization: boolean
-		people_with_access: string[]
-	}) {
+	function getCardColumnRange(chart_name: string, column: string) {
+		return call('insights.api.view.get_card_range', {
+			dashboard: dashboard.doc.name,
+			chart: chart_name,
+			column,
+		})
+	}
+
+	function getFilterColumnRange(filter_name: string) {
+		return dashboard.call('get_filter_column_range', { filter_name }, { showError: false })
+	}
+
+	function getShareLink() {
+		const { href } = router.resolve({
+			name: 'SharedDashboard',
+			params: { dashboard_name: dashboard.doc.name },
+		})
+		return dashboard.doc.share_link || `${window.location.origin}${href}`
+	}
+
+	// Updates who the document is shared with by name. Other readers come from
+	// the `visibility` field, which saves with the rest of the document.
+	function updateAccess(data: { people_with_access: string[] }) {
 		return dashboard
 			.call('update_access', { data })
 			.catch(showErrorToast)
 			.then(() => dashboard.load())
 	}
 
+	// Done. Edit mode ends only after the save returns. Autosave starts as soon
+	// as edit mode ends, and a save refused under autosave reverts what was sent.
+	// So a refused save keeps edit mode open with every edit.
+	async function finishEditing() {
+		await dashboard.save()
+		editing.value = false
+	}
 
-	const key = `insights:dashboard-filter-states-${name}`
-	filterStates.value = store(key, () => filterStates.value)
-
-	waitUntil(() => dashboard.isloaded).then(() => {
-		const defaultFilters = dashboard.doc.items.reduce((acc, item) => {
-			if (item.type != 'filter') return acc
-			const filterItem = item as WorkbookDashboardFilter
-			if (filterItem.default_operator && filterItem.default_value) {
-				acc[filterItem.filter_name] = {
-					operator: filterItem.default_operator,
-					value: filterItem.default_value,
-				}
-			}
-			return acc
-		}, {} as typeof filterStates.value)
-		Object.assign(filterStates.value, defaultFilters)
-
-		wheneverChanges(
-			() => dashboard.doc.title,
-			() => {
-				if (!dashboard.doc.workbook) return
-				const workbook = useWorkbook(dashboard.doc.workbook)
-				for (const d of workbook.doc.dashboards) {
-					if (d.name === dashboard.doc.name) {
-						d.title = dashboard.doc.title
-						break
-					}
-				}
+	// Reset Layout. Edit mode ends only after the confirm and the reload of the
+	// stored document. Ending it first would start autosave, which would save the
+	// edits the author is about to discard. Cancel keeps edit mode open.
+	function discardEditing() {
+		confirmDialog({
+			title: __('Discard Changes'),
+			message: __('Are you sure you want to discard changes?'),
+			onSuccess: async () => {
+				await dashboard.load()
+				editing.value = false
 			},
-			{ debounce: 500 }
-		)
+		})
+	}
+
+	// The owner sees the defaults they set, not their last choice. A default
+	// belongs to the document, and the owner is here to check it. A default fills
+	// only a filter that has no state yet.
+	waitUntil(() => dashboard.isloaded).then(() => {
+		Object.entries(filterDefaults.value).forEach(([filter_name, state]) => {
+			if (filter_name in filterStates.value) return
+			filterStates.value[filter_name] = state
+		})
 	})
 
 	return reactive({
@@ -390,25 +632,37 @@ function makeDashboard(name: string) {
 
 		editing,
 		editingItemIndex,
+		pickingCharts,
 		isEditingItem,
+		finishEditing,
+		discardEditing,
+		arranging,
 
-		filters,
 		filterStates,
+		cardFilters,
+		cardFiltersOn,
+		setCardFilters,
+		cardIsFiltered,
+		resetCardFilters,
+		getCardColumnValues,
+		getCardColumnRange,
+		getFilterColumnRange,
 
 		addChart,
 		addText,
 		addFilter,
 		removeItem,
-		normalizeLayout,
+		moveItems,
 
 		refresh,
 		refreshChart,
-
-		getAdhocFilters,
+		chartView,
+		linkedCharts,
+		chartsByName,
+		cellRules,
 
 		updateFilterState,
 		applyFilter,
-		getColumnFromFilterLink,
 
 		getDistinctColumnValues,
 		updateAccess,
@@ -426,19 +680,15 @@ const INITIAL_DOC: InsightsDashboardv3 = {
 	title: '',
 	workbook: '',
 	items: [],
-	is_public: false,
-	is_shared_with_organization: false,
+	visibility: 'Private',
+	visible_to_roles: [],
 	people_with_access: [],
 	read_only: false,
-	vertical_compact: true,
+	// the document states what a new dashboard is, so the doctype's default never
+	// reaches it: an insert sends every key, and Frappe fills a default only where
+	// the value came in unset
+	vertical_compact_layout: true,
 	has_workbook_access: false,
-}
-
-// Which page this view is on, read off the route the load happens on.
-function viewedOn() {
-	const page = router.currentRoute.value.name
-	if (page === 'SharedDashboard') return 'shared'
-	return page === 'Dashboard' ? 'dashboards' : 'workbook'
 }
 
 function getDashboardResource(name: string) {
@@ -449,25 +699,14 @@ function getDashboardResource(name: string) {
 		disableLocalStorage: true,
 		transform(doc: any) {
 			doc.items = safeJSONParse(doc.items) || []
-			// grid-layout-plus owns `moved` and writes it into every layout when
-			// the grid mounts, which leaves a freshly opened dashboard dirty.
-			// Set it on load instead.
-			doc.items.forEach((item: any) => {
-				if (item.layout && item.layout.moved === undefined) {
-					item.layout.moved = false
-				}
-			})
 			return doc
 		},
 	})
 	dashboard.onAfterLoad(() =>
-		dashboard.call('track_view', { surface: viewedOn() }).catch(() => {}),
+		// eslint-disable-next-line no-restricted-syntax -- a view count is telemetry, and the reader has nothing to act on if it fails
+		dashboard.call('track_view', { surface: 'workbook' }).catch(() => {}),
 	)
-	wheneverChanges(() => dashboard.doc.read_only, () => {
-		if (dashboard.doc.read_only) {
-			dashboard.autoSave = false
-		}
-	})
+	dashboard.onAfterSave(() => invalidateDashboard(String(dashboard.doc.name)))
 	return dashboard
 }
 

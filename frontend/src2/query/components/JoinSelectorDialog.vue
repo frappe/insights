@@ -7,7 +7,7 @@ import { wheneverChanges } from '../../helpers'
 import { joinTypes } from '../../helpers/constants'
 import { __ } from '../../translation'
 import { JoinArgs } from '../../types/query.types'
-import { workbookKey } from '../../workbook/workbook'
+import { workbookKey } from '../../workbook/workbook_key'
 import { column, expression, query_table, table } from '../helpers'
 import { Query } from '../query'
 import InlineExpression from './InlineExpression.vue'
@@ -97,7 +97,7 @@ const rightTable = computed(() => {
 })
 const tableOptions = useTableOptions({
 	data_source,
-	initialSearchText: rightTable.value,
+	selected_table: rightTable,
 })
 const rightTableColumnOptions = useTableColumnOptions(data_source, rightTable)
 
@@ -242,15 +242,15 @@ function reset() {
 </script>
 
 <template>
-	<Dialog :modelValue="showDialog">
-		<template #body>
-			<div class="rounded-lg bg-white px-4 pb-6 pt-5 sm:px-6">
+	<Dialog :open="showDialog" bare>
+		<template #default>
+			<div class="rounded-6 bg-surface-base px-4 pb-6 pt-5 sm:px-6">
 				<!-- Title & Close -->
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">
 						{{ __('Join Table') }}
 					</h3>
-					<Button variant="ghost" @click="showDialog = false" icon="x" size="md">
+					<Button variant="ghost" @click="showDialog = false" icon="lucide-x" size="md">
 					</Button>
 				</div>
 
@@ -259,12 +259,13 @@ function reset() {
 					<div class="flex flex-col gap-1.5">
 						<label class="block text-xs text-ink-gray-5">{{ __('Right Table') }}</label>
 						<Combobox
+							class="w-full"
 							:placeholder="__('Table')"
 							:open-on-focus="true"
 							v-model="selectedTable"
 							:loading="tableOptions.loading"
 							:options="groupedTableOptions"
-							@input="tableOptions.searchText = $event"
+							@update:query="tableOptions.searchText = $event"
 						/>
 					</div>
 					<div>
@@ -276,10 +277,11 @@ function reset() {
 								"
 							>
 								<div class="flex-1">
-									<label class="mb-1 block text-xs text-gray-600">{{
+									<label class="mb-1 block text-xs text-ink-gray-5">{{
 										__('Left Column')
 									}}</label>
 									<Combobox
+										class="w-full"
 										:placeholder="__('Column')"
 										:options="query.result.columnOptions"
 										:modelValue="join.join_condition.left_column.column_name"
@@ -290,10 +292,11 @@ function reset() {
 								</div>
 								<div class="flex h-7 flex-shrink-0 items-center font-mono">=</div>
 								<div class="flex-1">
-									<label class="mb-1 block text-xs text-gray-600">{{
+									<label class="mb-1 block text-xs text-ink-gray-5">{{
 										__('Right Column')
 									}}</label>
 									<Combobox
+										class="w-full"
 										:placeholder="__('Column')"
 										:loading="
 											rightTableColumnOptions.loading ||
@@ -312,7 +315,7 @@ function reset() {
 							</template>
 							<template v-else-if="'join_expression' in join.join_condition">
 								<div class="flex-1">
-									<label class="mb-1 block text-xs text-gray-600"
+									<label class="mb-1 block text-xs text-ink-gray-5"
 										>{{ __('Custom Join Condition') }}
 									</label>
 									<InlineExpression
@@ -324,45 +327,49 @@ function reset() {
 							<div class="flex flex-shrink-0 items-start">
 								<Button @click="toggleJoinConditionEditor">
 									<template #icon>
-										<Braces class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+										<Braces
+											class="h-4 w-4 text-ink-gray-6"
+											stroke-width="1.5"
+										/>
 									</template>
 								</Button>
 							</div>
 						</div>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs text-gray-600">{{
+						<label class="mb-1 block text-xs text-ink-gray-5">{{
 							__('Select Join Type')
 						}}</label>
 						<div class="flex gap-2">
 							<div
 								v-for="joinType in joinTypes"
 								:key="joinType.label"
-								class="flex flex-1 flex-col items-center justify-center rounded border py-3 transition-all"
+								class="flex flex-1 flex-col items-center justify-center rounded-4 border py-3 transition-all"
 								:class="
 									join.join_type === joinType.value
-										? 'border-gray-700'
-										: 'cursor-pointer hover:border-gray-400'
+										? 'border-outline-gray-6'
+										: 'cursor-pointer hover:border-outline-gray-3'
 								"
 								@click="join.join_type = joinType.value"
 							>
 								<component
 									:is="joinType.icon"
-									class="h-6 w-6 text-gray-600"
+									class="h-6 w-6 text-ink-gray-5"
 									stroke-width="1.5"
 								/>
 								<span class="block text-center text-xs">{{ joinType.label }}</span>
 							</div>
 						</div>
-						<div class="mt-1 text-xs text-gray-600">
+						<div class="mt-1 text-xs text-ink-gray-5">
 							{{ joinTypes.find((j) => j.value === join.join_type)?.description }}
 						</div>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs text-gray-600">{{
+						<label class="mb-1 block text-xs text-ink-gray-5">{{
 							__('Select Columns to Add')
 						}}</label>
 						<MultiSelect
+							class="w-full"
 							:placeholder="__('Columns')"
 							:loading="
 								rightTableColumnOptions.loading || queryTableColumnOptions.loading

@@ -6,13 +6,13 @@ how it ended. The host, the account, the driver's words and the query all stay
 here, and every size is a bucket.
 """
 
+from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 import frappe
 
 import insights
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
-    WAREHOUSE_DB_NAME,
     WarehouseTable,
     WarehouseTableImporter,
 )
@@ -26,7 +26,7 @@ DRIVER_ERROR = OSError(f'connection to "postgresql://svc:{SECRET}@warehouse.inte
 
 
 def sent(sender):
-    """The properties one capture carried, without the ones every event carries."""
+    """The properties one capture sent, without the ones every event sends."""
     _, kwargs = sender.call_args
     return {k: v for k, v in kwargs["properties"].items() if k not in ("app_version", "entry")}
 
@@ -117,7 +117,7 @@ class TestImportOutcome(InsightsIntegrationTestCase):
     """What an import reports once it reaches a terminal state.
 
     The remote read is the boundary, and a stand-in answers it. Everything the
-    event carries comes off the log the run itself writes.
+    event sends comes off the log the run itself writes.
     """
 
     DATA_SOURCE = "Site DB"
@@ -212,10 +212,12 @@ class TestImportOutcome(InsightsIntegrationTestCase):
 
     # @feature telemetry.source-outcomes
     def test_an_incremental_import_that_starts_from_a_bookmark_is_reported_as_resumed(self):
-        stored_table = MagicMock()
+        @contextmanager
+        def store_with_rows(*args, **kwargs):
+            yield MagicMock()
 
         def resolve(importer):
-            with patch.dict(insights.db_connections, {WAREHOUSE_DB_NAME: stored_table}):
+            with patch.object(insights.warehouse, "get_write_connection", store_with_rows):
                 importer._resolve_incremental_bookmark()
 
         self.assertEqual(

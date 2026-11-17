@@ -9,10 +9,10 @@
 				/>
 			</div>
 			<div
-				class="mx-auto bg-white px-4 py-8 sm:mt-6 sm:w-96 sm:rounded-lg sm:px-8 sm:shadow-xl"
+				class="mx-auto bg-surface-base px-4 py-8 sm:mt-6 sm:w-96 sm:rounded-6 sm:px-8 sm:shadow-xl"
 			>
 				<div class="mb-6 text-center">
-					<span class="text-base text-gray-900">{{ props.title }}</span>
+					<span class="text-base text-ink-gray-8">{{ props.title }}</span>
 				</div>
 				<slot></slot>
 			</div>
