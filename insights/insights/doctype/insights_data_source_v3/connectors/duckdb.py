@@ -2,21 +2,37 @@
 # For license information, please see license.txt
 
 import os
+import shutil
+import socket
+import threading
 import time
 from collections.abc import Generator
 from contextlib import contextmanager, suppress
+from functools import cache
 from urllib.parse import urlparse
 
 import frappe
 import ibis
-from duckdb import IOException
+from duckdb import ConnectionException, InterruptException, IOException
 from frappe.utils import get_files_path
 from ibis.backends.duckdb import Backend as DuckDBBackend
+from ibis.backends.sql.compilers.duckdb import DuckDBCompiler
+
+from insights.exceptions import QueryTimeout
+from insights.insights.doctype.insights_data_source_v3.web_tier import web_tier_settings
+from insights.resources import cpu_budget, memory_budget
+
+from .compilers import StarExceptDropColumns
 
 # DuckDB hands a file to one writer or to many readers, never both, and a read
 # connection holds its shared lock until its request ends. A writer that arrives
 # mid-request must therefore wait the readers out instead of failing on the
 # first attempt.
+#
+# A reader in another process holds the file's lock. A reader in another thread of
+# this process, as in a runner that serves requests and jobs in one process, holds
+# DuckDB's shared instance open read-only instead, and a write open fails on its
+# configuration. The writer waits out both.
 #
 # How long it may wait is the caller's business, not the file's. A writer serving
 # a click must not hold a web worker while readers come and go, so the default
@@ -24,6 +40,106 @@ from ibis.backends.duckdb import Backend as DuckDBBackend
 WRITE_LOCK_TIMEOUT = 30
 IMPORT_WRITE_LOCK_TIMEOUT = 5 * 60
 WRITE_LOCK_RETRY_INTERVAL = 1
+READER_HELD_ERRORS = ("Could not set lock", "different configuration than existing connections")
+
+# DuckDB defaults to 80% of host RAM and one thread per core, per process. With
+# several web workers that is more than the host has: a warehouse compaction
+# got OOM-killed, and one dashboard filled every core. So the data store gets
+# half of what the server may use, split among the queries the slot pool lets
+# run at once (`data_warehouse.data_store_slots`). Under its memory cap a query
+# spills to its own folder in `<db file>.tmp`. Sites can set the memory limit with this site
+# config key.
+MEMORY_LIMIT_CONFIG_KEY = "insights_duckdb_memory_limit"
+DATA_STORE_SHARE = 0.5
+# what the OS, MariaDB and the web workers' own Python keep, before the share
+MEMORY_HEADROOM = 2 * 1024**3
+# a window function cannot spill all it holds: on a 2-core, 4 GiB server, charts
+# that ran under 1 GiB ran out of memory under the half share's 512 MiB. Where
+# the floor applies, the slots together take more than the half share
+MIN_MEMORY_LIMIT = 1024**3
+# a query may spill this share of the disk that is free, split among the slots
+TEMP_DISK_SHARE = 0.25
+
+
+class InsightsDuckDBCompiler(StarExceptDropColumns, DuckDBCompiler):
+    pass
+
+
+def connect_duckdb(*args, **kwargs) -> DuckDBBackend:
+    kwargs.setdefault("memory_limit", get_memory_limit())
+    if args and isinstance(args[0], str) and args[0] != ":memory:":
+        # DuckDB names its spill files the same in every process, so processes
+        # that spill into one folder delete and overwrite each other's files.
+        # Passed to connect: a folder cannot change once it has been used
+        kwargs.setdefault("temp_directory", get_temp_directory(args[0]))
+    db = ibis.duckdb.connect(*args, **kwargs)
+    db.compiler = InsightsDuckDBCompiler()
+    # set, not passed to connect: connecting with settings that differ from those
+    # of a connection already open on the same file fails, and an import commit
+    # changes its threads
+    db.raw_sql(f"SET threads = {get_threads()}")
+    return db
+
+
+class QueryTimeLimitExceeded(QueryTimeout):
+    def __init__(self, seconds: int):
+        super().__init__(
+            f"Query execution time exceeded the limit of {seconds} seconds. Please try again with a smaller timespan or a more specific filter."
+        )
+        self.seconds = seconds
+
+
+# how often a running query looks for a cancel: one Redis call per this many
+# seconds while it runs, none for a query that ends sooner
+CANCEL_POLL_INTERVAL = 0.5
+
+
+@contextmanager
+def time_limit(db: DuckDBBackend, seconds: float, cancelled=None):
+    """Interrupt the query `db` runs once it has run `seconds`, or once
+    `cancelled()` says its reader asked it to stop.
+
+    DuckDB has no statement timeout, and a query that outlives the web tier's
+    timeout gets its worker killed. An interrupted query raises, and the
+    connection serves the next one.
+    """
+    lock = threading.Lock()
+    state = {"running": True, "interrupted": None}
+    finished = threading.Event()
+
+    def interrupt(reason: str):
+        with lock:
+            if state["running"]:
+                state["interrupted"] = reason
+                db.con.interrupt()
+
+    def watch():
+        deadline = time.monotonic() + seconds
+        while True:
+            left = deadline - time.monotonic()
+            if left <= 0:
+                return interrupt("time_limit")
+            if finished.wait(min(left, CANCEL_POLL_INTERVAL) if cancelled else left):
+                return
+            if cancelled and cancelled():
+                return interrupt("cancelled")
+
+    watcher = threading.Thread(target=watch, daemon=True)
+    watcher.start()
+    try:
+        yield
+    except InterruptException as e:
+        if state["interrupted"] == "time_limit":
+            raise QueryTimeLimitExceeded(seconds) from e
+        if state["interrupted"] == "cancelled":
+            from insights.cancellation import raise_cancelled
+
+            raise_cancelled(e)
+        raise
+    finally:
+        with lock:
+            state["running"] = False
+        finished.set()
 
 
 def get_duckdb_path(data_source) -> str:
@@ -41,7 +157,8 @@ def open_local_duckdb(
     """Open a DuckDB connection at the given filesystem path.
 
     This is the single place that knows how to configure a local DuckDB
-    connection. Do not call ibis.duckdb.connect() directly anywhere else.
+    connection. It opens through `connect_duckdb`, as every DuckDB connection
+    Insights makes must.
 
     Args:
         path: Absolute path to the .duckdb file.
@@ -50,29 +167,87 @@ def open_local_duckdb(
         lock_timeout: Seconds a write open waits for readers to release the file.
     """
     if not os.path.exists(path):
-        db = ibis.duckdb.connect(path)
+        db = connect_duckdb(path)
         db.disconnect()
 
-    db = ibis.duckdb.connect(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
+    db = connect_duckdb(path, read_only=True) if read_only else _connect_for_write(path, lock_timeout)
 
     private_folder = os.path.realpath(get_files_path(is_private=1))
     private_folder = _escape_sql_path(private_folder)
     db.raw_sql(f"SET home_directory='{private_folder}'")
     # a division by zero returns inf by default; live connections return NULL
     db.raw_sql("SET ieee_floating_point_ops = false")
+    if read_only:
+        # DuckDB's default lets one query fill 90% of the disk the site's files
+        # are on. An import keeps it: its commit spills what it must
+        db.raw_sql(f"SET max_temp_directory_size = '{get_temp_directory_limit(path)}B'")
 
     if not read_only and allowed_dir:
         resolved_dir = os.path.realpath(allowed_dir)
         resolved_dir_escaped = _escape_sql_path(resolved_dir)
-
-        with suppress(Exception):
-            db.raw_sql("SET enable_external_access = true")
-
         db.raw_sql(f"SET allowed_directories = ['{resolved_dir_escaped}']")
     else:
         db.raw_sql("SET enable_external_access = false")
 
     return db
+
+
+def get_memory_limit() -> str:
+    return frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY) or f"{get_default_memory_limit()}B"
+
+
+def get_default_memory_limit() -> int:
+    """A process's share of the data store's memory. DuckDB applies its limit to
+    the process, and each query that runs holds a slot, so the share is split
+    among the processes that may hold slots at once: the slots, or gunicorn's
+    workers when there are fewer (`data_warehouse.slots_per_process`). Together
+    they stay within the share, unless the floor applies."""
+    from insights.insights.doctype.insights_data_source_v3.data_warehouse import data_store_slots
+
+    slots = data_store_slots()
+    web_tier = web_tier_settings()
+    share = (memory_budget() - MEMORY_HEADROOM) * DATA_STORE_SHARE
+    return max(int(share / min(slots, web_tier.workers if web_tier else slots)), MIN_MEMORY_LIMIT)
+
+
+def get_threads() -> int:
+    """Threads for a process's DuckDB: a quarter of the cores, 1 to 4. A slot
+    usually holds a process's only query, so these are a query's threads. More
+    finish one query sooner but let fewer run at once; the CPU a query costs
+    does not change with its threads."""
+    return max(1, min(int(cpu_budget()) // 4, 4))
+
+
+def get_temp_directory(path: str) -> str:
+    """This process's spill folder, inside DuckDB's default `<db file>.tmp`. Named
+    for the host too: containers that share the sites folder repeat pids."""
+    parent = f"{path}.tmp"
+    os.makedirs(parent, exist_ok=True)
+    return os.path.join(parent, f"{socket.gethostname()}-{os.getpid()}")
+
+
+def get_temp_directory_limit(path: str) -> int:
+    from insights.insights.doctype.insights_data_source_v3.data_warehouse import data_store_slots
+
+    return int(_free_disk(os.path.dirname(path)) * TEMP_DISK_SHARE / data_store_slots())
+
+
+@cache
+def _free_disk(folder: str) -> int:
+    return shutil.disk_usage(folder).free
+
+
+def refused_by_writer(error: BaseException) -> BaseException | None:
+    """The DuckDB error under `error` that refused a read because a writer holds
+    the file, if that is why it failed. A read that is refused shows it with the
+    same messages as a write that waits."""
+    while error is not None:
+        if isinstance(error, IOException | ConnectionException) and any(
+            message in str(error) for message in READER_HELD_ERRORS
+        ):
+            return error
+        error = error.__cause__ or error.__context__
+    return None
 
 
 def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
@@ -82,9 +257,9 @@ def _connect_for_write(path: str, lock_timeout: float) -> DuckDBBackend:
 
     while True:
         try:
-            return ibis.duckdb.connect(path, read_only=False)
-        except IOException as e:
-            if "Could not set lock" not in str(e) or time.monotonic() >= deadline:
+            return connect_duckdb(path, read_only=False)
+        except (IOException, ConnectionException) as e:
+            if not any(error in str(e) for error in READER_HELD_ERRORS) or time.monotonic() >= deadline:
                 raise
             if not waited:
                 waited = True
@@ -122,7 +297,7 @@ def local_duckdb_write_lock(
     deadline = time.monotonic() + timeout
     lock_name = f"insights_duckdb_write_{frappe.scrub(os.path.basename(path))}"
     with filelock(lock_name, timeout=timeout):
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - the write open waits for, or fails on, a connection left open
             cached = insights.db_connections.pop(cache_key, None)
             if cached:
                 cached.disconnect()
@@ -185,7 +360,7 @@ get_local_duckdb_connection = open_local_duckdb
 
 def get_http_duckdb_connection(data_source, name, db_name):
     """Connect to a remote DuckDB via HTTP or DuckLake."""
-    db = ibis.duckdb.connect()
+    db = connect_duckdb()
     sql = get_http_secret(data_source, name, db_name)
     sql and db.raw_sql(sql)
     attach_url = f"ducklake:{db_name}" if data_source.is_ducklake else db_name

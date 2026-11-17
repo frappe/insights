@@ -74,15 +74,12 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
                 make_todo("Closed", "Medium"),
                 make_todo("Closed", None),
             ]
-        # the query reads over its own connection, so commit
-        frappe.db.commit()
 
     @classmethod
     def after_class(cls):
         frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
         for todo in cls.todos:
             frappe.delete_doc("ToDo", todo, force=True, ignore_permissions=True)
-        frappe.db.commit()
         delete_users(ADMIN)
 
     def carried(self):
@@ -90,11 +87,13 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
             result = frappe.get_doc(DT.QUERY, self.query).execute(force=True)
         return result, {row["status"]: row["todos__currency"] for row in result["rows"]}
 
+    # @feature query.summarize-currency-carried
     def test_the_name_says_what_is_carried(self):
         # the client reads the code off the row by this name
         self.assertTrue(is_hidden_column("todos__currency"))
         self.assertFalse(is_hidden_column("todos"))
 
+    # @feature query.summarize-currency-carried
     def test_a_query_built_on_this_one_hides_the_carried_column_too(self):
         operations = [
             {
@@ -105,11 +104,12 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         reader = create_test_query(ADMIN, self.workbook, title="Reads Hidden Columns", operations=operations)
         with as_user(ADMIN):
             result = reader.execute(force=True)
-            offered = reader.get_columns_for_selection()
+            selectable = reader.get_columns_for_selection()
         by_name = {c["name"]: c for c in result["columns"]}
         self.assertTrue(by_name["todos__currency"].get("hidden"))
-        self.assertNotIn("todos__currency", [c["name"] for c in offered])
+        self.assertNotIn("todos__currency", [c["name"] for c in selectable])
 
+    # @feature query.summarize-currency-carried
     def test_a_carried_column_is_marked_and_its_value_still_rides_in_the_row(self):
         result, by_status = self.carried()
         by_name = {c["name"]: c for c in result["columns"]}
@@ -119,20 +119,23 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         self.assertEqual(result["currency_symbols"]["High"]["symbol"], "High")
         self.assertNotIn(None, result["currency_symbols"])
 
-    def test_a_group_holding_a_row_without_a_code_carries_none(self):
+    # @feature query.summarize-currency-carried
+    def test_a_group_holding_a_row_without_a_code_holds_none(self):
         # min and max skip nulls, so a null row must void the group on its own
         _, by_status = self.carried()
         self.assertIsNone(by_status["Closed"])
 
-    def test_a_carried_column_is_not_offered_to_the_author(self):
+    # @feature query.summarize-currency-carried
+    def test_a_carried_column_is_not_listed_for_the_author(self):
         with as_user(ADMIN):
-            offered = frappe.get_doc(DT.QUERY, self.query).get_columns_for_selection()
-        names = [c["name"] for c in offered]
+            selectable = frappe.get_doc(DT.QUERY, self.query).get_columns_for_selection()
+        names = [c["name"] for c in selectable]
         self.assertIn("todos", names)
         self.assertNotIn("todos__currency", names)
 
-    def test_a_currency_column_that_is_gone_carries_none_rather_than_failing(self):
-        # a missing column must not fail the query, and it carries null, not the site currency
+    # @feature query.summarize-currency-carried
+    def test_a_currency_column_that_is_gone_holds_none_rather_than_failing(self):
+        # a missing column must not fail the query, and it holds null, not the site currency
         operations = copy.deepcopy(OPERATIONS)
         operations[-1]["measures"][0]["currency_column"] = "no_such_column"
         query = create_test_query(ADMIN, self.workbook, title="Missing Currency", operations=operations)
@@ -140,6 +143,7 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
             result = query.execute(force=True)
         self.assertTrue(all(row["todos__currency"] is None for row in result["rows"]))
 
+    # @feature query.summarize-currency-carried
     def test_a_carried_column_does_not_leave_in_an_export(self):
         frappe.db.set_single_value("Insights Settings", "allow_download", 1)
         with as_user(ADMIN):
@@ -147,3 +151,111 @@ class TestHiddenColumns(InsightsIntegrationTestCase):
         header = csv.splitlines()[0].split(",")
         self.assertIn("todos", header)
         self.assertNotIn("todos__currency", header)
+
+    # @feature query.summarize-currency-carried
+    def test_a_carried_column_does_not_leave_in_an_export_from_the_data_store(self):
+        rows = [
+            {"status": "Open", "kind": "Bug", "amount": 5, "currency": "INR"},
+            {"status": "Closed", "kind": "Task", "amount": 7, "currency": "USD"},
+        ]
+        operations = [
+            {"type": "code", "code": f"results = {rows}"},
+            {
+                "type": "summarize",
+                "measures": [
+                    {
+                        "measure_name": "total",
+                        "column_name": "amount",
+                        "data_type": "Integer",
+                        "aggregation": "sum",
+                        "format": "currency",
+                        "currency_column": "currency",
+                    },
+                    {
+                        "measure_name": "todos",
+                        "column_name": "amount",
+                        "data_type": "Integer",
+                        "aggregation": "count",
+                    },
+                ],
+                "dimensions": [
+                    {"dimension_name": "status", "column_name": "status", "data_type": "String"},
+                    {"dimension_name": "kind", "column_name": "kind", "data_type": "String"},
+                ],
+            },
+        ]
+        query = create_test_query(ADMIN, self.workbook, title="Stored Hidden Columns", operations=operations)
+        query.db_set("use_live_connection", 0)
+        frappe.db.set_single_value("Insights Settings", "allow_download", 1)
+        with as_user(ADMIN):
+            csv = frappe.get_doc(DT.QUERY, query.name).download_results(format="csv")
+        header = csv.splitlines()[0].split(",")
+        self.assertEqual(sorted(header), ["kind", "status", "todos", "total"])
+
+
+def make_number_card(currency):
+    card = frappe.get_doc(
+        {"doctype": "Number Card", "label": f"{TOKEN} {currency}", "type": "Custom", "currency": currency}
+    )
+    # the code reads one field, so the card needs none of what a saved card needs
+    card.db_insert()
+    return card.name
+
+
+class TestCurrencyFromALinkedDocument(InsightsIntegrationTestCase):
+    """A measure's currency is a field of the document a row links to, named in the
+    options form of frappe's Currency field: `Doctype:link_column:field`."""
+
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        cls.workbook = create_test_workbook(ADMIN, title="Linked Currency Workbook").name
+        cls.cards = {"USD": make_number_card("USD"), "INR": make_number_card("INR")}
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
+        frappe.db.delete("Number Card", {"name": ["in", list(cls.cards.values())]})
+        delete_users(ADMIN)
+
+    def carried(self, currency_column):
+        rows = [
+            {"card": self.cards["USD"], "amount": 5},
+            {"card": self.cards["USD"], "amount": 7},
+            {"card": self.cards["INR"], "amount": 3},
+            {"card": "no such card", "amount": 1},
+        ]
+        operations = [
+            {"type": "code", "code": f"results = {rows}"},
+            {
+                "type": "summarize",
+                "measures": [
+                    {
+                        "measure_name": "total",
+                        "column_name": "amount",
+                        "data_type": "Integer",
+                        "aggregation": "sum",
+                        "format": "currency",
+                        "currency_column": currency_column,
+                    }
+                ],
+                "dimensions": [{"dimension_name": "card", "column_name": "card", "data_type": "String"}],
+            },
+        ]
+        query = create_test_query(ADMIN, self.workbook, title="Linked Currency", operations=operations)
+        with as_user(ADMIN):
+            result = query.execute(force=True)
+        return {row["card"]: row["total__currency"] for row in result["rows"]}
+
+    # @feature query.summarize-currency-carried
+    def test_each_row_carries_the_currency_of_the_document_it_links(self):
+        carried = self.carried("Number Card:card:currency")
+        self.assertEqual(carried[self.cards["USD"]], "USD")
+        self.assertEqual(carried[self.cards["INR"]], "INR")
+        self.assertIsNone(carried["no such card"])
+
+    # @feature query.summarize-currency-carried
+    def test_only_a_field_that_links_to_currency_is_read(self):
+        # read without a permission check, so any other field would leak through the code
+        carried = self.carried("Number Card:card:label")
+        self.assertEqual(set(carried.values()), {None})

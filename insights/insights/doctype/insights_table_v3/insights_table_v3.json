@@ -14,8 +14,10 @@
   "estimated_on",
   "row_limit",
   "stored",
+  "columns",
   "sync_section",
   "sync_mode",
+  "sync_schedule",
   "sync_from",
   "column_break_poei",
   "sync_strategy",
@@ -65,6 +67,7 @@
    "fieldname": "estimated_row_count",
    "fieldtype": "Int",
    "label": "Estimated Row Count",
+   "permlevel": 1,
    "read_only": 1
   },
   {
@@ -78,6 +81,13 @@
    "fieldname": "stored",
    "fieldtype": "Check",
    "label": "Stored",
+   "read_only": 1
+  },
+  {
+   "description": "Column names and types read from the source on the last sync",
+   "fieldname": "columns",
+   "fieldtype": "JSON",
+   "label": "Columns",
    "read_only": 1
   },
   {
@@ -95,6 +105,14 @@
    "fieldtype": "Select",
    "label": "Sync Mode",
    "options": "Full\nIncremental"
+  },
+  {
+   "default": "@daily",
+   "description": "A cron expression for when the table is imported, such as <b>@hourly</b> or <b>*/15 * * * *</b>.",
+   "fieldname": "sync_schedule",
+   "fieldtype": "Data",
+   "label": "Sync Schedule",
+   "reqd": 1
   },
   {
    "default": "Append Only",
@@ -153,7 +171,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-16 12:00:00.000000",
+ "modified": "2026-10-20 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Table v3",
@@ -179,6 +197,11 @@
    "report": 1,
    "role": "Insights User",
    "share": 1
+  },
+  {
+   "permlevel": 1,
+   "read": 1,
+   "role": "Insights Admin"
   }
  ],
  "row_format": "Dynamic",

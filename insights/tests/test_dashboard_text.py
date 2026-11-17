@@ -44,12 +44,15 @@ class TestDashboardText(InsightsIntegrationTestCase):
         self.addCleanup(frappe.delete_doc, DT.DASHBOARD, dashboard.name, force=True)
         return frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "items"))[0]["text"]
 
+    # @feature dashboard.text-block
     def test_an_event_handler_does_not_survive_a_save(self):
         self.assertNotIn("onerror", self.stored_text(PAYLOAD))
 
+    # @feature dashboard.text-block
     def test_wrapping_the_payload_in_quotes_does_not_smuggle_it_through(self):
         self.assertNotIn("onerror", self.stored_text(JSON_WRAPPED_PAYLOAD))
 
+    # @feature dashboard.text-block
     def test_what_the_editor_writes_survives(self):
         """Measured against the marks `RichTextKit` emits, not a guess at them."""
         cases = {
@@ -74,6 +77,7 @@ class TestDashboardText(InsightsIntegrationTestCase):
             with self.subTest(name):
                 self.assertIn(expected, stored)
 
+    # @feature dashboard.text-block
     def test_an_embed_does_not_survive(self):
         """The one thing the sanitizer removes outright. Pinned so it is a known
         cost of the rule and not a surprise."""

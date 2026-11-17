@@ -5,7 +5,6 @@ const DEFAULT_PAGE_SIZE = 100
 export type PaginationOptions = {
 	rowCount: MaybeRefOrGetter<number>
 	pageSize: MaybeRefOrGetter<number>
-	displayPageSize?: MaybeRefOrGetter<number>
 	totalRowCount?: MaybeRefOrGetter<number | undefined>
 	currentPage?: MaybeRefOrGetter<number | undefined>
 	onPageChange?: (page: number) => void
@@ -19,7 +18,6 @@ export type PaginationState = {
 	isFirstPage: ComputedRef<boolean>
 	isLastPage: ComputedRef<boolean>
 	isSinglePage: ComputedRef<boolean>
-	startIndex: ComputedRef<number>
 	endIndex: ComputedRef<number>
 	rowDisplayOffset: ComputedRef<number>
 	prev: () => void
@@ -27,34 +25,30 @@ export type PaginationState = {
 	goTo: (pageNum: number) => void
 }
 
-// `pageSize` is the server chunk stride; `displayPageSize` is the client slice rendered
-// into the DOM. When they differ, a chunk is sub-paginated on the client with no fetch.
+// One page is one server chunk: `pageSize` is the stride the host fetches with,
+// and a page turn is a fetch.
 export function usePagination(options: PaginationOptions): PaginationState {
 	const config = useConfig(options)
 	const cursor = useCursor(options, config)
 	const bounds = useBounds(config, cursor)
 
-	const { serverPage, clientPage, clientPageCount, lastSubPage, fetchChunk } = cursor
+	const { page, goTo } = cursor
 
 	function prev() {
 		if (bounds.isFirstPage.value) return
-		if (clientPage.value > 1) clientPage.value--
-		else fetchChunk(serverPage.value - 1, lastSubPage.value)
+		goTo(page.value - 1)
 	}
 	function next() {
 		if (bounds.isLastPage.value) return
-		if (clientPage.value < clientPageCount.value) clientPage.value++
-		else fetchChunk(serverPage.value + 1)
+		goTo(page.value + 1)
 	}
 
-	return { ...bounds, prev, next, goTo: fetchChunk }
+	return { ...bounds, prev, next, goTo }
 }
 
 function useConfig(options: PaginationOptions) {
-	const serverPageSize = computed(() => toValue(options.pageSize) ?? DEFAULT_PAGE_SIZE)
 	return {
-		serverPageSize,
-		displayPageSize: computed(() => toValue(options.displayPageSize) ?? serverPageSize.value),
+		pageSize: computed(() => toValue(options.pageSize) ?? DEFAULT_PAGE_SIZE),
 		rowCount: computed(() => toValue(options.rowCount)),
 		total: computed(() => toValue(options.totalRowCount)),
 		enabled: computed(() => Boolean(toValue(options.enabled))),
@@ -64,72 +58,54 @@ function useConfig(options: PaginationOptions) {
 
 type Config = ReturnType<typeof useConfig>
 
-// Tracks which server chunk is loaded and which sub-page within it is shown.
 function useCursor(options: PaginationOptions, config: Config) {
-	const serverPage = ref(toValue(options.currentPage) ?? 1)
-	const clientPage = ref(1)
+	const page = ref(toValue(options.currentPage) ?? 1)
 
-	const clientPageCount = computed(() =>
-		Math.max(1, Math.ceil(config.rowCount.value / config.displayPageSize.value))
-	)
-	const chunkOffset = computed(() => (serverPage.value - 1) * config.serverPageSize.value)
+	const offset = computed(() => (page.value - 1) * config.pageSize.value)
 
-	function loadChunk(page: number, subPage = 1) {
-		if (page < 1 || page === serverPage.value) return
-		serverPage.value = page
-		clientPage.value = subPage
+	function load(to: number) {
+		if (to < 1 || to === page.value) return
+		page.value = to
 	}
-	function fetchChunk(page: number, subPage = 1) {
-		if (page < 1) return
-		loadChunk(page, subPage)
-		options.onPageChange?.(page)
+	function goTo(to: number) {
+		if (to < 1) return
+		load(to)
+		options.onPageChange?.(to)
 	}
 
-	// last sub-page of a full chunk — where a backward chunk hop should land
-	const lastSubPage = computed(() =>
-		Math.ceil(config.serverPageSize.value / config.displayPageSize.value)
+	watch(
+		() => toValue(options.currentPage),
+		(current) => current !== undefined && load(current),
 	)
 
-	// follow external page changes; clamp the sub-page when the chunk shrinks
-	watch(() => toValue(options.currentPage), (page) => page !== undefined && loadChunk(page))
-	watch(clientPageCount, (count) => (clientPage.value = Math.min(clientPage.value, count)))
-
-	return { serverPage, clientPage, clientPageCount, chunkOffset, lastSubPage, fetchChunk }
+	return { page, offset, goTo }
 }
 
 type Cursor = ReturnType<typeof useCursor>
 
 // Translates the cursor into the row indices and labels the table/footer render.
 function useBounds(config: Config, cursor: Cursor) {
-	const { serverPageSize, displayPageSize, rowCount, total, enabled, isServerPaged } = config
-	const { serverPage, clientPage, clientPageCount, chunkOffset } = cursor
+	const { pageSize, rowCount, total, enabled, isServerPaged } = config
+	const { page, offset } = cursor
 
-	const startIndex = computed(() =>
-		enabled.value ? (clientPage.value - 1) * displayPageSize.value : 0
-	)
 	const endIndex = computed(() =>
-		enabled.value
-			? Math.min(clientPage.value * displayPageSize.value, rowCount.value)
-			: rowCount.value
+		enabled.value ? Math.min(pageSize.value, rowCount.value) : rowCount.value,
 	)
 
-	const from = computed(() => chunkOffset.value + startIndex.value + 1)
-	const to = computed(() => chunkOffset.value + endIndex.value)
-	const rowDisplayOffset = computed(() => chunkOffset.value + startIndex.value)
-	const currentPage = computed(
-		() => Math.floor(chunkOffset.value / displayPageSize.value) + clientPage.value
-	)
+	const from = computed(() => offset.value + 1)
+	const to = computed(() => offset.value + endIndex.value)
+	const rowDisplayOffset = computed(() => offset.value)
+	const currentPage = computed(() => page.value)
 
 	const hasNextChunk = computed(() => {
 		if (!isServerPaged.value) return false
-		return total.value != null ? to.value < total.value : rowCount.value >= serverPageSize.value
+		return total.value != null ? to.value < total.value : rowCount.value >= pageSize.value
 	})
-	const isFirstPage = computed(() => serverPage.value <= 1 && clientPage.value <= 1)
-	const isLastPage = computed(() => clientPage.value >= clientPageCount.value && !hasNextChunk.value)
+	const isFirstPage = computed(() => page.value <= 1)
+	const isLastPage = computed(() => !hasNextChunk.value)
 	const isSinglePage = computed(() => isFirstPage.value && isLastPage.value)
 
 	return {
-		startIndex,
 		endIndex,
 		rowDisplayOffset,
 		from,

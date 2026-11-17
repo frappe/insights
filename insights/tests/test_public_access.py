@@ -1,13 +1,8 @@
-"""A link names what its author can read, and a public document runs as published.
+"""A link names what its author can read.
 
-Two rules over the same boundary. A chart's `query` and a dashboard's
-`linked_charts` are grants: the permission queries in `insights.permissions` read
-a link as access, and `insights.api.shared` reads a link from a public document
-the same way. So a link is checked where it is written.
-
-Once a document is public, the arguments its methods accept come from the
-request. `insights.api.PUBLIC_METHOD_ARGS` names them, so the query builder's own
-parameters stay with the builder.
+A chart's `query` and a dashboard's `linked_charts` are grants: the permission
+queries in `insights.permissions` read a link as access. So a link is checked
+where it is written, not where it is followed.
 """
 
 import frappe
@@ -15,7 +10,9 @@ import frappe
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import (
     DT,
+    as_user,
     create_test_chart,
+    create_test_dashboard,
     create_test_query,
     create_test_workbook,
     delete_users,
@@ -48,11 +45,13 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
             frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
         delete_users(OWNER, OTHER)
 
+    # @feature permissions.chart-cannot-link-unreadable-query
     def test_a_query_in_another_workbook_is_not_readable(self):
         """The baseline the rules below are measured against."""
         with self.as_user(OTHER):
             self.assertFalse(frappe.has_permission(DT.QUERY, ptype="read", doc=self.owner_query))
 
+    # @feature permissions.chart-cannot-link-unreadable-query
     def test_a_chart_cannot_link_an_unreadable_query(self):
         """A chart the caller owns makes its query readable, so the check cannot
         wait for the chart to be published."""
@@ -68,8 +67,9 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
                 }
             ).insert()
 
+    # @feature permissions.chart-cannot-link-unreadable-query
     def test_a_public_chart_cannot_link_an_unreadable_query(self):
-        """Public in a single insert, so the check runs before the flag lands."""
+        """Public in a single insert, so the check runs before the level lands."""
         with self.as_user(OTHER), self.assertRaises(frappe.PermissionError):
             frappe.get_doc(
                 {
@@ -78,11 +78,12 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
                     "workbook": self.other_workbook,
                     "query": self.owner_query,
                     "chart_type": "Bar",
-                    "is_public": 1,
+                    "visibility": "Public",
                     "config": {},
                 }
             ).insert()
 
+    # @feature permissions.chart-cannot-link-unreadable-query
     def test_an_existing_chart_cannot_be_repointed(self):
         """A link written on update is checked the same as one written on insert."""
         with self.as_user(OTHER):
@@ -99,6 +100,7 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
             with self.assertRaises(frappe.PermissionError):
                 chart.save()
 
+    # @feature permissions.dashboard-cannot-hold-unreadable-chart
     def test_a_dashboard_cannot_hold_an_unreadable_chart(self):
         """A chart on a dashboard the caller can read is readable, so naming one
         here is the same grant one level up.
@@ -117,6 +119,7 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
                 }
             ).insert()
 
+    # @feature permissions.dashboard-cannot-hold-unreadable-chart
     def test_a_dashboard_cannot_take_on_an_unreadable_chart(self):
         """The same on update: an existing dashboard gains an item."""
         with self.as_user(OTHER):
@@ -132,13 +135,39 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
             with self.assertRaises(frappe.PermissionError):
                 dashboard.save()
 
+    # @feature permissions.dashboard-cannot-hold-unreadable-chart
+    def test_a_dashboard_cannot_hold_a_chart_of_another_workbook(self):
+        """`frappe.client.save` from the dashboard builder. Reading the chart is
+        not enough: a dashboard's filters narrow the charts on it, and only the
+        chart's own workbook writes those."""
+        frappe.db.set_value(DT.CHART, self.owner_chart, "visibility", "Everyone")
+        self.addCleanup(frappe.db.set_value, DT.CHART, self.owner_chart, "visibility", "Private")
+
+        with self.as_user(OTHER):
+            self.assertTrue(frappe.has_permission(DT.CHART, ptype="read", doc=self.owner_chart))
+            with self.assertRaises(frappe.ValidationError):
+                frappe.get_doc(
+                    {
+                        "doctype": DT.DASHBOARD,
+                        "title": "Dashboard In Other Workbook",
+                        "workbook": self.other_workbook,
+                        "items": [{"id": "chart-1", "type": "chart", "chart": self.owner_chart}],
+                    }
+                ).insert()
+
+    # @feature shared.chart-link
     def test_publishing_your_own_chart_still_works(self):
+        """The query is readable, so the check the rules above make does not fire."""
         with self.as_user(OWNER):
             chart = frappe.get_doc(DT.CHART, self.owner_chart)
-            chart.update_access(is_public=True)
-            self.assertTrue(frappe.db.get_value(DT.CHART, chart.name, "is_public"))
+            chart.visibility = "Public"
+            chart.save()
 
+        self.assertEqual(frappe.db.get_value(DT.CHART, self.owner_chart, "visibility"), "Public")
+
+    # @feature shared.dashboard-link
     def test_publishing_your_own_dashboard_still_works(self):
+        """The chart is readable, so the check the rules above make does not fire."""
         with self.as_user(OWNER):
             dashboard = frappe.get_doc(
                 {
@@ -149,57 +178,105 @@ class TestLinkRequiresReadAccess(InsightsIntegrationTestCase):
                 }
             ).insert()
             self.assertEqual([row.chart for row in dashboard.linked_charts], [self.owner_chart])
-            dashboard.update_access(
-                {"is_public": 1, "is_shared_with_organization": 0, "people_with_access": []}
-            )
-            self.assertTrue(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "is_public"))
+
+            chart = frappe.get_doc(DT.CHART, self.owner_chart)
+            chart.run_as_owner = 1
+            chart.save()
+            dashboard.visibility = "Public"
+            dashboard.save()
+
+        self.assertEqual(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "visibility"), "Public")
 
 
-class TestPublicMethodArguments(InsightsIntegrationTestCase):
-    """The builder's own parameters are not part of the public contract."""
+class TestCardFilterRouting(InsightsIntegrationTestCase):
+    """A card filter is the reader's, so it reaches only what the card shows."""
 
-    def filter_args(self, doctype, method, args):
-        from insights.api import public_method_args
+    @classmethod
+    def before_class(cls):
+        create_test_users()
+        cls.workbook = create_test_workbook(OWNER, title="Routing Workbook").name
+        cls.query = create_test_query(OWNER, cls.workbook, title="Routing Query").name
+        cls.chart = create_test_chart(OWNER, cls.workbook, query=cls.query, title="Routing Chart").name
+        cls.dashboard = create_test_dashboard(OWNER, cls.workbook, chart=cls.chart, title="Routing Dashboard")
+        with as_user(OWNER):
+            chart = frappe.get_doc(DT.CHART, cls.chart)
+            chart.run_as_owner = 1
+            chart.save()
+            cls.dashboard.items = [
+                {"id": "chart-1", "type": "chart", "chart": cls.chart},
+                {
+                    "id": "filter-1",
+                    "type": "filter",
+                    "filter_name": "Region",
+                    "links": {cls.chart: f"`{cls.query}`.`region`"},
+                },
+            ]
+            cls.dashboard.visibility = "Public"
+            cls.dashboard.save()
 
-        return public_method_args(doctype, method, args)
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True, ignore_permissions=True)
+        delete_users(OWNER, OTHER)
 
-    def test_a_builder_parameter_is_dropped(self):
-        """The builder's step preview reshapes the query, so it stays with the builder."""
-        args = self.filter_args(DT.QUERY, "execute", {"active_operation_idx": 0, "page_size": 100})
-        self.assertNotIn("active_operation_idx", args)
-        self.assertEqual(args, {"page_size": 100})
-
-    def test_a_json_string_body_is_filtered_too(self):
-        """`args` arrives as a JSON body, so filtering must survive the parse."""
-        args = self.filter_args(DT.QUERY, "execute", '{"active_operation_idx": 0, "page": 2}')
-        self.assertEqual(args, {"page": 2})
-
-    def test_download_results_is_filtered_too(self):
-        args = self.filter_args(DT.QUERY, "download_results", {"active_operation_idx": 0, "format": "csv"})
-        self.assertEqual(args, {"format": "csv"})
-
-    def test_no_public_method_accepts_a_builder_parameter(self):
-        """The rule, not one parameter name."""
-        from insights.api import PUBLIC_METHOD_ARGS
-
-        builder_only = {"active_operation_idx", "force", "use_live_connection", "limit"}
-        for (doctype, method), allowed in PUBLIC_METHOD_ARGS.items():
-            self.assertFalse(
-                allowed & builder_only,
-                f"{doctype}.{method} exposes {allowed & builder_only} to Guests",
-            )
-
-    def test_every_public_method_declares_its_arguments(self):
-        """is_public_method and the argument surface are one map, so they cannot drift."""
-        from insights.api import PUBLIC_METHOD_ARGS, is_public_method
-
-        for doctype, method in PUBLIC_METHOD_ARGS:
-            self.assertTrue(is_public_method(doctype, method))
-
-    def test_the_dashboard_filter_path_keeps_what_it_needs(self):
-        args = self.filter_args(
-            DT.DASHBOARD,
-            "get_distinct_column_values",
-            {"query": "q1", "column_name": "status", "search_term": "op"},
+    # @feature dashboard.card-filter
+    def test_a_card_filter_lands_on_the_card_s_own_query(self):
+        """It names a column the card shows, so it reaches no other query.
+        `InsightsChartv3.fetch` routes it; the chart runs as its owner, and only
+        the owner may filter it."""
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
+            route_card_filters,
         )
-        self.assertEqual(args, {"query": "q1", "column_name": "status", "search_term": "op"})
+
+        with as_user(OWNER):
+            routed = route_card_filters(
+                self.chart, [{"column": "region", "operator": "=", "value": "North"}], None
+            )
+        self.assertEqual(list(routed), [self.chart])
+        self.assertEqual(
+            routed[self.chart]["filters"],
+            [
+                {
+                    "type": "filter",
+                    "column": {"type": "column", "column_name": "region"},
+                    "operator": "=",
+                    "value": "North",
+                }
+            ],
+        )
+
+    # @feature dashboard.card-filter
+    def test_a_card_filter_joins_the_routed_ones(self):
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
+            route_card_filters,
+        )
+
+        existing = {self.query: {"type": "filter_group", "logical_operator": "And", "filters": [{}]}}
+        with as_user(OWNER):
+            routed = route_card_filters(
+                self.chart, [{"column": "region", "operator": "=", "value": "North"}], existing
+            )
+        self.assertEqual(set(routed), {self.query, self.chart})
+
+    # @feature dashboard.card-filter
+    def test_a_card_filter_that_names_no_column_is_dropped(self):
+        from insights.insights.doctype.insights_dashboard_v3.insights_dashboard_v3 import (
+            route_card_filters,
+        )
+
+        self.assertIsNone(route_card_filters(self.chart, [{"operator": "="}], None))
+
+    # @feature shared.filters-on-public-dashboard
+    def test_a_reader_cannot_ask_for_a_column_the_card_does_not_show(self):
+        from insights.api.view import get_card_values
+
+        with self.assertRaises(frappe.DoesNotExistError):
+            get_card_values(self.chart, "a_column_nobody_drew", self.dashboard.name)
+
+    # @feature shared.filters-on-public-dashboard
+    def test_a_reader_cannot_ask_about_a_chart_this_grid_does_not_hold(self):
+        other = create_test_chart(OWNER, self.workbook, query=self.query, title="Off Grid").name
+        from insights.api.view import get_card_values
+
+        with self.assertRaises(frappe.DoesNotExistError):
+            get_card_values(other, "region", self.dashboard.name)

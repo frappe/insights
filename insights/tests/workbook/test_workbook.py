@@ -6,6 +6,7 @@ from insights.api.workbooks import (
     get_share_permissions,
     get_workbooks,
     import_workbook,
+    rename_folder,
     update_share_permissions,
     update_sort_orders,
 )
@@ -44,6 +45,7 @@ class TestWorkbook(InsightsIntegrationTestCase):
     def after_test(self):
         cleanup_test_workbooks(USER_1, COLLABORATOR)
 
+    # @feature dashboard.create-add-chart workbook.add-items
     def test_owner_can_build_workbook_query_chart_dashboard_flow(self):
         bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Authoring")
 
@@ -61,15 +63,11 @@ class TestWorkbook(InsightsIntegrationTestCase):
         self.assertIn("sql", query_result)
         self.assertGreater(len(query_result["columns"]), 0)
         self.assertEqual(chart["query"], bundle["query"].name)
-        self.assertTrue(chart["data_query"])
-        self.assertTrue(frappe.db.exists(DT.QUERY, chart["data_query"]))
         self.assertTrue(any(item.get("chart") == bundle["chart"].name for item in dashboard_items))
 
+    # @feature workbook.delete
     def test_deleting_workbook_removes_the_user_visible_tree(self):
         bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Delete")
-
-        with self.as_user(USER_1):
-            data_query_name = get_doc(DT.CHART, bundle["chart"].name)["data_query"]
 
         with self.as_user("Administrator"):
             frappe.delete_doc(DT.WORKBOOK, bundle["workbook"].name, force=True)
@@ -77,9 +75,9 @@ class TestWorkbook(InsightsIntegrationTestCase):
         self.assertFalse(frappe.db.exists(DT.WORKBOOK, bundle["workbook"].name))
         self.assertFalse(frappe.db.exists(DT.QUERY, bundle["query"].name))
         self.assertFalse(frappe.db.exists(DT.CHART, bundle["chart"].name))
-        self.assertFalse(frappe.db.exists(DT.QUERY, data_query_name))
         self.assertFalse(frappe.db.exists(DT.DASHBOARD, bundle["dashboard"].name))
 
+    # @feature workbook.folders
     def test_owner_can_organize_and_reorder_workbook_contents(self):
         bundle = create_workbook_bundle(
             USER_1,
@@ -152,6 +150,63 @@ class TestWorkbook(InsightsIntegrationTestCase):
         self.assertTrue(all(not row["folder"] for row in workbook["queries"]))
         self.assertTrue(all(not row["folder"] for row in workbook["charts"]))
 
+    # @feature workbook.folders workbook.duplicate
+    def test_two_folders_of_one_type_never_share_a_title(self):
+        """New folder always creates `Untitled`. An exported file refers to a
+        folder by its title, so two folders with one title become one in every copy."""
+        bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Folder Titles")
+        workbook = bundle["workbook"].name
+
+        with self.as_user(USER_1):
+            first = create_folder(workbook, "Untitled", "query")
+            second = create_folder(workbook, "Untitled", "query")
+            chart_folder = create_folder(workbook, "Untitled", "chart")
+
+            titles = {
+                name: frappe.db.get_value("Insights Folder", name, "title")
+                for name in (first, second, chart_folder)
+            }
+            self.assertEqual(titles, {first: "Untitled", second: "Untitled 2", chart_folder: "Untitled"})
+
+            with self.assertRaises(frappe.ValidationError):
+                rename_folder(second, "Untitled")
+
+    # @feature upgrade.duplicate-folder-titles
+    def test_folders_that_shared_a_title_before_the_rule_are_numbered_apart(self):
+        """Before `validate_title`, two clicks on New folder created two `Untitled` folders."""
+        from insights.patches.number_duplicate_folder_titles import execute
+
+        bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Duplicate Folder Titles")
+        workbook = bundle["workbook"].name
+        with self.as_user(USER_1):
+            names = [create_folder(workbook, "Untitled", "query") for _ in range(4)]
+            chart_folder = create_folder(workbook, "Untitled", "chart")
+        # three old folders share one title, and "Untitled 2" is already used
+        for name in (names[0], names[2], names[3]):
+            frappe.db.set_value("Insights Folder", name, "title", "Untitled", update_modified=False)
+
+        def titles():
+            return {
+                name: frappe.db.get_value("Insights Folder", name, "title") for name in (*names, chart_folder)
+            }
+
+        execute()
+        numbered = titles()
+        self.assertEqual(
+            numbered,
+            {
+                names[0]: "Untitled",
+                names[1]: "Untitled 2",
+                names[2]: "Untitled 3",
+                names[3]: "Untitled 4",
+                chart_folder: "Untitled",
+            },
+        )
+
+        execute()
+        self.assertEqual(titles(), numbered)
+
+    # @feature workbook.duplicate
     def test_duplicate_workbook_preserves_a_usable_copy(self):
         bundle = create_workbook_bundle(
             USER_1,
@@ -161,7 +216,6 @@ class TestWorkbook(InsightsIntegrationTestCase):
 
         with self.as_user(USER_1):
             original_workbook = get_workbook(bundle["workbook"].name)
-            original_chart = get_doc(DT.CHART, bundle["chart"].name)
             duplicate_name = run_doc_method(
                 "duplicate",
                 get_doc(DT.WORKBOOK, bundle["workbook"].name),
@@ -185,8 +239,6 @@ class TestWorkbook(InsightsIntegrationTestCase):
         self.assertEqual(len(duplicate_workbook["dashboards"]), 1)
         self.assertNotEqual(duplicate_query_name, bundle["query"].name)
         self.assertEqual(duplicate_chart["query"], duplicate_query_name)
-        self.assertTrue(duplicate_chart["data_query"])
-        self.assertNotEqual(duplicate_chart["data_query"], original_chart["data_query"])
         self.assertTrue(any(item.get("chart") == duplicate_chart_name for item in duplicate_dashboard_items))
         self.assertTrue(
             {row["name"] for row in duplicate_workbook["folders"]}.isdisjoint(
@@ -201,6 +253,7 @@ class TestWorkbook(InsightsIntegrationTestCase):
         )
         self.assertGreater(len(duplicate_result["columns"]), 0)
 
+    # @feature workbook.copy-paste
     def test_export_and_import_preserve_a_usable_workflow(self):
         bundle = create_workbook_bundle(
             USER_1,
@@ -210,12 +263,11 @@ class TestWorkbook(InsightsIntegrationTestCase):
 
         with self.as_user(USER_1):
             original_workbook = get_workbook(bundle["workbook"].name)
-            original_chart = get_doc(DT.CHART, bundle["chart"].name)
             exported_workbook = run_doc_method(
                 "export",
                 get_doc(DT.WORKBOOK, bundle["workbook"].name),
             )
-            imported_name = import_workbook(exported_workbook)
+            imported_name = import_workbook(exported_workbook)["workbook"]
             imported_workbook = get_workbook(imported_name)
         imported_query_name = imported_workbook["queries"][0]["name"]
         imported_chart_name = imported_workbook["charts"][0]["name"]
@@ -235,8 +287,6 @@ class TestWorkbook(InsightsIntegrationTestCase):
         self.assertEqual(len(imported_workbook["dashboards"]), 1)
         self.assertNotEqual(imported_query_name, bundle["query"].name)
         self.assertEqual(imported_chart["query"], imported_query_name)
-        self.assertTrue(imported_chart["data_query"])
-        self.assertNotEqual(imported_chart["data_query"], original_chart["data_query"])
         self.assertTrue(any(item.get("chart") == imported_chart_name for item in imported_dashboard_items))
         self.assertTrue(
             {row["name"] for row in imported_workbook["folders"]}.isdisjoint(
@@ -251,6 +301,25 @@ class TestWorkbook(InsightsIntegrationTestCase):
         )
         self.assertGreater(len(imported_result["columns"]), 0)
 
+    # @feature permissions.share-workbook-user
+    def test_the_workbook_says_who_may_share_it_as_the_share_endpoints_decide(self):
+        bundle = create_workbook_bundle(USER_1, "Workbook Who Shares")
+        name = bundle["workbook"].name
+        with self.as_user(USER_1):
+            update_share_permissions(name, [], organization_access="view")
+            self.assertTrue(get_workbook(name)["can_share"])
+
+        with self.as_user(COLLABORATOR):
+            self.assertFalse(get_workbook(name)["can_share"])
+            with self.assertRaises(frappe.PermissionError):
+                get_share_permissions(name)
+
+        # an admin who doesn't own the workbook may still share it
+        with self.as_user("Administrator"):
+            self.assertTrue(get_workbook(name)["can_share"])
+            get_share_permissions(name)
+
+    # @feature permissions.share-workbook-org permissions.viewer-cannot-edit
     def test_shared_workbook_supports_read_only_public_access_but_blocks_structure_changes(self):
         bundle = create_workbook_bundle(USER_1, "Workbook Flow Test Shared")
 
@@ -267,7 +336,6 @@ class TestWorkbook(InsightsIntegrationTestCase):
         )
         self.assertEqual(len(owner_workbooks), 1)
         self.assertEqual(owner_workbooks[0]["name"], bundle["workbook"].name)
-        self.assertEqual(owner_workbooks[0]["views"], 1)
         self.assertTrue(owner_workbooks[0]["shared_with_organization"])
 
         with self.as_user(COLLABORATOR):

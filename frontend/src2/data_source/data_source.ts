@@ -1,6 +1,6 @@
 import { useTimeAgo } from '@vueuse/core'
 import { call } from 'frappe-ui'
-import { defineAsyncComponent, h, reactive, ref } from 'vue'
+import { defineAsyncComponent, h, reactive, ref, watch, type Ref } from 'vue'
 import { showErrorToast, toOptions } from '../helpers'
 import { DatabaseType, DataSource, DataSourceListItem } from './data_source.types'
 
@@ -14,7 +14,6 @@ async function fetchSources() {
 		...source,
 		created_from_now: useTimeAgo(source.creation),
 		modified_from_now: useTimeAgo(source.modified),
-		title: source.is_site_db && source.title == 'Site DB' ? window.location.hostname : source.title,
 	}))
 	loading.value = false
 	return sources.value
@@ -57,6 +56,15 @@ export function getDataSourceList() {
 	return sources
 }
 
+/**
+ * A table's name as its users know it. A Frappe database names a doctype's
+ * table `tab` and the doctype, so `tabSales Invoice` reads as Sales Invoice.
+ */
+export function tableLabel(table: { data_source: string; table_name: string }) {
+	const source = getDataSourceList().value.find((s) => s.name === table.data_source)
+	return source?.is_frappe_db ? table.table_name.replace(/^tab/, '') : table.table_name
+}
+
 export function getDataSourceOptions() {
 	const list = getDataSourceList()
 	return toOptions(list.value, {
@@ -66,8 +74,37 @@ export function getDataSourceOptions() {
 	})
 }
 
-function getSchema(data_source: string) {
-	return call('insights.api.data_sources.get_schema', { data_source })
+export type SourceSchema = Record<
+	string,
+	{ label?: string; columns: { label: string; detail: string; type: string }[] }
+>
+
+/** The tables and columns of the source picked, and whether they are on their way or failed. */
+export function useSourceSchema(source: Ref<string>) {
+	const state = reactive({ schema: {} as SourceSchema, loading: false, failed: false })
+	let fetches = 0
+	watch(
+		source,
+		(data_source) => {
+			const token = ++fetches
+			state.schema = {}
+			state.failed = false
+			state.loading = Boolean(data_source)
+			if (!data_source) return
+			call<SourceSchema>('insights.api.data_sources.get_schema', { data_source })
+				.then((schema: SourceSchema) => {
+					if (token === fetches) state.schema = schema
+				})
+				.catch((error: Error) => {
+					if (token !== fetches) return
+					state.failed = true
+					showErrorToast(error, false)
+				})
+				.finally(() => token === fetches && (state.loading = false))
+		},
+		{ immediate: true },
+	)
+	return state
 }
 
 export default function useDataSourceStore() {
@@ -81,8 +118,6 @@ export default function useDataSourceStore() {
 		getSources: fetchSources,
 		getSource,
 		getOptions: getDataSourceOptions,
-
-		getSchema,
 
 		testing,
 		testConnection,
@@ -114,7 +149,5 @@ export function getDatabaseLogo(database_type: DatabaseType, size: 'sm' | 'md' =
 	if (size == 'sm' && database_type === 'ClickHouse') {
 		sizeClass = 'size-4'
 	}
-	return comp
-		? h(comp, { class: sizeClass })
-		: null
+	return comp ? h(comp, { class: sizeClass }) : null
 }

@@ -5,24 +5,40 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "description",
+  "info",
   "workbook",
   "query",
-  "data_query",
   "sort_order",
   "folder",
   "column_break_mgwd",
   "chart_type",
-  "is_public",
-  "permission_user",
+  "visibility",
+  "visible_to_roles",
+  "run_as_owner",
   "section_break_vmvi",
   "config",
-  "old_name"
+  "old_name",
+  "is_standard",
+  "kept_for_desk"
  ],
  "fields": [
   {
    "fieldname": "title",
    "fieldtype": "Data",
    "label": "Title"
+  },
+  {
+   "description": "A short line under the title. Leave it empty unless the title needs one.",
+   "fieldname": "description",
+   "fieldtype": "Data",
+   "label": "Description"
+  },
+  {
+   "description": "Definitions and caveats, shown behind an info icon beside the title.",
+   "fieldname": "info",
+   "fieldtype": "Small Text",
+   "label": "Info"
   },
   {
    "fieldname": "query",
@@ -44,22 +60,6 @@
    "label": "Chart Type"
   },
   {
-   "default": "0",
-   "fieldname": "is_public",
-   "fieldtype": "Check",
-   "in_list_view": 1,
-   "label": "Is Public",
-   "permlevel": 1
-  },
-  {
-   "fieldname": "permission_user",
-   "fieldtype": "Link",
-   "label": "Based on Permissions For User",
-   "options": "User",
-   "permlevel": 1,
-   "read_only": 1
-  },
-  {
    "fieldname": "section_break_vmvi",
    "fieldtype": "Section Break"
   },
@@ -76,15 +76,8 @@
    "label": "Workbook",
    "options": "Insights Workbook",
    "reqd": 1,
-   "search_index": 1
-  },
-  {
-   "fieldname": "data_query",
-   "fieldtype": "Link",
-   "label": "Data Query",
-   "options": "Insights Query v3",
-   "read_only": 1,
-   "search_index": 1
+   "search_index": 1,
+   "set_only_once": 1
   },
   {
    "fieldname": "old_name",
@@ -103,11 +96,46 @@
    "fieldname": "folder",
    "fieldtype": "Data",
    "label": "folder"
+  },
+  {
+   "default": "Private",
+   "fieldname": "visibility",
+   "fieldtype": "Select",
+   "label": "Visibility",
+   "options": "Private\nRoles\nEveryone\nPublic"
+  },
+  {
+   "depends_on": "eval:doc.visibility === 'Roles'",
+   "fieldname": "visible_to_roles",
+   "fieldtype": "Table MultiSelect",
+   "label": "Visible To Roles",
+   "options": "Has Role"
+  },
+  {
+   "default": "0",
+   "fieldname": "run_as_owner",
+   "fieldtype": "Check",
+   "label": "Run as owner"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Is Standard",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "kept_for_desk",
+   "fieldtype": "Check",
+   "label": "Kept for Desk",
+   "no_copy": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-10-18 02:38:53.314449",
+ "modified": "2026-09-30 22:00:00.000000",
  "modified_by": "Administrator",
  "module": "Insights",
  "name": "Insights Chart v3",

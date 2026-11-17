@@ -1,6 +1,7 @@
 import inspect
 import sys
 from contextlib import ExitStack
+from typing import ClassVar
 from unittest.mock import patch
 
 import frappe
@@ -99,7 +100,10 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
         with as_user("Administrator"):
             cls.before_class()
             if cls.COMMIT_AFTER_CLASS_SETUP:
-                frappe.db.commit()
+                # A suite's fixture rows are read back by a data source's own
+                # connection — Site DB opens its own `ibis.mysql.connect`, which
+                # cannot see this transaction.
+                frappe.db.commit()  # nosemgrep
         cls.assert_no_get_writes()
 
     @classmethod
@@ -114,7 +118,9 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
             with as_user("Administrator"):
                 cls.after_class()
                 if cls.COMMIT_AFTER_CLASS_TEARDOWN:
-                    frappe.db.commit()
+                    # setUpClass committed, so the runner's rollback would leave
+                    # the fixtures behind; the cleanup has to commit too.
+                    frappe.db.commit()  # nosemgrep
         finally:
             super().tearDownClass()
 
@@ -128,7 +134,9 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
         if self.SAVEPOINT:
             frappe.db.savepoint(self.SAVEPOINT)
         elif self.COMMIT_AFTER_TEST_SETUP:
-            frappe.db.commit()
+            # Same reason as setUpClass: the data source's own connection reads
+            # what before_test seeded.
+            frappe.db.commit()  # nosemgrep
 
     def tearDown(self):
         try:
@@ -137,7 +145,8 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
                 frappe.db.rollback(save_point=self.SAVEPOINT)
             self.after_test()
             if self.COMMIT_AFTER_TEST_TEARDOWN and not self.SAVEPOINT:
-                frappe.db.commit()
+                # setUp committed, so after_test's cleanup has to commit as well.
+                frappe.db.commit()  # nosemgrep
         finally:
             super().tearDown()
 
@@ -159,6 +168,42 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
         self.addCleanup(clear_cache)
         self.addCleanup(frappe.db.set_single_value, "Insights Settings", "enable_permissions", original)
 
+    def descriptions(self, result):
+        """The `description` column of a result, sorted.
+
+        The test tables have one text column, so a sorted list of it is how
+        these suites compare the rows a read returned.
+        """
+        return sorted(row["description"] for row in result["rows"])
+
+    def make_status_permlevel(self):
+        """Put `ToDo.status` behind permlevel 1, which no role here holds."""
+        self.set_status_property("permlevel", 1, "Int")
+
+    def make_status_masked(self):
+        """Mask `ToDo.status`. No role here holds the mask permission."""
+        self.set_status_property("mask", 1, "Check")
+
+    def set_status_property(self, property, value, property_type):
+        setter = frappe.get_doc(
+            {
+                "doctype": "Property Setter",
+                "doctype_or_field": "DocField",
+                "doc_type": "ToDo",
+                "field_name": "status",
+                "property": property,
+                "value": value,
+                "property_type": property_type,
+            }
+        ).insert(ignore_permissions=True)
+        frappe.clear_cache(doctype="ToDo")
+
+        def restore():
+            frappe.delete_doc("Property Setter", setter.name, force=True, ignore_permissions=True)
+            frappe.clear_cache(doctype="ToDo")
+
+        self.addCleanup(restore)
+
     def assert_visible_to(self, user, doctype, name, message=None):
         with self.as_user(user):
             self.assertTrue(
@@ -172,3 +217,30 @@ class InsightsIntegrationTestCase(IntegrationTestCase):
                 is_visible(doctype, name),
                 message or f"{doctype} {name} should not be visible to {user}",
             )
+
+
+class FakeDataSource(dict):
+    """Enough of a data source for a connector to read."""
+
+    DEFAULTS: ClassVar[dict] = {
+        "host": "db.internal",
+        "port": 5432,
+        "username": "svc",
+        "database_name": "analytics",
+        "schema": "",
+        "connection_string": None,
+        "use_ssl": 1,
+        "ssl_ca": None,
+    }
+
+    def __init__(self, **fields):
+        super().__init__(self.DEFAULTS | fields)
+
+    def __getattr__(self, name):
+        return self.get(name)
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def get_password(self, raise_exception=False):
+        return "secret"

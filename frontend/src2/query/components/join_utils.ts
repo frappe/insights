@@ -30,32 +30,43 @@ type TableOption = {
 }
 type UseTableOptions = {
 	data_source: Ref<string> | ComputedRef<string>
-	initialSearchText?: string
+	selected_table?: Ref<string> | ComputedRef<string>
 }
 export function useTableOptions(options: UseTableOptions) {
 	const tableStore = useTableStore()
 
+	function toOption(table_name: string, data_source: string): TableOption {
+		return {
+			table_name,
+			data_source,
+			description: data_source,
+			label: table_name,
+			value: `${data_source}.${table_name}`,
+		}
+	}
+
 	const tableOptions = computed<TableOption[]>(() => {
 		const dataSourceTables = tableStore.tables[options.data_source.value] || []
-		if (!dataSourceTables.length) return []
+		const fetched = dataSourceTables.map((t) => toOption(t.table_name, t.data_source))
 
-		return dataSourceTables.map((t) => ({
-			table_name: t.table_name,
-			data_source: t.data_source,
-			description: t.data_source,
-			label: t.table_name,
-			value: `${t.data_source}.${t.table_name}`,
-		}))
+		// The search never has to hold the selection. A combobox that cannot find
+		// its own value falls back to printing it raw, and here the raw value is
+		// "<data source>.<table>", which matches no table and keeps the list empty.
+		const selected = options.selected_table?.value
+		if (selected && !fetched.some((o) => o.table_name === selected)) {
+			return [toOption(selected, options.data_source.value), ...fetched]
+		}
+		return fetched
 	})
 
-	const searchText = ref(options.initialSearchText || '')
+	const searchText = ref('')
 	watchDebounced(
 		searchText,
 		() => tableStore.getTables(options.data_source.value, searchText.value),
 		{
 			debounce: 300,
 			immediate: true,
-		}
+		},
 	)
 
 	return reactive({
@@ -93,7 +104,7 @@ export function useTableColumnOptions(data_source: Ref<string>, table_name: Ref<
 					fetchingColumnOptions.value = false
 				})
 		},
-		{ immediate: true }
+		{ immediate: true },
 	)
 
 	return reactive({
@@ -134,10 +145,10 @@ export function useQueryColumnOptions(query_name: Ref<string>) {
 					fetchingColumnOptions.value = false
 				})
 		},
-			{ immediate: true }
+		{ immediate: true },
 	)
-			return reactive({
-				options: queryColumnOptions,
-				loading: fetchingColumnOptions,
-			})
+	return reactive({
+		options: queryColumnOptions,
+		loading: fetchingColumnOptions,
+	})
 }

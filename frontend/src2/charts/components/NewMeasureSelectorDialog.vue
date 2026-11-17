@@ -84,19 +84,20 @@ function resetNewMeasure() {
 
 <template>
 	<Dialog
-		:options="{ size: '2xl' }"
-		:modelValue="Boolean(showDialog)"
-		:disableOutsideClickToClose="true"
+		size="2xl"
+		bare
+		:open="Boolean(showDialog)"
+		:dismissible="false"
 		@after-leave="resetNewMeasure"
 		@close="showDialog = false"
 	>
-		<template #body>
-			<div class="bg-white px-4 pb-6 pt-5 sm:px-6">
+		<template #default>
+			<div class="bg-surface-base px-4 pb-6 pt-5 sm:px-6">
 				<div class="flex items-center justify-between pb-4">
-					<h3 class="text-2xl font-semibold leading-6 text-gray-900">
+					<h3 class="text-3xl-semibold leading-6 text-ink-gray-8">
 						{{ __('Create Measure') }}
 					</h3>
-					<Button variant="ghost" @click="showDialog = false" icon="x" size="md" />
+					<Button variant="ghost" @click="showDialog = false" icon="lucide-x" size="md" />
 				</div>
 
 				<div class="flex flex-col gap-2">
@@ -109,15 +110,15 @@ function resetNewMeasure() {
 						<FormControl
 							type="text"
 							class="flex-1"
-							:label="__('Measure Name')"
+							:label="__('Measure name')"
 							autocomplete="off"
-							placeholder="Measure Name"
+							:placeholder="__('Measure name')"
 							v-model="newMeasure.name"
 						/>
 						<FormControl
 							type="select"
 							class="flex-1"
-							:label="__('Data Type')"
+							:label="__('Data type')"
 							autocomplete="off"
 							:options="columnTypes"
 							v-model="newMeasure.type"
@@ -144,18 +145,5 @@ function resetNewMeasure() {
 <style>
 div[data-dismissable-layer] {
 	border-radius: 0.75rem;
-}
-.column-expression {
-	& .cm-column-highlight {
-		background-color: #ededed !important;
-		border-radius: 0.5rem !important;
-		padding: 1px 2px !important;
-		border: 1px solid #dedede !important;
-	}
-	& .cm-scroller {
-		background-color: #ffffff !important;
-		border-radius: 0.5rem !important;
-		border: 1px solid #ededed !important;
-	}
 }
 </style>

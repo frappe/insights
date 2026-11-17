@@ -2,7 +2,6 @@
 # See license.txt
 
 
-import click
 import frappe
 
 
@@ -13,57 +12,44 @@ def after_migrate():
         frappe.log_error(title="Error creating Admin Team")
 
     try:
-        from insights.api.templates import sync_workbook_template_updates
+        from insights.desk import install_custom_fields
 
-        sync_workbook_template_updates()
+        install_custom_fields()
     except Exception:
-        frappe.log_error(title="Error syncing workbook template updates")
+        frappe.log_error(title="Error installing desk custom fields")
+
+    sync_standard_workbooks()
+
+
+def after_app_install(app: str):
+    from insights import standard
+
+    standard.import_shipped([app])
+
+
+def sync_standard_workbooks():
+    """Import the workbooks the installed apps ship, delete the ones no app ships
+    any more and the members kept for a desk document that no longer uses them,
+    then name each desk document left linking what went.
+    """
+    from insights import standard
+    from insights.desk import report_dangling_claims
+    from insights.insights.doctype.insights_workbook.insights_workbook import (
+        delete_unclaimed_kept_members,
+    )
+
+    standard.import_shipped()
+    standard.delete_unshipped()
 
     try:
-        warn_about_the_templates_hook()
+        delete_unclaimed_kept_members()
     except Exception:
-        frappe.log_error(title="Error reading the insights_workbooks hook")
+        frappe.log_error(title="Error deleting Insights content kept for desk documents")
 
-
-def apps_declaring_the_templates_hook() -> list[str]:
-    """Installed apps other than Insights that ship workbook templates.
-
-    Reading an app's hooks imports it, and an app that is installed but not
-    importable would otherwise take the migrate down with it.
-    """
-    from insights.api.templates import TEMPLATES_HOOK
-
-    apps = []
-    for app in sorted(frappe.get_installed_apps()):
-        if app == "insights":
-            continue
-        try:
-            if frappe.get_hooks(TEMPLATES_HOOK, app_name=app):
-                apps.append(app)
-        except Exception:
-            continue
-
-    return apps
-
-
-def warn_about_the_templates_hook() -> None:
-    """Tell an app author their workbook templates stop being read.
-
-    The hook and the library retire on `develop`; standard workbooks replace
-    them. `click.secho` is how frappe's own migrate warns an app author, and it
-    reads the same on every frappe version this branch supports —
-    `frappe.utils.deprecations` does not exist past v15.
-    """
-    apps = apps_declaring_the_templates_hook()
-    if not apps:
-        return
-
-    click.secho(
-        f"{', '.join(apps)} declares the `insights_workbooks` hook, which is deprecated. "
-        "Insights removes it in the next major version, and the workbook templates it "
-        "points at stop being read. Ship the workbooks as standard documents instead.",
-        fg="yellow",
-    )
+    try:
+        report_dangling_claims()
+    except Exception:
+        frappe.log_error(title="Error reporting desk documents that link missing Insights content")
 
 
 def create_admin_team():

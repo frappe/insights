@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import { Badge, Tooltip } from 'frappe-ui'
-import { computed, inject, ref, unref } from 'vue'
+import { Alert, toast, Tooltip } from 'frappe-ui'
+import { computed, inject, ref, watch } from 'vue'
 import UserSelector from '../components/UserSelector.vue'
-import { copy, copyToClipboard } from '../helpers'
+import VisibilitySelector from '../components/VisibilitySelector.vue'
+import { copy, copyToClipboard, showErrorToast } from '../helpers'
 import session from '../session'
-import { DropdownOption } from '../types/query.types'
+import { Visibility } from '../types/workbook.types'
 import useUserStore from '../users/users'
+import ShareUserRow from '../workbook/ShareUserRow.vue'
 import { Dashboard } from './dashboard'
-import { createToast } from '../helpers/toasts'
+import { rolesWithoutReadLines, type RolesWithoutRead } from './roles_without_read'
 import { __ } from '../translation'
 
 const show = defineModel()
 
 const dashboard = inject('dashboard') as Dashboard
 
-const isPublic = ref(unref(dashboard.doc.is_public))
+const visibility = ref<Visibility>(dashboard.doc.visibility || 'Private')
+const visibleToRoles = ref((dashboard.doc.visible_to_roles || []).map((r) => r.role))
 const peopleWithAccess = ref(copy(dashboard.doc.people_with_access))
-const organizationAccess = ref(unref(dashboard.doc.is_shared_with_organization))
 
 const shareLink = computed(() => dashboard.getShareLink())
 const iFrameLink = computed(() => {
@@ -25,33 +27,73 @@ const iFrameLink = computed(() => {
 
 const hasChanged = computed(() => {
 	const prev = {
-		is_public: isPublic.value,
+		visibility: visibility.value,
+		visible_to_roles: visibleToRoles.value,
 		people_with_access: peopleWithAccess.value.map((u) => u.email),
-		is_shared_with_organization: organizationAccess.value,
 	}
 	const next = {
-		is_public: dashboard.doc.is_public,
+		visibility: dashboard.doc.visibility || 'Private',
+		visible_to_roles: (dashboard.doc.visible_to_roles || []).map((r) => r.role),
 		people_with_access: dashboard.doc.people_with_access.map((u) => u.email),
-		is_shared_with_organization: dashboard.doc.is_shared_with_organization,
 	}
 	return JSON.stringify(prev) !== JSON.stringify(next)
 })
 
-function saveChanges() {
-	dashboard.updateAccess({
-		is_public: isPublic.value,
-		is_shared_with_organization: organizationAccess.value,
+// The chosen roles that can't read what the dashboard's charts read. Save
+// names them once, and the next Save saves anyway.
+const rolesWithoutRead = ref<RolesWithoutRead>()
+watch([visibility, visibleToRoles], () => (rolesWithoutRead.value = undefined), { deep: true })
+const warning = computed(() => rolesWithoutReadLines(rolesWithoutRead.value || {}))
+
+// the roles this Save adds: those already saved were checked when they were
+const addedRoles = computed(() => {
+	if (visibility.value !== 'Roles') return []
+	const saved =
+		dashboard.doc.visibility === 'Roles'
+			? (dashboard.doc.visible_to_roles || []).map((r) => r.role)
+			: []
+	return visibleToRoles.value.filter((role) => !saved.includes(role))
+})
+
+async function saveChanges() {
+	if (!rolesWithoutRead.value && addedRoles.value.length) {
+		try {
+			rolesWithoutRead.value = await dashboard.call(
+				'get_roles_without_read',
+				{ roles: addedRoles.value },
+				{ showError: false },
+			)
+		} catch (error) {
+			// a check that failed saves nothing unchecked
+			showErrorToast(error as Error)
+			return
+		}
+		if (warning.value.length) return
+	}
+	dashboard.doc.visibility = visibility.value
+	dashboard.doc.visible_to_roles = visibleToRoles.value.map((role) => ({ role }))
+	await dashboard.save()
+	await dashboard.updateAccess({
 		people_with_access: peopleWithAccess.value.map((u) => u.email),
 	})
-	createToast({
-		variant: 'success',
-		title: __('Dashboard Access Updated'),
-	})
+	toast.success(__('Dashboard Access Updated'))
 	show.value = false
 }
 
 const selectedUserEmail = ref<string>('')
 const userStore = useUserStore()
+
+const owner = computed(() =>
+	dashboard.doc.owner === session.user.email
+		? {
+				full_name: session.user.full_name || session.user.email,
+				user_image: session.user.user_image,
+		  }
+		: {
+				full_name: userStore.getName(dashboard.doc.owner) || dashboard.doc.owner,
+				user_image: userStore.getImage(dashboard.doc.owner),
+		  },
+)
 function addSharedUser() {
 	if (!selectedUserEmail.value) return
 	if (!peopleWithAccess.value) peopleWithAccess.value = []
@@ -62,72 +104,56 @@ function addSharedUser() {
 	})
 	selectedUserEmail.value = ''
 }
-
-const generalAccess = computed({
-	get: () => {
-		if (isPublic.value) return 'anyone'
-		if (organizationAccess.value) return 'organization'
-		return 'specific'
-	},
-	set: (option: DropdownOption) => {
-		isPublic.value = option.value == 'anyone'
-		organizationAccess.value = option.value == 'organization'
-	},
-})
 </script>
 
 <template>
 	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Share Dashboard'),
-			actions: [
-				{
-					label: __('Done'),
-					variant: 'solid',
-					disabled: !hasChanged,
-					onClick: saveChanges,
-				},
-			],
-		}"
+		v-model:open="show"
+		:title="__('Share Dashboard')"
+		:actions="[
+			{
+				label: warning.length ? __('Save anyway') : __('Save'),
+				variant: 'solid',
+				disabled: !hasChanged,
+				onClick: saveChanges,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="flex flex-col gap-4">
-				<div class="flex flex-col gap-2">
-					<span class="text-sm text-gray-600">General Access</span>
-					<div class="flex gap-2">
-						<div class="flex-1">
-							<Autocomplete
-								placeholder="Select an option"
-								:hide-search="true"
-								v-model="generalAccess"
-								:options="[
-									{
-										label: __('Anyone with the link can view'),
-										value: 'anyone',
-									},
-									{
-										label: __('Anyone in the organization can view'),
-										value: 'organization',
-									},
-									{
-										label: __('Specific people can view'),
-										value: 'specific',
-									},
-								]"
-							>
-							</Autocomplete>
-						</div>
+				<VisibilitySelector v-model:visibility="visibility" v-model:roles="visibleToRoles">
+					<template #actions>
 						<Tooltip text="Copy Link" :hoverDelay="0.1">
-							<Button icon="link-2" @click="copyToClipboard(shareLink)"> </Button>
+							<Button icon="lucide-link-2" @click="copyToClipboard(shareLink)">
+							</Button>
 						</Tooltip>
 						<Tooltip text="Copy Embed" :hoverDelay="0.1">
-							<Button icon="code" @click="copyToClipboard(iFrameLink)"> </Button>
+							<Button icon="lucide-code" @click="copyToClipboard(iFrameLink)">
+							</Button>
 						</Tooltip>
-					</div>
-				</div>
+					</template>
+				</VisibilitySelector>
 
-				<hr class="my-1 border-t border-gray-200" />
+				<p v-if="visibility === 'Public'" class="-mt-2 text-sm text-ink-gray-5">
+					{{
+						__(
+							"Guests have no permissions of their own, so every chart on a public dashboard runs as its owner and shows them the rows its owner can see. Each chart's owner turns on Run as owner in the chart's share dialog.",
+						)
+					}}
+				</p>
+
+				<Alert
+					v-if="warning.length"
+					theme="amber"
+					:title="warning.join(' ')"
+					:description="
+						__(
+							'People with only these roles see Not Permitted in place of the charts that read them.',
+						)
+					"
+				/>
+
+				<hr class="my-1 border-t border-outline-gray-1" />
 
 				<div class="flex flex-col">
 					<div class="mb-4 flex w-full gap-2">
@@ -136,6 +162,7 @@ const generalAccess = computed({
 								v-model="selectedUserEmail"
 								placeholder="Search by name or email"
 								:hide-users="peopleWithAccess.map((u) => u.email)"
+								shares-with-roles
 							/>
 						</div>
 						<Button
@@ -146,18 +173,14 @@ const generalAccess = computed({
 							@click="addSharedUser"
 						></Button>
 					</div>
-					<span class="mb-2 text-sm text-gray-600">People with access</span>
+					<span class="mb-2 text-sm text-ink-gray-5">People with access</span>
 					<div class="flex flex-col gap-1 overflow-y-auto">
-						<div class="flex w-full items-center gap-2 py-1">
-							<Avatar size="xl" label="You" :image="session.user.user_image" />
-							<div class="flex flex-1 flex-col">
-								<div class="leading-5">You</div>
-								<div class="text-xs text-gray-600">
-									{{ session.user.email }}
-								</div>
-							</div>
-							<Badge size="lg" theme="orange">Owner</Badge>
-						</div>
+						<ShareUserRow
+							:full-name="owner.full_name"
+							:email="dashboard.doc.owner"
+							:image="owner.user_image"
+							access="owner"
+						/>
 						<div
 							v-for="user in peopleWithAccess"
 							:key="user.email"
@@ -166,11 +189,11 @@ const generalAccess = computed({
 							<Avatar size="xl" :label="user.full_name" :image="user.user_image" />
 							<div class="flex flex-1 flex-col">
 								<div class="leading-5">{{ user.full_name }}</div>
-								<div class="text-xs text-gray-600">{{ user.email }}</div>
+								<div class="text-xs text-ink-gray-5">{{ user.email }}</div>
 							</div>
 							<Button
 								variant="ghost"
-								icon="x"
+								icon="lucide-x"
 								@click="peopleWithAccess.splice(peopleWithAccess.indexOf(user), 1)"
 							></Button>
 						</div>
