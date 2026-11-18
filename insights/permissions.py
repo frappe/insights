@@ -60,7 +60,7 @@ from insights.insights.doctype.insights_team.insights_team import (
     get_teams,
     is_admin,
 )
-from insights.preview_key import is_being_previewed
+from insights.preview_key import preview_user_for
 
 PERMISSION_DOCTYPES = [
     "Insights Data Source v3",
@@ -335,10 +335,14 @@ class InsightsPermissions:
 
         # A preview render arrives as Guest with a key made for one dashboard.
         # The key is its only grant, and it covers only the documents the
-        # rendered image shows. The check is here, not on one endpoint, because
-        # the render calls the same endpoints as every other reader.
-        if ptype == "read" and is_being_previewed(doc.doctype, doc.name):
-            return True
+        # rendered image shows, and of those only what the user it was cut for
+        # may read. The check is here, not on one endpoint, because the render
+        # calls the same endpoints as every other reader.
+        previewer = preview_user_for(doc) if ptype == "read" else None
+        if previewer and previewer != self.user:
+            from insights.resolver import may_read
+
+            return may_read(doc, previewer)
 
         # Read whether the row exists, and who owns it, from the database and
         # never from `doc`. A whitelisted method can run on a document built
