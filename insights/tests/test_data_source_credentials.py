@@ -148,7 +148,7 @@ class TestRestConnectionTest(InsightsIntegrationTestCase):
         # the method surface reads the request to check the HTTP verb
         set_request(method="POST", path="/api/method/insights.api.run_doc_method")
 
-    def run_connection_test_as(self, user, **fields):
+    def run_connection_test_as(self, user, refused=False, **fields):
         """Return the requests the test sent, as (url, authorization header)."""
         # the form sends the whole document, edits included
         doc = frappe.get_doc(DT.DATA_SOURCE, self.data_source).as_dict() | fields
@@ -159,15 +159,16 @@ class TestRestConnectionTest(InsightsIntegrationTestCase):
             return MagicMock(headers={"content-type": "application/json"}, json=lambda: {})
 
         with self.as_user(user), patch("requests.Session.request", request):
-            try:
+            if refused:
+                with self.assertRaises(frappe.PermissionError):
+                    run_doc_method("test_connection", doc)
+            else:
                 run_doc_method("test_connection", doc)
-            except frappe.PermissionError:
-                pass
         return sent
 
     # @feature data-source.credentials-stay-with-admins
     def test_an_insights_user_cannot_test_the_source_against_another_url(self):
-        sent = self.run_connection_test_as(REST_USER, api_base_url=OTHER_URL, api_token="")
+        sent = self.run_connection_test_as(REST_USER, refused=True, api_base_url=OTHER_URL, api_token="")
         self.assertEqual([request for request in sent if request[0].startswith(OTHER_URL)], [])
 
     # @feature data-source.credentials-stay-with-admins
