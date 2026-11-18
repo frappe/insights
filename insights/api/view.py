@@ -176,7 +176,9 @@ def get_dashboard_preview(dashboard: str):
     )
 
 
-@frappe.whitelist(methods=["GET"])
+# POST, as every new endpoint: its CSRF token keeps another site from making a
+# signed-in reader's browser start a render here
+@frappe.whitelist(methods=["POST"])
 @rate_limit(limit=10, seconds=60, user_based=True)
 def get_dashboard_image(dashboard: str, filters: dict | str | None = None, width: int = 1280):
     """The whole dashboard as the caller sees it, as a JPEG download.
