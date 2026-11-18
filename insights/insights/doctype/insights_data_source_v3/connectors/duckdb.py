@@ -383,7 +383,7 @@ def get_http_secret(data_source, name, db_name):
         scope_escaped = scope.replace("'", "''")
 
         headers = frappe.parse_json(headers) if isinstance(headers, str) else headers
-        headers_str = ", ".join(f"'{k}': '{v}'" for k, v in headers.items())
+        headers_str = ", ".join(f"{_quote(k)}: {_quote(v)}" for k, v in headers.items())
 
         return f"""
             CREATE OR REPLACE SECRET {secret_name} (
@@ -399,3 +399,7 @@ def get_http_secret(data_source, name, db_name):
 
 def _escape_sql_path(path: str) -> str:
     return path.replace("'", "''")
+
+
+def _quote(value) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
