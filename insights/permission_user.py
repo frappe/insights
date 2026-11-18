@@ -30,7 +30,7 @@ from contextlib import contextmanager
 
 import frappe
 
-from insights.preview_key import get_preview_key, is_being_previewed
+from insights.preview_key import preview_user_for
 
 
 def get_permission_user() -> str:
@@ -163,14 +163,6 @@ def may_run_as(doctype: str, doc, user: str) -> bool:
     return bool(frappe.db.get_value("User", user, "enabled")) and bool(
         frappe.has_permission(doctype, ptype="write", doc=doc, user=user)
     )
-
-
-def preview_user_for(doc) -> str | None:
-    """The user a preview render of `doc` runs as, or None outside a render."""
-    key = get_preview_key()
-    if not key or not doc.name or not is_being_previewed(doc.doctype, doc.name):
-        return None
-    return key["user"]
 
 
 def why_rows_follow_reader(

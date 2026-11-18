@@ -19,6 +19,7 @@ server decides what runs.
 
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 
 from insights.insights.doctype.insights_chart_v3.chart_drill import (
     asks_for_rows,
@@ -45,6 +46,7 @@ from insights.permissions import (
     can_write,
     same_rows_for_every_reader,
 )
+from insights.preview_key import get_preview_key
 from insights.resolver import (
     CHART,
     DASHBOARD,
@@ -69,7 +71,9 @@ def get_dashboard(dashboard: str, surface: str | None = None):
     answers only `not_permitted`, with the doctypes its charts need.
     """
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
-    doc.track_view(surface)
+    # a preview or an image is drawn by a browser, not viewed by a reader
+    if not get_preview_key():
+        doc.track_view(surface)
     writable = can_write(doc)
     copyable = can_copy(doc)
     items = frappe.parse_json(doc.items) or []
@@ -170,6 +174,34 @@ def get_dashboard_preview(dashboard: str):
         filename=file.file_name,
         filecontent=file.get_content(),
     )
+
+
+# POST, as every new endpoint: its CSRF token keeps another site from making a
+# signed-in reader's browser start a render here
+@frappe.whitelist(methods=["POST"])
+@rate_limit(limit=10, seconds=60, user_based=True)
+def get_dashboard_image(dashboard: str, filters: dict | str | None = None, width: int = 1280):
+    """The whole dashboard as the caller sees it, as a JPEG download.
+
+    It shows the caller's rows, under `filters` (filter values keyed by filter
+    name, as a reader sets them), drawn `width` pixels wide. Nothing is stored.
+    Each call starts a browser on the server, so it is rate limited.
+    """
+    width = frappe.utils.cint(width)
+    if not MIN_IMAGE_WIDTH <= width <= MAX_IMAGE_WIDTH:
+        frappe.throw(_("Width must be between {0} and {1} pixels").format(MIN_IMAGE_WIDTH, MAX_IMAGE_WIDTH))
+
+    doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
+    frappe.response.update(
+        type="download",
+        display_content_as="inline",
+        filename=f"{doc.name}.jpg",
+        filecontent=doc.draw(frappe.parse_json(filters) or None, width),
+        content_type="image/jpeg",
+    )
+
+
+MIN_IMAGE_WIDTH, MAX_IMAGE_WIDTH = 320, 2560
 
 
 @frappe.whitelist(allow_guest=True)  # nosemgrep - resolve_for_read lets a guest read Public content only
