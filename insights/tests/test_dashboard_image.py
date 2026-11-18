@@ -208,6 +208,14 @@ class TestDashboardImage(InsightsIntegrationTestCase):
         self.assertEqual(image["Image Chart"], [OWNER_TODOS[1]])
 
     # @feature dashboard.image
+    def test_drawing_a_dashboard_logs_no_view(self):
+        """The browser is not a reader: its read must not count as a Guest's view."""
+        self.draw(READER)
+        self.assertFalse(
+            frappe.db.exists("View Log", {"reference_name": self.dashboard, "viewed_by": "Guest"})
+        )
+
+    # @feature dashboard.image
     def test_a_chart_the_caller_may_not_read_stays_out_of_their_image(self):
         """The key opens every chart on the dashboard. A User Permission that
         limits the reader to one query must still keep the other chart out."""
@@ -240,3 +248,18 @@ class TestDashboardImage(InsightsIntegrationTestCase):
             self.assertRaises(frappe.ValidationError),
         ):
             get_dashboard_image(self.dashboard)
+
+    # @feature dashboard.image dashboard.preview-image
+    def test_a_page_opened_with_a_key_loads_nothing_from_another_site(self):
+        """Chromium sends the key with every request the page makes. A text
+        card's image on another host would get it and read the caller's rows."""
+        from frappe.app import run_after_request_hooks
+        from werkzeug.wrappers import Response
+
+        def policy(headers):
+            response = Response("<html></html>", content_type="text/html")
+            run_after_request_hooks(EnvironBuilder(headers=headers).get_request(), response)
+            return response.headers.get("Content-Security-Policy")
+
+        self.assertTrue(policy({"X-Insights-Preview-Key": "key"}).startswith("default-src 'self' "))
+        self.assertIsNone(policy({}))
