@@ -483,7 +483,12 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         Every test arrives here, the button and the save alike, so the outcome
         is counted once. What the driver said stays here. Only the kind of
         failure travels. The message and the host it names do not.
+
+        A test runs on the document as the caller sent it, but with the saved
+        password wherever it left one blank. So only who may change the source
+        may test it.
         """
+        self.check_permission("write")
         try:
             self.attempt_connection()
         except Exception as e:
