@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import hashlib
+import inspect
 import re
 from collections.abc import Callable
 from urllib.parse import urlencode
@@ -553,6 +554,43 @@ class InsightsDashboardv3(Document):
             self.db_set("preview_image", file_url)
             return file_url
 
+    def draw(self, filters: dict | None = None, width: int = 1280) -> bytes:
+        """The whole dashboard as the session user sees it, as a JPEG.
+
+        The browser arrives as Guest with a preview key cut for the session
+        user, so every chart runs as it would for them. `filters` are the
+        dashboard's filter values, keyed by filter name, as a reader sets them.
+        """
+        capture = full_page_capture()
+        if not capture:
+            frappe.throw(
+                frappe._(
+                    "This site's Frappe cannot draw a whole dashboard as an image. "
+                    "It needs a Frappe version whose page preview can capture a full page."
+                )
+            )
+
+        query = {"capture": 1}
+        if filters:
+            query["filters"] = frappe.as_json(filters, indent=None)
+        url = frappe.utils.get_url(
+            get_app_url(f"/shared/dashboard/{self.name}?{urlencode(query)}"),
+            allow_header_override=False,
+        )
+        with generate_preview_key(self.name, frappe.session.user) as key:
+            headers = {"X-Insights-Preview-Key": key}
+            check_page_answers(url, headers)
+            return capture(
+                url,
+                headers=headers,
+                format="jpeg",
+                width=width,
+                full_page=True,
+                # set by the shared dashboard page in capture mode once every card has drawn
+                wait_until="document.documentElement.hasAttribute('data-dashboard-drawn')",
+                timeout=DRAW_TIMEOUT,
+            )
+
     def get_people_with_access(self):
         DocShare = frappe.qb.DocType("DocShare")
         User = frappe.qb.DocType("User")
@@ -952,6 +990,28 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
         return get_page_preview_via_service(url, headers)
 
     return get_preview_from_url(url, wait_for=1000, headers=headers or {}, format="jpeg")
+
+
+# seconds the browser waits for every card to draw; a card waits on its query
+DRAW_TIMEOUT = 60
+
+
+def full_page_capture() -> Callable | None:
+    """Frappe's capture of a URL, when it can capture a whole page and wait for
+    it to draw, else None.
+
+    Without it the capture is the top 1280x720 of the page, and Frappe v15 has
+    no capture at all: its fallback is an external service, which must not see
+    a reader's rows.
+    """
+    try:
+        from frappe.utils.preview import get_preview_from_url
+    except ImportError:
+        return None  # nosemgrep - no preview module is the answer: Frappe v15 cannot capture
+    takes = inspect.signature(get_preview_from_url).parameters
+    if not {"width", "full_page", "wait_until", "timeout"} <= takes.keys():
+        return None
+    return get_preview_from_url
 
 
 def check_page_answers(url: str, headers: dict | None = None) -> None:

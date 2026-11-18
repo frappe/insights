@@ -1,10 +1,13 @@
 <template>
-	<div class="flex h-screen w-screen overflow-hidden bg-surface-base text-base antialiased">
+	<div
+		class="flex w-screen bg-surface-base text-base antialiased"
+		:class="capture ? 'min-h-screen' : 'h-screen overflow-hidden'"
+	>
 		<div v-if="!hideSidebar" class="h-full border-r bg-surface-gray-1">
 			<AppSidebar />
 		</div>
 
-		<div class="flex h-full flex-1 flex-col overflow-auto">
+		<div class="flex flex-1 flex-col" :class="capture ? '' : 'h-full overflow-auto'">
 			<RouterView />
 		</div>
 
@@ -27,6 +30,7 @@ import UpgradeWizard from './upgrade/UpgradeWizard.vue'
 import { dialogs } from './helpers/confirm_dialog'
 import { attachRealtimeListener } from './helpers/index.ts'
 import session from './session'
+import { isCapture } from './dashboard/capture'
 
 const route = useRoute()
 const hideSidebar = ref(true)
@@ -36,6 +40,9 @@ watchEffect(() => {
 })
 
 const isGuestView = computed(() => route.meta.isGuestView || !session.isLoggedIn)
+// A page the server captures as an image lays out at its full height, so the
+// capture holds all of it (`dashboard/capture.ts`)
+const capture = computed(() => isCapture(route.query))
 
 const notifiers = {
 	success: toast.success,
