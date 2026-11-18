@@ -26,6 +26,7 @@ from insights.not_permitted import answers_refusal, refused_doctypes, roles_with
 from insights.permission_user import runs_as
 from insights.permissions import same_rows_for_every_reader
 from insights.preview_key import generate_preview_key
+from insights.resources import ResourcePool, server_busy
 from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File, get_app_url
 
@@ -561,8 +562,8 @@ class InsightsDashboardv3(Document):
         user, so every chart runs as it would for them. `filters` are the
         dashboard's filter values, keyed by filter name, as a reader sets them.
         """
-        capture = full_page_capture()
-        if not capture:
+        screenshot = full_page_capture()
+        if not screenshot:
             frappe.throw(
                 frappe._(
                     "This site's Frappe cannot draw a whole dashboard as an image. "
@@ -577,19 +578,39 @@ class InsightsDashboardv3(Document):
             get_app_url(f"/shared/dashboard/{self.name}?{urlencode(query)}"),
             allow_header_override=False,
         )
-        with generate_preview_key(self.name, frappe.session.user) as key:
-            headers = {"X-Insights-Preview-Key": key}
-            check_page_answers(url, headers)
-            return capture(
-                url,
-                headers=headers,
-                format="jpeg",
-                width=width,
-                full_page=True,
-                # set by the shared dashboard page in capture mode once every card has drawn
-                wait_until="document.documentElement.hasAttribute('data-dashboard-drawn')",
-                timeout=DRAW_TIMEOUT,
+        # The browser holds this web thread while the page it opens takes others,
+        # so a few draws at once could take every thread and none would finish
+        pool = ResourcePool(
+            "insights:dashboard_draw",
+            DRAWS_AT_ONCE,
+            per_user=1,
+            max_waiters=0,
+            lease_seconds=DRAW_TIMEOUT + 60,
+        )
+        if not (lease := pool.acquire()):
+            raise server_busy(DRAW_RETRY_AFTER)
+        try:
+            with generate_preview_key(self.name, frappe.session.user) as key:
+                headers = {"X-Insights-Preview-Key": key}
+                check_page_answers(url, headers)
+                return screenshot(
+                    url,
+                    headers=headers,
+                    format="jpeg",
+                    width=width,
+                    full_page=True,
+                    # set by the shared dashboard page in capture mode once every card has drawn
+                    wait_until="document.documentElement.hasAttribute('data-dashboard-drawn')",
+                    timeout=DRAW_TIMEOUT,
+                )
+        except TimeoutError:
+            frappe.throw(
+                frappe._("The dashboard's charts did not finish drawing within {0} seconds").format(
+                    DRAW_TIMEOUT
+                )
             )
+        finally:
+            pool.release(lease)
 
     def get_people_with_access(self):
         DocShare = frappe.qb.DocType("DocShare")
@@ -994,6 +1015,9 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
 
 # seconds the browser waits for every card to draw; a card waits on its query
 DRAW_TIMEOUT = 60
+# browsers drawing dashboards at once, on every site that shares this Redis
+DRAWS_AT_ONCE = 2
+DRAW_RETRY_AFTER = 10
 
 
 def full_page_capture() -> Callable | None:

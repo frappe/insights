@@ -46,6 +46,7 @@ from insights.permissions import (
     can_write,
     same_rows_for_every_reader,
 )
+from insights.preview_key import get_preview_key
 from insights.resolver import (
     CHART,
     DASHBOARD,
@@ -70,7 +71,9 @@ def get_dashboard(dashboard: str, surface: str | None = None):
     answers only `not_permitted`, with the doctypes its charts need.
     """
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
-    doc.track_view(surface)
+    # a preview or an image is drawn by a browser, not viewed by a reader
+    if not get_preview_key():
+        doc.track_view(surface)
     writable = can_write(doc)
     copyable = can_copy(doc)
     items = frappe.parse_json(doc.items) or []
