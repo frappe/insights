@@ -9,12 +9,15 @@ the fields themselves rather than on the endpoints that read them.
 permlevel instead.
 """
 
+import unittest
 from unittest.mock import MagicMock, patch
 
+import duckdb
 import frappe
 from frappe.utils import set_request
 
 from insights.api import run_doc_method
+from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import get_http_secret
 from insights.tests.base import InsightsIntegrationTestCase
 from insights.tests.factories import DT, create_user, delete_users
 
@@ -171,3 +174,26 @@ class TestRestConnectionTest(InsightsIntegrationTestCase):
     def test_an_insights_admin_tests_an_unsaved_edit_with_the_saved_token(self):
         sent = self.run_connection_test_as(REST_ADMIN, api_base_url=OTHER_URL, api_token="")
         self.assertEqual(sent, [(f"{OTHER_URL}/", f"Bearer {STORED_TOKEN}")])
+
+
+class TestDuckDBHttpHeaders(unittest.TestCase):
+    # @feature data-source.connect-duckdb
+    def test_a_header_with_quotes_reaches_duckdb_as_one_header(self):
+        """Unquoted, the key would not parse and the value would add an X-Other header."""
+        source = frappe._dict(http_headers={"X-Team's-Key": "a', 'X-Other': 'b"})
+        sql = get_http_secret(source, "Remote Source", "https://data.example.com/remote.duckdb")
+
+        db = duckdb.connect()
+        try:
+            db.execute(sql)
+            secrets = db.execute("select name, secret_string from duckdb_secrets()").fetchall()
+        finally:
+            db.close()
+
+        self.assertEqual(len(secrets), 1)
+        name, secret = secrets[0]
+        self.assertEqual(name, "http_auth_remote_source")
+        # DuckDB shows a quote inside a header as \'
+        self.assertTrue(
+            secret.endswith(r"extra_http_headers={'X-Team\'s-Key'='a\', \'X-Other\': \'b'}"), secret
+        )
