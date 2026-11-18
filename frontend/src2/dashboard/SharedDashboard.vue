@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { watch } from 'vue'
+import { useRoute } from 'vue-router'
 import router from '../router'
 import session from '../session'
+import { captureFilters, cardsSettled, isCapture, markDrawn } from './capture'
 import DashboardPage from './DashboardPage.vue'
+import { writeFilters } from './filter_storage'
 import { useDashboardView } from './view'
 
 // A dashboard opened by its public link. It uses the same view endpoints as the
@@ -13,22 +16,36 @@ import { useDashboardView } from './view'
 // to go back to.
 const props = defineProps<{ dashboard_name: string }>()
 
+const capture = isCapture(useRoute().query)
+// the capture's browser starts with empty storage, so the caller's filters are
+// stored where the page reads a reader's own, before it loads
+const filters = capture && captureFilters(useRoute().query)
+if (filters) writeFilters(props.dashboard_name, filters)
+
 // The reference is sent unchanged. The resolver accepts every form a link can
 // hold: a route, a docname, or the v2 name.
 const dashboard = useDashboardView(() => props.dashboard_name, 'shared')
 
 // On No Access, a guest is sent to sign in, because a signed-in user may be
-// able to read the dashboard.
+// able to read the dashboard. A capture draws the refusal its caller would see.
 watch(
 	() => dashboard.noAccess,
 	(noAccess) => {
-		if (!noAccess || session.isLoggedIn) return
+		if (!noAccess || session.isLoggedIn || capture) return
 		session.resetSession()
 		router.push('/login')
 	},
 )
+
+if (capture) {
+	watch(
+		() => cardsSettled(dashboard),
+		(settled) => settled && markDrawn(),
+		{ immediate: true },
+	)
+}
 </script>
 
 <template>
-	<DashboardPage :dashboard="dashboard" />
+	<DashboardPage :dashboard="dashboard" :full-height="capture" />
 </template>
