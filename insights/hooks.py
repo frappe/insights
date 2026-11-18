@@ -91,7 +91,7 @@ after_install = "insights.migrate.after_migrate"
 after_migrate = "insights.migrate.after_migrate"
 after_app_install = "insights.migrate.after_app_install"
 
-after_request = ["insights.request_cleanup.after_request"]
+after_request = ["insights.request_cleanup.after_request", "insights.preview_key.keep_the_key_on_this_site"]
 
 fixtures = [
     {

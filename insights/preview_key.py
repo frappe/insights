@@ -80,3 +80,16 @@ def preview_user_for(doc) -> str | None:
     if not key or not doc.name or not is_being_previewed(doc.doctype, doc.name):
         return None
     return key["user"]
+
+
+# Chromium sends a preview key, like every extra header, with every request the
+# page makes, to every host. A text card's image on another site would get the
+# key and could read the dashboard's rows as its user until the render ends. So a
+# page opened with a key loads only from this site.
+SAME_SITE_ONLY = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:"
+
+
+def keep_the_key_on_this_site(response, request):
+    """An `after_request` hook: a page opened with a preview key loads nothing from another site."""
+    if request and request.headers.get("X-Insights-Preview-Key"):
+        response.headers["Content-Security-Policy"] = SAME_SITE_ONLY
