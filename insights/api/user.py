@@ -269,7 +269,7 @@ def accept_invitation(key: str):
 
     # a new account has no password yet, so the invitation link is how the
     # invitee gets in the first time
-    frappe.local.login_manager.login_as(invitation.email)
+    frappe.local.login_manager.login_as(frappe.db.get_value("User", {"email": invitation.email}))
     frappe.local.response["location"] = get_app_url()
 
 
