@@ -7,6 +7,7 @@ import frappe
 V2_QUERY = "Insights Query"
 V2_DASHBOARD = "Insights Dashboard"
 V2_DASHBOARD_ITEM = "Insights Dashboard Item"
+V3_DASHBOARD = "Insights Dashboard v3"
 USED_WITHIN_DAYS = 30
 
 
@@ -101,12 +102,9 @@ def unmigrated_v2_dashboards() -> list[str]:
 
     reading = {dashboard for query in used for dashboard in read_by[query]}
     migrated = (
-        set(
-            frappe.get_all(
-                "Insights Dashboard v3", filters={"old_name": ["in", list(reading)]}, pluck="old_name"
-            )
-        )
-        if reading
+        set(frappe.get_all(V3_DASHBOARD, filters={"old_name": ["in", list(reading)]}, pluck="old_name"))
+        # a site updating straight from v2 has no v3 table yet, as this runs before model sync
+        if reading and frappe.db.table_exists(V3_DASHBOARD)
         else set()
     )
     return sorted(reading - migrated)
