@@ -3,6 +3,7 @@
 
 frappe.ui.form.on("Insights Data Source v3", {
 	refresh: function (frm) {
+		if (!frm.perm[0].write) return;
 		frm.add_custom_button("Test Connection", function () {
 			frm.call({
 				method: "test_connection",

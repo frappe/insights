@@ -7,6 +7,7 @@ import frappe
 V2_QUERY = "Insights Query"
 V2_DASHBOARD = "Insights Dashboard"
 V2_DASHBOARD_ITEM = "Insights Dashboard Item"
+V3_DASHBOARD = "Insights Dashboard v3"
 USED_WITHIN_DAYS = 30
 
 
@@ -28,10 +29,10 @@ Insights v3.50 no longer contains v2 or the v2 migrator. New features and bug fi
 
 Your site used v2 dashboards in the last 30 days that are not migrated yet: {len(dashboards)}. To prevent data loss, the update to Insights v3.50 has been blocked until you take action.
 
-Stay on your current Insights v3 release and migrate your v2 dashboards first. Then update to v3.50.
+Stay on your current Insights release and migrate your v2 dashboards first. Then update to v3.50.
 
 - On Insights v3.13 or later: as an Insights Admin, open Insights, then Settings > Migrate from v2.
-- On an older release: update to v3.15.1 first. Self-hosted, check out the `v3.15.1` tag. On Frappe Cloud, raise a support ticket at https://frappe.io/support.
+- On Insights v2 or an older v3 release: update to v3.15.1 first. Self-hosted, check out the `v3.15.1` tag. On Frappe Cloud, raise a support ticket at https://frappe.io/support.
 - v2 queries outside a dashboard are not migrated. To keep one, add it to a v2 dashboard before you migrate.
 
 Once these dashboards are migrated, update again. This check passes then.
@@ -101,12 +102,9 @@ def unmigrated_v2_dashboards() -> list[str]:
 
     reading = {dashboard for query in used for dashboard in read_by[query]}
     migrated = (
-        set(
-            frappe.get_all(
-                "Insights Dashboard v3", filters={"old_name": ["in", list(reading)]}, pluck="old_name"
-            )
-        )
-        if reading
+        set(frappe.get_all(V3_DASHBOARD, filters={"old_name": ["in", list(reading)]}, pluck="old_name"))
+        # a site updating straight from v2 has no v3 table yet, as this runs before model sync
+        if reading and frappe.db.table_exists(V3_DASHBOARD)
         else set()
     )
     return sorted(reading - migrated)
