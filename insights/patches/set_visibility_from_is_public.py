@@ -12,5 +12,9 @@ def execute():
     more, and its column is left for `bench trim-tables`.
     """
     for doctype in DOCTYPES:
+        # Sites upgrading straight from Insights v2 create these tables from the
+        # current schema, which no longer has `is_public`: nothing to migrate.
+        if not frappe.db.has_column(doctype, "is_public"):
+            continue
         content = frappe.qb.DocType(doctype)
         frappe.qb.update(content).set(content.visibility, "Public").where(content.is_public == 1).run()
