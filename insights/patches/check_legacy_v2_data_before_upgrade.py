@@ -29,10 +29,10 @@ Insights v3.50 no longer contains v2 or the v2 migrator. New features and bug fi
 
 Your site used v2 dashboards in the last 30 days that are not migrated yet: {len(dashboards)}. To prevent data loss, the update to Insights v3.50 has been blocked until you take action.
 
-Stay on your current Insights v3 release and migrate your v2 dashboards first. Then update to v3.50.
+Stay on your current Insights release and migrate your v2 dashboards first. Then update to v3.50.
 
 - On Insights v3.13 or later: as an Insights Admin, open Insights, then Settings > Migrate from v2.
-- On an older release: update to v3.15.1 first. Self-hosted, check out the `v3.15.1` tag. On Frappe Cloud, raise a support ticket at https://frappe.io/support.
+- On Insights v2 or an older v3 release: update to v3.15.1 first. Self-hosted, check out the `v3.15.1` tag. On Frappe Cloud, raise a support ticket at https://frappe.io/support.
 - v2 queries outside a dashboard are not migrated. To keep one, add it to a v2 dashboard before you migrate.
 
 Once these dashboards are migrated, update again. This check passes then.
