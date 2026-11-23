@@ -254,6 +254,39 @@ class TestChartDerivation(unittest.TestCase):
                 config = {**case["config"], slot: {}}
                 self.assertTrue(config_errors("Heatmap", case["query"], config))
 
+    # @feature charts.map-points
+    def test_a_points_map_needs_both_coordinates_and_a_regions_map_none(self):
+        case = next(c for c in chart_derivation_fixtures() if c["config"].get("map_style") == "points")
+
+        for slot, error in (
+            ("latitude_column", _("Latitude column is required")),
+            ("longitude_column", _("Longitude column is required")),
+        ):
+            with self.subTest(slot=slot):
+                config = {**case["config"], slot: {}}
+                self.assertIn(error, config_errors("Map", case["query"], config))
+
+        regions = {**case["config"], "map_style": "regions", "latitude_column": {}, "longitude_column": {}}
+        self.assertEqual(config_errors("Map", case["query"], regions), [])
+
+    # @feature charts.map-points
+    def test_a_points_map_refuses_a_coordinate_summed_or_counted(self):
+        """A sum or a count of latitudes is no place, so the point would be drawn where no row is."""
+        case = next(c for c in chart_derivation_fixtures() if c["config"].get("map_style") == "points")
+
+        for slot, error in (
+            ("latitude_column", _("Latitude must be an average, a minimum, or a maximum")),
+            ("longitude_column", _("Longitude must be an average, a minimum, or a maximum")),
+        ):
+            for aggregation in ("sum", "count", "count_distinct"):
+                with self.subTest(slot=slot, aggregation=aggregation):
+                    config = {**case["config"], slot: {**case["config"][slot], "aggregation": aggregation}}
+                    self.assertEqual(config_errors("Map", case["query"], config), [error])
+            for aggregation in ("avg", "min", "max"):
+                with self.subTest(slot=slot, aggregation=aggregation):
+                    config = {**case["config"], slot: {**case["config"][slot], "aggregation": aggregation}}
+                    self.assertEqual(config_errors("Map", case["query"], config), [])
+
     # @feature charts.missing-slot-message
     def test_a_new_axis_chart_is_only_told_its_x_axis_is_missing(self):
         """Two empty slots name the same nothing, which is not a clash."""

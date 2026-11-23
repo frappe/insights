@@ -102,6 +102,8 @@ export function ensureConfigSlots(config: any, chart_type: string) {
 	if (chart_type === 'Map') {
 		config.location_column = config.location_column || {}
 		config.value_column = config.value_column || {}
+		config.latitude_column = config.latitude_column || {}
+		config.longitude_column = config.longitude_column || {}
 	}
 
 	if (chart_type === 'Bubble') {
@@ -192,7 +194,14 @@ export function configDimensions(config: any): any[] {
 }
 
 /** The single-Measure slots a config can have, over every chart type. */
-const MEASURE_SLOTS = ['value_column', 'size_column', 'xAxis', 'yAxis']
+const MEASURE_SLOTS = [
+	'value_column',
+	'size_column',
+	'xAxis',
+	'yAxis',
+	'latitude_column',
+	'longitude_column',
+]
 
 /** The Measure-list slots a config can have, over every chart type. */
 const MEASURE_LIST_SLOTS = ['number_columns', 'measures', 'values']
@@ -251,6 +260,9 @@ export function dataSelection(config: any) {
 		// both are bounded in SQL
 		max_split_values: config.split_by?.max_split_values,
 		max_column_values: config.max_column_values,
+		// a points Map fetches each row's coordinates beside its value, a regions
+		// Map does not, so the same slots fetch different columns under each
+		map_style: config.map_style,
 	}
 }
 

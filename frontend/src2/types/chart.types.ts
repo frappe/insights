@@ -332,6 +332,14 @@ export type MapChartConfig = NumberFormatConfig & {
 	location_column: Dimension
 	value_column: Measure
 	map_type?: 'world' | 'india'
+	/**
+	 * Regions shade each region by its value; points draw a circle per row at its
+	 * coordinates, sized by its value. Regions when unset.
+	 */
+	map_style?: 'regions' | 'points'
+	/** Where a point sits, in degrees: read only when the style is points. */
+	latitude_column?: Measure
+	longitude_column?: Measure
 	region_mappings?: {
 		world?: Record<string, string>
 		india?: Record<string, string>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { MapChart as MapSeries } from 'echarts/charts'
+import { MapChart as MapSeries, ScatterChart } from 'echarts/charts'
+import { GeoComponent } from 'echarts/components'
 import { getMap, registerMap } from 'echarts/core'
 import {
 	ChartContainer,
@@ -11,15 +12,16 @@ import {
 import type { ChartTooltipItem } from 'frappe-ui/charts'
 import { computed, reactive, ref, watch } from 'vue'
 import { __ } from '../../translation'
-import type { MapChartProps } from '../adapter/map'
+import { project, type MapChartProps } from '../adapter/map'
 
-// The choropleth Insights renders itself. Everything around the plot is v2's, so
-// a Map card on a dashboard reads as one of the family. Only the geography is
-// ours. The arithmetic behind it — which region a row belongs to and which
-// class its value falls in — is `adapter/map.ts`, and this file holds what
+// The map Insights renders itself: a choropleth, or circles at coordinates.
+// Everything around the plot is v2's, so a Map card on a dashboard reads as one
+// of the family. Only the geography is ours. The arithmetic behind it — which
+// region a row belongs to and which class its value falls in, where a point sits
+// and how large it is drawn — is `adapter/map.ts`, and this file holds what
 // needs a DOM: the tokens, the GeoJSON, and the mount.
 
-registerChartModules([MapSeries])
+registerChartModules([MapSeries, ScatterChart, GeoComponent])
 
 const props = defineProps<MapChartProps>()
 
@@ -83,8 +85,23 @@ function colorOf(value: number | null) {
 	return bucket === -1 ? tokens.value.gridline : bucketColors.value[bucket]
 }
 
+// Web Mercator. The GeoJSON holds plain degrees, and echarts plots them as-is
+// unless it is told how to project them. A point is projected the same way, so
+// it lands on the shape it is in.
+const projection = {
+	project,
+	unproject: (point: [number, number]) => [
+		(point[0] * 180) / Math.PI,
+		((2 * 180) / Math.PI) * Math.atan(Math.exp(point[1])) - 90,
+	],
+}
+
+/** One color for every circle: the size is the scale, a second one would be noise. */
+const pointColor = computed(() => tokens.value.sequential[0])
+
 const option = computed(() => {
 	if (registered.value !== props.map) return undefined
+	if (props.points.length) return pointsOption()
 	return {
 		animation: true,
 		animationDuration: 300,
@@ -93,18 +110,7 @@ const option = computed(() => {
 				type: 'map',
 				name: props.measure,
 				map: props.map,
-				// Web Mercator. The GeoJSON holds plain degrees, and echarts
-				// plots them as-is unless it is told how to project them.
-				projection: {
-					project: (point: [number, number]) => [
-						(point[0] / 180) * Math.PI,
-						-Math.log(Math.tan((Math.PI / 2 + (point[1] / 180) * Math.PI) / 2)),
-					],
-					unproject: (point: [number, number]) => [
-						(point[0] * 180) / Math.PI,
-						((2 * 180) / Math.PI) * Math.atan(Math.exp(point[1])) - 90,
-					],
-				},
+				projection,
 				data: props.regions.map((region) => ({
 					name: region.name,
 					value: region.value,
@@ -126,6 +132,55 @@ const option = computed(() => {
 	}
 })
 
+/**
+ * The geography as a backdrop, every region in the "no row here" shade, and a
+ * circle per point over it. The regions take no hover: what is read is the circle.
+ */
+function pointsOption() {
+	return {
+		animation: true,
+		animationDuration: 300,
+		geo: {
+			map: props.map,
+			projection,
+			// the wheel or a pinch zooms, a drag moves the map; it opens on the
+			// area its points cover (adapter/map.ts)
+			roam: true,
+			scaleLimit: { min: 1, max: 40 },
+			...props.view,
+			// a backdrop: no highlight and no selection, and not silent, which would
+			// also stop the zoom
+			emphasis: { disabled: true },
+			selectedMode: false,
+			itemStyle: {
+				areaColor: tokens.value.gridline,
+				borderColor: tokens.value.backdrop,
+				borderWidth: 0.5,
+			},
+		},
+		series: [
+			{
+				type: 'scatter',
+				name: props.measure,
+				coordinateSystem: 'geo',
+				data: props.points.map((point) => ({
+					name: point.name,
+					value: [...point.coord, point.value],
+					symbolSize: point.size,
+				})),
+				itemStyle: {
+					color: pointColor.value,
+					opacity: 0.7,
+					// a circle over another stays readable by its edge
+					borderColor: tokens.value.backdrop,
+					borderWidth: 1,
+				},
+				emphasis: { scale: false },
+			},
+		],
+	}
+}
+
 const pointer = reactive({ x: 0, y: 0 })
 const tooltip = reactive({
 	open: false,
@@ -139,7 +194,9 @@ useChart({
 	container: plotEl,
 	option: () => option.value,
 	events: {
-		mouseover: (params: any) => showTooltip(params.name, params.value),
+		// a point's value is its coordinates, then the number
+		mouseover: (params: any) =>
+			showTooltip(params.name, Array.isArray(params.value) ? params.value[2] : params.value),
 		mouseout: () => (tooltip.open = false),
 		click: (params: any) => emit('regionClick', params.name),
 	},
@@ -169,7 +226,7 @@ function showTooltip(name: string, value: number) {
 		{
 			name,
 			label: props.measure,
-			color: colorOf(value),
+			color: props.points.length ? pointColor.value : colorOf(value),
 			value,
 			formattedValue: props.format(value),
 			kind: 'series',
@@ -186,7 +243,7 @@ function showTooltip(name: string, value: number) {
 		:title="props.title"
 		:subtitle="props.subtitle"
 		:error="failed ? __('Could not load the map') : null"
-		:empty="!props.regions.length"
+		:empty="!props.regions.length && !props.points.length"
 	>
 		<template v-if="$slots['title-suffix']" #title-suffix>
 			<slot name="title-suffix" />
