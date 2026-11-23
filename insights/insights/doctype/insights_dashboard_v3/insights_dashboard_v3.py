@@ -451,15 +451,20 @@ class InsightsDashboardv3(Document):
         `answers_refusal` is here because the method is whitelisted. A card
         over a table the caller may not read then answers an empty list, the
         same as through `insights.api.view`.
+
+        Values come with their state, and periods plain, as from
+        `insights.api.view.get_filter_values`.
         """
         adhoc_filters = self._filter_context_filters(filter_name, filter_context)
-        return self.lookup_filter(
-            filter_name,
-            lambda chart, query, column: query.distinct_column_values(
-                column, search_term=search_term, adhoc_filters=adhoc_filters, granularity=granularity
-            ),
-            missing=filter_not_available,
-        )
+
+        def values(chart, query, column):
+            if granularity:
+                return query.distinct_column_values(
+                    column, adhoc_filters=adhoc_filters, granularity=granularity
+                )
+            return query.column_value_states(column, search_term=search_term, adhoc_filters=adhoc_filters)
+
+        return self.lookup_filter(filter_name, values, missing=filter_not_available)
 
     def _filter_context_filters(self, filter_name: str, filter_context: dict | None = None):
         """The rest of the grid's filters, routed, to narrow one of this

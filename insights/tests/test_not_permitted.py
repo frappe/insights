@@ -979,8 +979,8 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             built = frappe.get_doc(DT.DASHBOARD, board).get_distinct_column_values(REFUSED_FILTER)
             ranged = get_filter_range(board, REFUSED_FILTER)
 
-        self.assertIn(self.todo, viewed)
-        self.assertEqual(sorted(built), sorted(viewed))
+        self.assertIn({"value": self.todo, "state": "possible"}, viewed)
+        self.assertEqual(built, viewed)
         self.assertIsNotNone(ranged)
 
     # @feature permissions.not-permitted-chart dashboard.filter-values
@@ -1017,7 +1017,7 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
             query_values = query.get_distinct_column_values("status")
             query_range = query.get_column_range("status")
 
-        self.assertIn(self.todo, viewed)
+        self.assertIn({"value": self.todo, "state": "possible"}, viewed)
         self.assertIsNotNone(ranged)
         self.assertEqual(card_values, [])
         self.assertIsNone(card_range)

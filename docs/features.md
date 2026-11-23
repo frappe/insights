@@ -255,6 +255,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.filter-add | A user adds a dashboard filter with a label and a type. |
 | dashboard.filter-links | A user links a dashboard filter to a chart's column and the chart refilters; an unlinked chart is left alone. |
 | dashboard.filter-values | A dashboard filter lists the distinct values, or the number range, of the column it links. |
+| dashboard.filter-excluded-values | A dashboard filter lists the values the other filters leave no rows for after the ones they leave, dimmed, and a reader can still pick one. |
 | dashboard.filter-date-periods | A date filter lists the years, fiscal years and months its column has rows in under the other filters, a year opens onto its quarters, and a pick keeps that whole period. |
 | dashboard.filter-datetime | A Datetime dashboard filter keeps a from–to range to the minute, or a span of the last minutes or hours that ends when the chart is read, so a refresh moves it. An Auto axis under such a window reads by the minute up to three hours, then by the hour. |
 | dashboard.filter-default | A user sets a filter's default operator and value. |
