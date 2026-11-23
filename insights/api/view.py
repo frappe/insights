@@ -17,6 +17,8 @@ behind a chart never leave the server: the client names the chart, and the
 server decides what runs.
 """
 
+import inspect
+
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
@@ -176,10 +178,15 @@ def get_dashboard_preview(dashboard: str):
     )
 
 
+# Frappe v15 and early v16 limit by IP only. A Frappe that old cannot capture a
+# whole page either, so there the draw refuses before it starts a browser.
+PER_USER = {"user_based": True} if "user_based" in inspect.signature(rate_limit).parameters else {}
+
+
 # POST, as every new endpoint: its CSRF token keeps another site from making a
 # signed-in reader's browser start a render here
 @frappe.whitelist(methods=["POST"])
-@rate_limit(limit=10, seconds=60, user_based=True)
+@rate_limit(limit=10, seconds=60, **PER_USER)
 def get_dashboard_image(dashboard: str, filters: dict | str | None = None, width: int = 1280):
     """The whole dashboard as the caller sees it, as a JPEG download.
 
