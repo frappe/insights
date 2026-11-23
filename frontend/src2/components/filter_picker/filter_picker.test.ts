@@ -194,7 +194,7 @@ describe('the values a text filter lists', () => {
 			[
 				['Ticked', true, false, undefined],
 				['Left', false, false, undefined],
-				['Gone', false, true, 'Excluded'],
+				['Gone', false, true, 'No data'],
 				['Also gone', false, true, undefined],
 			],
 		)
