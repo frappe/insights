@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-11-16 12:35\n"
+"PO-Revision-Date: 2026-11-23 13:46\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Swedish\n"
 "MIME-Version: 1.0\n"
@@ -1915,21 +1915,21 @@ msgstr "Markdown stöds"
 #. Label of the max_execution_time (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Execution Time (Seconds)"
-msgstr "Maximal Exekvering Tid (Sekunder)"
+msgstr "Högst Exekvering Tid (Sekunder)"
 
 #. Label of the max_memory_usage (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Memory Usage"
-msgstr "Maximal Minnes Användning"
+msgstr "Högst Minnes Användning"
 
 #. Label of the max_records_to_sync (Int) field in DocType 'Insights Settings'
 #: insights/insights/doctype/insights_settings/insights_settings.json
 msgid "Max Records To Sync"
-msgstr "Maximalt antal poster att synkronisera"
+msgstr "Högst antal poster att synkronisera"
 
 #: frontend/src2/charts/components/MeasurePicker.vue:140
 msgid "Maximum of..."
-msgstr "Maximalt..."
+msgstr "Högst..."
 
 #: frontend/src2/charts/components/NewMeasureSelectorDialog.vue:112
 msgid "Measure Name"
