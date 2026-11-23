@@ -50,12 +50,24 @@ export type Filter = {
 }
 
 /**
+ * A value a dashboard filter lists: `possible` when the other filters leave rows
+ * for it, `excluded` when they leave none.
+ */
+export type ListedValue = { value: string; state: 'possible' | 'excluded' }
+
+/**
  * What a column's filter lists to pick from. With `granularity`, the periods
- * the column has rows in, as each period's first day, newest first.
+ * the column has rows in, as each period's first day, newest first. A plain
+ * value is possible.
  */
 export type ValuesProvider = (
 	column: QueryResultColumn,
-) => (search: string, granularity?: GranularityType) => Promise<string[]>
+) => (search: string, granularity?: GranularityType) => Promise<Array<string | ListedValue>>
+
+/** A host may list plain values, numbers included; each of those is possible. */
+export function listedValue(value: string | ListedValue): ListedValue {
+	return value && typeof value === 'object' ? value : { value, state: 'possible' }
+}
 
 export type FilterKind = 'text' | 'number' | 'date'
 
@@ -215,7 +227,37 @@ export type ListItem = {
 	next?: boolean
 	/** a heading above the row, the first of its group */
 	group?: string
+	/** a value the other filters leave no rows for */
+	dimmed?: boolean
 	filter?: Filter
+}
+
+/**
+ * The rows of a multi-select over values: those ticked when the stage opened,
+ * then the values the other filters leave, then those they exclude, dimmed
+ * under a heading that says why. A reader may still pick an excluded value,
+ * and a ticked one reads as ticked whatever its state.
+ */
+export function valueRows(ticked: string[], listed: ListedValue[], picked: string[]): ListItem[] {
+	const rest = listed.filter(({ value }) => !ticked.includes(value))
+	const row = (value: string): ListItem => ({
+		key: `v:${value}`,
+		label: value,
+		tick: true,
+		checked: picked.includes(value),
+	})
+	const excluded = rest
+		.filter(({ state }) => state === 'excluded')
+		.map(({ value }, i) => ({
+			...row(value),
+			dimmed: !picked.includes(value),
+			group: i === 0 ? __('No rows under the other filters') : undefined,
+		}))
+	return [
+		...ticked.map(row),
+		...rest.filter(({ state }) => state !== 'excluded').map(({ value }) => row(value)),
+		...excluded,
+	]
 }
 
 /**

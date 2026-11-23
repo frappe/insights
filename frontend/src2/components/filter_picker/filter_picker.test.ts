@@ -21,7 +21,9 @@ import {
 	summaryParts,
 	spanLabel,
 	toFilterArgs,
+	listedValue,
 	unitOf,
+	valueRows,
 } from './filter_picker'
 
 describe('the words a span is written in', () => {
@@ -171,6 +173,50 @@ describe('typed date phrases', () => {
 			operator: 'between',
 			value: ['2026-10-18', '2026-10-24'],
 		})
+	})
+})
+
+describe('the values a text filter lists', () => {
+	// @feature dashboard.filter-excluded-values
+	it('lists what the other filters exclude last, dimmed under a heading, and still pickable', () => {
+		const rows = valueRows(
+			['Ticked'],
+			[
+				{ value: 'Gone', state: 'excluded' },
+				{ value: 'Left', state: 'possible' },
+				{ value: 'Ticked', state: 'excluded' },
+				{ value: 'Also gone', state: 'excluded' },
+			],
+			['Ticked'],
+		)
+
+		expect(rows.map((row) => [row.label, row.checked, row.dimmed ?? false, row.group])).toEqual(
+			[
+				['Ticked', true, false, undefined],
+				['Left', false, false, undefined],
+				['Gone', false, true, 'No rows under the other filters'],
+				['Also gone', false, true, undefined],
+			],
+		)
+		expect(rows.every((row) => row.tick)).toBe(true)
+	})
+
+	// @feature dashboard.card-filter dashboard.filter-excluded-values
+	it('lists a plain value from a host that has no states, numbers too, as possible', () => {
+		expect(
+			[3, 'Open', { value: 'Gone', state: 'excluded' }].map((v) => listedValue(v as string)),
+		).toEqual([
+			{ value: 3, state: 'possible' },
+			{ value: 'Open', state: 'possible' },
+			{ value: 'Gone', state: 'excluded' },
+		])
+	})
+
+	// @feature dashboard.filter-excluded-values
+	it('reads an excluded value the reader picks as picked, not dimmed', () => {
+		const rows = valueRows([], [{ value: 'Gone', state: 'excluded' }], ['Gone'])
+
+		expect(rows).toMatchObject([{ label: 'Gone', checked: true, dimmed: false }])
 	})
 })
 
