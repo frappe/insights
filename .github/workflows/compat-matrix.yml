@@ -5,9 +5,10 @@ on:
     # Every other day at 02:00 UTC. `*/2` restarts on the 1st, so a month can end with two runs in a row.
     - cron: '0 2 */2 * *'
   workflow_dispatch:
-  # Every release is a push to version-3, so the PRs that feed it must install on both Frappe versions
+  # Every release is a push to version-3, so the PRs that feed it must install on both Frappe versions.
+  # version-3 is rebuilt from develop, so a develop PR must at least import on Frappe v15.
   pull_request:
-    branches: [version-3]
+    branches: [version-3, develop]
 
 concurrency:
   group: compat-matrix-${{ github.event_name }}-${{ github.ref }}
@@ -49,12 +50,15 @@ jobs:
       max-parallel: 3
       matrix:
         # A pull request leaves insights_branch empty, so checkout takes the PR's own code.
+        # A develop PR only imports on v15: its frontend builds against Frappe develop's `ui/`.
         # main is Insights v2, which never targeted Frappe v16. develop builds against the
         # frappe app's `ui/`, which only Frappe develop ships.
         # dependencies: highest upgrades Insights' dependencies to the newest versions both
         # apps allow, which a site gets once another app or a later deploy upgrades them.
         include: >-
-          ${{ fromJSON(github.event_name == 'pull_request'
+          ${{ fromJSON(github.event_name == 'pull_request' && github.base_ref == 'develop'
+          && '[{"frappe_branch": "version-15", "import_only": true}]'
+          || github.event_name == 'pull_request'
           && '[{"frappe_branch": "version-15"}, {"frappe_branch": "version-16"}]'
           || '[{"insights_branch": "main", "frappe_branch": "version-15"},
           {"insights_branch": "version-3", "frappe_branch": "version-15"},
@@ -64,7 +68,7 @@ jobs:
           {"insights_branch": "version-3", "frappe_branch": "version-16", "dependencies": "highest"},
           {"insights_branch": "develop", "frappe_branch": "develop", "dependencies": "highest"}]') }}
 
-    name: Install (Insights=${{ matrix.insights_branch || github.head_ref }}, Frappe=${{ matrix.frappe_branch }}${{ matrix.dependencies && format(', Dependencies={0}', matrix.dependencies) || '' }})
+    name: Install (Insights=${{ matrix.insights_branch || github.head_ref }}, Frappe=${{ matrix.frappe_branch }}${{ matrix.dependencies && format(', Dependencies={0}', matrix.dependencies) || '' }}${{ matrix.import_only && ', Import only' || '' }})
 
     services:
       mariadb:
@@ -145,7 +149,7 @@ jobs:
         working-directory: ${{ env.BENCH_PATH }}
         run: |
           # Install the checked-out Insights code into the bench
-          bench get-app insights "$GITHUB_WORKSPACE"
+          bench get-app insights "$GITHUB_WORKSPACE" ${{ matrix.import_only && '--skip-assets' || '' }}
 
           # Install requirements
           bench setup requirements
@@ -247,6 +251,7 @@ jobs:
           EOF
 
       - name: Run Tests
+        if: ${{ !matrix.import_only }}
         working-directory: ${{ env.BENCH_PATH }}
         env:
           CI: "Yes"
