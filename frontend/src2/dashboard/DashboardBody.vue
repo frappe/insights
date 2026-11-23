@@ -18,7 +18,8 @@ import type { DashboardAction, DashboardView } from './view'
 // reports the same list to its host. Nothing here checks which page it is on.
 //
 // The page gives this a box of fixed size, and this fills it. So the grid
-// scrolls and the page around it does not.
+// scrolls and the page around it does not. A capture of the whole dashboard
+// asks for `fullHeight` instead, and this grows with the grid.
 const props = defineProps<{
 	// `useDashboardView` on a view page, `useDashboardBuilder` in the builder
 	dashboard: DashboardView
@@ -26,6 +27,8 @@ const props = defineProps<{
 	// a page that cannot use it
 	grid: Component
 	cell: Component
+	// grow to the grid's height instead of filling the box, for a capture
+	fullHeight?: boolean
 }>()
 
 // When an owner arranges a narrower breakpoint, the box gets that real width.
@@ -85,7 +88,7 @@ const noAccessTitle = __("You don't have access to this dashboard")
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col overflow-hidden">
+	<div class="flex w-full flex-col" :class="fullHeight ? '' : 'h-full overflow-hidden'">
 		<LoadFailure v-if="dashboard.notFound" :title="__('Dashboard not found')" />
 		<LoadFailure
 			v-else-if="dashboard.noAccess"
@@ -108,7 +111,8 @@ const noAccessTitle = __("You don't have access to this dashboard")
 		<div
 			v-else
 			ref="scroller"
-			class="flex-1 overflow-y-auto p-2"
+			class="p-2"
+			:class="fullHeight ? '' : 'flex-1 overflow-y-auto'"
 			@dragover="dashboard.builder?.dragOver($event)"
 			@drop="dashboard.builder?.drop($event)"
 		>

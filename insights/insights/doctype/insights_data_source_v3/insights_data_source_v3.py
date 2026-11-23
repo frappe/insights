@@ -466,11 +466,12 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
                 tables.extend(self.format_table_name(table, schema) for table in schema_tables)
             return tables
 
-        contains_special_chars = re.search(r"[^a-zA-Z0-9_]", database_name)
-        if not contains_special_chars:
-            return db.list_tables()
-
-        return db.list_tables(database=database_name)
+        # The connection is already scoped to database_name, so naming it again adds
+        # nothing and ibis reads a name containing dots as a table hierarchy, which
+        # fails for a database called e.g. `mydev.domain.net` (frappe/insights#1604).
+        # Passing it quoted is not an option either: ibis quotes identifiers itself,
+        # which is what #1179 had to undo.
+        return db.list_tables()
 
     @property
     def source_type(self):
@@ -483,7 +484,12 @@ class InsightsDataSourcev3(InsightsDataSourceDocument, Document):
         Every test arrives here, the button and the save alike, so the outcome
         is counted once. What the driver said stays here. Only the kind of
         failure travels. The message and the host it names do not.
+
+        A test runs on the document as the caller sent it, but with the saved
+        password wherever it left one blank. So only who may change the source
+        may test it.
         """
+        self.check_permission("write")
         try:
             self.attempt_connection()
         except Exception as e:

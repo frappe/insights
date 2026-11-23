@@ -29,6 +29,7 @@ import {
 	FILTER_TYPE_KINDS,
 	operatorOf,
 	type Filter,
+	type ListedValue,
 } from '../components/filter_picker/filter_picker'
 import { showErrorToast } from '../helpers'
 import type { FilterType, GranularityType } from '../helpers/constants'
@@ -303,12 +304,13 @@ export type DashboardView = {
 	// filter state, keyed by filter name
 	filters: FilterValues
 	setFilter: (filter_name: string, state?: FilterState) => void
-	// a filter's values, narrowed by the other filters
+	// a filter's values, each marked by whether the other filters leave rows
+	// for it; its periods, narrowed by them
 	filterValues: (
 		filter_name: string,
 		search_term?: string,
 		granularity?: GranularityType,
-	) => Promise<string[]>
+	) => Promise<Array<string | ListedValue>>
 	// the min and max for a number filter's presets, narrowed the same way
 	filterRange: (filter_name: string) => Promise<[number, number] | undefined>
 	// the filters the reader put on each card
@@ -755,8 +757,8 @@ function fetchDashboard(
  * The values a filter lists. Only the server knows the column behind it.
  *
  * `filters` is the current state of the other filters. The server applies them
- * and leaves this filter out, so the list narrows to what the other filters
- * allow.
+ * and leaves this filter out. Each value comes marked by whether the other
+ * filters leave rows for it; periods come narrowed to them.
  */
 function fetchFilterValues(
 	dashboard: string,
@@ -764,7 +766,7 @@ function fetchFilterValues(
 	search_term?: string,
 	filters?: FilterValues,
 	granularity?: GranularityType,
-): Promise<string[]> {
+): Promise<Array<string | ListedValue>> {
 	return call('insights.api.view.get_filter_values', {
 		dashboard,
 		filter_name,
