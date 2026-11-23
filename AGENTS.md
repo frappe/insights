@@ -23,6 +23,9 @@ frappe-ui in `frontend/src2/`, built with Vite.
 
 - Run `bench` commands from the bench root, not from this app directory
 - `develop` is the default branch; pull requests target `frappe/insights`
+- v3 ships from `version-3`: a fix lands on `develop` first, its backport targets
+  `version-3-hotfix`, and a "merge version-3-hotfix into version-3" pull request
+  releases it, since the Release workflow tags each push to `version-3`
 - Build UI on frappe-ui components and semantic tokens (`text-ink-*`, `bg-surface-*`,
   `border-outline-*`); no raw buttons or hardcoded colors. When frappe-ui has no
   component for it, build one that matches the taste of its frappe-ui neighbors
