@@ -235,7 +235,7 @@ export type ListItem = {
 /**
  * The rows of a multi-select over values: those ticked when the stage opened,
  * then the values the other filters leave, then those they exclude, dimmed
- * under a heading that says why. A reader may still pick an excluded value,
+ * under the heading Excluded. A reader may still pick an excluded value,
  * and a ticked one reads as ticked whatever its state.
  */
 export function valueRows(ticked: string[], listed: ListedValue[], picked: string[]): ListItem[] {
@@ -251,7 +251,7 @@ export function valueRows(ticked: string[], listed: ListedValue[], picked: strin
 		.map(({ value }, i) => ({
 			...row(value),
 			dimmed: !picked.includes(value),
-			group: i === 0 ? __('No rows under the other filters') : undefined,
+			group: i === 0 ? __('Excluded') : undefined,
 		}))
 	return [
 		...ticked.map(row),
