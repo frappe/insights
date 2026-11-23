@@ -1,0 +1,13 @@
+diff --git a/node_modules/echarts/lib/scale/Time.js b/node_modules/echarts/lib/scale/Time.js
+index 57586e5..42f0d0b 100644
+--- a/node_modules/echarts/lib/scale/Time.js
++++ b/node_modules/echarts/lib/scale/Time.js
+@@ -353,7 +353,7 @@ function createIntervalTicks(bottomUnitName, approxInterval, isUTC, extent, inne
+     out.push({
+       value: dateTime,
+       // extent[1] should be added; deduplication will be performed later.
+-      notAdd: dateTime > extent[1]
++      notAdd: dateTime > extent[1] || dateTime > maxTimestamp
+     });
+   }
+   function addLevelTicks(unitName, lastLevelTicks, levelTicks) {

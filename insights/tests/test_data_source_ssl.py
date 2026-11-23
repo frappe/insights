@@ -16,8 +16,7 @@ So `VERIFY_CA` with no CA file was a label, not a check, and the driver does not
 fall back to the system trust store. The test pins both keywords together.
 """
 
-from typing import ClassVar
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from frappe.tests import UnitTestCase
 
@@ -27,35 +26,9 @@ from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import
 from insights.insights.doctype.insights_data_source_v3.connectors.postgresql import (
     get_postgres_connection,
 )
+from insights.tests.base import FakeDataSource
 
 CA_CERTIFICATE = "-----BEGIN CERTIFICATE-----\nQ09SUE9SQVRFIENB\n-----END CERTIFICATE-----"
-
-
-class FakeDataSource(dict):
-    """Enough of a data source for a connector to read."""
-
-    DEFAULTS: ClassVar[dict] = {
-        "host": "db.internal",
-        "port": 5432,
-        "username": "svc",
-        "database_name": "analytics",
-        "schema": "",
-        "connection_string": None,
-        "use_ssl": 1,
-        "ssl_ca": None,
-    }
-
-    def __init__(self, **fields):
-        super().__init__(self.DEFAULTS | fields)
-
-    def __getattr__(self, name):
-        return self.get(name)
-
-    def __setattr__(self, name, value):
-        self[name] = value
-
-    def get_password(self, raise_exception=False):
-        return "secret"
 
 
 def connect_kwargs(connector, backend, **fields):
@@ -72,6 +45,7 @@ def connect_kwargs(connector, backend, **fields):
         if anchor:
             with open(anchor) as certificate:
                 captured["anchor"] = certificate.read()
+        return Mock()
 
     with patch(backend, side_effect=record):
         connector(FakeDataSource(**fields))
@@ -87,16 +61,19 @@ def mariadb_kwargs(**fields):
 
 
 class TestPostgresSSL(UnitTestCase):
+    # @feature data-source.ssl
     def test_ssl_without_an_authority_only_encrypts(self):
         kwargs = postgres_kwargs()
         self.assertEqual(kwargs["sslmode"], "require")
         self.assertNotIn("sslrootcert", kwargs)
 
+    # @feature data-source.ssl
     def test_an_authority_turns_the_same_flag_into_verification(self):
         kwargs = postgres_kwargs(ssl_ca=CA_CERTIFICATE)
         self.assertEqual(kwargs["sslmode"], "verify-full")
         self.assertIn(CA_CERTIFICATE, kwargs["anchor"])
 
+    # @feature data-source.ssl
     def test_no_ssl_sends_no_ssl_options(self):
         kwargs = postgres_kwargs(use_ssl=0)
         self.assertNotIn("sslmode", kwargs)
@@ -104,16 +81,19 @@ class TestPostgresSSL(UnitTestCase):
 
 
 class TestMariaDBSSL(UnitTestCase):
+    # @feature data-source.ssl
     def test_ssl_without_an_authority_only_encrypts(self):
         kwargs = mariadb_kwargs()
         self.assertEqual(kwargs["ssl_mode"], "REQUIRED")
         self.assertNotIn("ssl", kwargs)
 
+    # @feature data-source.ssl
     def test_an_authority_sends_both_the_mode_and_the_certificate(self):
         kwargs = mariadb_kwargs(ssl_ca=CA_CERTIFICATE)
         self.assertEqual(kwargs["ssl_mode"], "VERIFY_IDENTITY")
         self.assertIn(CA_CERTIFICATE, kwargs["anchor"])
 
+    # @feature data-source.ssl
     def test_no_ssl_disables_it(self):
         kwargs = mariadb_kwargs(use_ssl=0)
         self.assertEqual(kwargs["ssl_mode"], "DISABLED")

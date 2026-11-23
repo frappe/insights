@@ -30,8 +30,8 @@ export const COLUMN_TYPES = [
 	{ label: __('Array'), value: 'Array' },
 ] as const
 
-export const FILTER_TYPES = ['String', 'Number', 'Date'] as const
-export type FilterType = typeof FILTER_TYPES[number]
+export const FILTER_TYPES = ['String', 'Number', 'Date', 'Datetime'] as const
+export type FilterType = (typeof FILTER_TYPES)[number]
 
 export const joinTypes = [
 	{
@@ -61,22 +61,32 @@ export const joinTypes = [
 	},
 ] as const
 
-
 export const granularityOptions = [
 	{ label: __('Second'), value: 'second' },
 	{ label: __('Minute'), value: 'minute' },
 	{ label: __('Hour'), value: 'hour' },
-	{ label: __('Day'), value: 'day'},
-	{ label: __('Week'), value: 'week'},
-	{ label: __('Month'), value: 'month'},
-	{ label: __('Quarter'), value: 'quarter'},
-	{ label: __('Year'), value: 'year'},
-	{ label: __('Fiscal Year'), value: 'fiscal_year'},
+	{ label: __('Day'), value: 'day' },
+	{ label: __('Week'), value: 'week' },
+	{ label: __('Month'), value: 'month' },
+	{ label: __('Quarter'), value: 'quarter' },
+	{ label: __('Year'), value: 'year' },
+	{ label: __('Fiscal Year'), value: 'fiscal_year' },
+	{ label: __('Fiscal Quarter'), value: 'fiscal_quarter' },
 ] as const
 
-export type GranularityType = typeof granularityOptions[number]['value']
+export type GranularityType = (typeof granularityOptions)[number]['value']
+
+// An axis chart's date axis at the grain that fits the span it is read over. The
+// server resolves it to one of the grains above where the chart runs, and the
+// response's `granularity` says which.
+export const AUTO_GRANULARITY = 'auto'
+export const autoGranularityOption = { label: __('Auto'), value: AUTO_GRANULARITY } as const
+export type DimensionGranularity = GranularityType | typeof AUTO_GRANULARITY
 
 export const timeGranularityOptions = granularityOptions.slice(0, 3)
+
+// A Date has no time part, so the engine cannot truncate one to a sub-day grain.
+export const dateGranularityOptions = granularityOptions.slice(3)
 
 export function isCalendarDateType(dataType?: string) {
 	return CalendarDateTypes.includes(dataType || '')
@@ -85,6 +95,10 @@ export function isCalendarDateType(dataType?: string) {
 export function getGranularityOptions(dataType?: string) {
 	if (TimeTypes.includes(dataType || '')) {
 		return timeGranularityOptions
+	}
+
+	if (dataType === 'Date') {
+		return dateGranularityOptions
 	}
 
 	if (isCalendarDateType(dataType)) {

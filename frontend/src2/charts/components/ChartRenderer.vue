@@ -1,276 +1,49 @@
 <script setup lang="ts">
-import ChartSectionEmptySvg from '@/query/ChartSectionEmptySvg.vue'
-import { Button } from 'frappe-ui'
-import { Maximize, XIcon, RefreshCcw } from 'lucide-vue-next'
-import { computed, ref } from 'vue'
-import { titleCase } from '../../helpers'
-import { FIELDTYPES } from '../../helpers/constants.ts'
-import { EMPTY_RESULT, Query } from '../../query/query'
-import {
-	BarChartConfig,
-	BubbleChartConfig,
-	DonutChartConfig,
-	FunnelChartConfig,
-	LineChartConfig,
-	MapChartConfig,
-	NumberChartConfig,
-	SankeyChartConfig,
-	AXIS_CHARTS,
-	AxisChartConfig,
-} from '../../types/chart.types'
-import { Chart } from '../chart'
-import {
-	getBarChartOptions,
-	getBubbleChartOptions,
-	getDonutChartOptions,
-	getFunnelChartOptions,
-	getLineChartOptions,
-	getMapChartOptions,
-	getSankeyChartOptions,
-	getAxisChartRowOrder,
-} from '../helpers'
-import BaseChart from './BaseChart.vue'
-import DrillDown from './DrillDown.vue'
-import NumberChart from './NumberChart.vue'
-import TableChart from './TableChart.vue'
+import ChartView from '../ChartView.vue'
+import BuilderDrillDown from '../drill/BuilderDrillDown.vue'
+import type { ChartRead } from '../chart_view'
 
-const props = defineProps<{ chart: Chart; hideMaximize?: boolean }>()
+// The author's drill adds "open as query", which needs the workbook. A View
+// must not import that code, so this is a separate component and not a flag.
+const props = defineProps<{
+	chart?: ChartRead
+	reading?: string
+	hideMaximize?: boolean
+	actionsRevealed?: boolean
+	/** Whether the reader narrowed these rows, and can take that back. */
+	filtered?: boolean
+}>()
 
-const chart_type = computed(() => props.chart.doc.chart_type)
-const config = computed(() => props.chart.doc.config)
-const result = computed(() => props.chart.dataQuery.result || { ...EMPTY_RESULT })
-const loading = computed(
-	() =>
-		!props.chart.isloaded || !props.chart.dataQuery.isloaded || props.chart.dataQuery.executing,
-)
-
-const eChartOptions = computed(() => {
-	// the result outlives a chart type switch, so without this the option builders
-	// would run against the incoming type's still-empty config
-	if (!props.chart.isConfigValid) return
-	if (!result.value.columns?.length) return
-	if (chart_type.value === 'Bar' || chart_type.value === 'Row') {
-		return getBarChartOptions(
-			config.value as BarChartConfig,
-			result.value,
-			chart_type.value === 'Row',
-		)
-	}
-	if (chart_type.value === 'Line') {
-		return getLineChartOptions(config.value as LineChartConfig, result.value)
-	}
-	if (chart_type.value === 'Donut') {
-		return getDonutChartOptions(config.value as DonutChartConfig, result.value)
-	}
-	if (chart_type.value === 'Funnel') {
-		return getFunnelChartOptions(config.value as FunnelChartConfig, result.value)
-	}
-	if (chart_type.value === 'Map') {
-		return getMapChartOptions(config.value as MapChartConfig, result.value)
-	}
-	if (chart_type.value === 'Bubble') {
-		return getBubbleChartOptions(config.value as BubbleChartConfig, result.value)
-	}
-	if (chart_type.value === 'Sankey') {
-		return getSankeyChartOptions(config.value as SankeyChartConfig, result.value)
-	}
-})
-
-const showDrillDown = ref(false)
-const drillDownQuery = ref<Query>()
-
-const mapConfig = computed(() => props.chart.doc.config as MapChartConfig)
-
-// If columns don't change we shouldn't search for this on every click
-const locationColumn = computed(() => {
-	return result.value.columns.find(
-		(c) =>
-			FIELDTYPES.DIMENSION.includes(c.type) &&
-			c.name === mapConfig.value.location_column?.column_name,
-	)
-})
-
-// Runs only when data changes
-const locationRowIndex = computed(() => {
-	const index = new Map<string, any>()
-	const col = locationColumn.value
-
-	if (!col) return { index, reverseMap: new Map<string, string>() }
-
-	// computed mappings for faster acess
-	const mappings = mapConfig.value.region_mappings?.[mapConfig.value.map_type || 'world'] || {}
-	const reverseMap = new Map<string, string>()
-
-	for (const [userValue, mappedRegion] of Object.entries(mappings)) {
-		reverseMap.set(titleCase(mappedRegion as string), userValue)
-	}
-
-	// Index the rows
-	result.value.formattedRows.forEach((row) => {
-		const rawValue = row[col.name]?.toString()
-		if (!rawValue) return
-
-		const normalizedRowValue = titleCase(rawValue)
-		//	case 1: Index by Direct Match (Auto-mapped)
-		// Key: "United States" -> Row(United States)
-		index.set(normalizedRowValue, row)
-
-		//case 2: Index by config mapping
-		// If this row is "usa" and config maps == "usa" -> "United States"
-		// we also want the key "United States" to point to this row
-		const mappedName = mappings[rawValue]
-		if (mappedName) {
-			index.set(titleCase(mappedName as string), row)
-		}
-	})
-
-	return { index, reverseMap }
-})
-
-function handleMapChartClick(params: any) {
-	if (!locationColumn.value) return null
-
-	const clickedLocation = params.name
-	const normalizedClick = titleCase(clickedLocation)
-
-	const { index, reverseMap } = locationRowIndex.value
-	// Lookup directly
-	let matchedRow = index.get(normalizedClick)
-
-	if (!matchedRow) {
-		const originalUserVal = reverseMap.get(normalizedClick)
-		if (originalUserVal) {
-			matchedRow = index.get(titleCase(originalUserVal))
-		}
-	}
-
-	if (!matchedRow) return null
-
-	return props.chart.dataQuery.getDrillDownQuery(locationColumn.value, matchedRow)
-}
-
-function handleGeneralChartClick(params: any) {
-	let dataIndex = params.dataIndex
-
-	if (AXIS_CHARTS.includes(chart_type.value)) {
-		const rowOrder = getAxisChartRowOrder(
-			result.value.rows,
-			(config.value as AxisChartConfig).x_axis,
-			chart_type.value === 'Row',
-		)
-		dataIndex = rowOrder[dataIndex]
-	}
-
-	const row = result.value.formattedRows[dataIndex]
-	const column = result.value.columns.find((c) => c.name === params.seriesName)
-
-	return column ? props.chart.dataQuery.getDrillDownQuery(column, row) : null
-}
-
-async function onChartElementClick(params: any) {
-	if (params.componentType !== 'series') return
-
-	const query =
-		chart_type.value === 'Map'
-			? await handleMapChartClick(params)
-			: await handleGeneralChartClick(params)
-
-	if (query) {
-		drillDownQuery.value = query
-		showDrillDown.value = true
-	}
-}
-
-async function onNumberChartDrillDown(column: any, row: any) {
-	drillDownQuery.value = await props.chart.dataQuery.getDrillDownQuery(column, row)
-	if (drillDownQuery.value) {
-		showDrillDown.value = true
-	}
-}
-
-const showExpandedChartDialog = ref(false)
+const emit = defineEmits<{
+	resetFilters: []
+}>()
 </script>
 
 <template>
-	<div class="group relative h-full w-full">
-		<BaseChart
-			v-if="!loading && eChartOptions"
-			class="rounded bg-white py-1 shadow"
-			:class="props.chart.doc.chart_type == 'Map' ? '[&>div:last-child]:p-4' : ''"
-			:title="props.chart.doc.title"
-			:options="eChartOptions"
-			:onClick="onChartElementClick"
-		/>
-		<NumberChart
-			v-else-if="!loading && chart_type == 'Number'"
-			:config="config as NumberChartConfig"
-			:result="result"
-			@drill-down="onNumberChartDrillDown"
-		/>
-		<TableChart v-else-if="chart_type == 'Table'" :chart="props.chart" />
-
-		<div v-else class="flex h-full flex-1 flex-col items-center justify-center rounded border">
-			<template v-if="loading">
-				<LoadingIndicator class="h-5 w-5 text-gray-500" />
-				<p class="mt-1.5 text-gray-500">Loading data...</p>
-			</template>
-			<template v-else-if="chart.dataQuery.isServerBusy">
-				<Button
-					variant="outline"
-					@click="chart.refresh(true)"
-					label="Server is busy, click to retry"
-				>
-					<template #prefix>
-						<RefreshCcw class="h-4 w-4 text-gray-700" stroke-width="1.5" />
-					</template>
-				</Button>
-			</template>
-			<template v-else>
-				<ChartSectionEmptySvg></ChartSectionEmptySvg>
-				<p class="text-gray-500">
-					Pick a chart type and configure options to see the chart here
-				</p>
-			</template>
-		</div>
-
-		<div
-			v-if="!props.hideMaximize && chart && chart.doc.chart_type !== 'Number'"
-			class="absolute top-0 right-0 opacity-0 transition-opacity group-hover:opacity-100"
-			:class="chart_type == 'Table' ? 'p-1.5' : 'p-2'"
-		>
-			<Button variant="ghost" @click="showExpandedChartDialog = true">
-				<Maximize class="h-3.5 w-3.5 text-gray-700" stroke-width="1.5" />
-			</Button>
-		</div>
-	</div>
-
-	<DrillDown
-		v-if="drillDownQuery"
-		v-model="showDrillDown"
-		@update:modelValue="!$event ? (drillDownQuery = undefined) : undefined"
-		:query="drillDownQuery"
+	<ChartView
+		:chart="props.chart"
+		:reading="props.reading"
+		:hide-maximize="props.hideMaximize"
+		:actions-revealed="props.actionsRevealed"
+		:filtered="props.filtered"
+		:readonly="false"
+		@reset-filters="emit('resetFilters')"
 	>
-	</DrillDown>
-
-	<Dialog
-		v-if="chart"
-		v-model="showExpandedChartDialog"
-		:options="{
-			size: '7xl',
-			title: chart?.doc.title,
-		}"
-	>
-		<template #body>
-			<div class="h-[85vh] w-full">
-				<ChartRenderer v-if="chart" :chart="chart" :hide-maximize="true" />
-				<div class="absolute top-2 right-2">
-					<Button variant="ghost" @click="showExpandedChartDialog = false">
-						<template #icon>
-							<XIcon class="size-4 text-gray-700" />
-						</template>
-					</Button>
-				</div>
-			</div>
+		<template v-if="$slots.actions" #actions="{ expanded }">
+			<slot name="actions" :expanded="expanded" />
 		</template>
-	</Dialog>
+		<template v-if="$slots.hoverActions" #hoverActions>
+			<slot name="hoverActions" />
+		</template>
+
+		<!-- `v-if` unmounts it on close, so every drill starts from an empty stack -->
+		<template #drill="{ clicked, close }">
+			<BuilderDrillDown
+				v-if="clicked && props.chart"
+				:subject="props.chart.drillSubject"
+				:clicked="clicked"
+				@close="close()"
+			/>
+		</template>
+	</ChartView>
 </template>

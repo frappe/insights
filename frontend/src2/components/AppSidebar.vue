@@ -21,8 +21,8 @@
 		</div>
 		<div>
 			<DemoDataBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
-			<V2MigrationBanner v-if="!isSidebarCollapsed" class="m-2 p-2" />
-			<SecurityUpdateCard v-if="!isSidebarCollapsed" class="m-2 p-2" />
+			<UpgradeCard v-if="!isSidebarCollapsed" class="m-2" />
+			<SecurityUpdateCard v-if="!isSidebarCollapsed" class="m-2" />
 			<TrialBanner v-if="is_fc_site" :is-sidebar-collapsed="isSidebarCollapsed" />
 			<SidebarLink
 				:label="isSidebarCollapsed ? __('Expand') : __('Collapse')"
@@ -33,7 +33,7 @@
 				<template #icon>
 					<span class="grid h-5 w-6 flex-shrink-0 place-items-center">
 						<PanelRightOpen
-							class="h-4.5 w-4.5 text-gray-700 duration-300 ease-in-out"
+							class="h-4.5 w-4.5 text-ink-gray-6 duration-300 ease-in-out"
 							:class="{ '[transform:rotateY(180deg)]': isSidebarCollapsed }"
 							stroke-width="1.5"
 						/>
@@ -43,11 +43,11 @@
 		</div>
 	</div>
 
-	<Settings v-model="showSettingsDialog" />
+	<Settings v-if="session.isAuthorized" v-model="showSettingsDialog" />
 </template>
 
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { breakpointsTailwind, useBreakpoints, useStorage } from '@vueuse/core'
 import {
 	Book,
 	Database,
@@ -56,43 +56,37 @@ import {
 	PanelRightOpen,
 	SettingsIcon,
 } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import useSettings, {
-	settingsOpenedFrom,
-	settingsTab,
-	showSettingsDialog,
-} from '../settings/settings'
+import { computed, ref } from 'vue'
+import useSettings from '../settings/settings'
 import Settings from '../settings/Settings.vue'
 import SidebarLink from './SidebarLink.vue'
 import DemoDataBanner from './DemoDataBanner.vue'
-import V2MigrationBanner from './V2MigrationBanner.vue'
 import SecurityUpdateCard from './SecurityUpdateCard.vue'
+import UpgradeCard from '../upgrade/UpgradeCard.vue'
 import UserDropdown from './UserDropdown.vue'
-import { TrialBanner } from 'frappe-ui/frappe'
+import { TrialBanner } from '@framework/ui/components/TrialBanner/index.ts'
 import { __ } from '../translation'
+import session from '../session'
 
-const isSidebarCollapsed = useStorage('insights:sidebarCollapsed', false)
-
-const settings = useSettings()
-const is_fc_site = window.is_fc_site
-
-// `?settings=<tab>` opens the dialog on that tab. The settings live in a dialog
-// and not on a route, so this is the only way another app - v2 - can link into
-// one. The param is cleared, or a reload would reopen the dialog.
-const route = useRoute()
-const router = useRouter()
-onMounted(() => {
-	const tab = route.query.settings
-	if (!tab) return
-	settingsTab.value = String(tab)
-	// Only v2 links in, so the param is the whole of what "came from v2" means.
-	settingsOpenedFrom.value = 'v2'
-	showSettingsDialog.value = true
-	const query = { ...route.query }
-	delete query.settings
-	router.replace({ query })
+// Below the small breakpoint the open sidebar covers most of the page, so it
+// starts collapsed there, and toggling it does not change the stored choice
+const isNarrow = useBreakpoints(breakpointsTailwind).smaller('sm')
+const collapsedWhenWide = useStorage('insights:sidebarCollapsed', false)
+const collapsedWhenNarrow = ref(true)
+const isSidebarCollapsed = computed({
+	get: () => (isNarrow.value ? collapsedWhenNarrow.value : collapsedWhenWide.value),
+	set: (collapsed) => {
+		if (isNarrow.value) collapsedWhenNarrow.value = collapsed
+		else collapsedWhenWide.value = collapsed
+	},
 })
+const showSettingsDialog = ref(false)
+
+// A reader without an Insights role reads dashboards and nothing else, so the
+// rest is neither shown nor fetched
+const builder = session.isAuthorized
+const settings = builder ? useSettings() : undefined
+const is_fc_site = window.is_fc_site
 
 const links = ref([
 	{
@@ -104,22 +98,25 @@ const links = ref([
 		label: __('Workbooks'),
 		icon: Book,
 		to: 'WorkbookList',
+		hidden: !builder,
 	},
 	{
 		label: __('Data Sources'),
 		icon: Database,
 		to: 'DataSourceList',
+		hidden: !builder,
 	},
 	{
 		label: __('Data Store'),
 		icon: DatabaseZap,
 		to: 'DataStoreList',
-		hidden: computed(() => !settings.doc.enable_data_store),
+		hidden: computed(() => !settings?.doc.enable_data_store),
 	},
 	{
 		label: __('Settings'),
 		icon: SettingsIcon,
 		onClick: () => (showSettingsDialog.value = true),
+		hidden: !builder,
 	},
 ])
 </script>

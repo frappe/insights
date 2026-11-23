@@ -6,9 +6,14 @@ the SQL, the driver's words, the names of columns and tables — never leaves th
 site.
 """
 
+from contextlib import ExitStack, contextmanager
 from unittest.mock import patch
 
 import frappe
+from frappe.auth import CookieManager, LoginManager, validate_auth
+from frappe.sessions import delete_session
+from frappe.utils import set_request
+from frappe.utils.password import get_decrypted_password
 from ibis.common.exceptions import OperationNotDefinedError
 from pymysql.err import OperationalError
 
@@ -36,25 +41,11 @@ from insights.tests.factories import (
 )
 
 WORKBOOK_TITLE = "Query Failed Test Workbook"
-FIRST_TITLE = f"{WORKBOOK_TITLE} Cycle First"
-SECOND_TITLE = f"{WORKBOOK_TITLE} Cycle Second"
 
 TODO_SOURCE = {
     "type": "source",
     "table": {"type": "table", "data_source": "Site DB", "table_name": "tabToDo"},
 }
-
-
-def query_source(query_name):
-    return {"type": "source", "table": {"type": "query", "query_name": query_name}}
-
-
-def query_union(query_name):
-    return {
-        "type": "union",
-        "table": {"type": "query", "query_name": query_name},
-        "distinct": True,
-    }
 
 
 class TestErrorKind(InsightsIntegrationTestCase):
@@ -136,43 +127,67 @@ class TestErrorKind(InsightsIntegrationTestCase):
 
 
 class TestQueryFailedEvent(InsightsIntegrationTestCase):
-    """A run the engine refuses, provoked by a cycle between two queries.
-
-    Save-time validation rejects a cycle, so the second reference is written to
-    the row, and the refusal comes from the builder.
-    """
-
     @classmethod
     def before_class(cls):
         cls.workbook = create_test_workbook("Administrator", title=WORKBOOK_TITLE).name
         cls.query = create_test_query(
             "Administrator",
             cls.workbook,
-            title=FIRST_TITLE,
-            operations=[TODO_SOURCE],
+            title="Query Failed Test Query",
+            operations=[TODO_SOURCE, {"type": "teleport"}],
         ).name
-        cls.referenced = create_test_query(
-            "Administrator",
-            cls.workbook,
-            title=SECOND_TITLE,
-            operations=[query_source(cls.query)],
-        ).name
-        frappe.db.set_value(
-            DT.QUERY,
-            cls.query,
-            "operations",
-            frappe.as_json([TODO_SOURCE, query_union(cls.referenced)]),
+
+        admin = frappe.get_doc("User", "Administrator")
+        cls.original_keys = (
+            admin.api_key,
+            get_decrypted_password("User", "Administrator", "api_secret", raise_exception=False),
         )
+        admin.api_key, cls.api_secret = frappe.generate_hash(length=15), frappe.generate_hash(length=15)
+        admin.api_secret = cls.api_secret
+        admin.save(ignore_permissions=True)
+        cls.api_key = admin.api_key
+
+        with cls.in_request({}):
+            frappe.local.login_manager.login_as("Administrator")
+            cls.sid = frappe.session.sid
 
     @classmethod
     def after_class(cls):
         delete_workbooks(title_prefix=WORKBOOK_TITLE)
+        with cls.in_request({}):
+            delete_session(cls.sid, reason="Test Finished")
+        admin = frappe.get_doc("User", "Administrator")
+        admin.api_key, admin.api_secret = cls.original_keys
+        admin.save(ignore_permissions=True)
 
-    def refused_run(self):
-        """Run the query the engine has to refuse, and return the call it sent."""
+    @staticmethod
+    @contextmanager
+    def in_request(headers: dict):
+        """Authenticate a request that carries `headers` the way Frappe does."""
+        set_request(path="/api/method/insights.api.run_doc_method", headers=headers)
+        frappe.local.request_ip = "127.0.0.1"
+        frappe.local.cookie_manager = CookieManager()
+        frappe.local.login_manager = LoginManager()
+        try:
+            validate_auth()
+            yield
+        finally:
+            for name in ("request", "request_ip", "cookie_manager", "login_manager"):
+                delattr(frappe.local, name)
+            frappe.set_user("Administrator")
+
+    def refused_run(self, headers: dict | None = None):
+        """Run the query the engine has to refuse, and return the call it sent.
+
+        With `headers`, the run is made inside a request that carries them.
+        """
         query = frappe.get_doc(DT.QUERY, self.query)
-        with patch("frappe.utils.telemetry.capture") as sender, db_connections():
-            with self.assertRaises(frappe.ValidationError):
+        with ExitStack() as stack:
+            if headers is not None:
+                stack.enter_context(self.in_request(headers))
+            sender = stack.enter_context(patch("frappe.utils.telemetry.capture"))
+            stack.enter_context(db_connections())
+            with self.assertRaises((frappe.ValidationError, frappe.PermissionError)):
                 query.execute()
         return sender.call_args
 
@@ -189,12 +204,30 @@ class TestQueryFailedEvent(InsightsIntegrationTestCase):
                 "error_kind": "refused",
                 "data_store": False,
                 "source_type": "site_db",
+                "caller": "job",
             },
         )
+
+    # @feature telemetry.query-failed
+    def test_a_run_says_whether_a_token_or_a_session_made_it(self):
+        cookie = f"sid={self.sid}"
+        runs = [
+            ({"Authorization": f"token {self.api_key}:{self.api_secret}"}, "token"),
+            ({"Cookie": cookie}, "session"),
+            # Frappe lets the cookie through beside a header it cannot verify
+            ({"Cookie": cookie, "Authorization": "Bearer bogus"}, "session"),
+            ({"Cookie": cookie, "Authorization": "Negotiate abc"}, "session"),
+            ({"Cookie": cookie, "Authorization": "Basic YTpiOmM="}, "session"),
+            ({}, "guest"),
+        ]
+        for headers, caller in runs:
+            with self.subTest(headers=headers):
+                _, kwargs = self.refused_run(headers)
+                self.assertEqual(kwargs["properties"]["caller"], caller)
 
     # @feature telemetry.query-failed
     def test_a_report_names_nothing_the_query_reads(self):
         _, kwargs = self.refused_run()
         sent = frappe.as_json(kwargs["properties"])
-        for secret in ("tabToDo", FIRST_TITLE, SECOND_TITLE, "SELECT", "Circular"):
+        for secret in ("tabToDo", "teleport", "SELECT", "does not know"):
             self.assertNotIn(secret, sent)

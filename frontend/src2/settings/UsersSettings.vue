@@ -1,6 +1,7 @@
 <script setup lang="tsx">
 import { useTimeAgo } from '@vueuse/core'
-import { Avatar, ListView } from 'frappe-ui'
+import { Avatar } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { Plus, SearchIcon } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import IndicatorIcon from '../components/Icons/IndicatorIcon.vue'
@@ -18,7 +19,7 @@ const filteredUsers = computed(() => {
 	}
 	return userStore.users.filter(
 		(user) =>
-			user.full_name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+			user.full_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
 			user.email.toLowerCase().includes(searchQuery.value.toLowerCase()),
 	)
 })
@@ -36,6 +37,7 @@ const listOptions = ref({
 		{
 			label: __('Status'),
 			key: 'enabled',
+			width: '10rem',
 			getLabel: (props: any) => {
 				const user = props.row as User
 				if (user.invitation_status) {
@@ -50,9 +52,11 @@ const listOptions = ref({
 				const user = props.row as User
 				if (user.invitation_status) {
 					color =
-						user.invitation_status === 'Pending' ? 'text-yellow-500' : 'text-red-500'
+						user.invitation_status === 'Pending'
+							? 'text-ink-yellow-5'
+							: 'text-ink-red-5'
 				} else {
-					color = props.row.enabled ? 'text-green-500' : 'text-gray-500'
+					color = props.row.enabled ? 'text-ink-green-5' : 'text-ink-gray-4'
 				}
 				return <IndicatorIcon class={color} />
 			},
@@ -60,6 +64,7 @@ const listOptions = ref({
 		{
 			label: __('Email'),
 			key: 'email',
+			width: 2,
 		},
 		// {
 		// 	label: 'Last Active',
@@ -142,13 +147,13 @@ function sendInvitation() {
 
 <template>
 	<div class="flex h-full w-full flex-col gap-3 overflow-x-hidden overflow-y-scroll p-8 px-10">
-		<h1 class="flex-shrink-0 text-xl font-semibold">Users</h1>
+		<h1 class="flex-shrink-0 text-2xl-semibold">Users</h1>
 
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">
 			<div class="flex justify-between gap-2 overflow-visible py-1">
-				<FormControl :placeholder="__('Search')" :debounce="300">
+				<FormControl v-model="searchQuery" :placeholder="__('Search')" :debounce="300">
 					<template #prefix>
-						<SearchIcon class="h-4 w-4 text-gray-500" />
+						<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 					</template>
 				</FormControl>
 
@@ -159,7 +164,7 @@ function sendInvitation() {
 					@click="showInviteUserDialog = true"
 				>
 					<template #prefix>
-						<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+						<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 				</Button>
 			</div>
@@ -168,24 +173,22 @@ function sendInvitation() {
 	</div>
 
 	<Dialog
-		v-model="showInviteUserDialog"
-		:options="{
-			title: __('Invite User'),
-			size: 'sm',
-			actions: [
-				{
-					label: __('Send Invitation'),
-					variant: 'solid',
-					disabled: !areAllEmailsValid,
-					loading: userStore.sendingInvitation,
-					onClick: sendInvitation,
-				},
-			],
-		}"
+		v-model:open="showInviteUserDialog"
+		:title="__('Invite User')"
+		size="sm"
+		:actions="[
+			{
+				label: __('Send Invitation'),
+				variant: 'solid',
+				disabled: !areAllEmailsValid,
+				loading: userStore.sendingInvitation,
+				onClick: sendInvitation,
+			},
+		]"
 	>
-		<template #body-content>
+		<template #default>
 			<div class="flex flex-col gap-4">
-				<div class="flex flex-wrap gap-1 rounded bg-gray-100 p-0.5">
+				<div class="flex flex-wrap gap-1 rounded-4 bg-surface-gray-2 p-0.5">
 					<Button
 						v-for="(email, idx) in emailsToInvite"
 						:key="email"
@@ -208,7 +211,7 @@ function sendInvitation() {
 							placeholder="Enter email address"
 							v-model="emailsTxt"
 							@keydown.enter.capture.stop="extractEmails(`${emailsTxt} `)"
-							class="h-7 w-full rounded border-none bg-gray-100 py-1.5 pl-2 pr-2 text-base text-gray-800 placeholder-gray-500 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
+							class="h-7 w-full rounded-4 border-none bg-surface-gray-2 py-1.5 pl-2 pr-2 text-base text-ink-gray-7 placeholder-ink-gray-4 transition-colors focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
 						/>
 					</div>
 				</div>

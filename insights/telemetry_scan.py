@@ -13,6 +13,7 @@ import frappe
 from frappe.utils import add_days, getdate, now_datetime
 from frappe.utils.telemetry import is_pulse_enabled, site_age
 
+from insights.insights.doctype.insights_chart_v3.chart_query import CHART_TYPES
 from insights.insights.doctype.insights_data_source_v3.data_warehouse import row_limit
 from insights.insights.doctype.insights_data_source_v3.ibis.utils import get_functions
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import (
@@ -27,10 +28,6 @@ from insights.telemetry import capture, default_properties, is_standard_app
 
 PROPERTY_CAP = 4096
 LIST_LIMIT = 50
-
-# the chart types this version draws. version-3 declares them in the browser,
-# `frontend/src2/types/chart.types.ts`; the backend has no list of its own
-CHART_TYPES = ("Number", "Bar", "Line", "Row", "Donut", "Funnel", "Table", "Map", "Bubble", "Sankey")
 
 CHART_DOCTYPE = "Insights Chart v3"
 DASHBOARD_DOCTYPE = "Insights Dashboard v3"
@@ -104,7 +101,7 @@ def run_site_scan():
 def within_cap(props: dict) -> dict:
     """Cut lists until the properties serialize under Pulse's 4096 bytes.
 
-    `capture` adds the properties every event carries, so the room they take is
+    `capture` adds the properties every event includes, so the room they take is
     off the cap before the first list is measured.
     """
     cap = PROPERTY_CAP - serialized_size(default_properties())
@@ -133,9 +130,6 @@ def site_profile() -> dict:
         "apps": standard,
         "custom_apps": len(installed) - len(standard),
         "site_age_days": site_age(),
-        "first_workbook_from_template": bool(
-            frappe.db.exists(WORKBOOK_DOCTYPE, {"from_template": ["is", "set"]})
-        ),
     }
     props.update(timeline())
     props.update(footprint())
@@ -311,7 +305,7 @@ def known(value: str | None, closed_list, spelled: dict | None = None) -> str:
     """The name a value may leave the site under, from a list the engine owns.
 
     `operations` is free-form JSON that nothing validates, so a key built from it
-    can carry any word a client wrote. Anything the engine would refuse is
+    can hold any word a client wrote. Anything the engine would refuse is
     counted as `other`.
     """
     if value not in closed_list:
@@ -395,7 +389,7 @@ def tables_queries_read(operations_by_query: dict | None = None) -> dict:
     table twice counts once.
 
     Read from operations, never from `Insights Query Reference`: the edge table
-    only carries a query saved since it shipped, so it answers for a fraction of
+    only holds a query saved since it shipped, so it answers for a fraction of
     an older site.
     """
     if operations_by_query is None:

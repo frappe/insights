@@ -1,8 +1,11 @@
+import math
 import os
 import shutil
+import socket
 import tempfile
+import threading
 import time
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager, suppress
 from pathlib import Path
 
@@ -10,27 +13,69 @@ import frappe
 import frappe.utils
 import ibis
 import pandas as pd
-from duckdb import CatalogException
-from frappe.query_builder.functions import IfNull
-from frappe.utils import get_files_path, now
+import pyarrow as pa
+import pyarrow.compute as pc
+import pyarrow.parquet as pq
+from duckdb import CatalogException, DependencyException, OutOfMemoryException
+from frappe.query_builder.functions import IfNull, Max, Min
+from frappe.utils import add_days, cint, get_datetime, get_files_path, now, now_datetime
 from frappe.utils.background_jobs import is_job_enqueued
 from ibis import _
 from ibis.backends.duckdb import Backend as DuckDBBackend
+from ibis.backends.sql.datatypes import DuckDBType
 from ibis.common.exceptions import TableNotFound
 from ibis.expr.types import Expr, Table
 
 import insights
+from insights.compat import ServiceUnavailableError
+from insights.exceptions import TableNotStored
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     IMPORT_WRITE_LOCK_TIMEOUT,
+    MEMORY_LIMIT_CONFIG_KEY,
     WRITE_LOCK_TIMEOUT,
+    get_threads,
     local_duckdb_write_connection,
+    local_duckdb_write_lock,
     open_local_duckdb,
 )
+from insights.insights.doctype.insights_data_source_v3.connectors.mariadb import read_pyarrow_batches
+from insights.insights.doctype.insights_data_source_v3.web_tier import web_tier_settings
+from insights.insights.doctype.insights_table_v3.insights_table_v3 import store_columns
+from insights.resources import ResourcePool, cpu_budget, server_busy
 from insights.utils import InsightsDataSourcev3, InsightsTablev3
 
 WAREHOUSE_DB_NAME = "insights"
 
+# A stored table unused for this long is un-stored; a table imported this
+# recently is never pruned, even if nothing has queried it yet.
+UNUSED_TABLE_DAYS = 30
+# Cleanup holds the warehouse write lock for much longer than an import commit.
+CLEANUP_LOCK_TIMEOUT = 15 * 60
+# Rebuilding the file is only worth the disk and time above these thresholds.
+COMPACT_MIN_FILE_SIZE = 100 * 1024 * 1024
+COMPACT_MIN_FREE_RATIO = 0.2
+STALE_SPILL_FOLDER_SECONDS = 24 * 60 * 60
+# ibis's `create_table(overwrite=True)` fills a table of this name before
+# renaming it over the target. An import that died in between, before imports
+# committed in one transaction, left it behind.
+LEFTOVER_TABLE_PREFIX = "ibis_duckdb_table_"
 DEFAULT_ROW_LIMIT = 10_00_000
+IMPORT_TIMEOUT = 30 * 60
+# A batch is read and written this many chunks at a time, so an import holds a
+# chunk in memory, not a batch. A chunk is a row group of the batch's parquet
+# file, and DuckDB commits many small row groups with more memory than a few
+# large ones, so a chunk is no smaller than MIN_CHUNK_MEMORY (MB).
+CHUNKS_PER_BATCH = 10
+MIN_CHUNK_MEMORY = 8
+# DuckDB's memory runs past its limit, by about 85 MB and a buffer per thread
+# and column: committing 46 columns at a 1 GB limit took 1.1 GB with two threads
+# and 1.6 GB with eight, and 304 columns fit 341 MB only with one thread. So a
+# commit gets one thread and a share of the import's limit, no less than
+# COMMIT_MIN_MEMORY (MB). One that still runs out runs once more with the whole
+# limit, and a site that sets its own DuckDB limit keeps it.
+COMMIT_THREADS = 1
+COMMIT_MEMORY_SHARE = 2 / 3
+COMMIT_MIN_MEMORY = 128
 
 
 def row_limit(table_row_limit: int | None = None) -> int:
@@ -39,6 +84,144 @@ def row_limit(table_row_limit: int | None = None) -> int:
         or frappe.db.get_single_value("Insights Settings", "max_records_to_sync")
         or DEFAULT_ROW_LIMIT
     )
+
+
+def quote_ident(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
+# A request that reads the data store holds a slot from the moment it opens the
+# store until it ends, so the Python that builds the query and shapes its rows
+# is inside the bound, not only DuckDB. A full pool is waited on briefly, then
+# answered with a 503 the frontend retries; a waiting request holds a web
+# thread, so few may wait.
+SLOTS_CONFIG_KEY = "insights_data_store_slots"
+MAX_SLOTS = 16
+SLOT_WAIT = 3
+SLOT_RETRY_AFTER = 2
+# a data store query must end before the web tier kills its request
+WEB_TIMEOUT_SHARE = 0.75
+
+
+class ProcessSlot:
+    """The data store slots one process may hold. DuckDB's memory limit and
+    threads are per process and sized for the slots it may hold; the pool alone
+    would let one gthread worker take every slot, and its queries would share
+    one query's memory.
+
+    A hold ends with its pool lease, so a request whose release never ran does
+    not lock its process out for good."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._holders = {}
+
+    def acquire(self, capacity: int, hold: float) -> object | None:
+        with self._lock:
+            now = time.monotonic()
+            self._holders = {h: until for h, until in self._holders.items() if until > now}
+            if len(self._holders) >= capacity:
+                return None
+            holder = object()
+            self._holders[holder] = now + hold
+            return holder
+
+    def release(self, holder: object):
+        with self._lock:
+            self._holders.pop(holder, None)
+
+
+_process_slot = ProcessSlot()
+
+
+def data_store_slots() -> int:
+    """How many data store queries this server runs at once: the cores left after
+    a quarter is kept for everything else, at `get_threads` per query."""
+    if slots := cint(frappe.conf.get(SLOTS_CONFIG_KEY)):
+        return slots
+    cores = max(1, int(cpu_budget()))
+    reserve = max(1, cores // 4)
+    return max(2, min((cores - reserve) // get_threads(), MAX_SLOTS))
+
+
+def slots_per_process() -> int:
+    """The slots one process may hold: an even split among gunicorn's workers.
+    Outside gunicorn one process serves every request, so it may hold them all."""
+    slots = data_store_slots()
+    if not (web_tier := web_tier_settings()):
+        return slots
+    return math.ceil(slots / web_tier.workers)
+
+
+def data_store_pool() -> ResourcePool:
+    slots = data_store_slots()
+    web_tier = web_tier_settings()
+    timeout = web_tier.timeout if web_tier else None
+    return ResourcePool(
+        "insights:data_store",
+        slots,
+        # one user, API client or site cannot take every slot
+        per_site=math.ceil(slots / 2),
+        per_user=math.ceil(slots / 2),
+        max_waiters=max(1, web_tier.workers * web_tier.threads // 4) if web_tier else slots,
+        # a request lives no longer than the web tier lets it
+        lease_seconds=timeout + 5 if timeout else get_data_store_time_limit() + 60,
+    )
+
+
+def take_data_store_slot():
+    # background jobs and the CLI do not hold a web thread, and have no one to
+    # answer busy to
+    if getattr(frappe.local, "request", None) is None:
+        return
+    if getattr(frappe.local, "insights_data_store_slot", None):
+        return
+    pool = data_store_pool()
+    # not waited on: a waiting thread is not in the pool's waiting line, which
+    # bounds how many web threads wait. The client retries the busy answer
+    if not (process_slot := _process_slot.acquire(slots_per_process(), hold=pool.lease_seconds)):
+        raise server_busy(SLOT_RETRY_AFTER)
+    lease = pool.acquire(wait=SLOT_WAIT)
+    if not lease:
+        _process_slot.release(process_slot)
+        raise server_busy(SLOT_RETRY_AFTER)
+    started = getattr(frappe.local, "insights_data_store_started", None) or time.monotonic()
+    frappe.local.insights_data_store_slot = (pool, lease, started, process_slot)
+
+
+def release_data_store_slot():
+    frappe.local.insights_data_store_started = None
+    if slot := getattr(frappe.local, "insights_data_store_slot", None):
+        frappe.local.insights_data_store_slot = None
+        pool, lease, _started, process_slot = slot
+        try:
+            pool.release(lease)
+        finally:
+            _process_slot.release(process_slot)
+
+
+def yield_data_store_slot():
+    """Give the slot back while the request waits on another request's run. A
+    slot it takes again keeps the request's start, so its time limit does not
+    start over."""
+    if slot := getattr(frappe.local, "insights_data_store_slot", None):
+        release_data_store_slot()
+        frappe.local.insights_data_store_started = slot[2]
+
+
+def get_data_store_time_limit() -> int:
+    """Seconds a data store query may run: Max Execution Time, as for a live
+    query, but never so long that the web tier kills the worker first. A request
+    that runs several queries shares the web tier's time among them."""
+    from insights.insights.doctype.insights_settings.insights_settings import get_max_execution_time
+
+    limit = get_max_execution_time()
+    if (web_tier := web_tier_settings()) and web_tier.timeout:
+        left = web_tier.timeout * WEB_TIMEOUT_SHARE
+        if slot := getattr(frappe.local, "insights_data_store_slot", None):
+            left -= time.monotonic() - slot[2]
+        limit = min(limit, int(left))
+    return max(1, limit)
 
 
 class Warehouse:
@@ -74,6 +257,7 @@ class Warehouse:
     @property
     def db(self) -> DuckDBBackend:
         if WAREHOUSE_DB_NAME not in insights.db_connections:
+            take_data_store_slot()
             ddb = self.get_connection(read_only=True)
             insights.db_connections[WAREHOUSE_DB_NAME] = ddb
 
@@ -104,6 +288,8 @@ class Warehouse:
         mode: str = "replace",
         primary_key_column: str = "",
         cursor_column: str = "",
+        bookmark: str | None = None,
+        memory_limit: int | None = None,
         log_fn=None,
     ) -> "WarehouseTableWriter":
         """Create a table writer for batch inserts with automatic cleanup.
@@ -122,6 +308,8 @@ class Warehouse:
             mode=mode,
             primary_key_column=primary_key_column,
             cursor_column=cursor_column,
+            bookmark=bookmark,
+            memory_limit=memory_limit,
             log_fn=log_fn,
         )
 
@@ -146,6 +334,8 @@ class WarehouseTableWriter:
         mode: str = "replace",
         primary_key_column: str = "",
         cursor_column: str = "",
+        bookmark: str | None = None,
+        memory_limit: int | None = None,
         log_fn=None,
     ):
         self.database = database
@@ -154,6 +344,8 @@ class WarehouseTableWriter:
         self.mode = mode
         self.primary_key_column = primary_key_column
         self.cursor_column = cursor_column
+        self.bookmark = bookmark
+        self.memory_limit = memory_limit  # MB, for the commit
         self._log = log_fn or (lambda *args, **kwargs: None)
 
         self._temp_dir: Path | None = None
@@ -176,14 +368,10 @@ class WarehouseTableWriter:
         self._cleanup_temp_dir()
         return False
 
-    def insert(self, data: pd.DataFrame | Expr) -> Expr:
+    def insert(self, data: pd.DataFrame | pa.Table | Expr) -> Expr:
         if self._temp_dir is None:
             raise RuntimeError("WarehouseTableWriter must be used as a context manager")
 
-        # a MariaDB uuid column arrives as `uuid.UUID` objects, which Arrow refuses;
-        # read it as text, and `commit()` stores it as uuid again under `table_schema`
-        if isinstance(data, Expr) and any(t.is_uuid() for t in data.schema().values()):
-            data = data.cast({c: "string" for c, t in data.schema().items() if t.is_uuid()})
         # switch to memory backend for writing to temp directory
         data = ibis.memtable(data)
 
@@ -196,6 +384,23 @@ class WarehouseTableWriter:
 
         return ibis.read_parquet(parquet_path)
 
+    def insert_batches(self, batches: pa.RecordBatchReader) -> int:
+        """Write record batches to one parquet file as they are read, so one is in memory at a time."""
+        if self._temp_dir is None:
+            raise RuntimeError("WarehouseTableWriter must be used as a context manager")
+
+        parquet_path = self._temp_dir / f"batch_{self._batch_count + 1}.parquet"
+        self._log(f"Writing batch {self._batch_count + 1}")
+        rows = 0
+        with pq.ParquetWriter(parquet_path, batches.schema) as file:
+            for batch in batches:
+                file.write_batch(batch)
+                rows += batch.num_rows
+
+        self._parquet_files.append(parquet_path)
+        self._batch_count += 1
+        return rows
+
     def commit(self) -> int:
         if self._committed:
             return 0
@@ -205,22 +410,62 @@ class WarehouseTableWriter:
             self._cleanup_temp_dir()
             return 0
 
-        total_rows = 0
+        # Arrow keeps the memory the batches freed for its next ones, which DuckDB cannot use
+        pa.default_memory_pool().release_unused()
+
         try:
-            with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
-                self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
+            total_rows = self._commit_within_limit()
+            self._committed = True
+        finally:
+            self._cleanup_temp_dir()
 
-                with suppress(CatalogException):
-                    db.create_database(self.database)
+        return total_rows
 
-                db.raw_sql(f"USE '{self.database}'")
+    def _commit_within_limit(self) -> int:
+        memory = self.commit_memory()
+        if memory is None:
+            return self._commit(None)
+        limit = max(self.memory_limit, COMMIT_MIN_MEMORY)
+        for attempt in sorted({memory, limit}):
+            try:
+                return self._commit(attempt)
+            except OutOfMemoryException as error:
+                if attempt == limit:
+                    raise OutOfMemoryException(
+                        f"Committing '{self.table_name}' needs more than {limit} MB. "
+                        "Raise Max Memory Usage in Insights Settings and import it again."
+                    ) from error
+                self._log(f"The commit needs more than {attempt} MB, committing again with {limit} MB")
 
-                self._log(f"Switched to '{self.database}' database")
+    def commit_memory(self) -> int | None:
+        """MB DuckDB may use to commit, or None to keep its own limit."""
+        if not self.memory_limit or frappe.conf.get(MEMORY_LIMIT_CONFIG_KEY):
+            return None
+        return max(int(self.memory_limit * COMMIT_MEMORY_SHARE), COMMIT_MIN_MEMORY)
 
-                parquet_glob = str(self._temp_dir / "*.parquet")
-                merged = db.read_parquet(parquet_glob)
+    def _commit(self, memory: int | None) -> int:
+        with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
+            self._log(f"Committing {len(self._parquet_files)} parquet files to '{self.table_name}'")
 
+            if memory:
+                db.raw_sql(f"SET memory_limit = '{memory}MB'")
+                db.raw_sql(f"SET threads = {COMMIT_THREADS}")
+
+            with suppress(CatalogException):
+                db.create_database(self.database)
+
+            db.raw_sql(f"USE '{self.database}'")
+
+            self._log(f"Switched to '{self.database}' database")
+
+            parquet_glob = str(self._temp_dir / "*.parquet")
+            merged = db.read_parquet(parquet_glob)
+            rows = int(merged.count().execute())
+
+            with transaction(db):
                 if self._table_exists(db) and self.mode in ("append", "upsert"):
+                    self._add_missing_columns(db, merged)
+                    self._delete_from_bookmark(db)
                     if self.mode == "append":
                         db.insert(self.table_name, merged)
                     elif self.mode == "upsert":
@@ -228,45 +473,64 @@ class WarehouseTableWriter:
                 else:
                     db.create_table(self.table_name, merged, schema=self.table_schema, overwrite=True)
 
-                self._log("Commit completed.")
-
-                total_rows = merged.count().execute()
-                total_rows = int(total_rows)
-
-            self._committed = True
-        finally:
-            self._cleanup_temp_dir()
-
-        return total_rows
+            self._log("Commit completed.")
+            return rows
 
     def _table_exists(self, db: DuckDBBackend) -> bool:
         return self.table_name in db.list_tables()
+
+    def _add_missing_columns(self, db: DuckDBBackend, incoming: Table) -> None:
+        """Add columns the source has gained since the last import.
+
+        ibis inserts by name only while the source columns are a subset of the
+        target's; a new source column otherwise falls back to positional order.
+        """
+        existing_schema = db.table(self.table_name).schema()
+
+        for name, dtype in incoming.schema().items():
+            if name in existing_schema:
+                continue
+            column_type = DuckDBType.to_string(dtype)
+            self._log(f"New column '{name}' ({column_type}), adding it to '{self.table_name}'")
+            table = quote_ident(self.table_name)
+            db.raw_sql(f"ALTER TABLE {table} ADD COLUMN {quote_ident(name)} {column_type}")
+
+    def _delete_from_bookmark(self, db: DuckDBBackend) -> None:
+        """Drop the stored rows the run read again and no key matches, so they are copied once.
+
+        An upsert matches the others by key and keeps the columns it does not read.
+        """
+        if self.bookmark is None:
+            return
+        condition = f"{quote_ident(self.cursor_column)} >= ?"
+        if self.mode == "upsert":
+            condition += f" AND {quote_ident(self.primary_key_column)} IS NULL"
+        self._log(f"Deleting stored rows where {condition}, with {self.bookmark}")
+        db.raw_sql(
+            f"DELETE FROM {quote_ident(self.table_name)} WHERE {condition}", parameters=[self.bookmark]
+        )
 
     def _upsert(self, db: DuckDBBackend, incoming: Table) -> None:
         if not self.primary_key_column or not self.cursor_column:
             raise RuntimeError("Upsert mode requires both cursor and primary key columns")
 
         source_query = ibis.to_sql(incoming, dialect="duckdb", pretty=False)
-        merge_stmt = self._build_merge_statement(source_query)
+        merge_stmt = self._build_merge_statement(source_query, incoming.schema().names)
         self._log(f"MERGE Query:\n{merge_stmt}")
         db.raw_sql(merge_stmt)
 
-    def _build_merge_statement(self, source_query: str) -> str:
+    def _build_merge_statement(self, source_query: str, columns: Sequence[str]) -> str:
         source_alias = "source"
         target_alias = "target"
-
-        def quote_ident(name: str) -> str:
-            return '"' + name.replace('"', '""') + '"'
 
         def qualified_column(name: str, table: str) -> str:
             return f"{table}.{quote_ident(name)}"
 
         assignments = ", ".join(
-            f"{quote_ident(name)} = {qualified_column(name, source_alias)}"
-            for name in self.table_schema.names
+            f"{quote_ident(name)} = {qualified_column(name, source_alias)}" for name in columns
         )
-        insert_columns = ", ".join(quote_ident(name) for name in self.table_schema.names)
-        insert_values = ", ".join(qualified_column(name, source_alias) for name in self.table_schema.names)
+        insert_columns = ", ".join(quote_ident(name) for name in columns)
+        insert_values = ", ".join(qualified_column(name, source_alias) for name in columns)
 
         return (
             f"MERGE INTO {quote_ident(self.table_name)} AS {target_alias} "
@@ -285,7 +549,7 @@ class WarehouseTableWriter:
     def _cleanup_temp_dir(self) -> None:
         """Remove the temporary directory and all parquet files."""
         if self._temp_dir and self._temp_dir.exists():
-            with suppress(Exception):
+            with suppress(OSError):
                 shutil.rmtree(self._temp_dir)
         self._temp_dir = None
         self._parquet_files = []
@@ -295,6 +559,17 @@ class WarehouseTableWriter:
     def batch_count(self) -> int:
         """Number of batches inserted so far."""
         return self._batch_count
+
+
+@contextmanager
+def transaction(db: DuckDBBackend):
+    db.con.begin()
+    try:
+        yield
+    except BaseException:
+        db.con.rollback()
+        raise
+    db.con.commit()
 
 
 class WarehouseTable:
@@ -331,8 +606,14 @@ class WarehouseTable:
                 )
             else:
                 frappe.throw(
-                    f"{self.table_name} of {self.data_source} is not imported to the data warehouse."
+                    frappe._("{0} of {1} is not stored in the Data Store").format(
+                        self.table_name, self.data_source
+                    ),
+                    TableNotStored,
                 )
+        except ServiceUnavailableError:
+            # every data store slot is taken: the client retries a 503
+            raise
         except Exception as e:
             frappe.log_error(e)
             frappe.throw("Error accessing the data warehouse. Please try again.")
@@ -379,7 +660,11 @@ class WarehouseTable:
 
     def get_remote_table(self) -> Expr:
         ds = InsightsDataSourcev3.get_doc(self.data_source)
-        return ds.get_ibis_table(self.table_name)
+        remote_table = ds.get_ibis_table(self.table_name)
+        # the only read of the source schema in the warehouse path, so it is the
+        # one place that can record the columns without paying for them twice
+        store_columns(self.data_source, self.table_name, remote_table.schema())
+        return remote_table
 
     def enqueue_import(self) -> bool:
         """Queue an import for this table. True when one was already under way."""
@@ -391,9 +676,58 @@ class WarehouseTable:
 
     def drop(self) -> None:
         """Drop this table from the warehouse. No-op if it does not exist."""
-        with insights.warehouse.get_write_connection(self.schema) as db:
-            with suppress(Exception):
-                db.drop_table(self.warehouse_table_name, force=True)
+        with insights.warehouse.get_write_connection() as db:
+            db.drop_table(self.warehouse_table_name, database=self.schema, force=True)
+
+
+class CursorBatch:
+    """A batch read in cursor order, passed on a chunk at a time.
+
+    A full batch can end partway through the rows at its last cursor value, so it
+    holds those rows back for the next batch to read whole. A batch that is not
+    full ends the table, and passes them on too.
+    """
+
+    def __init__(self, reader: pa.RecordBatchReader, cursor_column: str, batch_size: int):
+        self.reader = reader
+        self.cursor_column = cursor_column
+        self.batch_size = batch_size
+        self.num_rows = 0
+        self.held = reader.schema.empty_table()
+
+    @property
+    def full(self) -> bool:
+        return self.num_rows >= self.batch_size
+
+    @property
+    def last(self):
+        """The cursor value of the rows held back."""
+        return self.held[self.cursor_column][0].as_py()
+
+    def rows(self) -> pa.RecordBatchReader:
+        return pa.RecordBatchReader.from_batches(self.reader.schema, self._pass_on())
+
+    def _pass_on(self) -> Generator[pa.RecordBatch, None, None]:
+        for chunk in self.reader:
+            if not chunk.num_rows:
+                continue
+            self.num_rows += chunk.num_rows
+            rows = pa.concat_tables([self.held, pa.Table.from_batches([chunk])])
+            start = start_of_last_value(rows[self.cursor_column])
+            # one row group per chunk, not one more for the rows held back from the last
+            yield from rows.slice(0, start).combine_chunks().to_batches()
+            self.held = rows.slice(start)
+
+        if not self.full:
+            yield from self.held.combine_chunks().to_batches()
+
+
+def start_of_last_value(values: pa.ChunkedArray) -> int:
+    """Where the run of rows sharing the last value begins, in rows sorted on that value."""
+    last = values[-1]
+    differs = pc.fill_null(pc.not_equal(values, last), True) if last.is_valid else pc.is_valid(values)
+    positions = pc.indices_nonzero(differs)
+    return positions[-1].as_py() + 1 if len(positions) else 0
 
 
 class WarehouseTableImporter:
@@ -406,6 +740,7 @@ class WarehouseTableImporter:
         self.warehouse_table_name = ""
         self.sync_strategy = "Append Only"
         self.writer_mode = "replace"  # overridden to "append" for incremental syncs
+        self.bookmark = None
 
         self.resumed = False
 
@@ -427,7 +762,7 @@ class WarehouseTableImporter:
 
     def enqueue_import(self) -> bool:
         """Queue an import for this table. True when one was already under way."""
-        job_id = f"import_{frappe.scrub(self.table.data_source)}_{frappe.scrub(self.table.table_name)}"
+        job_id = import_job_id(self.table.data_source, self.table.table_name)
 
         if is_job_enqueued(job_id) or self.import_in_progress():
             insights.create_toast(
@@ -546,8 +881,11 @@ class WarehouseTableImporter:
         backend = insights.db_connections.get(self.table.data_source)
         if backend is None:
             return
-        with suppress(Exception):
+        with suppress(Exception):  # nosemgrep - only MariaDB knows the variable, and only MariaDB set a limit
             backend.raw_sql("SET MAX_STATEMENT_TIME=0")
+        if backend.name == "mysql":
+            # a batch streams while its chunks are written, and the server waits on each
+            backend.raw_sql(f"SET SESSION net_write_timeout = {IMPORT_TIMEOUT}")
 
     def prepare_remote_table(self) -> Expr:
         self.remote_table = self.table.get_remote_table()
@@ -590,31 +928,33 @@ class WarehouseTableImporter:
 
         self._apply_before_import_script()
 
-        bookmark = self._resolve_incremental_bookmark()
-        self._log(f"Incremental sync: {self.cursor_column} > {bookmark}")
-        self.remote_table = self.remote_table.filter(_[self.cursor_column] > bookmark)
+        # Rows at the bookmark may still arrive after a run, so each run reads them again
+        self.bookmark = self._resolve_incremental_bookmark()
+        self._log(f"Incremental sync: {self.cursor_column} >= {self.bookmark}")
+        self.remote_table = self.remote_table.filter(_[self.cursor_column] >= self.bookmark)
 
         self.writer_mode = "upsert" if self.sync_strategy == "Update or Insert" else "append"
 
     def _resolve_incremental_bookmark(self):
-        """Return the cursor value to filter from for incremental sync, following this precedence:
-        1. Last sync bookmark (if exists and valid)
-        2. Sync From date (if set)
-        3. Throw error if neither is available
+        """Return the newest cursor value in the store, or Sync From for a table not stored yet.
+
+        `last_sync_bookmark` is saved after the store's commit, in another database.
+        A run that commits and then fails to save it would read its rows again and
+        append them twice.
+
+        A read-only open fails at once while another import commits, so the read
+        waits on the write connection as the commit does.
         """
-        bookmark = self.settings.last_sync_bookmark
-
-        if bookmark:
-            # Verify the warehouse table still exists; if not, treat as first sync
+        with insights.warehouse.get_write_connection(timeout=IMPORT_WRITE_LOCK_TIMEOUT) as db:
             try:
-                insights.warehouse.db.table(self.table.warehouse_table_name, database=self.table.schema)
+                stored = db.table(self.table.warehouse_table_name, database=self.table.schema)
+                bookmark = stored[self.cursor_column].max().execute()
             except TableNotFound:
-                self._log("Warehouse table not found despite existing bookmark — falling back to sync_from.")
-                bookmark = ""
+                bookmark = None
 
-        if bookmark:
+        if pd.notna(bookmark):
             self.resumed = True
-            return bookmark
+            return str(bookmark)
 
         if self.settings.sync_from:
             return str(self.settings.sync_from)
@@ -659,6 +999,8 @@ class WarehouseTableImporter:
                 mode=self.writer_mode,
                 primary_key_column=self.dedupe_key_column,
                 cursor_column=self.cursor_column,
+                bookmark=self.bookmark,
+                memory_limit=self.settings.memory_limit,
                 log_fn=self._log,
             ) as writer:
                 total_rows = self.process_batches(batch_size, writer)
@@ -686,38 +1028,73 @@ class WarehouseTableImporter:
         )
         return batch_size
 
+    def calculate_chunk_size(self, batch_size: int) -> int:
+        memory_limit = self.settings.memory_limit
+        chunk_memory = max(memory_limit / CHUNKS_PER_BATCH, MIN_CHUNK_MEMORY)
+        return max(min(int(batch_size * chunk_memory / memory_limit), batch_size), 1)
+
     def process_batches(self, batch_size: int, writer: WarehouseTableWriter) -> int:
-        remote_table = self.remote_table
-        if self.cursor_column:
-            remote_table = remote_table.order_by(
-                ibis.asc(self.cursor_column, nulls_first=True),
+        """Read the source in batches that never split the rows sharing a cursor value.
+
+        A full batch keeps the rows before its last cursor value, and the next batch
+        starts at that value. One query per batch: a second one would scan a source
+        whose cursor has no index twice.
+        """
+        chunk_size = self.calculate_chunk_size(batch_size)
+        if not self.cursor_column:
+            return self.write_batch(
+                writer, self.read_batch(writer, self.remote_table.head(batch_size), chunk_size)
             )
 
-        batch_number = 0
+        cursor = _[self.cursor_column]
+        ordered = ibis.asc(self.cursor_column, nulls_first=True)
+        remaining = self.remote_table
         total_rows = 0
 
         while True:
-            self._log(f"Processing batch: {batch_number + 1}")
-            batch = remote_table.head(batch_size)
-            self._log(f"Batch Query: \n{ibis.to_sql(batch)}")
-
-            batch = writer.insert(batch)
-
-            batch_count = int(batch.count().execute())
-            total_rows += batch_count
-
-            self._log(f"Rows: {batch_count} Total Rows: {total_rows}")
-
-            if batch_count < batch_size or not self.cursor_column:
+            query = remaining.order_by(ordered).head(batch_size)
+            batch = CursorBatch(self.read_batch(writer, query, chunk_size), self.cursor_column, batch_size)
+            written = self.write_batch(writer, batch.rows())
+            total_rows += written
+            if not batch.full:
                 break
 
-            last_cursor = batch[self.cursor_column].max().execute()
-            self._log(f"Bookmark: {last_cursor}")
-            remote_table = remote_table.filter(_[self.cursor_column] > last_cursor)
-            batch_number += 1
+            last = batch.last
+            # free the rows it held back before the next batch reads them again
+            del batch
+            if written:
+                remaining = self.remote_table.filter(cursor >= last)
+            else:
+                # one cursor value, or NULL, holds more rows than a batch
+                at_last, after_last = self.get_group_filters(last)
+                total_rows += self.write_batch(
+                    writer, self.read_batch(writer, self.remote_table.filter(at_last), chunk_size)
+                )
+                remaining = self.remote_table.filter(after_last)
 
-        self._log(f"Total Batches: {batch_number + 1} Total Rows: {total_rows}")
+        self._log(f"Total Batches: {writer.batch_count} Total Rows: {total_rows}")
         return total_rows
+
+    def get_group_filters(self, value) -> tuple[Expr, Expr]:
+        """Filters for the rows at a cursor value and the rows after it."""
+        cursor = _[self.cursor_column]
+        if value is None:
+            return cursor.isnull(), cursor.notnull()
+        return cursor == value, cursor > value
+
+    def read_batch(self, writer: WarehouseTableWriter, query: Expr, chunk_size: int) -> pa.RecordBatchReader:
+        self._log(f"Processing batch: {writer.batch_count + 1}")
+        self._log(f"Batch Query: \n{ibis.to_sql(query)}")
+        db = ibis.get_backend(query)
+        if db.name == "mysql":
+            return read_pyarrow_batches(db, query, chunk_size)
+        # other drivers read the whole batch at once, as before
+        return query.to_pyarrow().to_reader(max_chunksize=chunk_size)
+
+    def write_batch(self, writer: WarehouseTableWriter, rows: pa.RecordBatchReader) -> int:
+        count = writer.insert_batches(rows)
+        self._log(f"Rows: {count}")
+        return count
 
     def capture_outcome(self):
         """Report how the import ended, and nothing about what it read.
@@ -798,14 +1175,18 @@ class WarehouseTableImporter:
         self.log.log_output(f"[{now()}] [{elapsed:.1f}s] {message}", commit=commit)
 
 
+def import_job_id(data_source: str, table_name: str) -> str:
+    return f"import_{frappe.scrub(data_source)}_{frappe.scrub(table_name)}"
+
+
 def enqueue_warehouse_table_import(data_source: str, table_name: str):
-    job_id = f"import_{frappe.scrub(data_source)}_{frappe.scrub(table_name)}"
+    job_id = import_job_id(data_source, table_name)
     frappe.enqueue(
         "insights.insights.doctype.insights_data_source_v3.data_warehouse.execute_warehouse_table_import",
         data_source=data_source,
         table_name=table_name,
         queue="long",
-        timeout=30 * 60,
+        timeout=IMPORT_TIMEOUT,
         job_id=job_id,
         deduplicate=True,
     )
@@ -814,16 +1195,494 @@ def enqueue_warehouse_table_import(data_source: str, table_name: str):
 def execute_warehouse_table_import(data_source: str, table_name: str):
     table = WarehouseTable(data_source, table_name)
     importer = WarehouseTableImporter(table)
-    importer.start_import()
+    try:
+        importer.start_import()
+    finally:
+        # with two places, each import would otherwise wait for a free one up to
+        # a 4-minute scheduler tick: 60 nightly imports would wait about an hour
+        start_next_imports()
+
+
+def start_next_imports():
+    """Start the next due tables as the scheduler would, whoever's import just ended.
+
+    A reader whose query found a table missing queues its import, and the
+    imports this one starts must not run as that reader.
+    """
+    from insights.api.data_store import sync_tables
+
+    user = frappe.session.user
+    frappe.set_user("Administrator")  # nosemgrep - frappe.enqueue takes the session's user
+    try:
+        sync_tables()
+    except Exception:
+        frappe.log_error(title="Error starting the next due table imports")
+    finally:
+        frappe.set_user(user)  # nosemgrep - gives the job back its own user
+
+
+def get_warehouse_schema_name(data_source: str) -> str:
+    """Return the DuckDB schema name for a given data source name."""
+    return frappe.scrub(data_source).replace(".", "_")
+
+
+def cleanup_data_store():
+    """Weekly: un-store unused tables, drop orphans from DuckDB, compact the file.
+
+    Pruning is reversible by design — `get_ibis_table(import_if_not_exists=True)`
+    re-imports a dropped table the next time a query needs it.
+    """
+    logger = frappe.logger()
+
+    pruned = prune_unused_tables()
+    # DuckDB work is not part of this transaction: commit the docs first so a
+    # later failure leaves an orphan for next week, not a `stored` table whose
+    # warehouse table has already been dropped.
+    frappe.db.commit()  # nosemgrep
+
+    dropped, kept = drop_orphan_warehouse_tables()
+    compacted = compact_warehouse()
+    spill_folders = drop_stale_spill_folders()
+
+    summary = {
+        "tables_pruned": len(pruned),
+        "orphans_dropped": len(dropped),
+        "orphans_kept": len(kept),
+        "size_before": compacted[0] if compacted else None,
+        "size_after": compacted[1] if compacted else None,
+        "spill_folders_dropped": spill_folders,
+    }
+    logger.info(f"Data store cleanup: {summary}")
+    return summary
+
+
+def drop_stale_spill_folders() -> int:
+    """Drop the spill folders of processes that stopped without closing DuckDB,
+    such as a worker the OOM killer took. A folder a query spills into is
+    written to, so one untouched for a day is not in use, unless its process on
+    this host still runs: DuckDB keeps an open store's folder and does not make
+    it again."""
+    parent = Path(f"{insights.warehouse.get_db_path()}.tmp")
+    if not parent.is_dir():
+        return 0
+    cutoff = time.time() - STALE_SPILL_FOLDER_SECONDS
+    dropped = 0
+    for folder in parent.iterdir():
+        with suppress(OSError):
+            if folder.is_dir() and folder.stat().st_mtime < cutoff and not _runs_here(folder.name):
+                shutil.rmtree(folder, ignore_errors=True)
+                dropped += 1
+    return dropped
+
+
+def _runs_here(spill_folder: str) -> bool:
+    host, _, pid = spill_folder.rpartition("-")
+    if host != socket.gethostname() or not pid.isdigit():
+        return False
+    try:
+        os.kill(int(pid), 0)
+    except ProcessLookupError:
+        return False  # nosemgrep - no such process is the answer: it stopped
+    except PermissionError:
+        return True  # nosemgrep - the process exists, under another user
+    return True
+
+
+def prune_unused_tables() -> list[str]:
+    """Flip `stored` off for tables no query has read in `UNUSED_TABLE_DAYS`.
+
+    Incremental tables are never pruned: re-importing them restarts from
+    `sync_from` and history the source has purged since is unrecoverable.
+    """
+    logger = frappe.logger()
+    cutoff = add_days(now_datetime(), -UNUSED_TABLE_DAYS)
+
+    retention = frappe.db.get_value(
+        "Logs To Clear",
+        {"parent": "Log Settings", "ref_doctype": "Insights Query Execution Log"},
+        "days",
+    )
+    if retention is not None and retention < UNUSED_TABLE_DAYS:
+        logger.info(
+            "Data store cleanup: execution log retention is shorter than the unused window, skipping prune"
+        )
+        return []
+
+    candidates = frappe.get_all(
+        "Insights Table v3",
+        filters={"stored": 1},
+        fields=["name", "data_source", "table", "sync_mode"],
+    )
+    candidates = [t for t in candidates if t.sync_mode != "Incremental"]
+    if not candidates:
+        return []
+
+    last_used = get_last_execution_per_table()
+    first_imported = get_first_import_per_table()
+
+    pruned = []
+    for table in candidates:
+        key = (table.data_source, table.table)
+
+        used_on = last_used.get(key)
+        if used_on and used_on > cutoff:
+            continue
+
+        imported_on = first_imported.get(key)
+        if imported_on and imported_on > cutoff:
+            # Stored recently but not queried yet — give it time to be used.
+            continue
+
+        frappe.db.set_value(
+            "Insights Table v3",
+            table.name,
+            {"stored": 0, "last_synced_on": None, "last_sync_bookmark": None},
+            update_modified=False,
+        )
+        pruned.append(table.name)
+
+        reason = f"last execution {(now_datetime() - used_on).days}d ago" if used_on else "never executed"
+        logger.info(f"Data store cleanup: pruned '{table.name}' ({reason})")
+
+    return pruned
+
+
+def get_last_execution_per_table() -> dict[tuple[str, str], object]:
+    """Map (data_source, table) to when a query last read it.
+
+    A query execution counts as usage of every table its dependency chain
+    reads, not just the tables it names directly — nested queries are not
+    logged separately.
+    """
+    ExecutionLog = frappe.qb.DocType("Insights Query Execution Log")
+    executions = (
+        frappe.qb.from_(ExecutionLog)
+        .select(ExecutionLog.query, Max(ExecutionLog.creation).as_("last_executed_on"))
+        .groupby(ExecutionLog.query)
+        .run(as_dict=True)
+    )
+    executions = {r.query: get_datetime(r.last_executed_on) for r in executions if r.query}
+    if not executions:
+        return {}
+
+    references = frappe.get_all(
+        "Insights Query Reference",
+        fields=["query", "ref_type", "data_source", "table_name", "ref_query"],
+    )
+    query_deps: dict[str, list[str]] = {}
+    table_deps: dict[str, list[tuple[str, str]]] = {}
+    for ref in references:
+        if ref.ref_type == "Query" and ref.ref_query:
+            query_deps.setdefault(ref.query, []).append(ref.ref_query)
+        elif ref.ref_type == "Table" and ref.table_name:
+            table_deps.setdefault(ref.query, []).append((ref.data_source, ref.table_name))
+
+    last_used: dict[tuple[str, str], object] = {}
+    for query, executed_on in executions.items():
+        visited = set()
+        stack = [query]
+        while stack:
+            node = stack.pop()
+            if node in visited:
+                continue
+            visited.add(node)
+            for key in table_deps.get(node, []):
+                if key not in last_used or last_used[key] < executed_on:
+                    last_used[key] = executed_on
+            stack.extend(query_deps.get(node, []))
+
+    return last_used
+
+
+def get_first_import_per_table() -> dict[tuple[str, str], object]:
+    ImportLog = frappe.qb.DocType("Insights Table Import Log")
+    imports = (
+        frappe.qb.from_(ImportLog)
+        .select(
+            ImportLog.data_source,
+            ImportLog.table_name,
+            Min(ImportLog.creation).as_("first_imported_on"),
+        )
+        .where(ImportLog.status == "Completed")
+        .groupby(ImportLog.data_source, ImportLog.table_name)
+        .run(as_dict=True)
+    )
+    return {(r.data_source, r.table_name): get_datetime(r.first_imported_on) for r in imports}
+
+
+def drop_orphan_warehouse_tables() -> tuple[list[str], list[str]]:
+    """Drop warehouse tables that no longer have a `stored` doc behind them.
+
+    A table is dropped only if the drop is reversible: a doc says a source sync
+    can re-import it, a live table replaced it, a live table holds what a
+    Leftover Table held, or it holds no rows. The sweep keeps and reports
+    anything else, because its rows may be the only copy.
+
+    Returns (dropped, kept).
+    """
+    logger = frappe.logger()
+
+    expected = get_stored_warehouse_tables() | get_import_job_warehouse_tables()
+    replaceable = expected | get_reimportable_warehouse_tables()
+    flat_prefixes = get_legacy_flat_prefixes()
+
+    dropped, kept, occupied = [], [], set()
+    with insights.warehouse.get_write_connection(timeout=CLEANUP_LOCK_TIMEOUT) as db:
+        tables = db.raw_sql(
+            "select schema_name, table_name from duckdb_tables() where database_name = current_database()"
+        ).fetchall()
+
+        for schema, table in tables:
+            if (schema, table) in expected:
+                occupied.add(schema)
+                continue
+
+            successor = resolve_legacy_flat_table(schema, table, flat_prefixes)
+            if (schema, table) not in replaceable and successor not in replaceable:
+                # A count that fails reads as "not empty". The sweep deletes
+                # nothing it could not look inside first.
+                rows = count_table_rows(db, schema, table)
+                if rows and is_superseded_leftover(db, schema, table, rows, expected):
+                    rows = 0
+                if rows != 0:
+                    kept.append(f"{schema}.{table}")
+                    occupied.add(schema)
+                    report_unexplained_orphan(schema, table, rows)
+                    continue
+
+            db.raw_sql(f"DROP TABLE IF EXISTS {quote_identifier(schema)}.{quote_identifier(table)}")
+            dropped.append(f"{schema}.{table}")
+            logger.info(f"Data store cleanup: dropped '{schema}.{table}' (orphan: no matching doc)")
+
+        schemas = db.raw_sql(
+            "select schema_name from duckdb_schemas() "
+            "where database_name = current_database() and not internal"
+        ).fetchall()
+        for (schema,) in schemas:
+            if schema == "main" or schema in occupied:
+                continue
+            # Anything else still in the schema (a view, a sequence) keeps it.
+            with suppress(DependencyException):
+                db.raw_sql(f"DROP SCHEMA IF EXISTS {quote_identifier(schema)}")
+                logger.info(f"Data store cleanup: dropped empty schema '{schema}'")
+
+    return dropped, kept
+
+
+def is_superseded_leftover(
+    db: DuckDBBackend, schema: str, table: str, rows: int, expected: set[tuple[str, str]]
+) -> bool:
+    """Whether a live table holds at least what this Leftover Table holds.
+
+    A leftover holds the rows a dead import was writing. A live table in the
+    same schema with the same column names and as many rows or more is that
+    import's table, re-imported since, so the leftover adds nothing.
+    """
+    if not table.startswith(LEFTOVER_TABLE_PREFIX):
+        return False
+
+    columns = get_column_names(db, schema, table)
+    for live_schema, live_table in expected:
+        if live_schema != schema or get_column_names(db, schema, live_table) != columns:
+            continue
+        live_rows = count_table_rows(db, schema, live_table)
+        if live_rows is not None and live_rows >= rows:
+            frappe.logger().info(
+                f"Data store cleanup: '{schema}.{table}' is a leftover of '{schema}.{live_table}'"
+            )
+            return True
+
+    return False
+
+
+def get_column_names(db: DuckDBBackend, schema: str, table: str) -> set[str]:
+    query = (
+        "select column_name from duckdb_columns() "
+        "where database_name = current_database() and schema_name = ? and table_name = ?"
+    )
+    return {name for (name,) in db.raw_sql(query, parameters=[schema, table]).fetchall()}
+
+
+def get_stored_warehouse_tables() -> set[tuple[str, str]]:
+    """Where the source sync says its live tables are."""
+    return {
+        (get_warehouse_schema_name(t.data_source), frappe.scrub(t.table))
+        for t in frappe.get_all("Insights Table v3", filters={"stored": 1}, fields=["data_source", "table"])
+    }
+
+
+def get_import_job_warehouse_tables() -> set[tuple[str, str]]:
+    """Where import jobs write, named the way they write it.
+
+    `WarehouseTableWriter` sets no `stored` flag, so a job's table reads as an
+    orphan. The pair comes from the data source's `schema` field and the job's
+    `table_name` because those are the two values `TableWriter` hands to DuckDB.
+    Disabled jobs count — their rows are still the only copy.
+    """
+    schemas = {
+        d.name: d.get("schema")
+        for d in frappe.get_all("Insights Data Source v3", fields=["name", "`schema`"])
+    }
+    return {
+        # "main" is `WarehouseTableWriter`'s own default for an unset schema.
+        (schemas.get(job.data_source) or "main", job.table_name)
+        for job in frappe.get_all("Insights Table Import Job", fields=["data_source", "table_name"])
+        if job.table_name
+    }
+
+
+def get_reimportable_warehouse_tables() -> set[tuple[str, str]]:
+    """Warehouse tables a source sync can rebuild, so dropping them loses nothing.
+
+    Read from the docs rather than from this run's prune, so a run that died
+    between the prune and the sweep does not leave a table nothing ever drops.
+    """
+    return {
+        (get_warehouse_schema_name(t.data_source), frappe.scrub(t.table))
+        for t in frappe.get_all(
+            "Insights Table v3",
+            filters={"stored": 0},
+            fields=["data_source", "table", "sync_mode"],
+        )
+        if t.sync_mode != "Incremental"
+    }
+
+
+def get_legacy_flat_prefixes() -> list[tuple[str, str]]:
+    """(name prefix, warehouse schema) per data source, longest prefix first.
+
+    A source name can itself contain dots, so a flat name has to be split
+    against the known sources rather than on its first dot.
+    """
+    prefixes = [
+        (f"{frappe.scrub(name)}.", get_warehouse_schema_name(name))
+        for name in frappe.get_all("Insights Data Source v3", pluck="name")
+    ]
+    return sorted(prefixes, key=lambda p: len(p[0]), reverse=True)
+
+
+def resolve_legacy_flat_table(schema: str, table: str, prefixes) -> tuple[str, str] | None:
+    """Map a flat `main."<source>.<table>"` name to the table that replaced it.
+
+    Tables lived in `main` under a dotted name before the move to one schema
+    per data source. The rename left the old copies behind. A flat table is
+    safe to drop once its successor is accounted for.
+    """
+    if schema != "main":
+        return None
+
+    for prefix, source_schema in prefixes:
+        if table.startswith(prefix):
+            return (source_schema, frappe.scrub(table[len(prefix) :]))
+
+    return None
+
+
+def count_table_rows(db: DuckDBBackend, schema: str, table: str) -> int | None:
+    """Rows in a warehouse table, or None if the count itself failed."""
+    try:
+        query = f"select count(*) from {quote_identifier(schema)}.{quote_identifier(table)}"
+        return int(db.raw_sql(query).fetchone()[0])
+    except Exception:
+        frappe.logger().exception(f"Data store cleanup: could not count rows in '{schema}.{table}'")
+        return None
+
+
+def report_unexplained_orphan(schema: str, table: str, rows: int | None) -> None:
+    """Report a table the sweep refused to drop.
+
+    An `Error Log` outlives `logs/frappe.log`, which rotated before anyone
+    could ask what happened to seven months of imports.
+    """
+    held = f"{rows} rows" if rows is not None else "an unknown number of rows (the count failed)"
+    frappe.logger().error(f"Data store cleanup: kept '{schema}.{table}' (unexplained orphan, {held})")
+    frappe.log_error(
+        title="Data store cleanup kept an unexplained table",
+        message=(
+            f"'{schema}.{table}' holds {held}. Nothing claims it with `stored = 1`, so the "
+            "cleanup cannot tell whether a re-import would bring it back.\n\n"
+            "The table was left in place. Either claim it from the writer that maintains it, "
+            "or drop it by hand once you know what it holds."
+        ),
+    )
+
+
+def compact_warehouse() -> tuple[int, int] | None:
+    """Rebuild the warehouse file to reclaim disk, if it is worth doing.
+
+    `DROP TABLE` reuses freed blocks but never shrinks the file, so the only
+    way down from the high-water mark is copying the live data into a fresh
+    file and swapping it in. Returns (size before, size after), or None when
+    the rebuild was skipped or failed.
+    """
+    logger = frappe.logger()
+
+    path = insights.warehouse.get_db_path()
+    if not os.path.exists(path):
+        return None
+
+    size_before = os.path.getsize(path)
+    if size_before < COMPACT_MIN_FILE_SIZE:
+        return None
+
+    folder = os.path.dirname(path)
+    new_path = f"{path}.compact"
+
+    with local_duckdb_write_lock(
+        path, cache_key=WAREHOUSE_DB_NAME, timeout=CLEANUP_LOCK_TIMEOUT
+    ) as lock_timeout:
+        # ATTACH-ing the new file needs the warehouse folder allowed, not tmp.
+        db = open_local_duckdb(path, read_only=False, allowed_dir=folder, lock_timeout=lock_timeout)
+        try:
+            if get_free_block_ratio(db) < COMPACT_MIN_FREE_RATIO:
+                return None
+            copy_database_to(db, new_path)
+        except Exception:
+            logger.exception("Data store cleanup: failed to compact the warehouse, keeping the old file")
+            with suppress(OSError):
+                os.remove(new_path)
+            return None
+        finally:
+            db.disconnect()
+
+        # Still under the lock: no one can open the old file mid-swap.
+        with suppress(OSError):
+            os.remove(f"{path}.wal")
+        os.rename(new_path, path)
+
+    size_after = os.path.getsize(path)
+    logger.info(f"Data store cleanup: compacted warehouse {size_before} → {size_after} bytes")
+    return size_before, size_after
+
+
+def copy_database_to(db: DuckDBBackend, new_path: str) -> None:
+    with suppress(OSError):
+        os.remove(new_path)
+
+    database = db.raw_sql("select current_database()").fetchone()[0]
+    db.raw_sql(f"ATTACH '{escape_sql_string(new_path)}' AS compacted")
+    try:
+        db.raw_sql(f"COPY FROM DATABASE {quote_identifier(database)} TO compacted")
+    finally:
+        db.raw_sql("DETACH compacted")
+
+
+def get_free_block_ratio(db: DuckDBBackend) -> float:
+    # Free block accounting only reflects earlier drops after a checkpoint.
+    db.raw_sql("CHECKPOINT")
+    total_blocks, free_blocks = db.raw_sql(
+        "select total_blocks, free_blocks from pragma_database_size() "
+        "where database_name = current_database()"
+    ).fetchone()
+    return free_blocks / total_blocks if total_blocks else 0.0
 
 
 def quote_identifier(name: str) -> str:
     return '"' + name.replace('"', '""') + '"'
 
 
-def get_warehouse_schema_name(data_source: str) -> str:
-    """Return the DuckDB schema name for a given data source name."""
-    return frappe.scrub(data_source).replace(".", "_")
+def escape_sql_string(value: str) -> str:
+    return value.replace("'", "''")
 
 
 def is_warehouse(backend: DuckDBBackend):

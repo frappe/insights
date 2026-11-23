@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { SearchIcon } from 'lucide-vue-next'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref } from 'vue'
 import { __ } from '../translation'
 import useUserStore, { User } from '../users/users'
 
@@ -11,23 +11,22 @@ const props = defineProps<{
 	// only for pickers whose server side rejects an address that belongs to
 	// nobody - otherwise a typo becomes a silent grant
 	allowCustomEmail?: boolean
+	// the dialog can share with a role, which reaches users the picker never lists
+	sharesWithRoles?: boolean
 }>()
 const selectedUserEmail = defineModel<string>()
 
 const userStore = useUserStore()
-const searchTxt = ref('')
-watchEffect(() => {
-	searchTxt.value = selectedUserEmail.value || ''
-})
-
+const query = ref('')
 const matches = ref<User[]>([])
+
 watchDebounced(
-	searchTxt,
+	query,
 	() => {
-		const term = searchTxt.value
+		const term = query.value
 		userStore.searchUsers(term).then((res) => {
 			// a slow answer for an earlier term must not replace a later one
-			if (term === searchTxt.value) matches.value = res
+			if (term === query.value) matches.value = res
 		})
 	},
 	{ debounce: 300, immediate: true },
@@ -46,7 +45,7 @@ const options = computed(() => {
 			description: user.email,
 		}))
 
-	const address = searchTxt.value.trim()
+	const address = query.value.trim()
 	if (!props.allowCustomEmail || found.length || !isEmail(address) || hidden.has(address)) {
 		return found
 	}
@@ -55,34 +54,54 @@ const options = computed(() => {
 	// decides whether it belongs to an Insights user
 	return [{ label: address, value: address, description: __('Share with this address') }]
 })
+
+const emptyText = computed(() =>
+	query.value.trim() ? __('No matching users') : __('No other Insights users'),
+)
+
+// the picker lists Insights users only, so a colleague missing from it is
+// usually one without an Insights role
+const footerText = computed(() => {
+	if (props.allowCustomEmail) {
+		return __(
+			'Only users with an Insights role are listed. Type a full email address to share with anyone else.',
+		)
+	}
+	if (props.sharesWithRoles) {
+		return __(
+			'Only users with an Insights role are listed. To reach desk users, pick Anyone with a selected role above.',
+		)
+	}
+	return __('Only users with an Insights role are listed.')
+})
 </script>
 
 <template>
-	<Autocomplete
-		:hide-search="true"
-		:autofocus="false"
+	<Combobox
+		class="w-full"
+		v-model:query="query"
+		:filterable="false"
+		:loading="userStore.searching"
 		:modelValue="selectedUserEmail"
-		@update:modelValue="selectedUserEmail = $event?.value"
+		@update:modelValue="selectedUserEmail = $event"
 		:options="options"
+		:placeholder="props.placeholder || __('Search user...')"
+		:emptyText="emptyText"
 	>
-		<template #target="{ open }">
-			<FormControl
-				class="w-full"
-				type="text"
-				:placeholder="props.placeholder || 'Search user...'"
-				autocomplete="off"
-				v-model="searchTxt"
-				@update:modelValue="open"
-				@focus="open"
-			>
-				<template #prefix>
-					<SearchIcon class="h-4 w-4 text-gray-500" stroke-width="1.5" />
-				</template>
-			</FormControl>
+		<template #prefix>
+			<SearchIcon class="h-4 w-4 text-ink-gray-4" stroke-width="1.5" />
 		</template>
 
-		<template #item-prefix="{ option }">
-			<Avatar size="sm" :label="option.label" :image="option.user_image" />
+		<template #item-prefix="{ item }">
+			<Avatar size="sm" :label="item.label" :image="item.user_image" />
 		</template>
-	</Autocomplete>
+
+		<template #footer>
+			<div
+				class="w-0 min-w-full border-t border-outline-gray-1 px-3 py-2 text-sm text-ink-gray-5"
+			>
+				{{ footerText }}
+			</div>
+		</template>
+	</Combobox>
 </template>

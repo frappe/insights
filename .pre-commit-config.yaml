@@ -12,6 +12,7 @@ repos:
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
+        exclude: "tsconfig.*\\.json$"
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
@@ -33,7 +34,69 @@ repos:
     rev: v3.1.0
     hooks:
       - id: prettier
-        types_or: [javascript, vue, scss]
+        types_or: [javascript, jsx, ts, tsx, vue, scss]
+
+  # Pre-push, not pre-commit: the rule files are fetched on every run, so it fails offline.
+  # CI runs this hook too. Keep the list equal to every rule file under rules/ at the pin.
+  # The baseline reports only findings the pushed commits introduce, as `semgrep ci` does.
+  # It checks the baseline out in place, so parallel batches would scan each other's checkout.
+  - repo: https://github.com/semgrep/pre-commit
+    rev: v1.177.0
+    hooks:
+      - id: semgrep
+        name: Run Frappe semgrep rules
+        stages: [pre-push]
+        require_serial: true
+        entry: bash -c 'SEMGREP_BASELINE_COMMIT="$PRE_COMMIT_FROM_REF" exec semgrep "$@"' --
+        args:
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/code_quality.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/frappe_correctness.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/hooks.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/report.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/translate.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/ux.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/security/authorization.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/security/filesystem.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/security/format_string_injection.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/security/rce.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/security/sql.yml
+          - --config=https://raw.githubusercontent.com/frappe/semgrep-rules/b101a16e69df049b3fed1478bcc16223e957cca2/rules/security/whitelisted.yml
+          - --config=r/python.lang.correctness
+          - --error
+          - --disable-version-check
+          - --quiet
+          - --skip-unknown-extensions
+
+      # The hook above scans changed files only, so a rule change is checked against existing code here.
+      - id: semgrep
+        name: Scan the tree with the app's semgrep rules
+        stages: [pre-push]
+        pass_filenames: false
+        always_run: true
+        args:
+          - --config=.semgrep/insights.yml
+          - --error
+          - --metrics=off
+          - --disable-version-check
+          - --quiet
+          - .
+
+  - repo: local
+    hooks:
+      - id: typecheck
+        name: Type-check frontend
+        entry: yarn --cwd frontend typecheck:baseline
+        language: system
+        pass_filenames: false
+        files: ^frontend/
+
+      - id: feature-coverage
+        name: Check feature coverage
+        entry: python insights/tests/features.py check
+        language: python
+        pass_filenames: false
+        stages: [pre-push]
+        files: ^(insights/.*test_.*\.py|frontend/(src2|e2e/tests)/.*\.(test|spec)\.ts|docs/(features|coverage)\.md|insights/tests/features\.py)$
 
 ci:
     autoupdate_schedule: weekly

@@ -1,12 +1,10 @@
 # Copyright (c) 2022, Frappe Technologies Pvt. Ltd. and Contributors
 # License: GNU General Public License v3. See license.txt
 
-import os
-
 import frappe
 
 from insights.decorators import insights_whitelist
-from insights.setup.demo import DemoDataFactory
+from insights.setup.demo import SAMPLE_WORKBOOK_TITLE, DemoDataFactory
 
 
 @insights_whitelist(role="Insights Admin")
@@ -25,10 +23,8 @@ def check_demo_data_exists() -> bool:
 
 
 @insights_whitelist(role="Insights Admin", methods=["POST"])
-def setup_demo_data():
-    if frappe.flags.in_test or os.environ.get("CI"):
-        return
-
+def setup_demo_data() -> str | None:
+    """Set up the demo data, and return the sample workbook to open."""
     try:
         factory = DemoDataFactory()
         factory.run()
@@ -36,3 +32,4 @@ def setup_demo_data():
     except Exception:
         frappe.log_error("Insights: Demo Data Setup Failed")
         frappe.throw("Failed to setup demo data")
+    return frappe.db.get_value("Insights Workbook", {"title": SAMPLE_WORKBOOK_TITLE})

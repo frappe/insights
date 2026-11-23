@@ -8,8 +8,21 @@ import frappe
 import ibis.expr.schema as sch
 import sqlglot as sg
 from ibis.backends.postgres import Backend as PostgresBackend
+from ibis.backends.sql.compilers.postgres import PostgresCompiler
 
 from .ssl import ca_certificate_file
+
+
+class InsightsPostgresCompiler(PostgresCompiler):
+    # PostgreSQL aborts on a zero divisor; MariaDB returns NULL
+    def visit_Divide(self, op, *, left, right):
+        return super().visit_Divide(op, left=left, right=self.f.nullif(right, 0))
+
+    def visit_FloorDivide(self, op, *, left, right):
+        return super().visit_FloorDivide(op, left=left, right=self.f.nullif(right, 0))
+
+    def visit_Modulus(self, op, *, left, right):
+        return super().visit_Modulus(op, left=left, right=self.f.nullif(right, 0))
 
 
 class InsightsPostgresBackend(PostgresBackend):
@@ -56,6 +69,12 @@ ORDER BY c.position""",
 
 
 def get_postgres_connection(data_source):
+    db = _connect(data_source)
+    db.compiler = InsightsPostgresCompiler()
+    return db
+
+
+def _connect(data_source):
     if data_source.connection_string:
         url = urlparse(data_source.connection_string)
         return InsightsPostgresBackend()._from_url(

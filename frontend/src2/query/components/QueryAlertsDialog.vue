@@ -1,12 +1,12 @@
 <script setup lang="tsx">
 import { useTimeAgo } from '@vueuse/core'
-import { ListView } from 'frappe-ui'
+import { ListView } from 'frappe-ui/experimental'
 import { Plus, SearchIcon } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import IndicatorIcon from '../../components/Icons/IndicatorIcon.vue'
 import { getUniqueId } from '../../helpers'
 import { __ } from '../../translation'
-import useAlertStore from '../alert'
+import useAlertStore, { alertRows } from '../alert'
 import { Query } from '../query'
 
 const emit = defineEmits({
@@ -21,10 +21,11 @@ alertStore.loadAlerts(props.query.doc.name)
 
 const searchQuery = ref('')
 const filteredAlerts = computed(() => {
+	const rows = alertRows(alertStore.alerts)
 	if (!searchQuery.value) {
-		return alertStore.alerts
+		return rows
 	}
-	return alertStore.alerts.filter(
+	return rows.filter(
 		(alert: any) =>
 			alert.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
 			alert.owner.toLowerCase().includes(searchQuery.value.toLowerCase()),
@@ -39,12 +40,12 @@ const listOptions = ref({
 		},
 		{
 			label: __('Status'),
-			key: 'disabled',
+			key: 'enabled',
 			getLabel: (props: any) => {
-				return props.row.disabled ? __('Disabled') : __('Enabled')
+				return props.row.enabled ? __('Enabled') : __('Disabled')
 			},
 			prefix: (props: any) => {
-				const color = props.row.disabled ? 'text-gray-500' : 'text-green-500'
+				const color = props.row.enabled ? 'text-ink-green-5' : 'text-ink-gray-4'
 				return <IndicatorIcon class={color} />
 			},
 		},
@@ -89,19 +90,13 @@ const listOptions = ref({
 </script>
 
 <template>
-	<Dialog
-		v-model="show"
-		:options="{
-			title: __('Alerts'),
-			size: '2xl',
-		}"
-	>
-		<template #body-content>
+	<Dialog v-model:open="show" :title="__('Alerts')" size="2xl">
+		<template #default>
 			<div class="flex h-[30rem] w-full flex-1 flex-col gap-3 overflow-auto text-base">
 				<div class="flex justify-between gap-2 overflow-visible py-1">
 					<FormControl :placeholder="__('Search')" v-model="searchQuery" :debounce="300">
 						<template #prefix>
-							<SearchIcon class="h-4 w-4 text-gray-500" />
+							<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 						</template>
 					</FormControl>
 					<Button
@@ -115,7 +110,7 @@ const listOptions = ref({
 						"
 					>
 						<template #prefix>
-							<Plus class="h-4 w-4 text-gray-700" stroke-width="1.5" />
+							<Plus class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 						</template>
 					</Button>
 				</div>

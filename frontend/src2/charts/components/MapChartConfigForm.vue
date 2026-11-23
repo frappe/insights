@@ -1,23 +1,19 @@
 <script setup lang="ts">
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { __ } from '../../translation'
 import { MapChartConfig } from '../../types/chart.types'
-import {
-	DimensionOption,
-	ColumnOption,
-	Measure,
-	Dimension,
-	QueryResult,
-} from '../../types/query.types'
+import { DimensionOption, ColumnOption, QueryResult } from '../../types/query.types'
+import InlineFormControlLabel from '../../components/InlineFormControlLabel.vue'
 import DimensionPicker from './DimensionPicker.vue'
 import MeasurePicker from './MeasurePicker.vue'
+import NumberFormatSection from './NumberFormatSection.vue'
 import CollapsibleSection from './CollapsibleSection.vue'
 import RegionMappingDialog from './RegionMappingDialog.vue'
 import { FormControl, Button } from 'frappe-ui'
 import { FIELDTYPES } from '../../helpers/constants'
 import { call } from 'frappe-ui'
 import { InfoIcon } from 'lucide-vue-next'
-import useChart from '../chart'
+import { chartPreviewKey } from '../chart_preview'
 import { watchDebounced } from '@vueuse/core'
 
 const props = defineProps<{
@@ -35,21 +31,6 @@ const config = defineModel<MapChartConfig>({
 		value_column: {},
 		map_type: 'world',
 	}),
-})
-
-watchEffect(() => {
-	if (!config.value.location_column) {
-		config.value.location_column = {} as Dimension
-	}
-	if (!config.value.value_column) {
-		config.value.value_column = {} as Measure
-	}
-	if (!config.value.latitude_column) {
-		config.value.latitude_column = {} as Measure
-	}
-	if (!config.value.longitude_column) {
-		config.value.longitude_column = {} as Measure
-	}
 })
 
 const discrete_dimensions = computed(() =>
@@ -74,10 +55,10 @@ const unresolvedCount = ref<number | null>(null)
 const loadingUnresolved = ref(false)
 
 const userRegions = ref<string[]>([])
-const { dataQuery } = useChart(props.chartName!)
+const preview = inject(chartPreviewKey)!
 
 watchDebounced(
-	[() => config.value.location_column?.dimension_name, () => dataQuery.result?.rows],
+	[() => config.value.location_column?.dimension_name, () => preview.result?.rows],
 	([columnName, rows]) => {
 		if (!columnName || !props.queryName || !rows || rows.length === 0) {
 			userRegions.value = []
@@ -157,26 +138,24 @@ watch(
 
 <template>
 	<div class="flex flex-col gap-3">
-		<CollapsibleSection title="Options">
+		<CollapsibleSection :title="__('Options')">
 			<div class="flex flex-col gap-3 pt-1">
-				<FormControl
-					v-model="config.map_type"
-					label="Map Type"
-					type="select"
-					:options="map_options"
-				/>
+				<InlineFormControlLabel :label="__('Map type')" control-width="7rem">
+					<FormControl v-model="config.map_type" type="select" :options="map_options" />
+				</InlineFormControlLabel>
 
-				<FormControl
-					:model-value="config.map_style || 'regions'"
-					:label="__('Map Style')"
-					type="select"
-					:options="style_options"
-					@update:model-value="(style: any) => (config.map_style = style)"
-				/>
+				<InlineFormControlLabel :label="__('Map style')" control-width="7rem">
+					<FormControl
+						:model-value="config.map_style || 'regions'"
+						type="select"
+						:options="style_options"
+						@update:model-value="(style: any) => (config.map_style = style)"
+					/>
+				</InlineFormControlLabel>
 
 				<div class="flex flex-col gap-1">
 					<div class="flex justify-start items-center">
-						<label class="text-xs text-gray-600">{{
+						<label class="text-xs text-ink-gray-5">{{
 							points ? __('Point Column') : __('Region Column')
 						}}</label>
 						<Button
@@ -185,8 +164,8 @@ watch(
 							:icon="InfoIcon"
 							@click="openRegionMappingDialog"
 							:class="{
-								'text-gray-600': unresolvedCount === 0,
-								'text-red-600': unresolvedCount !== null && unresolvedCount > 0,
+								'text-ink-gray-5': unresolvedCount === 0,
+								'text-ink-red-6': unresolvedCount !== null && unresolvedCount > 0,
 							}"
 						/>
 					</div>
@@ -199,7 +178,7 @@ watch(
 				<MeasurePicker
 					v-model="config.value_column"
 					:column-options="props.columnOptions"
-					label="Value"
+					:label="__('Value')"
 				/>
 
 				<template v-if="points">
@@ -216,6 +195,11 @@ watch(
 				</template>
 			</div>
 		</CollapsibleSection>
+
+		<NumberFormatSection
+			:config="config"
+			:sole-measure-name="config.value_column?.measure_name"
+		/>
 
 		<RegionMappingDialog
 			v-if="chartName"
