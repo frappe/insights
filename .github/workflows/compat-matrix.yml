@@ -194,15 +194,31 @@ jobs:
               sys.exit(1)
           EOF
 
-      - name: Import Insights modules
+      - name: Create Site
         working-directory: ${{ env.BENCH_PATH }}
         run: |
+          bench new-site "$SITE_NAME" \
+            --db-root-password "$DB_ROOT_PASSWORD" \
+            --admin-password "$ADMIN_PASSWORD"
+          bench --site "$SITE_NAME" install-app insights
+
+      - name: Import Insights modules
+        working-directory: ${{ env.BENCH_PATH }}/sites
+        run: |
           # The tests import a few modules. A dependency release that moves a
-          # module Insights imports only fails when that module is imported.
-          ./env/bin/python - <<'EOF'
+          # module Insights imports, or a Frappe API one Frappe branch lacks,
+          # only fails when that module is imported. On a site every module
+          # should import, so any error fails: it takes down each endpoint in that module.
+          "$BENCH_PATH/env/bin/python" - <<'EOF'
           import importlib
+          import os
           import sys
           from pathlib import Path
+
+          import frappe
+
+          frappe.init(os.environ["SITE_NAME"], sites_path=".")
+          frappe.connect()
 
           import insights
 
@@ -221,26 +237,20 @@ jobs:
                   continue
               try:
                   importlib.import_module(module)
-              except ImportError as e:
-                  failures.append(f"{module}: {e}")
-              except Exception:
-                  # Modules that need a site or request fail here for reasons unrelated to dependencies
-                  pass
+              except Exception as e:
+                  failures.append(f"{module}: {e!r}")
 
+          frappe.destroy()
           if failures:
               print("Modules that fail to import:", *failures, sep="\n")
               sys.exit(1)
           EOF
 
-      - name: Create Site and Run Tests
+      - name: Run Tests
         working-directory: ${{ env.BENCH_PATH }}
         env:
           CI: "Yes"
         run: |
-          bench new-site "$SITE_NAME" \
-            --db-root-password "$DB_ROOT_PASSWORD" \
-            --admin-password "$ADMIN_PASSWORD"
-          bench --site "$SITE_NAME" install-app insights
           bench --site "$SITE_NAME" run-tests --app insights --module insights.tests.test_basic_workflow
 
   report-failure:
@@ -279,8 +289,8 @@ jobs:
                   if $step == "Check dependency conflicts" or $step == "Upgrade dependencies to highest allowed" then
                     "Insights and Frappe allow versions of a package that no release satisfies both. Sites that update either app install the version one of them rejects, and break at import or migrate. Relax the Insights range and release before this Frappe version reaches sites."
                   elif $step == "Import Insights modules" then
-                    "Insights code fails to import on the dependency versions this leg installed. Sites that install these versions break when the module loads. Fix the import, or cap the version and release."
-                  elif $step == "Create Site and Run Tests" and ($job.name | contains("Dependencies=highest")) then
+                    "Insights code fails to import on the Frappe or dependency versions this leg installed. Sites on these versions break when the module loads, and every endpoint in it fails. Fix the import, or cap the version and release."
+                  elif ($step == "Create Site" or $step == "Run Tests") and ($job.name | contains("Dependencies=highest")) then
                     "Insights breaks on the newest versions its dependency ranges allow. Sites get these versions when another app or a later deploy upgrades them. Fix the code, or cap the version and release."
                   else
                     "Insights does not install or pass its tests on this Frappe branch."
