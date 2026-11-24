@@ -1076,7 +1076,15 @@ class TestUnusableTableImport(InsightsIntegrationTestCase):
 
     # @feature data-store.import-table
     def test_a_query_on_a_listed_table_of_an_active_source_queues_its_import(self):
-        self.run_data_store_query("Site DB", self.TABLE)
+        # an earlier test's real import of this table can still be on the queue, or its
+        # log left "In Progress", and the importer would then report it under way and
+        # queue nothing. The queue is the boundary, so its state is set here
+        frappe.db.delete(
+            "Insights Table Import Log",
+            {"data_source": "Site DB", "table_name": self.TABLE, "status": "In Progress"},
+        )
+        with patch.object(data_warehouse, "is_job_enqueued", return_value=False):
+            self.run_data_store_query("Site DB", self.TABLE)
 
         self.enqueue.assert_called_once()
         self.assertEqual(self.enqueue.call_args.kwargs["table_name"], self.TABLE)
