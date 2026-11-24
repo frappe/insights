@@ -203,7 +203,7 @@ def update_team(team: dict):
         doc.append(
             "team_members",
             {
-                "user": member["user"],
+                "user": frappe.db.get_value("User", {"email": member["user"]}) or member["user"],
             },
         )
 
