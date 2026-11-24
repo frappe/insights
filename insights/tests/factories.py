@@ -158,6 +158,20 @@ def chart_derivation_fixtures():
         "data_type": "String",
         "dimension_name": "territory",
     }
+    place = {"column_name": "place", "data_type": "String", "dimension_name": "place"}
+    visits = {"aggregation": "count", "column_name": "name", "data_type": "Integer", "measure_name": "Visits"}
+    latitude = {
+        "aggregation": "avg",
+        "column_name": "latitude",
+        "data_type": "Decimal",
+        "measure_name": "Latitude",
+    }
+    longitude = {
+        "aggregation": "avg",
+        "column_name": "longitude",
+        "data_type": "Decimal",
+        "measure_name": "Longitude",
+    }
 
     return [
         {
@@ -175,6 +189,26 @@ def chart_derivation_fixtures():
             "operations": [
                 _source_operation("sales-invoices"),
                 {"type": "summarize", "measures": [revenue], "dimensions": [territory]},
+            ],
+        },
+        {
+            "title": "Visits by Place",
+            "chart_type": "Map",
+            "query": "visits",
+            "config": {
+                "filters": {"filters": [], "logical_operator": "And"},
+                "limit": 100,
+                "order_by": [],
+                "map_type": "world",
+                "map_style": "points",
+                "location_column": place,
+                "value_column": visits,
+                "latitude_column": latitude,
+                "longitude_column": longitude,
+            },
+            "operations": [
+                _source_operation("visits"),
+                {"type": "summarize", "measures": [visits, latitude, longitude], "dimensions": [place]},
             ],
         },
         {
