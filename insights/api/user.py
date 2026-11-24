@@ -301,12 +301,13 @@ def invite_users(emails: str):
 
 @insights_whitelist()
 def update_user(email: str, fields: dict):
-    if frappe.session.user != email and not is_admin(frappe.session.user):
+    user_id = frappe.db.get_value("User", {"email": email}) or email
+    if frappe.session.user != user_id and not is_admin(frappe.session.user):
         frappe.throw("Not permitted to update another user's profile", frappe.PermissionError)
 
     first_name, last_name = fields.get("first_name"), fields.get("last_name")
 
-    user = frappe.get_doc("User", email)
+    user = frappe.get_doc("User", user_id)
     if first_name:
         user.first_name = first_name
     if last_name:
