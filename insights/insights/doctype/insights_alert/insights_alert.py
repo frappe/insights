@@ -162,11 +162,15 @@ class InsightsAlert(Document):
         runs_as = get_permission_user()
         if not may_run_as(self.doctype, self, runs_as):
             if not frappe.db.get_value("User", runs_as, "enabled"):
-                frappe.throw(_("{0}, who this alert runs as, is disabled.").format(runs_as), SendRefused)
+                frappe.throw(
+                    _("{0}, who this alert runs as, is disabled.").format(frappe.utils.get_fullname(runs_as)),
+                    SendRefused,
+                )
             workbook = workbook_of(self)
             frappe.throw(
                 _("{0}, who this alert runs as, may not edit the workbook {1}.").format(
-                    runs_as, frappe.db.get_value("Insights Workbook", workbook, "title") or workbook
+                    frappe.utils.get_fullname(runs_as),
+                    frappe.db.get_value("Insights Workbook", workbook, "title") or workbook,
                 ),
                 SendRefused,
             )

@@ -234,7 +234,7 @@ class TestAlertRunsAsItsEnabler(InsightsIntegrationTestCase):
         recipients, subject, message = mails[0]
         self.assertEqual(recipients, [PUBLISHER])
         self.assertEqual(subject, f"Insights Alert stopped: {alert.title}")
-        self.assertIn(EDITOR, message)
+        self.assertIn("Perm Editor", message)
         self.assertIn(cause, message)
         self.assertNotIn("try again", message)
         self.assertEqual(frappe.db.get_value("Insights Alert", alert.name, "disabled"), 1)
