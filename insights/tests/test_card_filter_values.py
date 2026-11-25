@@ -266,3 +266,19 @@ class TestCardFilterValues(InsightsIntegrationTestCase):
             result = get_chart_data(chart, card_filters=[card_filter])
 
         self.assertEqual([row["Todos"] for row in result["rows"]], [len(OPEN_TODOS)])
+
+    # @feature dashboard.card-find
+    def test_a_find_keeps_the_rows_where_any_named_column_contains_the_term(self):
+        find = {"find": str(len(OPEN_TWO)), "columns": ["description", "weight"]}
+
+        with as_user(AUTHOR), db_connections():
+            result = get_chart_data(self.table, self.dashboard, card_filters=[find])
+
+        self.assertEqual([row["description"] for row in result["rows"]], [OPEN_TWO])
+
+    # @feature dashboard.card-find
+    def test_a_find_on_a_column_the_card_does_not_show_is_refused(self):
+        find = {"find": AUTHOR, "columns": ["allocated_to"]}
+
+        with as_user(AUTHOR), db_connections(), self.assertRaises(frappe.DoesNotExistError):
+            get_chart_data(self.table, self.dashboard, card_filters=[find])
