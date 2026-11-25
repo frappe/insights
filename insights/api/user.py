@@ -15,7 +15,7 @@ from insights.insights.doctype.insights_team.insights_team import is_admin
 from insights.insights.doctype.insights_user_invitation.insights_user_invitation import (
     get_invitation_by_key,
 )
-from insights.permissions import get_insights_users
+from insights.permissions import get_insights_users, user_id_of
 from insights.utils import get_app_url
 
 # the roster is a directory to share from, so it includes what a picker shows
@@ -203,7 +203,7 @@ def update_team(team: dict):
         doc.append(
             "team_members",
             {
-                "user": frappe.db.get_value("User", {"email": member["user"]}) or member["user"],
+                "user": user_id_of(member["user"]),
             },
         )
 
