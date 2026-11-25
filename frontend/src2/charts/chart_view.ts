@@ -214,6 +214,8 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	// sent as one more card filter, so the server searches every row and not just this page
 	const findTerm = ref('')
 	const applied = shallowRef<CardFind>()
+	// the findable columns of the last answer that had any, so a find that keeps no rows still has them
+	const findColumns = ref<string[]>([])
 
 	function filterContext(): DashboardFilterContext | undefined {
 		const filterContext = context?.filterContext(current.value.name)
@@ -404,6 +406,11 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 				columns: withoutHidden(response.columns),
 				rows: response.rows || [],
 			}
+			if (rows.columns.length) {
+				findColumns.value = rows.columns
+					.filter((column) => FINDABLE_TYPES.includes(column.type))
+					.map((column) => column.name)
+			}
 			result.value = {
 				...rows,
 				executedSQL: response.sql || '',
@@ -485,19 +492,15 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		return true
 	}
 
-	// columns are kept until the find is cleared: a find that keeps no rows may answer with none
 	function findOn(term: string): CardFind | undefined {
-		const columns =
-			applied.value?.columns ??
-			result.value.columns
-				.filter((column) => FINDABLE_TYPES.includes(column.type))
-				.map((column) => column.name)
+		const columns = findColumns.value
 		return term.trim() && columns.length ? { find: term.trim(), columns } : undefined
 	}
 
 	const askAgain = useDebounceFn(() => {
 		const next = findOn(findTerm.value)
-		if (stableStringify(next) === stableStringify(applied.value)) return
+		// a card whose last load failed loads again, as it has no columns to find on yet
+		if (stableStringify(next) === stableStringify(applied.value) && !failed.value) return
 		applied.value = next
 		return load()
 	}, FIND_DELAY)

@@ -95,6 +95,12 @@ export function useChartCell(props: ChartCellProps) {
 	const findOpen = ref(false)
 	const findsOnServer = computed(() => Boolean(isTable.value && read.value?.setFind))
 	watch(findText, (text) => read.value?.setFind?.(text))
+	// a cell that switches charts drops the old chart's find, as unmounting does
+	watch(read, (_, old) => {
+		old?.clearFind()
+		findText.value = ''
+		findOpen.value = false
+	})
 	provide(
 		tableFindKey,
 		computed(() => (findsOnServer.value ? '' : findText.value)),

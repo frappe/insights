@@ -26,6 +26,7 @@ from insights.not_permitted import answers_refusal, refused_doctypes, roles_with
 from insights.permission_user import runs_as
 from insights.permissions import same_rows_for_every_reader
 from insights.preview_key import generate_preview_key
+from insights.resolver import not_found
 from insights.resources import ResourcePool, server_busy
 from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File, get_app_url
@@ -985,6 +986,8 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     routed = dict(adhoc_filters or {})
     for rule in rules:
         if rule["type"] == "filter_group":
+            if any(not card_filter_source(chart, f["column"]["column_name"])[0] for f in rule["filters"]):
+                not_found()
             # a find reads the columns as the card shows them, never a grain's source
             group = routed.get(chart) or {"type": "filter_group", "logical_operator": "And", "filters": []}
             routed[chart] = {**group, "filters": [*group["filters"], rule]}

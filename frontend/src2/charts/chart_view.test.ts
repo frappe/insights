@@ -778,6 +778,33 @@ describe('a reader finding rows in a paged table', () => {
 	})
 
 	// @feature dashboard.card-find
+	it('loads again after a failed load, and finds on the columns the latest answer shows', async () => {
+		vi.useFakeTimers()
+		let answer = () => Promise.reject(new Error('timed out')) as Promise<any>
+		answers.set('insights.api.view.get_chart_data', () => answer())
+		const chartDoc = { name: 'chart-16', title: '', chart_type: 'Table', config: {} as any }
+		const read = findOn(chartDoc, { cardFilters: [] })
+
+		await read.load()
+		answer = () =>
+			pagedAnswer().then((paged) => ({
+				...paged,
+				columns: [{ name: 'region', type: 'String' }],
+			}))
+		read.setFind!('north')
+		await vi.runAllTimersAsync()
+		read.setFind!('north east')
+		await vi.runAllTimersAsync()
+		vi.useRealTimers()
+
+		expect(calls.map((call) => call.args.card_filters)).toEqual([
+			[],
+			[],
+			[{ find: 'north east', columns: ['region'] }],
+		])
+	})
+
+	// @feature dashboard.card-find
 	it('is not offered where the table holds its only page', async () => {
 		answers.set('insights.api.view.get_chart_data', () =>
 			pagedAnswer().then((answer) => ({ ...answer, can_read_rows: false })),
