@@ -28,13 +28,8 @@ const TableChart = defineAsyncComponent(() => import('../components/TableChart.v
 /** The stored config as the table reads it. `order_by` belongs to every Chart. */
 type StoredTableConfig = TableChartConfig & { order_by: OrderByArgs[] }
 
-/**
- * The host's find text, read by the grid it narrows. Find is the table's act
- * and client-side over the rows already shown, so it never reaches the adapter
- * or the server. A host that renders no find box provides nothing and the grid
- * shows every row it was handed.
- */
-export const tableFindKey: InjectionKey<Ref<string>> = Symbol('tableFind')
+/** The find text the grid narrows its own rows by; empty when the host finds on the server. */
+export const tableFindKey: InjectionKey<Readonly<Ref<string>>> = Symbol('tableFind')
 
 /** The cell a reader asked for the rows behind. */
 export type TableCellEvent = { column: QueryResultColumn; row: QueryResultRow }

@@ -272,7 +272,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.card-follows-edits | A card re-renders after its chart's config or its query was edited while the dashboard was closed. |
 | dashboard.export-png | A user downloads a dashboard as a PNG. |
 | dashboard.card-filter | A reader narrows one card with its own filter, and the filter lists only what the card shows. |
-| dashboard.card-find | A reader searches the rows a table card shows. |
+| dashboard.card-find | A reader searches every row of a table card, not just the page on screen. |
 | dashboard.drill | A reader drills from a dashboard card under the dashboard's filters. |
 | dashboard.edit-chart | A reader with access jumps from a card to the chart in its workbook. |
 | dashboard.list | A user browses dashboards, last opened first, and filters them by title, workbook, chart, data source or access. An admin also lists the dashboards nobody gave them. |

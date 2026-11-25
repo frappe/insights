@@ -7,6 +7,7 @@
 // both replaces it, so a card never renders a config over rows that the config
 // did not produce.
 
+import { useDebounceFn } from '@vueuse/core'
 import { call } from 'frappe-ui'
 import { computed, reactive, ref, shallowRef, unref, type ComputedRef, type Ref } from 'vue'
 import { copy, getErrorMessage } from '../helpers'
@@ -59,7 +60,7 @@ export type DashboardFilterContext = {
 	dashboard?: string
 	items?: WorkbookDashboardItem[]
 	filters?: FilterValues
-	cardFilters: CardFilter[]
+	cardFilters: (CardFilter | CardFind)[]
 }
 
 export type CardFilter = {
@@ -67,6 +68,18 @@ export type CardFilter = {
 	operator: FilterOperator
 	value: FilterValue
 }
+
+/** A reader's find on a card: the rows where any of `columns` contains the term. */
+export type CardFind = {
+	find: string
+	columns: string[]
+}
+
+// dates are left out: the server matches them as stored, not as the card prints them
+const FINDABLE_TYPES = ['String', 'Text', 'Integer', 'Decimal']
+
+// a find is a round trip, so it waits until the reader stops typing
+const FIND_DELAY = 300
 
 // The builder's chart document has this shape too, so the preview source reads
 // it directly.
@@ -198,8 +211,14 @@ export type ChartSource = {
 export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 	const current = computed(() => unref(source.doc))
 
+	// sent as one more card filter, so the server searches every row and not just this page
+	const findTerm = ref('')
+	const applied = shallowRef<CardFind>()
+
 	function filterContext(): DashboardFilterContext | undefined {
-		return context?.filterContext(current.value.name)
+		const filterContext = context?.filterContext(current.value.name)
+		if (!filterContext || !applied.value) return filterContext
+		return { ...filterContext, cardFilters: [...filterContext.cardFilters, applied.value] }
 	}
 
 	const answered = shallowRef<{ key?: string; doc: ChartViewDoc }>()
@@ -466,6 +485,35 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		return true
 	}
 
+	// columns are kept until the find is cleared: a find that keeps no rows may answer with none
+	function findOn(term: string): CardFind | undefined {
+		const columns =
+			applied.value?.columns ??
+			result.value.columns
+				.filter((column) => FINDABLE_TYPES.includes(column.type))
+				.map((column) => column.name)
+		return term.trim() && columns.length ? { find: term.trim(), columns } : undefined
+	}
+
+	const askAgain = useDebounceFn(() => {
+		const next = findOn(findTerm.value)
+		if (stableStringify(next) === stableStringify(applied.value)) return
+		applied.value = next
+		return load()
+	}, FIND_DELAY)
+
+	function setFind(term: string) {
+		if (term === findTerm.value) return
+		findTerm.value = term
+		askAgain()
+	}
+
+	// the read outlives its card, so the find is dropped without a load
+	function clearFind() {
+		findTerm.value = ''
+		applied.value = undefined
+	}
+
 	function goToPage(page: number) {
 		if (!paged.value || page < 1) return
 		currentPage.value = page
@@ -562,6 +610,10 @@ export function makeChartRead(source: ChartSource, context?: ChartReadContext) {
 		fetchResultCount: computed(() =>
 			paged.value && source.fetchCount ? fetchResultCount : undefined,
 		),
+		// a table that does not page holds all its rows, so it finds on screen
+		findTerm,
+		setFind: computed(() => (paged.value && context ? setFind : undefined)),
+		clearFind,
 		downloading: download ? download.downloading : false,
 		exportResults: computed(() => (canExport.value ? download?.exportResults : undefined)),
 		cancelDownload: download?.cancelDownload,

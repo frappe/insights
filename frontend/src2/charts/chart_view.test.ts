@@ -708,3 +708,85 @@ describe('a reader sorting a saved table', () => {
 		expect(read.sort).toBeUndefined()
 	})
 })
+
+// a paged table's find goes to the server as a card filter
+
+describe('a reader finding rows in a paged table', () => {
+	const findOn = (read: any, context: { cardFilters: CardFilter[] }) =>
+		useChartView(
+			read.name,
+			{
+				id: `dashboard:${read.name}`,
+				filterContext: (chart_name) => ({ chart: chart_name, ...context }),
+			},
+			read,
+		)
+
+	const pagedAnswer = () =>
+		Promise.resolve({
+			columns: [
+				{ name: 'owner', type: 'String' },
+				{ name: 'signed_up', type: 'Date' },
+				{ name: 'count', type: 'Integer' },
+			],
+			rows: [{ owner: 'North', signed_up: '2026-11-24', count: 3 }],
+			can_read_rows: true,
+		})
+
+	// @feature dashboard.card-find
+	it('asks the server over every row, on the columns a term can match, from the first page', async () => {
+		vi.useFakeTimers()
+		answers.set('insights.api.view.get_chart_data', pagedAnswer)
+		const own: CardFilter = { column: 'owner', operator: '!=', value: 'South' }
+		const chartDoc = { name: 'chart-13', title: '', chart_type: 'Table', config: {} as any }
+		const read = findOn(chartDoc, { cardFilters: [own] })
+
+		await read.load()
+		await read.goToPage!(3)
+		read.setFind!('gmail')
+		read.setFind!('gmail.com')
+		await vi.runAllTimersAsync()
+		vi.useRealTimers()
+
+		const asked = calls.filter((call) => call.method === 'insights.api.view.get_chart_data')
+		expect(asked.map((call) => call.args.page)).toEqual([1, 3, 1])
+		expect(asked[2].args.card_filters).toEqual([
+			own,
+			{ find: 'gmail.com', columns: ['owner', 'count'] },
+		])
+		expect(read.findTerm).toBe('gmail.com')
+	})
+
+	// @feature dashboard.card-find
+	it('drops the find without asking again, so the next card asks for every row', async () => {
+		vi.useFakeTimers()
+		answers.set('insights.api.view.get_chart_data', pagedAnswer)
+		const chartDoc = { name: 'chart-14', title: '', chart_type: 'Table', config: {} as any }
+		const read = findOn(chartDoc, { cardFilters: [] })
+
+		await read.load()
+		read.setFind!('north')
+		await vi.runAllTimersAsync()
+		read.clearFind()
+		await vi.runAllTimersAsync()
+		vi.useRealTimers()
+		expect(calls).toHaveLength(2)
+
+		await read.load()
+		expect(calls).toHaveLength(3)
+		expect(calls[2].args.card_filters).toEqual([])
+	})
+
+	// @feature dashboard.card-find
+	it('is not offered where the table holds its only page', async () => {
+		answers.set('insights.api.view.get_chart_data', () =>
+			pagedAnswer().then((answer) => ({ ...answer, can_read_rows: false })),
+		)
+		const chartDoc = { name: 'chart-15', title: '', chart_type: 'Table', config: {} as any }
+		const read = findOn(chartDoc, { cardFilters: [] })
+
+		await read.load()
+
+		expect(read.setFind).toBeUndefined()
+	})
+})

@@ -21,10 +21,7 @@ const emit = defineEmits<{
 	cellClick: [event: TableCellEvent]
 }>()
 
-// The find the host's box asks for. It runs over the rows this grid was handed
-// — formatted, so a date matches the way it prints — and never over the ones
-// the server kept back. A host with no find box provides none and every row
-// stands.
+// the host's find over the rows this grid was handed, formatted so a date matches as it prints
 const findText = inject(tableFindKey, ref(''))
 const matches = computed(() => findRows(props.rows, findText.value))
 
