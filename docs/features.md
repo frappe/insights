@@ -449,6 +449,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.import-script-sandbox | An import job's script reads Frappe data, calls its client and inserts into its table; it cannot write to the site, enqueue a job, call a method, send mail or register a commit hook. |
 | data-store.failed-import-notice | A reader is told when a table's newest import failed, and nothing while one runs or a retry is queued. |
 | data-store.write-lock | A write waits for readers to finish and gives up at a timeout. |
+| data-store.unusable-table | A data store query that reads a table not yet stored, of an inactive source or missing from its source's table list, is refused with a message that names it, and no import is queued. |
 | data-store.run-without-import | A run that asks not to import refuses a data store table that is not stored yet and names it, instead of reading an empty table and queuing its import. |
 | data-store.division-by-zero | A division by zero returns null in the data store, as it does on the live connection. |
 | data-store.cleanup-prunes-stale | The weekly cleanup drops a table no query has used, and keeps one used recently, nested, freshly imported or incremental. |

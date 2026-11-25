@@ -78,7 +78,7 @@ Work the ladder in order. **The corpus comes before the schema.**
 
 A schema tells you a column exists. It never tells you the column is the right one. A query somebody wrote and uses holds a definition that survived contact with the business.
 
-**1. Name the data sources.** `get_all_data_sources`. Their names are the first map: which system holds tickets, which holds sites, which holds billing. An ask that spans two of them is normal.
+**1. Name the data sources.** `get_all_data_sources`. Their names are the first map: which system holds tickets, which holds sites, which holds billing. An ask that spans two of them is normal. Skip a source whose `status` is `Inactive`: Insights could not connect to it, so it reads only the tables already in the data store.
 
 **2. Search the corpus for every business word in the ask.** This is the step that pays. "Partner", "active customer", "churned" and "enterprise" are decisions somebody encoded once, in a title, a `mutate`, a `case_when`, a filter value or a `sql` query. Section 3 has the searches. Run them for every noun and every qualifier the user used, before you look at a single table.
 

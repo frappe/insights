@@ -28,7 +28,7 @@ from ibis.expr.types import Expr, Table
 
 import insights
 from insights.compat import ServiceUnavailableError
-from insights.exceptions import TableNotStored
+from insights.exceptions import QueryRefused, TableNotStored
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
     IMPORT_WRITE_LOCK_TIMEOUT,
     MEMORY_LIMIT_CONFIG_KEY,
@@ -595,6 +595,7 @@ class WarehouseTable:
             return insights.warehouse.db.table(self.warehouse_table_name, database=self.schema)
         except TableNotFound:
             if import_if_not_exists:
+                self.check_source_active()
                 self.announce_missing_table(import_running=self.enqueue_import())
                 remote_table = self.get_remote_table()
                 return insights.warehouse.db.create_table(
@@ -617,6 +618,21 @@ class WarehouseTable:
         except Exception as e:
             frappe.log_error(e)
             frappe.throw("Error accessing the data warehouse. Please try again.")
+
+    def check_source_active(self):
+        """Refuse a reader before an import is queued for a source whose connection failed.
+
+        Only the reader is refused. The status is set when the source is saved, so a
+        scheduled or an admin's import still tries, and fails with a log if it must.
+        """
+        if frappe.db.get_value("Insights Data Source v3", self.data_source, "status") == "Inactive":
+            frappe.throw(
+                frappe._(
+                    "{0} is inactive: its connection failed when it was last saved. "
+                    "Fix it and save it again to read {1}."
+                ).format(self.data_source, self.table_name),
+                QueryRefused,
+            )
 
     def announce_missing_table(self, import_running: bool = False):
         """Say that the empty table the reader is about to get is not the real one.
@@ -670,6 +686,15 @@ class WarehouseTable:
         """Queue an import for this table. True when one was already under way."""
         if frappe.db.get_value("Insights Data Source v3", self.data_source, "type") == "REST API":
             frappe.throw("Import not supported for API data sources")
+
+        # the import would fail in the job, after a toast that it started
+        if not frappe.db.exists("Insights Table v3", self.table_doc_name):
+            frappe.throw(
+                frappe._("{0} is not in the table list of {1}. Update its tables if it is new.").format(
+                    self.table_name, self.data_source
+                ),
+                QueryRefused,
+            )
 
         importer = WarehouseTableImporter(self)
         return importer.enqueue_import()
@@ -844,6 +869,14 @@ class WarehouseTableImporter:
             ],
             as_dict=True,
         )
+        if not table_doc:
+            # the table list was refreshed, or the source deleted, after this import was queued
+            frappe.throw(
+                frappe._("{0} is not in the table list of {1}.").format(
+                    self.table.table_name, self.table.data_source
+                ),
+                frappe.DoesNotExistError,
+            )
         self.settings.row_limit = row_limit(table_doc.row_limit)
         self.settings.before_import_script = table_doc.before_import_script or ""
         self.settings.memory_limit = (
