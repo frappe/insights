@@ -156,7 +156,7 @@ function updatePermissions() {
 						:full-name="user.full_name"
 						:email="user.email"
 						:image="user.user_image"
-						:access="user.email === session.user.user_id ? 'owner' : user.access"
+						:access="user.email === session.user.email ? 'owner' : user.access"
 						:options="accessOptions(user.email)"
 					/>
 

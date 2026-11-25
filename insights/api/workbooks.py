@@ -14,7 +14,7 @@ from insights.api.list_filters import (
     match_records,
 )
 from insights.decorators import insights_whitelist
-from insights.permissions import validate_shareable_users
+from insights.permissions import user_id_of, validate_shareable_users
 from insights.telemetry import capture_share_granted
 from insights.utils import DocShare
 
@@ -164,6 +164,7 @@ def get_share_permissions(workbook_name: str):
             DocShare.read,
             DocShare.write,
             DocShare.share,
+            User.email,
             User.full_name,
             User.user_image,
         )
@@ -173,10 +174,11 @@ def get_share_permissions(workbook_name: str):
         .run(as_dict=True)
     )
     owner = frappe.db.get_value("Insights Workbook", workbook_name, "owner")
-    owner_info = frappe.db.get_value("User", owner, ["full_name", "user_image"], as_dict=True) or {}
+    owner_info = frappe.db.get_value("User", owner, ["email", "full_name", "user_image"], as_dict=True) or {}
     user_permissions.append(
         {
             "user": owner,
+            "email": owner_info.get("email"),
             "full_name": owner_info.get("full_name"),
             "user_image": owner_info.get("user_image"),
             "read": 1,
@@ -220,6 +222,8 @@ def update_share_permissions(
         fields=["name", "user", "everyone", "read", "write"],
     )
 
+    for permission in user_permissions:
+        permission["user"] = user_id_of(permission["user"])
     allowed_users = {permission["user"] for permission in user_permissions}
     # The dialog posts back every share it showed, so validate only a new
     # person or a raised access level. Otherwise a kept share with someone who
