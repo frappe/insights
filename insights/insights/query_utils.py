@@ -1,6 +1,7 @@
 # Copyright (c) 2025, Frappe Technologies Pvt. Ltd. and contributors
 # For license information, please see license.txt
 
+import functools
 import re
 from collections.abc import Callable
 
@@ -8,18 +9,43 @@ import frappe
 import sqlglot as sg
 import sqlparse
 
+# A native query is read by several checks on every build, and by the dashboard's
+# refusal check on every read. sqlparse takes about a tenth of a second for each
+# pass over a 20 KB query, so each answer below is kept per SQL text. They are
+# functions of the text alone, so a kept answer is never another reader's.
+SQL_TEXT_CACHE_SIZE = 64
+
+
+@functools.lru_cache(maxsize=SQL_TEXT_CACHE_SIZE)
+def strip_sql_comments(raw_sql: str) -> str:
+    """`raw_sql` without its comments."""
+    return sqlparse.format(raw_sql, strip_comments=True)
+
+
+@functools.lru_cache(maxsize=SQL_TEXT_CACHE_SIZE)
+def count_sql_statements(raw_sql: str) -> int:
+    """How many statements `raw_sql` holds, empty ones not counted."""
+    return len([stmt for stmt in sqlparse.parse(raw_sql) if stmt.tokens and stmt.value.strip()])
+
 
 def runs_stored_procedure(raw_sql: str) -> bool:
     """Whether a SQL query calls a stored procedure. A procedure runs as written,
     so the reader's permissions do not limit the tables it reads."""
-    return sqlparse.format(raw_sql, strip_comments=True).strip().lower().startswith("exec")
+    return strip_sql_comments(raw_sql).strip().lower().startswith("exec")
 
 
 def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> list[frappe._dict]:
+    return [frappe._dict(ref) for ref in _sql_table_refs(raw_sql, dialect)]
+
+
+@functools.lru_cache(maxsize=SQL_TEXT_CACHE_SIZE)
+def _sql_table_refs(raw_sql: str, dialect: sg.Dialect | None) -> tuple[dict, ...]:
+    """The tables `raw_sql` reads, for `extract_sql_table_refs`, which hands out a
+    copy of each so no caller changes what is kept."""
     try:
-        parsed = sg.parse_one(sqlparse.format(raw_sql, strip_comments=True), dialect=dialect)
+        parsed = sg.parse_one(strip_sql_comments(raw_sql), dialect=dialect)
     except Exception:
-        return []  # nosemgrep - an unparseable query runs nothing, so it reads no table
+        return ()  # nosemgrep - an unparseable query runs nothing, so it reads no table
 
     table_refs = []
     seen_refs = set()
@@ -39,9 +65,9 @@ def extract_sql_table_refs(raw_sql: str, dialect: sg.Dialect | None = None) -> l
             continue
 
         seen_refs.add(ref_key)
-        table_refs.append(table_ref)
+        table_refs.append(dict(table_ref))
 
-    return table_refs
+    return tuple(table_refs)
 
 
 def fold_identifiers(raw_sql: str, dialect: sg.Dialect | None) -> str:

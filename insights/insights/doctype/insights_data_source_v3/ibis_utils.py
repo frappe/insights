@@ -72,11 +72,13 @@ from insights.insights.query_builders.sql_functions import (
 from insights.insights.query_utils import (
     alias_qualified_tables,
     check_source_workbook,
+    count_sql_statements,
     extract_sql_table_refs,
     fold_identifiers,
     get_direct_dependencies,
     real_table_refs,
     runs_stored_procedure,
+    strip_sql_comments,
     table_reference,
     unbound_reads,
 )
@@ -1240,7 +1242,7 @@ class IbisQueryBuilder:
             calls_procedure, raw_sql, tables = checked
         else:
             calls_procedure = runs_stored_procedure(raw_sql)
-            raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
+            raw_sql = strip_sql_comments(raw_sql)
             raw_sql = self._validate_native_sql(
                 raw_sql, use_live_connection=self.use_live_connection, data_source=ds, dialect=source_dialect
             )
@@ -1362,8 +1364,7 @@ class IbisQueryBuilder:
         # one statement, on every path: ibis cannot run two — `db.sql` on a pair
         # fails while it reads the schema — and both rewrites below read the first
         # statement only, so a second one would be dropped rather than refused
-        statements = [stmt for stmt in sqlparse.parse(raw_sql) if stmt.tokens and stmt.value.strip()]
-        if len(statements) > 1:
+        if count_sql_statements(raw_sql) > 1:
             frappe.throw(
                 frappe._("Multiple SQL statements are not supported for native queries"),
                 QueryRefused,
