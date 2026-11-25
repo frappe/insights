@@ -51,7 +51,7 @@ const showWizard = ref(false)
 let stored: ReturnType<typeof useStorage<Progress>> | undefined
 function progressStore() {
 	stored ??= useStorage<Progress>(
-		`insights:upgrade-wizard:${session.user.email}`,
+		`insights:upgrade-wizard:${session.user.user_id}`,
 		freshProgress(),
 		localStorage,
 		{ mergeDefaults: true },
@@ -72,7 +72,7 @@ const steps = computed(() =>
 	wizardSteps(items.value, {
 		can: can.value,
 		admin: admin.value,
-		me: session.user.email,
+		me: session.user.user_id,
 	}),
 )
 

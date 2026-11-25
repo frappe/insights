@@ -121,7 +121,7 @@ def get_user_info():
     is_admin = "Insights Admin" in roles
 
     user = frappe.db.get_value(
-        "User", frappe.session.user, ["first_name", "last_name", "user_type", "language"], as_dict=1
+        "User", frappe.session.user, ["email", "first_name", "last_name", "user_type", "language"], as_dict=1
     )
 
     locale = user.get("language") or frappe.db.get_single_value("System Settings", "language") or "en"
@@ -136,7 +136,8 @@ def get_user_info():
         has_workbooks = bool(frappe.db.exists("Insights Workbook", {"is_standard": 0}))
 
     return {
-        "email": frappe.session.user,
+        "user_id": frappe.session.user,
+        "email": user.get("email"),
         "first_name": user.get("first_name"),
         "last_name": user.get("last_name"),
         "is_admin": is_admin,

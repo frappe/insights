@@ -44,7 +44,7 @@ async function shareDialog(owner: string) {
 describe('the dashboard share dialog', () => {
 	// @feature permissions.share-dashboard
 	it('saves with Save and names its owner, as the workbook share dialog does', async () => {
-		session.user.email = 'reader@example.com'
+		session.user.user_id = 'reader@example.com'
 		session.user.first_name = 'Rea'
 		const html = await shareDialog('owner@example.com')
 

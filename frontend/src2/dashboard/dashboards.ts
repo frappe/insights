@@ -66,7 +66,7 @@ export type DashboardView = 'grid' | 'list'
 /** The view the Dashboards page shows, kept in the browser for each user. */
 export function useDashboardView() {
 	return useStorage<DashboardView>(
-		`insights:dashboard-view:${session.user.email}`,
+		`insights:dashboard-view:${session.user.user_id}`,
 		'list',
 		localStorage,
 	)

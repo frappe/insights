@@ -30,7 +30,7 @@ const placeholder_script = `# assign rows to \`results\`, e.g. results = frappe.
 const showLogs = ref(false)
 const scriptLogs = ref<string[]>([])
 attachRealtimeListener('insights_script_log', (data: any) => {
-	if (data.user == session.user.email) {
+	if (data.user == session.user.user_id) {
 		scriptLogs.value = data.logs
 	}
 })

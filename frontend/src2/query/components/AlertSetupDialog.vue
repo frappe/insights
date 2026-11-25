@@ -47,7 +47,7 @@ const userStore = useUserStore()
 // enabled it.
 const runsAs = computed(() => {
 	const enabler = alert.islocal || alert.doc.disabled ? '' : alert.doc.permission_user
-	if (!enabler || enabler === session.user.email) {
+	if (!enabler || enabler === session.user.user_id) {
 		return __('Runs as you, so it sends the rows you can see.')
 	}
 	return __(

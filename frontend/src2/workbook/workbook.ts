@@ -195,7 +195,7 @@ function makeWorkbook(name: string) {
 		router.replace(`/workbook/${workbook.name}`)
 	}
 
-	const isOwner = computed(() => workbook.doc.owner === session.user?.email)
+	const isOwner = computed(() => workbook.doc.owner === session.user?.user_id)
 	const canShare = computed(() => Boolean(workbook.doc.can_share))
 
 	async function getSharePermissions(): Promise<UpdateSharePermissionsArgs> {

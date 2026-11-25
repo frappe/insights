@@ -11,7 +11,7 @@ import type { FilterValues } from '../types/workbook.types'
 type StoredFilters = Record<string, FilterValues[string] | null>
 
 function key(dashboard: string) {
-	return `insights:dashboard-filters:${session.user.email || 'Guest'}:${dashboard}`
+	return `insights:dashboard-filters:${session.user.user_id || 'Guest'}:${dashboard}`
 }
 
 function storedFilters(dashboard: string): StoredFilters {
