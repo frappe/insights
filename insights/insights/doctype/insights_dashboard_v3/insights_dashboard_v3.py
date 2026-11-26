@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import hashlib
+import inspect
 import re
 from collections.abc import Callable
 from urllib.parse import urlencode
@@ -25,6 +26,7 @@ from insights.not_permitted import answers_refusal, refused_doctypes, roles_with
 from insights.permission_user import runs_as
 from insights.permissions import same_rows_for_every_reader
 from insights.preview_key import generate_preview_key
+from insights.resources import ResourcePool, server_busy
 from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File, get_app_url
 
@@ -449,15 +451,20 @@ class InsightsDashboardv3(Document):
         `answers_refusal` is here because the method is whitelisted. A card
         over a table the caller may not read then answers an empty list, the
         same as through `insights.api.view`.
+
+        Values come with their state, and periods plain, as from
+        `insights.api.view.get_filter_values`.
         """
         adhoc_filters = self._filter_context_filters(filter_name, filter_context)
-        return self.lookup_filter(
-            filter_name,
-            lambda chart, query, column: query.distinct_column_values(
-                column, search_term=search_term, adhoc_filters=adhoc_filters, granularity=granularity
-            ),
-            missing=filter_not_available,
-        )
+
+        def values(chart, query, column):
+            if granularity:
+                return query.distinct_column_values(
+                    column, adhoc_filters=adhoc_filters, granularity=granularity
+                )
+            return query.column_value_states(column, search_term=search_term, adhoc_filters=adhoc_filters)
+
+        return self.lookup_filter(filter_name, values, missing=filter_not_available)
 
     def _filter_context_filters(self, filter_name: str, filter_context: dict | None = None):
         """The rest of the grid's filters, routed, to narrow one of this
@@ -552,6 +559,63 @@ class InsightsDashboardv3(Document):
             file_url = f"{create_preview_file(preview, self.name)}?{version}.{frappe.generate_hash()[:4]}"
             self.db_set("preview_image", file_url)
             return file_url
+
+    def draw(self, filters: dict | None = None, width: int = 1280) -> bytes:
+        """The whole dashboard as the session user sees it, as a JPEG.
+
+        The browser arrives as Guest with a preview key cut for the session
+        user, so every chart runs as it would for them. `filters` are the
+        dashboard's filter values, keyed by filter name, as a reader sets them.
+        """
+        screenshot = full_page_capture()
+        if not screenshot:
+            frappe.throw(
+                frappe._(
+                    "This site's Frappe cannot draw a whole dashboard as an image. "
+                    "It needs a Frappe version whose page preview can capture a full page."
+                )
+            )
+
+        query = {"capture": 1}
+        if filters:
+            query["filters"] = frappe.as_json(filters, indent=None)
+        url = frappe.utils.get_url(
+            get_app_url(f"/shared/dashboard/{self.name}?{urlencode(query)}"),
+            allow_header_override=False,
+        )
+        # The browser holds this web thread while the page it opens takes others,
+        # so a few draws at once could take every thread and none would finish
+        pool = ResourcePool(
+            "insights:dashboard_draw",
+            DRAWS_AT_ONCE,
+            per_user=1,
+            max_waiters=0,
+            lease_seconds=DRAW_TIMEOUT + 60,
+        )
+        if not (lease := pool.acquire()):
+            raise server_busy(DRAW_RETRY_AFTER)
+        try:
+            with generate_preview_key(self.name, frappe.session.user) as key:
+                headers = {"X-Insights-Preview-Key": key}
+                check_page_answers(url, headers)
+                return screenshot(
+                    url,
+                    headers=headers,
+                    format="jpeg",
+                    width=width,
+                    full_page=True,
+                    # set by the shared dashboard page in capture mode once every card has drawn
+                    wait_until="document.documentElement.hasAttribute('data-dashboard-drawn')",
+                    timeout=DRAW_TIMEOUT,
+                )
+        except TimeoutError:
+            frappe.throw(
+                frappe._("The dashboard's charts did not finish drawing within {0} seconds").format(
+                    DRAW_TIMEOUT
+                )
+            )
+        finally:
+            pool.release(lease)
 
     def get_people_with_access(self):
         DocShare = frappe.qb.DocType("DocShare")
@@ -952,6 +1016,31 @@ def get_page_preview(url: str, headers: dict | None = None) -> bytes:
         return get_page_preview_via_service(url, headers)
 
     return get_preview_from_url(url, wait_for=1000, headers=headers or {}, format="jpeg")
+
+
+# seconds the browser waits for every card to draw; a card waits on its query
+DRAW_TIMEOUT = 60
+# browsers drawing dashboards at once, on every site that shares this Redis
+DRAWS_AT_ONCE = 2
+DRAW_RETRY_AFTER = 10
+
+
+def full_page_capture() -> Callable | None:
+    """Frappe's capture of a URL, when it can capture a whole page and wait for
+    it to draw, else None.
+
+    Without it the capture is the top 1280x720 of the page, and Frappe v15 has
+    no capture at all: its fallback is an external service, which must not see
+    a reader's rows.
+    """
+    try:
+        from frappe.utils.preview import get_preview_from_url
+    except ImportError:
+        return None  # nosemgrep - no preview module is the answer: Frappe v15 cannot capture
+    takes = inspect.signature(get_preview_from_url).parameters
+    if not {"width", "full_page", "wait_until", "timeout"} <= takes.keys():
+        return None
+    return get_preview_from_url
 
 
 def check_page_answers(url: str, headers: dict | None = None) -> None:

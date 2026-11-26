@@ -2,7 +2,8 @@
 
 Generating a dashboard's preview image starts a browser on this server and hands
 it a key, because the dashboard it renders is usually not public. The key is a
-read grant and nothing wider: it opens the documents the image already shows.
+read grant and nothing wider: it opens the documents the image already shows,
+as far as the user it was cut for may read them.
 `insights.permissions` reads it as that grant, and `insights.permission_user`
 reads the user it was cut for, so the render shows rows instead of empty cards.
 """
@@ -71,3 +72,24 @@ def get_preview_key():
 def get_previewed_dashboard():
     key = get_preview_key()
     return key["dashboard"] if key else None
+
+
+def preview_user_for(doc) -> str | None:
+    """The user a preview render of `doc` runs as, or None outside a render."""
+    key = get_preview_key()
+    if not key or not doc.name or not is_being_previewed(doc.doctype, doc.name):
+        return None
+    return key["user"]
+
+
+# Chromium sends a preview key, like every extra header, with every request the
+# page makes, to every host. A text card's image on another site would get the
+# key and could read the dashboard's rows as its user until the render ends. So a
+# page opened with a key loads only from this site.
+SAME_SITE_ONLY = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:"
+
+
+def keep_the_key_on_this_site(response, request):
+    """An `after_request` hook: a page opened with a preview key loads nothing from another site."""
+    if request and request.headers.get("X-Insights-Preview-Key"):
+        response.headers["Content-Security-Policy"] = SAME_SITE_ONLY

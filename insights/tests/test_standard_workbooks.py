@@ -949,7 +949,6 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
     # @feature standard.resync
     def test_a_file_that_fails_to_import_stops_neither_the_others_nor_the_migrate(self):
         self.ship()
-        failed = frappe.db.count("Error Log")
         real_import = standard.import_file_by_path
 
         def refuse_this_app(path, **kwargs):
@@ -957,12 +956,18 @@ class TheWalkTakesEveryFileAnAppShips(InsightsIntegrationTestCase):
                 raise frappe.ValidationError
             return real_import(path, **kwargs)
 
-        with patch.object(standard, "import_file_by_path", refuse_this_app):
+        # the site's Error Logs move with any background job, so the logger is watched
+        with (
+            patch.object(standard, "import_file_by_path", refuse_this_app),
+            patch.object(frappe, "log_error", wraps=frappe.log_error) as log_error,
+        ):
             migrate()
 
         self.assertFalse(frappe.db.exists(DT.WORKBOOK, WORKBOOK))
         self.assertFalse(frappe.flags.in_import)
-        self.assertEqual(frappe.db.count("Error Log"), failed + 1)
+        log_error.assert_called_once_with(
+            title=f"Failed to import the shipped workbook {frappe.scrub(WORKBOOK)}.json"
+        )
 
 
 @unittest.skipUnless(desk_islands(), "Frappe has no desk islands")

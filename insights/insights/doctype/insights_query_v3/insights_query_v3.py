@@ -506,6 +506,7 @@ class InsightsQueryv3(Document):
         limit: int = 20,
         adhoc_filters: dict | None = None,
         granularity: str | None = None,
+        cache_expiry: int | None = None,
     ):
         """The values a picker lists for `column_name`. With `granularity`, the
         periods it has rows in instead, as each period's first day, newest first.
@@ -538,22 +539,59 @@ class InsightsQueryv3(Document):
                 .head(max(limit, 500))
             )
         else:
-            values_query = (
-                builder.query.select(column_name)
-                .filter(
-                    _[column_name].notnull() if not search_term else _[column_name].ilike(f"%{search_term}%")
-                )
-                .distinct()
-                .head(limit)
-            )
+            values_query = _searched_values(builder.query, column_name, search_term).head(limit)
         result, _time_taken = execute_ibis_query(
             values_query,
             # periods follow new rows as charts do, other values change rarely
-            cache_expiry=60 * 10 if granularity else 24 * 60 * 60,
+            cache_expiry=cache_expiry or (60 * 10 if granularity else 24 * 60 * 60),
             reference_doctype=self.doctype,
             reference_name=self.name,
         )
         return result[column_name].tolist()
+
+    def column_value_states(
+        self,
+        column_name: str,
+        search_term: str | None = None,
+        limit: int = 20,
+        adhoc_filters: dict | None = None,
+    ) -> list[dict]:
+        """Every value of `column_name`, each `possible` when `adhoc_filters`
+        leave rows for it and `excluded` when they leave none.
+
+        Possible values come first, so an excluded one never pushes a possible
+        one out of the list. They are the list `distinct_column_values` gives
+        under the filters. Only when that list leaves room are the rest looked
+        up, without the filters and outside the values already listed. One
+        query that tests every value against the filtered ones makes the
+        database collect the column's whole distinct set before it can cut the
+        list: 14 to 28 s against under 0.3 s for these two, on a million rows
+        with 200,000 values."""
+        # under other filters a value's state follows the rows, as periods do
+        possible = self.distinct_column_values(
+            column_name,
+            search_term=search_term,
+            limit=limit,
+            adhoc_filters=adhoc_filters,
+            cache_expiry=60 * 10 if adhoc_filters else None,
+        )
+        states = [{"value": value, "state": "possible"} for value in possible]
+        if not adhoc_filters or len(possible) >= limit:
+            return states
+
+        builder = self.get_builder()
+        column_name = builder.get_column(column_name).get_name()
+        rest = builder.query
+        if possible:
+            rest = rest.filter(~rest[column_name].isin(possible))
+        excluded_query = _searched_values(rest, column_name, search_term).head(limit - len(possible))
+        result, _time_taken = execute_ibis_query(
+            excluded_query,
+            cache_expiry=60 * 10,
+            reference_doctype=self.doctype,
+            reference_name=self.name,
+        )
+        return states + [{"value": value, "state": "excluded"} for value in result[column_name].tolist()]
 
     @insights_whitelist()
     @answers_refusal(lambda: None)
@@ -928,6 +966,15 @@ def imported_queries(query, workbook):
     for name, dependency in ((query.get("dependencies") or {}).get("queries") or {}).items():
         if not already_in_workbook(name, workbook):
             yield from imported_queries(dependency, workbook)
+
+
+def _searched_values(query, column_name: str, search_term: str | None = None):
+    """The distinct values of `column_name` a picker lists, narrowed by `search_term`."""
+    return (
+        query.select(column_name)
+        .filter(_[column_name].notnull() if not search_term else _[column_name].ilike(f"%{search_term}%"))
+        .distinct()
+    )
 
 
 @contextmanager
