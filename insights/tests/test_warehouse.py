@@ -29,7 +29,7 @@ import insights
 from insights.api.data_store import sync_tables, update_failed_sync_status
 from insights.cache_utils import make_digest
 from insights.cancellation import REQUEST_ID_HEADER, cancel
-from insights.exceptions import QueryCancelled, QueryTimeout
+from insights.exceptions import QueryCancelled, QueryRefused, QueryTimeout
 from insights.insights.doctype.insights_data_source_v3 import data_warehouse
 from insights.insights.doctype.insights_data_source_v3.connectors import duckdb as duckdb_connector
 from insights.insights.doctype.insights_data_source_v3.connectors.duckdb import (
@@ -50,6 +50,7 @@ from insights.insights.doctype.insights_data_source_v3.data_warehouse import (
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import execute_ibis_query
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import (
     DataSourceConnectionError,
+    InsightsDataSourcev3,
     after_request,
 )
 from insights.insights.doctype.insights_data_source_v3.web_tier import WebTierSettings
@@ -64,6 +65,7 @@ from insights.tests.factories import (
     create_uuid_doctype,
     delete_uuid_doctype,
     delete_workbooks,
+    execute_test_query,
 )
 
 GiB = 1024**3
@@ -652,10 +654,19 @@ finally:
         for user in ("one@example.com", "two@example.com"):
             with patch.object(frappe.local, "session", frappe._dict(user=user)):
                 self.assertTrue(pool.acquire())
-        started = frappe.utils.now_datetime()
 
-        # its tables live in the data store, so it connects with a data store slot
-        with patch.object(data_warehouse, "SLOT_WAIT", 0), self.request():
+        # its tables live in the data store, so it connects with a data store slot.
+        # The site's Error Logs move with any background job, so the loggers are watched:
+        # the app's, and the one Frappe's request handler logs through. They wrap the
+        # request, so its after-request hooks are watched too
+        with (
+            patch.object(frappe, "log_error", wraps=frappe.log_error) as log_error,
+            patch.object(
+                frappe.utils.error, "log_error", wraps=frappe.utils.error.log_error
+            ) as request_log_error,
+            patch.object(data_warehouse, "SLOT_WAIT", 0),
+            self.request(),
+        ):
             try:
                 source._get_ibis_backend()
                 self.fail("the source connected with every slot held")
@@ -666,7 +677,8 @@ finally:
             retry_after = frappe.local.response_headers.get("Retry-After")
 
         self.assertEqual((response.status_code, retry_after), (503, "2"))
-        self.assertFalse(frappe.get_all("Error Log", filters={"creation": [">=", started]}, pluck="name"))
+        log_error.assert_not_called()
+        request_log_error.assert_not_called()
         self.assertNotIn(source.name, insights.db_connections)
 
     # @feature data-store.query-slots
@@ -965,6 +977,130 @@ class TestMissingTableNotice(InsightsIntegrationTestCase):
             self.make_table().announce_missing_table(import_running=True)
 
         toast.assert_not_called()
+
+
+class TestUnusableTableImport(InsightsIntegrationTestCase):
+    """A data store query on a table that cannot be imported is refused before anything is queued."""
+
+    INACTIVE_SOURCE = "unusable_table_inactive_source"
+    TABLE = "tabToDo"
+
+    @classmethod
+    def before_class(cls):
+        # db_insert skips on_update, which would try to connect and set the status itself
+        frappe.get_doc(
+            {
+                "doctype": "Insights Data Source v3",
+                "name": cls.INACTIVE_SOURCE,
+                "title": cls.INACTIVE_SOURCE,
+                "database_type": "MariaDB",
+                "host": "127.0.0.1",
+                "port": 1,
+                "database_name": "unusable",
+                "username": "unusable",
+                "status": "Inactive",
+            }
+        ).db_insert()
+        # a table the source listed while it was still active
+        frappe.get_doc(
+            {
+                "doctype": "Insights Table v3",
+                "table": cls.TABLE,
+                "label": cls.TABLE,
+                "data_source": cls.INACTIVE_SOURCE,
+            }
+        ).insert(ignore_permissions=True)
+        cls.workbook = create_test_workbook("Administrator").name
+
+    @classmethod
+    def after_class(cls):
+        frappe.delete_doc(DT.WORKBOOK, cls.workbook, force=True)
+        frappe.delete_doc("Insights Table v3", get_table_name(cls.INACTIVE_SOURCE, cls.TABLE), force=True)
+        frappe.db.delete("Insights Data Source v3", cls.INACTIVE_SOURCE)
+
+    def before_test(self):
+        tmpdir = tempfile.mkdtemp(prefix="insights_unusable_table_test_")
+        self.addCleanup(shutil.rmtree, tmpdir, ignore_errors=True)
+        self.enterContext(
+            patch.object(insights.warehouse, "get_db_path", return_value=str(Path(tmpdir) / "store.duckdb"))
+        )
+        self.enterContext(patch.object(insights, "create_toast"))
+        self.enterContext(patch("frappe.utils.telemetry.capture"))
+        insights.db_connections.pop("insights", None)
+        self.enqueue = self.enterContext(patch("frappe.enqueue"))
+
+    def after_test(self):
+        frappe.db.delete("Insights Table Import Log", {"table_name": "tabNever Listed"})
+        frappe.db.commit()  # nosemgrep - the import commits its log
+
+    def run_data_store_query(self, data_source, table_name):
+        query = create_test_query(
+            "Administrator",
+            self.workbook,
+            operations=[
+                {
+                    "type": "source",
+                    "table": {"type": "table", "data_source": data_source, "table_name": table_name},
+                }
+            ],
+        )
+        query.db_set("use_live_connection", 0)
+        return execute_test_query(query.name)
+
+    def assert_refused_and_nothing_queued(self, data_source, table_name, message):
+        # the site's Error Log count moves with any background job, so the logger is watched
+        with (
+            patch.object(InsightsDataSourcev3, "_get_db_connection") as connect,
+            patch.object(frappe, "log_error", wraps=frappe.log_error) as log_error,
+        ):
+            with self.assertRaises(QueryRefused) as refused:
+                self.run_data_store_query(data_source, table_name)
+
+        self.assertIn(message, str(refused.exception))
+        connect.assert_not_called()
+        self.enqueue.assert_not_called()
+        self.assertFalse(
+            frappe.db.exists(
+                "Insights Table Import Log", {"data_source": data_source, "table_name": table_name}
+            )
+        )
+        log_error.assert_not_called()
+
+    # @feature data-store.unusable-table
+    def test_a_query_on_an_inactive_source_names_it_and_queues_no_import(self):
+        self.assert_refused_and_nothing_queued(
+            self.INACTIVE_SOURCE, self.TABLE, f"{self.INACTIVE_SOURCE} is inactive"
+        )
+
+    # @feature data-store.unusable-table
+    def test_a_query_on_a_table_the_source_never_listed_names_it_and_queues_no_import(self):
+        self.assert_refused_and_nothing_queued(
+            "Site DB", "tabNever Listed", "tabNever Listed is not in the table list of Site DB"
+        )
+
+    # @feature data-store.unusable-table
+    def test_an_import_whose_table_left_the_table_list_fails_and_says_so(self):
+        importer = WarehouseTableImporter(WarehouseTable("Site DB", "tabNever Listed"))
+        with self.assertRaises(frappe.DoesNotExistError):
+            importer.start_import()
+
+        self.assertEqual(importer.log.status, "Failed")
+        self.assertIn("tabNever Listed is not in the table list of Site DB", importer.log.output)
+
+    # @feature data-store.import-table
+    def test_a_query_on_a_listed_table_of_an_active_source_queues_its_import(self):
+        # an earlier test's real import of this table can still be on the queue, or its
+        # log left "In Progress", and the importer would then report it under way and
+        # queue nothing. The queue is the boundary, so its state is set here
+        frappe.db.delete(
+            "Insights Table Import Log",
+            {"data_source": "Site DB", "table_name": self.TABLE, "status": "In Progress"},
+        )
+        with patch.object(data_warehouse, "is_job_enqueued", return_value=False):
+            self.run_data_store_query("Site DB", self.TABLE)
+
+        self.enqueue.assert_called_once()
+        self.assertEqual(self.enqueue.call_args.kwargs["table_name"], self.TABLE)
 
 
 class TestSyncSchedule(InsightsIntegrationTestCase):
