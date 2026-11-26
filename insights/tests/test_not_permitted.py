@@ -824,6 +824,69 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         with self.assertRaises(frappe.db.OperationalError):
             self.fetch(unknown)
 
+    # @feature permissions.site-user-permissions
+    def test_a_native_query_another_reader_ran_first_reads_only_this_reader_s_rows(self):
+        """The next build of the same SQL reuses its rewrite. A reader whose
+        rows desk narrows gets only those rows, after a reader who reads every
+        row ran it."""
+        other = frappe.get_doc(
+            {"doctype": "ToDo", "description": f"{PREFIX} not the reader's", "allocated_to": "Administrator"}
+        ).insert(ignore_permissions=True)
+        # Site DB reads through its own connection, which sees only committed rows
+        frappe.db.commit()  # nosemgrep
+
+        def remove_other():
+            frappe.delete_doc("ToDo", other.name, force=True, ignore_permissions=True)
+            frappe.db.commit()  # nosemgrep
+
+        self.addCleanup(remove_other)
+        raw_sql = f"select name from tabToDo where description like '{PREFIX}%'"
+        chart = self.create_chart(
+            "native rows", [{"type": "sql", "data_source": SITE_DB, "raw_sql": raw_sql}], "name"
+        )
+
+        with as_user("Administrator"), db_connections():
+            everyone = frappe.get_doc(DT.CHART, chart).fetch(force=True)["rows"]
+        self.assertEqual(sorted(row["name"] for row in everyone), sorted([self.todo, other.name]))
+
+        self.assertEqual([row["name"] for row in self.fetch(chart)["rows"]], [self.todo])
+
+    # @feature permissions.not-permitted-chart
+    def test_a_native_query_that_ran_is_refused_once_its_column_is_held_back(self):
+        """A rewrite kept from a build before the column was held back must not
+        run for the reader after. The reader and their roles are the same both
+        times, so a rewrite kept per reader and roles would let the column out."""
+        self.read_every_row()
+        raw_sql = f"select name, status from tabToDo where description like '{PREFIX}%'"
+        chart = self.create_chart(
+            "native held back later", [{"type": "sql", "data_source": SITE_DB, "raw_sql": raw_sql}], "name"
+        )
+        self.assertEqual([row["name"] for row in self.fetch(chart)["rows"]], [self.todo])
+
+        self.make_status_permlevel()
+
+        with self.assertRaises(NotPermitted) as refusal:
+            self.fetch(chart)
+        self.assertEqual(refusal.exception.doctypes, ["ToDo"])
+
+    # @feature permissions.not-permitted-chart
+    def test_a_native_query_does_not_read_a_held_back_column_under_another_spelling(self):
+        """MariaDB reads U+017F, the long s, as `s` in a column name, where
+        Python's `lower()` does not, so `\u017ftatus` names `status`. Once the
+        column is held back, the table stays bound and the database finds no
+        such column."""
+        self.read_every_row()
+        raw_sql = f"select name, \u017ftatus from tabToDo where description like '{PREFIX}%'"
+        chart = self.create_chart(
+            "native long s", [{"type": "sql", "data_source": SITE_DB, "raw_sql": raw_sql}], "name"
+        )
+        self.assertEqual([row["name"] for row in self.fetch(chart)["rows"]], [self.todo])
+
+        self.make_status_permlevel()
+
+        with self.assertRaises(frappe.db.OperationalError):
+            self.fetch(chart)
+
     # @feature permissions.not-permitted-chart
     def test_a_union_keeps_a_remove_from_either_side(self):
         """A union keeps only the columns both sides have. The other side's

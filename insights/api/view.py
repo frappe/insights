@@ -565,12 +565,15 @@ def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> d
     A dashboard routes only the charts on it. A filter's links are not checked
     on save, so a filter on the caller's own dashboard could name any chart and
     any column of its query.
+
+    `chart` is the name `resolve_chart(chart, dashboard)` returned, so the
+    reader may read the dashboard and the chart is on it. Checking that again
+    would run the dashboard's refusal check twice more for one card.
     """
     if not dashboard:
         return None
 
-    resolve_chart(chart, dashboard)
-    items = frappe.db.get_value(DASHBOARD, resolve_for_read(DASHBOARD, dashboard), "items")
+    items = frappe.db.get_value(DASHBOARD, resolve(DASHBOARD, dashboard), "items")
     return route_filters(items, chart, filters)
 
 
