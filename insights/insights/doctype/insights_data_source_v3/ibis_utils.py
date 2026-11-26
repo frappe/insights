@@ -22,7 +22,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.common.annotations import SignatureValidationError
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.datatypes import DataType
-from ibis.expr.operations.relations import DatabaseTable, Field, Project
+from ibis.expr.operations.relations import DatabaseTable, Field, InMemoryTable, Project
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
@@ -1230,6 +1230,7 @@ class IbisQueryBuilder:
             if ds.database_type == "PostgreSQL"
             else "insights:native_sql:checked:"
             + make_digest(
+                insights.__version__,
                 ds.name,
                 ds.database_type,
                 source_dialect,
@@ -1283,9 +1284,17 @@ class IbisQueryBuilder:
         # way, for this reader or any other, reuses it. A binding that changes
         # changes the key, so a permission is never read from the cache. Only a
         # build that passed `refuse_held_back_in_sql` and the schema probe is kept.
+        # A binding that reads an in-memory table, such as the names a User
+        # Permission allows on the Data Store, is named anew on each build, so
+        # its key would never be found again.
         bound_key = None
-        if not runs_procedure and raw_sql.lower().startswith(("select", "with")):
+        if (
+            not runs_procedure
+            and raw_sql.lower().startswith(("select", "with"))
+            and not any(binding.op().find(InMemoryTable) for binding in bindings.values())
+        ):
             bound_key = "insights:native_sql:bound:" + make_digest(
+                insights.__version__,
                 ds.name,
                 target_dialect,
                 self.use_live_connection,
