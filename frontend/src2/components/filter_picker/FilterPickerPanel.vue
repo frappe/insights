@@ -50,6 +50,8 @@ import {
 	timedRangeProblem,
 	timedRangeValue,
 	unitRows,
+	listedValue,
+	valueRows,
 	type Filter,
 	type ListItem,
 	type OperatorDef,
@@ -59,6 +61,7 @@ import {
 	type RelativeUnit,
 	type SpanDirection,
 	type Stage,
+	type ListedValue,
 	type ValuesProvider,
 } from './filter_picker'
 import FilterPickerCalendar from './FilterPickerCalendar.vue'
@@ -219,7 +222,7 @@ function load(filter: Filter) {
 if (props.initial) load(props.initial)
 else reset()
 
-const distinct = ref<string[]>([])
+const distinct = ref<ListedValue[]>([])
 const fetching = ref(false)
 let request = 0
 let asked: string | undefined
@@ -249,7 +252,7 @@ async function fetchDistinct() {
 		})
 	if (id !== request) return
 	// reka's ComboboxItem throws on an empty value
-	distinct.value = values.filter(Boolean)
+	distinct.value = values.map(listedValue).filter(({ value }) => value)
 	fetching.value = false
 }
 
@@ -321,7 +324,10 @@ watch(
 		// a failed ask is not an answer, so the list asks again when it is opened again
 		if (!starts) return
 		// a datetime column answers a timestamp, and the rows go by the day
-		periods.value = { ...periods.value, [grain]: starts.map((s) => String(s).slice(0, 10)) }
+		periods.value = {
+			...periods.value,
+			[grain]: starts.map((s) => String(listedValue(s).value).slice(0, 10)),
+		}
 		// the reopened period's row exists only now, so the highlight can land on it
 		if (editing.value) highlight(selectedRowKey(editing.value, stage.value) || '')
 	},
@@ -523,13 +529,7 @@ const rows = computed<ListItem[]>(() => {
 
 	if (multi.value) {
 		const top = sticky.value.filter((v) => matches(v))
-		const rest = distinct.value.filter((v) => !top.includes(v))
-		return [...top, ...rest].map((v) => ({
-			key: `v:${v}`,
-			label: v,
-			tick: true,
-			checked: picked.value.includes(v),
-		}))
+		return valueRows(top, distinct.value, picked.value)
 	}
 
 	const use: ListItem[] = typed.value ? [{ key: 'use', label: typed.value.label }] : []

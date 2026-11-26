@@ -69,6 +69,7 @@ vi.stubGlobal('localStorage', {
 import useChart from '../charts/chart'
 import useDashboard from './dashboard'
 import { effectScope, nextTick, ref } from 'vue'
+import { cardsSettled } from './capture'
 import { cellRulesFor, useDashboardView, watchFilterDefault } from './view'
 
 const layout = { i: '1', x: 0, y: 0, w: 20, h: 8 }
@@ -226,6 +227,19 @@ describe('a dashboard the reader leaves while its cards load', () => {
 		// the page the reader left is shown while its cards load, not a loading page
 		expect(back.loading).toBe(false)
 		expect(dashboardCalls()).toHaveLength(fetched)
+	})
+})
+
+// The server's capture of a dashboard waits for the page to say it has drawn,
+// so the image shows no card still loading.
+describe('a dashboard captured as an image', () => {
+	// @feature dashboard.image
+	it('is drawn only once every card has its answer', async () => {
+		answer.cardsHang = true
+		expect(cardsSettled(await opened('captured-loading'))).toBe(false)
+
+		answer.cardsHang = false
+		expect(cardsSettled(await opened('captured'))).toBe(true)
 	})
 })
 

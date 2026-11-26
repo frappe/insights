@@ -20,6 +20,8 @@ const props = defineProps<{
 	dashboard: DashboardView
 	// the parents of this page only. This component adds the last crumb
 	breadcrumbs?: PageCrumb[]
+	// lay out at the content's height instead of scrolling inside the window, for a capture
+	fullHeight?: boolean
 }>()
 
 // `DashboardBody` decides the actions. This page reads them through the ref and
@@ -36,7 +38,7 @@ watch(pageTitle, (title) => (document.title = `${title} | Insights`), { immediat
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col overflow-hidden">
+	<div class="flex w-full flex-col" :class="fullHeight ? '' : 'h-full overflow-hidden'">
 		<!-- The header belongs to this page, not the body, so it renders in every
 		     state. A reader who gets Not Found still has a way back. -->
 		<div
@@ -60,6 +62,7 @@ watch(pageTitle, (title) => (document.title = `${title} | Insights`), { immediat
 			:dashboard="dashboard"
 			:grid="StaticGridLayout"
 			:cell="DashboardItemView"
+			:full-height="fullHeight"
 		/>
 	</div>
 </template>

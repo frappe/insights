@@ -393,7 +393,8 @@ class DashboardFilterReadsTheQuery:
 
     def distinct_values(self, dashboard, filter_name):
         with db_connections():
-            return frappe.get_doc(DT.DASHBOARD, dashboard).get_distinct_column_values(filter_name)
+            listed = frappe.get_doc(DT.DASHBOARD, dashboard).get_distinct_column_values(filter_name)
+            return [listed_value["value"] for listed_value in listed]
 
     # @feature dashboard.filter-values
     def test_a_filter_lists_the_values_of_the_column_it_links(self):
@@ -442,7 +443,9 @@ class DashboardFilterReadsTheQuery:
             }
         )
         with self.as_user(OWNER), db_connections():
-            self.assertEqual(forged.get_distinct_column_values(self.FILTER_NAME), [SECRET])
+            self.assertEqual(
+                forged.get_distinct_column_values(self.FILTER_NAME), [{"value": SECRET, "state": "possible"}]
+            )
 
 
 class ChartExportReadsTheQuery:
