@@ -1299,14 +1299,13 @@ class IbisQueryBuilder:
                 sql, schema = bound
                 return db.sql(zlib.decompress(sql).decode(), schema=schema)
 
-        parsed = None
         if raw_sql.lower().startswith(("select", "with")):
             parsed = sg.parse_one(raw_sql, dialect=source_dialect)
             self.refuse_held_back_in_sql(parsed, bindings)
         replace_map = {
             reference: binding_sql[reference]
             for reference, table_expr in bindings.items()
-            if not self._binding_is_the_table(parsed, reference, tables[reference], table_expr)
+            if not self._binding_is_the_table(reference, tables[reference], table_expr)
         }
 
         if not self.use_live_connection:
@@ -1491,45 +1490,32 @@ class IbisQueryBuilder:
 
         return bindings
 
-    def _binding_is_the_table(
-        self, parsed: sg.exp.Expression | None, reference: str, table_name: str, binding: IbisQuery
-    ) -> bool:
-        """Whether `parsed` reads the same through the table name as through its binding,
-        so the reference can stay as written.
+    def _binding_is_the_table(self, reference: str, table_name: str, binding: IbisQuery) -> bool:
+        """Whether `binding` reads what the table name reads, so the reference can
+        stay as written.
 
         Only on a live connection, where the binding reads the very table the
         name does; a Data Store binding reads a table of another name. A binding
-        with a `WHERE` narrows the rows, so it is always kept.
-
-        A binding that only leaves out columns, the ones `apply_column_permissions`
-        held back, is the table for a query that cannot reach them. The query
-        reaches a column through a `*`, by a name, or through a `NATURAL` join
-        that compares it, so a query with any of those, or with a name anywhere
-        that a left-out column has, keeps its binding. This is stricter than
-        `refuse_held_back_in_sql`, which skips a name the query also defines as
-        an alias: there, the binding is what keeps the column out.
+        with a `WHERE` narrows the rows, so it is always kept, and so is one that
+        leaves out any column. The SQL is not read to tell whether it can reach a
+        left-out column: the database resolves a name in ways a reading of the
+        SQL does not (MariaDB reads U+017F, the long s, as `s`), and a whole row can be
+        read without naming a column (PostgreSQL's `row_to_json(t)`).
         """
-        if not self.use_live_connection or parsed is None or reference != table_name:
+        if not self.use_live_connection or reference != table_name:
             return False
 
         op = binding.op()
         if isinstance(op, DatabaseTable):
             return op.name == table_name
 
-        if not (
+        return (
             isinstance(op, Project)
             and isinstance(op.parent, DatabaseTable)
             and op.parent.name == table_name
             and all(isinstance(v, Field) and v.rel == op.parent and v.name == k for k, v in op.values.items())
-        ):
-            return False
-
-        left_out = {c.lower() for c in op.parent.schema.names} - {c.lower() for c in op.values}
-        if any(not isinstance(star.parent, sg.exp.Count) for star in parsed.find_all(sg.exp.Star)):
-            return False
-        if any(join.args.get("method") for join in parsed.find_all(sg.exp.Join)):
-            return False
-        return not any(ident.name.lower() in left_out for ident in parsed.find_all(sg.exp.Identifier))
+            and set(op.parent.schema.names) == set(op.values)
+        )
 
     def refuse_held_back_in_sql(
         self, parsed: sg.exp.Expression, relations: dict[str, IbisQuery], dropped_by_writer=frozenset()

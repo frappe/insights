@@ -870,6 +870,24 @@ class ANotPermittedChartDoesNotRun(ContentOverATableTheReaderCannotRead):
         self.assertEqual(refusal.exception.doctypes, ["ToDo"])
 
     # @feature permissions.not-permitted-chart
+    def test_a_native_query_does_not_read_a_held_back_column_under_another_spelling(self):
+        """MariaDB reads U+017F, the long s, as `s` in a column name, where
+        Python's `lower()` does not, so `\u017ftatus` names `status`. Once the
+        column is held back, the table stays bound and the database finds no
+        such column."""
+        self.read_every_row()
+        raw_sql = f"select name, \u017ftatus from tabToDo where description like '{PREFIX}%'"
+        chart = self.create_chart(
+            "native long s", [{"type": "sql", "data_source": SITE_DB, "raw_sql": raw_sql}], "name"
+        )
+        self.assertEqual([row["name"] for row in self.fetch(chart)["rows"]], [self.todo])
+
+        self.make_status_permlevel()
+
+        with self.assertRaises(frappe.db.OperationalError):
+            self.fetch(chart)
+
+    # @feature permissions.not-permitted-chart
     def test_a_union_keeps_a_remove_from_either_side(self):
         """A union keeps only the columns both sides have. The other side's
         remove drops `status` for the author too, so the join's `status` is the

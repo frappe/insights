@@ -1,7 +1,10 @@
+from unittest.mock import patch
+
 import frappe
 import ibis
 import ibis.expr.operations as ops
 import sqlglot as sg
+from frappe.model import optional_fields
 
 from insights.exceptions import QueryRefused
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
@@ -282,31 +285,37 @@ class TestNativeSQL(InsightsIntegrationTestCase):
 
     # @feature query.native-sql permissions.site-user-permissions
     def test_a_table_is_read_as_written_only_where_its_binding_changes_nothing(self):
-        """A binding that adds no `WHERE` and leaves out only columns the query
-        cannot reach reads what the table does, so the database is handed the
-        table as written. A query that can reach a held-back column, through a
-        `*` or a `NATURAL` join, keeps the binding, and so does a reader whose
-        rows are narrowed."""
+        """A binding that adds no `WHERE` and leaves out no column reads what the
+        table does, so the database is handed the table as written. A binding
+        that leaves out a column is kept whatever the query names, and so is the
+        binding of a reader whose rows are narrowed."""
         every_row = "native_sql_every_row@test.com"
         narrowed = "native_sql_narrowed@test.com"
         create_user(every_row, first_name="Native", last_name="Every Row", roles="System Manager")
         create_user(narrowed, first_name="Native", last_name="Narrowed", roles="Insights User")
         self.addCleanup(delete_users, every_row, narrowed)
-        self.make_status_permlevel()
 
-        bound = {
-            "select count(*) as n from `tabToDo`": [],
-            "select t.priority, count(*) as n from `tabToDo` t group by t.priority": [],
+        queries = {
+            "select count(*) as n from `tabToDo`": ["tabToDo"],
+            "select t.priority, count(*) as n from `tabToDo` t group by t.priority": ["t"],
             "select * from `tabToDo` limit 1": ["tabToDo"],
             "select t.name from `tabToDo` t natural join `tabToDo` t2": ["t", "t2"],
         }
-        for raw_sql, references in bound.items():
-            with self.subTest(raw_sql), as_user(every_row), db_connections():
-                self.assertEqual(self.bound_references(self.sent_sql(raw_sql)), references)
+        # Frappe v16 took `_comments` out of `optional_fields`, so every binding
+        # leaves it out. Put back, the reader may read every column of `ToDo`
+        with patch("frappe.model.optional_fields", (*optional_fields, "_comments")):
+            for raw_sql in queries:
+                with self.subTest(raw_sql, held_back=None), as_user(every_row), db_connections():
+                    self.assertEqual(self.bound_references(self.sent_sql(raw_sql)), [])
 
-        with as_user(narrowed), db_connections():
-            sent = self.sent_sql("select count(*) as n from `tabToDo`")
-        self.assertEqual(self.bound_references(sent), ["tabToDo"])
+            with as_user(narrowed), db_connections():
+                sent = self.sent_sql("select count(*) as n from `tabToDo`")
+            self.assertEqual(self.bound_references(sent), ["tabToDo"])
+
+            self.make_status_permlevel()
+            for raw_sql, references in queries.items():
+                with self.subTest(raw_sql, held_back="status"), as_user(every_row), db_connections():
+                    self.assertEqual(self.bound_references(self.sent_sql(raw_sql)), references)
 
     # @feature query.native-sql permissions.site-user-permissions
     def test_a_reader_narrowed_by_rows_runs_native_sql_on_the_data_store(self):
