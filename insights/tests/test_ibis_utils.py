@@ -633,7 +633,8 @@ class TestIbisDateOperators(IbisQueryBuilderTestCase):
         connection = ibis.sqlite.connect()
         connection.raw_sql(f"create table stamps (label TEXT, at {self.SQLITE_TYPES[data_type]})")
         values = ", ".join(
-            f"('{label}', {'NULL' if at is None else f"'{at}'"})" for label, at in rows.items()
+            f"('{label}', NULL)" if at is None else f"('{label}', '{at}')"
+            for label, at in rows.items()
         )
         connection.raw_sql(f"insert into stamps values {values}")
         builder = IbisQueryBuilder(self.make_query_doc([]))
