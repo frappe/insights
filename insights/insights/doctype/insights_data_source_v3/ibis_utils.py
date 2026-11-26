@@ -4,6 +4,7 @@ import re
 import sys
 import time
 import traceback
+import zlib
 from contextlib import contextmanager
 from datetime import date, datetime
 from functools import cached_property
@@ -21,7 +22,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.common.annotations import SignatureValidationError
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.datatypes import DataType
-from ibis.expr.operations.relations import DatabaseTable, Field
+from ibis.expr.operations.relations import DatabaseTable, Field, InMemoryTable, Project
 from ibis.expr.types import Expr
 from ibis.expr.types import Table as IbisQuery
 
@@ -71,11 +72,13 @@ from insights.insights.query_builders.sql_functions import (
 from insights.insights.query_utils import (
     alias_qualified_tables,
     check_source_workbook,
+    count_sql_statements,
     extract_sql_table_refs,
     fold_identifiers,
     get_direct_dependencies,
     real_table_refs,
     runs_stored_procedure,
+    strip_sql_comments,
     table_reference,
     unbound_reads,
 )
@@ -115,6 +118,10 @@ SQL_COLUMN_RELATION = "_insights_sql_column"
 
 # the alias a native SQL query is nested under before ibis sees it
 NATIVE_SQL_RELATION = "_insights_native_sql"
+
+# how long a native query's checked text and its bound text are kept for the
+# next build of the same SQL, as long as a query's results are kept by default
+NATIVE_SQL_CACHE_EXPIRY = 3600
 
 # The aggregations whose group values add up to the value of the whole. Only
 # these let a set of groups be read as parts of one total: two groups' averages
@@ -1215,40 +1222,107 @@ class IbisQueryBuilder:
         db = ds._get_ibis_backend() if self.use_live_connection else insights.warehouse.db
         source_dialect = ds.get_sqlglot_dialect()
 
-        calls_procedure = runs_stored_procedure(raw_sql)
-        raw_sql = sqlparse.format(sql=raw_sql, strip_comments=True)
-        raw_sql = self._validate_native_sql(
-            raw_sql, use_live_connection=self.use_live_connection, data_source=ds, dialect=source_dialect
+        # the checks and the spelling of the tables depend only on the SQL and the
+        # data source, so the next build of the same SQL reuses them. Not on
+        # PostgreSQL, where the table a name reads depends on the tables listed
+        checked_key = (
+            None
+            if ds.database_type == "PostgreSQL"
+            else "insights:native_sql:checked:"
+            + make_digest(
+                insights.__version__,
+                ds.name,
+                ds.database_type,
+                source_dialect,
+                self.use_live_connection,
+                raw_sql,
+            )
         )
+        checked = checked_key and frappe.cache.get_value(checked_key)
+        if checked:
+            calls_procedure, raw_sql, tables = checked
+        else:
+            calls_procedure = runs_stored_procedure(raw_sql)
+            raw_sql = strip_sql_comments(raw_sql)
+            raw_sql = self._validate_native_sql(
+                raw_sql, use_live_connection=self.use_live_connection, data_source=ds, dialect=source_dialect
+            )
+            tables = self._get_sql_table_names(raw_sql, data_source=ds, dialect=source_dialect)
+            if checked_key:
+                frappe.cache.set_value(
+                    checked_key, (calls_procedure, raw_sql, tables), expires_in_sec=NATIVE_SQL_CACHE_EXPIRY
+                )
 
         # the data store reads DuckDB, so from the transpile on, that is the dialect
         # this query is written in
         target_dialect = source_dialect if self.use_live_connection else "duckdb"
 
         # raw SQL names its own tables, so each one is replaced with a binding
-        # that applies the reader's permissions. This covers every SQL query
+        # that applies the reader's permissions, unless the binding reads what
+        # the table name already reads (`_binding_is_the_table`). This covers every SQL query
         # except a stored procedure call, which names no table and is trusted
         # code (`trusted_code_of`). `_validate_native_sql` refuses the other
         # shapes a binding cannot be built for, instead of running them unbound
-        tables = self._get_sql_table_names(raw_sql, data_source=ds, dialect=source_dialect)
         bindings = self._get_sql_table_bindings(
             db,
             data_source,
             tables,
             use_live_connection=self.use_live_connection,
         )
+        binding_sql = {reference: ibis.to_sql(table_expr) for reference, table_expr in bindings.items()}
+
+        supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
+        runs_procedure = (
+            supports_stored_procedure and ds.enable_stored_procedure_execution and calls_procedure
+        )
+
+        # The bindings are built for every reader on every build: they hold the
+        # reader's permissions, down to the rows a share or a User Permission
+        # allows. What follows them, the rewrite and the schema the database
+        # reports for it, depends only on the SQL, the bindings' text and the
+        # schemas of the tables they read. So the next build that binds the same
+        # way, for this reader or any other, reuses it. A binding that changes
+        # changes the key, so a permission is never read from the cache. Only a
+        # build that passed `refuse_held_back_in_sql` and the schema probe is kept.
+        # A binding that reads an in-memory table, such as the names a User
+        # Permission allows on the Data Store, is named anew on each build, so
+        # its key would never be found again.
+        bound_key = None
+        if (
+            not runs_procedure
+            and raw_sql.lower().startswith(("select", "with"))
+            and not any(binding.op().find(InMemoryTable) for binding in bindings.values())
+        ):
+            bound_key = "insights:native_sql:bound:" + make_digest(
+                insights.__version__,
+                ds.name,
+                target_dialect,
+                self.use_live_connection,
+                raw_sql,
+                *(f"{ref}\n{binding_sql[ref]}\n{bindings[ref].schema()!r}" for ref in sorted(bindings)),
+                # what `refuse_held_back_in_sql` reads besides the bindings, so a
+                # hit is a build that refused nothing with the same inputs
+                sorted(not_permitted.held_back_columns()),
+            )
+            if bound := frappe.cache.get_value(bound_key):
+                sql, schema = bound
+                return db.sql(zlib.decompress(sql).decode(), schema=schema)
+
         if raw_sql.lower().startswith(("select", "with")):
             parsed = sg.parse_one(raw_sql, dialect=source_dialect)
             self.refuse_held_back_in_sql(parsed, bindings)
-        replace_map = {table_name: ibis.to_sql(table_expr) for table_name, table_expr in bindings.items()}
+        replace_map = {
+            reference: binding_sql[reference]
+            for reference, table_expr in bindings.items()
+            if not self._binding_is_the_table(reference, tables[reference], table_expr)
+        }
 
         if not self.use_live_connection:
             raw_sql = self._transpile_sql_to_duckdb(raw_sql, source_dialect)
 
         raw_sql = self._replace_sql_tables(raw_sql, replace_map, dialect=target_dialect)
 
-        supports_stored_procedure = ds.database_type in ["PostgreSQL", "MSSQL", "MariaDB"]
-        if supports_stored_procedure and ds.enable_stored_procedure_execution and calls_procedure:
+        if runs_procedure:
             current_date = date.today().strftime("%Y-%m-%d")  # Format: 'YYYY-MM-DD'
             raw_sql = raw_sql.replace("@Today", f"'{current_date}'")
 
@@ -1262,7 +1336,14 @@ class IbisQueryBuilder:
             results = ibis.memtable(df)
 
         elif raw_sql.strip().lower().startswith(("select", "with")):
-            results = db.sql(self._hide_ctes_from_ibis(raw_sql, dialect=target_dialect))
+            sql = self._hide_ctes_from_ibis(raw_sql, dialect=target_dialect)
+            results = db.sql(sql)
+            if bound_key:
+                frappe.cache.set_value(
+                    bound_key,
+                    (zlib.compress(sql.encode()), results.schema()),
+                    expires_in_sec=NATIVE_SQL_CACHE_EXPIRY,
+                )
 
         else:
             frappe.throw(
@@ -1291,8 +1372,7 @@ class IbisQueryBuilder:
         # one statement, on every path: ibis cannot run two — `db.sql` on a pair
         # fails while it reads the schema — and both rewrites below read the first
         # statement only, so a second one would be dropped rather than refused
-        statements = [stmt for stmt in sqlparse.parse(raw_sql) if stmt.tokens and stmt.value.strip()]
-        if len(statements) > 1:
+        if count_sql_statements(raw_sql) > 1:
             frappe.throw(
                 frappe._("Multiple SQL statements are not supported for native queries"),
                 QueryRefused,
@@ -1418,6 +1498,33 @@ class IbisQueryBuilder:
             bindings[reference] = table_expr
 
         return bindings
+
+    def _binding_is_the_table(self, reference: str, table_name: str, binding: IbisQuery) -> bool:
+        """Whether `binding` reads what the table name reads, so the reference can
+        stay as written.
+
+        Only on a live connection, where the binding reads the very table the
+        name does; a Data Store binding reads a table of another name. A binding
+        with a `WHERE` narrows the rows, so it is always kept, and so is one that
+        leaves out any column. The SQL is not read to tell whether it can reach a
+        left-out column: the database resolves a name in ways a reading of the
+        SQL does not (MariaDB reads U+017F, the long s, as `s`), and a whole row can be
+        read without naming a column (PostgreSQL's `row_to_json(t)`).
+        """
+        if not self.use_live_connection or reference != table_name:
+            return False
+
+        op = binding.op()
+        if isinstance(op, DatabaseTable):
+            return op.name == table_name
+
+        return (
+            isinstance(op, Project)
+            and isinstance(op.parent, DatabaseTable)
+            and op.parent.name == table_name
+            and all(isinstance(v, Field) and v.rel == op.parent and v.name == k for k, v in op.values.items())
+            and set(op.parent.schema.names) == set(op.values)
+        )
 
     def refuse_held_back_in_sql(
         self, parsed: sg.exp.Expression, relations: dict[str, IbisQuery], dropped_by_writer=frozenset()
