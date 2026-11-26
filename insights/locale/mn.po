@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: frappe\n"
 "Report-Msgid-Bugs-To: hello@frappe.io\n"
 "POT-Creation-Date: 2026-06-21 10:42+0000\n"
-"PO-Revision-Date: 2026-11-16 12:35\n"
+"PO-Revision-Date: 2026-11-23 13:46\n"
 "Last-Translator: hello@frappe.io\n"
 "Language-Team: Mongolian\n"
 "MIME-Version: 1.0\n"
@@ -932,7 +932,7 @@ msgstr "Текстийг засах"
 #: insights/insights/doctype/insights_alert/insights_alert.json
 #: insights/insights/doctype/insights_user_invitation/insights_user_invitation.json
 msgid "Email"
-msgstr "И-мэйл"
+msgstr "Имэйл"
 
 #. Label of the email_sent_at (Datetime) field in DocType 'Insights User
 #. Invitation'
@@ -1401,7 +1401,7 @@ msgstr "Insights хяналтын самбарын зүйл"
 #. Name of a DocType
 #: insights/insights/doctype/insights_dashboard_v3/insights_dashboard_v3.json
 msgid "Insights Dashboard v3"
-msgstr "Insights Dashboard v3"
+msgstr "Хяналтын самбар v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source/insights_data_source.json
@@ -1411,12 +1411,12 @@ msgstr "Insights өгөгдлийн эх сурвалж"
 #. Name of a DocType
 #: insights/insights/doctype/insights_data_source_v3/insights_data_source_v3.json
 msgid "Insights Data Source v3"
-msgstr "Insights Data Source v3"
+msgstr "Оюун ухааны мэдээллийн эх сурвалж v3"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_folder/insights_folder.json
 msgid "Insights Folder"
-msgstr "Insights Folder"
+msgstr "Фолдерын ойлголтууд"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_notebook/insights_notebook.json
@@ -1436,7 +1436,7 @@ msgstr "Ойлголтын асуулга"
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_chart/insights_query_chart.json
 msgid "Insights Query Chart"
-msgstr "Insights Query Chart"
+msgstr "Query Chart-ын ойлголтууд"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_column/insights_query_column.json
@@ -1466,7 +1466,7 @@ msgstr "Insights асуулгын хүснэгт"
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_transform/insights_query_transform.json
 msgid "Insights Query Transform"
-msgstr "Insights Query Transform"
+msgstr "Асуултын өөрчлөлтийн талаарх ойлголтууд"
 
 #. Name of a DocType
 #: insights/insights/doctype/insights_query_variable/insights_query_variable.json
@@ -1584,7 +1584,7 @@ msgstr "Ойлголтын ажлын дэвтэр"
 #. Name of a DocType
 #: insights/insights/doctype/insights_workbook_folder/insights_workbook_folder.json
 msgid "Insights Workbook Folder"
-msgstr "Insights Workbook Folder"
+msgstr "Insights Workbook хавтас"
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -2539,7 +2539,7 @@ msgstr "Гүйх"
 
 #: insights/insights/doctype/insights_table_import_job/insights_table_import_job.js:37
 msgid "Run {0} of {1}"
-msgstr "{1}-с {0} -г ажиллуулна уу"
+msgstr "{1}-с {0}-г ажиллуулна уу"
 
 #. Label of the sql (Code) field in DocType 'Insights Query'
 #. Label of the sql (Code) field in DocType 'Insights Query Execution Log'
@@ -3035,7 +3035,7 @@ msgstr "Телеграм чат ID"
 #. v3'
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.json
 msgid "Temporal column used to detect rows that changed since the last sync. Use <b>modified</b> for mutable tables and <b>creation</b> for append-only tables."
-msgstr "Сүүлийн синкээс хойш өөрчлөгдсөн мөрүүдийг илрүүлэхэд ашигладаг түр зуурын багана. Хувиргах боломжтой хүснэгтүүдийн хувьд <b>өөрчлөгдсөн</b> , зөвхөн нэмэх боломжтой хүснэгтүүдийн хувьд <b>үүсгэлт</b> ашиглана уу."
+msgstr "Сүүлийн синкээс хойш өөрчлөгдсөн мөрүүдийг илрүүлэхэд ашигладаг түр зуурын багана. Хувиргах боломжтой хүснэгтүүдийн хувьд <b>өөрчлөгдсөн</b>, зөвхөн нэмэх боломжтой хүснэгтүүдийн хувьд <b>үүсгэлт</b> ашиглана уу."
 
 #. Option for the 'Type' (Select) field in DocType 'Insights Table Column'
 #: insights/insights/doctype/insights_table_column/insights_table_column.json
@@ -3072,7 +3072,7 @@ msgstr "Энэ багана нь энэ хяналтын самбар дээр �
 
 #: insights/insights/doctype/insights_table_v3/insights_table_v3.js:15
 msgid "This will delete all warehouse data for <b>{0}</b> and reset the sync bookmark. Are you sure?"
-msgstr "Энэ нь <b>{0}</b> -н бүх агуулахын өгөгдлийг устгаж, синк хийх хавчуургыг дахин тохируулна. Та итгэлтэй байна уу?"
+msgstr "Энэ нь <b>{0}</b>-н бүх агуулахын өгөгдлийг устгаж, синк хийх хавчуургыг дахин тохируулна. Та итгэлтэй байна уу?"
 
 #. Option for the 'Week Starts On' (Select) field in DocType 'Insights
 #. Settings'

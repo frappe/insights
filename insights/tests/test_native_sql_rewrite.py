@@ -7,6 +7,7 @@ import sqlglot as sg
 from frappe.model import optional_fields
 
 from insights.exceptions import QueryRefused
+from insights.insights.doctype.insights_data_source_v3 import data_warehouse
 from insights.insights.doctype.insights_data_source_v3.ibis_utils import IbisQueryBuilder
 from insights.insights.doctype.insights_data_source_v3.insights_data_source_v3 import db_connections
 from insights.insights.doctype.insights_table_v3.insights_table_v3 import InsightsTablev3, get_table_name
@@ -325,7 +326,13 @@ class TestNativeSQL(InsightsIntegrationTestCase):
         create_user(reader, first_name="Native", last_name="Rows", roles="Insights User")
         self.addCleanup(delete_users, reader)
 
-        with as_user(reader), db_connections():
+        # the queue is the boundary: a real import job would outlive this test and
+        # move the state later tests read
+        with (
+            as_user(reader),
+            db_connections(),
+            patch.object(data_warehouse, "enqueue_warehouse_table_import"),
+        ):
             rows = self.run_native_sql(
                 "select status, count(*) as todos from tabToDo group by status", use_live_connection=0
             )
