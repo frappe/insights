@@ -10,6 +10,7 @@ from insights.insights.doctype.insights_table_v3.insights_table_v3 import (
     apply_column_permissions,
     get_permitted_columns_for_table,
 )
+from insights.tests.factories import create_user, delete_users
 
 
 class TestInsightsTablev3(FrappeTestCase):
@@ -30,6 +31,24 @@ class TestUserPermissionColumns(FrappeTestCase):
         self.assertIn("_assign", allowed)
         # a regular (permlevel 0) field the admin can read
         self.assertIn("email", allowed)
+
+    # @feature permissions.site-user-permissions
+    def test_a_reader_who_may_read_comments_reads_every_column_of_the_table(self):
+        # Frappe no longer lists `_comments` as an optional field, because older rows hold
+        # the text of the document's comments. A reader who may read Comment reads it, so
+        # their binding is the plain table; anyone else still has it held back.
+        columns = set(frappe.db.get_table_columns("ToDo"))
+        manager, reader = "columns-manager@test.com", "columns-reader@test.com"
+        create_user(manager, roles="System Manager")
+        create_user(reader, roles="Insights User")
+        self.addCleanup(delete_users, manager, reader)
+
+        self.assertEqual(get_permitted_columns_for_table("tabToDo"), columns)
+        self.assertEqual(get_permitted_columns_for_table("tabToDo", user=manager), columns)
+        self.assertEqual(get_permitted_columns_for_table("tabToDo", user=reader), columns - {"_comments"})
+
+        todo = ibis.table({c: "string" for c in columns}, name="tabToDo")
+        self.assertIs(apply_column_permissions(todo, "tabToDo"), todo)
 
     # @feature permissions.site-user-permissions
     def test_no_columns_when_doctype_is_not_readable(self):
