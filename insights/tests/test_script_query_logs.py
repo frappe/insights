@@ -289,8 +289,8 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
         ).insert()
         table = f"frappe.get_doc('Insights Query v3', '{query.name}').build()"
         acts = {
-            # for an admin the relation is the permlevel projection over the table
-            "op": f"{table}.op().parent.source.raw_sql(\"update tabToDo set description='x' where name='{todo.name}'\")",
+            # for an admin who may read every column the relation is the table itself
+            "op": f"{table}.op().source.raw_sql(\"update tabToDo set description='x' where name='{todo.name}'\")",
             "get_backend": f"{table}.get_backend()",
             "cache": f"{table}.cache()",
             "release": f"{table}.release()",

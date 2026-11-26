@@ -122,10 +122,19 @@ class TestCurrencyInfo(InsightsIntegrationTestCase):
 
     # @feature charts.currency-decimals
     def test_the_site_says_how_many_places_an_amount_prints_as_desk_does(self):
-        frappe.db.set_default("currency_precision", "0")
-        self.assertEqual(get_site_info()["currency_precision"], 0)
-        frappe.db.set_default("currency_precision", "")
-        self.assertIsNone(get_site_info()["currency_precision"])
+        # Stated, not written: the defaults cache is shared, and a worker refills it from
+        # the committed rows while a write here is uncommitted.
+        get_default = frappe.db.get_default
+        for stored, places in (("0", 0), ("", None)):
+
+            def stored_precision(key, *args, stored=stored, **kwargs):
+                return stored if key == "currency_precision" else get_default(key, *args, **kwargs)
+
+            with (
+                self.subTest(stored=stored),
+                patch.object(frappe.db, "get_default", side_effect=stored_precision),
+            ):
+                self.assertEqual(get_site_info()["currency_precision"], places)
 
     # @feature charts.measure-unit
     def test_the_client_can_reach_it_the_way_it_calls_it(self):
