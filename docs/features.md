@@ -255,6 +255,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | dashboard.filter-add | A user adds a dashboard filter with a label and a type. |
 | dashboard.filter-links | A user links a dashboard filter to a chart's column and the chart refilters; an unlinked chart is left alone. |
 | dashboard.filter-values | A dashboard filter lists the distinct values, or the number range, of the column it links. |
+| dashboard.filter-excluded-values | A dashboard filter lists the values the other filters leave no rows for after the ones they leave, dimmed, and a reader can still pick one. |
 | dashboard.filter-date-periods | A date filter lists the years, fiscal years and months its column has rows in under the other filters, a year opens onto its quarters, and a pick keeps that whole period. |
 | dashboard.filter-datetime | A Datetime dashboard filter keeps a from–to range to the minute, or a span of the last minutes or hours that ends when the chart is read, so a refresh moves it. An Auto axis under such a window reads by the minute up to three hours, then by the hour. |
 | dashboard.filter-default | A user sets a filter's default operator and value. |
@@ -449,6 +450,7 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | data-store.import-script-sandbox | An import job's script reads Frappe data, calls its client and inserts into its table; it cannot write to the site, enqueue a job, call a method, send mail or register a commit hook. |
 | data-store.failed-import-notice | A reader is told when a table's newest import failed, and nothing while one runs or a retry is queued. |
 | data-store.write-lock | A write waits for readers to finish and gives up at a timeout. |
+| data-store.unusable-table | A data store query that reads a table not yet stored, of an inactive source or missing from its source's table list, is refused with a message that names it, and no import is queued. |
 | data-store.run-without-import | A run that asks not to import refuses a data store table that is not stored yet and names it, instead of reading an empty table and queuing its import. |
 | data-store.division-by-zero | A division by zero returns null in the data store, as it does on the live connection. |
 | data-store.cleanup-prunes-stale | The weekly cleanup drops a table no query has used, and keeps one used recently, nested, freshly imported or incremental. |

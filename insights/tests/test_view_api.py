@@ -36,6 +36,19 @@ DASHBOARD_TITLE = "View API Test Dashboard"
 TODO_PREFIX = "View API Test"
 OWNER_TODOS = [f"{TODO_PREFIX} owner 1", f"{TODO_PREFIX} owner 2"]
 
+# the Priority filter's state that leaves only the second of OWNER_TODOS
+HIGH_PRIORITY = {"Priority": {"operator": "in", "value": ["High"]}}
+
+
+def possible(*values):
+    """A filter list where the other filters exclude none of `values`."""
+    return [{"value": value, "state": "possible"} for value in values]
+
+
+def by_value(listed):
+    return sorted(listed, key=lambda listed_value: listed_value["value"])
+
+
 MISSING_REFERENCES = [
     "view_api_test_app/no_such_thing",
     "no-such-route",
@@ -92,11 +105,13 @@ class TestViewAPI(InsightsIntegrationTestCase):
         create_user(DESK_USER, first_name="View", last_name="Desk User")
         create_user(ADMIN, first_name="View", last_name="Admin", roles=["Insights User", "System Manager"])
 
-        for description in OWNER_TODOS:
+        # the two differ in priority, so a filter on it leaves one of them
+        for description, priority in zip(OWNER_TODOS, ("Medium", "High"), strict=True):
             frappe.get_doc(
                 {
                     "doctype": "ToDo",
                     "description": description,
+                    "priority": priority,
                     "allocated_to": OWNER,
                     "assigned_by": "Administrator",
                 }
@@ -766,8 +781,8 @@ class TestViewAPI(InsightsIntegrationTestCase):
                 dashboard=dashboard.name, filter_name="Description", search_term="owner 1"
             )
 
-        self.assertEqual(sorted(values), sorted(OWNER_TODOS))
-        self.assertEqual(searched, [OWNER_TODOS[0]])
+        self.assertEqual(by_value(values), possible(*OWNER_TODOS))
+        self.assertEqual(searched, possible(OWNER_TODOS[0]))
 
     # @feature permissions.non-insights-user dashboard.filter-values
     def test_a_roleless_reader_reaches_what_the_authoring_endpoints_gate(self):
@@ -786,7 +801,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
             with permission_user(permission_user_for(frappe.get_doc(DT.CHART, chart.name))):
                 count = query_doc.count_rows()
 
-        self.assertEqual(sorted(values), sorted(OWNER_TODOS))
+        self.assertEqual(by_value(values), possible(*OWNER_TODOS))
         self.assertEqual(count, len(OWNER_TODOS))
 
     # @feature permissions.non-insights-user
@@ -799,6 +814,105 @@ class TestViewAPI(InsightsIntegrationTestCase):
         # empty, not refused: the chart applies each reader's permissions, so a
         # reader gets only the values their own permissions allow
         self.assertEqual(values, [])
+
+    def add_priority_filter(self, dashboard, chart):
+        """A second filter on `dashboard`, over the priority of the chart's rows."""
+        items = frappe.parse_json(frappe.db.get_value(DT.DASHBOARD, dashboard.name, "items"))
+        items.append(
+            {
+                "type": "filter",
+                "filter_name": "Priority",
+                "filter_type": "String",
+                "links": {chart.name: f"`{chart.query}`.`priority`"},
+                "layout": {"i": "filter-2", "x": 4, "y": 0, "w": 4, "h": 1},
+            }
+        )
+        frappe.db.set_value(DT.DASHBOARD, dashboard.name, "items", json.dumps(items), update_modified=False)
+
+    # @feature dashboard.filter-excluded-values
+    def test_a_filter_lists_what_the_other_filters_exclude_after_what_they_leave(self):
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+        chart.db_set("run_as_owner", 1, update_modified=False)
+        self.add_priority_filter(dashboard, chart)
+        # the High one is the second, so the order is the state's and not the rows'
+
+        with as_user(DESK_USER), db_connections():
+            values = get_filter_values(dashboard.name, "Description", filters=HIGH_PRIORITY)
+            searched = get_filter_values(dashboard.name, "Description", "owner 1", filters=HIGH_PRIORITY)
+            built = frappe.get_doc(DT.DASHBOARD, dashboard.name).get_distinct_column_values(
+                "Description", filter_context={"chart": chart.name, "filters": HIGH_PRIORITY}
+            )
+
+        self.assertEqual(
+            values,
+            [
+                {"value": OWNER_TODOS[1], "state": "possible"},
+                {"value": OWNER_TODOS[0], "state": "excluded"},
+            ],
+        )
+        self.assertEqual(searched, [{"value": OWNER_TODOS[0], "state": "excluded"}])
+        # the builder's grid lists the same
+        self.assertEqual(built, values)
+
+    # @feature dashboard.filter-excluded-values
+    def test_an_excluded_value_never_takes_a_possible_ones_place_in_the_list(self):
+        query, _, _ = self.make_content(visibility="Everyone")
+        # the routed shape of a Priority filter set to High
+        adhoc_filters = {
+            query.name: {
+                "type": "filter_group",
+                "logical_operator": "And",
+                "filters": [
+                    {
+                        "type": "filter",
+                        "column": {"type": "column", "column_name": "priority"},
+                        "operator": "in",
+                        "value": ["High"],
+                    }
+                ],
+            }
+        }
+
+        with db_connections():
+            listed = query.column_value_states("description", limit=1, adhoc_filters=adhoc_filters)
+
+        self.assertEqual(listed, [{"value": OWNER_TODOS[1], "state": "possible"}])
+
+    # @feature dashboard.filter-excluded-values
+    def test_with_no_other_filter_set_every_value_is_possible_from_one_build(self):
+        from insights.insights.doctype.insights_query_v3.insights_query_v3 import InsightsQueryv3
+
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+        chart.db_set("run_as_owner", 1, update_modified=False)
+        self.add_priority_filter(dashboard, chart)
+
+        build = InsightsQueryv3.get_builder
+        with (
+            as_user(DESK_USER),
+            db_connections(),
+            patch.object(InsightsQueryv3, "get_builder", autospec=True, side_effect=build) as built,
+        ):
+            values = get_filter_values(dashboard.name, "Description", filters={"Priority": {}})
+
+        self.assertEqual(by_value(values), possible(*OWNER_TODOS))
+        # nothing to test the values against, so the query is built once
+        self.assertEqual(built.call_count, 1)
+
+    # @feature dashboard.filter-excluded-values permissions.non-insights-user
+    def test_excluded_values_are_only_those_the_reader_may_see(self):
+        """The values a filter lists come from the card's rows, as the reader
+        reads them. Setting another filter shows what that filter rules out,
+        never a value the reader would not see with no filter set."""
+        _, chart, dashboard = self.make_content(visibility="Everyone")
+        self.add_priority_filter(dashboard, chart)
+
+        with as_user(DESK_USER), db_connections():
+            unfiltered = get_filter_values(dashboard.name, "Description")
+            filtered = get_filter_values(dashboard.name, "Description", filters=HIGH_PRIORITY)
+
+        # the chart runs as its reader, who may read none of the owner's ToDos
+        self.assertEqual(unfiltered, [])
+        self.assertEqual(filtered, [])
 
     # @feature permissions.request-body-not-trusted
     def test_a_reader_cannot_supply_the_routing_table(self):
@@ -826,9 +940,9 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(DESK_USER), db_connections():
             values = forged.get_distinct_column_values("Description", filter_context=context)
 
-        # not filtered: the list holds all of the published filter's values, not
-        # only the Closed ones
-        self.assertEqual(sorted(values), sorted(OWNER_TODOS))
+        # not filtered: every one of the published filter's values is possible,
+        # none excluded by the forged one
+        self.assertEqual(by_value(values), possible(*OWNER_TODOS))
 
     # @feature permissions.request-body-not-trusted
     def test_an_insights_user_cannot_claim_write_on_the_dashboard_in_hand(self):
@@ -855,7 +969,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
             for claim in ({"__islocal": 1}, {"owner": OUTSIDER}):
                 forged = frappe.get_doc({**stored, "items": forged_items, **claim})
                 values = forged.get_distinct_column_values("Description", filter_context=context)
-                self.assertEqual(sorted(values), sorted(OWNER_TODOS), claim)
+                self.assertEqual(by_value(values), possible(*OWNER_TODOS), claim)
 
     # @feature permissions.chart-cannot-link-unreadable-query permissions.denied-says-no-access
     def test_a_filter_cannot_read_a_query_the_dashboard_does_not_reach(self):
@@ -946,7 +1060,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(DESK_USER), db_connections():
             values = get_filter_values(dashboard=dashboard.name, filter_name="Underneath")
 
-        self.assertEqual(sorted(values), sorted(OWNER_TODOS))
+        self.assertEqual(by_value(values), possible(*OWNER_TODOS))
 
     # @feature permissions.chart-cannot-link-unreadable-query
     def test_one_unreadable_link_does_not_refuse_the_filter_behind_it(self):
@@ -982,7 +1096,7 @@ class TestViewAPI(InsightsIntegrationTestCase):
         with as_user(DESK_USER), db_connections():
             values = get_filter_values(dashboard=dashboard.name, filter_name="Either")
 
-        self.assertEqual(sorted(values), sorted(OWNER_TODOS))
+        self.assertEqual(by_value(values), possible(*OWNER_TODOS))
 
     # @feature permissions.authoring-needs-role permissions.non-insights-user
     def test_the_authoring_endpoints_still_refuse_a_user_without_the_role(self):

@@ -565,12 +565,15 @@ def routed_filters(chart: str, dashboard: str | None, filters: dict | None) -> d
     A dashboard routes only the charts on it. A filter's links are not checked
     on save, so a filter on the caller's own dashboard could name any chart and
     any column of its query.
+
+    `chart` is the name `resolve_chart(chart, dashboard)` returned, so the
+    reader may read the dashboard and the chart is on it. Checking that again
+    would run the dashboard's refusal check twice more for one card.
     """
     if not dashboard:
         return None
 
-    resolve_chart(chart, dashboard)
-    items = frappe.db.get_value(DASHBOARD, resolve_for_read(DASHBOARD, dashboard), "items")
+    items = frappe.db.get_value(DASHBOARD, resolve(DASHBOARD, dashboard), "items")
     return route_filters(items, chart, filters)
 
 
@@ -595,14 +598,19 @@ def get_filter_values(
     the same shape `routed_filters` takes. It goes through `route_filters` too,
     without this filter itself. Narrowing a filter's values by its own current
     value would make picking a second value impossible.
+
+    Each value comes as `{"value", "state"}`: `possible` when the other
+    filters leave rows for it, `excluded` when they leave none. A reader still
+    sees what the other filters rule out, and may pick it. Periods come as
+    plain values, narrowed by the other filters.
     """
     doc = frappe.get_doc(DASHBOARD, resolve_for_read(DASHBOARD, dashboard))
 
     def values(chart, query, column):
         adhoc_filters = route_filters(doc.items, chart, filters, exclude_filter=filter_name)
-        return query.distinct_column_values(
-            column, search_term=search_term, adhoc_filters=adhoc_filters, granularity=granularity
-        )
+        if granularity:
+            return query.distinct_column_values(column, adhoc_filters=adhoc_filters, granularity=granularity)
+        return query.column_value_states(column, search_term=search_term, adhoc_filters=adhoc_filters)
 
     return doc.lookup_filter(filter_name, values, missing=not_found)
 

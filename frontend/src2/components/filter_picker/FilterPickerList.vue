@@ -133,13 +133,14 @@ function keyOf(item: ListItem, stage: string) {
 					     shrinks, because any shrink shows its ellipsis -->
 						<span
 							class="truncate text-start"
-							:class="
+							:class="[
 								item.operator !== undefined
 									? 'font-medium text-ink-gray-8'
 									: item.note
 									  ? 'max-w-full shrink-0'
-									  : 'flex-1'
-							"
+									  : 'flex-1',
+								item.dimmed && 'text-ink-gray-6',
+							]"
 							>{{ item.label }}</span
 						>
 						<template v-if="item.operator !== undefined">
