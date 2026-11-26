@@ -654,10 +654,19 @@ finally:
         for user in ("one@example.com", "two@example.com"):
             with patch.object(frappe.local, "session", frappe._dict(user=user)):
                 self.assertTrue(pool.acquire())
-        started = frappe.utils.now_datetime()
 
-        # its tables live in the data store, so it connects with a data store slot
-        with patch.object(data_warehouse, "SLOT_WAIT", 0), self.request():
+        # its tables live in the data store, so it connects with a data store slot.
+        # The site's Error Logs move with any background job, so the loggers are watched:
+        # the app's, and the one Frappe's request handler logs through. They wrap the
+        # request, so its after-request hooks are watched too
+        with (
+            patch.object(frappe, "log_error", wraps=frappe.log_error) as log_error,
+            patch.object(
+                frappe.utils.error, "log_error", wraps=frappe.utils.error.log_error
+            ) as request_log_error,
+            patch.object(data_warehouse, "SLOT_WAIT", 0),
+            self.request(),
+        ):
             try:
                 source._get_ibis_backend()
                 self.fail("the source connected with every slot held")
@@ -668,7 +677,8 @@ finally:
             retry_after = frappe.local.response_headers.get("Retry-After")
 
         self.assertEqual((response.status_code, retry_after), (503, "2"))
-        self.assertFalse(frappe.get_all("Error Log", filters={"creation": [">=", started]}, pluck="name"))
+        log_error.assert_not_called()
+        request_log_error.assert_not_called()
         self.assertNotIn(source.name, insights.db_connections)
 
     # @feature data-store.query-slots
@@ -1018,7 +1028,6 @@ class TestUnusableTableImport(InsightsIntegrationTestCase):
         self.enterContext(patch("frappe.utils.telemetry.capture"))
         insights.db_connections.pop("insights", None)
         self.enqueue = self.enterContext(patch("frappe.enqueue"))
-        self.error_logs = frappe.db.count("Error Log")
 
     def after_test(self):
         frappe.db.delete("Insights Table Import Log", {"table_name": "tabNever Listed"})
@@ -1039,7 +1048,11 @@ class TestUnusableTableImport(InsightsIntegrationTestCase):
         return execute_test_query(query.name)
 
     def assert_refused_and_nothing_queued(self, data_source, table_name, message):
-        with patch.object(InsightsDataSourcev3, "_get_db_connection") as connect:
+        # the site's Error Log count moves with any background job, so the logger is watched
+        with (
+            patch.object(InsightsDataSourcev3, "_get_db_connection") as connect,
+            patch.object(frappe, "log_error", wraps=frappe.log_error) as log_error,
+        ):
             with self.assertRaises(QueryRefused) as refused:
                 self.run_data_store_query(data_source, table_name)
 
@@ -1051,7 +1064,7 @@ class TestUnusableTableImport(InsightsIntegrationTestCase):
                 "Insights Table Import Log", {"data_source": data_source, "table_name": table_name}
             )
         )
-        self.assertEqual(frappe.db.count("Error Log"), self.error_logs)
+        log_error.assert_not_called()
 
     # @feature data-store.unusable-table
     def test_a_query_on_an_inactive_source_names_it_and_queues_no_import(self):
