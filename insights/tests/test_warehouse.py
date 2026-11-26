@@ -1018,7 +1018,6 @@ class TestUnusableTableImport(InsightsIntegrationTestCase):
         self.enterContext(patch("frappe.utils.telemetry.capture"))
         insights.db_connections.pop("insights", None)
         self.enqueue = self.enterContext(patch("frappe.enqueue"))
-        self.error_logs = frappe.db.count("Error Log")
 
     def after_test(self):
         frappe.db.delete("Insights Table Import Log", {"table_name": "tabNever Listed"})
@@ -1039,7 +1038,11 @@ class TestUnusableTableImport(InsightsIntegrationTestCase):
         return execute_test_query(query.name)
 
     def assert_refused_and_nothing_queued(self, data_source, table_name, message):
-        with patch.object(InsightsDataSourcev3, "_get_db_connection") as connect:
+        # the site's Error Log count moves with any background job, so the logger is watched
+        with (
+            patch.object(InsightsDataSourcev3, "_get_db_connection") as connect,
+            patch.object(frappe, "log_error") as log_error,
+        ):
             with self.assertRaises(QueryRefused) as refused:
                 self.run_data_store_query(data_source, table_name)
 
@@ -1051,7 +1054,7 @@ class TestUnusableTableImport(InsightsIntegrationTestCase):
                 "Insights Table Import Log", {"data_source": data_source, "table_name": table_name}
             )
         )
-        self.assertEqual(frappe.db.count("Error Log"), self.error_logs)
+        log_error.assert_not_called()
 
     # @feature data-store.unusable-table
     def test_a_query_on_an_inactive_source_names_it_and_queues_no_import(self):
