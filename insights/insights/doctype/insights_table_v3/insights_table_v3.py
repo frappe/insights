@@ -656,8 +656,9 @@ def apply_column_permissions(t: Table, table_name, user=None):
     allowed = get_permitted_columns_for_table(table_name, user)
     cols = [c for c in t.columns if c in allowed]
     # No permitted column means the reader may not read the table. The row check
-    # below refuses that, and ibis rejects an empty column list anyway.
-    if not cols:
+    # below refuses that, and ibis rejects an empty column list anyway. With every
+    # column permitted, the table itself is the binding, so native SQL can read it as written.
+    if not cols or len(cols) == len(t.columns):
         return t
 
     doctype = table_name.removeprefix("tab")
@@ -696,11 +697,17 @@ def get_permitted_columns_for_table(table_name, user=None) -> set[str]:
 
     doctype = table_name.removeprefix("tab")
     meta = frappe.get_meta(doctype)
+    # Frappe stopped counting `_comments` as optional (frappe/frappe#42927): rows written
+    # before it hold the text of the document's comments and emails. A reader who may read
+    # Comment reads it; a share of one comment does not open the column on every doctype.
+    meta_columns = {*optional_fields}
+    if frappe.has_permission("Comment", "read", user=user, ignore_share_permissions=True):
+        meta_columns.add("_comments")
 
     def permitted(dt, parent=None) -> set[str]:
-        # get_permitted_fields drops optional meta columns (`_assign`, `_comments`, ...)
+        # get_permitted_fields drops optional meta columns (`_assign`, ...)
         # because they aren't in valid_columns; add them back so they survive.
-        readable = {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *optional_fields}
+        readable = {*get_permitted_fields(doctype=dt, parenttype=parent, user=user), *meta_columns}
         return readable - masked_fields(dt, parent, user)
 
     if not meta.istable:
