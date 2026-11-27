@@ -39,8 +39,9 @@ const openItemTitle = computed(() => {
 	return items.find((item) => item.name === name)?.title
 })
 
-waitUntil(() => !workbook.pending).then(() => {
-	if (isMobile.value) return
+// a phone gets neither: it reads the workbook as a list; a phone turned wide
+// gets both then
+waitUntil(() => !workbook.pending && !isMobile.value).then(() => {
 	if (workbook.doc.queries.length === 0) {
 		workbook.addQuery()
 	}
