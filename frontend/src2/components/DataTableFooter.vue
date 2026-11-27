@@ -29,9 +29,9 @@ const hasContent = computed(
 	<!-- the bar is one button tall with or without its buttons, so a footer that
 	     is only a status line stands as high as one with a pager -->
 	<div v-if="hasContent" class="flex h-9 flex-shrink-0 items-center border-t px-2">
-		<div class="flex flex-1 items-center">
+		<div class="flex min-w-0 flex-1 items-center overflow-hidden whitespace-nowrap">
 			<!-- `ResultStatus` says what a result is. The bar only holds the place
-			     for it. -->
+			     for it, on one line: the bar is one button tall. -->
 			<slot name="left" />
 		</div>
 		<div class="flex items-center gap-1">
