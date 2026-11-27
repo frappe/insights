@@ -4,6 +4,7 @@ import { Wand2 } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import { useIsMobile } from '../../composables/useIsMobile'
+import { workbookKey } from '../../workbook/workbook_key'
 import { useShortcut } from '../../composables/useShortcut'
 import { useSourceSchema } from '../../data_source/data_source'
 import { __ } from '../../translation'
@@ -19,6 +20,7 @@ import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 const query = inject<Query>('query')!
 const $find = ref<HTMLElement>()
 const isMobile = useIsMobile()
+const workbook = inject(workbookKey)!
 query.autoExecute = false
 query.ensureResult()
 
@@ -133,7 +135,7 @@ const stale = computed(() => {
 					:key="completions.tables.length"
 					v-model="sql"
 					language="sql"
-					:read-only="isMobile"
+					:read-only="workbook.readOnly"
 					:schema="completions.schema"
 					:tables="completions.tables"
 				/>

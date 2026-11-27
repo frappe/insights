@@ -17,6 +17,7 @@ import { confirmDialog } from '../helpers/confirm_dialog'
 import useDocumentResource from '../helpers/resource'
 import { getLinkedQueries } from '../query/linked_queries'
 import useQuery, { newQuery } from '../query/query'
+import { useIsMobile } from '../composables/useIsMobile'
 import router from '../router'
 import session from '../session'
 import type { Operation } from '../types/query.types'
@@ -360,8 +361,15 @@ function makeWorkbook(name: string) {
 		return call(method, { workbook: workbook.name, items }).catch(showErrorToast)
 	}
 
+	// Everything that edits the workbook or its items reads this. A phone reads a
+	// workbook, so it takes the read-only path a user without write access takes.
+	// Only the client: the document's `read_only` stays the user's access.
+	const isMobile = useIsMobile()
+	const readOnly = computed(() => Boolean(workbook.doc.read_only) || isMobile.value)
+
 	return reactive({
 		...toRefs(workbook),
+		readOnly,
 		canShare,
 		isOwner,
 

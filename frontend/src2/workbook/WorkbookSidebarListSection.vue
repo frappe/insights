@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Plus, X } from 'lucide-vue-next'
 import { setDraggedItem } from './workbook_drag'
-import { useIsMobile } from '../composables/useIsMobile'
+import { inject } from 'vue'
+import { workbookKey } from './workbook_key'
 const section = defineProps<{
 	title: string
 	emptyMessage: string
@@ -17,7 +18,7 @@ function onDragStart(event: DragEvent, row: any) {
 	if (!event.dataTransfer) return
 	setDraggedItem(event.dataTransfer, section.title, row)
 }
-const isMobile = useIsMobile()
+const workbook = inject(workbookKey)!
 </script>
 
 <template>
@@ -26,8 +27,7 @@ const isMobile = useIsMobile()
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
 			</div>
-			<!-- a phone reads a workbook and does not add to it -->
-			<div class="max-sm:hidden">
+			<div v-if="!workbook.readOnly">
 				<Button
 					class="!h-fit !p-1"
 					variant="ghost"
@@ -52,7 +52,7 @@ const isMobile = useIsMobile()
 				:class="
 					section.isActive(row) ? ' bg-surface-gray-2' : ' hover:border-outline-gray-2'
 				"
-				:draggable="!isMobile"
+				:draggable="!workbook.readOnly"
 				@dragstart="onDragStart($event, row)"
 			>
 				<router-link
@@ -66,7 +66,8 @@ const isMobile = useIsMobile()
 						<p class="truncate">{{ row.title }}</p>
 					</div>
 					<button
-						class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible max-sm:hidden"
+						v-if="!workbook.readOnly"
+						class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
 						:aria-label="__('Remove {0}', row.title)"
 						@click.prevent.stop="section.remove(row)"
 					>

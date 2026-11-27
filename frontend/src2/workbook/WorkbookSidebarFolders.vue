@@ -5,7 +5,6 @@ import Draggable from 'vuedraggable'
 import type { WorkbookChart, WorkbookFolder, WorkbookQuery } from '../types/workbook.types'
 import { setDraggedItem } from './workbook_drag'
 import { workbookKey } from './workbook_key'
-import { useIsMobile } from '../composables/useIsMobile'
 
 const section = defineProps<{
 	title: string
@@ -147,8 +146,6 @@ function onListChange(
 
 	workbook.updateSortOrder(updates)
 }
-// a phone reads a workbook: no reordering or moving into folders
-const isMobile = useIsMobile()
 </script>
 
 <template>
@@ -157,8 +154,7 @@ const isMobile = useIsMobile()
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
 			</div>
-			<!-- a phone reads a workbook and does not add to it -->
-			<div v-if="!editingFolderName" class="flex gap-1 max-sm:hidden">
+			<div v-if="!editingFolderName && !workbook.readOnly" class="flex gap-1">
 				<Button
 					class="!h-fit !p-1"
 					variant="ghost"
@@ -193,7 +189,7 @@ const isMobile = useIsMobile()
 				:animation="150"
 				:delay="150"
 				:delay-on-touch-only="true"
-				:disabled="isMobile"
+				:disabled="workbook.readOnly"
 				:touch-start-threshold="5"
 				:empty-insert-threshold="20"
 				ghost-class="sortable-ghost"
@@ -218,7 +214,8 @@ const isMobile = useIsMobile()
 								<p class="truncate">{{ row.title }}</p>
 							</div>
 							<button
-								class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible max-sm:hidden"
+								v-if="!workbook.readOnly"
+								class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
 								:aria-label="__('Remove {0}', row.title)"
 								@click.prevent.stop="section.remove(row)"
 							>
@@ -242,7 +239,7 @@ const isMobile = useIsMobile()
 					:animation="150"
 					:delay="150"
 					:delay-on-touch-only="true"
-					:disabled="isMobile"
+					:disabled="workbook.readOnly"
 					:touch-start-threshold="5"
 					:empty-insert-threshold="20"
 					ghost-class="sortable-ghost"
@@ -286,8 +283,8 @@ const isMobile = useIsMobile()
 								<p v-else class="flex-1 truncate text-sm">{{ folder.title }}</p>
 							</div>
 							<div
-								v-if="editingFolderName !== folder.name"
-								class="invisible flex gap-0.5 group-hover:visible max-sm:hidden"
+								v-if="editingFolderName !== folder.name && !workbook.readOnly"
+								class="invisible flex gap-0.5 group-hover:visible"
 							>
 								<button
 									class="cursor-pointer rounded-4 p-1 transition-all hover:bg-surface-gray-3"
@@ -340,7 +337,8 @@ const isMobile = useIsMobile()
 										<p class="truncate">{{ row.title }}</p>
 									</div>
 									<button
-										class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible max-sm:hidden"
+										v-if="!workbook.readOnly"
+										class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
 										:aria-label="__('Remove {0}', row.title)"
 										@click.prevent.stop="section.remove(row)"
 									>

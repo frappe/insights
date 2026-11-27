@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { Badge, Textarea } from 'frappe-ui'
-import { computed, provide, ref } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import NumberInput from '../components/NumberInput.vue'
@@ -24,6 +24,7 @@ import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
 import { useIsMobile } from '../composables/useIsMobile'
+import { workbookKey } from '../workbook/workbook_key'
 import { __ } from '../translation'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
@@ -39,9 +40,11 @@ window.chart = chart
 const preview = useChartPreview(chart)
 provide(chartPreviewKey, preview)
 // for a user who cannot write the chart, the preview runs the stored chart, so
-// an edit here would not change the rows it shows. A phone reads a chart.
+// an edit here would not change the rows it shows
+const workbook = inject(workbookKey)!
+const readOnly = computed(() => preview.doc.can_write === false || workbook.readOnly)
+// a phone has no room for the card's actions
 const isMobile = useIsMobile()
-const readOnly = computed(() => preview.doc.can_write === false || isMobile.value)
 
 // the first render separately, so opening a chart does not wait out the debounce
 waitUntil(() => !chart.pending).then(() => preview.load())
