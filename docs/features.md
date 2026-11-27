@@ -477,6 +477,8 @@ One row per thing a user can do or rely on. Slugs are `<area>.<feature>` in the 
 | alerts.message | A user writes the alert's message with field tokens. |
 | alerts.email | An alert emails its recipients, inside or outside the site, with a reply-to that reaches the author and a body that names the alert and the site as text. |
 | alerts.webhook | An alert posts a versioned payload to a webhook, token, when set, in the header, the text under `message` and `content`, rows capped and the cap declared. |
+| alerts.thread | A line holding only `<!-- thread -->` splits an alert's message: a webhook gets the first part as `content` and each later part as one item of `thread`, and the send fails unless the receiver answers with `thread_messages` equal to the items sent. Email and Telegram send one message without the markers. |
+| alerts.linked-queries | An alert links more queries of its workbook, each under a name. Each runs once a send, as the user the alert runs as and checked as its own query is, and the message reads its rows as `queries.<name>.rows` and how many as `queries.<name>.count`, at most 100. A linked query that fails fails the send. |
 | alerts.webhook-address-policy | A webhook reaches only a public https address, never a private or loopback one, even through rebinding or a proxy. |
 | alerts.telegram | An alert sends to Telegram. |
 | alerts.schedule | An alert runs on its frequency, or on a cron expression the save checks the scheduler can read. |

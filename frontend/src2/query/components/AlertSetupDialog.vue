@@ -1,11 +1,12 @@
 <script setup lang="tsx">
 import { Textarea, toast } from 'frappe-ui'
-import { computed, reactive, ref, unref, watch } from 'vue'
+import { computed, inject, reactive, ref, unref, watch } from 'vue'
 import Toggle from '../../components/Toggle.vue'
 import { waitUntil, wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { __ } from '../../translation'
 import useUserStore from '../../users/users'
+import { workbookKey } from '../../workbook/workbook_key'
 import useAlertStore, { cronRefusal } from '../alert'
 import { Query } from '../query'
 import ExpressionEditor from './ExpressionEditor.vue'
@@ -64,6 +65,50 @@ const webhookError = computed(() => {
 	return ''
 })
 
+// The server reads a linked query only from the alert's own workbook.
+const workbook = inject(workbookKey, null)
+const linkedQueryOptions = computed(() =>
+	(workbook?.doc.queries || [])
+		.filter((q) => q.name !== props.query.doc.name)
+		.map((q) => ({ label: q.title, value: q.name })),
+)
+
+function addLinkedQuery() {
+	alert.doc.queries = [...(alert.doc.queries || []), { alias: '', query: '' }]
+}
+
+function removeLinkedQuery(index: number) {
+	alert.doc.queries = alert.doc.queries.filter((_, i) => i !== index)
+}
+
+// The message reads a linked query as `queries.<name>`, so a name is an identifier.
+const ALIAS = /^[A-Za-z_][A-Za-z0-9_]*$/
+const linkedQueriesError = computed(() => {
+	const aliases = (alert.doc.queries || []).map((row) => row.alias)
+	if ((alert.doc.queries || []).some((row) => !row.query)) return __('Select a query')
+	if (aliases.some((alias) => !ALIAS.test(alias))) {
+		return __('Name each query with letters, digits and underscores, starting with a letter')
+	}
+	if (new Set(aliases).size !== aliases.length) return __('Give each query its own name')
+	return ''
+})
+
+// Text, not markup: the tokens hold Jinja braces and an HTML comment.
+const messageHints = [
+	{ token: '{{ rows }}', description: __('The result of the query') },
+	{ token: '{{ count }}', description: __('The number of rows in the query') },
+	{
+		token: '{{ queries.<name>.rows }}, {{ queries.<name>.count }}',
+		description: __('The first 100 rows of a linked query, and how many it read'),
+	},
+	{
+		token: '<!-- thread -->',
+		description: __(
+			'On a line of its own, starts a thread message. A webhook posts the text before the first marker, and each part after a marker in its thread. Email and Telegram send one message.',
+		),
+	},
+]
+
 // A toast under the dialog is half hidden, so the field says it too.
 const cronError = ref('')
 watch(
@@ -84,6 +129,7 @@ const isValidAlert = computed(() => {
 	if (!alert.doc.custom_condition && !filterCondition.operator) return false
 	if (!alert.doc.custom_condition && !filterCondition.right) return false
 	if (!alert.doc.message) return false
+	if (linkedQueriesError.value) return false
 	return true
 })
 
@@ -285,6 +331,50 @@ function toggleAlert() {
 					/>
 				</div>
 
+				<div class="flex flex-col gap-1.5">
+					<label class="block text-xs text-ink-gray-5">{{ __('Linked queries') }}</label>
+					<div
+						v-for="(row, index) in alert.doc.queries"
+						:key="index"
+						class="flex items-center gap-4"
+					>
+						<FormControl
+							type="text"
+							class="flex-1"
+							v-model="row.alias"
+							:placeholder="__('Name, e.g. by_app')"
+						/>
+						<FormControl
+							type="select"
+							class="flex-1"
+							v-model="row.query"
+							:placeholder="__('Select Query')"
+							:options="linkedQueryOptions"
+						/>
+						<Button
+							variant="ghost"
+							icon="lucide-x"
+							:aria-label="__('Remove linked query')"
+							@click="removeLinkedQuery(index)"
+						/>
+					</div>
+					<ErrorMessage
+						v-if="alert.doc.queries?.length && linkedQueriesError"
+						:message="linkedQueriesError"
+					/>
+					<div class="flex items-center gap-3">
+						<Button
+							variant="outline"
+							icon-left="lucide-plus"
+							:label="__('Add Query')"
+							@click="addLinkedQuery"
+						/>
+						<p class="text-p-sm text-ink-gray-5">
+							{{ __('Each runs once a send, for the message to read.') }}
+						</p>
+					</div>
+				</div>
+
 				<div>
 					<Textarea
 						:label="__('Message')"
@@ -305,14 +395,11 @@ Thanks,
 							)
 						}}
 
-						<div
-							v-html="
-								`<ul class='list-disc pl-4'>
-							<li>{{ rows }} - The result of the query</li>
-							<li>{{ count }} - The number of rows in the query</li>
-						</ul>`
-							"
-						/>
+						<ul class="list-disc pl-4">
+							<li v-for="hint in messageHints" :key="hint.token">
+								<code>{{ hint.token }}</code> - {{ hint.description }}
+							</li>
+						</ul>
 					</div>
 				</div>
 

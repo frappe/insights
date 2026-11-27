@@ -102,6 +102,7 @@ class InsightsQueryv3(Document):
         standard.guard_member(self)
         if not (self.flags.force_delete or standard.deleted_with_workbook(self)):
             refuse_delete_while_linked(self, taken=("Insights Alert", "Insights Query Reference"))
+            self.refuse_delete_while_an_alert_links_it()
 
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
@@ -113,6 +114,20 @@ class InsightsQueryv3(Document):
         # Clean up empty folders
         if self.folder:
             self.cleanup_empty_folder(self.folder)
+
+    def refuse_delete_while_an_alert_links_it(self):
+        """An alert that links this query among its own would fail every send.
+        Frappe reports the row as its alert, which `on_trash` deletes only when
+        this is the alert's own query, so the link check above lets it pass."""
+        from frappe.model.delete_doc import raise_link_exists_exception
+
+        for alert in frappe.get_all(
+            "Insights Alert Query",
+            filters={"query": self.name, "parenttype": "Insights Alert"},
+            pluck="parent",
+        ):
+            if frappe.db.get_value("Insights Alert", alert, "query") != self.name:
+                raise_link_exists_exception(self, "Insights Alert", alert)
 
     def after_delete(self):
         standard.export_member(self)
@@ -794,6 +809,23 @@ class InsightsQueryv3(Document):
             raise
 
         return frappe._dict(count=count, condition_met=condition_met, rows=rows)
+
+    def execute_rows_for_alert(self, page_size):
+        """The first `page_size` rows, read fresh in one statement. A query an
+        alert links feeds its message only, so it has no condition to test."""
+        try:
+            query = self.get_builder(force=True).query
+            results, _time_taken = execute_ibis_query(
+                query,
+                page_size=page_size,
+                cache=False,
+                reference_doctype=self.doctype,
+                reference_name=self.execution_reference,
+            )
+        except Exception as e:
+            self.capture_failure(e)
+            raise
+        return results.to_dict(orient="records")
 
     @insights_whitelist()
     def export(self):
