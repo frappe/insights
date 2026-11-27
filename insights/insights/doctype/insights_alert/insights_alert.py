@@ -169,7 +169,7 @@ class InsightsAlert(Document):
             if not ALIAS.fullmatch(row.alias or ""):
                 frappe.throw(
                     _(
-                        "{0} cannot name a linked query. Use letters, digits and underscores, and start with a letter."
+                        "{0} cannot name a linked query. Use letters, digits and underscores, and do not start with a digit."
                     ).format(escape_html(row.alias or ""))
                 )
             if row.alias in aliases:
@@ -385,19 +385,23 @@ class InsightsAlert(Document):
 
     def run_linked_queries(self):
         """What the template reads as `queries.<alias>`: each linked query's
-        first rows, from one statement each. One more row than the cap is read,
-        so `truncated` says whether the rows are all of them."""
+        rows and how many, from one statement each.
+
+        A linked query must fit in `ALERT_MAX_ROWS`. Past it the send fails:
+        a message that counts or sums a cut list would post a wrong number.
+        """
         queries = {}
         with db_connections():
             for row in self.queries:
                 doc = frappe.get_doc("Insights Query v3", row.query)
                 rows = doc.execute_rows_for_alert(ALERT_MAX_ROWS + 1)
-                queries[row.alias] = {
-                    "title": doc.title,
-                    "rows": rows[:ALERT_MAX_ROWS],
-                    "count": min(len(rows), ALERT_MAX_ROWS),
-                    "truncated": len(rows) > ALERT_MAX_ROWS,
-                }
+                if len(rows) > ALERT_MAX_ROWS:
+                    frappe.throw(
+                        _("The linked query {0} returns more than {1} rows. Summarize it to fewer.").format(
+                            escape_html(doc.title), ALERT_MAX_ROWS
+                        )
+                    )
+                queries[row.alias] = {"title": doc.title, "rows": rows, "count": len(rows)}
         return queries
 
     def get_message_context(self, result=None, queries=None):

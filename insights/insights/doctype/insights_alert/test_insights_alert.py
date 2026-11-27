@@ -1161,6 +1161,23 @@ class TestLinkedQueries(AlertOverSeededTodos):
         self.assertEqual(sendmail.call_count, 0)
 
     # @feature alerts.linked-queries
+    def test_a_linked_query_past_the_row_cap_fails_the_send(self):
+        """Its count would be the cap, not the total, and the message would post it."""
+        alert = self.make_alert(
+            message="{{ queries.open.count }} open", queries=[self.linked("open", self.query)]
+        )
+
+        with (
+            patch(f"{InsightsAlert.__module__}.ALERT_MAX_ROWS", 2),
+            patch("frappe.sendmail") as sendmail,
+            self.assertRaises(frappe.ValidationError) as refusal,
+        ):
+            alert.send_alert()
+
+        self.assertIn("more than 2 rows", str(refusal.exception))
+        self.assertEqual(sendmail.call_count, 0)
+
+    # @feature alerts.linked-queries
     def test_a_linked_query_from_another_workbook_is_refused_at_save_and_at_send(self):
         """The workbook decides who may send the alert, so a linked query from
         another would send rows that workbook's writers never granted."""

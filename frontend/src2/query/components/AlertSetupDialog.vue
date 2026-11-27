@@ -84,13 +84,19 @@ function removeLinkedQuery(index: number) {
 // The message reads a linked query as `queries.<name>`, so a name is an identifier.
 const ALIAS = /^[A-Za-z_][A-Za-z0-9_]*$/
 const linkedQueriesError = computed(() => {
-	const aliases = (alert.doc.queries || []).map((row) => row.alias)
-	if ((alert.doc.queries || []).some((row) => !row.query)) return __('Select a query')
+	const rows = alert.doc.queries || []
+	const aliases = rows.map((row) => row.alias)
+	if (rows.some((row) => !row.query)) return __('Select a query')
 	if (aliases.some((alias) => !ALIAS.test(alias))) {
-		return __('Name each query with letters, digits and underscores, starting with a letter')
+		return __('Name each query with letters, digits and underscores, not starting with a digit')
 	}
 	if (new Set(aliases).size !== aliases.length) return __('Give each query its own name')
 	return ''
+})
+// A row just added is not a mistake yet. It still blocks the save.
+const shownLinkedQueriesError = computed(() => {
+	const started = (alert.doc.queries || []).some((row) => row.alias || row.query)
+	return started ? linkedQueriesError.value : ''
 })
 
 // Text, not markup: the tokens hold Jinja braces and an HTML comment.
@@ -99,12 +105,12 @@ const messageHints = [
 	{ token: '{{ count }}', description: __('The number of rows in the query') },
 	{
 		token: '{{ queries.<name>.rows }}, {{ queries.<name>.count }}',
-		description: __('The first 100 rows of a linked query, and how many it read'),
+		description: __('The rows of a linked query, at most 100, and how many'),
 	},
 	{
 		token: '<!-- thread -->',
 		description: __(
-			'On a line of its own, starts a thread message. A webhook posts the text before the first marker, and each part after a marker in its thread. Email and Telegram send one message.',
+			'On a line of its own, starts a thread message under a webhook post. Email sends one message.',
 		),
 	},
 ]
@@ -359,20 +365,16 @@ function toggleAlert() {
 						/>
 					</div>
 					<ErrorMessage
-						v-if="alert.doc.queries?.length && linkedQueriesError"
-						:message="linkedQueriesError"
+						v-if="shownLinkedQueriesError"
+						:message="shownLinkedQueriesError"
 					/>
-					<div class="flex items-center gap-3">
-						<Button
-							variant="outline"
-							icon-left="lucide-plus"
-							:label="__('Add Query')"
-							@click="addLinkedQuery"
-						/>
-						<p class="text-p-sm text-ink-gray-5">
-							{{ __('Each runs once a send, for the message to read.') }}
-						</p>
-					</div>
+					<Button
+						class="self-start"
+						variant="outline"
+						icon-left="lucide-plus"
+						:label="__('Add Query')"
+						@click="addLinkedQuery"
+					/>
 				</div>
 
 				<div>
