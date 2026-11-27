@@ -84,8 +84,9 @@ function expand() {
 // from the tab order, and on most cards nothing else can take focus to reveal
 // them. The group is named `card` because the grid cell around it is also a
 // group, and a bare `group-hover` would react to the cell and its gutter.
+// A touch screen cannot point, so there they always show.
 const HIDDEN_UNTIL_POINTED_AT =
-	'w-0 overflow-hidden group-focus-within/card:w-auto group-focus-within/card:overflow-visible group-hover/card:w-auto group-hover/card:overflow-visible'
+	'w-0 overflow-hidden group-focus-within/card:w-auto group-focus-within/card:overflow-visible group-hover/card:w-auto group-hover/card:overflow-visible [@media(hover:none)]:w-auto [@media(hover:none)]:overflow-visible'
 </script>
 
 <template>
