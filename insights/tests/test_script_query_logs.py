@@ -243,7 +243,6 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
             f.write(b"%PDF-1.4")
         self.addCleanup(os.remove, private_file)
         frame = "pandas.DataFrame([{'a': 1}])"
-        query_name = self.script_query("Files Inner", "results = [{'a': 1}]").name
         acts = {
             "read_csv": f"pandas.read_csv({target!r})",
             "to_pickle": f"{frame}.to_pickle({target!r})",
@@ -252,7 +251,7 @@ class TestScriptSandbox(InsightsIntegrationTestCase):
             "to_csv": f"{frame}['a'].to_csv({target!r})",
             "class to_csv": f"pandas.DataFrame.to_csv({frame}, {target!r})",
             "tofile": f"{frame}.values.tofile({target!r})",
-            "table to_csv": f"frappe.get_doc('Insights Query v3', '{query_name}').build().to_csv({target!r})",
+            "table to_csv": f"frappe.get_doc('Insights Query v3', '{self.script_query('Files Inner', 'results = [{\'a\': 1}]').name}').build().to_csv({target!r})",
             "a private file": "frappe.utils.pdf_to_base64('/private/files/insights-script-probe.pdf')",
         }
         for act, code in acts.items():

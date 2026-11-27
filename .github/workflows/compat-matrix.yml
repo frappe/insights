@@ -84,8 +84,31 @@ jobs:
           --health-timeout=2s
           --health-retries=10
 
+      # bench keeps the default redis hosts even when it skips config
+      # generation, so these ports must answer. Frappe v16 raises a redis
+      # connection error where v15 only warns.
+      redis-cache:
+        image: redis:8-alpine
+        ports:
+          - 13000:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=5
+
+      redis-queue:
+        image: redis:8-alpine
+        ports:
+          - 11000:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=5
+
     env:
-      BENCH_PATH: /home/runner/pilot/benches/frappe-bench
+      BENCH_PATH: /home/runner/frappe-bench
       SITE_NAME: test_site
       DB_ROOT_PASSWORD: root
       ADMIN_PASSWORD: admin
@@ -96,47 +119,40 @@ jobs:
         with:
           ref: ${{ matrix.insights_branch }}
 
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.frappe_branch == 'version-15' && '3.11' || '3.14' }}
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          # Frappe v15 runs on Node v18, but Insights' Vite needs Node v20.19
+          node-version: ${{ matrix.frappe_branch == 'version-15' && '20' || '24' }}
 
-      - name: Cache pip and uv
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/pip
-            ~/.cache/uv
-          key: ${{ runner.os }}-pip-${{ matrix.frappe_branch }}-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ matrix.frappe_branch }}-
-            ${{ runner.os }}-pip-
-
-      - name: Setup Pilot with Frappe ${{ matrix.frappe_branch }}
+      - name: Install bench
         run: |
-          curl -fsSL https://raw.githubusercontent.com/frappe/pilot/develop/install.sh | sh -s -- --ci
-          export PATH="$HOME/pilot/bin:$HOME/.local/bin:$PATH"
-          printf '%s\n' "$HOME/pilot/bin" "$HOME/.local/bin" >> "$GITHUB_PATH"
-          pilot new frappe-bench --frappe-branch "${{ matrix.frappe_branch }}"
-          pilot -b frappe-bench set-bench-config python "${{ matrix.frappe_branch == 'version-15' && '3.11' || '3.14' }}"
-          pilot -b frappe-bench set-bench-config admin_allow_site_to_pilot_communication false
-          pilot -b frappe-bench set-bench-config mariadb_existing true
-          pilot -b frappe-bench set-bench-config mariadb_host 127.0.0.1
-          pilot -b frappe-bench set-bench-config mariadb_port 3306
-          pilot -b frappe-bench set-bench-config mariadb_admin_user root
-          pilot -b frappe-bench set-bench-config mariadb_password "$DB_ROOT_PASSWORD"
-          pilot -b frappe-bench init --skip-frontend
-          printf '[client]\nskip-ssl\n' > ~/.my.cnf
-          mariadb --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
-          mariadb --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
+          pip install frappe-bench
+
+      - name: Init bench with Frappe ${{ matrix.frappe_branch }}
+        run: |
+          bench init \
+            --frappe-branch ${{ matrix.frappe_branch }} \
+            --skip-redis-config-generation \
+            --skip-assets \
+            --python "$(which python)" \
+            "$BENCH_PATH"
+          mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
+          mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
       - name: Install Insights
         working-directory: ${{ env.BENCH_PATH }}
         run: |
-          app_sha=$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)
-          pilot get-app "$GITHUB_WORKSPACE" --branch "$app_sha" --skip-assets
-        env:
-          CI: "Yes"
+          # Install the checked-out Insights code into the bench
+          bench get-app insights "$GITHUB_WORKSPACE" ${{ matrix.import_only && '--skip-assets' || '' }}
+
+          # Install requirements
+          bench setup requirements
 
       - name: Upgrade dependencies to highest allowed
         if: ${{ matrix.dependencies == 'highest' }}
@@ -149,13 +165,13 @@ jobs:
           from importlib.metadata import requires
           print(' '.join(sorted({re.match(r'[A-Za-z0-9._-]+', r).group() for r in requires('insights')})))
           ")
-          uv pip install --python env/bin/python --upgrade -e apps/frappe -e apps/insights $packages
+          ./env/bin/python -m pip install --upgrade -e apps/frappe -e apps/insights $packages
 
       - name: Check dependency conflicts
         working-directory: ${{ env.BENCH_PATH }}
         run: |
-          # Fail on dependency conflicts involving Insights.
-          uv pip install --python env/bin/python pip
+          # bench installs one app at a time, so pip only warns when two apps'
+          # ranges disagree. Fail on the conflicts that involve Insights.
           ./env/bin/python - <<'EOF'
           import re
           import subprocess
@@ -182,16 +198,13 @@ jobs:
               sys.exit(1)
           EOF
 
-      - name: Start Pilot
-        run: |
-          pilot -b frappe-bench start > "$RUNNER_TEMP/pilot.log" 2>&1 &
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
-            http://127.0.0.1:7000/api/v1/health
-
       - name: Create Site
         working-directory: ${{ env.BENCH_PATH }}
         run: |
-          pilot new-site "$SITE_NAME" --admin-password "$ADMIN_PASSWORD" --apps frappe insights --skip-assets
+          bench new-site "$SITE_NAME" \
+            --db-root-password "$DB_ROOT_PASSWORD" \
+            --admin-password "$ADMIN_PASSWORD"
+          bench --site "$SITE_NAME" install-app insights
 
       - name: Import Insights modules
         working-directory: ${{ env.BENCH_PATH }}/sites
@@ -243,7 +256,7 @@ jobs:
         env:
           CI: "Yes"
         run: |
-          pilot frappe --site "$SITE_NAME" run-tests --app insights --module insights.tests.test_basic_workflow
+          bench --site "$SITE_NAME" run-tests --app insights --module insights.tests.test_basic_workflow
 
   report-failure:
     name: Report failure
