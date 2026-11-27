@@ -5,6 +5,7 @@ import Draggable from 'vuedraggable'
 import type { WorkbookChart, WorkbookFolder, WorkbookQuery } from '../types/workbook.types'
 import { setDraggedItem } from './workbook_drag'
 import { workbookKey } from './workbook_key'
+import { useIsMobile } from '../composables/useIsMobile'
 
 const section = defineProps<{
 	title: string
@@ -146,6 +147,8 @@ function onListChange(
 
 	workbook.updateSortOrder(updates)
 }
+// a phone reads a workbook: no reordering or moving into folders
+const isMobile = useIsMobile()
 </script>
 
 <template>
@@ -154,7 +157,8 @@ function onListChange(
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
 			</div>
-			<div v-if="!editingFolderName" class="flex gap-1">
+			<!-- a phone reads a workbook and does not add to it -->
+			<div v-if="!editingFolderName" class="flex gap-1 max-sm:hidden">
 				<Button
 					class="!h-fit !p-1"
 					variant="ghost"
@@ -189,6 +193,7 @@ function onListChange(
 				:animation="150"
 				:delay="150"
 				:delay-on-touch-only="true"
+				:disabled="isMobile"
 				:touch-start-threshold="5"
 				:empty-insert-threshold="20"
 				ghost-class="sortable-ghost"
@@ -213,7 +218,7 @@ function onListChange(
 								<p class="truncate">{{ row.title }}</p>
 							</div>
 							<button
-								class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
+								class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible max-sm:hidden"
 								:aria-label="__('Remove {0}', row.title)"
 								@click.prevent.stop="section.remove(row)"
 							>
@@ -237,6 +242,7 @@ function onListChange(
 					:animation="150"
 					:delay="150"
 					:delay-on-touch-only="true"
+					:disabled="isMobile"
 					:touch-start-threshold="5"
 					:empty-insert-threshold="20"
 					ghost-class="sortable-ghost"
@@ -281,7 +287,7 @@ function onListChange(
 							</div>
 							<div
 								v-if="editingFolderName !== folder.name"
-								class="invisible flex gap-0.5 group-hover:visible"
+								class="invisible flex gap-0.5 group-hover:visible max-sm:hidden"
 							>
 								<button
 									class="cursor-pointer rounded-4 p-1 transition-all hover:bg-surface-gray-3"
@@ -334,7 +340,7 @@ function onListChange(
 										<p class="truncate">{{ row.title }}</p>
 									</div>
 									<button
-										class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
+										class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible max-sm:hidden"
 										:aria-label="__('Remove {0}', row.title)"
 										@click.prevent.stop="section.remove(row)"
 									>

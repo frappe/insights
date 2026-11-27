@@ -2,6 +2,7 @@
 import { Braces, LayoutPanelTop, ScrollText, Table2 } from 'lucide-vue-next'
 import { __ } from '../translation'
 import { computed, inject } from 'vue'
+import { useIsMobile } from '../composables/useIsMobile'
 import { useRoute } from 'vue-router'
 import WorkbookSidebarListSection from './WorkbookSidebarListSection.vue'
 import WorkbookSidebarFolders from './WorkbookSidebarFolders.vue'
@@ -10,6 +11,8 @@ import ChartIcon from '../charts/components/ChartIcon.vue'
 
 const workbook = inject(workbookKey)!
 const route = useRoute()
+// a phone opens a dashboard to read it, not in the builder
+const isMobile = useIsMobile()
 
 const activeQueryName = computed(() => {
 	if (route.name === 'WorkbookQuery') {
@@ -79,7 +82,10 @@ const activeQueryName = computed(() => {
 				add: workbook.addDashboard,
 				remove: (dashboard) => workbook.removeDashboard(dashboard.name),
 				isActive: (dashboard) => workbook.isActiveTab('dashboard', dashboard.name),
-				route: (dashboard) => `/workbook/${workbook.name}/dashboard/${dashboard.name}`,
+				route: (dashboard) =>
+					isMobile
+						? `/dashboards/${dashboard.name}`
+						: `/workbook/${workbook.name}/dashboard/${dashboard.name}`,
 			}"
 		>
 			<template #item-icon>
