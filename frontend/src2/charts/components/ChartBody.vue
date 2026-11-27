@@ -20,6 +20,7 @@ import ChartSectionEmptySvg from './ChartSectionEmptySvg.vue'
 import ScopeMark from './ScopeMark.vue'
 import TitleMark from './TitleMark.vue'
 import ChartStateMessage from './ChartStateMessage.vue'
+import { closeReadingsOnTouchOutside } from './reading'
 
 // The chart itself: the type it is, the data it has, and every state in between.
 // One state machine — a surface that renders a chart renders this, and gets the
@@ -288,11 +289,42 @@ const fillerEvents = computed(() =>
 const scope = computed(() => scopeText(props.chart.scopedBy, props.chart.narrowedByPermissions))
 
 // echarts hands over the point, not the event, so the capture phase records
-// the click position before the chart's own handler runs.
+// the press before the chart's own handler runs. The press, not the click: on
+// touch echarts clicks at touchend, before the browser's click arrives.
 const clickedAt = shallowRef<ClickPoint>({ x: 0, y: 0 })
-function rememberPoint(event: MouseEvent) {
+function rememberPoint(event: PointerEvent) {
 	clickedAt.value = { x: event.clientX, y: event.clientY }
 }
+
+// frappe-ui's plot reads a finger as a mouse (frappe-ui `useAxisChart`,
+// `usePlotKeyboard`, `useTooltipDismiss`). After a tap the browser sends the
+// mousedown a mouse would, and the focus it gives the plot put the tooltip on
+// the first mark and closed a drill menu the tap had just opened. The lifted
+// finger's `pointerleave` closed the tooltip, and the tooltip took its place
+// from a TouchEvent's clientX, which it has not got. So a tap does not focus
+// the plot, its leave does not reach the plot, the touch gets its point, and
+// the tooltip stays until the next touch lands outside this chart.
+const onPlot = (event: Event) => (event.target as Element).closest?.('[data-slot="chart-plot"]')
+function pointTouch(event: TouchEvent) {
+	const touch = event.touches[0]
+	if (!touch) return
+	Object.defineProperties(event, {
+		clientX: { value: touch.clientX },
+		clientY: { value: touch.clientY },
+	})
+}
+let touchedAt = -Infinity
+function endTouch(event: TouchEvent) {
+	if (onPlot(event)) touchedAt = event.timeStamp
+}
+// the mousedown that follows a tap; its click still comes, for menus to close
+function skipTapFocus(event: MouseEvent) {
+	if (onPlot(event) && event.timeStamp - touchedAt < 1000) event.preventDefault()
+}
+function keepTouchReading(event: PointerEvent) {
+	if (event.pointerType === 'touch' && onPlot(event)) event.stopPropagation()
+}
+closeReadingsOnTouchOutside()
 
 // A resolver answers with the raw row, which is what a drill reads, so nothing
 // is looked up on the way out.
@@ -306,7 +338,13 @@ function reportSegment(target: DrillDownTarget) {
 		ref="root"
 		class="relative h-full w-full"
 		data-testid="chart"
-		@click.capture="rememberPoint"
+		data-chart-body
+		@pointerdown.capture="rememberPoint"
+		@pointerleave.capture="keepTouchReading"
+		@touchstart.capture.passive="pointTouch"
+		@touchmove.capture.passive="pointTouch"
+		@touchend.capture.passive="endTouch"
+		@mousedown.capture="skipTapFocus"
 	>
 		<component
 			v-if="filler && (state === 'chart' || ownsStates)"

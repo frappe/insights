@@ -7,6 +7,7 @@ import { useIsMobile } from '../composables/useIsMobile'
 import { __ } from '../translation'
 import type { ChartRead } from './chart_view'
 import ChartChrome from './components/ChartChrome.vue'
+import { closeReadings } from './components/reading'
 import ViewDrillDown from './drill/ViewDrillDown.vue'
 import type { ChartSegmentClick } from './drill/segment_click'
 
@@ -48,13 +49,17 @@ const emit = defineEmits<{ resetFilters: [] }>()
 // server would refuse.
 //
 // On a touch screen a tap on a card only shows the value: the same tap starts a
-// scroll past the chart, so the drill opens only in the expanded chart.
+// scroll past the chart, so the drill opens in the expanded chart. A card that
+// cannot expand, such as a Number card, drills where it is.
 const clicked = ref<ChartSegmentClick>()
 const isTouch = useMediaQuery('(hover: none)')
+const expandedBox = ref<HTMLElement>()
 function onSegmentClick(click: ChartSegmentClick) {
 	if (!props.chart?.drillable) return
-	if (isTouch.value && !expanded.value) return
+	if (isTouch.value && !expanded.value && canMaximize.value) return
 	clicked.value = click
+	// in the expanded chart a tap drills: the menu takes the place of the value
+	if (isTouch.value) closeReadings(expandedBox.value)
 }
 
 // A new chart closes the drill: the stack belongs to the click that started it.
@@ -189,7 +194,7 @@ const HIDDEN_UNTIL_POINTED_AT =
 	     hides behind a hover: the pointer is already over the dialog. -->
 	<Dialog v-if="chart && canMaximize" v-model:open="expanded" size="7xl" bare>
 		<template #default>
-			<div class="chart-expanded relative" :style="expandedSize">
+			<div ref="expandedBox" class="chart-expanded relative" :style="expandedSize">
 				<ChartChrome
 					:chart="chart"
 					:reading="props.reading"
