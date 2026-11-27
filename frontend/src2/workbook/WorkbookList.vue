@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
-import { QuickFilter } from '@framework/ui/QuickFilter'
+import { applyQuick, QuickFilter, quickOperator, quickValue } from '@framework/ui/QuickFilter'
 import { useMagicKeys, whenever } from '@vueuse/core'
-import { Breadcrumbs, MultiSelect } from 'frappe-ui'
+import { BottomSheet, Breadcrumbs, MultiSelect } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
-import { PlusIcon } from 'lucide-vue-next'
-import { AccessSource, useAccessSources } from '../components/access'
+import { ListFilter, PlusIcon, SearchIcon } from 'lucide-vue-next'
+import { access, AccessSource, useAccessSources } from '../components/access'
 import AccessLabel from '../components/AccessLabel.vue'
 import OwnerAvatar from '../components/OwnerAvatar.vue'
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
 import { __ } from '../translation'
+import useUserStore from '../users/users'
 import { WorkbookListItem } from '../types/workbook.types'
 import useWorkbook, { newWorkbookName } from './workbook'
 import { pastedWorkbook } from './workbook_file'
@@ -19,6 +20,7 @@ import useWorkbooks from './workbooks'
 
 const router = useRouter()
 const workbookStore = useWorkbooks()
+const userStore = useUserStore()
 
 const {
 	options: sourceOptions,
@@ -49,6 +51,34 @@ const filterFields = [
 	'owner',
 	'modified',
 ]
+
+// On a phone the title quick filter is a search box across the width, and the
+// rest of the filters wait in a sheet behind one button
+const phoneTitle = computed({
+	get: () => String(quickValue(filters.value, titleField)),
+	set: (value: string) =>
+		(filters.value = applyQuick(
+			filters.value,
+			titleField,
+			value,
+			quickOperator(filters.value, titleField),
+		)),
+})
+const showFilterSheet = ref(false)
+const sheetFilterCount = computed(
+	() => filters.value.filter((f) => f.fieldname !== titleField.fieldname).length,
+)
+
+// the one line under a phone row's title
+function phoneMeta(workbook: WorkbookListItem) {
+	const sources =
+		workbook.data_sources.length > 1
+			? `${workbook.data_sources[0]} +${workbook.data_sources.length - 1}`
+			: workbook.data_sources[0]
+	return [sources, access(workbook, userStore.getName).label, workbook.modified_from_now]
+		.filter(Boolean)
+		.join(' · ')
+}
 
 // "Load more" grows the page size and refetches
 const PAGE_SIZE = 20
@@ -128,9 +158,9 @@ watchEffect(() => {
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
-			<div class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-wrap">
+			<div class="flex min-w-0 flex-1 items-center gap-2 max-sm:hidden">
 				<QuickFilter
-					class="min-w-0 max-sm:w-full"
+					class="min-w-0"
 					doctype="Insights Workbook"
 					:fields="quickFields"
 					v-model:filters="filters"
@@ -150,11 +180,94 @@ watchEffect(() => {
 					v-model="filters"
 				/>
 			</div>
+			<FormControl
+				class="flex-1 sm:hidden"
+				:placeholder="__('Search by Title')"
+				v-model="phoneTitle"
+				:debounce="300"
+			>
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
+				</template>
+			</FormControl>
+			<Button
+				class="sm:hidden"
+				size="md"
+				:aria-label="__('Filters')"
+				@click="showFilterSheet = true"
+			>
+				<template v-if="sheetFilterCount" #prefix>
+					<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+				</template>
+				<template v-else #icon>
+					<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+				</template>
+				<template v-if="sheetFilterCount">{{ sheetFilterCount }}</template>
+			</Button>
 		</div>
+
+		<BottomSheet v-model:open="showFilterSheet" :title="__('Filters')">
+			<div class="flex flex-col gap-4 px-4 pb-6">
+				<MultiSelect
+					class="w-full"
+					variant="subtle"
+					:placeholder="__('Access')"
+					:options="sourceOptions"
+					:modelValue="shownSources"
+					@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
+				/>
+				<QuickFilter
+					doctype="Insights Workbook"
+					:fields="[dataSourceField, tableField, queryField]"
+					v-model:filters="filters"
+				/>
+				<Filter
+					doctype="Insights Workbook"
+					align="start"
+					:fields="filterFields"
+					v-model="filters"
+				/>
+			</div>
+		</BottomSheet>
+
+		<!-- a phone has one view: two-line rows, the title across the width -->
+		<List
+			v-if="workbookStore.workbooks.length"
+			class="-mx-3 list-row-px-3 sm:hidden"
+			:columns="['2rem', 'minmax(0,1fr)']"
+			:row-height="56"
+		>
+			<ListRow
+				v-for="workbook in workbookStore.workbooks"
+				:key="workbook.name"
+				class="active:bg-surface-gray-2"
+			>
+				<ListCell>
+					<RouterLink
+						:to="`/workbook/${workbook.name}`"
+						class="absolute inset-0"
+						:aria-label="workbook.title"
+					/>
+					<OwnerAvatar
+						:owner="workbook.owner"
+						:shipped-by="workbook.shipped_by"
+						:shipped-by-logo="workbook.shipped_by_logo"
+					/>
+				</ListCell>
+				<ListCell class="flex-col !items-start justify-center">
+					<span class="w-full truncate text-base text-ink-gray-8">
+						{{ workbook.title }}
+					</span>
+					<span class="w-full truncate text-sm text-ink-gray-5">
+						{{ phoneMeta(workbook) }}
+					</span>
+				</ListCell>
+			</ListRow>
+		</List>
 
 		<List
 			v-if="workbookStore.workbooks.length"
-			class="-mx-3 list-row-px-3"
+			class="-mx-3 list-row-px-3 max-sm:hidden"
 			:columns="{
 				base: ['minmax(0,1fr)', '6rem'],
 				lg: ['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem'],

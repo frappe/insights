@@ -1,17 +1,25 @@
 <script setup lang="ts">
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
-import { QuickFilter } from '@framework/ui/QuickFilter'
-import { Breadcrumbs, MultiSelect, TabButtons } from 'frappe-ui'
+import { applyQuick, QuickFilter, quickOperator, quickValue } from '@framework/ui/QuickFilter'
+import { BottomSheet, Breadcrumbs, MultiSelect, TabButtons } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
-import { LayoutGrid, List as ListIcon, MoreVertical, SearchIcon, Star } from 'lucide-vue-next'
+import {
+	LayoutGrid,
+	List as ListIcon,
+	ListFilter,
+	MoreVertical,
+	SearchIcon,
+	Star,
+} from 'lucide-vue-next'
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
-import { AccessSource, useAccessSources } from '../components/access'
+import { access, AccessSource, useAccessSources } from '../components/access'
 import AccessLabel from '../components/AccessLabel.vue'
 import OwnerAvatar from '../components/OwnerAvatar.vue'
 import { showErrorToast, wheneverChanges } from '../helpers'
 import session from '../session'
 import { __ } from '../translation'
+import useUserStore from '../users/users'
 import DashboardCard from './DashboardCard.vue'
 import useDashboardStore, {
 	canOpenWorkbook,
@@ -52,6 +60,8 @@ const filterFields = [
 // once, and none of the controls that call the builder's endpoints: filters,
 // access sources, favorites and the card menu. They search by title here.
 const isReader = !session.isAuthorized
+// a reader may not list users, so only a builder's rows name who has access
+const userStore = isReader ? undefined : useUserStore()
 
 const view = useDashboardView()
 const views = [
@@ -67,6 +77,35 @@ const listColumns = isReader
 			lg: ['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem', '4.5rem'],
 	  }
 const titleSearch = ref('')
+
+// On a phone the title quick filter is a search box across the width, and the
+// rest of the filters wait in a sheet behind one button
+const phoneTitle = computed({
+	get: () => String(quickValue(filters.value, titleField)),
+	set: (value: string) =>
+		(filters.value = applyQuick(
+			filters.value,
+			titleField,
+			value,
+			quickOperator(filters.value, titleField),
+		)),
+})
+const showFilterSheet = ref(false)
+const sheetFilterCount = computed(
+	() => filters.value.filter((f) => f.fieldname !== titleField.fieldname).length,
+)
+
+// the one line under a phone row's title
+function phoneMeta(dashboard: DashboardListItem) {
+	if (isReader) return dashboard.modified_from_now
+	return [
+		dashboard.workbook_title,
+		access(dashboard, userStore!.getName).label,
+		dashboard.modified_from_now,
+	]
+		.filter(Boolean)
+		.join(' · ')
+}
 const listed = computed(() => {
 	if (!isReader) return store.dashboards
 	const term = titleSearch.value.toLowerCase()
@@ -172,6 +211,7 @@ watchEffect(() => {
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
 			<FormControl
 				v-if="isReader"
+				class="max-sm:flex-1"
 				:placeholder="__('Search by Title')"
 				v-model="titleSearch"
 				:debounce="300"
@@ -180,20 +220,71 @@ watchEffect(() => {
 					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
-			<div v-else class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-wrap">
-				<QuickFilter
-					class="min-w-0 max-sm:w-full"
-					doctype="Insights Dashboard v3"
-					:fields="quickFields"
-					v-model:filters="filters"
-				/>
+			<template v-else>
+				<div class="flex min-w-0 flex-1 items-center gap-2 max-sm:hidden">
+					<QuickFilter
+						class="min-w-0"
+						doctype="Insights Dashboard v3"
+						:fields="quickFields"
+						v-model:filters="filters"
+					/>
+					<MultiSelect
+						class="w-40 shrink-0"
+						variant="subtle"
+						:placeholder="__('Access')"
+						:options="sourceOptions"
+						:modelValue="shownSources"
+						@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
+					/>
+					<Filter
+						doctype="Insights Dashboard v3"
+						align="start"
+						:fields="filterFields"
+						v-model="filters"
+					/>
+				</div>
+				<FormControl
+					class="flex-1 sm:hidden"
+					:placeholder="__('Search by Title')"
+					v-model="phoneTitle"
+					:debounce="300"
+				>
+					<template #prefix>
+						<SearchIcon class="h-4 w-4 text-ink-gray-4" />
+					</template>
+				</FormControl>
+				<Button
+					class="sm:hidden"
+					size="md"
+					:aria-label="__('Filters')"
+					@click="showFilterSheet = true"
+				>
+					<template v-if="sheetFilterCount" #prefix>
+						<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					</template>
+					<template v-else #icon>
+						<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+					</template>
+					<template v-if="sheetFilterCount">{{ sheetFilterCount }}</template>
+				</Button>
+			</template>
+			<TabButtons class="max-sm:hidden" v-model="view" :options="views" />
+		</div>
+
+		<BottomSheet v-if="!isReader" v-model:open="showFilterSheet" :title="__('Filters')">
+			<div class="flex flex-col gap-4 px-4 pb-6">
 				<MultiSelect
-					class="w-40 shrink-0"
+					class="w-full"
 					variant="subtle"
 					:placeholder="__('Access')"
 					:options="sourceOptions"
 					:modelValue="shownSources"
 					@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
+				/>
+				<QuickFilter
+					doctype="Insights Dashboard v3"
+					:fields="[workbookField]"
+					v-model:filters="filters"
 				/>
 				<Filter
 					doctype="Insights Dashboard v3"
@@ -202,13 +293,81 @@ watchEffect(() => {
 					v-model="filters"
 				/>
 			</div>
-			<TabButtons v-model="view" :options="views" />
-		</div>
+		</BottomSheet>
 
 		<div class="h-full w-full">
+			<!-- a phone has one view: two-line rows, the title across the width -->
+			<List
+				v-if="listed.length"
+				class="-mx-3 list-row-px-3 sm:hidden"
+				:columns="isReader ? ['2rem', 'minmax(0,1fr)'] : ['2rem', 'minmax(0,1fr)', 'auto']"
+				:row-height="56"
+			>
+				<ListRow
+					v-for="dashboard in listed"
+					:key="dashboard.name"
+					class="active:bg-surface-gray-2"
+				>
+					<ListCell>
+						<RouterLink
+							:to="`/dashboards/${dashboard.name}`"
+							class="absolute inset-0"
+							:aria-label="dashboard.title"
+						/>
+						<OwnerAvatar
+							:owner="dashboard.owner"
+							:owner-name="dashboard.owner_name"
+							:shipped-by="dashboard.shipped_by"
+							:shipped-by-logo="dashboard.shipped_by_logo"
+						/>
+					</ListCell>
+					<ListCell class="flex-col !items-start justify-center">
+						<span class="w-full truncate text-base text-ink-gray-8">
+							{{ dashboard.title }}
+						</span>
+						<span class="w-full truncate text-sm text-ink-gray-5">
+							{{ phoneMeta(dashboard) }}
+						</span>
+					</ListCell>
+					<ListCell v-if="!isReader" class="justify-end">
+						<Button
+							class="relative"
+							variant="ghost"
+							:label="
+								dashboard.is_favourite
+									? __('Remove from favorites')
+									: __('Add to favorites')
+							"
+							@click="toggleFavorite(dashboard)"
+						>
+							<template #icon>
+								<Star
+									class="h-4 w-4"
+									:class="
+										dashboard.is_favourite
+											? 'fill-ink-amber-4 text-ink-amber-4'
+											: 'text-ink-gray-5'
+									"
+								/>
+							</template>
+						</Button>
+						<Dropdown :options="dropdownOptions(dashboard)">
+							<Button class="relative" variant="ghost" :label="__('More')">
+								<template #icon>
+									<MoreVertical
+										class="h-4 w-4 text-ink-gray-6"
+										stroke-width="1.5"
+									/>
+								</template>
+							</Button>
+						</Dropdown>
+					</ListCell>
+				</ListRow>
+			</List>
+
 			<List
 				v-if="listed.length && view === 'list'"
-				class="-mx-3 list-row-px-3"
+				class="-mx-3 list-row-px-3 max-sm:hidden"
 				:columns="listColumns"
 				:row-height="40"
 			>
@@ -304,7 +463,7 @@ watchEffect(() => {
 				</ListRow>
 			</List>
 
-			<div v-else-if="listed.length" class="flex flex-col gap-12">
+			<div v-else-if="listed.length" class="flex flex-col gap-12 max-sm:hidden">
 				<section v-for="group in groups" :key="group.label" class="flex flex-col gap-4">
 					<div v-if="groups.length > 1" class="text-base-medium text-ink-gray-6">
 						{{ group.label }}
