@@ -1081,6 +1081,23 @@ class TestThread(AlertOverSeededTodos):
                 self.send_webhook(THREADED_MESSAGE, answer)
             self.assertIn("did not confirm the thread", str(refusal.exception))
 
+    # @feature alerts.thread
+    def test_a_thread_the_receiver_refuses_fails_the_send_with_its_reason(self):
+        """Raven refuses a thread of more than 20 messages, and says so in its answer."""
+        refusal = receiver_answer("thread can have at most 20 messages")
+        refusal.status_code = 400
+        alert = self.make_alert(
+            channel="Webhook",
+            recipients="",
+            webhook_url="https://example.com/hooks/insights",
+            message=THREADED_MESSAGE,
+        )
+
+        with patch(POST, return_value=refusal), self.assertRaises(frappe.ValidationError) as failure:
+            alert.send_alert()
+
+        self.assertIn("returned 400: thread can have at most 20 messages", str(failure.exception))
+
     # @feature alerts.thread alerts.email
     def test_an_email_alert_sends_one_message_without_the_thread_markers(self):
         alert = self.make_alert(message=THREADED_MESSAGE)
@@ -1094,7 +1111,7 @@ class TestThread(AlertOverSeededTodos):
             self.assertIn(part, body)
 
 
-class TestLinkedQueries(AlertOverSeededTodos):
+class TestMessageQueries(AlertOverSeededTodos):
     """An alert's message reads more queries than its own, as `queries.<alias>`."""
 
     @classmethod
@@ -1119,16 +1136,16 @@ class TestLinkedQueries(AlertOverSeededTodos):
         ).name
         frappe.db.commit()  # nosemgrep
 
-    def linked(self, alias, query):
+    def message_query(self, alias, query):
         return {"alias": alias, "query": query}
 
-    # @feature alerts.linked-queries
-    def test_each_linked_query_runs_once_a_send_and_the_message_reads_its_rows_and_count(self):
+    # @feature alerts.message-queries
+    def test_each_message_query_runs_once_a_send_and_the_message_reads_its_rows_and_count(self):
         from insights.insights.doctype.insights_query_v3 import insights_query_v3
 
         alert = self.make_alert(
             message="{{ count }} todos, {{ queries.closed.count }} closed: {{ queries.closed.rows[0].description }}",
-            queries=[self.linked("closed", self.closed)],
+            queries=[self.message_query("closed", self.closed)],
         )
 
         with (
@@ -1139,32 +1156,32 @@ class TestLinkedQueries(AlertOverSeededTodos):
         ):
             alert.send_alert()
 
-        # the alert's own aggregate and rows, and one for the linked query
+        # the alert's own aggregate and rows, and one for the message query
         self.assertEqual(statements.call_count, 3)
         self.assertIn(
             f"3 todos, 1 closed: {ALERT_TODO_PREFIX} Closed 3", sendmail.call_args.kwargs["message"]
         )
 
-    # @feature alerts.linked-queries
-    def test_a_linked_query_that_fails_fails_the_send(self):
+    # @feature alerts.message-queries
+    def test_a_message_query_that_fails_fails_the_send(self):
         failing = create_test_query(
             "Administrator",
             self.workbook,
-            title="Failing linked query",
+            title="Failing message query",
             operations=[{"type": "code", "code": "frappe.throw('the source is down')"}],
         ).name
-        alert = self.make_alert(message="{{ count }} todos", queries=[self.linked("down", failing)])
+        alert = self.make_alert(message="{{ count }} todos", queries=[self.message_query("down", failing)])
 
         with patch("frappe.sendmail") as sendmail, self.assertRaises(frappe.ValidationError):
             alert.send_alert()
 
         self.assertEqual(sendmail.call_count, 0)
 
-    # @feature alerts.linked-queries
-    def test_a_linked_query_past_the_row_cap_fails_the_send(self):
+    # @feature alerts.message-queries
+    def test_a_message_query_past_the_row_cap_fails_the_send(self):
         """Its count would be the cap, not the total, and the message would post it."""
         alert = self.make_alert(
-            message="{{ queries.open.count }} open", queries=[self.linked("open", self.query)]
+            message="{{ queries.open.count }} open", queries=[self.message_query("open", self.query)]
         )
 
         with (
@@ -1177,16 +1194,16 @@ class TestLinkedQueries(AlertOverSeededTodos):
         self.assertIn("more than 2 rows", str(refusal.exception))
         self.assertEqual(sendmail.call_count, 0)
 
-    # @feature alerts.linked-queries
-    def test_a_linked_query_from_another_workbook_is_refused_at_save_and_at_send(self):
-        """The workbook decides who may send the alert, so a linked query from
+    # @feature alerts.message-queries
+    def test_a_message_query_from_another_workbook_is_refused_at_save_and_at_send(self):
+        """The workbook decides who may send the alert, so a message query from
         another would send rows that workbook's writers never granted."""
         other = create_test_workbook("Administrator", title="Other Workbook").name
         self.addCleanup(frappe.delete_doc, "Insights Workbook", other, force=True)
         foreign = create_test_query("Administrator", other, title="Foreign todos").name
 
         with self.assertRaises(frappe.ValidationError) as refusal:
-            self.make_alert(queries=[self.linked("foreign", foreign)])
+            self.make_alert(queries=[self.message_query("foreign", foreign)])
         self.assertIn("not in this alert's workbook", str(refusal.exception))
 
         # a test send runs an unsaved alert, which no save has checked
@@ -1201,26 +1218,26 @@ class TestLinkedQueries(AlertOverSeededTodos):
                 "condition": "status == 'Open'",
                 "message": "{{ queries.foreign.count }}",
                 "recipients": "someone@external.example.org",
-                "queries": [self.linked("foreign", foreign)],
+                "queries": [self.message_query("foreign", foreign)],
             }
         )
         with patch("frappe.sendmail") as sendmail, self.assertRaises(frappe.ValidationError):
             alert.test_alert()
         self.assertEqual(sendmail.call_count, 0)
 
-    # @feature alerts.linked-queries
-    def test_a_linked_query_its_sender_may_not_read_is_not_sent(self):
+    # @feature alerts.message-queries
+    def test_a_message_query_its_sender_may_not_read_is_not_sent(self):
         """Checked at every send, as the alert's own query is, for the user it
         runs as. A User Permission can keep a writer of the workbook to some of
         its queries, and leave the alert alone."""
         from insights.api.workbooks import update_share_permissions
 
-        reader = "alert_linked_reader@test.com"
-        create_user(reader, first_name="Linked", last_name="Reader", roles="Insights User")
+        reader = "alert_message_reader@test.com"
+        create_user(reader, first_name="Message", last_name="Reader", roles="Insights User")
         self.addCleanup(delete_users, reader)
         update_share_permissions(self.workbook, [{"user": reader, "read": 1, "write": 1}])
         self.addCleanup(update_share_permissions, self.workbook, [])
-        alert = self.make_alert(queries=[self.linked("closed", self.closed)])
+        alert = self.make_alert(queries=[self.message_query("closed", self.closed)])
 
         # forced: the reader may not read the todos the condition tests
         with permission_user(reader), patch("frappe.sendmail") as sendmail:
@@ -1245,21 +1262,21 @@ class TestLinkedQueries(AlertOverSeededTodos):
         self.assertIn("Closed todos", str(refusal.exception))
         self.assertEqual(sendmail.call_count, 0)
 
-    # @feature alerts.linked-queries
-    def test_a_linked_query_needs_a_name_the_message_can_read_once(self):
+    # @feature alerts.message-queries
+    def test_a_message_query_needs_a_name_the_message_can_read_once(self):
         for queries in (
-            [self.linked("closed todos", self.closed)],
-            [self.linked("1closed", self.closed)],
-            [self.linked("items", self.closed)],
-            [self.linked("closed", "")],
-            [self.linked("closed", self.closed), self.linked("closed", self.query)],
+            [self.message_query("closed todos", self.closed)],
+            [self.message_query("1closed", self.closed)],
+            [self.message_query("items", self.closed)],
+            [self.message_query("closed", "")],
+            [self.message_query("closed", self.closed), self.message_query("closed", self.query)],
         ):
             with self.subTest(queries=queries), self.assertRaises(frappe.ValidationError):
                 self.make_alert(queries=queries)
 
-    # @feature alerts.linked-queries
-    def test_a_query_an_alert_links_is_not_deleted_until_the_link_is_removed(self):
-        alert = self.make_alert(queries=[self.linked("closed", self.closed)])
+    # @feature alerts.message-queries
+    def test_a_query_an_alert_message_reads_is_not_deleted_until_the_alert_lets_it_go(self):
+        alert = self.make_alert(queries=[self.message_query("closed", self.closed)])
 
         with self.assertRaises(frappe.LinkExistsError):
             frappe.delete_doc("Insights Query v3", self.closed)

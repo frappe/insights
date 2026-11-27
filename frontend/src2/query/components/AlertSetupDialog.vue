@@ -65,26 +65,26 @@ const webhookError = computed(() => {
 	return ''
 })
 
-// The server reads a linked query only from the alert's own workbook.
+// The server reads a message query only from the alert's own workbook.
 const workbook = inject(workbookKey, null)
-const linkedQueryOptions = computed(() =>
+const messageQueryOptions = computed(() =>
 	(workbook?.doc.queries || [])
 		.filter((q) => q.name !== props.query.doc.name)
 		.map((q) => ({ label: q.title, value: q.name })),
 )
 
-function addLinkedQuery() {
+function addMessageQuery() {
 	alert.doc.queries = [...(alert.doc.queries || []), { alias: '', query: '' }]
 }
 
-function removeLinkedQuery(index: number) {
+function removeMessageQuery(index: number) {
 	alert.doc.queries = alert.doc.queries.filter((_, i) => i !== index)
 }
 
-// The message reads a linked query as `queries.<name>`, so a name is an identifier.
+// The message reads a message query as `queries.<name>`, so a name is an identifier.
 const ALIAS = /^[A-Za-z_][A-Za-z0-9_]*$/
 // A row left blank is dropped on save, not refused.
-const linkedQueriesError = computed(() => {
+const messageQueriesError = computed(() => {
 	const rows = (alert.doc.queries || []).filter((row) => row.alias || row.query)
 	const aliases = rows.map((row) => row.alias)
 	if (rows.some((row) => !row.query)) return __('Select a query')
@@ -95,7 +95,7 @@ const linkedQueriesError = computed(() => {
 	return ''
 })
 
-function dropBlankLinkedQueries() {
+function dropBlankMessageQueries() {
 	alert.doc.queries = (alert.doc.queries || []).filter((row) => row.alias || row.query)
 }
 
@@ -105,7 +105,7 @@ const messageHints = [
 	{ token: '{{ count }}', description: __('The number of rows in the query') },
 	{
 		token: '{{ queries.<name>.rows }}, {{ queries.<name>.count }}',
-		description: __('The rows of a linked query, at most 100, and how many'),
+		description: __('The rows of a message query, at most 100, and how many'),
 	},
 	{
 		token: '<!-- thread -->',
@@ -135,7 +135,7 @@ const isValidAlert = computed(() => {
 	if (!alert.doc.custom_condition && !filterCondition.operator) return false
 	if (!alert.doc.custom_condition && !filterCondition.right) return false
 	if (!alert.doc.message) return false
-	if (linkedQueriesError.value) return false
+	if (messageQueriesError.value) return false
 	return true
 })
 
@@ -143,7 +143,7 @@ function updateAlert() {
 	if (!alert.isdirty) return
 	if (!isValidAlert.value) return
 
-	dropBlankLinkedQueries()
+	dropBlankMessageQueries()
 	const isNew = unref(alert.islocal)
 	if (isNew) {
 		alert.doc.query = props.query.doc.name
@@ -168,7 +168,7 @@ function save() {
 
 function testSendAlert() {
 	if (!isValidAlert.value) return
-	dropBlankLinkedQueries()
+	dropBlankMessageQueries()
 	if (alert.islocal) {
 		alert.doc.query = props.query.doc.name
 	}
@@ -340,7 +340,7 @@ function toggleAlert() {
 				</div>
 
 				<div class="flex flex-col gap-1.5">
-					<label class="block text-xs text-ink-gray-5">{{ __('Linked queries') }}</label>
+					<label class="block text-xs text-ink-gray-5">{{ __('Message queries') }}</label>
 					<div
 						v-for="(row, index) in alert.doc.queries"
 						:key="index"
@@ -357,22 +357,22 @@ function toggleAlert() {
 							class="flex-1"
 							v-model="row.query"
 							:placeholder="__('Select Query')"
-							:options="linkedQueryOptions"
+							:options="messageQueryOptions"
 						/>
 						<Button
 							variant="ghost"
 							icon="lucide-x"
-							:aria-label="__('Remove linked query')"
-							@click="removeLinkedQuery(index)"
+							:aria-label="__('Remove message query')"
+							@click="removeMessageQuery(index)"
 						/>
 					</div>
-					<ErrorMessage v-if="linkedQueriesError" :message="linkedQueriesError" />
+					<ErrorMessage v-if="messageQueriesError" :message="messageQueriesError" />
 					<Button
 						class="self-start"
 						variant="outline"
 						icon-left="lucide-plus"
-						:label="__('Add Query')"
-						@click="addLinkedQuery"
+						:label="__('Add message query')"
+						@click="addMessageQuery"
 					/>
 				</div>
 

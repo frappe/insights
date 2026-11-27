@@ -151,7 +151,7 @@
    "description": "More queries the message reads, each once a send, as queries.<name>.rows and queries.<name>.count.",
    "fieldname": "queries",
    "fieldtype": "Table",
-   "label": "Linked Queries",
+   "label": "Message Queries",
    "options": "Insights Alert Query"
   }
  ],

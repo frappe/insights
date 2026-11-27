@@ -102,7 +102,7 @@ class InsightsQueryv3(Document):
         standard.guard_member(self)
         if not (self.flags.force_delete or standard.deleted_with_workbook(self)):
             refuse_delete_while_linked(self, taken=("Insights Alert", "Insights Query Reference"))
-            self.refuse_delete_while_an_alert_links_it()
+            self.refuse_delete_while_an_alert_message_reads_it()
 
         for alert in frappe.get_all("Insights Alert", filters={"query": self.name}, pluck="name"):
             frappe.delete_doc("Insights Alert", alert, force=True, ignore_permissions=True)
@@ -115,8 +115,8 @@ class InsightsQueryv3(Document):
         if self.folder:
             self.cleanup_empty_folder(self.folder)
 
-    def refuse_delete_while_an_alert_links_it(self):
-        """An alert that links this query among its own would fail every send.
+    def refuse_delete_while_an_alert_message_reads_it(self):
+        """An alert whose message reads this query would fail every send.
         Frappe reports the row as its alert, which `on_trash` deletes only when
         this is the alert's own query, so the link check above lets it pass."""
         from frappe.model.delete_doc import raise_link_exists_exception
@@ -794,16 +794,7 @@ class InsightsQueryv3(Document):
             # no row meets a condition, whatever it says about an empty result
             condition_met = count > 0 and bool(pd.notna(meets) and meets)
 
-            rows = []
-            if condition_met or rows_when_unmet:
-                results, _time_taken = execute_ibis_query(
-                    query,
-                    page_size=page_size,
-                    cache=False,
-                    reference_doctype=self.doctype,
-                    reference_name=self.execution_reference,
-                )
-                rows = results.to_dict(orient="records")
+            rows = self.read_rows(query, page_size) if condition_met or rows_when_unmet else []
         except Exception as e:
             self.capture_failure(e)
             raise
@@ -811,20 +802,23 @@ class InsightsQueryv3(Document):
         return frappe._dict(count=count, condition_met=condition_met, rows=rows)
 
     def execute_rows_for_alert(self, page_size):
-        """The first `page_size` rows, read fresh in one statement. A query an
-        alert links feeds its message only, so it has no condition to test."""
+        """The first `page_size` rows, in one statement. A query an alert's
+        message reads has no condition to test."""
         try:
-            query = self.get_builder(force=True).query
-            results, _time_taken = execute_ibis_query(
-                query,
-                page_size=page_size,
-                cache=False,
-                reference_doctype=self.doctype,
-                reference_name=self.execution_reference,
-            )
+            return self.read_rows(self.get_builder(force=True).query, page_size)
         except Exception as e:
             self.capture_failure(e)
             raise
+
+    def read_rows(self, query, page_size):
+        """The first `page_size` rows of a built query, read fresh, for an alert."""
+        results, _time_taken = execute_ibis_query(
+            query,
+            page_size=page_size,
+            cache=False,
+            reference_doctype=self.doctype,
+            reference_name=self.execution_reference,
+        )
         return results.to_dict(orient="records")
 
     @insights_whitelist()

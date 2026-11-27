@@ -36,7 +36,7 @@ ALERT_MAX_ROWS = 100
 # thread. An HTML comment, so a channel or receiver without threads shows nothing.
 THREAD_MARKER = re.compile(r"^[ \t]*<!--\s*thread\s*-->[ \t]*$", re.MULTILINE)
 
-# The template reads a linked query as `queries.<alias>`.
+# The template reads a message query as `queries.<alias>`.
 ALIAS = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
@@ -97,7 +97,7 @@ class InsightsAlert(Document):
 
         if self.query:
             self.has_query_permission()
-            self.check_linked_queries()
+            self.check_message_queries()
 
         if self.channel == "Email":
             self.get_recipients()
@@ -155,8 +155,8 @@ class InsightsAlert(Document):
         if not can_read_referenced_query(self.query):
             frappe.throw(_("You do not have permission to access this query"), frappe.PermissionError)
 
-    def check_linked_queries(self, sending=False):
-        """Each linked query is checked as the alert's own query is, and must be
+    def check_message_queries(self, sending=False):
+        """Each message query is checked as the alert's own query is, and must be
         in the alert's workbook, which `may_run_as` checks the sender against.
 
         A sender must also be allowed to download its rows, which the send posts.
@@ -169,26 +169,28 @@ class InsightsAlert(Document):
             if not ALIAS.fullmatch(row.alias or ""):
                 frappe.throw(
                     _(
-                        "{0} cannot name a linked query. Use letters, digits and underscores, and do not start with a digit."
+                        "{0} cannot name a message query. Use letters, digits and underscores, and do not start with a digit."
                     ).format(escape_html(row.alias or ""))
                 )
             # `queries.items` would read the dict's method, not the query
             if hasattr(frappe._dict, row.alias):
-                frappe.throw(_("{0} cannot name a linked query. Choose another name.").format(row.alias))
+                frappe.throw(_("{0} cannot name a message query. Choose another name.").format(row.alias))
             if row.alias in aliases:
-                frappe.throw(_("Two linked queries are named {0}").format(row.alias))
+                frappe.throw(_("Two message queries are named {0}").format(row.alias))
             aliases.add(row.alias)
             if not row.query:
-                frappe.throw(_("Select a query for the linked query {0}").format(row.alias))
+                frappe.throw(_("Select a query for the message query {0}").format(row.alias))
 
             query = frappe.get_doc("Insights Query v3", row.query)
             if query.workbook != workbook:
                 frappe.throw(
-                    _("The linked query {0} is not in this alert's workbook").format(escape_html(query.title))
+                    _("The message query {0} is not in this alert's workbook").format(
+                        escape_html(query.title)
+                    )
                 )
             if not can_read_referenced_query(query.name):
                 frappe.throw(
-                    _("You do not have permission to access the linked query {0}").format(
+                    _("You do not have permission to access the message query {0}").format(
                         escape_html(query.title)
                     ),
                     frappe.PermissionError,
@@ -196,7 +198,7 @@ class InsightsAlert(Document):
             if sending and not can_export(query):
                 frappe.throw(
                     _(
-                        "You may not download the rows of the linked query {0}, so you may not send them."
+                        "You may not download the rows of the message query {0}, so you may not send them."
                     ).format(escape_html(query.title)),
                     SendRefused,
                 )
@@ -230,7 +232,7 @@ class InsightsAlert(Document):
             )
         self.has_query_permission()
         self.check_sender_may_download()
-        self.check_linked_queries(sending=True)
+        self.check_message_queries(sending=True)
 
         result = self.run_query(force)
         if not result.condition_met and not force:
@@ -240,7 +242,7 @@ class InsightsAlert(Document):
             return
 
         # Built once: a webhook alert sends the rendered message and the rows behind it.
-        context = self.get_message_context(result, self.run_linked_queries())
+        context = self.get_message_context(result, self.run_message_queries())
         parts = self.render_message(context)
         message = self.format_message(parts)
 
@@ -300,9 +302,11 @@ class InsightsAlert(Document):
             )
             response.raise_for_status()
         except requests.HTTPError as e:
-            frappe.throw(
-                _("The webhook at {0} returned {1}").format(self.webhook_url, e.response.status_code)
-            )
+            refusal = _("The webhook at {0} returned {1}").format(self.webhook_url, e.response.status_code)
+            if thread:
+                # A receiver refuses a thread it cannot post, such as one too long, and says why.
+                refusal += ": " + escape_html(e.response.text[:500])
+            frappe.throw(refusal)
         except requests.RequestException as e:
             # No log_error here: `send_alerts` logs, and the interactive caller
             # reads the message. An OutboundRequestRefused already says what it
@@ -388,11 +392,11 @@ class InsightsAlert(Document):
         result.query_title = doc.title
         return result
 
-    def run_linked_queries(self):
-        """What the template reads as `queries.<alias>`: each linked query's
+    def run_message_queries(self):
+        """What the template reads as `queries.<alias>`: each message query's
         rows and how many, from one statement each.
 
-        A linked query must fit in `ALERT_MAX_ROWS`. Past it the send fails:
+        A message query must fit in `ALERT_MAX_ROWS`. Past it the send fails:
         a message that counts or sums a cut list would post a wrong number.
         """
         queries = {}
@@ -402,7 +406,7 @@ class InsightsAlert(Document):
                 rows = doc.execute_rows_for_alert(ALERT_MAX_ROWS + 1)
                 if len(rows) > ALERT_MAX_ROWS:
                     frappe.throw(
-                        _("The linked query {0} returns more than {1} rows. Summarize it to fewer.").format(
+                        _("The message query {0} returns more than {1} rows. Summarize it to fewer.").format(
                             escape_html(doc.title), ALERT_MAX_ROWS
                         )
                     )
@@ -411,7 +415,7 @@ class InsightsAlert(Document):
 
     def get_message_context(self, result=None, queries=None):
         result = result or self.run_query(force=True)
-        queries = self.run_linked_queries() if queries is None else queries
+        queries = self.run_message_queries() if queries is None else queries
         rows, count = result.rows, result.count
 
         datatable = pd.DataFrame(rows).to_html(index=False)
