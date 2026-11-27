@@ -58,10 +58,14 @@ const views = [
 	{ value: 'grid', icon: LayoutGrid, label: __('Grid') },
 	{ value: 'list', icon: ListIcon, label: __('List') },
 ]
-// a reader cannot open the workbook or list who else may open a dashboard
+// a reader cannot open the workbook or list who else may open a dashboard;
+// below `lg` the fixed tracks leave the title no room, so only Modified stays
 const listColumns = isReader
-	? ['minmax(0,1fr)', '8rem', '8rem']
-	: ['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem', '4.5rem']
+	? { base: ['minmax(0,1fr)', '6rem'], lg: ['minmax(0,1fr)', '8rem', '8rem'] }
+	: {
+			base: ['minmax(0,1fr)', '6rem', '4.5rem'],
+			lg: ['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem', '4.5rem'],
+	  }
 const titleSearch = ref('')
 const listed = computed(() => {
 	if (!isReader) return store.dashboards
@@ -176,9 +180,9 @@ watchEffect(() => {
 					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
-			<div v-else class="flex min-w-0 flex-1 items-center gap-2">
+			<div v-else class="flex min-w-0 flex-1 items-center gap-2 flex-wrap sm:flex-nowrap">
 				<QuickFilter
-					class="min-w-0"
+					class="w-full min-w-0 sm:w-auto"
 					doctype="Insights Dashboard v3"
 					:fields="quickFields"
 					v-model:filters="filters"
@@ -211,10 +215,10 @@ watchEffect(() => {
 				<ListHeader class="sticky top-0 z-10 bg-surface-base">
 					<ListHeaderCell>{{ __('Title') }}</ListHeaderCell>
 					<template v-if="!isReader">
-						<ListHeaderCell>{{ __('Workbook') }}</ListHeaderCell>
-						<ListHeaderCell>{{ __('Access') }}</ListHeaderCell>
+						<ListHeaderCell class="hidden lg:flex">{{ __('Workbook') }}</ListHeaderCell>
+						<ListHeaderCell class="hidden lg:flex">{{ __('Access') }}</ListHeaderCell>
 					</template>
-					<ListHeaderCell>{{ __('Opened') }}</ListHeaderCell>
+					<ListHeaderCell class="hidden lg:flex">{{ __('Opened') }}</ListHeaderCell>
 					<ListHeaderCell>{{ __('Modified') }}</ListHeaderCell>
 					<ListHeaderCell v-if="!isReader" />
 				</ListHeader>
@@ -240,16 +244,16 @@ watchEffect(() => {
 						</span>
 					</ListCell>
 					<template v-if="!isReader">
-						<ListCell>
+						<ListCell class="hidden lg:flex">
 							<span class="truncate text-base text-ink-gray-6">
 								{{ dashboard.workbook_title }}
 							</span>
 						</ListCell>
-						<ListCell>
+						<ListCell class="hidden lg:flex">
 							<AccessLabel :item="dashboard" />
 						</ListCell>
 					</template>
-					<ListCell>
+					<ListCell class="hidden lg:flex">
 						<span class="truncate text-base text-ink-gray-6">
 							{{ dashboard.last_opened_from_now }}
 						</span>

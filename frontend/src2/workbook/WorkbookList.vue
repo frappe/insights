@@ -128,9 +128,9 @@ watchEffect(() => {
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
-			<div class="flex min-w-0 flex-1 items-center gap-2">
+			<div class="flex min-w-0 flex-1 items-center gap-2 flex-wrap sm:flex-nowrap">
 				<QuickFilter
-					class="min-w-0"
+					class="w-full min-w-0 sm:w-auto"
 					doctype="Insights Workbook"
 					:fields="quickFields"
 					v-model:filters="filters"
@@ -155,14 +155,17 @@ watchEffect(() => {
 		<List
 			v-if="workbookStore.workbooks.length"
 			class="-mx-3 list-row-px-3"
-			:columns="['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem']"
+			:columns="{
+				base: ['minmax(0,1fr)', '6rem'],
+				lg: ['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem'],
+			}"
 			:row-height="40"
 		>
 			<ListHeader class="sticky top-0 z-10 bg-surface-base">
 				<ListHeaderCell>{{ __('Title') }}</ListHeaderCell>
-				<ListHeaderCell>{{ __('Data Source') }}</ListHeaderCell>
-				<ListHeaderCell>{{ __('Access') }}</ListHeaderCell>
-				<ListHeaderCell>{{ __('Opened') }}</ListHeaderCell>
+				<ListHeaderCell class="hidden lg:flex">{{ __('Data Source') }}</ListHeaderCell>
+				<ListHeaderCell class="hidden lg:flex">{{ __('Access') }}</ListHeaderCell>
+				<ListHeaderCell class="hidden lg:flex">{{ __('Opened') }}</ListHeaderCell>
 				<ListHeaderCell>{{ __('Modified') }}</ListHeaderCell>
 			</ListHeader>
 			<ListRow
@@ -185,7 +188,7 @@ watchEffect(() => {
 						workbook.title
 					}}</span>
 				</ListCell>
-				<ListCell>
+				<ListCell class="hidden lg:flex">
 					<span class="truncate text-base text-ink-gray-6">
 						{{ workbook.data_sources[0] }}
 					</span>
@@ -196,10 +199,10 @@ watchEffect(() => {
 						+{{ workbook.data_sources.length - 1 }}
 					</span>
 				</ListCell>
-				<ListCell>
+				<ListCell class="hidden lg:flex">
 					<AccessLabel :item="workbook" />
 				</ListCell>
-				<ListCell>
+				<ListCell class="hidden lg:flex">
 					<span class="truncate text-base text-ink-gray-6">
 						{{ workbook.last_opened_from_now }}
 					</span>
