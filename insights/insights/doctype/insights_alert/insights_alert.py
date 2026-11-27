@@ -422,7 +422,7 @@ class InsightsAlert(Document):
         if count > len(rows):
             datatable += "<p>{}</p>".format(_("The first {0} of {1} rows").format(len(rows), count))
         datatable = f"<div class='datatable-container'>{datatable}</div>"
-        return deep_convert_dict_to_dict(
+        context = deep_convert_dict_to_dict(
             {
                 "rows": rows,
                 "count": count,
@@ -433,9 +433,15 @@ class InsightsAlert(Document):
                     "title": self.title,
                 },
                 "datatable": datatable,
-                "queries": queries,
             }
         )
+        # Plain dicts, not `frappe._dict`: a name with no query must fail the
+        # send, not print None into the message.
+        context["queries"] = {
+            alias: {**query, "rows": deep_convert_dict_to_dict(query["rows"])}
+            for alias, query in queries.items()
+        }
+        return context
 
     def get_recipients(self):
         """The addresses this alert mails.

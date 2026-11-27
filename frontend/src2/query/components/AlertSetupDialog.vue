@@ -83,6 +83,20 @@ function removeMessageQuery(index: number) {
 
 // The message reads a message query as `queries.<name>`, so a name is an identifier.
 const ALIAS = /^[A-Za-z_][A-Za-z0-9_]*$/
+// `queries.items` would read a method of the dict, not the query. The server refuses these too.
+const RESERVED = [
+	'items',
+	'keys',
+	'values',
+	'get',
+	'update',
+	'pop',
+	'popitem',
+	'copy',
+	'clear',
+	'setdefault',
+	'fromkeys',
+]
 // A row left blank is dropped on save, not refused.
 const messageQueriesError = computed(() => {
 	const rows = (alert.doc.queries || []).filter((row) => row.alias || row.query)
@@ -91,6 +105,8 @@ const messageQueriesError = computed(() => {
 	if (aliases.some((alias) => !ALIAS.test(alias))) {
 		return __('Name each query with letters, digits and underscores, not starting with a digit')
 	}
+	const reserved = aliases.find((alias) => RESERVED.includes(alias))
+	if (reserved) return __('{0} cannot name a message query. Choose another name.', reserved)
 	if (new Set(aliases).size !== aliases.length) return __('Give each query its own name')
 	return ''
 })

@@ -1163,6 +1163,18 @@ class TestMessageQueries(AlertOverSeededTodos):
         )
 
     # @feature alerts.message-queries
+    def test_a_message_that_reads_a_name_with_no_query_fails_the_send(self):
+        """A misspelled name would otherwise post the word None, or a Jinja note, in its place."""
+        alert = self.make_alert(
+            message="{{ queries.closd.count }} closed", queries=[self.message_query("closed", self.closed)]
+        )
+
+        with patch("frappe.sendmail") as sendmail, self.assertRaisesRegex(Exception, "closd"):
+            alert.send_alert()
+
+        self.assertEqual(sendmail.call_count, 0)
+
+    # @feature alerts.message-queries
     def test_a_message_query_that_fails_fails_the_send(self):
         failing = create_test_query(
             "Administrator",
