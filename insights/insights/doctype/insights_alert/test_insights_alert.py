@@ -1250,6 +1250,8 @@ class TestLinkedQueries(AlertOverSeededTodos):
         for queries in (
             [self.linked("closed todos", self.closed)],
             [self.linked("1closed", self.closed)],
+            [self.linked("items", self.closed)],
+            [self.linked("closed", "")],
             [self.linked("closed", self.closed), self.linked("closed", self.query)],
         ):
             with self.subTest(queries=queries), self.assertRaises(frappe.ValidationError):

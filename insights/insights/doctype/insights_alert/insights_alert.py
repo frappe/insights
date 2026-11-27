@@ -172,9 +172,14 @@ class InsightsAlert(Document):
                         "{0} cannot name a linked query. Use letters, digits and underscores, and do not start with a digit."
                     ).format(escape_html(row.alias or ""))
                 )
+            # `queries.items` would read the dict's method, not the query
+            if hasattr(frappe._dict, row.alias):
+                frappe.throw(_("{0} cannot name a linked query. Choose another name.").format(row.alias))
             if row.alias in aliases:
                 frappe.throw(_("Two linked queries are named {0}").format(row.alias))
             aliases.add(row.alias)
+            if not row.query:
+                frappe.throw(_("Select a query for the linked query {0}").format(row.alias))
 
             query = frappe.get_doc("Insights Query v3", row.query)
             if query.workbook != workbook:

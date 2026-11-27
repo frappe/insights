@@ -83,8 +83,9 @@ function removeLinkedQuery(index: number) {
 
 // The message reads a linked query as `queries.<name>`, so a name is an identifier.
 const ALIAS = /^[A-Za-z_][A-Za-z0-9_]*$/
+// A row left blank is dropped on save, not refused.
 const linkedQueriesError = computed(() => {
-	const rows = alert.doc.queries || []
+	const rows = (alert.doc.queries || []).filter((row) => row.alias || row.query)
 	const aliases = rows.map((row) => row.alias)
 	if (rows.some((row) => !row.query)) return __('Select a query')
 	if (aliases.some((alias) => !ALIAS.test(alias))) {
@@ -93,11 +94,10 @@ const linkedQueriesError = computed(() => {
 	if (new Set(aliases).size !== aliases.length) return __('Give each query its own name')
 	return ''
 })
-// A row just added is not a mistake yet. It still blocks the save.
-const shownLinkedQueriesError = computed(() => {
-	const started = (alert.doc.queries || []).some((row) => row.alias || row.query)
-	return started ? linkedQueriesError.value : ''
-})
+
+function dropBlankLinkedQueries() {
+	alert.doc.queries = (alert.doc.queries || []).filter((row) => row.alias || row.query)
+}
 
 // Text, not markup: the tokens hold Jinja braces and an HTML comment.
 const messageHints = [
@@ -143,6 +143,7 @@ function updateAlert() {
 	if (!alert.isdirty) return
 	if (!isValidAlert.value) return
 
+	dropBlankLinkedQueries()
 	const isNew = unref(alert.islocal)
 	if (isNew) {
 		alert.doc.query = props.query.doc.name
@@ -167,6 +168,7 @@ function save() {
 
 function testSendAlert() {
 	if (!isValidAlert.value) return
+	dropBlankLinkedQueries()
 	if (alert.islocal) {
 		alert.doc.query = props.query.doc.name
 	}
@@ -364,10 +366,7 @@ function toggleAlert() {
 							@click="removeLinkedQuery(index)"
 						/>
 					</div>
-					<ErrorMessage
-						v-if="shownLinkedQueriesError"
-						:message="shownLinkedQueriesError"
-					/>
+					<ErrorMessage v-if="linkedQueriesError" :message="linkedQueriesError" />
 					<Button
 						class="self-start"
 						variant="outline"
