@@ -2,11 +2,12 @@
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
 import { applyQuick, QuickFilter, quickOperator, quickValue } from '@framework/ui/QuickFilter'
 import { useMagicKeys, whenever } from '@vueuse/core'
-import { BottomSheet, Breadcrumbs, MultiSelect } from 'frappe-ui'
+import { Breadcrumbs, MultiSelect } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
 import { ListFilter, PlusIcon, SearchIcon } from 'lucide-vue-next'
 import { access, AccessSource, useAccessSources } from '../components/access'
 import AccessLabel from '../components/AccessLabel.vue'
+import { useIsMobile } from '../composables/useIsMobile'
 import OwnerAvatar from '../components/OwnerAvatar.vue'
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
@@ -53,7 +54,8 @@ const filterFields = [
 ]
 
 // On a phone the title quick filter is a search box across the width, and the
-// rest of the filters wait in a sheet behind one button
+// rest of the filters wait below it, one per row, behind one button
+const isMobile = useIsMobile()
 const phoneTitle = computed({
 	get: () => String(quickValue(filters.value, titleField)),
 	set: (value: string) =>
@@ -64,10 +66,13 @@ const phoneTitle = computed({
 			quickOperator(filters.value, titleField),
 		)),
 })
-const showFilterSheet = ref(false)
-const sheetFilterCount = computed(
-	() => filters.value.filter((f) => f.fieldname !== titleField.fieldname).length,
+// Access counts once it narrows the list: no pick, or a stale one, shows all
+const phoneFilterCount = computed(
+	() =>
+		filters.value.filter((f) => f.fieldname !== titleField.fieldname).length +
+		(shownSources.value.length ? 1 : 0),
 )
+const showPhoneFilters = ref(phoneFilterCount.value > 0)
 
 // the one line under a phone row's title
 function phoneMeta(workbook: WorkbookListItem) {
@@ -158,7 +163,7 @@ watchEffect(() => {
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
-			<div class="flex min-w-0 flex-1 items-center gap-2 max-sm:hidden">
+			<div v-if="!isMobile" class="flex min-w-0 flex-1 items-center gap-2">
 				<QuickFilter
 					class="min-w-0"
 					doctype="Insights Workbook"
@@ -181,7 +186,8 @@ watchEffect(() => {
 				/>
 			</div>
 			<FormControl
-				class="flex-1 sm:hidden"
+				v-if="isMobile"
+				class="flex-1"
 				:placeholder="__('Search by Title')"
 				v-model="phoneTitle"
 				:debounce="300"
@@ -191,49 +197,53 @@ watchEffect(() => {
 				</template>
 			</FormControl>
 			<Button
-				class="sm:hidden"
+				v-if="isMobile"
 				size="md"
+				:variant="showPhoneFilters ? 'subtle' : 'outline'"
 				:aria-label="__('Filters')"
-				@click="showFilterSheet = true"
+				:aria-expanded="showPhoneFilters"
+				@click="showPhoneFilters = !showPhoneFilters"
 			>
-				<template v-if="sheetFilterCount" #prefix>
+				<template v-if="phoneFilterCount" #prefix>
 					<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</template>
 				<template v-else #icon>
 					<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 				</template>
-				<template v-if="sheetFilterCount">{{ sheetFilterCount }}</template>
+				<template v-if="phoneFilterCount">{{ phoneFilterCount }}</template>
 			</Button>
 		</div>
 
-		<BottomSheet v-model:open="showFilterSheet" :title="__('Filters')">
-			<div class="flex flex-col gap-4 px-4 pb-6">
-				<MultiSelect
-					class="w-full"
-					variant="subtle"
-					:placeholder="__('Access')"
-					:options="sourceOptions"
-					:modelValue="shownSources"
-					@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
-				/>
-				<QuickFilter
-					doctype="Insights Workbook"
-					:fields="[dataSourceField, tableField, queryField]"
-					v-model:filters="filters"
-				/>
-				<Filter
-					doctype="Insights Workbook"
-					align="start"
-					:fields="filterFields"
-					v-model="filters"
-				/>
-			</div>
-		</BottomSheet>
+		<!-- QuickFilter sizes each input at w-40; one per row, stretched, fills a phone -->
+		<div v-if="isMobile && showPhoneFilters" class="flex flex-col gap-2">
+			<QuickFilter
+				v-for="quickField in [dataSourceField, tableField, queryField]"
+				:key="quickField.fieldname"
+				class="[&>div]:w-full"
+				doctype="Insights Workbook"
+				:fields="[quickField]"
+				v-model:filters="filters"
+			/>
+			<MultiSelect
+				class="w-full"
+				variant="subtle"
+				:placeholder="__('Access')"
+				:options="sourceOptions"
+				:modelValue="shownSources"
+				@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
+			/>
+			<Filter
+				doctype="Insights Workbook"
+				align="start"
+				:fields="filterFields"
+				v-model="filters"
+			/>
+		</div>
 
 		<!-- a phone has one view: two-line rows, the title across the width -->
 		<List
-			v-if="workbookStore.workbooks.length"
-			class="-mx-3 list-row-px-3 sm:hidden"
+			v-if="isMobile && workbookStore.workbooks.length"
+			class="-mx-3 list-row-px-3"
 			:columns="['2rem', 'minmax(0,1fr)']"
 			:row-height="56"
 		>
@@ -266,8 +276,8 @@ watchEffect(() => {
 		</List>
 
 		<List
-			v-if="workbookStore.workbooks.length"
-			class="-mx-3 list-row-px-3 max-sm:hidden"
+			v-else-if="workbookStore.workbooks.length"
+			class="-mx-3 list-row-px-3"
 			:columns="{
 				base: ['minmax(0,1fr)', '6rem'],
 				lg: ['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem'],

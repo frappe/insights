@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
 import { applyQuick, QuickFilter, quickOperator, quickValue } from '@framework/ui/QuickFilter'
-import { BottomSheet, Breadcrumbs, MultiSelect, TabButtons } from 'frappe-ui'
+import { Breadcrumbs, MultiSelect, TabButtons } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
 import {
 	LayoutGrid,
@@ -15,6 +15,7 @@ import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { access, AccessSource, useAccessSources } from '../components/access'
 import AccessLabel from '../components/AccessLabel.vue'
+import { useIsMobile } from '../composables/useIsMobile'
 import OwnerAvatar from '../components/OwnerAvatar.vue'
 import { showErrorToast, wheneverChanges } from '../helpers'
 import session from '../session'
@@ -79,7 +80,8 @@ const listColumns = isReader
 const titleSearch = ref('')
 
 // On a phone the title quick filter is a search box across the width, and the
-// rest of the filters wait in a sheet behind one button
+// rest of the filters wait below it, one per row, behind one button
+const isMobile = useIsMobile()
 const phoneTitle = computed({
 	get: () => String(quickValue(filters.value, titleField)),
 	set: (value: string) =>
@@ -90,16 +92,19 @@ const phoneTitle = computed({
 			quickOperator(filters.value, titleField),
 		)),
 })
-const showFilterSheet = ref(false)
-const sheetFilterCount = computed(
-	() => filters.value.filter((f) => f.fieldname !== titleField.fieldname).length,
+// Access counts once it narrows the list: no pick, or a stale one, shows all
+const phoneFilterCount = computed(
+	() =>
+		filters.value.filter((f) => f.fieldname !== titleField.fieldname).length +
+		(shownSources.value.length ? 1 : 0),
 )
+const showPhoneFilters = ref(phoneFilterCount.value > 0)
 
 // the one line under a phone row's title
 function phoneMeta(dashboard: DashboardListItem) {
 	if (isReader) return dashboard.modified_from_now
 	return [
-		dashboard.workbook_title,
+		dashboard.workbook_title !== dashboard.title && dashboard.workbook_title,
 		access(dashboard, userStore!.getName).label,
 		dashboard.modified_from_now,
 	]
@@ -221,7 +226,7 @@ watchEffect(() => {
 				</template>
 			</FormControl>
 			<template v-else>
-				<div class="flex min-w-0 flex-1 items-center gap-2 max-sm:hidden">
+				<div v-if="!isMobile" class="flex min-w-0 flex-1 items-center gap-2">
 					<QuickFilter
 						class="min-w-0"
 						doctype="Insights Dashboard v3"
@@ -244,7 +249,8 @@ watchEffect(() => {
 					/>
 				</div>
 				<FormControl
-					class="flex-1 sm:hidden"
+					v-if="isMobile"
+					class="flex-1"
 					:placeholder="__('Search by Title')"
 					v-model="phoneTitle"
 					:debounce="300"
@@ -254,52 +260,54 @@ watchEffect(() => {
 					</template>
 				</FormControl>
 				<Button
-					class="sm:hidden"
+					v-if="isMobile"
 					size="md"
+					:variant="showPhoneFilters ? 'subtle' : 'outline'"
 					:aria-label="__('Filters')"
-					@click="showFilterSheet = true"
+					:aria-expanded="showPhoneFilters"
+					@click="showPhoneFilters = !showPhoneFilters"
 				>
-					<template v-if="sheetFilterCount" #prefix>
+					<template v-if="phoneFilterCount" #prefix>
 						<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
 					<template v-else #icon>
 						<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
 					</template>
-					<template v-if="sheetFilterCount">{{ sheetFilterCount }}</template>
+					<template v-if="phoneFilterCount">{{ phoneFilterCount }}</template>
 				</Button>
 			</template>
-			<TabButtons class="max-sm:hidden" v-model="view" :options="views" />
+			<TabButtons v-if="!isMobile" v-model="view" :options="views" />
 		</div>
 
-		<BottomSheet v-if="!isReader" v-model:open="showFilterSheet" :title="__('Filters')">
-			<div class="flex flex-col gap-4 px-4 pb-6">
-				<MultiSelect
-					class="w-full"
-					variant="subtle"
-					:placeholder="__('Access')"
-					:options="sourceOptions"
-					:modelValue="shownSources"
-					@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
-				/>
-				<QuickFilter
-					doctype="Insights Dashboard v3"
-					:fields="[workbookField]"
-					v-model:filters="filters"
-				/>
-				<Filter
-					doctype="Insights Dashboard v3"
-					align="start"
-					:fields="filterFields"
-					v-model="filters"
-				/>
-			</div>
-		</BottomSheet>
+		<!-- QuickFilter sizes each input at w-40; one per row, stretched, fills a phone -->
+		<div v-if="isMobile && !isReader && showPhoneFilters" class="flex flex-col gap-2">
+			<QuickFilter
+				class="[&>div]:w-full"
+				doctype="Insights Dashboard v3"
+				:fields="[workbookField]"
+				v-model:filters="filters"
+			/>
+			<MultiSelect
+				class="w-full"
+				variant="subtle"
+				:placeholder="__('Access')"
+				:options="sourceOptions"
+				:modelValue="shownSources"
+				@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
+			/>
+			<Filter
+				doctype="Insights Dashboard v3"
+				align="start"
+				:fields="filterFields"
+				v-model="filters"
+			/>
+		</div>
 
 		<div class="h-full w-full">
 			<!-- a phone has one view: two-line rows, the title across the width -->
 			<List
-				v-if="listed.length"
-				class="-mx-3 list-row-px-3 sm:hidden"
+				v-if="isMobile && listed.length"
+				class="-mx-3 list-row-px-3"
 				:columns="isReader ? ['2rem', 'minmax(0,1fr)'] : ['2rem', 'minmax(0,1fr)', 'auto']"
 				:row-height="56"
 			>
@@ -366,8 +374,8 @@ watchEffect(() => {
 			</List>
 
 			<List
-				v-if="listed.length && view === 'list'"
-				class="-mx-3 list-row-px-3 max-sm:hidden"
+				v-else-if="listed.length && view === 'list'"
+				class="-mx-3 list-row-px-3"
 				:columns="listColumns"
 				:row-height="40"
 			>
@@ -463,7 +471,7 @@ watchEffect(() => {
 				</ListRow>
 			</List>
 
-			<div v-else-if="listed.length" class="flex flex-col gap-12 max-sm:hidden">
+			<div v-else-if="listed.length" class="flex flex-col gap-12">
 				<section v-for="group in groups" :key="group.label" class="flex flex-col gap-4">
 					<div v-if="groups.length > 1" class="text-base-medium text-ink-gray-6">
 						{{ group.label }}
