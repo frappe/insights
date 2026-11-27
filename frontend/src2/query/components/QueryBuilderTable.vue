@@ -17,6 +17,7 @@ import ColumnRemove from './ColumnRemove.vue'
 import ColumnSort from './ColumnSort.vue'
 import ColumnTypeChange from './ColumnTypeChange.vue'
 import ResultPane from '../../components/result_pane/ResultPane.vue'
+import { useIsMobile } from '../../composables/useIsMobile'
 import QueryDataTable from './QueryDataTable.vue'
 import BuilderDrillDown from '../../charts/drill/BuilderDrillDown.vue'
 import type { ChartSegmentClick } from '../../charts/drill/segment_click'
@@ -28,6 +29,8 @@ import { __ } from '../../translation'
 
 const props = defineProps<{ findTarget?: HTMLElement | null }>()
 const query = inject('query') as Query
+// a phone reads the result: no column edits
+const isMobile = useIsMobile()
 
 // A summarized cell opens the same dialog a chart segment does. The candidates
 // are the one thing this surface has to ask for, so the click waits on them
@@ -103,19 +106,19 @@ function addNewColumn() {
 				:rows="rows"
 				:current-page="currentPage"
 				:page-size="pageSize"
-				:enable-column-rename="true"
-				:enable-new-column="true"
+				:enable-column-rename="!isMobile"
+				:enable-new-column="!isMobile"
 				:enable-drill-down="true"
 				@segment-click="onSegmentClick"
 			>
-				<template #header-prefix="{ column }">
+				<template v-if="!isMobile" #header-prefix="{ column }">
 					<ColumnTypeChange
 						:model-value="column.type"
 						@update:model-value="onTypeChange(column, $event)"
 					/>
 				</template>
 
-				<template #header-suffix="{ column }">
+				<template v-if="!isMobile" #header-suffix="{ column }">
 					<div class="ml-auto pl-2">
 						<Popover side="bottom" align="end">
 							<template #trigger="{ open }">

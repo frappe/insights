@@ -10,6 +10,7 @@ import {
 	Scroll,
 } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
+import { useIsMobile } from '../../composables/useIsMobile'
 import { formatShortcut } from '../../composables/useShortcut'
 import session from '../../session'
 import { __ } from '../../translation'
@@ -32,6 +33,8 @@ const props = withDefaults(
 )
 
 const query = inject('query') as Query
+// a phone reads a query and does not run or change it
+const isMobile = useIsMobile()
 
 const showViewSQLDialog = ref(false)
 const showAlertsDialog = ref(false)
@@ -88,6 +91,7 @@ function handleExecute() {
 <template>
 	<!-- stale is the only state that asks for a run, so the button says so -->
 	<Button
+		v-if="!isMobile"
 		:variant="props.stale ? 'solid' : 'outline'"
 		:label="__('Execute')"
 		:tooltip="__('Execute ({0})', formatShortcut('Meta+E'))"
@@ -102,7 +106,7 @@ function handleExecute() {
 		</template>
 	</Button>
 
-	<Dropdown align="end" :options="moreActions">
+	<Dropdown v-if="!isMobile" align="end" :options="moreActions">
 		<Button variant="outline" :tooltip="__('More')">
 			<template #icon>
 				<MoreHorizontal class="h-3.5 w-3.5 text-ink-gray-6" stroke-width="1.5" />

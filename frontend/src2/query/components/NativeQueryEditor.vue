@@ -3,6 +3,7 @@ import { toast } from 'frappe-ui'
 import { Wand2 } from 'lucide-vue-next'
 import { computed, h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
+import { useIsMobile } from '../../composables/useIsMobile'
 import { useShortcut } from '../../composables/useShortcut'
 import { useSourceSchema } from '../../data_source/data_source'
 import { __ } from '../../translation'
@@ -17,6 +18,7 @@ import DataSourceSelector from './source_selector/DataSourceSelector.vue'
 
 const query = inject<Query>('query')!
 const $find = ref<HTMLElement>()
+const isMobile = useIsMobile()
 query.autoExecute = false
 query.ensureResult()
 
@@ -112,7 +114,7 @@ const stale = computed(() => {
 <template>
 	<div class="flex flex-1 overflow-hidden">
 		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
-			<QueryHeader>
+			<QueryHeader v-if="!isMobile">
 				<DataSourceSelector
 					v-model="data_source"
 					:placeholder="__('Select a data source')"
@@ -131,6 +133,7 @@ const stale = computed(() => {
 					:key="completions.tables.length"
 					v-model="sql"
 					language="sql"
+					:read-only="isMobile"
 					:schema="completions.schema"
 					:tables="completions.tables"
 				/>
@@ -154,7 +157,7 @@ const stale = computed(() => {
 
 		<!-- Right Sidebar -->
 		<div
-			class="relative flex h-full w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-surface-base"
+			class="relative flex h-full w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-surface-base max-sm:hidden"
 		>
 			<QueryInfo />
 

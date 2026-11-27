@@ -8,9 +8,12 @@ import QueryHeader from './QueryHeader.vue'
 import QueryInfo from './QueryInfo.vue'
 import QueryOperations from './QueryOperations.vue'
 import { useUndoKeys } from '../../helpers/undo_keys'
+import { useIsMobile } from '../../composables/useIsMobile'
+import { __ } from '../../translation'
 
 const query = inject<Query>('query')!
 const $find = ref<HTMLElement>()
+const isMobile = useIsMobile()
 query.autoExecute = true
 
 useUndoKeys({
@@ -26,7 +29,14 @@ onBeforeUnmount(() => {
 <template>
 	<div class="flex flex-1 overflow-hidden">
 		<div class="relative flex h-full flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
-			<QueryBuilderSourceSelector v-if="!query.doc.operations.length" />
+			<!-- a phone reads a query; picking its source is editing it -->
+			<p
+				v-if="!query.doc.operations.length && isMobile"
+				class="py-8 text-center text-base text-ink-gray-5"
+			>
+				{{ __('This query has no data yet.') }}
+			</p>
+			<QueryBuilderSourceSelector v-else-if="!query.doc.operations.length" />
 			<template v-else>
 				<QueryHeader>
 					<div ref="$find" class="flex"></div>

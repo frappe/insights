@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { inject } from 'vue'
 import ContentEditable from '../../components/ContentEditable.vue'
+import { useIsMobile } from '../../composables/useIsMobile'
 import { __ } from '../../translation'
 import { Query } from '../query'
 
@@ -8,11 +9,14 @@ import { Query } from '../query'
 // the query menu and the data source act on the query, so they cannot sit in
 // the result pane below — a code editor stands between the two.
 const query = inject('query') as Query
+// a phone reads the query: the workbook's header already names it
+const isMobile = useIsMobile()
 </script>
 
 <template>
 	<div class="flex h-7 w-full flex-shrink-0 items-center justify-between gap-3">
 		<ContentEditable
+			v-if="!isMobile"
 			class="-ml-2 w-fit max-w-full text-md-medium !text-ink-gray-7"
 			:model-value="query.doc.title"
 			:placeholder="__('Untitled Query')"
