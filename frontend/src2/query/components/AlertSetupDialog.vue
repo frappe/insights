@@ -1,11 +1,12 @@
 <script setup lang="tsx">
 import { Textarea, toast } from 'frappe-ui'
-import { computed, reactive, ref, unref, watch } from 'vue'
+import { computed, inject, reactive, ref, unref, watch } from 'vue'
 import Toggle from '../../components/Toggle.vue'
 import { waitUntil, wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { __ } from '../../translation'
 import useUserStore from '../../users/users'
+import { workbookKey } from '../../workbook/workbook_key'
 import useAlertStore, { cronRefusal } from '../alert'
 import { Query } from '../query'
 import ExpressionEditor from './ExpressionEditor.vue'
@@ -64,6 +65,72 @@ const webhookError = computed(() => {
 	return ''
 })
 
+// The server reads a message query only from the alert's own workbook.
+const workbook = inject(workbookKey, null)
+const messageQueryOptions = computed(() =>
+	(workbook?.doc.queries || [])
+		.filter((q) => q.name !== props.query.doc.name)
+		.map((q) => ({ label: q.title, value: q.name })),
+)
+
+function addMessageQuery() {
+	alert.doc.queries = [...(alert.doc.queries || []), { alias: '', query: '' }]
+}
+
+function removeMessageQuery(index: number) {
+	alert.doc.queries = alert.doc.queries.filter((_, i) => i !== index)
+}
+
+// The message reads a message query as `queries.<name>`, so a name is an identifier.
+const ALIAS = /^[A-Za-z_][A-Za-z0-9_]*$/
+// `queries.items` would read a method of the dict, not the query. The server refuses these too.
+const RESERVED = [
+	'items',
+	'keys',
+	'values',
+	'get',
+	'update',
+	'pop',
+	'popitem',
+	'copy',
+	'clear',
+	'setdefault',
+	'fromkeys',
+]
+// A row left blank is dropped on save, not refused.
+const messageQueriesError = computed(() => {
+	const rows = (alert.doc.queries || []).filter((row) => row.alias || row.query)
+	const aliases = rows.map((row) => row.alias)
+	if (rows.some((row) => !row.query)) return __('Select a query')
+	if (aliases.some((alias) => !ALIAS.test(alias))) {
+		return __('Name each query with letters, digits and underscores, not starting with a digit')
+	}
+	const reserved = aliases.find((alias) => RESERVED.includes(alias))
+	if (reserved) return __('{0} cannot name a message query. Choose another name.', reserved)
+	if (new Set(aliases).size !== aliases.length) return __('Give each query its own name')
+	return ''
+})
+
+function dropBlankMessageQueries() {
+	alert.doc.queries = (alert.doc.queries || []).filter((row) => row.alias || row.query)
+}
+
+// Text, not markup: the tokens hold Jinja braces and an HTML comment.
+const messageHints = [
+	{ token: '{{ rows }}', description: __('The result of the query') },
+	{ token: '{{ count }}', description: __('The number of rows in the query') },
+	{
+		token: '{{ queries.<name>.rows }}, {{ queries.<name>.count }}',
+		description: __('The rows of a message query, at most 100, and how many'),
+	},
+	{
+		token: '<!-- thread -->',
+		description: __(
+			'On a line of its own, starts a thread message under a webhook post. Email sends one message.',
+		),
+	},
+]
+
 // A toast under the dialog is half hidden, so the field says it too.
 const cronError = ref('')
 watch(
@@ -84,6 +151,7 @@ const isValidAlert = computed(() => {
 	if (!alert.doc.custom_condition && !filterCondition.operator) return false
 	if (!alert.doc.custom_condition && !filterCondition.right) return false
 	if (!alert.doc.message) return false
+	if (messageQueriesError.value) return false
 	return true
 })
 
@@ -91,6 +159,7 @@ function updateAlert() {
 	if (!alert.isdirty) return
 	if (!isValidAlert.value) return
 
+	dropBlankMessageQueries()
 	const isNew = unref(alert.islocal)
 	if (isNew) {
 		alert.doc.query = props.query.doc.name
@@ -115,6 +184,7 @@ function save() {
 
 function testSendAlert() {
 	if (!isValidAlert.value) return
+	dropBlankMessageQueries()
 	if (alert.islocal) {
 		alert.doc.query = props.query.doc.name
 	}
@@ -285,6 +355,43 @@ function toggleAlert() {
 					/>
 				</div>
 
+				<div class="flex flex-col gap-1.5">
+					<label class="block text-xs text-ink-gray-5">{{ __('Message queries') }}</label>
+					<div
+						v-for="(row, index) in alert.doc.queries"
+						:key="index"
+						class="flex items-center gap-4"
+					>
+						<FormControl
+							type="text"
+							class="flex-1"
+							v-model="row.alias"
+							:placeholder="__('Name, e.g. by_app')"
+						/>
+						<FormControl
+							type="select"
+							class="flex-1"
+							v-model="row.query"
+							:placeholder="__('Select Query')"
+							:options="messageQueryOptions"
+						/>
+						<Button
+							variant="ghost"
+							icon="lucide-x"
+							:aria-label="__('Remove message query')"
+							@click="removeMessageQuery(index)"
+						/>
+					</div>
+					<ErrorMessage v-if="messageQueriesError" :message="messageQueriesError" />
+					<Button
+						class="self-start"
+						variant="outline"
+						icon-left="lucide-plus"
+						:label="__('Add message query')"
+						@click="addMessageQuery"
+					/>
+				</div>
+
 				<div>
 					<Textarea
 						:label="__('Message')"
@@ -305,14 +412,11 @@ Thanks,
 							)
 						}}
 
-						<div
-							v-html="
-								`<ul class='list-disc pl-4'>
-							<li>{{ rows }} - The result of the query</li>
-							<li>{{ count }} - The number of rows in the query</li>
-						</ul>`
-							"
-						/>
+						<ul class="list-disc pl-4">
+							<li v-for="hint in messageHints" :key="hint.token">
+								<code>{{ hint.token }}</code> - {{ hint.description }}
+							</li>
+						</ul>
 					</div>
 				</div>
 

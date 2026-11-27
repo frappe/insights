@@ -31,6 +31,14 @@ WEBHOOK_PAYLOAD_VERSION = 1
 # ceiling on its body. `count` still reports the real total.
 ALERT_MAX_ROWS = 100
 
+# A line holding only this marker ends one message of the rendered text and
+# starts the next. A webhook sends the first as the post and the rest as its
+# thread. An HTML comment, so a channel or receiver without threads shows nothing.
+THREAD_MARKER = re.compile(r"^[ \t]*<!--\s*thread\s*-->[ \t]*$", re.MULTILINE)
+
+# The template reads a message query as `queries.<alias>`.
+ALIAS = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
 
 class SendRefused(frappe.PermissionError):
     """The user an alert runs as may not send it. A scheduled run then disables the alert."""
@@ -57,6 +65,8 @@ class InsightsAlert(Document):
     if TYPE_CHECKING:
         from frappe.types import DF
 
+        from insights.insights.doctype.insights_alert_query.insights_alert_query import InsightsAlertQuery
+
         channel: DF.Literal["Email", "Telegram", "Webhook"]
         condition: DF.Code
         cron_format: DF.Data | None
@@ -66,6 +76,7 @@ class InsightsAlert(Document):
         last_execution: DF.Datetime | None
         message: DF.MarkdownEditor | None
         permission_user: DF.Link | None
+        queries: DF.Table[InsightsAlertQuery]
         query: DF.Link
         recipients: DF.SmallText | None
         telegram_chat_id: DF.Data | None
@@ -86,6 +97,7 @@ class InsightsAlert(Document):
 
         if self.query:
             self.has_query_permission()
+            self.check_message_queries()
 
         if self.channel == "Email":
             self.get_recipients()
@@ -143,6 +155,54 @@ class InsightsAlert(Document):
         if not can_read_referenced_query(self.query):
             frappe.throw(_("You do not have permission to access this query"), frappe.PermissionError)
 
+    def check_message_queries(self, sending=False):
+        """Each message query is checked as the alert's own query is, and must be
+        in the alert's workbook, which `may_run_as` checks the sender against.
+
+        A sender must also be allowed to download its rows, which the send posts.
+        """
+        from insights.permissions import can_export, can_read_referenced_query
+
+        workbook = workbook_of(self)
+        aliases = set()
+        for row in self.queries:
+            if not ALIAS.fullmatch(row.alias or ""):
+                frappe.throw(
+                    _(
+                        "{0} cannot name a message query. Use letters, digits and underscores, and do not start with a digit."
+                    ).format(escape_html(row.alias or ""))
+                )
+            # `queries.items` would read the dict's method, not the query
+            if hasattr(frappe._dict, row.alias):
+                frappe.throw(_("{0} cannot name a message query. Choose another name.").format(row.alias))
+            if row.alias in aliases:
+                frappe.throw(_("Two message queries are named {0}").format(row.alias))
+            aliases.add(row.alias)
+            if not row.query:
+                frappe.throw(_("Select a query for the message query {0}").format(row.alias))
+
+            query = frappe.get_doc("Insights Query v3", row.query)
+            if query.workbook != workbook:
+                frappe.throw(
+                    _("The message query {0} is not in this alert's workbook").format(
+                        escape_html(query.title)
+                    )
+                )
+            if not can_read_referenced_query(query.name):
+                frappe.throw(
+                    _("You do not have permission to access the message query {0}").format(
+                        escape_html(query.title)
+                    ),
+                    frappe.PermissionError,
+                )
+            if sending and not can_export(query):
+                frappe.throw(
+                    _(
+                        "You may not download the rows of the message query {0}, so you may not send them."
+                    ).format(escape_html(query.title)),
+                    SendRefused,
+                )
+
     def check_sender_may_download(self):
         """A send mails the query's rows, so whoever sends it by hand must be
         allowed to download them. The scheduler's session is Administrator, so a
@@ -172,6 +232,7 @@ class InsightsAlert(Document):
             )
         self.has_query_permission()
         self.check_sender_may_download()
+        self.check_message_queries(sending=True)
 
         result = self.run_query(force)
         if not result.condition_met and not force:
@@ -181,15 +242,16 @@ class InsightsAlert(Document):
             return
 
         # Built once: a webhook alert sends the rendered message and the rows behind it.
-        context = self.get_message_context(result)
-        message = self.evaluate_message(context)
+        context = self.get_message_context(result, self.run_message_queries())
+        parts = self.render_message(context)
+        message = self.format_message(parts)
 
         if self.channel == "Email":
             self.send_email_alert(message)
         if self.channel == "Telegram":
             self.send_telegram_alert(message)
         if self.channel == "Webhook":
-            self.send_webhook_alert(message, context)
+            self.send_webhook_alert(message, context, parts)
 
         self.db_set("last_execution", now_datetime(), update_modified=False)
 
@@ -197,12 +259,16 @@ class InsightsAlert(Document):
         tg = TelegramAlert(self.telegram_chat_id)
         tg.send(message)
 
-    def send_webhook_alert(self, message, context):
+    def send_webhook_alert(self, message, context, parts=None):
         """POST the alert to the configured endpoint. The token, when there is
         one, travels in an Authorization header rather than the URI, which would
         put it in the receiver's access logs. Without a token no header is sent:
         Frappe reads any bearer token as OAuth, so a receiver that authenticates
-        by its secret URL, like Raven's incoming webhook, would answer 401."""
+        by its secret URL, like Raven's incoming webhook, would answer 401.
+
+        A message split by thread markers posts its first part as `content` and
+        the rest as `thread`, and the receiver must confirm the thread."""
+        thread = parts[1:] if parts else []
         payload = {
             "version": WEBHOOK_PAYLOAD_VERSION,
             "event": "insights_alert",
@@ -218,6 +284,9 @@ class InsightsAlert(Document):
                 "triggered_at": get_datetime_str(now_datetime()),
             },
         }
+        if thread:
+            payload["content"] = parts[0]
+            payload["thread"] = thread
 
         headers = {"Content-Type": "application/json"}
         if self.webhook_token:
@@ -233,9 +302,11 @@ class InsightsAlert(Document):
             )
             response.raise_for_status()
         except requests.HTTPError as e:
-            frappe.throw(
-                _("The webhook at {0} returned {1}").format(self.webhook_url, e.response.status_code)
-            )
+            refusal = _("The webhook at {0} returned {1}").format(self.webhook_url, e.response.status_code)
+            if thread:
+                # A receiver refuses a thread it cannot post, such as one too long, and says why.
+                refusal += ": " + escape_html(e.response.text[:500])
+            frappe.throw(refusal)
         except requests.RequestException as e:
             # No log_error here: `send_alerts` logs, and the interactive caller
             # reads the message. An OutboundRequestRefused already says what it
@@ -243,6 +314,9 @@ class InsightsAlert(Document):
             frappe.throw(
                 _("Could not deliver the alert to {0} ({1})").format(self.webhook_url, type(e).__name__)
             )
+
+        if thread:
+            check_thread_posted(response, len(thread))
 
     def get_author_email(self):
         """The reply-to address, or None. A mail without a reply-to is better than no mail."""
@@ -278,10 +352,17 @@ class InsightsAlert(Document):
             return doc.evaluate_alert_expression(self.condition)
 
     def evaluate_message(self, context):
+        return self.format_message(self.render_message(context))
+
+    def render_message(self, context) -> list[str]:
+        """The rendered message, split at its thread markers."""
         rows_pattern = r"{{\s*rows\s*}}"
         message_md = re.sub(rows_pattern, "{{ datatable }}", self.message)
+        return split_thread(render_template_restricted(message_md, context))
 
-        message_md = render_template_restricted(message_md, context)
+    def format_message(self, parts):
+        """One message for the channel, without the thread markers."""
+        message_md = "\n\n".join(parts)
         # A webhook consumer wants the text, not the styled email body.
         if self.channel in ("Telegram", "Webhook"):
             return message_md
@@ -311,15 +392,37 @@ class InsightsAlert(Document):
         result.query_title = doc.title
         return result
 
-    def get_message_context(self, result=None):
+    def run_message_queries(self):
+        """What the template reads as `queries.<alias>`: each message query's
+        rows and how many, from one statement each.
+
+        A message query must fit in `ALERT_MAX_ROWS`. Past it the send fails:
+        a message that counts or sums a cut list would post a wrong number.
+        """
+        queries = {}
+        with db_connections():
+            for row in self.queries:
+                doc = frappe.get_doc("Insights Query v3", row.query)
+                rows = doc.execute_rows_for_alert(ALERT_MAX_ROWS + 1)
+                if len(rows) > ALERT_MAX_ROWS:
+                    frappe.throw(
+                        _("The message query {0} returns more than {1} rows. Summarize it to fewer.").format(
+                            escape_html(doc.title), ALERT_MAX_ROWS
+                        )
+                    )
+                queries[row.alias] = {"title": doc.title, "rows": rows, "count": len(rows)}
+        return queries
+
+    def get_message_context(self, result=None, queries=None):
         result = result or self.run_query(force=True)
+        queries = self.run_message_queries() if queries is None else queries
         rows, count = result.rows, result.count
 
         datatable = pd.DataFrame(rows).to_html(index=False)
         if count > len(rows):
             datatable += "<p>{}</p>".format(_("The first {0} of {1} rows").format(len(rows), count))
         datatable = f"<div class='datatable-container'>{datatable}</div>"
-        return deep_convert_dict_to_dict(
+        context = deep_convert_dict_to_dict(
             {
                 "rows": rows,
                 "count": count,
@@ -332,6 +435,13 @@ class InsightsAlert(Document):
                 "datatable": datatable,
             }
         )
+        # Plain dicts, not `frappe._dict`: a name with no query must fail the
+        # send, not print None into the message.
+        context["queries"] = {
+            alias: {**query, "rows": deep_convert_dict_to_dict(query["rows"])}
+            for alias, query in queries.items()
+        }
+        return context
 
     def get_recipients(self):
         """The addresses this alert mails.
@@ -381,6 +491,37 @@ class InsightsAlert(Document):
     @frappe.whitelist(methods=["POST"])
     def test_alert(self):
         self.send_alert(force=True)
+
+
+def split_thread(text: str) -> list[str]:
+    """The text before the first thread marker, then the text after each.
+
+    Without a marker the text is left as it is. With one, each part is trimmed,
+    and an empty part is dropped, as a receiver would drop an empty message.
+    """
+    if not THREAD_MARKER.search(text):
+        return [text]
+    return [part.strip() for part in THREAD_MARKER.split(text) if part.strip()] or [""]
+
+
+def check_thread_posted(response, sent: int):
+    """Refuse a send whose receiver did not say it posted the whole thread.
+
+    A receiver that does not read `thread`, such as a Raven without threads,
+    posts the first message, drops the rest, and answers as it always does.
+    Raven answers `{"message_id", "thread_messages"}` when it posts a thread.
+    """
+    try:
+        body = response.json()
+    except ValueError:
+        body = None
+    posted = body.get("thread_messages") if isinstance(body, dict) else None
+    if posted != sent:
+        frappe.throw(
+            _(
+                "The webhook did not confirm the thread: it was sent {0} thread messages and confirmed {1}."
+            ).format(sent, posted if isinstance(posted, int) else 0)
+        )
 
 
 def send_alerts():

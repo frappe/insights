@@ -4,6 +4,12 @@ import { reactive, ref } from 'vue'
 import { getErrorMessage, getUniqueId, showErrorToast } from '../helpers'
 import useDocumentResource from '../helpers/resource'
 
+// A query the message reads as `queries.<alias>`, besides the alert's own
+export type InsightsAlertQuery = {
+	alias: string
+	query: string
+}
+
 export type InsightsAlert = {
 	doctype: 'Insights Alert'
 	disabled: 0 | 1
@@ -22,6 +28,7 @@ export type InsightsAlert = {
 	condition: string
 	custom_condition: 0 | 1
 	message: string
+	queries: InsightsAlertQuery[]
 	creation: string
 	modified: string
 	created_from_now: string
@@ -76,6 +83,7 @@ const EMPTY_ALERT: InsightsAlert = {
 	condition: '',
 	custom_condition: 0,
 	message: '',
+	queries: [],
 	creation: '',
 	modified: '',
 	created_from_now: '',

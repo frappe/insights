@@ -164,7 +164,7 @@ doc_events = {
         "validate": "insights.permissions.validate_member_share",
     },
     # child tables of workbook members
-    ("Insights Dashboard Chart v3", "Has Role", "Insights Query Variable"): {
+    ("Insights Dashboard Chart v3", "Has Role", "Insights Query Variable", "Insights Alert Query"): {
         "validate": "insights.permissions.refuse_member_row_alone",
         "on_trash": "insights.permissions.refuse_member_row_alone",
     },
