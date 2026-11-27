@@ -35,13 +35,24 @@ function toOption(action: DashboardAction) {
 </script>
 
 <template>
-	<Button
-		v-if="first"
-		variant="outline"
-		:label="first.label"
-		:iconLeft="iconClass(first)"
-		v-bind="target(first)"
-	/>
+	<!-- on a phone the label would take the room of the dashboard's name in the
+	     header, so the first action is its icon alone -->
+	<template v-if="first">
+		<Button
+			class="hidden sm:inline-flex"
+			variant="outline"
+			:label="first.label"
+			:iconLeft="iconClass(first)"
+			v-bind="target(first)"
+		/>
+		<Button
+			class="sm:hidden"
+			variant="outline"
+			:label="first.label"
+			:icon="iconClass(first)"
+			v-bind="target(first)"
+		/>
+	</template>
 	<Dropdown v-if="rest.length" align="end" :options="rest">
 		<Button variant="outline">
 			<template #icon>
