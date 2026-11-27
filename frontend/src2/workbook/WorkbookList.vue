@@ -128,9 +128,9 @@ watchEffect(() => {
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
-			<div class="flex min-w-0 flex-1 items-center gap-2 flex-wrap sm:flex-nowrap">
+			<div class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-wrap">
 				<QuickFilter
-					class="w-full min-w-0 sm:w-auto"
+					class="min-w-0 max-sm:w-full"
 					doctype="Insights Workbook"
 					:fields="quickFields"
 					v-model:filters="filters"
@@ -163,9 +163,9 @@ watchEffect(() => {
 		>
 			<ListHeader class="sticky top-0 z-10 bg-surface-base">
 				<ListHeaderCell>{{ __('Title') }}</ListHeaderCell>
-				<ListHeaderCell class="hidden lg:flex">{{ __('Data Source') }}</ListHeaderCell>
-				<ListHeaderCell class="hidden lg:flex">{{ __('Access') }}</ListHeaderCell>
-				<ListHeaderCell class="hidden lg:flex">{{ __('Opened') }}</ListHeaderCell>
+				<ListHeaderCell class="max-lg:hidden">{{ __('Data Source') }}</ListHeaderCell>
+				<ListHeaderCell class="max-lg:hidden">{{ __('Access') }}</ListHeaderCell>
+				<ListHeaderCell class="max-lg:hidden">{{ __('Opened') }}</ListHeaderCell>
 				<ListHeaderCell>{{ __('Modified') }}</ListHeaderCell>
 			</ListHeader>
 			<ListRow
@@ -188,7 +188,7 @@ watchEffect(() => {
 						workbook.title
 					}}</span>
 				</ListCell>
-				<ListCell class="hidden lg:flex">
+				<ListCell class="max-lg:hidden">
 					<span class="truncate text-base text-ink-gray-6">
 						{{ workbook.data_sources[0] }}
 					</span>
@@ -199,10 +199,10 @@ watchEffect(() => {
 						+{{ workbook.data_sources.length - 1 }}
 					</span>
 				</ListCell>
-				<ListCell class="hidden lg:flex">
+				<ListCell class="max-lg:hidden">
 					<AccessLabel :item="workbook" />
 				</ListCell>
-				<ListCell class="hidden lg:flex">
+				<ListCell class="max-lg:hidden">
 					<span class="truncate text-base text-ink-gray-6">
 						{{ workbook.last_opened_from_now }}
 					</span>

@@ -39,7 +39,7 @@ function toOption(action: DashboardAction) {
 	     header, so the first action is its icon alone -->
 	<template v-if="first">
 		<Button
-			class="hidden sm:inline-flex"
+			class="max-sm:hidden"
 			variant="outline"
 			:label="first.label"
 			:iconLeft="iconClass(first)"

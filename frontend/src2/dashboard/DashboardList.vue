@@ -180,9 +180,9 @@ watchEffect(() => {
 					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
 				</template>
 			</FormControl>
-			<div v-else class="flex min-w-0 flex-1 items-center gap-2 flex-wrap sm:flex-nowrap">
+			<div v-else class="flex min-w-0 flex-1 items-center gap-2 max-sm:flex-wrap">
 				<QuickFilter
-					class="w-full min-w-0 sm:w-auto"
+					class="min-w-0 max-sm:w-full"
 					doctype="Insights Dashboard v3"
 					:fields="quickFields"
 					v-model:filters="filters"
@@ -215,10 +215,10 @@ watchEffect(() => {
 				<ListHeader class="sticky top-0 z-10 bg-surface-base">
 					<ListHeaderCell>{{ __('Title') }}</ListHeaderCell>
 					<template v-if="!isReader">
-						<ListHeaderCell class="hidden lg:flex">{{ __('Workbook') }}</ListHeaderCell>
-						<ListHeaderCell class="hidden lg:flex">{{ __('Access') }}</ListHeaderCell>
+						<ListHeaderCell class="max-lg:hidden">{{ __('Workbook') }}</ListHeaderCell>
+						<ListHeaderCell class="max-lg:hidden">{{ __('Access') }}</ListHeaderCell>
 					</template>
-					<ListHeaderCell class="hidden lg:flex">{{ __('Opened') }}</ListHeaderCell>
+					<ListHeaderCell class="max-lg:hidden">{{ __('Opened') }}</ListHeaderCell>
 					<ListHeaderCell>{{ __('Modified') }}</ListHeaderCell>
 					<ListHeaderCell v-if="!isReader" />
 				</ListHeader>
@@ -244,16 +244,16 @@ watchEffect(() => {
 						</span>
 					</ListCell>
 					<template v-if="!isReader">
-						<ListCell class="hidden lg:flex">
+						<ListCell class="max-lg:hidden">
 							<span class="truncate text-base text-ink-gray-6">
 								{{ dashboard.workbook_title }}
 							</span>
 						</ListCell>
-						<ListCell class="hidden lg:flex">
+						<ListCell class="max-lg:hidden">
 							<AccessLabel :item="dashboard" />
 						</ListCell>
 					</template>
-					<ListCell class="hidden lg:flex">
+					<ListCell class="max-lg:hidden">
 						<span class="truncate text-base text-ink-gray-6">
 							{{ dashboard.last_opened_from_now }}
 						</span>
