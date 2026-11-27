@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Breadcrumbs } from 'frappe-ui'
+import { Breadcrumbs, PageHeaderBackButton, PageHeaderMobile } from 'frappe-ui'
 import { computed, ref, watch } from 'vue'
 import { __ } from '../translation'
 import DashboardActions from './DashboardActions.vue'
@@ -33,6 +33,12 @@ const body = ref<InstanceType<typeof DashboardBody>>()
 const pageTitle = computed(() => props.dashboard.title || __('Dashboard'))
 
 const crumbs = computed(() => [...(props.breadcrumbs || []), { label: pageTitle.value }])
+// A phone shows back and the title instead of the trail. A page with no parents,
+// such as the public link, has nowhere to go back to.
+const parent = computed(() => props.breadcrumbs?.at(-1))
+const showsActions = computed(
+	() => !props.dashboard.loading && !props.dashboard.notFound && !props.dashboard.noAccess,
+)
 
 watch(pageTitle, (title) => (document.title = `${title} | Insights`), { immediate: true })
 </script>
@@ -42,19 +48,26 @@ watch(pageTitle, (title) => (document.title = `${title} | Insights`), { immediat
 		<!-- The header belongs to this page, not the body, so it renders in every
 		     state. A reader who gets Not Found still has a way back. -->
 		<div
-			class="flex h-12 flex-shrink-0 items-center justify-between gap-2 border-b border-outline-gray-1 px-4"
+			class="flex h-12 flex-shrink-0 items-center justify-between gap-2 border-b border-outline-gray-1 px-4 max-sm:hidden"
 		>
 			<div class="flex min-w-0 items-baseline gap-2">
 				<Breadcrumbs :items="crumbs" />
 			</div>
 			<!-- No actions until the dashboard loads, and none on Not Found or No Access. -->
-			<div
-				v-if="!dashboard.loading && !dashboard.notFound && !dashboard.noAccess"
-				class="flex flex-shrink-0 items-center gap-1"
-			>
+			<div v-if="showsActions" class="flex flex-shrink-0 items-center gap-1">
 				<DashboardActions :actions="body?.actions || []" />
 			</div>
 		</div>
+		<PageHeaderMobile class="flex-shrink-0 sm:hidden" :title="pageTitle">
+			<template v-if="parent" #prefix>
+				<PageHeaderBackButton :label="__('Back')" :fallback-route="parent.route" />
+			</template>
+			<template v-if="showsActions" #suffix>
+				<div class="flex items-center gap-1">
+					<DashboardActions :actions="body?.actions || []" />
+				</div>
+			</template>
+		</PageHeaderMobile>
 
 		<DashboardBody
 			ref="body"
