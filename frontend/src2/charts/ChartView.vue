@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Button, Dialog, Tooltip } from 'frappe-ui'
 import { AlertTriangle, Maximize2, XIcon } from 'lucide-vue-next'
+import { useMediaQuery } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
+import { useIsMobile } from '../composables/useIsMobile'
 import { __ } from '../translation'
 import type { ChartRead } from './chart_view'
 import ChartChrome from './components/ChartChrome.vue'
@@ -44,9 +46,14 @@ const emit = defineEmits<{ resetFilters: [] }>()
 // The read says whether the chart can be drilled. Guest cannot, and the endpoint
 // refuses Guest too. This check keeps the app from showing a drill that the
 // server would refuse.
+//
+// On a touch screen a tap on a card only shows the value: the same tap starts a
+// scroll past the chart, so the drill opens only in the expanded chart.
 const clicked = ref<ChartSegmentClick>()
+const isTouch = useMediaQuery('(hover: none)')
 function onSegmentClick(click: ChartSegmentClick) {
 	if (!props.chart?.drillable) return
+	if (isTouch.value && !expanded.value) return
 	clicked.value = click
 }
 
@@ -70,7 +77,19 @@ const card = ref<HTMLElement>()
 const expanded = ref(false)
 const expandedSize = ref<{ width: string; height: string }>()
 
+// On a phone the expanded chart takes the whole screen, less the dialog's margin
+const PHONE_MARGIN = 16
+const isMobile = useIsMobile()
+
 function expand() {
+	if (isMobile.value) {
+		expandedSize.value = {
+			width: `calc(100dvw - ${2 * PHONE_MARGIN}px)`,
+			height: `calc(100dvh - ${2 * PHONE_MARGIN}px)`,
+		}
+		expanded.value = true
+		return
+	}
 	const rect = card.value!.getBoundingClientRect()
 	expandedSize.value = {
 		width: `${Math.min(rect.width * GROWTH, window.innerWidth * WINDOW_SHARE)}px`,
