@@ -1,7 +1,7 @@
 <template>
 	<div
 		class="flex w-screen bg-surface-base text-base antialiased"
-		:class="capture ? 'min-h-screen' : 'h-screen overflow-hidden'"
+		:class="capture ? 'min-h-screen' : 'h-dvh overflow-hidden'"
 	>
 		<div v-if="!hideSidebar" class="h-full border-r bg-surface-gray-1 max-sm:hidden">
 			<AppSidebar />
