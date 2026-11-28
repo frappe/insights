@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { Button, Dialog, Tooltip } from 'frappe-ui'
 import { AlertTriangle, Maximize2, XIcon } from 'lucide-vue-next'
+import { useMediaQuery } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
+import { useIsMobile } from '../composables/useIsMobile'
 import { __ } from '../translation'
 import type { ChartRead } from './chart_view'
 import ChartChrome from './components/ChartChrome.vue'
+import { closeReadings } from './components/reading'
 import ViewDrillDown from './drill/ViewDrillDown.vue'
 import type { ChartSegmentClick } from './drill/segment_click'
 
@@ -44,10 +47,19 @@ const emit = defineEmits<{ resetFilters: [] }>()
 // The read says whether the chart can be drilled. Guest cannot, and the endpoint
 // refuses Guest too. This check keeps the app from showing a drill that the
 // server would refuse.
+//
+// On a touch screen a tap on a card only shows the value: the same tap starts a
+// scroll past the chart, so the drill opens in the expanded chart. A card that
+// cannot expand, such as a Number card, drills where it is.
 const clicked = ref<ChartSegmentClick>()
+const isTouch = useMediaQuery('(hover: none)')
+const expandedBox = ref<HTMLElement>()
 function onSegmentClick(click: ChartSegmentClick) {
 	if (!props.chart?.drillable) return
+	if (isTouch.value && !expanded.value && canMaximize.value) return
 	clicked.value = click
+	// in the expanded chart a tap drills: the menu takes the place of the value
+	if (isTouch.value) closeReadings(expandedBox.value)
 }
 
 // A new chart closes the drill: the stack belongs to the click that started it.
@@ -70,7 +82,19 @@ const card = ref<HTMLElement>()
 const expanded = ref(false)
 const expandedSize = ref<{ width: string; height: string }>()
 
+// On a phone the expanded chart takes the whole screen, less the dialog's margin
+const PHONE_MARGIN = 16
+const isMobile = useIsMobile()
+
 function expand() {
+	if (isMobile.value) {
+		expandedSize.value = {
+			width: `calc(100dvw - ${2 * PHONE_MARGIN}px)`,
+			height: `calc(100dvh - ${2 * PHONE_MARGIN}px)`,
+		}
+		expanded.value = true
+		return
+	}
 	const rect = card.value!.getBoundingClientRect()
 	expandedSize.value = {
 		width: `${Math.min(rect.width * GROWTH, window.innerWidth * WINDOW_SHARE)}px`,
@@ -84,8 +108,9 @@ function expand() {
 // from the tab order, and on most cards nothing else can take focus to reveal
 // them. The group is named `card` because the grid cell around it is also a
 // group, and a bare `group-hover` would react to the cell and its gutter.
+// A touch screen cannot point, so there they always show.
 const HIDDEN_UNTIL_POINTED_AT =
-	'w-0 overflow-hidden group-focus-within/card:w-auto group-focus-within/card:overflow-visible group-hover/card:w-auto group-hover/card:overflow-visible'
+	'w-0 overflow-hidden group-focus-within/card:w-auto group-focus-within/card:overflow-visible group-hover/card:w-auto group-hover/card:overflow-visible [@media(hover:none)]:w-auto [@media(hover:none)]:overflow-visible'
 </script>
 
 <template>
@@ -169,7 +194,7 @@ const HIDDEN_UNTIL_POINTED_AT =
 	     hides behind a hover: the pointer is already over the dialog. -->
 	<Dialog v-if="chart && canMaximize" v-model:open="expanded" size="7xl" bare>
 		<template #default>
-			<div class="chart-expanded relative" :style="expandedSize">
+			<div ref="expandedBox" class="chart-expanded relative" :style="expandedSize">
 				<ChartChrome
 					:chart="chart"
 					:reading="props.reading"

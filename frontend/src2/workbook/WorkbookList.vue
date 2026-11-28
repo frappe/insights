@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { Filter, serializeFilters, type FilterField } from '@framework/ui/Filter'
-import { QuickFilter } from '@framework/ui/QuickFilter'
+import { applyQuick, QuickFilter, quickOperator, quickValue } from '@framework/ui/QuickFilter'
 import { useMagicKeys, whenever } from '@vueuse/core'
 import { Breadcrumbs, MultiSelect } from 'frappe-ui'
 import { List, ListCell, ListHeader, ListHeaderCell, ListRow } from 'frappe-ui/list'
-import { PlusIcon } from 'lucide-vue-next'
-import { AccessSource, useAccessSources } from '../components/access'
+import { ListFilter, PlusIcon, SearchIcon } from 'lucide-vue-next'
+import { access, AccessSource, useAccessSources } from '../components/access'
 import AccessLabel from '../components/AccessLabel.vue'
+import { useIsMobile } from '../composables/useIsMobile'
 import OwnerAvatar from '../components/OwnerAvatar.vue'
 import { computed, ref, toRef, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import { wheneverChanges } from '../helpers'
 import { __ } from '../translation'
+import useUserStore from '../users/users'
 import { WorkbookListItem } from '../types/workbook.types'
 import useWorkbook, { newWorkbookName } from './workbook'
 import { pastedWorkbook } from './workbook_file'
@@ -19,6 +21,7 @@ import useWorkbooks from './workbooks'
 
 const router = useRouter()
 const workbookStore = useWorkbooks()
+const userStore = useUserStore()
 
 const {
 	options: sourceOptions,
@@ -49,6 +52,38 @@ const filterFields = [
 	'owner',
 	'modified',
 ]
+
+// On a phone the title quick filter is a search box across the width, and the
+// rest of the filters wait below it, one per row, behind one button
+const isMobile = useIsMobile()
+const phoneTitle = computed({
+	get: () => String(quickValue(filters.value, titleField)),
+	set: (value: string) =>
+		(filters.value = applyQuick(
+			filters.value,
+			titleField,
+			value,
+			quickOperator(filters.value, titleField),
+		)),
+})
+// Access counts once it narrows the list: no pick, or a stale one, shows all
+const phoneFilterCount = computed(
+	() =>
+		filters.value.filter((f) => f.fieldname !== titleField.fieldname).length +
+		(shownSources.value.length ? 1 : 0),
+)
+const showPhoneFilters = ref(phoneFilterCount.value > 0)
+
+// the one line under a phone row's title
+function phoneMeta(workbook: WorkbookListItem) {
+	const sources =
+		workbook.data_sources.length > 1
+			? `${workbook.data_sources[0]} +${workbook.data_sources.length - 1}`
+			: workbook.data_sources[0]
+	return [sources, access(workbook, userStore.getName).label, workbook.modified_from_now]
+		.filter(Boolean)
+		.join(' · ')
+}
 
 // "Load more" grows the page size and refetches
 const PAGE_SIZE = 20
@@ -128,7 +163,7 @@ watchEffect(() => {
 
 	<div class="mb-4 flex h-full flex-col gap-3 overflow-auto px-5 pt-3">
 		<div class="flex items-center justify-between gap-2 overflow-visible py-1">
-			<div class="flex min-w-0 flex-1 items-center gap-2">
+			<div v-if="!isMobile" class="flex min-w-0 flex-1 items-center gap-2">
 				<QuickFilter
 					class="min-w-0"
 					doctype="Insights Workbook"
@@ -150,19 +185,110 @@ watchEffect(() => {
 					v-model="filters"
 				/>
 			</div>
+			<FormControl
+				v-if="isMobile"
+				class="flex-1"
+				:placeholder="__('Search by Title')"
+				v-model="phoneTitle"
+				:debounce="300"
+			>
+				<template #prefix>
+					<SearchIcon class="h-4 w-4 text-ink-gray-4" />
+				</template>
+			</FormControl>
+			<Button
+				v-if="isMobile"
+				size="md"
+				:variant="showPhoneFilters ? 'subtle' : 'outline'"
+				:aria-label="__('Filters')"
+				:aria-expanded="showPhoneFilters"
+				@click="showPhoneFilters = !showPhoneFilters"
+			>
+				<template v-if="phoneFilterCount" #prefix>
+					<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+				</template>
+				<template v-else #icon>
+					<ListFilter class="h-4 w-4 text-ink-gray-6" stroke-width="1.5" />
+				</template>
+				<template v-if="phoneFilterCount">{{ phoneFilterCount }}</template>
+			</Button>
 		</div>
 
+		<!-- QuickFilter sizes each input at w-40; one per row, stretched, fills a phone -->
+		<div v-if="isMobile && showPhoneFilters" class="flex flex-col gap-2">
+			<QuickFilter
+				v-for="quickField in [dataSourceField, tableField, queryField]"
+				:key="quickField.fieldname"
+				class="[&>div]:w-full"
+				doctype="Insights Workbook"
+				:fields="[quickField]"
+				v-model:filters="filters"
+			/>
+			<MultiSelect
+				class="w-full"
+				variant="subtle"
+				:placeholder="__('Access')"
+				:options="sourceOptions"
+				:modelValue="shownSources"
+				@update:modelValue="(next) => (selectedSources = next as AccessSource[])"
+			/>
+			<Filter
+				doctype="Insights Workbook"
+				align="start"
+				:fields="filterFields"
+				v-model="filters"
+			/>
+		</div>
+
+		<!-- a phone has one view: two-line rows, the title across the width -->
 		<List
-			v-if="workbookStore.workbooks.length"
+			v-if="isMobile && workbookStore.workbooks.length"
 			class="-mx-3 list-row-px-3"
-			:columns="['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem']"
+			:columns="['2rem', 'minmax(0,1fr)']"
+			:row-height="56"
+		>
+			<ListRow
+				v-for="workbook in workbookStore.workbooks"
+				:key="workbook.name"
+				class="active:bg-surface-gray-2"
+			>
+				<ListCell>
+					<RouterLink
+						:to="`/workbook/${workbook.name}`"
+						class="absolute inset-0"
+						:aria-label="workbook.title"
+					/>
+					<OwnerAvatar
+						:owner="workbook.owner"
+						:shipped-by="workbook.shipped_by"
+						:shipped-by-logo="workbook.shipped_by_logo"
+					/>
+				</ListCell>
+				<ListCell class="flex-col !items-start justify-center">
+					<span class="w-full truncate text-base text-ink-gray-8">
+						{{ workbook.title }}
+					</span>
+					<span class="w-full truncate text-sm text-ink-gray-5">
+						{{ phoneMeta(workbook) }}
+					</span>
+				</ListCell>
+			</ListRow>
+		</List>
+
+		<List
+			v-else-if="workbookStore.workbooks.length"
+			class="-mx-3 list-row-px-3"
+			:columns="{
+				base: ['minmax(0,1fr)', '6rem'],
+				lg: ['minmax(0,1fr)', '11rem', '10rem', '8rem', '8rem'],
+			}"
 			:row-height="40"
 		>
 			<ListHeader class="sticky top-0 z-10 bg-surface-base">
 				<ListHeaderCell>{{ __('Title') }}</ListHeaderCell>
-				<ListHeaderCell>{{ __('Data Source') }}</ListHeaderCell>
-				<ListHeaderCell>{{ __('Access') }}</ListHeaderCell>
-				<ListHeaderCell>{{ __('Opened') }}</ListHeaderCell>
+				<ListHeaderCell class="max-lg:hidden">{{ __('Data Source') }}</ListHeaderCell>
+				<ListHeaderCell class="max-lg:hidden">{{ __('Access') }}</ListHeaderCell>
+				<ListHeaderCell class="max-lg:hidden">{{ __('Opened') }}</ListHeaderCell>
 				<ListHeaderCell>{{ __('Modified') }}</ListHeaderCell>
 			</ListHeader>
 			<ListRow
@@ -185,7 +311,7 @@ watchEffect(() => {
 						workbook.title
 					}}</span>
 				</ListCell>
-				<ListCell>
+				<ListCell class="max-lg:hidden">
 					<span class="truncate text-base text-ink-gray-6">
 						{{ workbook.data_sources[0] }}
 					</span>
@@ -196,10 +322,10 @@ watchEffect(() => {
 						+{{ workbook.data_sources.length - 1 }}
 					</span>
 				</ListCell>
-				<ListCell>
+				<ListCell class="max-lg:hidden">
 					<AccessLabel :item="workbook" />
 				</ListCell>
-				<ListCell>
+				<ListCell class="max-lg:hidden">
 					<span class="truncate text-base text-ink-gray-6">
 						{{ workbook.last_opened_from_now }}
 					</span>

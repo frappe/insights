@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { ChevronLeft } from 'lucide-vue-next'
 import { computed } from 'vue'
+import { useIsMobile } from '../composables/useIsMobile'
+import { __ } from '../translation'
 import SidebarLink from './SidebarLink.vue'
 
 export type Tab = {
@@ -27,11 +30,17 @@ const tabGroups = computed(() => {
 const activeTab = defineModel<Tab>('activeTab', {
 	type: Object,
 })
+const isMobile = useIsMobile()
 </script>
 
+<!-- On a phone the rail and the tab take turns at the full width: the rail while
+     no tab is open, the tab with a way back once one is. -->
 <template>
 	<div class="flex h-full w-full">
-		<div class="flex w-52 shrink-0 flex-col overflow-hidden bg-surface-gray-1 p-2">
+		<div
+			class="flex w-52 shrink-0 flex-col overflow-hidden bg-surface-gray-1 p-2 max-sm:w-full"
+			:class="activeTab ? 'max-sm:hidden' : ''"
+		>
 			<h1 v-if="props.title" class="px-2 pt-2 text-lg-semibold">
 				{{ props.title }}
 			</h1>
@@ -54,7 +63,22 @@ const activeTab = defineModel<Tab>('activeTab', {
 				</nav>
 			</div>
 		</div>
-		<div class="flex h-full flex-1 flex-col overflow-hidden">
+		<div
+			class="flex h-full flex-1 flex-col overflow-hidden"
+			:class="activeTab ? '' : 'max-sm:hidden'"
+		>
+			<div v-if="isMobile" class="flex shrink-0 px-2 pt-2">
+				<Button
+					variant="ghost"
+					size="md"
+					:label="props.title || __('Back')"
+					@click="activeTab = undefined"
+				>
+					<template #prefix>
+						<ChevronLeft class="h-4 w-4 text-ink-gray-6" />
+					</template>
+				</Button>
+			</div>
 			<component v-if="activeTab && activeTab.component" :is="activeTab.component" />
 		</div>
 	</div>

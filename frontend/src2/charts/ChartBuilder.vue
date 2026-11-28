@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
 import { Badge, Textarea } from 'frappe-ui'
-import { computed, provide, ref } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import InlineFormControlLabel from '../components/InlineFormControlLabel.vue'
 import NumberInput from '../components/NumberInput.vue'
@@ -23,6 +23,8 @@ import ChartSortConfig from './components/ChartSortConfig.vue'
 import ChartTypeSelector from './components/ChartTypeSelector.vue'
 import CollapsibleSection from './components/CollapsibleSection.vue'
 import LoadingOverlay from '../components/LoadingOverlay.vue'
+import { useIsMobile } from '../composables/useIsMobile'
+import { workbookKey } from '../workbook/workbook_key'
 import { __ } from '../translation'
 
 const props = defineProps<{ chart_name: string; queries: DropdownOption[] }>()
@@ -39,7 +41,10 @@ const preview = useChartPreview(chart)
 provide(chartPreviewKey, preview)
 // for a user who cannot write the chart, the preview runs the stored chart, so
 // an edit here would not change the rows it shows
-const readOnly = computed(() => preview.doc.can_write === false)
+const workbook = inject(workbookKey)!
+const readOnly = computed(() => preview.doc.can_write === false || workbook.readOnly)
+// a phone has no room for the card's actions
+const isMobile = useIsMobile()
 
 // the first render separately, so opening a chart does not wait out the debounce
 waitUntil(() => !chart.pending).then(() => preview.load())
@@ -95,7 +100,7 @@ if (useRoute().query.share) {
 			     shown once with the actions beside it -->
 			<div ref="chartEl" class="flex min-h-0 flex-1 items-center justify-center">
 				<ChartRenderer :chart="preview" hide-maximize>
-					<template v-if="chart.doc.query" #actions>
+					<template v-if="chart.doc.query && !isMobile" #actions>
 						<ChartBuilderActions
 							:chart="chart"
 							:preview="preview"
@@ -110,7 +115,7 @@ if (useRoute().query.share) {
 		</div>
 		<!-- `inert` on the content and not the scroller, so a reader still scrolls it -->
 		<div
-			class="relative isolate mt-1.5 flex w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-surface-base px-3.5"
+			class="relative isolate mt-1.5 flex w-[19rem] flex-shrink-0 flex-col overflow-y-auto bg-surface-base px-3.5 max-sm:hidden"
 		>
 			<div class="flex flex-col divide-y" :inert="readOnly">
 				<CollapsibleSection title="Chart">

@@ -30,7 +30,7 @@ function update() {
 </script>
 
 <template>
-	<div class="flex w-full flex-col gap-6 p-8 px-10">
+	<div class="flex w-full flex-col gap-6 p-8 px-10 max-sm:p-4">
 		<h1 class="text-2xl-semibold">Profile</h1>
 		<div class="flex items-start gap-4">
 			<div class="relative flex flex-col items-center justify-between gap-2">
@@ -42,7 +42,7 @@ function update() {
 			</div>
 		</div>
 		<div class="flex w-full flex-col gap-4">
-			<div class="flex gap-6">
+			<div class="flex gap-6 max-sm:flex-col max-sm:gap-4">
 				<FormControl
 					v-model="user.first_name"
 					label="First Name"
@@ -56,7 +56,7 @@ function update() {
 					v-model="user.last_name"
 				/>
 			</div>
-			<div class="flex gap-6">
+			<div class="flex gap-6 max-sm:flex-col max-sm:gap-4">
 				<FormControl
 					autocomplete="off"
 					class="flex-1"

@@ -154,7 +154,7 @@ function onListChange(
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
 			</div>
-			<div v-if="!editingFolderName" class="flex gap-1">
+			<div v-if="!editingFolderName && !workbook.readOnly" class="flex gap-1">
 				<Button
 					class="!h-fit !p-1"
 					variant="ghost"
@@ -189,6 +189,7 @@ function onListChange(
 				:animation="150"
 				:delay="150"
 				:delay-on-touch-only="true"
+				:disabled="workbook.readOnly"
 				:touch-start-threshold="5"
 				:empty-insert-threshold="20"
 				ghost-class="sortable-ghost"
@@ -213,6 +214,7 @@ function onListChange(
 								<p class="truncate">{{ row.title }}</p>
 							</div>
 							<button
+								v-if="!workbook.readOnly"
 								class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
 								:aria-label="__('Remove {0}', row.title)"
 								@click.prevent.stop="section.remove(row)"
@@ -237,6 +239,7 @@ function onListChange(
 					:animation="150"
 					:delay="150"
 					:delay-on-touch-only="true"
+					:disabled="workbook.readOnly"
 					:touch-start-threshold="5"
 					:empty-insert-threshold="20"
 					ghost-class="sortable-ghost"
@@ -280,7 +283,7 @@ function onListChange(
 								<p v-else class="flex-1 truncate text-sm">{{ folder.title }}</p>
 							</div>
 							<div
-								v-if="editingFolderName !== folder.name"
+								v-if="editingFolderName !== folder.name && !workbook.readOnly"
 								class="invisible flex gap-0.5 group-hover:visible"
 							>
 								<button
@@ -334,6 +337,7 @@ function onListChange(
 										<p class="truncate">{{ row.title }}</p>
 									</div>
 									<button
+										v-if="!workbook.readOnly"
 										class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-3 group-hover:visible"
 										:aria-label="__('Remove {0}', row.title)"
 										@click.prevent.stop="section.remove(row)"

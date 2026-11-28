@@ -49,11 +49,6 @@ export default {
 			maxWidth: {
 				'main-content': '768px',
 			},
-			screens: {
-				standalone: {
-					raw: '(display-mode: standalone)',
-				},
-			},
 		},
 	},
 	plugins: [containerQueries],

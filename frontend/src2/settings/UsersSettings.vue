@@ -146,7 +146,9 @@ function sendInvitation() {
 </script>
 
 <template>
-	<div class="flex h-full w-full flex-col gap-3 overflow-x-hidden overflow-y-scroll p-8 px-10">
+	<div
+		class="flex h-full w-full flex-col gap-3 overflow-x-hidden overflow-y-scroll p-8 px-10 max-sm:p-4"
+	>
 		<h1 class="flex-shrink-0 text-2xl-semibold">Users</h1>
 
 		<div class="flex w-full flex-1 flex-col gap-3 overflow-auto">

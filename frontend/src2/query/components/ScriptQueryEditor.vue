@@ -4,6 +4,8 @@ import { h, inject, ref } from 'vue'
 import Code from '../../components/Code.vue'
 import VariablesDialog from '../../components/VariablesDialog.vue'
 import ResultPane from '../../components/result_pane/ResultPane.vue'
+import { useIsMobile } from '../../composables/useIsMobile'
+import { workbookKey } from '../../workbook/workbook_key'
 import { attachRealtimeListener, wheneverChanges } from '../../helpers'
 import session from '../../session'
 import { __ } from '../../translation'
@@ -14,6 +16,8 @@ import QueryHeader from './QueryHeader.vue'
 
 const query = inject<Query>('query')!
 const $find = ref<HTMLElement>()
+const isMobile = useIsMobile()
+const workbook = inject(workbookKey)!
 query.autoExecute = false
 query.ensureResult()
 
@@ -81,7 +85,7 @@ function handleSaveVariables(variables: any[]) {
 
 <template>
 	<div class="flex flex-1 flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
-		<QueryHeader>
+		<QueryHeader v-if="!isMobile">
 			<QueryActions
 				:on-execute="() => run()"
 				:extra-actions="extraActions"
@@ -96,7 +100,7 @@ function handleSaveVariables(variables: any[]) {
 						v-model="code"
 						language="python"
 						:placeholder="placeholder_script"
-						:read-only="!session.user.can_write_trusted_code"
+						:read-only="workbook.readOnly || !session.user.can_write_trusted_code"
 					/>
 				</div>
 

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { Plus, X } from 'lucide-vue-next'
 import { setDraggedItem } from './workbook_drag'
+import { inject } from 'vue'
+import { workbookKey } from './workbook_key'
 const section = defineProps<{
 	title: string
 	emptyMessage: string
@@ -16,6 +18,7 @@ function onDragStart(event: DragEvent, row: any) {
 	if (!event.dataTransfer) return
 	setDraggedItem(event.dataTransfer, section.title, row)
 }
+const workbook = inject(workbookKey)!
 </script>
 
 <template>
@@ -24,7 +27,7 @@ function onDragStart(event: DragEvent, row: any) {
 			<div class="flex items-center gap-1">
 				<div class="text-sm-medium">{{ section.title }}</div>
 			</div>
-			<div>
+			<div v-if="!workbook.readOnly">
 				<Button
 					class="!h-fit !p-1"
 					variant="ghost"
@@ -49,7 +52,7 @@ function onDragStart(event: DragEvent, row: any) {
 				:class="
 					section.isActive(row) ? ' bg-surface-gray-2' : ' hover:border-outline-gray-2'
 				"
-				draggable="true"
+				:draggable="!workbook.readOnly"
 				@dragstart="onDragStart($event, row)"
 			>
 				<router-link
@@ -63,6 +66,7 @@ function onDragStart(event: DragEvent, row: any) {
 						<p class="truncate">{{ row.title }}</p>
 					</div>
 					<button
+						v-if="!workbook.readOnly"
 						class="invisible cursor-pointer rounded-4 px-1.5 py-1 transition-all hover:bg-surface-gray-2 group-hover:visible"
 						:aria-label="__('Remove {0}', row.title)"
 						@click.prevent.stop="section.remove(row)"

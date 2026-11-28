@@ -53,7 +53,7 @@ const filler = computed(() =>
 )
 
 let clickedAt: ClickPoint = { x: 0, y: 0 }
-function rememberPoint(event: MouseEvent) {
+function rememberPoint(event: PointerEvent) {
 	clickedAt = { x: event.clientX, y: event.clientY }
 }
 
@@ -68,7 +68,7 @@ const events = computed(() =>
 	<!-- `card: false` keeps the box a chart needs — it clips the plot — and drops
 	     the card's own border and background. A dialog is already the chrome here, and a second
 	     border inside it renders a card that is not there. -->
-	<ChartCard class="h-full" :card="false" @click.capture="rememberPoint">
+	<ChartCard class="h-full" :card="false" @pointerdown.capture="rememberPoint">
 		<component v-if="filler" :is="filler.component" v-bind="filler.props" v-on="events" />
 	</ChartCard>
 </template>

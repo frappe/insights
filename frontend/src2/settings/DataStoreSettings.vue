@@ -9,7 +9,7 @@ settings.load()
 </script>
 
 <template>
-	<div class="flex w-full flex-col gap-6 overflow-y-scroll p-8 px-10">
+	<div class="flex w-full flex-col gap-6 overflow-y-scroll p-8 px-10 max-sm:p-4">
 		<h1 class="text-2xl-semibold">Data Store</h1>
 
 		<SettingItem

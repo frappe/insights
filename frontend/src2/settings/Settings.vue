@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Building2, CircleUser, DatabaseZap, KeyRound, SettingsIcon, Users } from 'lucide-vue-next'
-import { defineAsyncComponent, shallowRef } from 'vue'
+import { defineAsyncComponent, shallowRef, watch } from 'vue'
 import TabbedSidebarLayout, { Tab, TabGroup } from '../components/TabbedSidebarLayout.vue'
+import { useIsMobile } from '../composables/useIsMobile'
 import { __ } from '../translation'
 
 const showDialog = defineModel({ required: true, default: false })
@@ -50,13 +51,21 @@ const tabGroups: TabGroup[] = [
 	},
 ]
 const tabs = tabGroups.flatMap((group) => group.tabs)
-const activeTab = shallowRef<Tab>(tabs.find((tab) => tab.label === props.tab) ?? tabs[0])
+// a phone opens on the list of tabs, unless the caller names one
+const isMobile = useIsMobile()
+const activeTab = shallowRef<Tab | undefined>(
+	tabs.find((tab) => tab.label === props.tab) ?? (isMobile.value ? undefined : tabs[0]),
+)
+// a desktop always shows a tab, also when the window was a phone's at first
+watch(showDialog, (open) => {
+	if (open && !activeTab.value && !isMobile.value) activeTab.value = tabs[0]
+})
 </script>
 
 <template>
 	<Dialog v-model:open="showDialog" size="4xl" bare>
 		<template #default>
-			<div class="relative flex text-base" :style="{ height: 'calc(100vh - 12rem)' }">
+			<div class="relative flex h-[calc(100vh-12rem)] text-base max-sm:h-[calc(90dvh-1rem)]">
 				<TabbedSidebarLayout
 					:title="__('Settings')"
 					:tabs="tabGroups"
