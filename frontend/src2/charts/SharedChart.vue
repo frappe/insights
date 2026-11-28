@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { call } from 'frappe-ui'
-import { provide, ref } from 'vue'
+import { computed, provide, ref, watch } from 'vue'
 import type { Filter, ValuesProvider } from '../components/filter_picker/filter_picker'
 import TableCardActions from '../dashboard/TableCardActions.vue'
 import type { QueryResultColumn } from '../types/query.types'
@@ -36,8 +36,13 @@ const valuesProvider: ValuesProvider = (column) => (search_term, granularity) =>
 const rangeProvider = (column: QueryResultColumn) =>
 	call<[number, number] | undefined>('insights.api.view.get_card_range', cardColumn(column))
 
+// a table that pages finds on the server, so every row is searched
 const findText = ref('')
-provide(tableFindKey, findText)
+watch(findText, (text) => chart.setFind?.(text))
+provide(
+	tableFindKey,
+	computed(() => (chart.setFind ? '' : findText.value)),
+)
 // Expand mounts a second TableCardActions, so the page holds what the reader opened
 const findOpen = ref(false)
 const actionsActive = ref(false)

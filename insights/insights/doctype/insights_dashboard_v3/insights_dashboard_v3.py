@@ -26,6 +26,7 @@ from insights.not_permitted import answers_refusal, refused_doctypes, roles_with
 from insights.permission_user import runs_as
 from insights.permissions import same_rows_for_every_reader
 from insights.preview_key import generate_preview_key
+from insights.resolver import not_found
 from insights.resources import ResourcePool, server_busy
 from insights.telemetry import capture, capture_share_granted
 from insights.utils import DocShare, File, get_app_url
@@ -956,9 +957,15 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     card's query, on the column the dimension reads, so a period finer than the
     grain still finds its rows instead of missing the bucket. `card_filter_source`
     says which column that is.
+
+    A find `{"find": term, "columns": [...]}` keeps rows where any column contains the term.
     """
     rules = []
     for card_filter in frappe.parse_json(card_filters) or []:
+        if "find" in card_filter:
+            if find := card_find(card_filter):
+                rules.append(find)
+            continue
         column = card_filter.get("column")
         operator = card_filter.get("operator")
         if not column or not isinstance(column, str) or not operator:
@@ -978,6 +985,13 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
     check_card_filter(chart)
     routed = dict(adhoc_filters or {})
     for rule in rules:
+        if rule["type"] == "filter_group":
+            if any(not card_filter_source(chart, f["column"]["column_name"])[0] for f in rule["filters"]):
+                not_found()
+            # a find reads the columns as the card shows them, never a grain's source
+            group = routed.get(chart) or {"type": "filter_group", "logical_operator": "And", "filters": []}
+            routed[chart] = {**group, "filters": [*group["filters"], rule]}
+            continue
         query, source_column, grain, _ = card_filter_source(chart, rule["column"]["column_name"])
         target = chart
         if source_column and grain:
@@ -986,6 +1000,28 @@ def route_card_filters(chart: str, card_filters: list | None, adhoc_filters: dic
         group = routed.get(target) or {"type": "filter_group", "logical_operator": "And", "filters": []}
         routed[target] = {**group, "filters": [*group["filters"], rule]}
     return routed
+
+
+def card_find(card_filter: dict) -> dict | None:
+    """A reader's find on a card, as one Or across the columns it names."""
+    term = card_filter.get("find")
+    columns = [c for c in card_filter.get("columns") or [] if c and isinstance(c, str)]
+    if not isinstance(term, str) or not term.strip() or not columns:
+        return None
+
+    return {
+        "type": "filter_group",
+        "logical_operator": "Or",
+        "filters": [
+            {
+                "type": "filter",
+                "column": {"type": "column", "column_name": column},
+                "operator": "contains",
+                "value": term.strip(),
+            }
+            for column in columns
+        ],
+    }
 
 
 def preview_refusal(dashboard) -> str | None:

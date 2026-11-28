@@ -797,6 +797,9 @@ class IbisQueryBuilder:
         return self.query.filter(condition)
 
     def make_filter_condition(self, filter_args):
+        # a nested group, such as a reader's find across a card's columns
+        if filter_args.type == "filter_group":
+            return self.make_group_condition(filter_args)
         if hasattr(filter_args, "expression") and filter_args.expression:
             return self.evaluate_expression(filter_args.expression.expression)
 
@@ -855,17 +858,18 @@ class IbisQueryBuilder:
         return FILTER_OPERATORS.get(operator)
 
     def apply_filter_group(self, filter_group_args):
-        filters = filter_group_args.filters
-        if not filters:
+        if not filter_group_args.filters:
             return self.query
+        return self.query.filter(self.make_group_condition(filter_group_args))
 
+    def make_group_condition(self, filter_group_args):
         logical_operator = filter_group_args.logical_operator
-        conditions = [self.make_filter_condition(filter) for filter in filters]
+        conditions = [self.make_filter_condition(filter) for filter in filter_group_args.filters]
 
         if logical_operator == "And":
-            return self.query.filter(ibis.and_(*conditions))
+            return ibis.and_(*conditions)
         elif logical_operator == "Or":
-            return self.query.filter(ibis.or_(*conditions))
+            return ibis.or_(*conditions)
 
         frappe.throw(f"Logical operator {logical_operator} is not supported", QueryRefused)
 

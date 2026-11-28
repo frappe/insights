@@ -5,7 +5,7 @@
 // It is separate from both cards because of their imports. The builder's card
 // imports the builder's drill, which an island must not load.
 
-import { computed, provide, ref, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, provide, ref, shallowRef, watch } from 'vue'
 import { numberReadings } from '../charts/adapter/number'
 import { tableFindKey } from '../charts/adapter/table'
 import type { ChartRead } from '../charts/chart_view'
@@ -90,13 +90,23 @@ export function useChartCell(props: ChartCellProps) {
 		return props.dashboard.cardRange(chart_name, column.name)
 	}
 
-	// Find runs only in the browser: a case-insensitive match over the rows the
-	// card already shows. It is not a filter, so it lives here and not on the page.
-	// Nothing outside this card reads it, and a reload should not restore it.
-	// `TableChart` reads it through the key and narrows the rows it renders.
+	// a paged table finds on the server; one that does not page narrows its rows in `TableChart`
 	const findText = ref('')
 	const findOpen = ref(false)
-	provide(tableFindKey, findText)
+	const findsOnServer = computed(() => Boolean(isTable.value && read.value?.setFind))
+	watch(findText, (text) => read.value?.setFind?.(text))
+	// a cell that switches charts drops the old chart's find, as unmounting does
+	watch(read, (_, old) => {
+		old?.clearFind()
+		findText.value = ''
+		findOpen.value = false
+	})
+	provide(
+		tableFindKey,
+		computed(() => (findsOnServer.value ? '' : findText.value)),
+	)
+	// the read outlives this card, and its next card has an empty find box
+	onScopeDispose(() => read.value?.clearFind())
 
 	return {
 		read,
