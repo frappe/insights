@@ -32,7 +32,7 @@ jobs:
     timeout-minutes: 60
     name: UI
     env:
-      BENCH_PATH: /home/runner/frappe-bench
+      BENCH_PATH: /home/runner/pilot/benches/frappe-bench
       SITE_NAME: insights.test
       SITE_URL: http://insights.test:8000
       DB_ROOT_PASSWORD: root
@@ -66,6 +66,29 @@ jobs:
       - name: Add the site to hosts
         run: echo "127.0.0.1 $SITE_NAME" | sudo tee -a /etc/hosts
 
+      - name: Cache pip and uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/uv
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py', '**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
@@ -74,32 +97,43 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
 
-      - name: Install system dependencies
+      - name: Setup Pilot
         run: |
-          sudo apt -qq update
-          sudo apt -qq install -y redis-server
+          curl -fsSL https://raw.githubusercontent.com/frappe/pilot/develop/install.sh | sh -s -- --ci
+          export PATH="$HOME/pilot/bin:$HOME/.local/bin:$PATH"
+          printf '%s\n' "$HOME/pilot/bin" "$HOME/.local/bin" >> "$GITHUB_PATH"
+          pilot new frappe-bench --frappe-branch "$FRAPPE_BRANCH"
+          pilot -b frappe-bench set-bench-config admin_allow_site_to_pilot_communication false
+          pilot -b frappe-bench set-bench-config mariadb_existing true
+          pilot -b frappe-bench set-bench-config mariadb_host 127.0.0.1
+          pilot -b frappe-bench set-bench-config mariadb_port 3306
+          pilot -b frappe-bench set-bench-config mariadb_admin_user root
+          pilot -b frappe-bench set-bench-config mariadb_password "$DB_ROOT_PASSWORD"
+          pilot -b frappe-bench init
+          printf '[client]\nskip-ssl\n' > ~/.my.cnf
+          mariadb --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
+          mariadb --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
 
-      - name: Setup
-        run: |
-          pip install frappe-bench
-          bench init \
-            --frappe-branch "$FRAPPE_BRANCH" \
-            --skip-assets \
-            --python "$(which python)" \
-            "$BENCH_PATH"
-          mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL character_set_server = 'utf8mb4'"
-          mysql --host 127.0.0.1 --port 3306 -u root -p"$DB_ROOT_PASSWORD" -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
-
-      - name: Install
+      - name: Install Insights
         working-directory: ${{ env.BENCH_PATH }}
         run: |
-          bench get-app insights $GITHUB_WORKSPACE --skip-assets
-          bench setup requirements --dev
-          bench new-site --db-root-password "$DB_ROOT_PASSWORD" --admin-password "$ADMIN_PASSWORD" "$SITE_NAME"
-          bench --site "$SITE_NAME" install-app insights
-          # yarn caches every frappe-ui commit as 1.0.2, so Frappe would reuse Insights' pin
-          yarn cache clean frappe-ui
-          bench build
+          uv pip install --python env/bin/python -e "apps/frappe[test]"
+          pilot get-app "$GITHUB_WORKSPACE" --branch "$GITHUB_SHA" --skip-assets
+        env:
+          CI: "Yes"
+
+      - name: Start Pilot
+        run: |
+          pilot -b frappe-bench start > "$RUNNER_TEMP/pilot.log" 2>&1 &
+          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 \
+            http://127.0.0.1:7000/api/v1/health
+
+      - name: Create and Build Site
+        working-directory: ${{ env.BENCH_PATH }}
+        run: |
+          pilot new-site "$SITE_NAME" --admin-password "$ADMIN_PASSWORD" --apps frappe insights --skip-assets
+          # Never prebuilt: e2e must exercise this checkout's frontend + islands, not a download.
+          pilot build --apps insights --force
         env:
           CI: "Yes"
 
@@ -107,31 +141,23 @@ jobs:
         working-directory: ${{ env.BENCH_PATH }}/apps/insights/frontend
         run: yarn test
 
-      - name: Configure the site
+      - name: Configure and Start Site Services
         working-directory: ${{ env.BENCH_PATH }}
         run: |
-          bench --site "$SITE_NAME" set-config allow_tests 1 --parse
-          bench --site "$SITE_NAME" set-config host_name "$SITE_URL"
+          pilot frappe --site "$SITE_NAME" set-config allow_tests 1 --parse
+          pilot frappe --site "$SITE_NAME" set-config host_name "$SITE_URL"
           # Not optional. See "Raise the background job ceiling" in
           # frontend/e2e/AGENTS.md for what a full queue does to a run.
-          bench --site "$SITE_NAME" set-config max_queued_jobs 100000 --parse
-
-      - name: Start the site
-        working-directory: ${{ env.BENCH_PATH }}
-        run: |
-          sed -i '/^watch:/d' Procfile
-          sed -i '/^schedule:/d' Procfile
-          bench start &> bench_start.log &
-          # A Table Import runs on the `long` queue, and the Procfile's one
-          # worker serves `short`, `default` and `long` in priority order. The
-          # suite's own teardown backlog starves `long`, so the import flow
-          # never finishes. This worker takes `long` alone.
-          bench worker --queue long &> long_worker.log &
-          timeout 120 bash -c "until curl -sf $SITE_URL/api/method/ping > /dev/null; do sleep 2; done"
+          pilot frappe --site "$SITE_NAME" set-config max_queued_jobs 100000 --parse
+          # A Table Import runs on the `long` queue; dedicate a worker so the
+          # default worker's teardown backlog cannot starve it.
+          pilot frappe worker --queue long > "$RUNNER_TEMP/long_worker.log" 2>&1 &
+          curl --fail --silent --show-error --retry 30 --retry-delay 2 --retry-all-errors \
+            --output /dev/null "$SITE_URL/api/method/ping"
 
       # Seeding runs after the site is up, not before: `update_progress`
-      # publishes realtime, and the redis ports come from `bench start`, so
-      # seeding first dies on `Error 111 connecting to 127.0.0.1:11000`.
+      # publishes realtime, and redis must be listening, so seeding first dies
+      # on `Error 111 connecting to 127.0.0.1:11000`.
       #
       # The suite reads the demo dataset and asserts on its exact row counts, so
       # the Data Source has to exist before any test runs. `CI` makes
@@ -140,7 +166,7 @@ jobs:
       # one. This also creates the seeded "Order Analysis" Workbook.
       - name: Seed the demo Data Source
         working-directory: ${{ env.BENCH_PATH }}
-        run: bench --site "$SITE_NAME" execute insights.setup.setup_wizard.setup_demo_data
+        run: pilot frappe --site "$SITE_NAME" execute insights.setup.setup_wizard.setup_demo_data
         env:
           CI: "Yes"
 
@@ -176,5 +202,7 @@ jobs:
         if: failure()
         working-directory: ${{ env.BENCH_PATH }}
         run: |
-          cat bench_start.log || true
+          cat "$RUNNER_TEMP/pilot.log" || true
+          cat "$RUNNER_TEMP/long_worker.log" || true
+          cat logs/*.log || true
           cat sites/"$SITE_NAME"/logs/*.log || true
