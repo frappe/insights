@@ -361,11 +361,11 @@ function makeWorkbook(name: string) {
 		return call(method, { workbook: workbook.name, items }).catch(showErrorToast)
 	}
 
-	// Everything that edits the workbook or its items reads this. A phone reads a
-	// workbook, so it takes the read-only path a user without write access takes.
-	// Only the client: the document's `read_only` stays the user's access.
+	// Every control that edits the workbook or its items reads this, so a new one
+	// hides on a phone too. A phone reads a workbook. A user who cannot write it
+	// still edits it here without saving, so `doc.read_only` is not part of it.
 	const isMobile = useIsMobile()
-	const readOnly = computed(() => Boolean(workbook.doc.read_only) || isMobile.value)
+	const readOnly = computed(() => isMobile.value)
 
 	return reactive({
 		...toRefs(workbook),

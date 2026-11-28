@@ -25,7 +25,12 @@ const emit = defineEmits<{ close: [] }>()
 // workbook: a user who can only read it cannot add a query to it.
 const workbook = inject(workbookKey, null)
 function openable(answer: DrillLevelData) {
-	return Boolean(answer.operations?.length) && Boolean(workbook) && !workbook?.readOnly
+	return (
+		Boolean(answer.operations?.length) &&
+		Boolean(workbook) &&
+		!workbook?.doc.read_only &&
+		!workbook?.readOnly
+	)
 }
 
 // The rows level on screen, if any. Its answer reflects the reader's latest
