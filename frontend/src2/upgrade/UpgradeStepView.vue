@@ -67,7 +67,7 @@ const picture = computed(
 	() => group.value?.picture ?? (current.value ? pictureOf(current.value.item) : undefined),
 )
 const badge = computed(() => stepBadge(openCount.value, group.value?.kind ?? 'note'))
-const sentenceFor = (row: Row) => sentenceOf(row.item, session.user.email, session.user.locale)
+const sentenceFor = (row: Row) => sentenceOf(row.item, session.user.user_id, session.user.locale)
 const sentence = computed(() => (current.value ? sentenceFor(current.value) : undefined))
 
 /** The row's button, unless it is a fix the reader may not apply, or one already applied. */
@@ -91,7 +91,7 @@ const person = computed(() => {
 		PERSON_KEYS.flatMap((key) => [row.item.data?.[key]].flat()).filter(
 			(user): user is string =>
 				typeof user === 'string' &&
-				user !== session.user.email &&
+				user !== session.user.user_id &&
 				Boolean(row.item.people?.[user]),
 		)
 	let email = current.value ? named(current.value)[0] : undefined

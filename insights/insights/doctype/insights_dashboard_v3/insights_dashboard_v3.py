@@ -658,13 +658,13 @@ class InsightsDashboardv3(Document):
         it, only the client's user picker stopped a share to a portal user, who
         could then download the owner's rows.
         """
-        from insights.permissions import validate_shareable_users
+        from insights.permissions import user_id_of, validate_shareable_users
 
         if not frappe.has_permission("Insights Dashboard v3", ptype="share", doc=self.name):
             frappe.throw("You do not have permission to share this dashboard")
 
         data = frappe.parse_json(data)
-        people_with_access = data.get("people_with_access") or []
+        people_with_access = [user_id_of(user) for user in data.get("people_with_access") or []]
 
         existing_shares = frappe.get_all(
             "DocShare",

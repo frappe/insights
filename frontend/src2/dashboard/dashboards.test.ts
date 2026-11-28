@@ -12,7 +12,7 @@ vi.hoisted(() => {
 	Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true })
 })
 
-const session = vi.hoisted(() => ({ user: { email: 'ann@x.com' }, isAuthorized: true }))
+const session = vi.hoisted(() => ({ user: { user_id: 'ann@x.com' }, isAuthorized: true }))
 vi.mock('../session', () => ({ default: session }))
 
 import { canOpenWorkbook, useDashboardView } from './dashboards'
@@ -25,7 +25,7 @@ describe('the Dashboards view', () => {
 		await nextTick()
 		expect(useDashboardView().value).toBe('grid')
 
-		session.user.email = 'bob@x.com'
+		session.user.user_id = 'bob@x.com'
 		expect(useDashboardView().value).toBe('list')
 	})
 })

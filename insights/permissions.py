@@ -255,6 +255,17 @@ def refuse_member_row_alone(row, method=None):
     )
 
 
+def user_id_of(user: str) -> str:
+    """The ID of the user `user` names by ID or by email. The share pickers send an email.
+
+    Only a string is looked up: a list would be read as a filter, such as
+    `["like", "a%"]`, and the error naming the user it found would give them away.
+    """
+    if not isinstance(user, str):
+        return user
+    return frappe.db.get_value("User", {"email": user}) or user
+
+
 def validate_shareable_users(emails):
     """Refuse to share content with anyone who is not an Insights user.
 

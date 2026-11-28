@@ -40,8 +40,8 @@ async function searchUsers(search_term = '') {
 		.finally(() => (searching.value = false))
 }
 
-function getUser(email: string) {
-	return users.value.find((user) => user.email === email)
+function getUser(user: string) {
+	return users.value.find((u) => u.name === user || u.email === user)
 }
 function getName(email: string) {
 	const user = getUser(email)

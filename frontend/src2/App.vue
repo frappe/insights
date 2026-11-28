@@ -56,7 +56,7 @@ const notifiers = {
 }
 
 attachRealtimeListener('insights_notification', (data: any) => {
-	if (data.user == session.user.email) {
+	if (data.user == session.user.user_id) {
 		const notify = notifiers[data.type as keyof typeof notifiers] || toast.message
 		notify(data.title || data.message, {
 			description: data.title ? data.message : undefined,

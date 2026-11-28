@@ -109,8 +109,8 @@ class InsightsUserInvitation(Document):
         account access to Insights. It says nothing about who holds the key, so
         the caller needs to tell the two cases apart.
         """
-        if frappe.db.exists("User", self.email):
-            return frappe.get_doc("User", self.email), False
+        if user := frappe.db.get_value("User", {"email": self.email}):
+            return frappe.get_doc("User", user), False
 
         first_name = self.email.split("@")[0].title()
         user = frappe.get_doc(

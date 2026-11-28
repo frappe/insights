@@ -84,13 +84,15 @@ const selectedUserEmail = ref<string>('')
 const userStore = useUserStore()
 
 const owner = computed(() =>
-	dashboard.doc.owner === session.user.email
+	dashboard.doc.owner === session.user.user_id
 		? {
 				full_name: session.user.full_name || session.user.email,
+				email: session.user.email,
 				user_image: session.user.user_image,
 		  }
 		: {
 				full_name: userStore.getName(dashboard.doc.owner) || dashboard.doc.owner,
+				email: userStore.getUser(dashboard.doc.owner)?.email || dashboard.doc.owner,
 				user_image: userStore.getImage(dashboard.doc.owner),
 		  },
 )
@@ -177,7 +179,7 @@ function addSharedUser() {
 					<div class="flex flex-col gap-1 overflow-y-auto">
 						<ShareUserRow
 							:full-name="owner.full_name"
-							:email="dashboard.doc.owner"
+							:email="owner.email"
 							:image="owner.user_image"
 							access="owner"
 						/>
