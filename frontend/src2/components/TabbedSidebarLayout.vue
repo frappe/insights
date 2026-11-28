@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft } from 'lucide-vue-next'
 import { computed } from 'vue'
+import { useIsMobile } from '../composables/useIsMobile'
 import { __ } from '../translation'
 import SidebarLink from './SidebarLink.vue'
 
@@ -29,6 +30,7 @@ const tabGroups = computed(() => {
 const activeTab = defineModel<Tab>('activeTab', {
 	type: Object,
 })
+const isMobile = useIsMobile()
 </script>
 
 <!-- On a phone the rail and the tab take turns at the full width: the rail while
@@ -65,7 +67,7 @@ const activeTab = defineModel<Tab>('activeTab', {
 			class="flex h-full flex-1 flex-col overflow-hidden"
 			:class="activeTab ? '' : 'max-sm:hidden'"
 		>
-			<div class="flex shrink-0 px-2 pt-2 sm:hidden">
+			<div v-if="isMobile" class="flex shrink-0 px-2 pt-2">
 				<Button
 					variant="ghost"
 					size="md"
